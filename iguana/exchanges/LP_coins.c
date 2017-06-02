@@ -18,6 +18,7 @@
 //  marketmaker
 //
 
+char *portstrs[][2] = { { "BTC", "8332" }, { "KMD", "7771" }, { "LTC", "9332" }, { "REVS", "10196" }, { "JUMBLR", "15106" }, };
 
 char *parse_conf_line(char *line,char *field)
 {
@@ -115,50 +116,26 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot)
     return(-1);
 }
 
-uint32_t LP_assetmagic(char *symbol,uint64_t supply)
+uint16_t LP_rpcport(char *symbol)
 {
-    uint8_t buf[512]; int32_t len = 0;
-    if ( strcmp(symbol,"KMD") == 0 )
-        return(0x8de4eef9);
-    len = iguana_rwnum(1,&buf[len],sizeof(supply),(void *)&supply);
-    strcpy((char *)&buf[len],symbol);
-    len += strlen(symbol);
-    return(calc_crc32(0,buf,len));
-}
-
-uint16_t LP_assetport(uint32_t magic)
-{
-    if ( magic == 0x8de4eef9 )
-        return(7771);
-    else return(8000 + (magic % 7777));
-}
-
-uint16_t LP_rpcport(char *symbol,uint64_t supply,uint32_t *magicp)
-{
-    if ( symbol == 0 || symbol[0] == 0 || strcmp("KMD",symbol) == 0 )
-    {
-        *magicp = 0x8de4eef9;
-        return(7771);
-    }
-    else if ( strcmp("BTC",symbol) == 0 )
-        return(8332);
-    else if ( strcmp("LTC",symbol) == 0 )
-        return(9332);
-    *magicp = LP_assetmagic(symbol,supply);
-    return(LP_assetport(*magicp)+1);
+    int32_t i;
+    for (i=0; i<sizeof(portstrs)/sizeof(*portstrs); i++)
+        if ( strcmp(portstrs[i][0],symbol) == 0 )
+            return(atoi(portstrs[i][1]));
+    return(0);
 }
 
 struct iguana_info *LP_coinfind(char *symbol)
 {
     static struct iguana_info *LP_coins; static int32_t LP_numcoins;
-    struct iguana_info *coin,cdata; int32_t i; uint32_t magic; uint16_t port;
+    struct iguana_info *coin,cdata; int32_t i; uint16_t port;
     for (i=0; i<LP_numcoins; i++)
         if ( strcmp(LP_coins[i].symbol,symbol) == 0 )
             return(&LP_coins[i]);
     memset(&cdata,0,sizeof(cdata));
     coin = &cdata;
     safecopy(cdata.symbol,symbol,sizeof(cdata.symbol));
-    port = LP_rpcport(symbol,10,&magic);
+    port = LP_rpcport(symbol);
     sprintf(cdata.serverport,"127.0.0.1:%u",port);
     cdata.longestchain = 100000;
     cdata.txfee = 10000;
