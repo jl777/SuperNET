@@ -781,7 +781,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     {
         char tmpstr[128];
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
-        //printf("%s coinaddr.(%s) %d wif.(%s) passphrase.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr,passphrase);
+        printf("%s (%s) %d wif.(%s) (%s)\n",symbol,coinaddr,coin->pubtype,tmpstr,passphrase);
         if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coinaddr,-1)) != 0 )
             printf("importprivkey -> (%s)\n",jprint(retjson,1));
     }
@@ -814,7 +814,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                     if ( amclient != 0 )
                         targetval = (depositval / 776) + 50000;
                     else targetval = (depositval / 9) * 8;
-                printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
+                //printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
                     if ( (i= LP_nearestvalue(values,n,targetval)) >= 0 )
                     {
                         item = jitem(array,i);

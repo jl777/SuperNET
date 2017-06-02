@@ -212,6 +212,12 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             LP_importaddress(swap->alicecoin.symbol,coinaddr);
             fprintf(fp,",\"Apayment\":\"%s\"",coinaddr);
         }
+        if ( rawtx->I.redeemlen > 0 )
+        {
+            char scriptstr[2049];
+            init_hexbytes_noT(scriptstr,rawtx->redeemscript,rawtx->I.redeemlen);
+            fprintf(fp,",\"redeem\":\"%s\"",scriptstr);
+        }
         /*basilisk_dontforget_userdata("Aclaim",fp,swap->I.userdata_aliceclaim,swap->I.userdata_aliceclaimlen);
          basilisk_dontforget_userdata("Areclaim",fp,swap->I.userdata_alicereclaim,swap->I.userdata_alicereclaimlen);
          basilisk_dontforget_userdata("Aspend",fp,swap->I.userdata_alicespend,swap->I.userdata_alicespendlen);

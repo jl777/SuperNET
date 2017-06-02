@@ -1223,11 +1223,11 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
                 {
                     for (j=0; j<swap->bobpayment.I.datalen; j++)
                         printf("%02x",swap->bobpayment.txbytes[j]);
-                    //printf(" <- bobpayment.%d\n",swap->bobpayment.datalen);
-                    //for (j=0; j<swap->bobpayment.redeemlen; j++)
-                    //    printf("%02x",swap->bobpayment.redeemscript[j]);
-                    //printf(" <- redeem.%d\n",swap->bobpayment.redeemlen);
-                    printf(" <- GENERATED BOB PAYMENT.%d\n",swap->bobpayment.I.datalen);
+                    printf(" <- bobpayment.%d\n",swap->bobpayment.I.datalen);
+                    for (j=0; j<swap->bobpayment.I.redeemlen; j++)
+                        printf("%02x",swap->bobpayment.redeemscript[j]);
+                    printf(" <- redeem.%d\n",swap->bobpayment.I.redeemlen);
+                    printf(" <- GENERATED BOB PAYMENT.%d destaddr.(%s)\n",swap->bobpayment.I.datalen,swap->bobpayment.I.destaddr);
                     LP_unspents_mark(swap->bobcoin.symbol,swap->bobpayment.vins);
                     //basilisk_bobpayment_reclaim(swap,swap->I.callduration);
                     //printf("bobscripts set completed\n");
