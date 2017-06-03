@@ -203,7 +203,7 @@ void LP_utxosquery(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock
         if ( lastn >= mypeer->numutxos )
             firsti = -1;
         else firsti = (mypeer->numutxos - lastn);
-        HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
+        /*HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
         {
             if ( i++ < firsti )
                 continue;
@@ -216,7 +216,7 @@ void LP_utxosquery(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock
             }
         }
         if ( flag != 0 )
-            printf(" <- missing utxos\n");
+            printf(" <- missing utxos\n");*/
     } else if ( peer != 0 )
         peer->errors++;
 }
