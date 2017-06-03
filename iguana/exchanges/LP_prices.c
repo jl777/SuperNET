@@ -288,11 +288,11 @@ static int _cmp_orderbookrev(const void *a,const void *b)
 
 cJSON *LP_orderbookjson(struct LP_cacheinfo *ptr,int32_t polarity)
 {
-    double price,volume; cJSON *item = cJSON_CreateObject();
-    if ( (price= ptr->price) != 0. && (volume= dstr(ptr->Q.satoshis)) != 0. )
+    double price; cJSON *item = cJSON_CreateObject();
+    if ( (price= ptr->price) != 0. )
     {
         jaddnum(item,"price",polarity > 0 ? price : 1. / price);
-        jaddnum(item,"volume",polarity > 0 ? volume : volume / price);
+        jaddnum(item,"volume",polarity > 0 ? dstr(ptr->Q.satoshis) : dstr(ptr->Q.destsatoshis));
         jaddbits256(item,"txid",ptr->Q.txid);
         jaddnum(item,"vout",ptr->Q.vout);
     }
@@ -323,13 +323,13 @@ char *LP_orderbook(char *base,char *rel)
     if ( numbids > 1 )
         qsort(bids,numbids,sizeof(*bids),_cmp_orderbook);
     for (i=0; i<numbids; i++)
-        jaddi(array,LP_orderbookjson(bids[i],1));
+        jaddi(array,LP_orderbookjson(bids[i],-1));
     jadd(retjson,"bids",array);
     array = cJSON_CreateArray();
     if ( numasks > 1 )
         qsort(asks,numasks,sizeof(*asks),_cmp_orderbookrev);
     for (i=0; i<numasks; i++)
-        jaddi(array,LP_orderbookjson(asks[i],-1));
+        jaddi(array,LP_orderbookjson(asks[i],1));
     jadd(retjson,"asks",array);
     jaddstr(retjson,"base",base);
     jaddstr(retjson,"rel",rel);
