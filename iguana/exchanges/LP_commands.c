@@ -252,7 +252,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                     for (i=0; i<n; i++)
                     {
                         item = jitem(array,i);
-                        printf("%s\n",jprint(item,0));
+                        //printf("%s\n",jprint(item,0));
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 && LP_sizematch(estimatedbase,j64bits(item,"satoshis")) == 0 )
                         {
@@ -268,7 +268,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                                     jaddnum(icopy,"price",price);
                                 jaddi(retarray,icopy);
                             }
-                        }
+                        } else printf("skip %s estimated %.8f vs %.8f\n",coinstr,dstr(estimatedbase),dstr(j64bits(item,"satoshis")));
                     }
                 }
                 free_json(array);
