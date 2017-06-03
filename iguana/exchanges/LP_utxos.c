@@ -29,22 +29,36 @@ struct LP_utxoinfo *LP_utxofind(bits256 txid,int32_t vout)
     return(utxo);
 }
 
-cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
+cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
 {
-    cJSON *item = cJSON_CreateObject();
-    jaddstr(item,"ipaddr",utxo->ipaddr);
-    jaddnum(item,"port",utxo->port);
-    jaddnum(item,"profit",utxo->profitmargin);
-    jaddstr(item,"base",utxo->coin);
     jaddstr(item,"coin",utxo->coin);
     jaddstr(item,"address",utxo->coinaddr);
-    jaddstr(item,"script",utxo->spendscript);
     jaddbits256(item,"txid",utxo->txid);
     jaddnum(item,"vout",utxo->vout);
     jaddnum(item,"value",dstr(utxo->satoshis));
     jaddbits256(item,"txid2",utxo->txid2);
     jaddnum(item,"vout2",utxo->vout2);
     jaddnum(item,"value2",dstr(utxo->satoshis2));
+    if ( utxo->swappending != 0 )
+        jaddnum(item,"pending",utxo->swappending);
+    if ( bits256_nonz(utxo->otherpubkey) != 0 )
+        jaddbits256(item,"desthash",utxo->otherpubkey);
+    if ( utxo->pair >= 0 )
+        jaddnum(item,"socket",utxo->pair);
+    if ( utxo->swap != 0 )
+        jaddstr(item,"swap","in progress");
+    return(item);
+}
+
+cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
+{
+    cJSON *item = cJSON_CreateObject();
+    item = LP_inventoryjson(item,utxo);
+    jaddstr(item,"ipaddr",utxo->ipaddr);
+    jaddnum(item,"port",utxo->port);
+    jaddnum(item,"profit",utxo->profitmargin);
+    jaddstr(item,"base",utxo->coin);
+    jaddstr(item,"script",utxo->spendscript);
     return(item);
 }
 
@@ -207,6 +221,17 @@ void LP_utxosquery(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock
         peer->errors++;
 }
 
+char *LP_inventory(char *symbol)
+{
+    struct LP_utxoinfo *utxo,*tmp; cJSON *array = cJSON_CreateArray();
+    HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
+    {
+        if ( strcmp(symbol,utxo->coin) == 0 )
+            jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
+    }
+    return(jprint(array,1));
+}
+
 int32_t LP_maxvalue(uint64_t *values,int32_t n)
 {
     int32_t i,maxi = -1; uint64_t maxval = 0;
@@ -238,7 +263,8 @@ int32_t LP_nearestvalue(uint64_t *values,int32_t n,uint64_t targetval)
 
 uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symbol,char *passphrase,char *wifstr,int32_t amclient)
 {
-    char coinaddr[64],*script; struct LP_utxoinfo *utxo; cJSON *array,*item,*retjson; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
+    static uint32_t counter;
+    char coinaddr[64],*script; struct LP_utxoinfo *utxo; cJSON *array,*item,*retjson; bits256 userpass,userpub,txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
     {
         printf("cant add privkey for %s, coin not active\n",symbol);
@@ -248,9 +274,15 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else privkey = iguana_wif2privkey(wifstr);
     iguana_priv2pub(pubkey33,coinaddr,privkey,coin->pubtype);
+    if ( counter == 0 )
     {
         char tmpstr[128];
+        counter++;
+        bitcoin_priv2wif(USERPASS_WIFSTR,privkey,188);
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
+        conv_NXTpassword(userpass.bytes,pubkey.bytes,(uint8_t *)tmpstr,(int32_t)strlen(tmpstr));
+        userpub = curve25519(userpass,curve25519_basepoint9());
+        printf("userpass.(%s)\n",bits256_str(USERPASS,userpub));
         printf("%s (%s) %d wif.(%s) (%s)\n",symbol,coinaddr,coin->pubtype,tmpstr,passphrase);
         if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coinaddr,-1)) != 0 )
             printf("importprivkey -> (%s)\n",jprint(retjson,1));

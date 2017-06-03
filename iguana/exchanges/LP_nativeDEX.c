@@ -28,13 +28,14 @@ struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 
 char *activecoins[] = { "BTC", "KMD", "REVS", "JUMBLR" };//"LTC", "USD",   };
 char GLOBAL_DBDIR[] = "DB";
+char USERPASS[65],USERPASS_WIFSTR[64];
 
 char *default_LPnodes[] = { "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //"5.9.253.195",
 
 portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex;
 int32_t LP_mypubsock = -1;
 int32_t Client_connections;
-int32_t IAMCLIENT = 0;
+int32_t USERPASS_COUNTER,IAMCLIENT = 0;
 
 
 // stubs
@@ -282,3 +283,5 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     }
     LP_mainloop(mypeer,mypubport,pubsock,pullsock,myport,amclient,passphrase,profitmargin);
 }
+
+

@@ -42,8 +42,8 @@
 #define DEX_SLEEP 3
 #define BASILISK_KEYSIZE ((int32_t)(2*sizeof(bits256)+sizeof(uint32_t)*2))
 
-extern char GLOBAL_DBDIR[];
-extern int32_t IAMCLIENT;
+extern char GLOBAL_DBDIR[],USERPASS[],USERPASS_WIFSTR[];
+extern int32_t IAMCLIENT,USERPASS_COUNTER;
 
 struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; };
 

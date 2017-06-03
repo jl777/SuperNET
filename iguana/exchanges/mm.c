@@ -846,7 +846,7 @@ int main(int argc, const char * argv[])
                 struct LP_utxoinfo *utxo,*utmp;
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
-                    if ( (matchjson= LP_bestprice(utxo,"KMD")) != 0 )
+                    if ( (matchjson= LP_autotrade(utxo,"KMD",0.)) != 0 )
                         printf("bestprice (%s)\n",jprint(matchjson,1));
                 }
             }

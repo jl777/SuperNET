@@ -277,11 +277,13 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
     return(retarray);
 }
 
-cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
+cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
 {
     static bits256 zero;
     int32_t i,n,besti,DEXselector=0; cJSON *array,*item,*bestitem=0; struct basilisk_request R; double bestmetric,metric,bestprice=0.,price,prices[100]; struct LP_quoteinfo Q[sizeof(prices)/sizeof(*prices)];
     bestprice = 0.;
+    if ( maxprice == 0. )
+        maxprice = LP_price(base,myutxo->coin) / 0.975;
     if ( (array= LP_tradecandidates(myutxo,base)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -329,33 +331,41 @@ cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
                 if ( besti >= 0 )//&& bits256_cmp(myutxo->mypub,otherpubs[besti]) == 0 )
                 {
                     item = jitem(array,besti);
-                    bestitem = LP_quotejson(&Q[i]);
                     i = besti;
-                    Q[i].desttxid = myutxo->txid;
-                    Q[i].destvout = myutxo->vout;
-                    Q[i].feetxid = myutxo->txid2;
-                    Q[i].feevout = myutxo->vout2;
-                    strcpy(Q[i].destaddr,myutxo->coinaddr);
-                    price = LP_query("request",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
-                    if ( jobj(bestitem,"price") != 0 )
-                        jdelete(bestitem,"price");
-                    jaddnum(bestitem,"price",prices[besti]);
-                    if ( LP_price(base,myutxo->coin) > 0.975*price )
+                    bestitem = LP_quotejson(&Q[i]);
+                    if ( bestprice <= maxprice )
                     {
                         Q[i].desttxid = myutxo->txid;
                         Q[i].destvout = myutxo->vout;
                         Q[i].feetxid = myutxo->txid2;
                         Q[i].feevout = myutxo->vout2;
                         strcpy(Q[i].destaddr,myutxo->coinaddr);
-                        price = LP_query("connect",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
-                        LP_requestinit(&R,Q[i].srchash,Q[i].desthash,base,Q[i].satoshis,Q[i].destcoin,Q[i].destsatoshis,Q[i].timestamp,Q[i].quotetime,DEXselector);
-                        printf("Alice r.%u q.%u\n",R.requestid,R.quoteid);
+                        price = LP_query("request",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
+                        if ( jobj(bestitem,"price") != 0 )
+                            jdelete(bestitem,"price");
+                        jaddnum(bestitem,"price",prices[besti]);
+                        if ( price <= maxprice )
+                        {
+                            Q[i].desttxid = myutxo->txid;
+                            Q[i].destvout = myutxo->vout;
+                            Q[i].feetxid = myutxo->txid2;
+                            Q[i].feevout = myutxo->vout2;
+                            strcpy(Q[i].destaddr,myutxo->coinaddr);
+                            price = LP_query("connect",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
+                            LP_requestinit(&R,Q[i].srchash,Q[i].desthash,base,Q[i].satoshis,Q[i].destcoin,Q[i].destsatoshis,Q[i].timestamp,Q[i].quotetime,DEXselector);
+                            jaddstr(bestitem,"status","connected");
+                            jaddnum(bestitem,"requestid",R.requestid);
+                            jaddnum(bestitem,"quoteid",R.quoteid);
+                            printf("Alice r.%u q.%u\n",R.requestid,R.quoteid);
+                        } else jaddstr(bestitem,"status","too expensive");
                     }
                 }
             }
             free_json(array);
         }
     }
+    if ( bestitem == 0 )
+        return(cJSON_Parse("{\"error\":\"no match found\"}"));
     return(bestitem);
 }
 
@@ -488,71 +498,103 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t amclient,otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson;
+    char *method,*ipaddr,*userpass,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t amclient,otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
-    else
+    if ( IAMCLIENT != 0 && USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
     {
-        amclient = (LP_mypeer == 0);
-        if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
+        if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
+            return(clonestr("{\"error\":\"authentication error\"}"));
+        if ( USERPASS_COUNTER == 0 )
         {
-            if ( strcmp(ipaddr,"127.0.0.1") != 0 && port >= 1000 )
-            {
-                if ( (pushport= juint(argjson,"push")) == 0 )
-                    pushport = argport + 1;
-                if ( (subport= juint(argjson,"sub")) == 0 )
-                    subport = argport + 2;
-                if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
-                {
-                    if ( (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
-                        peer->numpeers = otherpeers;
-                    if ( (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
-                    {
-                        printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
-                        peer->numutxos = othernumutxos;
-                    }
-                    //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
-                } else LP_addpeer(amclient,LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
-            } 
+            USERPASS_COUNTER = 1;
+            retjson = cJSON_CreateObject();
+            jaddstr(retjson,"userpass",USERPASS);
+            return(jprint(retjson,1));
         }
-        printf("CMD.(%s)\n",jprint(argjson,0));
-        if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
-            retstr = LP_quotereceived(argjson);
-        else if ( IAMCLIENT != 0 && strcmp(method,"connected") == 0 )
+        if ( (coin= jstr(argjson,"coin")) != 0 )
         {
-            int32_t pairsock = -1; char *pairstr;
-            if ( (pairstr= jstr(argjson,"pair")) == 0 || (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
-                printf("error creating pairsock\n");
-            else if ( nn_connect(pairsock,pairstr) >= 0 )
+            if ( strcmp(method,"inventory") == 0 )
             {
-                struct LP_quoteinfo *qp; int32_t DEXselector = 0;
-                qp = calloc(1,sizeof(*qp));
-                LP_quoteparse(qp,argjson);
-                qp->pair = pairsock;
-                qp->privkey = LP_privkey(qp->destaddr);
-                LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis,qp->destcoin,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
-                printf("alice pairstr.(%s)\n",pairstr);
-                if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)qp) == 0 )
+                LP_privkey_init(0,-1,coin,0,USERPASS_WIFSTR,1);
+                return(LP_inventory(coin));
+            }
+            else if ( strcmp(method,"candidates") == 0 || strcmp(method,"autotrade") == 0 )
+            {
+                bits256 txid; int32_t vout; struct LP_utxoinfo *utxo;
+                txid = jbits256(argjson,"txid");
+                if ( bits256_nonz(txid) == 0 )
+                    return(clonestr("{\"error\":\"invalid or missing txid\"}"));
+                if ( jobj(argjson,"vout") == 0 )
+                    return(clonestr("{\"error\":\"missing vout\"}"));
+                vout = jint(argjson,"vout");
+                if ( (utxo= LP_utxofind(txid,vout)) == 0 )
+                    return(clonestr("{\"error\":\"txid/vout not found\"}"));
+                if ( strcmp(method,"candidates") == 0 )
+                    return(jprint(LP_tradecandidates(utxo,coin),1));
+                else return(jprint(LP_autotrade(utxo,coin,jdouble(argjson,"maxprice")),1));
+            }
+       } else return(clonestr("{\"error\":\"no coin specified\"}"));
+    }
+    amclient = (LP_mypeer == 0);
+    if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
+    {
+        if ( strcmp(ipaddr,"127.0.0.1") != 0 && port >= 1000 )
+        {
+            if ( (pushport= juint(argjson,"push")) == 0 )
+                pushport = argport + 1;
+            if ( (subport= juint(argjson,"sub")) == 0 )
+                subport = argport + 2;
+            if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
+            {
+                if ( (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
+                    peer->numpeers = otherpeers;
+                if ( (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
                 {
+                    printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
+                    peer->numutxos = othernumutxos;
                 }
+                //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
+            } else LP_addpeer(amclient,LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
+        }
+    }
+    printf("CMD.(%s)\n",jprint(argjson,0));
+    if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
+        retstr = LP_quotereceived(argjson);
+    else if ( IAMCLIENT != 0 && strcmp(method,"connected") == 0 )
+    {
+        int32_t pairsock = -1; char *pairstr;
+        if ( (pairstr= jstr(argjson,"pair")) == 0 || (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
+            printf("error creating pairsock\n");
+        else if ( nn_connect(pairsock,pairstr) >= 0 )
+        {
+            struct LP_quoteinfo *qp; int32_t DEXselector = 0;
+            qp = calloc(1,sizeof(*qp));
+            LP_quoteparse(qp,argjson);
+            qp->pair = pairsock;
+            qp->privkey = LP_privkey(qp->destaddr);
+            LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis,qp->destcoin,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
+            printf("alice pairstr.(%s)\n",pairstr);
+            if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)qp) == 0 )
+            {
             }
         }
-        else if ( IAMCLIENT == 0 && strcmp(method,"getprice") == 0 )
-            retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
-        else if ( strcmp(method,"orderbook") == 0 )
-            retstr = LP_orderbook(jstr(argjson,"base"),jstr(argjson,"rel"));
-        else if ( IAMCLIENT == 0 && strcmp(method,"getpeers") == 0 )
-            retstr = LP_peers();
-        else if ( IAMCLIENT == 0 && strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
-            retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
-        else if ( IAMCLIENT == 0 && strcmp(method,"notify") == 0 )
-            retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
-        else if ( IAMCLIENT == 0 && strcmp(method,"notifyutxo") == 0 )
-        {
-            printf("utxonotify.(%s)\n",jprint(argjson,0));
-            LP_addutxo(amclient,LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),SATOSHIDEN * jdouble(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),SATOSHIDEN * jdouble(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jstr(argjson,"ipaddr"),juint(argjson,"port"),jdouble(argjson,"profit"));
-            retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
-        }
+    }
+    else if ( IAMCLIENT == 0 && strcmp(method,"getprice") == 0 )
+        retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
+    else if ( strcmp(method,"orderbook") == 0 )
+        retstr = LP_orderbook(jstr(argjson,"base"),jstr(argjson,"rel"));
+    else if ( IAMCLIENT == 0 && strcmp(method,"getpeers") == 0 )
+        retstr = LP_peers();
+    else if ( IAMCLIENT == 0 && strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
+        retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
+    else if ( IAMCLIENT == 0 && strcmp(method,"notify") == 0 )
+        retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
+    else if ( IAMCLIENT == 0 && strcmp(method,"notifyutxo") == 0 )
+    {
+        printf("utxonotify.(%s)\n",jprint(argjson,0));
+        LP_addutxo(amclient,LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),SATOSHIDEN * jdouble(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),SATOSHIDEN * jdouble(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jstr(argjson,"ipaddr"),juint(argjson,"port"),jdouble(argjson,"profit"));
+        retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
     }
     if ( retstr != 0 )
         return(retstr);
