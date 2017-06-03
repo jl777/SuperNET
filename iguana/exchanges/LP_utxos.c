@@ -136,7 +136,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
 
 int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {
-    struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
+    struct LP_peerinfo *peer,*destpeer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
     if ( amclient != 0 )
     {
         printf("LP_utxosparse not for clientside\n");
@@ -167,14 +167,15 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                     }
                 }
             }
-            /*if ( (destpeer= LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport)) != 0 )
+            if ( (destpeer= LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport)) != 0 )
             {
+                destpeer->numutxos = n;
                 if ( destpeer->numutxos < n )
                 {
                     //destpeer->numutxos = n;
                     //printf("got.(%s) from %s numutxos.%d\n",retstr,destpeer->ipaddr,destpeer->numutxos);
                 }
-            }*/
+            }
         }
         free_json(array);
     }

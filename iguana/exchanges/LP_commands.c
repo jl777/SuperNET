@@ -569,9 +569,9 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
                 subport = argport + 2;
             if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
             {
-                if ( (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
+                if ( 0 && (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
                     peer->numpeers = otherpeers;
-                if ( (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
+                if ( 0 && (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
                 {
                     printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
                     peer->numutxos = othernumutxos;
