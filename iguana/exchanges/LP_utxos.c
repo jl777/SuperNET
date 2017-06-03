@@ -227,7 +227,7 @@ char *LP_inventory(char *symbol)
     struct LP_utxoinfo *utxo,*tmp; cJSON *array = cJSON_CreateArray();
     HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
     {
-        if ( strcmp(symbol,utxo->coin) == 0 )
+        if ( strcmp(symbol,utxo->coin) == 0 && (IAMCLIENT != 0 || strcmp(utxo->ipaddr,"127.0.0.1") != 0) )
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
     }
     return(jprint(array,1));
