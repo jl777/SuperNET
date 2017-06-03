@@ -89,7 +89,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", coin == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(deposittxid) == 0,vout < 0,depositvout < 0,satoshis <= 0,depositsatoshis <= 0);
         return(0);
     }
-    if ( amclient == 0 && strcmp(ipaddr,"127.0.0.1") == 0 )
+    if ( IAMCLIENT == 0 && strcmp(ipaddr,"127.0.0.1") == 0 )
     {
         printf("LP node got localhost utxo\n");
         return(0);
@@ -129,7 +129,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         portable_mutex_unlock(&LP_utxomutex);
         if ( mypubsock >= 0 )
             LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
-        char str[65],str2[65]; printf("%s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",ipaddr,port,utxo->coin,dstr(satoshis),dstr(depositsatoshis),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid));
+        char str[65],str2[65]; printf("amclient.%d %s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",IAMCLIENT,ipaddr,port,utxo->coin,dstr(satoshis),dstr(depositsatoshis),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid));
     }
     return(utxo);
 }
