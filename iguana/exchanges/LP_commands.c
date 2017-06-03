@@ -503,8 +503,6 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         return(clonestr("{\"error\":\"need method in request\"}"));
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
     {
-        if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
-            return(clonestr("{\"error\":\"authentication error\"}"));
         if ( USERPASS_COUNTER == 0 )
         {
             USERPASS_COUNTER = 1;
@@ -512,6 +510,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             jaddstr(retjson,"userpass",USERPASS);
             return(jprint(retjson,1));
         }
+        if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
+            return(clonestr("{\"error\":\"authentication error\"}"));
         if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 )
         {
             if ( strcmp(method,"setprice") == 0 )
