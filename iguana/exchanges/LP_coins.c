@@ -72,12 +72,28 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str)
     strcat(fname,"/");
 #endif
     if ( strcmp(symbol,"BTC") == 0 )
+    {
+#ifdef __APPLE__
+        strcat(fname,"Bitcoin");
+#else
         strcat(fname,".bitcoin");
+#endif
+    }
     else if ( strcmp(symbol,"LTC") == 0 )
+    {
+#ifdef __APPLE__
+        strcat(fname,"Litecoin");
+#else
         strcat(fname,".litecoin");
+#endif
+    }
     else
     {
+#ifdef __APPLE__
+        strcat(fname,"Komodo");
+#else
         strcat(fname,".komodo");
+#endif
         if ( strcmp(symbol,"KMD") != 0 )
         {
 #ifdef WIN32
