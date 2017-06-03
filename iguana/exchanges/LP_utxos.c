@@ -322,7 +322,6 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                         item = jitem(array,i);
                         txid = jbits256(item,"txid");
                         vout = juint(item,"vout");
-                        printf("j.%d %.8f target %.8f\n",i,dstr(values[i]),dstr(targetval));
                         if ( jstr(item,"scriptPubKey") != 0 && strcmp(script,jstr(item,"scriptPubKey")) == 0 )
                         {
                             value = values[i];

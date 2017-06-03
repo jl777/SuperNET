@@ -107,7 +107,10 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         exit(-1);
     }
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
+    {
         LP_coinfind(activecoins[i]);
+        LP_priceinfoadd(activecoins[i]);
+    }
     if ( amclient != 0 )
     {
         while ( 1 )

@@ -498,10 +498,10 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t amclient,otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson;
+    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t amclient,otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
-    if ( IAMCLIENT != 0 && USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
+    if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
     {
         if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
             return(clonestr("{\"error\":\"authentication error\"}"));
@@ -512,7 +512,29 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             jaddstr(retjson,"userpass",USERPASS);
             return(jprint(retjson,1));
         }
-        if ( (coin= jstr(argjson,"coin")) != 0 )
+        if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 )
+        {
+            if ( strcmp(method,"setprice") == 0 )
+            {
+                if ( LP_mypriceset(base,rel,jdouble(argjson,"price")) < 0 )
+                    return(clonestr("{\"error\":\"couldnt set price\"}"));
+                else return(clonestr("{\"result\":\"success\"}"));
+            }
+            else if ( strcmp(method,"myprice") == 0 )
+            {
+                double bid,ask;
+                if ( LP_myprice(&bid,&ask,base,rel) != 0. )
+                {
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"base",base);
+                    jaddstr(retjson,"rel",rel);
+                    jaddnum(retjson,"bid",bid);
+                    jaddnum(retjson,"ask",ask);
+                    return(jprint(retjson,1));
+                } else return(clonestr("{\"error\":\"no price set\"}"));
+            }
+        }
+        else if ( IAMCLIENT != 0 && (coin= jstr(argjson,"coin")) != 0 )
         {
             if ( strcmp(method,"inventory") == 0 )
             {
@@ -534,7 +556,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
                     return(jprint(LP_tradecandidates(utxo,coin),1));
                 else return(jprint(LP_autotrade(utxo,coin,jdouble(argjson,"maxprice")),1));
             }
-       } else return(clonestr("{\"error\":\"no coin specified\"}"));
+       }
     }
     amclient = (LP_mypeer == 0);
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )

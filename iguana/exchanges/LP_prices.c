@@ -18,7 +18,16 @@
 //  marketmaker
 //
 
-double LP_kmdbtc;
+struct LP_priceinfo
+{
+    char symbol[16];
+    uint64_t coinbits;
+    int32_t ind,pad;
+    double diagval;
+    double *relvals;
+    double *myprices;
+} *LP_priceinfos;
+int32_t LP_numpriceinfos;
 
 struct LP_cacheinfo
 {
@@ -79,6 +88,145 @@ double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,i
     return(0.);
 }
 
+struct LP_priceinfo *LP_priceinfofind(char *symbol)
+{
+    int32_t i; struct LP_priceinfo *pp; uint64_t coinbits;
+    if ( LP_numpriceinfos > 0 )
+    {
+        coinbits = stringbits(symbol);
+        pp = LP_priceinfos;
+        for (i=0; i<LP_numpriceinfos; i++,pp++)
+            if ( pp->coinbits == coinbits )
+                return(pp);
+    }
+    return(0);
+}
+
+struct LP_priceinfo *LP_priceinfoptr(int32_t *indp,char *base,char *rel)
+{
+    struct LP_priceinfo *basepp,*relpp;
+    if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    {
+        *indp = relpp->ind;
+        return(basepp);
+    }
+    else
+    {
+        *indp = -1;
+        return(0);
+    }
+}
+
+void LP_priceinfoupdate(char *base,char *rel,double price)
+{
+    struct LP_priceinfo *basepp,*relpp;
+    if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    {
+        dxblend(&basepp->relvals[relpp->ind],price,0.9);
+        dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
+    }
+}
+
+double LP_myprice(double *bidp,double *askp,char *base,char *rel)
+{
+    struct LP_priceinfo *basepp,*relpp;
+    if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    {
+        *askp = basepp->myprices[relpp->ind];
+        *bidp = relpp->myprices[basepp->ind];
+        return((*askp + *bidp) * 0.5);
+    } else return(0.);
+}
+
+int32_t LP_mypriceset(char *base,char *rel,double price)
+{
+    struct LP_priceinfo *basepp,*relpp;
+    if ( price != 0. && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    {
+        basepp->myprices[relpp->ind] = price;        // ask
+        relpp->myprices[basepp->ind] = 1. / price;   // bid
+        return(0);
+    } else return(-1);
+}
+
+double LP_price(char *base,char *rel)
+{
+    struct LP_priceinfo *basepp; int32_t relind; double price = 0.;
+    if ( (basepp= LP_priceinfoptr(&relind,base,rel)) != 0 )
+    {
+        if ( (price= basepp->myprices[relind]) == 0. )
+            price = basepp->relvals[relind];
+    }
+    return(price);
+}
+
+cJSON *LP_priceinfomatrix(int32_t usemyprices)
+{
+    int32_t i,j,n,m; double total,sum,val; struct LP_priceinfo *pp; uint32_t now; struct LP_cacheinfo *ptr,*tmp; cJSON *vectorjson = cJSON_CreateObject();
+    now = (uint32_t)time(NULL);
+    HASH_ITER(hh,LP_cacheinfos,ptr,tmp)
+    {
+        if ( ptr->timestamp < now-60 || ptr->price == 0. )
+            continue;
+        LP_priceinfoupdate(ptr->Q.srccoin,ptr->Q.destcoin,ptr->price);
+    }
+    pp = LP_priceinfos;
+    total = m = 0;
+    for (i=0; i<LP_numpriceinfos; i++,pp++)
+    {
+        pp->diagval = sum = n = 0;
+        for (j=0; j<LP_numpriceinfos; j++)
+        {
+            if ( usemyprices == 0 || (val= pp->myprices[j]) == 0. )
+                val = pp->relvals[j];
+            if ( val != 0. )
+            {
+                sum += val;
+                n++;
+            }
+        }
+        if ( n > 0 )
+        {
+            pp->diagval = sum / n;
+            total += pp->diagval, m++;
+        }
+    }
+    if ( m > 0 )
+    {
+        pp = LP_priceinfos;
+        for (i=0; i<LP_numpriceinfos; i++,pp++)
+        {
+            pp->diagval /= total;
+            jaddnum(vectorjson,pp->symbol,pp->diagval);
+        }
+    }
+    return(vectorjson);
+}
+
+struct LP_priceinfo *LP_priceinfoadd(char *symbol)
+{
+    struct LP_priceinfo *pp; int32_t i,vecsize; cJSON *retjson;
+    LP_priceinfos = realloc(LP_priceinfos,sizeof(*LP_priceinfos) * (LP_numpriceinfos + 1));
+    pp = &LP_priceinfos[LP_numpriceinfos];
+    memset(pp,0,sizeof(*pp));
+    safecopy(pp->symbol,symbol,sizeof(pp->symbol));
+    pp->coinbits = stringbits(symbol);
+    pp->ind = LP_numpriceinfos;
+    pp->relvals = calloc(LP_numpriceinfos+1,sizeof(*pp->relvals));
+    pp->myprices = calloc(LP_numpriceinfos+1,sizeof(*pp->myprices));
+    vecsize = sizeof(*LP_priceinfos[i].relvals) * (LP_numpriceinfos + 1);
+    for (i=0; i<LP_numpriceinfos; i++)
+    {
+        LP_priceinfos[i].relvals = realloc(LP_priceinfos[i].relvals,vecsize);
+        memset(LP_priceinfos[i].relvals,0,vecsize);
+        LP_priceinfos[i].myprices[LP_numpriceinfos] = 0.;
+    }
+    LP_numpriceinfos++;
+    if ( (retjson= LP_priceinfomatrix(0)) != 0 )
+        free_json(retjson);
+    return(pp);
+}
+
 struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,double price,struct LP_quoteinfo *qp)
 {
     char str[65]; struct LP_cacheinfo *ptr=0;
@@ -92,13 +240,14 @@ struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,
             portable_mutex_unlock(&LP_cachemutex);
         } else printf("LP_cacheadd keysize mismatch?\n");
     }
-    if ( price != ptr->price )
-    {
-        printf("updated %s/v%d %s/%s %llu price %.8f\n",bits256_str(str,txid),vout,base,rel,(long long)qp->satoshis,price);
-    }
-    ptr->price = price;
     ptr->Q = *qp;
     ptr->timestamp = (uint32_t)time(NULL);
+    if ( price != ptr->price )
+    {
+        ptr->price = price;
+        LP_priceinfoupdate(base,rel,price);
+        printf("updated %s/v%d %s/%s %llu price %.8f\n",bits256_str(str,txid),vout,base,rel,(long long)qp->satoshis,price);
+    } else ptr->price = price;
     return(ptr);
 }
 
@@ -182,24 +331,9 @@ char *LP_orderbook(char *base,char *rel)
     return(jprint(retjson,1));
 }
 
-// very, very simple for now
-
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32])
 {
-    if ( avebid > SMALLVAL && aveask > SMALLVAL && strcmp(base,"KMD") == 0 && strcmp(rel,"BTC") == 0 )
-        LP_kmdbtc = (avebid + aveask) * 0.5;
-}
-
-double LP_price(char *base,char *rel)
-{
-    if ( LP_kmdbtc != 0. )
-    {
-        if ( strcmp(base,"KMD") == 0 && strcmp(rel,"BTC") == 0 )
-            return(LP_kmdbtc);
-        else if ( strcmp(rel,"KMD") == 0 && strcmp(base,"BTC") == 0 )
-            return(1. / LP_kmdbtc);
-    }
-    return(0.);
+    LP_priceinfoupdate(base,rel,price);
 }
 
 char *LP_pricestr(char *base,char *rel)
@@ -214,6 +348,8 @@ char *LP_pricestr(char *base,char *rel)
         jaddstr(retjson,"base",base);
         jaddstr(retjson,"rel",rel);
         jaddnum(retjson,"price",price);
+        jadd(retjson,"theoretical",LP_priceinfomatrix(0));
+        jadd(retjson,"quotes",LP_priceinfomatrix(1));
         return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"cant find baserel pair\"}"));
 }
