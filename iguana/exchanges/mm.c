@@ -836,9 +836,9 @@ int main(int argc, const char * argv[])
             free(retstr);
         }
         incr = 100.;
-        while ( 1 )
+        while ( IAMCLIENT != 0 )
         {
-            theoretical = marketmaker_updateprice("komodo","KMD","BTC",theoretical,&incr);
+            theoretical = marketmaker_updateprice("komodo","REVS","KMD",theoretical,&incr);
             sleep(3);
             LP_privkey_updates(0,-1,passphrase,1);
             if ( jint(retjson,"client") != 0 )
@@ -846,12 +846,13 @@ int main(int argc, const char * argv[])
                 struct LP_utxoinfo *utxo,*utmp;
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
-                    if ( (matchjson= LP_autotrade(utxo,"KMD",0.)) != 0 )
+                    if ( strcmp(utxo->coin,"REVS") == 0 && (matchjson= LP_autotrade(utxo,"KMD",0.)) != 0 )
                         printf("bestprice (%s)\n",jprint(matchjson,1));
                 }
             }
             sleep(1000);
         }
+getchar();
         profitmargin = jdouble(retjson,"profitmargin");
         minask = jdouble(retjson,"minask");
         maxbid = jdouble(retjson,"maxbid");

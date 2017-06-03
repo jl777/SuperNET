@@ -393,7 +393,7 @@ int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double p
 int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
     char *method,*base,*rel,*retstr,pairstr[512]; cJSON *retjson; double price; bits256 privkey,txid; struct LP_utxoinfo *utxo; int32_t retval = -1,DEXselector = 0; uint64_t destvalue; struct basilisk_request R; struct LP_quoteinfo Q;
-    if ( (method= jstr(argjson,"method")) != 0 )
+    if ( IAMCLIENT == 0 && (method= jstr(argjson,"method")) != 0 )
     {
         txid = jbits256(argjson,"txid");
         if ( (utxo= LP_utxofind(txid,jint(argjson,"vout"))) != 0 && strcmp(utxo->ipaddr,mypeer->ipaddr) == 0 && utxo->port == mypeer->port && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )

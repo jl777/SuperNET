@@ -29,7 +29,7 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
     int32_t sentbytes,len,i; struct nn_pollfd pfd;
     if ( sock < 0 )
     {
-        printf("LP_send to illegal socket\n");
+        printf("LP_send.(%s) to illegal socket\n",msg);
         if ( freeflag != 0 )
             free(msg);
         return(-1);
