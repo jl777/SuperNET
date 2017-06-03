@@ -602,11 +602,11 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             }
         }
     }
-    else if ( IAMCLIENT == 0 && strcmp(method,"getprice") == 0 )
+    else if ( strcmp(method,"getprice") == 0 )
         retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
     else if ( strcmp(method,"orderbook") == 0 )
         retstr = LP_orderbook(jstr(argjson,"base"),jstr(argjson,"rel"));
-    else if ( IAMCLIENT == 0 && strcmp(method,"getpeers") == 0 )
+    else if ( strcmp(method,"getpeers") == 0 )
         retstr = LP_peers();
     else if ( IAMCLIENT == 0 && strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
         retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
