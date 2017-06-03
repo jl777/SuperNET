@@ -18,15 +18,16 @@
 //  marketmaker
 //
 
+#define LP_MAXPRICEINFOS 64
 struct LP_priceinfo
 {
     char symbol[16];
     uint64_t coinbits;
     int32_t ind,pad;
     double diagval;
-    double *relvals;
-    double *myprices;
-} LP_priceinfos[256];
+    double relvals[LP_MAXPRICEINFOS];
+    double myprices[LP_MAXPRICEINFOS];
+} LP_priceinfos[LP_MAXPRICEINFOS];
 int32_t LP_numpriceinfos;
 
 struct LP_cacheinfo
@@ -205,7 +206,7 @@ cJSON *LP_priceinfomatrix(int32_t usemyprices)
 
 struct LP_priceinfo *LP_priceinfoadd(char *symbol)
 {
-    struct LP_priceinfo *pp; int32_t i,vecsize; cJSON *retjson;
+    struct LP_priceinfo *pp; cJSON *retjson;
     if ( LP_numpriceinfos >= sizeof(LP_priceinfos)/sizeof(*LP_priceinfos) )
     {
         printf("cant add any more priceinfos\n");
@@ -215,9 +216,9 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
     memset(pp,0,sizeof(*pp));
     safecopy(pp->symbol,symbol,sizeof(pp->symbol));
     pp->coinbits = stringbits(symbol);
-    pp->ind = LP_numpriceinfos;
-    pp->relvals = calloc(LP_numpriceinfos+1,sizeof(*pp->relvals));
-    pp->myprices = calloc(LP_numpriceinfos+1,sizeof(*pp->myprices));
+    pp->ind = LP_numpriceinfos++;
+    /*pp->relvals = calloc(LP_numpriceinfos+1,sizeof(*pp->relvals));
+    //pp->myprices = calloc(LP_numpriceinfos+1,sizeof(*pp->myprices));
     vecsize = sizeof(*LP_priceinfos[i].relvals) * (LP_numpriceinfos + 1);
     for (i=0; i<LP_numpriceinfos; i++)
     {
@@ -225,7 +226,7 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
         LP_priceinfos[i].relvals = realloc(LP_priceinfos[i].relvals,vecsize);
         memset(LP_priceinfos[i].relvals,0,vecsize);
         LP_priceinfos[i].myprices[LP_numpriceinfos] = 0.;
-    }
+    }*/
     LP_numpriceinfos++;
     if ( (retjson= LP_priceinfomatrix(0)) != 0 )
         free_json(retjson);
