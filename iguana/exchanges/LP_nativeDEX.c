@@ -111,6 +111,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         LP_coinfind(activecoins[i]);
         LP_priceinfoadd(activecoins[i]);
     }
+    LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
@@ -121,7 +122,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         while ( 1 )
         {
             nonz = n = 0;
-            if ( (counter++ % 3600) == 0 )
+            if ( (++counter % 3600) == 0 )
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
             if ( (counter % 500) == 0 )
             {
@@ -163,7 +164,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         while ( 1 )
         {
             nonz = 0;
-            if ( (counter++ % 2000) == 0 )
+            if ( (++counter % 2000) == 0 )
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
@@ -174,7 +175,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                     if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
                         LP_peersquery(amclient,mypeer,pubsock,peer->ipaddr,peer->port,mypeer->ipaddr,myport,profitmargin);
                 }
-                if ( peer->numutxos > mypeer->numutxos )
+                if ( peer->numutxos != mypeer->numutxos )
                 {
                     lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
                     if ( lastn < 0 )
