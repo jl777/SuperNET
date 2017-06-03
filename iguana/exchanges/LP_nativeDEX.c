@@ -161,9 +161,12 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             {
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
-                    if ( strcmp(utxo->coin,"KMD") == 0 )
-                        LP_priceping(pubsock,utxo,"BTC",profitmargin);
-                    else LP_priceping(pubsock,utxo,"KMD",profitmargin);
+                    if ( strcmp(utxo->ipaddr,mypeer->ipaddr) == 0 && utxo->port == mypeer->port )
+                    {
+                        if ( strcmp(utxo->coin,"KMD") == 0 )
+                            LP_priceping(pubsock,utxo,"BTC",profitmargin);
+                        else LP_priceping(pubsock,utxo,"KMD",profitmargin);
+                    }
                 }
             }
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
