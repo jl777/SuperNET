@@ -124,15 +124,6 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             nonz = n = 0;
             if ( (++counter % 3600) == 0 )
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
-            if ( (counter % 500) == 0 )
-            {
-                HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
-                {
-                    if ( strcmp(utxo->coin,"KMD") == 0 )
-                        LP_priceping(pubsock,utxo,"BTC",profitmargin);
-                    else LP_priceping(pubsock,utxo,"KMD",profitmargin);
-                }
-            }
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
                 n++;
@@ -166,6 +157,15 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             nonz = 0;
             if ( (++counter % 2000) == 0 )
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
+            if ( (counter % 500) == 0 )
+            {
+                HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
+                {
+                    if ( strcmp(utxo->coin,"KMD") == 0 )
+                        LP_priceping(pubsock,utxo,"BTC",profitmargin);
+                    else LP_priceping(pubsock,utxo,"KMD",profitmargin);
+                }
+            }
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
                 if ( peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0 )
