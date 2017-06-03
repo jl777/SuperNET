@@ -191,7 +191,7 @@ void LP_utxosquery(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock
         return;
     }
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
-    if ( (peer != 0 && peer->errors > 0) || mypeer == 0 )
+    if ( mypeer == 0 ) //(peer != 0 && peer->errors > 0) || 
         return;
     if ( coin == 0 )
         coin = "";
