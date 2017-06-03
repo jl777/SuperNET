@@ -129,14 +129,14 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         portable_mutex_unlock(&LP_utxomutex);
         if ( mypubsock >= 0 )
             LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
-        //char str[65],str2[65]; printf("%s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",ipaddr,port,utxo->coin,dstr(satoshis),dstr(depositsatoshis),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid));
+        char str[65],str2[65]; printf("%s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",ipaddr,port,utxo->coin,dstr(satoshis),dstr(depositsatoshis),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid));
     }
     return(utxo);
 }
 
 int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {
-    struct LP_peerinfo *peer,*destpeer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
+    struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
     if ( amclient != 0 )
     {
         printf("LP_utxosparse not for clientside\n");
@@ -167,14 +167,14 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                     }
                 }
             }
-            if ( (destpeer= LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport)) != 0 )
+            /*if ( (destpeer= LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport)) != 0 )
             {
                 if ( destpeer->numutxos < n )
                 {
                     //destpeer->numutxos = n;
                     //printf("got.(%s) from %s numutxos.%d\n",retstr,destpeer->ipaddr,destpeer->numutxos);
                 }
-            }
+            }*/
         }
         free_json(array);
     }
