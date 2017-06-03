@@ -232,7 +232,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
     struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*icopy,*retarray=0,*item; int32_t i,n; double price; int64_t estimatedbase;
     if ( (price= LP_price(base,myutxo->coin)) == .0 )
     {
-        printf("no LP_price\n");
+        printf("no LP_price (%s -> %s)\n",base,myutxo->coin);
         return(0);
     }
     estimatedbase = myutxo->satoshis / price;
@@ -583,7 +583,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             } else LP_addpeer(amclient,LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
         }
     }
-    printf("CMD.(%s)\n",jprint(argjson,0));
+    //printf("CMD.(%s)\n",jprint(argjson,0));
     if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
         retstr = LP_quotereceived(argjson);
     else if ( IAMCLIENT != 0 && strcmp(method,"connected") == 0 )
