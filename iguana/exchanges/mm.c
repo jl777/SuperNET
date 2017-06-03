@@ -852,7 +852,8 @@ int main(int argc, const char * argv[])
             }
             sleep(1000);
         }
-getchar();
+        while ( 1 )
+            sleep(1);
         profitmargin = jdouble(retjson,"profitmargin");
         minask = jdouble(retjson,"minask");
         maxbid = jdouble(retjson,"maxbid");
