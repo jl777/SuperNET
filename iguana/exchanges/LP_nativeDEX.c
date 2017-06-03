@@ -27,8 +27,8 @@ struct LP_utxoinfo  *LP_utxoinfos;
 struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 
 char *activecoins[] = { "BTC", "KMD", "REVS", "JUMBLR" };//"LTC", "USD",   };
-char GLOBAL_DBDIR[] = "DB";
-char USERPASS[65],USERPASS_WIFSTR[64];
+char GLOBAL_DBDIR[] = { "DB" };
+char USERPASS[65],USERPASS_WIFSTR[64],USERHOME[512] = { "/root" };
 
 char *default_LPnodes[] = { "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //"5.9.253.195",
 
@@ -56,7 +56,7 @@ void tradebot_pendingadd(cJSON *tradejson,char *base,double basevolume,char *rel
 }
 char *LP_getdatadir()
 {
-    return("/root");
+    return(USERHOME);
 }
 
 char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_t skip)
@@ -229,12 +229,14 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     }
 }
 
-void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient)
+void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome)
 {
     char *myipaddr=0; long filesize,n; int32_t timeout,maxsize,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128];
     IAMCLIENT = amclient;
     OS_randombytes((void *)&n,sizeof(n));
     srand((int32_t)n);
+    if ( userhome != 0 && userhome[0] != 0 )
+        safecopy(USERHOME,userhome,sizeof(USERHOME));
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
     portable_mutex_init(&LP_commandmutex);
