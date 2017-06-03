@@ -1,1 +1,2 @@
-curl --url "http://127.0.0.1:7779" --data "{\"method\":\"orderbook\",\"base\":\"REVS\",\"rel\":\"KMD\"}"
+source userpass
+curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"orderbook\",\"base\":\"REVS\",\"rel\":\"KMD\"}"
