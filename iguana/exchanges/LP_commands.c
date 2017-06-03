@@ -534,14 +534,14 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
-        else if ( IAMCLIENT != 0 && (coin= jstr(argjson,"coin")) != 0 )
+        else if ( (coin= jstr(argjson,"coin")) != 0 )
         {
             if ( strcmp(method,"inventory") == 0 )
             {
                 LP_privkey_init(0,-1,coin,0,USERPASS_WIFSTR,1);
                 return(LP_inventory(coin));
             }
-            else if ( strcmp(method,"candidates") == 0 || strcmp(method,"autotrade") == 0 )
+            else if ( IAMCLIENT != 0 && (strcmp(method,"candidates") == 0 || strcmp(method,"autotrade") == 0) )
             {
                 bits256 txid; int32_t vout; struct LP_utxoinfo *utxo;
                 txid = jbits256(argjson,"txid");
