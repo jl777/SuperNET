@@ -178,7 +178,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 if ( peer->numutxos != mypeer->numutxos )
                 {
                     lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
-                    if ( lastn < 0 )
+                    if ( lastn < LP_PROPAGATION_SLACK * 2 )
                         lastn = LP_PROPAGATION_SLACK * 2;
                     printf("%s numutxos.%d vs %d lastn.%d\n",peer->ipaddr,peer->numutxos,mypeer->numutxos,lastn);
                     if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
