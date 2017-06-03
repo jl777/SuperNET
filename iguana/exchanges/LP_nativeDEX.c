@@ -78,7 +78,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 
 void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,int32_t pullsock,uint16_t myport,int32_t amclient,char *passphrase,double profitmargin)
 {
-    static uint16_t tmpport;
+    //static uint16_t tmpport;
     char *retstr; uint8_t r; int32_t i,n,j,len,recvsize,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; struct LP_utxoinfo *utxo,*utmp; void *ptr; cJSON *argjson;
     if ( amclient == 0 )
     {
@@ -98,10 +98,10 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             LP_peersquery(amclient,mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport,profitmargin);
         }
     }
-    if ( amclient != 0 )
-        tmpport = myport + 10;
-    else tmpport = myport;
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&tmpport) != 0 )
+    //if ( amclient != 0 )
+    //    tmpport = myport + 10;
+    //else tmpport = myport;
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
