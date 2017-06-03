@@ -231,7 +231,10 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
 {
     struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*icopy,*retarray=0,*item; int32_t i,n; double price; int64_t estimatedbase;
     if ( (price= LP_price(base,myutxo->coin)) == .0 )
+    {
+        printf("no LP_price\n");
         return(0);
+    }
     estimatedbase = myutxo->satoshis / price;
     printf("%s -> %s price %.8f mysatoshis %llu estimated base %llu\n",base,myutxo->coin,price,(long long)myutxo->satoshis,(long long)estimatedbase);
     if ( estimatedbase <= 0 )
