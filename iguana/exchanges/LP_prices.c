@@ -26,7 +26,7 @@ struct LP_priceinfo
     double diagval;
     double *relvals;
     double *myprices;
-} *LP_priceinfos;
+} LP_priceinfos[256];
 int32_t LP_numpriceinfos;
 
 struct LP_cacheinfo
@@ -206,7 +206,11 @@ cJSON *LP_priceinfomatrix(int32_t usemyprices)
 struct LP_priceinfo *LP_priceinfoadd(char *symbol)
 {
     struct LP_priceinfo *pp; int32_t i,vecsize; cJSON *retjson;
-    LP_priceinfos = realloc(LP_priceinfos,sizeof(*LP_priceinfos) * (LP_numpriceinfos + 1));
+    if ( LP_numpriceinfos >= sizeof(LP_priceinfos)/sizeof(*LP_priceinfos) )
+    {
+        printf("cant add any more priceinfos\n");
+        return(0);
+    }
     pp = &LP_priceinfos[LP_numpriceinfos];
     memset(pp,0,sizeof(*pp));
     safecopy(pp->symbol,symbol,sizeof(pp->symbol));
@@ -217,6 +221,7 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
     vecsize = sizeof(*LP_priceinfos[i].relvals) * (LP_numpriceinfos + 1);
     for (i=0; i<LP_numpriceinfos; i++)
     {
+        printf("realloc i.%d of %d relvals.%p\n",i,LP_numpriceinfos,LP_priceinfos[i].relvals);
         LP_priceinfos[i].relvals = realloc(LP_priceinfos[i].relvals,vecsize);
         memset(LP_priceinfos[i].relvals,0,vecsize);
         LP_priceinfos[i].myprices[LP_numpriceinfos] = 0.;
