@@ -1,0 +1,2 @@
+source randval
+pkill -15 marketmaker; git pull; ./m_mm; ./marketmaker "{\"profitmargin\":0.01,\"passphrase\":\"$randval\"}" &
