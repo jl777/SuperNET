@@ -133,7 +133,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                     if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
                     {
                         portable_mutex_lock(&LP_commandmutex);
-                        if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypubport)) != 0 )
+                        if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
                         {
                             printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                             free(retstr);
@@ -190,7 +190,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                     if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
                     {
                         portable_mutex_lock(&LP_commandmutex);
-                        if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypubport)) != 0 )
+                        if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
                         {
                             printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                             free(retstr);
@@ -211,7 +211,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                     portable_mutex_lock(&LP_commandmutex);
                     if ( LP_command(mypeer,pubsock,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin) == 0 )
                     {
-                        if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypubport)) != 0 )
+                        if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
                         {
                             printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                             free(retstr);
