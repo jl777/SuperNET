@@ -230,7 +230,7 @@ char *LP_inventory(char *symbol)
     else myipaddr = "127.0.0.1";
     HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
     {
-        if ( strcmp(symbol,utxo->coin) == 0 && (IAMCLIENT != 0 || strcmp(utxo->ipaddr,myipaddr) != 0) )
+        if ( strcmp(symbol,utxo->coin) == 0 && (IAMCLIENT != 0 || strcmp(utxo->ipaddr,myipaddr) == 0) )
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
     }
     return(jprint(array,1));
