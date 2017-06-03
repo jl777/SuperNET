@@ -278,6 +278,10 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else privkey = iguana_wif2privkey(wifstr);
     iguana_priv2pub(pubkey33,coinaddr,privkey,coin->pubtype);
+    if ( strcmp("BTC",symbol) == 0 )
+        strcpy(BTCADDR,coinaddr);
+    else if ( strcmp("KMD",symbol) == 0 )
+        strcpy(KMDADDR,coinaddr);
     if ( counter == 0 )
     {
         char tmpstr[128];

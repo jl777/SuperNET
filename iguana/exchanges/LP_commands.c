@@ -511,6 +511,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             USERPASS_COUNTER = 1;
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"userpass",USERPASS);
+            jaddstr(retjson,"BTC",BTCADDR);
+            jaddstr(retjson,"KMD",KMDADDR);
             return(jprint(retjson,1));
         }
         if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )

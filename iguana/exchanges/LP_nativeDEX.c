@@ -28,7 +28,7 @@ struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 
 char *activecoins[] = { "BTC", "KMD", "REVS", "JUMBLR" };//"LTC", "USD",   };
 char GLOBAL_DBDIR[] = { "DB" };
-char USERPASS[65],USERPASS_WIFSTR[64],USERHOME[512] = { "/root" };
+char USERPASS[65],USERPASS_WIFSTR[64],BTCADDR[64],KMDADDR[64],USERHOME[512] = { "/root" };
 
 char *default_LPnodes[] = { "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //"5.9.253.195",
 
