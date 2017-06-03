@@ -183,7 +183,7 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
 
 void LP_utxosquery(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport,double myprofit)
 {
-    char *retstr; struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer; int32_t i,firsti; uint32_t now,flag = 0;
+    char *retstr; struct LP_peerinfo *peer; int32_t i,firsti; uint32_t now;
     if ( amclient != 0 )
     {
         printf("LP_utxosquery not for clientside\n");

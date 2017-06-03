@@ -111,6 +111,11 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         LP_coinfind(activecoins[i]);
         LP_priceinfoadd(activecoins[i]);
     }
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
+            LP_utxosquery(0,mypeer,pubsock,peer->ipaddr,peer->port,"",100,mypeer->ipaddr,myport,profitmargin);
+    }
     if ( amclient != 0 )
     {
         while ( 1 )
