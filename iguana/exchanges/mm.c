@@ -836,7 +836,7 @@ int main(int argc, const char * argv[])
             free(retstr);
         }
         incr = 100.;
-        while ( IAMCLIENT != 0 )
+        while ( (0) && IAMCLIENT != 0 )
         {
             theoretical = marketmaker_updateprice("komodo","REVS","KMD",theoretical,&incr);
             sleep(3);
