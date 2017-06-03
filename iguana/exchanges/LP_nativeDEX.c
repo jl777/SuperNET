@@ -36,7 +36,7 @@ portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex;
 int32_t LP_mypubsock = -1;
 int32_t Client_connections;
 int32_t USERPASS_COUNTER,IAMCLIENT = 0;
-
+double LP_profitratio = 1.;
 
 // stubs
 int32_t basilisk_istrustedbob(struct basilisk_swap *swap)
@@ -236,6 +236,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
 {
     char *myipaddr=0; long filesize,n; int32_t timeout,maxsize,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128];
     IAMCLIENT = amclient;
+    LP_profitratio += profitmargin;
     OS_randombytes((void *)&n,sizeof(n));
     srand((int32_t)n);
     if ( userhome != 0 && userhome[0] != 0 )
