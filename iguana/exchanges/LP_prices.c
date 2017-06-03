@@ -289,8 +289,9 @@ static int _cmp_orderbookrev(const void *a,const void *b)
 cJSON *LP_orderbookjson(struct LP_cacheinfo *ptr,int32_t polarity)
 {
     double price; cJSON *item = cJSON_CreateObject();
-    if ( (price= ptr->price) != 0. )
+    if ( ptr->Q.satoshis != 0 && ptr->Q.destsatoshis != 0 )
     {
+        price = (double)ptr->Q.destsatoshis / ptr->Q.satoshis;
         jaddnum(item,"price",polarity > 0 ? price : 1. / price);
         jaddnum(item,"volume",polarity > 0 ? dstr(ptr->Q.satoshis) : dstr(ptr->Q.destsatoshis));
         jaddbits256(item,"txid",ptr->Q.txid);
