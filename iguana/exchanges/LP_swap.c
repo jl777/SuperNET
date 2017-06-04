@@ -547,6 +547,7 @@ void LP_bobloop(void *_utxo)
             printf("error bobscripts deposit\n");
         else
         {
+            printf("depositlen.%d\n",swap->bobdeposit.I.datalen);
             LP_swapsfp_update(&swap->I.req);
             if ( LP_waitfor(utxo->pair,swap,10,LP_verify_otherfee) < 0 )
                 printf("error waiting for alicefee\n");
