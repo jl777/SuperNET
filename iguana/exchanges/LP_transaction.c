@@ -1446,8 +1446,8 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
     uint8_t userdata[512]; char str[65]; int32_t i,retval=-1,len = 0; static bits256 zero;
     if ( LP_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->bobdeposit,0,data,datalen,0) == 0 )
     {
-        swap->bobrefund.utxovout = 0;
-        swap->bobrefund.utxotxid = swap->bobdeposit.I.signedtxid = LP_broadcast_tx(swap->bobdeposit.name,swap->bobcoin.symbol,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen);
+        swap->aliceclaim.utxovout = 0;
+        swap->aliceclaim.utxotxid = swap->bobdeposit.I.signedtxid = LP_broadcast_tx(swap->bobdeposit.name,swap->bobcoin.symbol,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen);
         if ( bits256_nonz(swap->bobdeposit.I.signedtxid) != 0 )
             swap->depositunconf = 1;
         basilisk_dontforget_update(swap,&swap->bobdeposit);

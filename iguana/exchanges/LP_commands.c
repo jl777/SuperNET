@@ -363,7 +363,7 @@ int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double p
         utxo->swappending = 0;
     if ( now > utxo->published+60 && utxo->swappending == 0 && utxo->pair < 0 && utxo->swap == 0 && (price= LP_price(utxo->coin,rel)) != 0. )
     {
-        price *= (1. + profitmargin);
+        //price *= (1. + profitmargin);
         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
             return(-1);
         Q.timestamp = (uint32_t)time(NULL);
