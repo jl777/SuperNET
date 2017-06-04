@@ -310,7 +310,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                                 bestmetric = metric;
                             }
                         }
-                    } else printf("(%f %f) ",price,dstr(Q[i].destsatoshis));
+                    } else printf("(%f %f) ",dstr(myutxo->satoshis),dstr(Q[i].destsatoshis));
                 }
                 printf("metrics, best %f\n",bestmetric);
                 if ( besti >= 0 )//&& bits256_cmp(myutxo->mypub,otherpubs[besti]) == 0 )
