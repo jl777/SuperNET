@@ -536,7 +536,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t pubtype,uint8_t
                     }
                 }
                 finalized = iguana_vininfo_create(pubtype,p2shtype,isPoS,serialized2,maxsize,msgtx,vins,numinputs,V);
-                printf("finalized.%d\n",finalized);
+                printf("finalized.%d ignore_cltverr.%d\n",finalized,V[0].ignore_cltverr);
                 if ( (complete= bitcoin_verifyvins(ctx,symbol,pubtype,p2shtype,isPoS,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
                     int32_t tmp; //char str[65];
