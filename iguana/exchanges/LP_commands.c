@@ -300,7 +300,6 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                 if ( (price= jdouble(item,"price")) == 0. )
                 {
                     LP_quoteparse(&Q[i],item);
-                    //char str[65]; printf("i.%d of %d: (%s) -> txid.%s\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid));
                     price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,zero);
                     if ( Q[i].destsatoshis != 0 && (double)j64bits(item,"satoshis")/Q[i].destsatoshis > price )
                     {
@@ -310,7 +309,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                 }
                 if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
-                //printf("i.%d price %.8f bestprice %.8f: (%s)\n",i,price,bestprice,jprint(item,0));
+                char str[65]; printf("i.%d of %d: (%s) -> txid.%s price %.8f best %.8f\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid),price,bestprice);
             }
             if ( bestprice != 0. )
             {
@@ -498,7 +497,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
     return(retval);
 }
 
-// add orderbook api
+// addcoin api
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
