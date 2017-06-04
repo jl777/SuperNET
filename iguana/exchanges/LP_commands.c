@@ -252,6 +252,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                     {
                         item = jitem(array,i);
                         //printf("%s\n",jprint(item,0));
+                        printf("i.%d %.8f %.8f, %.8f %.8f\n",i,dstr(estimatedbase),dstr(j64bits(item,"satoshis")),dstr(myutxo->satoshis),dstr(Q.destsatoshis));
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 && LP_sizematch(estimatedbase,j64bits(item,"satoshis")) == 0 )
                         {
@@ -289,7 +290,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
         maxprice = LP_price(base,myutxo->coin) / 0.975;
     if ( (array= LP_tradecandidates(myutxo,base)) != 0 )
     {
-        printf("candidates.(%s)\n",jprint(array,0));
+        //printf("candidates.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             memset(prices,0,sizeof(prices));
