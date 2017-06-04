@@ -48,15 +48,14 @@ bits256 LP_broadcast_tx(char *name,char *symbol,uint8_t *data,int32_t datalen)
     if ( data != 0 && datalen != 0 )
     {
         char str[65];
-#ifdef BASILISK_DISABLESENDTX
-        txid = bits256_doublesha256(0,data,datalen);
-        printf("%s <- dont sendrawtransaction (%s)\n",name,bits256_str(str,txid));
-        return(txid);
-#endif
         signedtx = malloc(datalen*2 + 1);
         init_hexbytes_noT(signedtx,data,datalen);
+#ifdef BASILISK_DISABLESENDTX
+        txid = bits256_doublesha256(0,data,datalen);
+        printf("%s <- dont sendrawtransaction (%s) %s\n",name,bits256_str(str,txid),signedtx);
+#else
         txid = LP_broadcast(name,symbol,signedtx);
-        // sent to nn_socket!
+#endif
         free(signedtx);
     }
     return(txid);
