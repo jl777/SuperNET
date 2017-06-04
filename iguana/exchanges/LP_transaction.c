@@ -735,7 +735,7 @@ int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_
             if ( strcmp(symbol,"BTC") != 0 )
                 return(retval);
             estimatedrate = LP_getestimatedrate(symbol);
-            newtxfee = estimatedrate * len;
+            newtxfee = estimatedrate * dest->I.datalen;
         } else break;
     }
     return(retval);
