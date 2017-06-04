@@ -144,8 +144,8 @@ int32_t LP_mypriceset(char *base,char *rel,double price)
     struct LP_priceinfo *basepp,*relpp;
     if ( price != 0. && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
-        basepp->myprices[relpp->ind] = price * LP_profitratio;             // ask
-        relpp->myprices[basepp->ind] = (1. / price) * LP_profitratio;   // bid
+        basepp->myprices[relpp->ind] = price;          // ask
+        relpp->myprices[basepp->ind] = (1. / price);   // bid
         return(0);
     } else return(-1);
 }
