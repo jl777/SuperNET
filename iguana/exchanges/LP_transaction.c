@@ -639,6 +639,12 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     if ( addrtype == p2shtype )
         spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
     else spendlen = bitcoin_standardspend(spendscript,0,rmd160);
+    if ( change != 0 && strcmp(changeaddr,destaddr) == 0 )
+    {
+        printf("combine change %.8f -> %s\n",dstr(change),changeaddr);
+        satoshis += change;
+        change = 0;
+    }
     txobj = bitcoin_txoutput(txobj,spendscript,spendlen,satoshis);
     if ( change != 0 )
     {
@@ -722,7 +728,7 @@ int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_
     }
     for (iter=0; iter<2; iter++)
     {
-        if ( (signedtx= basilisk_swap_bobtxspend(&dest->I.signedtxid,iter == 0 ? txfee : newtxfee,rawtx->name,symbol,pubtype,p2shtype,isPoS,wiftype,swap->ctx,privkey,privkey2,rawtx->redeemscript,rawtx->I.redeemlen,userdata,userdatalen,rawtx->utxotxid,rawtx->utxovout,dest->p2shaddr,rawtx->I.pubkey33,1,0,&destamount,rawtx->I.amount,changeaddr,vinaddr,dest->I.suppress_pubkeys)) != 0 )
+        if ( (signedtx= basilisk_swap_bobtxspend(&dest->I.signedtxid,iter == 0 ? txfee : newtxfee,rawtx->name,symbol,pubtype,p2shtype,isPoS,wiftype,swap->ctx,privkey,privkey2,rawtx->redeemscript,rawtx->I.redeemlen,userdata,userdatalen,rawtx->utxotxid,rawtx->utxovout,dest->I.destaddr,rawtx->I.pubkey33,1,0,&destamount,rawtx->I.amount,changeaddr,vinaddr,dest->I.suppress_pubkeys)) != 0 )
         {
             dest->I.datalen = (int32_t)strlen(signedtx) >> 1;
             if ( dest->I.datalen <= sizeof(dest->txbytes) )

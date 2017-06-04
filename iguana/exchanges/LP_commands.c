@@ -113,9 +113,8 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->desthash = jbits256(argjson,"desthash");
     if ( (qp->satoshis= j64bits(argjson,"satoshis")) == 0 )
         qp->satoshis = SATOSHIDEN * jdouble(argjson,"value");
-    if ( (qp->satoshis2= j64bits(argjson,"satoshis2")) == 0 )
-        qp->satoshis = SATOSHIDEN * jdouble(argjson,"value2");
-    qp->destsatoshis = j64bits(argjson,"destsatoshis");
+    if ( (qp->destsatoshis= j64bits(argjson,"destsatoshis")) == 0 )
+        qp->destsatoshis = SATOSHIDEN * jdouble(argjson,"value2");
     qp->change = SATOSHIDEN * jdouble(argjson,"change");
     qp->txfee = j64bits(argjson,"txfee");
     qp->desttxfee = j64bits(argjson,"desttxfee");
