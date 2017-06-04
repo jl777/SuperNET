@@ -164,6 +164,7 @@ struct LP_utxoinfo
     UT_hash_handle hh;
     bits256 txid,txid2,feetxid,otherpubkey,mypub;
     void *swap;
+    double value;
     uint64_t satoshis,satoshis2;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     int32_t vout,vout2,pair;

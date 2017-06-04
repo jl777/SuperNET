@@ -116,7 +116,11 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         safecopy(utxo->spendscript,spendscript,sizeof(utxo->spendscript));
         utxo->txid = txid;
         utxo->vout = vout;
-        utxo->satoshis = satoshis;
+        utxo->value = dstr(satoshis);
+        if ( IAMCLIENT == 0 )
+            utxo->satoshis = satoshis;
+        else if ( depositsatoshis < 9 * (satoshis >> 3) )
+            utxo->satoshis = (depositsatoshis / 9) << 3;
         utxo->txid2 = deposittxid;
         utxo->vout2 = depositvout;
         utxo->satoshis2 = depositsatoshis;

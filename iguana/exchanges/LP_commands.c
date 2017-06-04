@@ -228,7 +228,7 @@ int32_t LP_sizematch(uint64_t mysatoshis,uint64_t othersatoshis)
 
 cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
 {
-    struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*icopy,*retarray=0,*item; int32_t i,n; double price; int64_t satoshis;
+    struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*retarray=0,*item; int32_t i,n; double price;
     if ( (price= LP_price(base,myutxo->coin)) == .0 )
     {
         printf("no LP_price (%s -> %s)\n",base,myutxo->coin);
@@ -250,23 +250,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                         LP_quoteparse(&Q,item);
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 )
-                        {
-                            icopy = 0;
-                            if ( (price= LP_pricecache(&Q,base,myutxo->coin,jbits256(item,"txid"),jint(item,"vout"))) != 0. )
-                            {
-                                if ( Q.destsatoshis == 0 )
-                                    Q.destsatoshis = Q.satoshis * price;
-                                if ( LP_sizematch(myutxo->satoshis,Q.destsatoshis) == 0 )
-                                    icopy = jduplicate(item);
-                            } else icopy = jduplicate(item);
-                            if ( icopy != 0 )
-                            {
-                                if ( price != 0. )
-                                    jaddnum(icopy,"price",price);
-                                jaddi(retarray,icopy);
-                            }
-                            printf(">>>> i.%d %.8f %.8f Q: price %.8f -> %.8f\n",i,dstr(myutxo->satoshis),dstr(Q.destsatoshis),price,price * dstr(Q.satoshis));
-                        }
+                            jaddi(retarray,jduplicate(item));
                     }
                 }
                 free_json(array);
@@ -300,11 +284,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                 if ( (price= jdouble(item,"price")) == 0. )
                 {
                     price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,zero);
-                    if ( Q[i].destsatoshis != 0 && (double)j64bits(item,"satoshis")/Q[i].destsatoshis > price )
-                    {
-                        printf("adjustprice %.8f -> %.8f\n",price,(double)j64bits(item,"satoshis")/Q[i].destsatoshis);
-                        price = (double)j64bits(item,"satoshis")/Q[i].destsatoshis;
-                    }
+                    Q[i].destsatoshis = price * Q[i].satoshis;
                 }
                 if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
@@ -316,7 +296,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                 besti = -1;
                 for (i=0; i<n && i<sizeof(prices)/sizeof(*prices); i++)
                 {
-                    if ( (price= prices[i]) != 0. && Q[i].destsatoshis != 0 )
+                    if ( (price= prices[i]) != 0. && myutxo->satoshis > Q[i].destsatoshis )
                     {
                         metric = price / bestprice;
                         printf("%f %f %f %f ",price,metric,dstr(Q[i].destsatoshis),metric * metric * metric);
