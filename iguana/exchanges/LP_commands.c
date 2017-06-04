@@ -310,7 +310,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                 }
                 if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
-                char str[65]; printf("i.%d of %d: (%s) -> txid.%s price %.8f best %.8f\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid),price,bestprice);
+                char str[65]; printf("i.%d of %d: (%s) -> txid.%s price %.8f best %.8f dest %.8f\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid),price,bestprice,dstr(Q[i].destsatoshis));
             }
             if ( bestprice != 0. )
             {
@@ -332,7 +332,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                                 bestmetric = metric;
                             }
                         }
-                    }
+                    } else printf("(%f %f) ",price,dstr(Q[i].destsatoshis));
                 }
                 printf("metrics, best %f\n",bestmetric);
                 if ( besti >= 0 )//&& bits256_cmp(myutxo->mypub,otherpubs[besti]) == 0 )
