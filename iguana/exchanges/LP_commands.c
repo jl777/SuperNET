@@ -320,10 +320,10 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                     if ( (price= prices[i]) != 0. && Q[i].destsatoshis != 0 )
                     {
                         metric = price / bestprice;
-                        printf("%f ",metric);
-                        if ( metric > 0.9 )
+                        printf("%f %f ",price,metric);
+                        if ( metric < 1.1 )
                         {
-                            metric = Q[i].destsatoshis * metric * metric * metric;
+                            metric = dstr(Q[i].destsatoshis) / metric * metric * metric;
                             printf("%f, ",metric);
                             if ( metric > bestmetric )
                             {
