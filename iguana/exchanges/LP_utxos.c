@@ -35,7 +35,8 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
     jaddstr(item,"address",utxo->coinaddr);
     jaddbits256(item,"txid",utxo->txid);
     jaddnum(item,"vout",utxo->vout);
-    jaddnum(item,"value",dstr(utxo->satoshis));
+    jaddnum(item,"value",utxo->value);
+    jadd64bits(item,"satoshis",utxo->satoshis);
     jaddbits256(item,"txid2",utxo->txid2);
     jaddnum(item,"vout2",utxo->vout2);
     jaddnum(item,"value2",dstr(utxo->satoshis2));
