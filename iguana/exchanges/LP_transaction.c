@@ -1448,6 +1448,9 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
         swap->I.userdata_aliceclaimlen = len;
         bitcoin_address(swap->bobdeposit.p2shaddr,swap->bobcoin.p2shtype,swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
         strcpy(swap->bobdeposit.I.destaddr,swap->bobdeposit.p2shaddr);
+        for (i=0; i<swap->bobdeposit.I.datalen; i++)
+            printf("%02x",swap->bobdeposit.txbytes[i]);
+        printf(" <- bobdeposit.%d\n",swap->bobdeposit.I.datalen);
         for (i=0; i<swap->bobdeposit.I.redeemlen; i++)
             printf("%02x",swap->bobdeposit.redeemscript[i]);
         printf(" <- bobdeposit redeem %d %s suppress.%d\n",i,swap->bobdeposit.I.destaddr,swap->aliceclaim.I.suppress_pubkeys);
@@ -1499,6 +1502,9 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
         len = basilisk_swapuserdata(userdata,revAm,0,swap->I.myprivs[0],swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
         bitcoin_address(swap->bobpayment.p2shaddr,swap->bobcoin.p2shtype,swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
         strcpy(swap->bobpayment.I.destaddr,swap->bobpayment.p2shaddr);
+        for (i=0; i<swap->bobpayment.I.datalen; i++)
+            printf("%02x",swap->bobpayment.txbytes[i]);
+        printf(" <- bobpayment.%d\n",swap->bobpayment.I.datalen);
         for (i=0; i<swap->bobpayment.I.redeemlen; i++)
             printf("%02x",swap->bobpayment.redeemscript[i]);
         printf(" <- bobpayment redeem %d %s\n",i,swap->bobpayment.I.destaddr);
