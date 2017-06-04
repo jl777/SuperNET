@@ -257,6 +257,10 @@ int32_t LP_choosei_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
                 vcalc_sha256(0,swap->I.secretAm256,swap->I.privAm.bytes,sizeof(swap->I.privAm));
                 swap->I.pubAm = bitcoin_pubkey33(swap->ctx,pubkey33,swap->I.privAm);
                 printf("set privAm.%s %s\n",bits256_str(str,swap->I.privAm),bits256_str(str2,*(bits256 *)swap->I.secretAm256));
+                swap->bobdeposit.I.pubkey33[0] = 2;
+                for (i=0; i<32; i++)
+                    swap->bobdeposit.I.pubkey33[i+1] = swap->I.pubA0.bytes[i];
+                printf("SET bobdeposit pubkey33.(02%s)\n",bits256_str(str,swap->I.pubA0));
                 //basilisk_bobscripts_set(swap,0);
             }
             return(0);
