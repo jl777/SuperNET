@@ -1446,8 +1446,8 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
     uint8_t userdata[512]; char str[65]; int32_t i,retval=-1,len = 0; static bits256 zero;
     if ( LP_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->bobdeposit,0,data,datalen,0) == 0 )
     {
-        swap->bobdeposit.utxovout = 0;
-        swap->bobdeposit.utxotxid = swap->bobdeposit.I.signedtxid = LP_broadcast_tx(swap->bobdeposit.name,swap->bobcoin.symbol,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen);
+        swap->bobrefund.utxovout = 0;
+        swap->bobrefund.utxotxid = swap->bobdeposit.I.signedtxid = LP_broadcast_tx(swap->bobdeposit.name,swap->bobcoin.symbol,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen);
         if ( bits256_nonz(swap->bobdeposit.I.signedtxid) != 0 )
             swap->depositunconf = 1;
         basilisk_dontforget_update(swap,&swap->bobdeposit);
@@ -1487,8 +1487,8 @@ int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t 
 {
     if ( LP_rawtx_spendscript(swap,swap->alicecoin.longestchain,&swap->alicepayment,0,data,datalen,0) == 0 )
     {
-        swap->alicepayment.utxovout = 0;
-        swap->alicepayment.utxotxid = swap->alicepayment.I.signedtxid = LP_broadcast_tx(swap->alicepayment.name,swap->alicecoin.symbol,swap->alicepayment.txbytes,swap->alicepayment.I.datalen);
+        swap->bobspend.utxovout = 0;
+        swap->bobspend.utxotxid = swap->alicepayment.I.signedtxid = LP_broadcast_tx(swap->alicepayment.name,swap->alicecoin.symbol,swap->alicepayment.txbytes,swap->alicepayment.I.datalen);
         bitcoin_address(swap->alicepayment.p2shaddr,swap->alicecoin.p2shtype,swap->alicepayment.redeemscript,swap->alicepayment.I.redeemlen);
         strcpy(swap->alicepayment.I.destaddr,swap->alicepayment.p2shaddr);
         if ( bits256_nonz(swap->alicepayment.I.signedtxid) != 0 )
@@ -1506,8 +1506,8 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
     memset(revAm.bytes,0,sizeof(revAm));
     if ( LP_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->bobpayment,0,data,datalen,0) == 0 )
     {
-        swap->bobpayment.utxovout = 0;
-        swap->bobpayment.utxotxid = swap->bobpayment.I.signedtxid = LP_broadcast_tx(swap->bobpayment.name,swap->bobpayment.coin->symbol,swap->bobpayment.txbytes,swap->bobpayment.I.datalen);
+        swap->alicespend.utxovout = 0;
+        swap->alicespend.utxotxid = swap->bobpayment.I.signedtxid = LP_broadcast_tx(swap->bobpayment.name,swap->bobpayment.coin->symbol,swap->bobpayment.txbytes,swap->bobpayment.I.datalen);
         if ( bits256_nonz(swap->bobpayment.I.signedtxid) != 0 )
             swap->paymentunconf = 1;
         basilisk_dontforget_update(swap,&swap->bobpayment);
