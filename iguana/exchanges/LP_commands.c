@@ -250,7 +250,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                         LP_quoteparse(&Q,item);
                         if ( (satoshis= j64bits(item,"satoshis")) == 0 )
                             satoshis = SATOSHIDEN * jdouble(item,"value");
-                        printf("i.%d %.8f %.8f\n",i,dstr(myutxo->satoshis),dstr(Q.destsatoshis));
+                        printf(">>>> i.%d %.8f %.8f\n",i,dstr(myutxo->satoshis),dstr(Q.destsatoshis));
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 )
                         {
