@@ -720,6 +720,9 @@ int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_
         bitcoin_address(changeaddr,pubtype,changermd160,20);
         printf("changeaddr.(%s)\n",changeaddr);
     }
+    for (iter=0; iter<33; iter++)
+        printf("%02x",rawtx->I.pubkey33[iter]);
+    printf(" pubkey33.%s, suppress.%d\n",rawtx->name,rawtx->I.suppress_pubkeys);
     for (iter=0; iter<2; iter++)
     {
         if ( (signedtx= basilisk_swap_bobtxspend(&rawtx->I.signedtxid,iter == 0 ? txfee : newtxfee,rawtx->name,symbol,pubtype,p2shtype,isPoS,wiftype,swap->ctx,privkey,privkey2,0,0,userdata,userdatalen,rawtx->utxotxid,rawtx->utxovout,dest->p2shaddr,rawtx->I.pubkey33,1,0,&destamount,rawtx->I.amount,changeaddr,vinaddr,rawtx->I.suppress_pubkeys)) != 0 )
@@ -1453,7 +1456,7 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
             printf(" <- aliceclaim\n");
             //basilisk_txlog(swap,&swap->aliceclaim,swap->I.putduration+swap->I.callduration);
             return(retval);
-        } else printf("error signing aliceclaim\n");
+        } else printf("error signing aliceclaim suppress.%d vin.(%s)\n",swap->aliceclaim.I.suppress_pubkeys,swap->bobdeposit.I.destaddr);
     }
     printf("error with bobdeposit\n");
     return(retval);

@@ -552,15 +552,18 @@ void LP_bobloop(void *_utxo)
                 printf("error bobscripts payment\n");
             else if ( LP_swapdata_rawtxsend(utxo->pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
                 printf("error sending bobpayment\n");
-            printf("looping on swaplist\n");
-            while ( 1 )
+            else
             {
-                if ( (retstr= basilisk_swaplist()) != 0 )
+                printf("looping on swaplist\n");
+                while ( 1 )
                 {
-                    printf("%s\n",retstr);
-                    free(retstr);
+                    if ( (retstr= basilisk_swaplist()) != 0 )
+                    {
+                        printf("%s\n",retstr);
+                        free(retstr);
+                    }
+                    sleep(100);
                 }
-                sleep(100);
             }
         }
         basilisk_swap_finished(swap);
@@ -600,15 +603,18 @@ void LP_aliceloop(void *_qp)
                 printf("error sending alicepayment\n");
             else if ( LP_waitfor(qp->pair,swap,10,LP_verify_bobpayment) < 0 )
                 printf("error waiting for bobpayment\n");
-            printf("looping on swaplist\n");
-            while ( 1 )
+            else
             {
-                if ( (retstr= basilisk_swaplist()) != 0 )
+                printf("looping on swaplist\n");
+                while ( 1 )
                 {
-                    printf("%s\n",retstr);
-                    free(retstr);
+                    if ( (retstr= basilisk_swaplist()) != 0 )
+                    {
+                        printf("%s\n",retstr);
+                        free(retstr);
+                    }
+                    sleep(100);
                 }
-                sleep(100);
             }
         }
         basilisk_swap_finished(swap);
