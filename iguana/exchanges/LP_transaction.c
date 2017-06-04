@@ -536,7 +536,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t pubtype,uint8_t
                     }
                 }
                 finalized = iguana_vininfo_create(pubtype,p2shtype,isPoS,serialized2,maxsize,msgtx,vins,numinputs,V);
-                printf("finalized.%d ignore_cltverr.%d\n",finalized,V[0].ignore_cltverr);
+                printf("finalized.%d ignore_cltverr.%d suppress.%d\n",finalized,V[0].ignore_cltverr,V[0].suppress_pubkeys);
                 if ( (complete= bitcoin_verifyvins(ctx,symbol,pubtype,p2shtype,isPoS,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
                     int32_t tmp; //char str[65];
@@ -1449,7 +1449,7 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
         strcpy(swap->bobdeposit.I.destaddr,swap->bobdeposit.p2shaddr);
         for (i=0; i<swap->bobdeposit.I.redeemlen; i++)
             printf("%02x",swap->bobdeposit.redeemscript[i]);
-        printf(" <- bobdeposit redeem %d %s\n",i,swap->bobdeposit.I.destaddr);
+        printf(" <- bobdeposit redeem %d %s suppress.%d\n",i,swap->bobdeposit.I.destaddr,swap->aliceclaim.I.suppress_pubkeys);
         memcpy(swap->aliceclaim.redeemscript,swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
         swap->aliceclaim.I.redeemlen = swap->bobdeposit.I.redeemlen;
         retval = 0;
