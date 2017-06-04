@@ -323,7 +323,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                         printf("%f ",metric);
                         if ( metric > 0.9 )
                         {
-                            metric = Q[i].destsatoshis / metric * metric * metric;
+                            metric = Q[i].destsatoshis * metric * metric * metric;
                             printf("%f, ",metric);
                             if ( metric > bestmetric )
                             {

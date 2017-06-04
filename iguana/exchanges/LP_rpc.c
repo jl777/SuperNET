@@ -160,7 +160,7 @@ int32_t LP_importaddress(char *symbol,char *address)
 
 double LP_getestimatedrate(char *symbol)
 {
-    char buf[512],*retstr; double rate = 200; struct iguana_info *coin = LP_coinfind(symbol);
+    char buf[512],*retstr; double rate = 20; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin != 0 )
     {
         sprintf(buf,"[%d]",3);

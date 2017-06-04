@@ -705,6 +705,8 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
             if ( coin->estimatedrate == 0. )
                 coin->estimatedrate = LP_getestimatedrate(coin->symbol);
             newtxfee = coin->estimatedrate * len;
+            if ( newtxfee < 10000 )
+                newtxfee = 10000;
             printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
         } else break;
     }
