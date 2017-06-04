@@ -406,12 +406,13 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
     {
         if ( (datalen= nn_recv(pairsock,&data,NN_MSG,0)) >= 0 )
         {
-            printf("received %d bytes\n",datalen);
+            printf("wait for got.%d\n",datalen);
             retval = (*verify)(swap,data,datalen);
             nn_freemsg(data);
             return(retval);
         } else printf("error nn_recv\n");
     }
+    printf("waitfor timedout\n");
     return(retval);
 }
 
@@ -551,6 +552,7 @@ void LP_bobloop(void *_utxo)
                 printf("error bobscripts payment\n");
             else if ( LP_swapdata_rawtxsend(utxo->pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
                 printf("error sending bobpayment\n");
+            printf("looping on swaplist\n");
             while ( 1 )
             {
                 if ( (retstr= basilisk_swaplist()) != 0 )
@@ -598,6 +600,7 @@ void LP_aliceloop(void *_qp)
                 printf("error sending alicepayment\n");
             else if ( LP_waitfor(qp->pair,swap,10,LP_verify_bobpayment) < 0 )
                 printf("error waiting for bobpayment\n");
+            printf("looping on swaplist\n");
             while ( 1 )
             {
                 if ( (retstr= basilisk_swaplist()) != 0 )

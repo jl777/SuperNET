@@ -1443,17 +1443,17 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
         memcpy(swap->I.userdata_aliceclaim,userdata,len);
         swap->I.userdata_aliceclaimlen = len;
         retval = 0;
-        //if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->aliceclaim,&swap->bobdeposit,swap->I.myprivs[0],0,userdata,len,1,swap->changermd160)) == 0 )
+        if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->aliceclaim,&swap->bobdeposit,swap->I.myprivs[0],0,userdata,len,1,swap->changermd160,swap->bobdeposit.I.destaddr)) == 0 )
         {
             for (i=0; i<swap->bobdeposit.I.datalen; i++)
                 printf("%02x",swap->bobdeposit.txbytes[i]);
             printf(" <- bobdeposit\n");
-            //for (i=0; i<swap->aliceclaim.I.datalen; i++)
-            //    printf("%02x",swap->aliceclaim.txbytes[i]);
-            //printf(" <- aliceclaim\n");
+            for (i=0; i<swap->aliceclaim.I.datalen; i++)
+                printf("%02x",swap->aliceclaim.txbytes[i]);
+            printf(" <- aliceclaim\n");
             //basilisk_txlog(swap,&swap->aliceclaim,swap->I.putduration+swap->I.callduration);
             return(retval);
-        } //else printf("error signing aliceclaim\n");
+        } else printf("error signing aliceclaim\n");
     }
     printf("error with bobdeposit\n");
     return(retval);
