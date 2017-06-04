@@ -114,7 +114,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     if ( (qp->satoshis= j64bits(argjson,"satoshis")) == 0 )
         qp->satoshis = SATOSHIDEN * jdouble(argjson,"value");
     if ( (qp->destsatoshis= j64bits(argjson,"destsatoshis")) == 0 )
-        qp->destsatoshis = SATOSHIDEN * jdouble(argjson,"value2");
+        qp->destsatoshis = qp->satoshis * jdouble(argjson,"price");
     qp->change = SATOSHIDEN * jdouble(argjson,"change");
     qp->txfee = j64bits(argjson,"txfee");
     qp->desttxfee = j64bits(argjson,"desttxfee");
@@ -248,8 +248,6 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                     {
                         item = jitem(array,i);
                         LP_quoteparse(&Q,item);
-                        if ( (satoshis= j64bits(item,"satoshis")) == 0 )
-                            satoshis = SATOSHIDEN * jdouble(item,"value");
                         printf(">>>> i.%d %.8f %.8f\n",i,dstr(myutxo->satoshis),dstr(Q.destsatoshis));
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 )
