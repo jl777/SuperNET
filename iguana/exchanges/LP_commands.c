@@ -248,7 +248,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                     {
                         item = jitem(array,i);
                         LP_quoteparse(&Q,item);
-                        printf(">>>> i.%d %.8f %.8f\n",i,dstr(myutxo->satoshis),dstr(Q.destsatoshis));
+                        printf(">>>> i.%d %.8f %.8f Q: price %.8f\n",i,dstr(myutxo->satoshis),dstr(Q.destsatoshis),jdouble(item,"price"));
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 )
                         {
@@ -264,7 +264,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                                     jaddnum(icopy,"price",price);
                                 jaddi(retarray,icopy);
                             }
-                        } else printf("skip %s estimated %.8f\n",coinstr,dstr(satoshis));
+                        }
                     }
                 }
                 free_json(array);
@@ -306,7 +306,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                 }
                 if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
-                char str[65]; printf("i.%d of %d: (%s) -> txid.%s price %.8f best %.8f dest %.8f\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid),price,bestprice,dstr(Q[i].destsatoshis));
+                //char str[65]; printf("i.%d of %d: (%s) -> txid.%s price %.8f best %.8f dest %.8f\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid),price,bestprice,dstr(Q[i].destsatoshis));
             }
             if ( bestprice != 0. )
             {
