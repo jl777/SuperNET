@@ -248,13 +248,14 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                     {
                         item = jitem(array,i);
                         LP_quoteparse(&Q,item);
-                        printf(">>>> i.%d %.8f %.8f Q: price %.8f\n",i,dstr(myutxo->satoshis),dstr(Q.destsatoshis),jdouble(item,"price"));
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 )
                         {
                             icopy = 0;
                             if ( (price= LP_pricecache(&Q,base,myutxo->coin,jbits256(item,"txid"),jint(item,"vout"))) != 0. )
                             {
+                                if ( Q.destsatoshis == 0 )
+                                    Q.destsatoshis = Q.satoshis * price;
                                 if ( LP_sizematch(myutxo->satoshis,Q.destsatoshis) == 0 )
                                     icopy = jduplicate(item);
                             } else icopy = jduplicate(item);
@@ -264,6 +265,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                                     jaddnum(icopy,"price",price);
                                 jaddi(retarray,icopy);
                             }
+                            printf(">>>> i.%d %.8f %.8f Q: price %.8f -> %.8f\n",i,dstr(myutxo->satoshis),dstr(Q.destsatoshis),price,price * dstr(Q.satoshis));
                         }
                     }
                 }
