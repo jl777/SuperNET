@@ -1382,15 +1382,14 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     //printf("recvlen.%d datalen.%d redeemlen.%d\n",recvlen,datalen,rawtx->redeemlen);
     if ( rawtx->I.datalen == 0 )
     {
-        //rawtx->txbytes = calloc(1,datalen);
+        int32_t i; for (i=0; i<datalen; i++)
+            printf("%02x",data[i]);
+        printf(" <- received\n");
         memcpy(rawtx->txbytes,data,datalen);
         rawtx->I.datalen = datalen;
     }
     else if ( datalen != rawtx->I.datalen || memcmp(rawtx->txbytes,data,datalen) != 0 )
     {
-        int32_t i; for (i=0; i<datalen; i++)
-            printf("%02x",data[i]);
-        printf(" <- received\n");
         for (i=0; i<rawtx->I.datalen; i++)
             printf("%02x",rawtx->txbytes[i]);
         printf(" <- rawtx\n");
