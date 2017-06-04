@@ -1163,7 +1163,8 @@ int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay)
 
 int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,int32_t genflag)
 {
-    int32_t j; //char str[65];
+    int32_t j; char coinaddr[64];
+    bitcoin_address(coinaddr,swap->bobcoin.pubtype,swap->changermd160,20);
     if ( genflag != 0 && swap->I.iambob == 0 )
         printf("basilisk_bobscripts_set WARNING: alice generating BOB tx\n");
     if ( depositflag == 0 )
@@ -1176,7 +1177,7 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
         printf(" <- bobpayment redeem %d %s\n",i,swap->bobpayment.I.destaddr);
         if ( genflag != 0 && bits256_nonz(*(bits256 *)swap->I.secretBn256) != 0 && swap->bobpayment.I.datalen == 0 )
         {
-            basilisk_rawtx_gen(swap->ctx,"payment",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobpayment,swap->bobpayment.I.locktime,swap->bobpayment.spendscript,swap->bobpayment.I.spendlen,swap->bobpayment.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,0);
+            basilisk_rawtx_gen(swap->ctx,"payment",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobpayment,swap->bobpayment.I.locktime,swap->bobpayment.spendscript,swap->bobpayment.I.spendlen,swap->bobpayment.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
             if ( swap->bobpayment.I.spendlen == 0 || swap->bobpayment.I.datalen == 0 )
             {
                 printf("error bob generating %p payment.%d\n",swap->bobpayment.txbytes,swap->bobpayment.I.spendlen);
@@ -1209,7 +1210,7 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
         printf(" <- bobdeposit redeem %d %s\n",i,swap->bobdeposit.I.destaddr);
         if ( genflag != 0 && (swap->bobdeposit.I.datalen == 0 || swap->bobrefund.I.datalen == 0) )
         {
-            basilisk_rawtx_gen(swap->ctx,"deposit",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobdeposit,swap->bobdeposit.I.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.I.spendlen,swap->bobdeposit.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,0);
+            basilisk_rawtx_gen(swap->ctx,"deposit",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobdeposit,swap->bobdeposit.I.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.I.spendlen,swap->bobdeposit.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
             if ( swap->bobdeposit.I.datalen == 0 || swap->bobdeposit.I.spendlen == 0 )
             {
                 printf("error bob generating %p deposit.%d\n",swap->bobdeposit.txbytes,swap->bobdeposit.I.spendlen);
@@ -1291,38 +1292,40 @@ int32_t basilisk_alicepayment_spend(struct basilisk_swap *swap,struct basilisk_r
 
 void basilisk_alicepayment(struct basilisk_swap *swap,struct iguana_info *coin,struct basilisk_rawtx *alicepayment,bits256 pubAm,bits256 pubBn)
 {
+    int32_t i; char coinaddr[64];
     alicepayment->I.spendlen = basilisk_alicescript(alicepayment->redeemscript,&alicepayment->I.redeemlen,alicepayment->spendscript,0,alicepayment->I.destaddr,coin->p2shtype,pubAm,pubBn);
-    basilisk_rawtx_gen(swap->ctx,"alicepayment",swap->I.started,swap->persistent_pubkey33,0,1,alicepayment,alicepayment->I.locktime,alicepayment->spendscript,alicepayment->I.spendlen,coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,0);
+    for (i=0; i<33; i++)
+        printf("%02x",swap->persistent_pubkey33[i]);
+    printf(" pubkey33, ");
+    for (i=0; i<20; i++)
+        printf("%02x",swap->changermd160[i]);
+    printf(" rmd160, ");
+    bitcoin_address(coinaddr,coin->pubtype,swap->changermd160,20);
+    printf("%s\n",coinaddr);
+    basilisk_rawtx_gen(swap->ctx,"alicepayment",swap->I.started,swap->persistent_pubkey33,0,1,alicepayment,alicepayment->I.locktime,alicepayment->spendscript,alicepayment->I.spendlen,coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
 }
 
 int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    int32_t i,retval = -1;
-    printf("alicetxs\n");
-    for (i=0; i<3; i++)
+    char coinaddr[64]; int32_t i,retval = -1;
+    if ( swap->alicepayment.I.datalen == 0 )
+        basilisk_alicepayment(swap,swap->alicepayment.coin,&swap->alicepayment,swap->I.pubAm,swap->I.pubBn);
+    if ( swap->alicepayment.I.datalen == 0 || swap->alicepayment.I.spendlen == 0 )
+        printf("error alice generating payment.%d\n",swap->alicepayment.I.spendlen);
+    else
     {
-        if ( swap->alicepayment.I.datalen == 0 )
-            basilisk_alicepayment(swap,swap->alicepayment.coin,&swap->alicepayment,swap->I.pubAm,swap->I.pubBn);
-        if ( swap->alicepayment.I.datalen == 0 || swap->alicepayment.I.spendlen == 0 )
-        {
-            printf("error alice generating payment.%d\n",swap->alicepayment.I.spendlen);
-            sleep(20);
-        }
-        else
-        {
-            retval = 0;
-            for (i=0; i<swap->alicepayment.I.datalen; i++)
-                printf("%02x",swap->alicepayment.txbytes[i]);
-            printf(" ALICE PAYMENT created\n");
-            LP_unspents_mark(swap->alicecoin.symbol,swap->alicepayment.vins);
-            //basilisk_txlog(swap,&swap->alicepayment,-1);
-            break;
-        }
+        retval = 0;
+        for (i=0; i<swap->alicepayment.I.datalen; i++)
+            printf("%02x",swap->alicepayment.txbytes[i]);
+        printf(" ALICE PAYMENT created\n");
+        LP_unspents_mark(swap->alicecoin.symbol,swap->alicepayment.vins);
+        //basilisk_txlog(swap,&swap->alicepayment,-1);
     }
     if ( swap->myfee.I.datalen == 0 )
     {
         //printf("generate fee\n");
-        if ( basilisk_rawtx_gen(swap->ctx,"myfee",swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,swap->myfee.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,0) == 0 )
+        bitcoin_address(coinaddr,swap->alicecoin.pubtype,swap->changermd160,20);
+        if ( basilisk_rawtx_gen(swap->ctx,"myfee",swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,swap->myfee.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr) == 0 )
         {
             swap->I.statebits |= LP_swapdata_rawtxsend(pairsock,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
             LP_unspents_mark(swap->I.iambob!=0?swap->bobcoin.symbol:swap->alicecoin.symbol,swap->myfee.vins);

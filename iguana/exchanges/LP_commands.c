@@ -498,6 +498,34 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
     return(retval);
 }
 
+char *LP_connected(cJSON *argjson)
+{
+    cJSON *retjson; int32_t pairsock = -1; char *pairstr; struct LP_quoteinfo *qp; int32_t DEXselector = 0;
+    retjson = cJSON_CreateObject();
+    if ( IAMCLIENT == 0 )
+        jaddstr(retjson,"result","update stats");
+    else
+    {
+        if ( (pairstr= jstr(argjson,"pair")) == 0 || (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
+            jaddstr(retjson,"error","couldnt create pairsock");
+        else if ( nn_connect(pairsock,pairstr) >= 0 )
+        {
+            qp = calloc(1,sizeof(*qp));
+            LP_quoteparse(qp,argjson);
+            qp->pair = pairsock;
+            qp->privkey = LP_privkey(qp->destaddr);
+            LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis,qp->destcoin,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
+            printf("alice pairstr.(%s)\n",pairstr);
+            if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)qp) == 0 )
+            {
+                jaddstr(retjson,"result","success");
+                jadd(retjson,"trade",LP_quotejson(qp));
+            } else jaddstr(retjson,"error","couldnt aliceloop");
+        }
+    }
+    return(jprint(retjson,1));
+}
+
 // addcoin api
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
@@ -589,25 +617,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
     //printf("CMD.(%s)\n",jprint(argjson,0));
     if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
         retstr = LP_quotereceived(argjson);
-    else if ( IAMCLIENT != 0 && strcmp(method,"connected") == 0 )
-    {
-        int32_t pairsock = -1; char *pairstr;
-        if ( (pairstr= jstr(argjson,"pair")) == 0 || (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
-            printf("error creating pairsock\n");
-        else if ( nn_connect(pairsock,pairstr) >= 0 )
-        {
-            struct LP_quoteinfo *qp; int32_t DEXselector = 0;
-            qp = calloc(1,sizeof(*qp));
-            LP_quoteparse(qp,argjson);
-            qp->pair = pairsock;
-            qp->privkey = LP_privkey(qp->destaddr);
-            LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis,qp->destcoin,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
-            printf("alice pairstr.(%s)\n",pairstr);
-            if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)qp) == 0 )
-            {
-            }
-        }
-    }
+    else if ( strcmp(method,"connected") == 0 )
+        retstr = LP_connected(argjson);
     else if ( strcmp(method,"getprice") == 0 )
         retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
     else if ( strcmp(method,"orderbook") == 0 )
