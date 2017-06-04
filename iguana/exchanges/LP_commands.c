@@ -228,7 +228,7 @@ int32_t LP_sizematch(uint64_t mysatoshis,uint64_t othersatoshis)
 
 cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
 {
-    struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*icopy,*retarray=0,*item; int32_t i,n; double price; int64_t estimatedbase;
+    struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*icopy,*retarray=0,*item; int32_t i,n; double price; int64_t estimatedbase,satoshis;
     if ( (price= LP_price(base,myutxo->coin)) == .0 )
     {
         printf("no LP_price (%s -> %s)\n",base,myutxo->coin);
@@ -251,10 +251,12 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                     for (i=0; i<n; i++)
                     {
                         item = jitem(array,i);
-                        //printf("%s\n",jprint(item,0));
-                        printf("i.%d %.8f %.8f, %.8f %.8f\n",i,dstr(estimatedbase),dstr(j64bits(item,"satoshis")),dstr(myutxo->satoshis),dstr(Q.destsatoshis));
+                        LP_quoteparse(&Q,item);
+                        if ( (satoshis= j64bits(item,"satoshis")) == 0 )
+                            satoshis = SATOSHIDEN * jdouble(item,"value");
+                        printf("i.%d %.8f %.8f, %.8f %.8f\n",i,dstr(estimatedbase),dstr(satoshis),dstr(myutxo->satoshis),dstr(Q.destsatoshis));
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
-                        if ( strcmp(coinstr,base) == 0 && LP_sizematch(estimatedbase,j64bits(item,"satoshis")) == 0 )
+                        if ( strcmp(coinstr,base) == 0 && LP_sizematch(estimatedbase,satoshis) == 0 )
                         {
                             icopy = 0;
                             if ( (price= LP_pricecache(&Q,base,myutxo->coin,jbits256(item,"txid"),jint(item,"vout"))) != 0. )
