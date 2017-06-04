@@ -298,9 +298,9 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
             for (i=0; i<n && i<sizeof(prices)/sizeof(*prices); i++)
             {
                 item = jitem(array,i);
+                LP_quoteparse(&Q[i],item);
                 if ( (price= jdouble(item,"price")) == 0. )
                 {
-                    LP_quoteparse(&Q[i],item);
                     price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,zero);
                     if ( Q[i].destsatoshis != 0 && (double)j64bits(item,"satoshis")/Q[i].destsatoshis > price )
                     {
@@ -321,9 +321,11 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                     if ( (price= prices[i]) != 0. && Q[i].destsatoshis != 0 )
                     {
                         metric = price / bestprice;
+                        printf("%f ",metric);
                         if ( metric > 0.9 )
                         {
                             metric = Q[i].destsatoshis / metric * metric * metric;
+                            printf("%f, ",metric);
                             if ( metric > bestmetric )
                             {
                                 besti = i;
@@ -332,12 +334,15 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                         }
                     }
                 }
+                printf("metrics, best %f\n",bestmetric);
                 if ( besti >= 0 )//&& bits256_cmp(myutxo->mypub,otherpubs[besti]) == 0 )
                 {
-                    item = jitem(array,besti);
                     i = besti;
+                    bestprice = prices[i];
+                    item = jitem(array,i);
                     bestitem = LP_quotejson(&Q[i]);
-                    if ( bestprice <= maxprice )
+                    printf("bestprice %f vs maxprice %f\n",bestprice,maxprice);
+                    if ( maxprice == 0. || bestprice <= maxprice )
                     {
                         Q[i].desttxid = myutxo->txid;
                         Q[i].destvout = myutxo->vout;
@@ -347,7 +352,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                         price = LP_query("request",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
                         if ( jobj(bestitem,"price") != 0 )
                             jdelete(bestitem,"price");
-                        jaddnum(bestitem,"price",prices[besti]);
+                        jaddnum(bestitem,"price",prices[i]);
                         if ( price <= maxprice )
                         {
                             Q[i].desttxid = myutxo->txid;
