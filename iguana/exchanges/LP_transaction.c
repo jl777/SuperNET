@@ -725,7 +725,7 @@ int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_
     printf(" pubkey33.%s, suppress.%d\n",rawtx->name,rawtx->I.suppress_pubkeys);
     for (iter=0; iter<2; iter++)
     {
-        if ( (signedtx= basilisk_swap_bobtxspend(&rawtx->I.signedtxid,iter == 0 ? txfee : newtxfee,rawtx->name,symbol,pubtype,p2shtype,isPoS,wiftype,swap->ctx,privkey,privkey2,0,0,userdata,userdatalen,rawtx->utxotxid,rawtx->utxovout,dest->p2shaddr,rawtx->I.pubkey33,1,0,&destamount,rawtx->I.amount,changeaddr,vinaddr,rawtx->I.suppress_pubkeys)) != 0 )
+        if ( (signedtx= basilisk_swap_bobtxspend(&rawtx->I.signedtxid,iter == 0 ? txfee : newtxfee,rawtx->name,symbol,pubtype,p2shtype,isPoS,wiftype,swap->ctx,privkey,privkey2,rawtx->redeemscript,rawtx->I.redeemlen,userdata,userdatalen,rawtx->utxotxid,rawtx->utxovout,dest->p2shaddr,rawtx->I.pubkey33,1,0,&destamount,rawtx->I.amount,changeaddr,vinaddr,rawtx->I.suppress_pubkeys)) != 0 )
         {
             rawtx->I.datalen = (int32_t)strlen(signedtx) >> 1;
             if ( rawtx->I.datalen <= sizeof(rawtx->txbytes) )
@@ -1443,13 +1443,15 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
             swap->depositunconf = 1;
         basilisk_dontforget_update(swap,&swap->bobdeposit);
         len = basilisk_swapuserdata(userdata,zero,1,swap->I.myprivs[0],swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
+        memcpy(swap->I.userdata_aliceclaim,userdata,len);
+        swap->I.userdata_aliceclaimlen = len;
         bitcoin_address(swap->bobdeposit.p2shaddr,swap->bobcoin.p2shtype,swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
         strcpy(swap->bobdeposit.I.destaddr,swap->bobdeposit.p2shaddr);
         for (i=0; i<swap->bobdeposit.I.redeemlen; i++)
             printf("%02x",swap->bobdeposit.redeemscript[i]);
         printf(" <- bobdeposit redeem %d %s\n",i,swap->bobdeposit.I.destaddr);
-        memcpy(swap->I.userdata_aliceclaim,userdata,len);
-        swap->I.userdata_aliceclaimlen = len;
+        memcpy(swap->aliceclaim.redeemscript,swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
+        swap->aliceclaim.I.redeemlen = swap->bobdeposit.I.redeemlen;
         retval = 0;
         if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->aliceclaim,&swap->bobdeposit,swap->I.myprivs[0],0,userdata,len,1,swap->changermd160,swap->bobdeposit.I.destaddr)) == 0 )
         {
