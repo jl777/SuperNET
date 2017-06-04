@@ -225,6 +225,7 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
         if ( activescriptlen < 16 )
             continue;
         //printf("interpreter.(%s)\n",jprint(spendscript,0));
+        printf("bitcoin_assembler ignore_cltverr.%d suppress.%d\n",V[vini].ignore_cltverr,V[vini].suppress_pubkeys);
         if ( (scriptlen= bitcoin_assembler(coin,logarray,script,spendscript,1,nLockTime,&V[vini])) < 0 )
         {
             //printf("bitcoin_assembler error scriptlen.%d\n",scriptlen);
@@ -722,10 +723,10 @@ int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_
     }
     for (iter=0; iter<33; iter++)
         printf("%02x",rawtx->I.pubkey33[iter]);
-    printf(" pubkey33.%s, suppress.%d\n",rawtx->name,rawtx->I.suppress_pubkeys);
+    printf(" pubkey33.%s, suppress.%d\n",rawtx->name,dest->I.suppress_pubkeys);
     for (iter=0; iter<2; iter++)
     {
-        if ( (signedtx= basilisk_swap_bobtxspend(&rawtx->I.signedtxid,iter == 0 ? txfee : newtxfee,rawtx->name,symbol,pubtype,p2shtype,isPoS,wiftype,swap->ctx,privkey,privkey2,rawtx->redeemscript,rawtx->I.redeemlen,userdata,userdatalen,rawtx->utxotxid,rawtx->utxovout,dest->p2shaddr,rawtx->I.pubkey33,1,0,&destamount,rawtx->I.amount,changeaddr,vinaddr,rawtx->I.suppress_pubkeys)) != 0 )
+        if ( (signedtx= basilisk_swap_bobtxspend(&rawtx->I.signedtxid,iter == 0 ? txfee : newtxfee,rawtx->name,symbol,pubtype,p2shtype,isPoS,wiftype,swap->ctx,privkey,privkey2,rawtx->redeemscript,rawtx->I.redeemlen,userdata,userdatalen,rawtx->utxotxid,rawtx->utxovout,dest->p2shaddr,rawtx->I.pubkey33,1,0,&destamount,rawtx->I.amount,changeaddr,vinaddr,dest->I.suppress_pubkeys)) != 0 )
         {
             rawtx->I.datalen = (int32_t)strlen(signedtx) >> 1;
             if ( rawtx->I.datalen <= sizeof(rawtx->txbytes) )
