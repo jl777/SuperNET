@@ -228,16 +228,12 @@ int32_t LP_sizematch(uint64_t mysatoshis,uint64_t othersatoshis)
 
 cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
 {
-    struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*icopy,*retarray=0,*item; int32_t i,n; double price; int64_t estimatedbase,satoshis;
+    struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*icopy,*retarray=0,*item; int32_t i,n; double price; int64_t satoshis;
     if ( (price= LP_price(base,myutxo->coin)) == .0 )
     {
         printf("no LP_price (%s -> %s)\n",base,myutxo->coin);
         return(0);
     }
-    estimatedbase = myutxo->satoshis / price;
-    printf("%s -> %s price %.8f mysatoshis %llu estimated base %llu\n",base,myutxo->coin,price,(long long)myutxo->satoshis,(long long)estimatedbase);
-    if ( estimatedbase <= 0 )
-        return(0);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,base,100)) != 0 )
@@ -254,9 +250,9 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                         LP_quoteparse(&Q,item);
                         if ( (satoshis= j64bits(item,"satoshis")) == 0 )
                             satoshis = SATOSHIDEN * jdouble(item,"value");
-                        printf("i.%d %.8f %.8f, %.8f %.8f\n",i,dstr(estimatedbase),dstr(satoshis),dstr(myutxo->satoshis),dstr(Q.destsatoshis));
+                        printf("i.%d %.8f %.8f\n",i,dstr(myutxo->satoshis),dstr(Q.destsatoshis));
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
-                        if ( strcmp(coinstr,base) == 0 && LP_sizematch(estimatedbase,satoshis) == 0 )
+                        if ( strcmp(coinstr,base) == 0 )
                         {
                             icopy = 0;
                             if ( (price= LP_pricecache(&Q,base,myutxo->coin,jbits256(item,"txid"),jint(item,"vout"))) != 0. )
@@ -270,7 +266,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                                     jaddnum(icopy,"price",price);
                                 jaddi(retarray,icopy);
                             }
-                        } else printf("skip %s estimated %.8f vs %.8f\n",coinstr,dstr(estimatedbase),dstr(j64bits(item,"satoshis")));
+                        } else printf("skip %s estimated %.8f\n",coinstr,dstr(satoshis));
                     }
                 }
                 free_json(array);
