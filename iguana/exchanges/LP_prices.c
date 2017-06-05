@@ -266,7 +266,7 @@ static int _cmp_orderbook(const void *a,const void *b)
         retval = 1;
     else if ( ptr_b < ptr_a )
         retval = -1;
-/*    else
+    else
     {
 #undef ptr_a
 #undef ptr_b
@@ -276,8 +276,8 @@ static int _cmp_orderbook(const void *a,const void *b)
             return(1);
         else if ( ptr_b < ptr_a )
             return(-1);
-    }*/
-    printf("%.8f vs %.8f -> %d\n",ptr_a,ptr_b,retval);
+    }
+   // printf("%.8f vs %.8f -> %d\n",ptr_a,ptr_b,retval);
     return(retval);
 #undef ptr_a
 #undef ptr_b
@@ -324,7 +324,7 @@ char *LP_orderbook(char *base,char *rel)
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     if ( numbids > 1 )
-        qsort(bids,numbids,sizeof(*bids),_cmp_orderbookrev);
+        qsort(bids,numbids,sizeof(*bids),_cmp_orderbook);
     for (i=0; i<numbids; i++)
         jaddi(array,LP_orderbookjson(bids[i],-1));
     jadd(retjson,"bids",array);
@@ -335,7 +335,7 @@ char *LP_orderbook(char *base,char *rel)
         for (i=0; i<numasks; i++)
             printf("%.8f ",asks[i]->price);
         printf(" -> ");
-        qsort(asks,numasks,sizeof(*asks),_cmp_orderbook);
+        qsort(asks,numasks,sizeof(*asks),_cmp_orderbookrev);
         for (i=0; i<numasks; i++)
             printf("%.8f ",asks[i]->price);
         printf("sorted asks.%d\n",numasks);
