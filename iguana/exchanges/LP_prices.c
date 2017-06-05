@@ -265,7 +265,7 @@ static int _cmp_orderbook(const void *a,const void *b)
         return(1);
     else if ( ptr_b < ptr_a )
         return(-1);
-    else
+/*    else
     {
 #undef ptr_a
 #undef ptr_b
@@ -275,7 +275,7 @@ static int _cmp_orderbook(const void *a,const void *b)
             return(1);
         else if ( ptr_b < ptr_a )
             return(-1);
-    }
+    }*/
     return(0);
 #undef ptr_a
 #undef ptr_b
