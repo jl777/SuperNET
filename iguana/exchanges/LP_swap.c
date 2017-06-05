@@ -739,7 +739,7 @@ void basilisk_rawtx_setparms(char *name,uint32_t quoteid,struct basilisk_rawtx *
     } else printf("%s vouttype.%d destaddr.(%s)\n",name,rawtx->I.vouttype,rawtx->I.destaddr);
 }
 
-struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits)
+struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits,struct LP_quoteinfo *qp)
 {
     //FILE *fp; char fname[512];
     uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag=-2,x = -1; struct iguana_info *coin;
@@ -846,7 +846,13 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     swap->bobspend.I.suppress_pubkeys = 1;
     basilisk_rawtx_setparms("alicereclaim",swap->I.req.quoteid,&swap->alicereclaim,&swap->alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,alicepub33,jumblrflag);
     swap->alicereclaim.I.suppress_pubkeys = 1;
-    printf("IAMBOB.%d\n",swap->I.iambob);
+    swap->bobpayment.utxotxid = qp->txid, swap->bobpayment.utxovout = qp->vout;
+    swap->bobdeposit.utxotxid = qp->txid2, swap->bobdeposit.utxovout = qp->vout2;
+    swap->alicepayment.utxotxid = qp->desttxid, swap->alicepayment.utxovout = qp->destvout;
+    if ( swap->I.iambob != 0 )
+        swap->otherfee.utxotxid = qp->feetxid, swap->otherfee.utxovout = qp->feevout;
+    else swap->myfee.utxotxid = qp->feetxid, swap->myfee.utxovout = qp->feevout;
+    char str[65],str2[65]; printf("IAMBOB.%d %s %s\n",swap->I.iambob,bits256_str(str,qp->txid),bits256_str(str2,qp->txid2));
     return(swap);
 }
 
@@ -864,13 +870,7 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
     swap->persistent_privkey = privkey;
     memcpy(swap->persistent_pubkey33,pubkey33,33);
     calc_rmd160_sha256(swap->changermd160,pubkey33,33);
-    swap->bobpayment.utxotxid = qp->txid, swap->bobpayment.utxovout = qp->vout;
-    swap->bobdeposit.utxotxid = qp->txid2, swap->bobdeposit.utxovout = qp->vout2;
-    swap->alicepayment.utxotxid = qp->desttxid, swap->alicepayment.utxovout = qp->destvout;
-    if ( iambob != 0 )
-        swap->otherfee.utxotxid = qp->feetxid, swap->otherfee.utxovout = qp->feevout;
-    else swap->myfee.utxotxid = qp->feetxid, swap->myfee.utxovout = qp->feevout;
-    if ( bitcoin_swapinit(privkey,pubkey33,pubkey25519,swap,optionduration,!iambob) == 0 )
+    if ( bitcoin_swapinit(privkey,pubkey33,pubkey25519,swap,optionduration,!iambob,qp) == 0 )
     {
         printf("error doing swapinit\n");
         free(swap);
