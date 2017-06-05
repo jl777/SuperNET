@@ -32,6 +32,7 @@ struct LP_utxoinfo *LP_utxofind(bits256 txid,int32_t vout)
 cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
 {
     jaddstr(item,"coin",utxo->coin);
+    jaddnum(item,"now",time(NULL));
     jaddstr(item,"address",utxo->coinaddr);
     jaddbits256(item,"txid",utxo->txid);
     jaddnum(item,"vout",utxo->vout);
@@ -155,7 +156,7 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
+                if ( juint(item,"timestamp") > now-60 && (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
                 {
                     if ( (pushport= juint(item,"push")) == 0 )
                         pushport = argport + 1;
