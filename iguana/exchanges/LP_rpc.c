@@ -52,7 +52,7 @@ char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,
 char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
 {
     char url[4096],str[65],str2[65];
-    sprintf(url,"http://%s:%u/api/stats/notifyutxo?ipaddr=%s&port=%u&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%.8f&txid2=%s&vout2=%d&value2=%.8f&script=%s&address=%s",destip,destport,utxo->ipaddr,utxo->port,utxo->profitmargin,utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->value),bits256_str(str2,utxo->txid2),utxo->vout2,dstr(utxo->value2),utxo->spendscript,utxo->coinaddr);
+    sprintf(url,"http://%s:%u/api/stats/notifyutxo?ipaddr=%s&port=%u&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%llu&txid2=%s&vout2=%d&value2=llu&script=%s&address=%s",destip,destport,utxo->ipaddr,utxo->port,utxo->profitmargin,utxo->coin,bits256_str(str,utxo->txid),utxo->vout,(long long)utxo->value,bits256_str(str2,utxo->txid2),utxo->vout2,(long long)utxo->value2,utxo->spendscript,utxo->coinaddr);
     if ( strlen(url) > 1024 )
         printf("WARNING long url.(%s)\n",url);
     return(issue_curl(url));
