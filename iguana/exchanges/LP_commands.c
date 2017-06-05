@@ -81,11 +81,11 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
                             return(-1);
                         //printf("txid.(%s)\ntxid2.(%s)\n",jprint(LP_gettxout(Q.srccoin,Q.txid,Q.vout),1),jprint(LP_gettxout(Q.srccoin,Q.txid2,Q.vout2),1));
-                        if ( LP_iseligible(Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) == 0 )
+                        /*if ( LP_iseligible(Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) == 0 )
                         {
                             printf("not eligible\n");
                             return(-1);
-                        }
+                        }*/
                         if ( strcmp(method,"price") == 0 )
                             Q.timestamp = (uint32_t)time(NULL);
                         retjson = LP_quotejson(&Q);
