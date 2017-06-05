@@ -183,8 +183,9 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             now = (uint32_t)time(NULL);
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
-                if ( peer->numpeers > 0 && (peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0) )
+                if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0) )
                 {
+                    peer->lastpeers = now;
                     if ( peer->numpeers != mypeer->numpeers )
                         printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,mypeer->numpeers);
                     if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
