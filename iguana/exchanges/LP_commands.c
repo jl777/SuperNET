@@ -222,7 +222,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
                         {
                             if ( LP_ismine(utxo) != 0 && (strcmp(utxo->coin,base) == 0 || strcmp(utxo->coin,rel) == 0) )
                                 LP_priceping(LP_mypubsock,utxo,rel,LP_profitratio - 1.);
-                            else printf("notmine.(%s %s)\n",utxo->coin,bits256_str(str,utxo->txid));
+                            //else printf("notmine.(%s %s)\n",utxo->coin,bits256_str(str,utxo->txid));
                         }
                     }
                     return(clonestr("{\"result\":\"success\"}"));
