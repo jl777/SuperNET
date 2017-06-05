@@ -65,7 +65,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
         txid = jbits256(argjson,"txid");
         if ( (utxo= LP_utxofind(txid,jint(argjson,"vout"))) != 0 && strcmp(utxo->ipaddr,mypeer->ipaddr) == 0 && utxo->port == mypeer->port && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )
         {
-            //printf("LP_command.(%s)\n",jprint(argjson,0));
+            printf("LP_command.(%s)\n",jprint(argjson,0));
             if ( time(NULL) > utxo->swappending )
                 utxo->swappending = 0;
             if ( strcmp(method,"price") == 0 || strcmp(method,"request") == 0 )
