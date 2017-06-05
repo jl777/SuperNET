@@ -147,10 +147,11 @@ char *LP_spentcheck(cJSON *argjson)
 
 int32_t LP_iseligible(char *coin,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
-    uint64_t val,val2;
+    uint64_t val,val2,threshold;
     if ( (val= LP_txvalue(coin,txid,vout)) >= satoshis )
     {
-        if ( (val2= LP_txvalue(coin,txid2,vout2)) >= LP_DEPOSITSATOSHIS(satoshis) )
+        threshold = (IAMCLIENT == 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
+        if ( (val2= LP_txvalue(coin,txid2,vout2)) >= threshold )
         {
             printf("val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
             return(1);
