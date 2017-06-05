@@ -113,17 +113,18 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         if ( LP_quoteparse(&Q,argjson) < 0 )
                             return(-2);
                         //printf("connect with.(%s)\n",jprint(argjson,0));
+                        Q.destsatoshis = Q.satoshis * price;
                         privkey = LP_privkey(utxo->coinaddr);
                         if ( bits256_nonz(utxo->mypub) == 0 )
                             utxo->mypub = LP_pubkey(privkey);
-                        if ( bits256_nonz(privkey) != 0 && Q.quotetime >= Q.timestamp-3 && Q.quotetime < utxo->swappending && bits256_cmp(utxo->mypub,Q.srchash) == 0 && (destvalue= LP_txvalue(rel,Q.desttxid,Q.destvout)) >= price*Q.satoshis+Q.desttxfee && destvalue >= Q.destsatoshis+Q.desttxfee )
+                        if ( LP_iseligible(Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) != 0 && bits256_nonz(privkey) != 0 && Q.quotetime >= Q.timestamp-3 && Q.quotetime < utxo->swappending && bits256_cmp(utxo->mypub,Q.srchash) == 0 && (destvalue= LP_txvalue(rel,Q.desttxid,Q.destvout)) >= price*Q.satoshis+Q.desttxfee && destvalue >= Q.destsatoshis+Q.desttxfee )
                         {
+                            printf("txid.(%s)\ntxid2.(%s)\n",jprint(LP_gettxout(Q.srccoin,Q.txid,Q.vout),1),jprint(LP_gettxout(Q.srccoin,Q.txid2,Q.vout2),1));
                             nanomsg_tcpname(pairstr,mypeer->ipaddr,10000+(rand() % 10000));
                             if ( (utxo->pair= nn_socket(AF_SP,NN_PAIR)) < 0 )
                                 printf("error creating utxo->pair\n");
                             else if ( nn_bind(utxo->pair,pairstr) >= 0 )
                             {
-                                //char str[65]; printf("destsatoshis %.8f %s t%u\n",dstr(Q.destsatoshis),bits256_str(str,Q.desthash),Q.quotetime);
                                 LP_requestinit(&R,Q.srchash,Q.desthash,base,Q.satoshis,rel,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
                                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_bobloop,(void *)utxo) == 0 )
                                 {
