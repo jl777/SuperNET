@@ -192,6 +192,18 @@ int32_t LP_sizematch(uint64_t mysatoshis,uint64_t othersatoshis)
     else return(-1);
 }
 
+int32_t LP_arrayfind(cJSON *array,bits256 txid,int32_t vout)
+{
+    int32_t i,n = cJSON_GetArraySize(array); cJSON *item;
+    for (i=0; i<n; i++)
+    {
+        item = jitem(array,i);
+        if ( vout == jint(item,"vout") && bits256_cmp(txid,jbits256(item,"txid")) == 0 )
+            return(i);
+    }
+    return(-1);
+}
+
 cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
 {
     struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*retarray=0,*item; int32_t i,n; double price;
@@ -216,15 +228,14 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                         LP_quoteparse(&Q,item);
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 )
-                            jaddi(retarray,jduplicate(item));
+                            if ( LP_arrayfind(retarray,Q.txid,Q.vout) < 0 )
+                                jaddi(retarray,jduplicate(item));
                     }
                 }
                 free_json(array);
             }
             free(utxostr);
         }
-        if ( retarray != 0 )
-            break;
     }
     return(retarray);
 }
@@ -238,7 +249,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
         maxprice = LP_price(base,myutxo->coin) / 0.975;
     if ( (array= LP_tradecandidates(myutxo,base)) != 0 )
     {
-        //printf("candidates.(%s)\n",jprint(array,0));
+        printf("candidates.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             memset(prices,0,sizeof(prices));
