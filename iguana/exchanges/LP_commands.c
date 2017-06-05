@@ -291,6 +291,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         retstr = LP_quotereceived(argjson);
     else if ( strcmp(method,"connected") == 0 )
         retstr = LP_connected(argjson);
+    else if ( strcmp(method,"checktxid") == 0 )
+        retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"getprice") == 0 )
         retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
     else if ( strcmp(method,"orderbook") == 0 )

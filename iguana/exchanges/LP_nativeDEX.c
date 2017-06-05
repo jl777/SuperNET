@@ -162,7 +162,17 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             {
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
-                    if ( LP_ismine(utxo) != 0 )
+                    if ( LP_txvalue(utxo->coin,utxo->txid,utxo->vout) == 0 )
+                    {
+                        printf("txid %s %.8f has been spent\n",utxo->coin,dstr(utxo->value));
+                        LP_spentnotify(utxo,0);
+                    }
+                    else if ( LP_txvalue(utxo->coin,utxo->txid2,utxo->vout2) == 0 )
+                    {
+                        printf("txid2 %s %.8f has been spent\n",utxo->coin,dstr(utxo->value2));
+                        LP_spentnotify(utxo,1);
+                    }
+                    else if ( LP_ismine(utxo) != 0 )
                     {
                         if ( strcmp(utxo->coin,"KMD") == 0 )
                             LP_priceping(pubsock,utxo,"BTC",profitmargin);

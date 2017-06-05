@@ -66,8 +66,6 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     {
         jaddbits256(retjson,"txid2",qp->txid2);
         jaddnum(retjson,"vout2",qp->vout2);
-        if ( qp->satoshis2 != 0 )
-            jadd64bits(retjson,"satoshis2",qp->satoshis2);
     }
     if ( bits256_nonz(qp->desttxid) != 0 )
     {
@@ -114,10 +112,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->feetxid = jbits256(argjson,"feetxid");
     qp->destvout = jint(argjson,"destvout");
     qp->desthash = jbits256(argjson,"desthash");
-    //qp->feesatoshis = j64bits(argjson,"feesatoshis");
     qp->satoshis = j64bits(argjson,"satoshis");
-    qp->satoshis2 = j64bits(argjson,"satoshis2");
-    qp->value = j64bits(argjson,"value");
     qp->destsatoshis = j64bits(argjson,"destsatoshis");
     qp->txfee = j64bits(argjson,"txfee");
     qp->desttxfee = j64bits(argjson,"desttxfee");
@@ -131,16 +126,14 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     safecopy(qp->destcoin,destcoin,sizeof(qp->destcoin));
     if ( (qp->txfee= LP_getestimatedrate(utxo->coin)*LP_AVETXSIZE) < 10000 )
         qp->txfee = 10000;
-    if ( qp->txfee >= utxo->value || qp->txfee >= utxo->value2 || utxo->value2 < utxo->satoshis+(utxo->satoshis>>3) )
+    if ( qp->txfee >= utxo->satoshis || qp->txfee >= utxo->value2 || utxo->value2 < LP_DEPOSITSATOSHIS(utxo->satoshis) )
         return(-1);
     qp->txid = utxo->txid;
     qp->vout = utxo->vout;
     qp->txid2 = utxo->txid2;
     qp->vout2 = utxo->vout2;
-    qp->satoshis = utxo->satoshis;
-    qp->satoshis2 = utxo->satoshis + (utxo->satoshis >> 3);
+    qp->satoshis = utxo->satoshis - qp->txfee;
     qp->destsatoshis = qp->satoshis * price;
-    //qp->feesatoshis = qp->destsatoshis / INSTANTDEX_INSURANCEDIV;
     if ( (qp->desttxfee= LP_getestimatedrate(qp->destcoin) * LP_AVETXSIZE) < 10000 )
         qp->desttxfee = 10000;
     if ( qp->desttxfee >= qp->destsatoshis )
@@ -164,7 +157,6 @@ int32_t LP_quoteinfoset(struct LP_quoteinfo *qp,uint32_t timestamp,uint32_t quot
     qp->timestamp = timestamp;
     qp->quotetime = quotetime;
     qp->destsatoshis = destsatoshis;
-    //qp->feesatoshis = qp->destsatoshis / INSTANTDEX_INSURANCEDIV;
     qp->desttxfee = desttxfee;
     qp->desttxid = desttxid;
     qp->destvout = destvout;
@@ -229,8 +221,13 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                         LP_quoteparse(&Q,item);
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 )
-                            if ( LP_arrayfind(retarray,Q.txid,Q.vout) < 0 )
-                                jaddi(retarray,jduplicate(item));
+                        {
+                            if ( LP_iseligible(Q.txid,Q.vout) != 0 )
+                            {
+                                if ( LP_arrayfind(retarray,Q.txid,Q.vout) < 0 )
+                                    jaddi(retarray,jduplicate(item));
+                            }
+                        }
                     }
                 }
                 free_json(array);

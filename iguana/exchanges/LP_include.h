@@ -21,6 +21,9 @@
 #ifndef LP_INCLUDE_H
 #define LP_INCLUDE_H
 
+#define LP_DEXFEE(destsatoshis) ((destsatoshis) / INSTANTDEX_INSURANCEDIV)
+#define LP_DEPOSITSATOSHIS(satoshis) ((satoshis) + (satoshis >> 3))
+
 #define INSTANTDEX_DECKSIZE 1000
 #define INSTANTDEX_LOCKTIME (3600*2 + 300*2)
 #define INSTANTDEX_INSURANCEDIV 777
@@ -167,7 +170,7 @@ struct LP_utxoinfo
     uint64_t value,satoshis,value2;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     int32_t vout,vout2,pair;
-    uint32_t lasttime,errors,swappending,published;
+    uint32_t lasttime,errors,swappending,published,spentflag;
     double profitmargin;
     char ipaddr[64],coinaddr[64],spendscript[256],coin[16];
     uint16_t port;
@@ -188,7 +191,7 @@ struct LP_quoteinfo
 {
     struct basilisk_request R;
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
-    uint64_t value,satoshis,satoshis2,txfee,destsatoshis,desttxfee;
+    uint64_t satoshis,txfee,destsatoshis,desttxfee;
     uint32_t timestamp,quotetime; int32_t vout,vout2,destvout,feevout,pair;
     char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
 };

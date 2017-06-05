@@ -29,6 +29,13 @@ int32_t LP_ismine(struct LP_utxoinfo *utxo)
     else return(0);
 }
 
+int32_t LP_isunspent(struct LP_utxoinfo *utxo)
+{
+    if ( utxo->spentflag == 0 && utxo->swappending == 0 )
+        return(1);
+    else return(0);
+}
+
 struct LP_utxoinfo *LP_utxofind(bits256 txid,int32_t vout)
 {
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
@@ -60,6 +67,8 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
         jaddnum(item,"socket",utxo->pair);
     if ( utxo->swap != 0 )
         jaddstr(item,"swap","in progress");
+    if ( utxo->spentflag != 0 )
+        jaddnum(item,"spent",utxo->spentflag);
     return(item);
 }
 
@@ -94,6 +103,63 @@ char *LP_utxos(struct LP_peerinfo *mypeer,char *coin,int32_t lastn)
     return(jprint(utxosjson,1));
 }
 
+void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
+{
+    cJSON *argjson;
+    utxo->spentflag = (uint32_t)time(NULL);
+    if ( LP_mypubsock >= 0 )
+    {
+        argjson = cJSON_CreateObject();
+        jaddstr(argjson,"method","checktxid");
+        jaddbits256(argjson,"txid",utxo->txid);
+        jaddnum(argjson,"vout",utxo->vout);
+        if ( selector != 0 )
+        {
+            jaddbits256(argjson,"checktxid",utxo->txid2);
+            jaddnum(argjson,"checkvout",utxo->vout2);
+        }
+        LP_send(LP_mypubsock,jprint(argjson,1),1);
+    }
+}
+
+char *LP_spentcheck(cJSON *argjson)
+{
+    bits256 txid,checktxid; int32_t vout,checkvout; struct LP_utxoinfo *utxo;
+    txid = jbits256(argjson,"txid");
+    vout = jint(argjson,"vout");
+    if ( (utxo= LP_utxofind(txid,vout)) != 0 )
+    {
+        if ( jobj(argjson,"check") == 0 )
+            checktxid = txid, checkvout = vout;
+        else
+        {
+            checktxid = jbits256(argjson,"checktxid");
+            checkvout = jint(argjson,"checkvout");
+        }
+        if ( LP_txvalue(utxo->coin,checktxid,checkvout) == 0 )
+        {
+            utxo->spentflag = (uint32_t)time(NULL);
+            printf("indeed txid was spent\n");
+            return(clonestr("{\"result\":\"marked as spent\"}"));
+        } else return(clonestr("{\"error\":\"txid is still unspent?\"}"));
+    } else return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
+}
+
+int32_t LP_iseligible(bits256 txid,int32_t vout)
+{
+    struct LP_utxoinfo *utxo;
+    if ( (utxo= LP_utxofind(txid,vout)) != 0 )
+    {
+        if ( LP_txvalue(utxo->coin,utxo->txid,utxo->vout) == utxo->value )
+        {
+            if ( LP_txvalue(utxo->coin,utxo->txid2,utxo->vout2) == utxo->value2 )
+                return(1);
+            else printf("mismatched txid value2\n");
+        } else printf("mismatched txid value\n");
+    }
+    return(0);
+}
+
 struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,char *ipaddr,uint16_t port,double profitmargin)
 {
     uint64_t tmpsatoshis; struct LP_utxoinfo *utxo = 0;
@@ -107,8 +173,8 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         printf("LP node got localhost utxo\n");
         return(0);
     }
-    if ( IAMCLIENT == 0 || value2 < 9 * (value >> 3) )
-        tmpsatoshis = (value2 / 9) << 3;
+    if ( IAMCLIENT == 0 || value2 < 9 * (value >> 3) + 100000 )
+        tmpsatoshis = ((value2 / 9) << 3) - 100000;
     else tmpsatoshis = value;
     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
@@ -244,7 +310,7 @@ char *LP_inventory(char *symbol)
     else myipaddr = "127.0.0.1";
     HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
     {
-        if ( strcmp(symbol,utxo->coin) == 0 && (IAMCLIENT != 0 || strcmp(utxo->ipaddr,myipaddr) == 0) )
+        if ( LP_isunspent(utxo) != 0 && strcmp(symbol,utxo->coin) == 0 && (IAMCLIENT != 0 || LP_ismine(utxo) != 0) )
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
     }
     return(jprint(array,1));
@@ -332,8 +398,8 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                     depositval = values[i];
                     values[i] = 0, used++;
                     if ( amclient != 0 )
-                        targetval = (depositval / 776) + 50000;
-                    else targetval = (depositval / 9) * 8;
+                        targetval = (depositval / 776) + 100000;
+                    else targetval = (depositval / 9) * 8 + 100000;
                     //printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
                     if ( (i= LP_nearestvalue(values,n,targetval)) >= 0 )
                     {
