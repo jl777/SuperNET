@@ -226,7 +226,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                             {
                                 if ( LP_arrayfind(retarray,Q.txid,Q.vout) < 0 )
                                     jaddi(retarray,jduplicate(item));
-                            }
+                            } else printf("ineligible.(%s)\n",jprint(item,0));
                         }
                     }
                 }
