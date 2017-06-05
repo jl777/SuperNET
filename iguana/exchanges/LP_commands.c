@@ -81,11 +81,11 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
                             return(-1);
                         //printf("txid.(%s)\ntxid2.(%s)\n",jprint(LP_gettxout(Q.srccoin,Q.txid,Q.vout),1),jprint(LP_gettxout(Q.srccoin,Q.txid2,Q.vout2),1));
-                        /*if ( LP_iseligible(Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) == 0 )
+                        if ( LP_iseligible(Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) == 0 )
                         {
                             printf("not eligible\n");
                             return(-1);
-                        }*/
+                        }
                         if ( strcmp(method,"price") == 0 )
                             Q.timestamp = (uint32_t)time(NULL);
                         retjson = LP_quotejson(&Q);
@@ -215,7 +215,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             return(clonestr("{\"error\":\"authentication error\"}"));
         if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 )
         {
-            char str[65];
+            //char str[65];
             if ( strcmp(method,"setprice") == 0 )
             {
                 if ( LP_mypriceset(base,rel,jdouble(argjson,"price")) < 0 )
@@ -310,7 +310,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
     else if ( IAMCLIENT == 0 && strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
     {
         retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
-        printf("RETURN. %d utxos\n",cJSON_GetArraySize(cJSON_Parse(retstr)));
+        //printf("RETURN. %d utxos\n",cJSON_GetArraySize(cJSON_Parse(retstr)));
     }
     else if ( IAMCLIENT == 0 && strcmp(method,"notify") == 0 )
         retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
