@@ -123,8 +123,10 @@ void LP_priceinfoupdate(char *base,char *rel,double price)
     struct LP_priceinfo *basepp,*relpp;
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
-        dxblend(&basepp->relvals[relpp->ind],price,0.9);
-        dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
+        //dxblend(&basepp->relvals[relpp->ind],price,0.9);
+        //dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
+        basepp->relvals[relpp->ind] = price;
+        relpp->relvals[basepp->ind] = 1. / price;
     }
 }
 
@@ -139,6 +141,7 @@ double LP_myprice(double *bidp,double *askp,char *base,char *rel)
             if ( (val= relpp->myprices[basepp->ind]) != 0. )
             {
                 *bidp = 1. / val;
+                printf("myprice (%.8f %.8f)\n",*bidp,*askp);
                 return((*askp + *bidp) * 0.5);
             }
         }
