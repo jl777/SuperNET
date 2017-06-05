@@ -80,6 +80,12 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         price *= (1. + profitmargin);
                         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
                             return(-1);
+                        printf("txid.(%s)\ntxid2.(%s)\n",jprint(LP_gettxout(Q.srccoin,Q.txid,Q.vout),1),jprint(LP_gettxout(Q.srccoin,Q.txid2,Q.vout2),1));
+                        if ( LP_iseligible(Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) == 0 )
+                        {
+                            printf("not eligible\n");
+                            return(-1);
+                        }
                         if ( strcmp(method,"price") == 0 )
                             Q.timestamp = (uint32_t)time(NULL);
                         retjson = LP_quotejson(&Q);
@@ -117,9 +123,8 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         privkey = LP_privkey(utxo->coinaddr);
                         if ( bits256_nonz(utxo->mypub) == 0 )
                             utxo->mypub = LP_pubkey(privkey);
-                        if ( LP_iseligible(Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) != 0 && bits256_nonz(privkey) != 0 && Q.quotetime >= Q.timestamp-3 && Q.quotetime < utxo->swappending && bits256_cmp(utxo->mypub,Q.srchash) == 0 && (destvalue= LP_txvalue(rel,Q.desttxid,Q.destvout)) >= price*Q.satoshis+Q.desttxfee && destvalue >= Q.destsatoshis+Q.desttxfee )
+                        if ( bits256_nonz(privkey) != 0 && Q.quotetime >= Q.timestamp-3 && Q.quotetime < utxo->swappending && bits256_cmp(utxo->mypub,Q.srchash) == 0 && (destvalue= LP_txvalue(rel,Q.desttxid,Q.destvout)) >= price*Q.satoshis+Q.desttxfee && destvalue >= Q.destsatoshis+Q.desttxfee )
                         {
-                            printf("txid.(%s)\ntxid2.(%s)\n",jprint(LP_gettxout(Q.srccoin,Q.txid,Q.vout),1),jprint(LP_gettxout(Q.srccoin,Q.txid2,Q.vout2),1));
                             nanomsg_tcpname(pairstr,mypeer->ipaddr,10000+(rand() % 10000));
                             if ( (utxo->pair= nn_socket(AF_SP,NN_PAIR)) < 0 )
                                 printf("error creating utxo->pair\n");
