@@ -145,17 +145,17 @@ char *LP_spentcheck(cJSON *argjson)
     } else return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
 }
 
-int32_t LP_iseligible(bits256 txid,int32_t vout)
+int32_t LP_iseligible(char *coin,bits256 txid,int32_t vout,uint64_t value,bits256 txid2,int32_t vout2,uint64_t value2)
 {
-    struct LP_utxoinfo *utxo; uint64_t value; char str[65];
+    struct LP_utxoinfo *utxo; uint64_t val,val2; char str[65];
     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
-        if ( (value= LP_txvalue(utxo->coin,utxo->txid,utxo->vout)) == utxo->value )
+        if ( (val= LP_txvalue(coin,txid,vout)) != value )
         {
-            if ( LP_txvalue(utxo->coin,utxo->txid2,utxo->vout2) == utxo->value2 )
+            if ( (val2= LP_txvalue(coin,txid2,vout2)) != value2 )
                 return(1);
-            else printf("mismatched txid value2 %.8f vs %.8f\n",dstr(value),dstr(utxo->value2));
-        } else printf("mismatched txid value %.8f vs %.8f\n",dstr(value),dstr(utxo->value));
+            else printf("mismatched txid value2 %.8f vs %.8f\n",dstr(val2),dstr(value2));
+        } else printf("mismatched txid value %.8f vs %.8f\n",dstr(val),dstr(value));
     } else printf("cant find (%s/v%d)\n",bits256_str(str,txid),vout);
     return(0);
 }

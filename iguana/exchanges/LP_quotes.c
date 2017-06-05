@@ -222,7 +222,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                         safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 )
                         {
-                            if ( LP_iseligible(Q.txid,Q.vout) != 0 )
+                            if ( LP_iseligible(Q.srccoin,Q.txid,Q.vout,Q.value,Q.txid2,Q.vout2,Q.va.ue2) != 0 )
                             {
                                 if ( LP_arrayfind(retarray,Q.txid,Q.vout) < 0 )
                                     jaddi(retarray,jduplicate(item));
