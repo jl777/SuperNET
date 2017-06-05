@@ -78,7 +78,6 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     {
         jaddbits256(retjson,"feetxid",qp->feetxid);
         jaddnum(retjson,"feevout",qp->feevout);
-        //jadd64bits(retjson,"feesatoshis",qp->feesatoshis);
     }
     if ( qp->desttxfee != 0 )
         jadd64bits(retjson,"desttxfee",qp->desttxfee);

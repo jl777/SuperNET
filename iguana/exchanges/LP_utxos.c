@@ -148,9 +148,9 @@ char *LP_spentcheck(cJSON *argjson)
 int32_t LP_iseligible(char *coin,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
     uint64_t val,val2;
-    if ( (val= LP_txvalue(coin,txid,vout)) < satoshis )
+    if ( (val= LP_txvalue(coin,txid,vout)) >= satoshis )
     {
-        if ( (val2= LP_txvalue(coin,txid2,vout2)) < LP_DEPOSITSATOSHIS(satoshis) )
+        if ( (val2= LP_txvalue(coin,txid2,vout2)) >= LP_DEPOSITSATOSHIS(satoshis) )
             return(1);
         else printf("mismatched %s txid value2 %.8f < %.8f\n",coin,dstr(val2),dstr(LP_DEPOSITSATOSHIS(satoshis)));
     } else printf("mismatched %s txid value %.8f < %.8f\n",coin,dstr(val),dstr(satoshis));
