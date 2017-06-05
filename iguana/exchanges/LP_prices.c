@@ -260,8 +260,8 @@ struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,
 static int _cmp_orderbook(const void *a,const void *b)
 {
     int32_t retval = 0;
-#define ptr_a ((struct LP_cacheinfo *)a)->price
-#define ptr_b ((struct LP_cacheinfo *)b)->price
+#define ptr_a (*(struct LP_cacheinfo **)a)->price
+#define ptr_b (*(struct LP_cacheinfo **)b)->price
     if ( ptr_b > ptr_a )
         retval = 1;
     else if ( ptr_b < ptr_a )
