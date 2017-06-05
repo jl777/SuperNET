@@ -721,6 +721,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
 int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen,int32_t ignore_cltverr,uint8_t *changermd160,char *vinaddr)
 {
     char *signedtx,*changeaddr = 0,_changeaddr[64]; int64_t txfee,newtxfee=0,destamount; uint32_t timestamp,locktime=0,sequenceid = 0xffffffff; int32_t iter,retval = -1; double estimatedrate;
+    char str2[65]; printf("%s rawtxsign.(%s/v%d)\n",dest->name,bits256_str(str2,dest->utxotxid),dest->utxovout);
     timestamp = swap->I.started;
     if ( dest == &swap->aliceclaim )
         locktime = swap->bobdeposit.I.locktime + 1, sequenceid = 0;
@@ -1207,8 +1208,8 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
                 LP_unspents_mark(swap->bobcoin.symbol,swap->bobpayment.vins);
                 if ( swap->I.iambob != 0 )
                 {
-                    swap->bobpayment.utxovout = 0;
-                    swap->bobpayment.utxotxid = swap->bobpayment.I.signedtxid;
+                    swap->bobreclaim.utxovout = 0;
+                    swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
                 }
                 //printf("bobscripts set completed\n");
