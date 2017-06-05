@@ -181,6 +181,7 @@ char *LP_quotereceived(cJSON *argjson)
     if ( (ptr= LP_cacheadd(Q.srccoin,Q.destcoin,Q.txid,Q.vout,price,&Q)) != 0 )
     {
         ptr->Q = Q;
+        char str[65]; printf("received.(%s) quote %.8f\n",bits256_str(str,Q.txid),price);
         return(clonestr("{\"result\":\"updated\"}"));
     } else return(clonestr("{\"error\":\"nullptr\"}"));
 }
@@ -249,7 +250,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
         maxprice = LP_price(base,myutxo->coin) / 0.975;
     if ( (array= LP_tradecandidates(myutxo,base)) != 0 )
     {
-        printf("candidates.(%s)\nn.%d",jprint(array,0),cJSON_GetArraySize(array));
+        printf("candidates.(%s)\nn.%d\n",jprint(array,0),cJSON_GetArraySize(array));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             memset(prices,0,sizeof(prices));
