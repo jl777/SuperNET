@@ -32,7 +32,7 @@
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
 
 #define BASILISK_DISABLEWAITTX
-//#define BASILISK_DISABLESENDTX
+#define BASILISK_DISABLESENDTX
 
 #define LP_PROPAGATION_SLACK 10 // txid ordering is not enforced, so getting extra recent txid
 #define LP_RESERVETIME 60
