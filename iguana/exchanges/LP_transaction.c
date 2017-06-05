@@ -1242,7 +1242,7 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
                 if ( swap->I.iambob != 0 )
                 {
                     swap->bobrefund.utxovout = 0;
-                    swap->bobrefund.utxotxid = swap->bobpayment.I.signedtxid;
+                    swap->bobrefund.utxotxid = swap->bobdeposit.I.signedtxid;
                     basilisk_bobdeposit_refund(swap,swap->I.putduration);
                 }
                 printf("bobscripts set completed\n");
