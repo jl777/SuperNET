@@ -38,7 +38,7 @@ char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t 
 {
     char url[512];
     sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=127.0.0.1&port=0",destip,destport,coin,lastn);
-    //printf("getutxos.(%s)\n",url);
+    //printf("getutxo.(%s)\n",url);
     return(issue_curl(url));
 }
 
