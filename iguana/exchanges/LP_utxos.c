@@ -147,16 +147,13 @@ char *LP_spentcheck(cJSON *argjson)
 
 int32_t LP_iseligible(char *coin,bits256 txid,int32_t vout,uint64_t value,bits256 txid2,int32_t vout2,uint64_t value2)
 {
-    struct LP_utxoinfo *utxo; uint64_t val,val2; char str[65];
-    if ( (utxo= LP_utxofind(txid,vout)) != 0 )
+    uint64_t val,val2; 
+    if ( (val= LP_txvalue(coin,txid,vout)) != value )
     {
-        if ( (val= LP_txvalue(coin,txid,vout)) != value )
-        {
-            if ( (val2= LP_txvalue(coin,txid2,vout2)) != value2 )
-                return(1);
-            else printf("mismatched txid value2 %.8f vs %.8f\n",dstr(val2),dstr(value2));
-        } else printf("mismatched txid value %.8f vs %.8f\n",dstr(val),dstr(value));
-    } else printf("cant find (%s/v%d)\n",bits256_str(str,txid),vout);
+        if ( (val2= LP_txvalue(coin,txid2,vout2)) != value2 )
+            return(1);
+        else printf("mismatched %s txid value2 %.8f vs %.8f\n",coin,dstr(val2),dstr(value2));
+    } else printf("mismatched %s txid value %.8f vs %.8f\n",coin,dstr(val),dstr(value));
     return(0);
 }
 
