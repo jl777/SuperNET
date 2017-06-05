@@ -84,7 +84,7 @@ char *LP_utxos(struct LP_peerinfo *mypeer,char *coin,int32_t lastn)
 
 struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin,bits256 txid,int32_t vout,int64_t satoshis,bits256 deposittxid,int32_t depositvout,int64_t depositsatoshis,char *spendscript,char *coinaddr,char *ipaddr,uint16_t port,double profitmargin)
 {
-    struct LP_utxoinfo *utxo = 0;
+    uint64_t tmpsatoshis; struct LP_utxoinfo *utxo = 0;
     if ( coin == 0 || coin[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(deposittxid) == 0 || vout < 0 || depositvout < 0 || satoshis <= 0 || depositsatoshis <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", coin == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(deposittxid) == 0,vout < 0,depositvout < 0,satoshis <= 0,depositsatoshis <= 0);
@@ -95,9 +95,12 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         printf("LP node got localhost utxo\n");
         return(0);
     }
+    if ( IAMCLIENT == 0 || depositsatoshis < 9 * (satoshis >> 3) )
+        tmpsatoshis = (depositsatoshis / 9) << 3;
+    else tmpsatoshis = satoshis;
     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
-        if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(deposittxid,utxo->txid2) != 0 || vout != utxo->vout || satoshis != utxo->satoshis || depositvout != utxo->vout2 || depositsatoshis != utxo->satoshis2 || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
+        if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(deposittxid,utxo->txid2) != 0 || vout != utxo->vout || tmpsatoshis != utxo->satoshis || depositvout != utxo->vout2 || depositsatoshis != utxo->satoshis2 || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
         {
             utxo->errors++;
             char str[65],str2[65]; printf("error on subsequent utxo add.(%s v %s) %d %d %d %d %d %d %d %d %d %d %d\n",bits256_str(str,txid),bits256_str(str2,utxo->txid),bits256_cmp(txid,utxo->txid) != 0,bits256_cmp(deposittxid,utxo->txid2) != 0,vout != utxo->vout,satoshis != utxo->satoshis,depositvout != utxo->vout2,depositsatoshis != utxo->satoshis2,strcmp(coin,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,strcmp(ipaddr,utxo->ipaddr) != 0,port != utxo->port);
@@ -118,10 +121,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         utxo->txid = txid;
         utxo->vout = vout;
         utxo->value = dstr(satoshis);
-        if ( IAMCLIENT != 0 )
-            utxo->satoshis = satoshis;
-        else if ( depositsatoshis < 9 * (satoshis >> 3) )
-            utxo->satoshis = (depositsatoshis / 9) << 3;
+        utxo->satoshis = tmpsatoshis;
         utxo->txid2 = deposittxid;
         utxo->vout2 = depositvout;
         utxo->satoshis2 = depositsatoshis;
