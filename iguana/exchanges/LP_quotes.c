@@ -172,7 +172,7 @@ char *LP_quotereceived(cJSON *argjson)
     if ( (ptr= LP_cacheadd(Q.srccoin,Q.destcoin,Q.txid,Q.vout,price,&Q)) != 0 )
     {
         ptr->Q = Q;
-        char str[65]; printf("received.(%s) quote %.8f\n",bits256_str(str,Q.txid),price);
+        //char str[65]; printf("received.(%s) quote %.8f\n",bits256_str(str,Q.txid),price);
         return(clonestr("{\"result\":\"updated\"}"));
     } else return(clonestr("{\"error\":\"nullptr\"}"));
 }
@@ -207,7 +207,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
     totaladded = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        n = 0;
+        n = added = 0;
         if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,base,100)) != 0 )
         {
             //printf("%s:%u %s %s\n",peer->ipaddr,peer->port,base,utxostr);
@@ -216,7 +216,6 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                 if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
                 {
                     retarray = cJSON_CreateArray();
-                    added = 0;
                     for (i=0; i<n; i++)
                     {
                         item = jitem(array,i);
@@ -258,7 +257,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
         maxprice = LP_price(base,myutxo->coin) / 0.975;
     if ( (array= LP_tradecandidates(myutxo,base)) != 0 )
     {
-        printf("candidates.(%s)\nn.%d\n",jprint(array,0),cJSON_GetArraySize(array));
+        //printf("candidates.(%s)\nn.%d\n",jprint(array,0),cJSON_GetArraySize(array));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             memset(prices,0,sizeof(prices));
@@ -330,7 +329,14 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                             jaddnum(bestitem,"requestid",R.requestid);
                             jaddnum(bestitem,"quoteid",R.quoteid);
                             printf("Alice r.%u q.%u\n",R.requestid,R.quoteid);
-                        } else jaddstr(bestitem,"status","too expensive");
+                        }
+                        else
+                        {
+                            jaddstr(bestitem,"status","too expensive");
+                            jaddnum(bestitem,"price",price);
+                            jaddnum(bestitem,"maxprice",maxprice);
+                            jaddnum(bestitem,"bestprice",bestprice);
+                        }
                     }
                 }
             }
@@ -355,7 +361,7 @@ int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double p
         retjson = LP_quotejson(&Q);
         jaddstr(retjson,"method","quote");
         retstr = jprint(retjson,1);
-        printf("PING.(%s)\n",retstr);
+        //printf("PING.(%s)\n",retstr);
         LP_send(pubsock,retstr,1);
         utxo->published = now;
         return(0);
