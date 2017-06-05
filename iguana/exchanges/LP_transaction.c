@@ -96,7 +96,6 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
     uint64_t value = 0; double interest; cJSON *txobj;
     if ( (txobj= LP_gettxout(symbol,txid,vout)) != 0 )
     {
-        //char str[65]; printf("%s.(%s) txobj.(%s)\n",symbol,bits256_str(str,txid),jprint(txobj,0));
         if ( (value= jdouble(txobj,"amount")*SATOSHIDEN) == 0 && (value= jdouble(txobj,"value")*SATOSHIDEN) == 0 )
         {
             char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d\n",symbol,bits256_str(str,txid),jprint(txobj,0),vout);
@@ -109,6 +108,7 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
                 value += SATOSHIDEN * interest;
             }
         }
+        char str[65]; printf("%.8f <- %s.(%s) txobj.(%s)\n",dstr(value),symbol,bits256_str(str,txid),jprint(txobj,0));
         free_json(txobj);
     }
     return(value);
