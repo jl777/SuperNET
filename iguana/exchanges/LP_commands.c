@@ -192,7 +192,7 @@ char *LP_connected(cJSON *argjson)
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t amclient,otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson;
+    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t amclient,otherpeers,othernumutxos; struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer; cJSON *retjson;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
@@ -213,7 +213,18 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             {
                 if ( LP_mypriceset(base,rel,jdouble(argjson,"price")) < 0 )
                     return(clonestr("{\"error\":\"couldnt set price\"}"));
-                else return(clonestr("{\"result\":\"success\"}"));
+                else
+                {
+                    if ( IAMCLIENT == 0 )
+                    {
+                        HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
+                        {
+                            if ( LP_ismine(utxo) != 0 && strcmp(utxo->coin,base) == 0 )
+                                LP_priceping(LP_mypubsock,utxo,rel,LP_profitratio - 1.);
+                        }
+                    }
+                    return(clonestr("{\"result\":\"success\"}"));
+                }
             }
             else if ( strcmp(method,"myprice") == 0 )
             {

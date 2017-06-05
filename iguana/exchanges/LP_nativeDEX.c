@@ -162,7 +162,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             {
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
-                    if ( strcmp(utxo->ipaddr,mypeer->ipaddr) == 0 && utxo->port == mypeer->port )
+                    if ( LP_ismine(utxo) != 0 )
                     {
                         if ( strcmp(utxo->coin,"KMD") == 0 )
                             LP_priceping(pubsock,utxo,"BTC",profitmargin);

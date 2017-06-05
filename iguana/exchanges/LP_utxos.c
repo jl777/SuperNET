@@ -18,6 +18,17 @@
 //  marketmaker
 //
 
+int32_t LP_ismine(struct LP_utxoinfo *utxo)
+{
+    if ( strcmp(utxo->ipaddr,"127.0.0.1") == 0 )
+        return(1);
+    else if ( LP_mypeer == 0 )
+        return(0);
+    else if ( strcmp(utxo->ipaddr,LP_mypeer->ipaddr) == 0 && utxo->port == LP_mypeer->port )\
+        return(1);
+    else return(0);
+}
+
 struct LP_utxoinfo *LP_utxofind(bits256 txid,int32_t vout)
 {
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
