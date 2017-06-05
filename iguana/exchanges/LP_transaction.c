@@ -60,7 +60,7 @@ bits256 LP_broadcast_tx(char *name,char *symbol,uint8_t *data,int32_t datalen)
     return(txid);
 }
 
-uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
+uint64_t oldLP_txvalue(char *symbol,bits256 txid,int32_t vout)
 {
     uint64_t value = 0; double interest; cJSON *txobj,*vouts,*utxoobj; int32_t numvouts;
     if ( (txobj= LP_gettx(symbol,txid)) != 0 )
@@ -84,6 +84,29 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
                     }
                     free_json(utxoobj);
                 }
+            }
+        }
+        free_json(txobj);
+    }
+    return(value);
+}
+
+uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
+{
+    uint64_t value = 0; double interest; cJSON *txobj;
+    if ( (txobj= LP_gettxout(symbol,txid,vout)) != 0 )
+    {
+        //char str[65]; printf("%s.(%s) txobj.(%s)\n",symbol,bits256_str(str,txid),jprint(txobj,0));
+        if ( (value= jdouble(txobj,"amount")*SATOSHIDEN) == 0 && (value= jdouble(txobj,"value")*SATOSHIDEN) == 0 )
+        {
+            char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d\n",symbol,bits256_str(str,txid),jprint(txobj,0),vout);
+        }
+        else if ( strcmp(symbol,"KMD") == 0 )
+        {
+            if ( (interest= jdouble(txobj,"interest")) != 0. )
+            {
+                printf("add interest of %.8f to %.8f\n",interest,dstr(value));
+                value += SATOSHIDEN * interest;
             }
         }
         free_json(txobj);
