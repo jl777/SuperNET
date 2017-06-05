@@ -50,6 +50,8 @@ char *LP_peers()
 struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
     uint32_t ipbits; int32_t pushsock,subsock,timeout,enabled; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
+    if ( strcmp(ipaddr,"173.208.149.42") == 0 )
+        return(0);
     ipbits = (uint32_t)calc_ipbits(ipaddr);
     expand_ipbits(checkip,ipbits);
     if ( strcmp(checkip,ipaddr) == 0 )
