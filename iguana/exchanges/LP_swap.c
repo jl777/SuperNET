@@ -864,18 +864,18 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
     swap->persistent_privkey = privkey;
     memcpy(swap->persistent_pubkey33,pubkey33,33);
     calc_rmd160_sha256(swap->changermd160,pubkey33,33);
-    if ( bitcoin_swapinit(privkey,pubkey33,pubkey25519,swap,optionduration,!iambob) == 0 )
-    {
-        printf("error doing swapinit\n");
-        free(swap);
-        swap = 0;
-    }
     swap->bobpayment.utxotxid = qp->txid, swap->bobpayment.utxovout = qp->vout;
     swap->bobdeposit.utxotxid = qp->txid2, swap->bobdeposit.utxovout = qp->vout2;
     swap->alicepayment.utxotxid = qp->desttxid, swap->alicepayment.utxovout = qp->destvout;
     if ( iambob != 0 )
         swap->otherfee.utxotxid = qp->feetxid, swap->otherfee.utxovout = qp->feevout;
     else swap->myfee.utxotxid = qp->feetxid, swap->myfee.utxovout = qp->feevout;
+    if ( bitcoin_swapinit(privkey,pubkey33,pubkey25519,swap,optionduration,!iambob) == 0 )
+    {
+        printf("error doing swapinit\n");
+        free(swap);
+        swap = 0;
+    }
     return(swap);
 }
 
