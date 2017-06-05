@@ -80,7 +80,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,int32_t pullsock,uint16_t myport,int32_t amclient,char *passphrase,double profitmargin)
 {
     //static uint16_t tmpport;
-    char *retstr; uint8_t r; int32_t i,n,j,len,recvsize,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; struct LP_utxoinfo *utxo,*utmp; void *ptr; cJSON *argjson;
+    char *retstr; uint8_t r; int32_t i,n,j,len,recvsize,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now; struct LP_utxoinfo *utxo,*utmp; void *ptr; cJSON *argjson;
     if ( amclient == 0 )
     {
         for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
@@ -170,6 +170,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                     }
                 }
             }
+            now = (uint32_t)time(NULL);
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
                 if ( peer->numpeers > 0 && (peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0) )
@@ -179,8 +180,9 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                     if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
                         LP_peersquery(amclient,mypeer,pubsock,peer->ipaddr,peer->port,mypeer->ipaddr,myport,profitmargin);
                 }
-                if ( peer->numutxos != mypeer->numutxos )
+                if ( peer->numutxos != mypeer->numutxos && now > peer->lastutxos+60 )
                 {
+                    peer->lastutxos = now;
                     lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
                     if ( lastn < LP_PROPAGATION_SLACK * 2 )
                         lastn = LP_PROPAGATION_SLACK * 2;

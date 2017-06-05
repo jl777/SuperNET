@@ -173,7 +173,7 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                         if ( utxo != 0 )
                             utxo->lasttime = now;
                     }
-                }
+                } else printf("skip.(%s)\n",jprint(item,0));
             }
             if ( (destpeer= LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport)) != 0 )
             {
