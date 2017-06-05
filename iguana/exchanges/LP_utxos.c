@@ -100,6 +100,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
     else tmpsatoshis = value;
     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
+        printf("%.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(tmpsatoshis),dstr(utxo->value),dstr(utxo->value2),dstr(utxo->satoshis));
         if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(txid2,utxo->txid2) != 0 || vout != utxo->vout || value != utxo->value || tmpsatoshis != utxo->satoshis || vout2 != utxo->vout2 || value2 != utxo->value2 || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
         {
             utxo->errors++;
