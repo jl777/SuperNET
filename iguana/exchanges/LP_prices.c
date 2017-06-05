@@ -326,12 +326,14 @@ char *LP_orderbook(char *base,char *rel)
     for (i=0; i<numbids; i++)
         jaddi(array,LP_orderbookjson(bids[i],-1));
     jadd(retjson,"bids",array);
+    jaddnum(retjson,"numbids",numbids);
     array = cJSON_CreateArray();
     if ( numasks > 1 )
         qsort(asks,numasks,sizeof(*asks),_cmp_orderbook);
     for (i=0; i<numasks; i++)
         jaddi(array,LP_orderbookjson(asks[i],1));
     jadd(retjson,"asks",array);
+    jaddnum(retjson,"numasks",numasks);
     jaddstr(retjson,"base",base);
     jaddstr(retjson,"rel",rel);
     jaddnum(retjson,"timestamp",now);
