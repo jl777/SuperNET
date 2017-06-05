@@ -1205,7 +1205,11 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
                 printf(" <- GENERATED BOB PAYMENT.%d destaddr.(%s)\n",swap->bobpayment.I.datalen,swap->bobpayment.I.destaddr);
                 LP_unspents_mark(swap->bobcoin.symbol,swap->bobpayment.vins);
                 if ( swap->I.iambob != 0 )
+                {
+                    swap->bobpayment.utxovout = 0;
+                    swap->bobpayment.utxotxid = swap->bobpayment.I.signedtxid;
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
+                }
                 //printf("bobscripts set completed\n");
                 return(0);
             }
@@ -1234,7 +1238,11 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
                 printf(" <- GENERATED BOB DEPOSIT.%d\n",swap->bobdeposit.I.datalen);
                 LP_unspents_mark(swap->bobcoin.symbol,swap->bobdeposit.vins);
                 if ( swap->I.iambob != 0 )
+                {
+                    swap->bobrefund.utxovout = 0;
+                    swap->bobrefund.utxotxid = swap->bobpayment.I.signedtxid;
                     basilisk_bobdeposit_refund(swap,swap->I.putduration);
+                }
                 printf("bobscripts set completed\n");
                 return(0);
             }
