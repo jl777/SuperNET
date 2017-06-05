@@ -35,11 +35,11 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
     jaddstr(item,"address",utxo->coinaddr);
     jaddbits256(item,"txid",utxo->txid);
     jaddnum(item,"vout",utxo->vout);
-    jaddnum(item,"value",utxo->value);
+    jadd64bits(item,"value",utxo->value);
     jadd64bits(item,"satoshis",utxo->satoshis);
     jaddbits256(item,"txid2",utxo->txid2);
     jaddnum(item,"vout2",utxo->vout2);
-    jaddnum(item,"value2",dstr(utxo->satoshis2));
+    jadd64bits(item,"value2",utxo->value2);
     if ( utxo->swappending != 0 )
         jaddnum(item,"pending",utxo->swappending);
     if ( bits256_nonz(utxo->otherpubkey) != 0 )
@@ -82,12 +82,12 @@ char *LP_utxos(struct LP_peerinfo *mypeer,char *coin,int32_t lastn)
     return(jprint(utxosjson,1));
 }
 
-struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin,bits256 txid,int32_t vout,int64_t satoshis,bits256 deposittxid,int32_t depositvout,int64_t depositsatoshis,char *spendscript,char *coinaddr,char *ipaddr,uint16_t port,double profitmargin)
+struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,char *ipaddr,uint16_t port,double profitmargin)
 {
     uint64_t tmpsatoshis; struct LP_utxoinfo *utxo = 0;
-    if ( coin == 0 || coin[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(deposittxid) == 0 || vout < 0 || depositvout < 0 || satoshis <= 0 || depositsatoshis <= 0 )
+    if ( coin == 0 || coin[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
-        printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", coin == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(deposittxid) == 0,vout < 0,depositvout < 0,satoshis <= 0,depositsatoshis <= 0);
+        printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", coin == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
     if ( IAMCLIENT == 0 && strcmp(ipaddr,"127.0.0.1") == 0 )
@@ -95,15 +95,15 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         printf("LP node got localhost utxo\n");
         return(0);
     }
-    if ( IAMCLIENT == 0 || depositsatoshis < 9 * (satoshis >> 3) )
-        tmpsatoshis = (depositsatoshis / 9) << 3;
-    else tmpsatoshis = satoshis;
+    if ( IAMCLIENT == 0 || value2 < 9 * (value >> 3) )
+        tmpsatoshis = (value2 / 9) << 3;
+    else tmpsatoshis = value;
     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
-        if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(deposittxid,utxo->txid2) != 0 || vout != utxo->vout || tmpsatoshis != utxo->satoshis || depositvout != utxo->vout2 || depositsatoshis != utxo->satoshis2 || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
+        if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(txid2,utxo->txid2) != 0 || vout != utxo->vout || value != utxo->value || tmpsatoshis != utxo->satoshis || vout2 != utxo->vout2 || value2 != utxo->value2 || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
         {
             utxo->errors++;
-            char str[65],str2[65]; printf("error on subsequent utxo add.(%s v %s) %d %d %d %d %d %d %d %d %d %d %d\n",bits256_str(str,txid),bits256_str(str2,utxo->txid),bits256_cmp(txid,utxo->txid) != 0,bits256_cmp(deposittxid,utxo->txid2) != 0,vout != utxo->vout,satoshis != utxo->satoshis,depositvout != utxo->vout2,depositsatoshis != utxo->satoshis2,strcmp(coin,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,strcmp(ipaddr,utxo->ipaddr) != 0,port != utxo->port);
+            char str[65],str2[65]; printf("error on subsequent utxo add.(%s v %s) %d %d %d %d %d %d %d %d %d %d %d %d\n",bits256_str(str,txid),bits256_str(str2,utxo->txid),bits256_cmp(txid,utxo->txid) != 0,bits256_cmp(txid2,utxo->txid2) != 0,vout != utxo->vout,tmpsatoshis != utxo->satoshis,vout2 != utxo->vout2,value2 != utxo->value2,strcmp(coin,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,strcmp(ipaddr,utxo->ipaddr) != 0,port != utxo->port,value != utxo->value);
         }
         else if ( profitmargin != 0. )
             utxo->profitmargin = profitmargin;
@@ -120,11 +120,11 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         safecopy(utxo->spendscript,spendscript,sizeof(utxo->spendscript));
         utxo->txid = txid;
         utxo->vout = vout;
-        utxo->value = dstr(satoshis);
+        utxo->value = value;
         utxo->satoshis = tmpsatoshis;
-        utxo->txid2 = deposittxid;
-        utxo->vout2 = depositvout;
-        utxo->satoshis2 = depositsatoshis;
+        utxo->txid2 = txid2;
+        utxo->vout2 = vout2;
+        utxo->value2 = value2;
         memcpy(utxo->key,txid.bytes,sizeof(txid));
         memcpy(&utxo->key[sizeof(txid)],&vout,sizeof(vout));
         portable_mutex_lock(&LP_utxomutex);
@@ -134,7 +134,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         portable_mutex_unlock(&LP_utxomutex);
         if ( mypubsock >= 0 )
             LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
-        char str[65],str2[65]; printf("amclient.%d %s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",IAMCLIENT,ipaddr,port,utxo->coin,dstr(satoshis),dstr(depositsatoshis),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid));
+        char str[65],str2[65]; printf("amclient.%d %s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",IAMCLIENT,ipaddr,port,utxo->coin,dstr(value),dstr(value2),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid));
     }
     return(utxo);
 }
@@ -166,7 +166,7 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                     if ( jobj(item,"txid") != 0 )
                     {
                         txid = jbits256(item,"txid");
-                        utxo = LP_addutxo(amclient,mypeer,mypubsock,jstr(item,"coin"),txid,jint(item,"vout"),SATOSHIDEN*jdouble(item,"value"),jbits256(item,"txid2"),jint(item,"vout2"),SATOSHIDEN * jdouble(item,"value2"),jstr(item,"script"),jstr(item,"address"),argipaddr,argport,jdouble(item,"profit"));
+                        utxo = LP_addutxo(amclient,mypeer,mypubsock,jstr(item,"coin"),txid,jint(item,"vout"),j64bits(item,"value"),jbits256(item,"txid2"),jint(item,"vout2"),j64bits(item,"value2"),jstr(item,"script"),jstr(item,"address"),argipaddr,argport,jdouble(item,"profit"));
                         if ( utxo != 0 )
                             utxo->lasttime = now;
                     }

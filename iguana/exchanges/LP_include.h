@@ -164,8 +164,7 @@ struct LP_utxoinfo
     UT_hash_handle hh;
     bits256 txid,txid2,feetxid,otherpubkey,mypub;
     void *swap;
-    double value;
-    uint64_t satoshis,satoshis2;
+    uint64_t value,satoshis,value2;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     int32_t vout,vout2,pair;
     uint32_t lasttime,errors,swappending,published;
@@ -189,7 +188,7 @@ struct LP_quoteinfo
 {
     struct basilisk_request R;
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
-    uint64_t satoshis,satoshis2,txfee,destsatoshis,desttxfee,change;
+    uint64_t value,satoshis,satoshis2,txfee,destsatoshis,desttxfee;
     uint32_t timestamp,quotetime; int32_t vout,vout2,destvout,feevout,pair;
     char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
 };

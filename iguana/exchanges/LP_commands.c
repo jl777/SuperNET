@@ -118,7 +118,6 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                             utxo->mypub = LP_pubkey(privkey);
                         if ( bits256_nonz(privkey) != 0 && Q.quotetime >= Q.timestamp-3 && Q.quotetime < utxo->swappending && bits256_cmp(utxo->mypub,Q.srchash) == 0 && (destvalue= LP_txvalue(rel,Q.desttxid,Q.destvout)) >= price*Q.satoshis+Q.desttxfee && destvalue >= Q.destsatoshis+Q.desttxfee )
                         {
-                            Q.change = destvalue - (Q.destsatoshis+Q.desttxfee);
                             nanomsg_tcpname(pairstr,mypeer->ipaddr,10000+(rand() % 10000));
                             if ( (utxo->pair= nn_socket(AF_SP,NN_PAIR)) < 0 )
                                 printf("error creating utxo->pair\n");
@@ -294,7 +293,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
     else if ( IAMCLIENT == 0 && strcmp(method,"notifyutxo") == 0 )
     {
         printf("utxonotify.(%s)\n",jprint(argjson,0));
-        LP_addutxo(amclient,LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),SATOSHIDEN * jdouble(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),SATOSHIDEN * jdouble(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jstr(argjson,"ipaddr"),juint(argjson,"port"),jdouble(argjson,"profit"));
+        LP_addutxo(amclient,LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jstr(argjson,"ipaddr"),juint(argjson,"port"),jdouble(argjson,"profit"));
         retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
     }
     if ( retstr != 0 )
