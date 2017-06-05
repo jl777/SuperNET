@@ -152,7 +152,7 @@ int32_t LP_iseligible(char *coin,bits256 txid,int32_t vout,uint64_t satoshis,bit
     {
         if ( (val2= LP_txvalue(coin,txid2,vout2)) >= LP_DEPOSITSATOSHIS(satoshis) )
         {
-            //printf("val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
+            printf("val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
             return(1);
         } else printf("mismatched %s txid value2 %.8f < %.8f\n",coin,dstr(val2),dstr(LP_DEPOSITSATOSHIS(satoshis)));
     } else printf("mismatched %s txid value %.8f < %.8f\n",coin,dstr(val),dstr(satoshis));
@@ -167,7 +167,10 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", coin == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
-    if ( LP_iseligible(coin,txid,vout,value,txid2,vout2) <= 0 )
+    if ( IAMCLIENT == 0 && value2 < 9 * (value >> 3) + 100000 )
+        tmpsatoshis = (((value2-100000) / 9) << 3);
+    else tmpsatoshis = value;
+    if ( LP_iseligible(coin,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
     {
         printf("LP_addutxo got spent txid\n");
         return(0);
@@ -177,10 +180,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         printf("LP node got localhost utxo\n");
         return(0);
     }
-    if ( IAMCLIENT == 0 && value2 < 9 * (value >> 3) + 100000 )
-        tmpsatoshis = (((value2-100000) / 9) << 3);
-    else tmpsatoshis = value;
-    if ( (utxo= LP_utxofind(txid,vout)) != 0 )
+     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
         //printf("%.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(tmpsatoshis),dstr(utxo->value),dstr(utxo->value2),dstr(utxo->satoshis));
         if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(txid2,utxo->txid2) != 0 || vout != utxo->vout || value != utxo->value || tmpsatoshis != utxo->satoshis || vout2 != utxo->vout2 || value2 != utxo->value2 || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
