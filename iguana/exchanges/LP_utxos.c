@@ -95,7 +95,7 @@ char *LP_utxos(struct LP_peerinfo *mypeer,char *coin,int32_t lastn)
     {
         if ( i++ < firsti )
             continue;
-        if ( (coin == 0 || coin[0] == 0 || strcmp(coin,utxo->coin) == 0) && LP_ismine(utxo) != 0 )
+        if ( (coin == 0 || coin[0] == 0 || strcmp(coin,utxo->coin) == 0) )//&& LP_ismine(utxo) != 0 )
         {
             jaddi(utxosjson,LP_utxojson(utxo));
         }

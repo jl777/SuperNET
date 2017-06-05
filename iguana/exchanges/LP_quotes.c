@@ -198,14 +198,16 @@ int32_t LP_arrayfind(cJSON *array,bits256 txid,int32_t vout)
 
 cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
 {
-    struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*retarray=0,*item; int32_t i,n; double price;
+    struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*retarray=0,*item; int32_t i,n,totaladded,added; double price;
     if ( (price= LP_price(base,myutxo->coin)) == .0 )
     {
         printf("no LP_price (%s -> %s)\n",base,myutxo->coin);
         return(0);
     }
+    totaladded = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        n = 0;
         if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,base,100)) != 0 )
         {
             //printf("%s:%u %s %s\n",peer->ipaddr,peer->port,base,utxostr);
@@ -214,6 +216,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                 if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
                 {
                     retarray = cJSON_CreateArray();
+                    added = 0;
                     for (i=0; i<n; i++)
                     {
                         item = jitem(array,i);
@@ -224,14 +227,23 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                             if ( LP_iseligible(Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) != 0 )
                             {
                                 if ( LP_arrayfind(retarray,Q.txid,Q.vout) < 0 )
+                                {
                                     jaddi(retarray,jduplicate(item));
+                                    added++;
+                                    totaladded++;
+                                }
                             } else printf("ineligible.(%s)\n",jprint(item,0));
                         }
                     }
-                }
+                 }
                 free_json(array);
             }
             free(utxostr);
+        }
+        if ( n == totaladded && added == 0 )
+        {
+            printf("n.%d totaladded.%d vs added.%d\n",n,totaladded,added);
+            break;
         }
     }
     return(retarray);
