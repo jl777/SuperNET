@@ -208,7 +208,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
     {
         if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,base,100)) != 0 )
         {
-            //printf("%s:%u %s\n",peer->ipaddr,peer->port,utxostr);
+            printf("%s:%u %s %s\n",peer->ipaddr,peer->port,base,utxostr);
             if ( (array= cJSON_Parse(utxostr)) != 0 )
             {
                 if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
