@@ -321,10 +321,10 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
 
 int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double profitmargin)
 {
-    double price; uint32_t now; cJSON *retjson; struct LP_quoteinfo Q; char *retstr;
+    double price,bid,ask; uint32_t now; cJSON *retjson; struct LP_quoteinfo Q; char *retstr;
     if ( (now= (uint32_t)time(NULL)) > utxo->swappending )
         utxo->swappending = 0;
-    if ( now > utxo->published+60 && utxo->swappending == 0 && utxo->pair < 0 && utxo->swap == 0 && (price= LP_price(utxo->coin,rel)) != 0. )
+    if ( now > utxo->published+60 && utxo->swappending == 0 && utxo->pair < 0 && utxo->swap == 0 && (price= LP_myprice(&bid,&ask,utxo->coin,rel)) != 0. )
     {
         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
             return(-1);
