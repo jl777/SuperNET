@@ -139,7 +139,7 @@ char *LP_spentcheck(cJSON *argjson)
         if ( LP_txvalue(utxo->coin,checktxid,checkvout) == 0 )
         {
             utxo->spentflag = (uint32_t)time(NULL);
-            printf("indeed txid was spent\n");
+            //printf("indeed txid was spent\n");
             return(clonestr("{\"result\":\"marked as spent\"}"));
         } else return(clonestr("{\"error\":\"txid is still unspent?\"}"));
     } else return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
@@ -152,7 +152,7 @@ int32_t LP_iseligible(char *coin,bits256 txid,int32_t vout,uint64_t satoshis,bit
     {
         if ( (val2= LP_txvalue(coin,txid2,vout2)) >= LP_DEPOSITSATOSHIS(satoshis) )
         {
-            printf("val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
+            //printf("val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
             return(1);
         } else printf("mismatched %s txid value2 %.8f < %.8f\n",coin,dstr(val2),dstr(LP_DEPOSITSATOSHIS(satoshis)));
     } else printf("mismatched %s txid value %.8f < %.8f\n",coin,dstr(val),dstr(satoshis));
@@ -165,6 +165,11 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
     if ( coin == 0 || coin[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", coin == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
+        return(0);
+    }
+    if ( LP_iseligible(coin,txid,vout,value,txid2,vout2) <= 0 )
+    {
+        printf("LP_addutxo got spent txid\n");
         return(0);
     }
     if ( IAMCLIENT == 0 && strcmp(ipaddr,"127.0.0.1") == 0 )
