@@ -300,7 +300,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
     else if ( IAMCLIENT == 0 && strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
     {
         retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
-        printf("RETURN.(%s)\n",retstr);
+        //printf("RETURN.(%s)\n",retstr);
     }
     else if ( IAMCLIENT == 0 && strcmp(method,"notify") == 0 )
         retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
