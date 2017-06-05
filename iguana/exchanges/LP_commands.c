@@ -290,7 +290,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
     else if ( IAMCLIENT == 0 && strcmp(method,"notify") == 0 )
         retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
-    else if ( IAMCLIENT == 0 && strcmp(method,"notifyutxo") == 0 )
+    else if ( IAMCLIENT == 0 && strcmp(method,"notified") == 0 )
     {
         printf("utxonotify.(%s)\n",jprint(argjson,0));
         LP_addutxo(amclient,LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jstr(argjson,"ipaddr"),juint(argjson,"port"),jdouble(argjson,"profit"));
