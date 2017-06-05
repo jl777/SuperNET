@@ -172,8 +172,8 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         printf("LP node got localhost utxo\n");
         return(0);
     }
-    if ( IAMCLIENT == 0 || value2 < 9 * (value >> 3) + 100000 )
-        tmpsatoshis = ((value2 / 9) << 3) - 100000;
+    if ( IAMCLIENT == 0 && value2 < 9 * (value >> 3) + 100000 )
+        tmpsatoshis = (((value2-100000) / 9) << 3);
     else tmpsatoshis = value;
     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
