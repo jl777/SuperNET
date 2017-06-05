@@ -347,6 +347,7 @@ int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double p
         retjson = LP_quotejson(&Q);
         jaddstr(retjson,"method","quote");
         retstr = jprint(retjson,1);
+        printf("PING.(%s)\n",retstr);
         LP_send(pubsock,retstr,1);
         utxo->published = now;
         return(0);
