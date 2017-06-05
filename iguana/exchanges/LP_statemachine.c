@@ -404,18 +404,12 @@ cJSON *LP_createvins(struct basilisk_rawtx *dest,struct vin_info *V,struct basil
 int32_t _basilisk_rawtx_gen(char *str,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay,bits256 privkey)
 {
     char scriptstr[1024],wifstr[256],coinaddr[64],*signedtx,*rawtxbytes; uint32_t basilisktag; int32_t retval = -1; cJSON *vins,*privkeys,*addresses,*valsobj; struct vin_info *V;
-    //bitcoin_address(coinaddr,rawtx->coin->chain->pubtype,myinfo->persistent_pubkey33,33);
-    if ( rawtx->coin->changeaddr[0] == 0 )
-    {
-        bitcoin_address(rawtx->coin->changeaddr,rawtx->coin->pubtype,pubkey33,33);
-        printf("set change address.(%s)\n",rawtx->coin->changeaddr);
-    }
     init_hexbytes_noT(scriptstr,script,scriptlen);
     basilisktag = (uint32_t)rand();
     valsobj = cJSON_CreateObject();
     jaddstr(valsobj,"coin",rawtx->coin->symbol);
     jaddstr(valsobj,"spendscript",scriptstr);
-    jaddstr(valsobj,"changeaddr",rawtx->coin->changeaddr);
+    jaddstr(valsobj,"changeaddr",rawtx->coin->smartaddr);
     jadd64bits(valsobj,"satoshis",rawtx->I.amount);
     if ( strcmp(rawtx->coin->symbol,"BTC") == 0 && txfee > 0 && txfee < 50000 )
         txfee = 50000;
@@ -990,7 +984,6 @@ cJSON *basilisk_privkeyarray(struct iguana_info *coin,cJSON *vins)
 {
     cJSON *privkeyarray,*item,*sobj; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char coinaddr[64],account[128],wifstr[64],str[65],typestr[64],*hexstr; uint8_t script[1024]; int32_t i,n,len,vout; bits256 txid,privkey; double bidasks[2];
     privkeyarray = cJSON_CreateArray();
-    //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
     if ( (n= cJSON_GetArraySize(vins)) > 0 )
     {
         for (i=0; i<n; i++)

@@ -168,7 +168,7 @@ double LP_getestimatedrate(char *symbol)
         {
             if ( retstr[0] != '-' )
             {
-                rate = atof(retstr) / 1024.;
+                coin->estimatedrate = rate = atof(retstr) / 1024.;
                 printf("estimated rate.(%s) %s -> %.8f\n",symbol,retstr,rate);
             }
             free(retstr);

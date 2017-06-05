@@ -141,9 +141,29 @@ uint16_t LP_rpcport(char *symbol)
     return(0);
 }
 
+cJSON *LP_coinjson(struct iguana_info *coin)
+{
+    cJSON *item = cJSON_CreateObject();
+    jaddstr(item,"coin",coin->symbol);
+    jaddstr(item,"smartaddress",coin->smartaddr);
+    jaddstr(item,"rpc",coin->serverport);
+    jaddnum(item,"pubtype",coin->pubtype);
+    jaddnum(item,"p2shtype",coin->p2shtype);
+    jaddnum(item,"wiftype",coin->wiftype);
+    return(item);
+}
+
+static struct iguana_info *LP_coins; static int32_t LP_numcoins;
+cJSON *LP_coinsjson()
+{
+    int32_t i; cJSON *array = cJSON_CreateArray();
+    for (i=0; i<LP_numcoins; i++)
+        jaddi(array,LP_coinjson(&LP_coins[i]));
+    return(array);
+}
+
 struct iguana_info *LP_coinfind(char *symbol)
 {
-    static struct iguana_info *LP_coins; static int32_t LP_numcoins;
     struct iguana_info *coin,cdata; int32_t i; uint16_t port;
     for (i=0; i<LP_numcoins; i++)
         if ( strcmp(LP_coins[i].symbol,symbol) == 0 )
@@ -184,6 +204,4 @@ struct iguana_info *LP_coinfind(char *symbol)
     *coin = cdata;
     return(coin);
 }
-
-
 

@@ -130,13 +130,20 @@ void LP_priceinfoupdate(char *base,char *rel,double price)
 
 double LP_myprice(double *bidp,double *askp,char *base,char *rel)
 {
-    struct LP_priceinfo *basepp,*relpp;
+    struct LP_priceinfo *basepp,*relpp; double val;
+    *bidp = *askp = 0.;
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
-        *askp = basepp->myprices[relpp->ind];
-        *bidp = relpp->myprices[basepp->ind];
-        return((*askp + *bidp) * 0.5);
-    } else return(0.);
+        if ( (*askp= basepp->myprices[relpp->ind]) != 0. )
+        {
+            if ( (val= relpp->myprices[basepp->ind]) != 0. )
+            {
+                *bidp = 1. / val;
+                return((*askp + *bidp) * 0.5);
+            }
+        }
+    }
+    return(0.);
 }
 
 int32_t LP_mypriceset(char *base,char *rel,double price)
@@ -217,16 +224,6 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
     safecopy(pp->symbol,symbol,sizeof(pp->symbol));
     pp->coinbits = stringbits(symbol);
     pp->ind = LP_numpriceinfos++;
-    /*pp->relvals = calloc(LP_numpriceinfos+1,sizeof(*pp->relvals));
-    //pp->myprices = calloc(LP_numpriceinfos+1,sizeof(*pp->myprices));
-    vecsize = sizeof(*LP_priceinfos[i].relvals) * (LP_numpriceinfos + 1);
-    for (i=0; i<LP_numpriceinfos; i++)
-    {
-        printf("realloc i.%d of %d relvals.%p\n",i,LP_numpriceinfos,LP_priceinfos[i].relvals);
-        LP_priceinfos[i].relvals = realloc(LP_priceinfos[i].relvals,vecsize);
-        memset(LP_priceinfos[i].relvals,0,vecsize);
-        LP_priceinfos[i].myprices[LP_numpriceinfos] = 0.;
-    }*/
     LP_numpriceinfos++;
     if ( (retjson= LP_priceinfomatrix(0)) != 0 )
         free_json(retjson);

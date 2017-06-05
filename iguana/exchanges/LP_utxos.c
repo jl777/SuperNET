@@ -175,11 +175,6 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
             if ( (destpeer= LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport)) != 0 )
             {
                 destpeer->numutxos = n;
-                if ( destpeer->numutxos < n )
-                {
-                    //destpeer->numutxos = n;
-                    //printf("got.(%s) from %s numutxos.%d\n",retstr,destpeer->ipaddr,destpeer->numutxos);
-                }
             }
         }
         free_json(array);
@@ -273,7 +268,7 @@ int32_t LP_nearestvalue(uint64_t *values,int32_t n,uint64_t targetval)
 uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symbol,char *passphrase,char *wifstr,int32_t amclient)
 {
     static uint32_t counter;
-    char coinaddr[64],*script; struct LP_utxoinfo *utxo; cJSON *array,*item,*retjson; bits256 userpass,userpub,txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
+    char *script; struct LP_utxoinfo *utxo; cJSON *array,*item,*retjson; bits256 userpass,userpub,txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
     {
         printf("cant add privkey for %s, coin not active\n",symbol);
@@ -282,11 +277,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     if ( passphrase != 0 )
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else privkey = iguana_wif2privkey(wifstr);
-    iguana_priv2pub(pubkey33,coinaddr,privkey,coin->pubtype);
-    if ( strcmp("BTC",symbol) == 0 )
-        strcpy(BTCADDR,coinaddr);
-    else if ( strcmp("KMD",symbol) == 0 )
-        strcpy(KMDADDR,coinaddr);
+    iguana_priv2pub(pubkey33,coin->smartaddr,privkey,coin->pubtype);
     if ( counter == 0 )
     {
         char tmpstr[128];
@@ -296,13 +287,13 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         conv_NXTpassword(userpass.bytes,pubkey.bytes,(uint8_t *)tmpstr,(int32_t)strlen(tmpstr));
         userpub = curve25519(userpass,curve25519_basepoint9());
         printf("userpass.(%s)\n",bits256_str(USERPASS,userpub));
-        printf("%s (%s) %d wif.(%s) (%s)\n",symbol,coinaddr,coin->pubtype,tmpstr,passphrase);
-        if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coinaddr,-1)) != 0 )
+        printf("%s (%s) %d wif.(%s) (%s)\n",symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
+        if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
             printf("importprivkey -> (%s)\n",jprint(retjson,1));
     }
-    bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
+    bitcoin_addr2rmd160(&tmptype,rmd160,coin->smartaddr);
     LP_privkeyadd(privkey,rmd160);
-    if ( (array= LP_listunspent(symbol,coinaddr)) != 0 )
+    if ( (array= LP_listunspent(symbol,coin->smartaddr)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -341,12 +332,12 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                             values[i] = 0, used++;
                             if ( amclient == 0 )
                             {
-                                if ( (utxo= LP_addutxo(amclient,mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin)) != 0 )
+                                if ( (utxo= LP_addutxo(amclient,mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coin->smartaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin)) != 0 )
                                     utxo->mypub = curve25519(privkey,curve25519_basepoint9());
                             }
                             else
                             {
-                                if ( (utxo= LP_addutxo(amclient,mypeer,mypubsock,symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coinaddr,"127.0.0.1",0,0)) != 0 )
+                                if ( (utxo= LP_addutxo(amclient,mypeer,mypubsock,symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coin->smartaddr,"127.0.0.1",0,0)) != 0 )
                                     utxo->mypub = curve25519(privkey,curve25519_basepoint9());
                             }
                             total += value;
