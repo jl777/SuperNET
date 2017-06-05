@@ -232,7 +232,7 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                if ( juint(item,"timestamp") > now-60 && (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
+                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
                 {
                     if ( (pushport= juint(item,"push")) == 0 )
                         pushport = argport + 1;
