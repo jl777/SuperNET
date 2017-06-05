@@ -306,7 +306,7 @@ char *LP_orderbook(char *base,char *rel)
     now = (uint32_t)time(NULL);
     HASH_ITER(hh,LP_cacheinfos,ptr,tmp)
     {
-        if ( ptr->timestamp < now-60 || ptr->price == 0. )
+        if ( ptr->timestamp < now-60*2 || ptr->price == 0. )
             continue;
         if ( strcmp(ptr->Q.srccoin,base) == 0 && strcmp(ptr->Q.destcoin,rel) == 0 )
         {
@@ -329,7 +329,15 @@ char *LP_orderbook(char *base,char *rel)
     jaddnum(retjson,"numbids",numbids);
     array = cJSON_CreateArray();
     if ( numasks > 1 )
+    {
+        for (i=0; i<numasks; i++)
+            printf("%.8f ",asks[i]->price);
+        printf(" -> ");
         qsort(asks,numasks,sizeof(*asks),_cmp_orderbook);
+        for (i=0; i<numasks; i++)
+            printf("%.8f ",asks[i]->price);
+        printf("sorted asks.%d\n",numasks);
+    }
     for (i=0; i<numasks; i++)
         jaddi(array,LP_orderbookjson(asks[i],1));
     jadd(retjson,"asks",array);
