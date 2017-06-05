@@ -208,7 +208,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
     {
         if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,base,100)) != 0 )
         {
-            printf("%s:%u %s %s\n",peer->ipaddr,peer->port,base,utxostr);
+            //printf("%s:%u %s %s\n",peer->ipaddr,peer->port,base,utxostr);
             if ( (array= cJSON_Parse(utxostr)) != 0 )
             {
                 if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
@@ -270,7 +270,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                 besti = -1;
                 for (i=0; i<n && i<sizeof(prices)/sizeof(*prices); i++)
                 {
-                    if ( (price= prices[i]) != 0. && myutxo->satoshis > Q[i].destsatoshis )
+                    if ( (price= prices[i]) != 0. && myutxo->satoshis >= Q[i].destsatoshis+Q[i].desttxfee )
                     {
                         metric = price / bestprice;
                         printf("%f %f %f %f ",price,metric,dstr(Q[i].destsatoshis),metric * metric * metric);
