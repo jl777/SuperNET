@@ -172,7 +172,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
     else tmpsatoshis = value;
     if ( LP_iseligible(coin,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
     {
-        printf("LP_addutxo got spent txid\n");
+        printf("LP_addutxo got spent txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",dstr(value),dstr(value2),dstr(tmpsatoshis));
         return(0);
     }
     if ( IAMCLIENT == 0 && strcmp(ipaddr,"127.0.0.1") == 0 )
