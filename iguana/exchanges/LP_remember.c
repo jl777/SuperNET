@@ -964,7 +964,7 @@ char *basilisk_swapfinished(uint32_t requestid,uint32_t quoteid)
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    printf("check r%u/q%u\n",juint(item,"requestid"),juint(item,"quoteid"));
+                    printf("(%s) check r%u/q%u\n",jprint(item,0),juint(item,"requestid"),juint(item,"quoteid"));
                     if ( juint(item,"requestid") == requestid && juint(item,"quoteid") == quoteid )
                     {
                         if ( jstr(item,"status") != 0 && strcmp(jstr(item,"status"),"finished") == 0 )
