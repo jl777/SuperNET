@@ -37,7 +37,10 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
                 if ( (errorobj= jobj(retjson,"error")) != 0 )
                 {
                     if ( jint(errorobj,"code") == -27 ) // "transaction already in block chain"
+                    {
                         txid = expectedtxid;
+                        sentflag = 1;
+                    }
                 }
                 free_json(retjson);
             }
@@ -145,7 +148,7 @@ int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 se
     while ( errs == 0 && *indp < 0 )
     {
         //printf("search %s ht.%d\n",symbol,loadheight);
-        if ( (blockjson= LP_blockjson(&h,symbol,0,loadheight)) != 0 )
+        if ( (blockjson= LP_blockjson(&h,symbol,0,loadheight)) != 0 && h == loadheight )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
             {
@@ -177,7 +180,7 @@ int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 se
                 }
             }
             free_json(blockjson);
-        }
+        } else errs++;
         loadheight++;
     }
     char str[65]; printf("reached %s ht.%d %s/v%d\n",symbol,loadheight,bits256_str(str,*spendtxidp),*indp);
