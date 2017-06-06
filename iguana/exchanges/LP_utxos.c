@@ -61,9 +61,9 @@ struct LP_utxoinfo *LP_utxo2find(bits256 txid,int32_t vout)
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
     memcpy(key,txid.bytes,sizeof(txid));
     memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
-    portable_mutex_lock(&LP_utxomutex);
+    //portable_mutex_lock(&LP_utxomutex);
     utxo = _LP_utxo2find(txid,vout);
-    portable_mutex_unlock(&LP_utxomutex);
+    //portable_mutex_unlock(&LP_utxomutex);
     return(utxo);
 }
 
