@@ -52,7 +52,7 @@ struct LP_utxoinfo *_LP_utxo2find(bits256 txid,int32_t vout)
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
     memcpy(key,txid.bytes,sizeof(txid));
     memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
-    //HASH_FIND(hh,LP_utxoinfos2,key,sizeof(key),utxo);
+    HASH_FIND(hh,LP_utxoinfos2,key,sizeof(key),utxo);
     return(utxo);
 }
 
@@ -61,9 +61,9 @@ struct LP_utxoinfo *LP_utxo2find(bits256 txid,int32_t vout)
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
     memcpy(key,txid.bytes,sizeof(txid));
     memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
-    //portable_mutex_lock(&LP_utxomutex);
+    portable_mutex_lock(&LP_utxomutex);
     utxo = _LP_utxo2find(txid,vout);
-    //portable_mutex_unlock(&LP_utxomutex);
+    portable_mutex_unlock(&LP_utxomutex);
     return(utxo);
 }
 
@@ -240,8 +240,8 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         char str[65],str2[65]; printf("amclient.%d %s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",IAMCLIENT,ipaddr,port,utxo->coin,dstr(value),dstr(value2),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid2));
         portable_mutex_lock(&LP_utxomutex);
         HASH_ADD_KEYPTR(hh,LP_utxoinfos,utxo->key,sizeof(utxo->key),utxo);
-        //if ( _LP_utxo2find(txid2,vout2) == 0 )
-        //    HASH_ADD_KEYPTR(hh,LP_utxoinfos2,utxo->key2,sizeof(utxo->key2),utxo);
+        if ( _LP_utxo2find(txid2,vout2) == 0 )
+            HASH_ADD_KEYPTR(hh,LP_utxoinfos2,utxo->key2,sizeof(utxo->key2),utxo);
         if ( mypeer != 0 )
             mypeer->numutxos++;
         portable_mutex_unlock(&LP_utxomutex);
@@ -343,7 +343,7 @@ char *LP_inventory(char *symbol)
     else myipaddr = "127.0.0.1";
     HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
     {
-        char str[65]; printf("iterate %s\n",bits256_str(str,utxo->txid));
+        //char str[65]; printf("iterate %s\n",bits256_str(str,utxo->txid));
         if ( LP_isunspent(utxo) != 0 && strcmp(symbol,utxo->coin) == 0 && (IAMCLIENT != 0 || LP_ismine(utxo) != 0) )
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
     }
@@ -388,7 +388,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         printf("cant add privkey for %s, coin not active\n",symbol);
         return(0);
     }
-    printf("privkey init.(%s) %s\n",symbol,coin->symbol);
+    //printf("privkey init.(%s) %s\n",symbol,coin->symbol);
     if ( passphrase != 0 )
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else privkey = iguana_wif2privkey(wifstr);
@@ -468,7 +468,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         }
         free_json(array);
     }
-    printf("privkey.%s %.8f\n",symbol,dstr(total));
+    //printf("privkey.%s %.8f\n",symbol,dstr(total));
     return(total);
 }
 
@@ -477,7 +477,7 @@ void LP_privkey_updates(struct LP_peerinfo *mypeer,int32_t pubsock,char *passphr
     int32_t i;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
-        printf("i.%d of %d\n",i,(int32_t)(sizeof(activecoins)/sizeof(*activecoins)));
+        //printf("i.%d of %d\n",i,(int32_t)(sizeof(activecoins)/sizeof(*activecoins)));
         LP_privkey_init(mypeer,pubsock,activecoins[i],passphrase,"",amclient);
     }
 }
