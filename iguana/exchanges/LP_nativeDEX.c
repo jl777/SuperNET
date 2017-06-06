@@ -160,9 +160,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             nonz = 0;
             if ( (++counter % 2000) == 0 )
             {
-                printf("start privkey updates\n");
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
-                printf("done privkey updates\n");
             }
             if ( (counter % 500) == 0 )
             {
