@@ -236,6 +236,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         if ( mypeer != 0 )
             mypeer->numutxos++;
         portable_mutex_unlock(&LP_utxomutex);
+        printf("added\n");
         if ( mypubsock >= 0 )
             LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
     }
