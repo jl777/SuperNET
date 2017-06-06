@@ -256,7 +256,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         {
             if ( strcmp(method,"inventory") == 0 )
             {
-                //LP_privkey_init(0,-1,coin,0,USERPASS_WIFSTR,1);
+                LP_privkey_init(0,-1,coin,0,USERPASS_WIFSTR,1);
                 return(LP_inventory(coin));
             }
             else if ( IAMCLIENT != 0 && (strcmp(method,"candidates") == 0 || strcmp(method,"autotrade") == 0) )
