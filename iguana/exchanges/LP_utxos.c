@@ -324,6 +324,7 @@ char *LP_inventory(char *symbol)
     else myipaddr = "127.0.0.1";
     HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
     {
+        char str[65]; printf("iterate %s\n",bits256_str(str,utxo->txid));
         if ( LP_isunspent(utxo) != 0 && strcmp(symbol,utxo->coin) == 0 && (IAMCLIENT != 0 || LP_ismine(utxo) != 0) )
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
     }
