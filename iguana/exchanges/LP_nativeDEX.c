@@ -164,7 +164,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
                 printf("done privkey updates\n");
             }
-            if ( (counter % 500) == 0 )
+            if ( 0 && (counter % 500) == 0 )
             {
                 char str[65];
                 printf("start utxos updates\n");
@@ -199,6 +199,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             printf("start peers updates\n");
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
+                break;
                 printf("updatepeer.%s lag.%d\n",peer->ipaddr,now-peer->lastpeers);
                 if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0) )
                 {
@@ -237,7 +238,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 }
             }
             printf("done peers updates\n");
-            while ( pullsock >= 0 && (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
+            while ( 0 && pullsock >= 0 && (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
             {
                 nonz++;
                 if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
