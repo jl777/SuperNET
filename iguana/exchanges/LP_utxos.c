@@ -463,7 +463,10 @@ void LP_privkey_updates(struct LP_peerinfo *mypeer,int32_t pubsock,char *passphr
 {
     int32_t i;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
+    {
+        printf("i.%d of %d\n",i,(int32_t)(sizeof(activecoins)/sizeof(*activecoins)));
         LP_privkey_init(mypeer,pubsock,activecoins[i],passphrase,"",amclient);
+    }
 }
 
 
