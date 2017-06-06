@@ -228,6 +228,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         memcpy(&utxo->key[sizeof(txid)],&vout,sizeof(vout));
         memcpy(utxo->key2,txid2.bytes,sizeof(txid2));
         memcpy(&utxo->key2[sizeof(txid2)],&vout2,sizeof(vout2));
+        char str[65],str2[65]; printf("amclient.%d %s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",IAMCLIENT,ipaddr,port,utxo->coin,dstr(value),dstr(value2),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid2));
         portable_mutex_lock(&LP_utxomutex);
         HASH_ADD_KEYPTR(hh,LP_utxoinfos,utxo->key,sizeof(utxo->key),utxo);
         if ( LP_utxo2find(txid2,vout2) == 0 )
@@ -237,7 +238,6 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         portable_mutex_unlock(&LP_utxomutex);
         if ( mypubsock >= 0 )
             LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
-        char str[65],str2[65]; printf("amclient.%d %s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",IAMCLIENT,ipaddr,port,utxo->coin,dstr(value),dstr(value2),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid2));
     }
     return(utxo);
 }
