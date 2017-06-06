@@ -141,8 +141,15 @@ double LP_myprice(double *bidp,double *askp,char *base,char *rel)
             if ( (val= relpp->myprices[basepp->ind]) != 0. )
             {
                 *bidp = 1. / val;
-                printf("myprice (%.8f %.8f)\n",*bidp,*askp);
-                return((*askp + *bidp) * 0.5);
+            } else *bidp = *askp * 0.99;
+            return((*askp + *bidp) * 0.5);
+        }
+        else
+        {
+            if ( (val= relpp->myprices[basepp->ind]) != 0. )
+            {
+                *bidp = 1. / val;
+                *askp = *bidp / 0.99;
             }
         }
     }
@@ -177,7 +184,7 @@ cJSON *LP_priceinfomatrix(int32_t usemyprices)
     now = (uint32_t)time(NULL);
     HASH_ITER(hh,LP_cacheinfos,ptr,tmp)
     {
-        if ( ptr->timestamp < now-60 || ptr->price == 0. )
+        if ( ptr->timestamp < now-3600*2 || ptr->price == 0. )
             continue;
         LP_priceinfoupdate(ptr->Q.srccoin,ptr->Q.destcoin,ptr->price);
     }
@@ -308,7 +315,7 @@ char *LP_orderbook(char *base,char *rel)
     now = (uint32_t)time(NULL);
     HASH_ITER(hh,LP_cacheinfos,ptr,tmp)
     {
-        if ( ptr->timestamp < now-60*2 || ptr->price == 0. )
+        if ( ptr->timestamp < now-3600*2 || ptr->price == 0. )
             continue;
         if ( strcmp(ptr->Q.srccoin,base) == 0 && strcmp(ptr->Q.destcoin,rel) == 0 )
         {
