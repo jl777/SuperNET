@@ -325,7 +325,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
             printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
             exit(-1);
         }
-        printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));
+        //printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));
     }
     LP_mainloop(mypeer,mypubport,pubsock,pullsock,myport,amclient,passphrase,profitmargin);
 }
