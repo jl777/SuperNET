@@ -131,7 +131,7 @@ char *LP_spentcheck(cJSON *argjson)
     bits256 txid,checktxid; int32_t vout,checkvout; struct LP_utxoinfo *utxo;
     txid = jbits256(argjson,"txid");
     vout = jint(argjson,"vout");
-    if ( (utxo= LP_utxofind(txid,vout)) != 0 )
+    if ( (utxo= LP_utxofind(txid,vout)) != 0 && utxo->spentflag == 0 )
     {
         if ( jobj(argjson,"check") == 0 )
             checktxid = txid, checkvout = vout;
@@ -142,6 +142,8 @@ char *LP_spentcheck(cJSON *argjson)
         }
         if ( LP_txvalue(utxo->coin,checktxid,checkvout) == 0 )
         {
+            if ( LP_mypeer != 0 && LP_mypeer->numutxos > 0 )
+                LP_mypeer->numutxos--;
             utxo->spentflag = (uint32_t)time(NULL);
             //printf("indeed txid was spent\n");
             return(clonestr("{\"result\":\"marked as spent\"}"));
