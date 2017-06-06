@@ -19,9 +19,9 @@
 //
 
 
-bits256 LP_broadcast(char *txname,char *symbol,char *txbytes)
+bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxid)
 {
-    char *retstr; bits256 txid; int32_t i,sentflag = 0;
+    char *retstr; bits256 txid; cJSON *retjson,*errorobj; int32_t i,sentflag = 0;
     memset(&txid,0,sizeof(txid));
     for (i=0; i<1; i++)
     {
@@ -31,6 +31,15 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes)
             {
                 decode_hex(txid.bytes,32,retstr);
                 sentflag = 1;
+            }
+            else if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (errorobj= jobj(retjson,"error")) != 0 )
+                {
+                    if ( jint(errorobj,"code") == -27 ) // "transaction already in block chain"
+                        txid = expectedtxid;
+                }
+                free_json(retjson);
             }
             char str[65]; printf("[%s] %s RETSTR.(%s) %s.%s\n",txname,txbytes,retstr,symbol,bits256_str(str,txid));
             free(retstr);
@@ -49,11 +58,11 @@ bits256 LP_broadcast_tx(char *name,char *symbol,uint8_t *data,int32_t datalen)
     {
         signedtx = malloc(datalen*2 + 1);
         init_hexbytes_noT(signedtx,data,datalen);
-#ifdef BASILISK_DISABLESENDTX
         txid = bits256_doublesha256(0,data,datalen);
+#ifdef BASILISK_DISABLESENDTX
         char str[65]; printf("%s <- dont sendrawtransaction (%s) %s\n",name,bits256_str(str,txid),signedtx);
 #else
-        txid = LP_broadcast(name,symbol,signedtx);
+        txid = LP_broadcast(name,symbol,signedtx,txid);
 #endif
         free(signedtx);
     }
