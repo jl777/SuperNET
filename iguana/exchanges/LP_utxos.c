@@ -381,6 +381,7 @@ int32_t LP_nearestvalue(uint64_t *values,int32_t n,uint64_t targetval)
 
 uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symbol,char *passphrase,char *wifstr,int32_t amclient)
 {
+    static uint32_t counter;
     char *script; struct LP_utxoinfo *utxo; cJSON *array,*item,*retjson; bits256 userpass,userpub,txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
     {
@@ -394,7 +395,6 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     iguana_priv2pub(pubkey33,coin->smartaddr,privkey,coin->pubtype);
     if ( coin->counter == 0 )
     {
-        static uint32_t counter;
         char tmpstr[128];
         coin->counter++;
         if ( counter++ == 0 )
