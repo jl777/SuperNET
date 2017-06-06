@@ -914,7 +914,7 @@ char *basilisk_swaplist()
                 if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
                 {
                     jaddi(array,item);
-                    if ( 1 && (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
+                    if ( (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
                         break;
                 }
             }
