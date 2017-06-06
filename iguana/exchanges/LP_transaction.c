@@ -120,7 +120,7 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
                 value += SATOSHIDEN * interest;
             }
         }
-        char str[65]; printf("%.8f <- %s.(%s) txobj.(%s)\n",dstr(value),symbol,bits256_str(str,txid),jprint(txobj,0));
+        //char str[65]; printf("%.8f <- %s.(%s) txobj.(%s)\n",dstr(value),symbol,bits256_str(str,txid),jprint(txobj,0));
         free_json(txobj);
     }
     return(value);

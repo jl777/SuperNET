@@ -403,6 +403,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
             used = 0;
             while ( used < n )
             {
+                printf("used.%d of n.%d\n",used,n);
                 if ( (i= LP_maxvalue(values,n)) >= 0 )
                 {
                     item = jitem(array,i);
