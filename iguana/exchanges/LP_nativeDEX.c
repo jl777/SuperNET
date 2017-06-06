@@ -166,15 +166,16 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             }
             if ( (counter % 500) == 0 )
             {
-                //char str[65];
+                char str[65];
                 printf("start utxos updates\n");
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
                     now = (uint32_t)time(NULL);
+                    printf("%s lag.%d\n",bits256_str(str,utxo->txid),now-utxo->lastspentcheck);
                     if ( utxo->spentflag == 0 && now > utxo->lastspentcheck+60 )
                     {
                         utxo->lastspentcheck = now;
-                        /*if ( LP_txvalue(utxo->coin,utxo->txid,utxo->vout) == 0 )
+                        if ( LP_txvalue(utxo->coin,utxo->txid,utxo->vout) == 0 )
                         {
                             printf("txid.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->value));
                             LP_spentnotify(utxo,0);
@@ -184,7 +185,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                             printf("txid2.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,utxo->txid2),utxo->vout2,dstr(utxo->value2));
                             LP_spentnotify(utxo,1);
                         }
-                        else*/ if ( LP_ismine(utxo) != 0 )
+                        else if ( LP_ismine(utxo) != 0 )
                         {
                             if ( strcmp(utxo->coin,"KMD") == 0 )
                                 LP_priceping(pubsock,utxo,"BTC",profitmargin);
@@ -198,6 +199,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             printf("start peers updates\n");
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
+                printf("updatepeer.%s lag.%d\n",now-peer->lastpeers);
                 if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0) )
                 {
                     peer->lastpeers = now;
@@ -224,7 +226,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                         portable_mutex_lock(&LP_commandmutex);
                         if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
                         {
-                            //printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
+                            printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                             free(retstr);
                         }
                         portable_mutex_unlock(&LP_commandmutex);
@@ -246,7 +248,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                     {
                         if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
                         {
-                            //printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
+                            printf("%s PULL.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                             free(retstr);
                         }
                     }
