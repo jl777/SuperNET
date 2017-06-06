@@ -153,7 +153,7 @@ int32_t LP_iseligible(char *coin,bits256 txid,int32_t vout,uint64_t satoshis,bit
         threshold = (IAMCLIENT == 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
         if ( (val2= LP_txvalue(coin,txid2,vout2)) >= threshold )
         {
-            printf("val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
+            //printf("val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
             return(1);
         } else printf("mismatched %s txid value2 %.8f < %.8f\n",coin,dstr(val2),dstr(LP_DEPOSITSATOSHIS(satoshis)));
     } else printf("mismatched %s txid value %.8f < %.8f\n",coin,dstr(val),dstr(satoshis));
