@@ -50,7 +50,7 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
                 LP_swap_coinaddr(swap,&swap->bobcoin,coinaddr,rawtx->txbytes,rawtx->I.datalen);
                 if ( coinaddr[0] != 0 )
                 {
-                    LP_importaddress(swap->bobcoin.symbol,coinaddr);
+                    //LP_importaddress(swap->bobcoin.symbol,coinaddr);
                     if ( rawtx == &swap->bobdeposit )
                         safecopy(swap->Bdeposit,coinaddr,sizeof(swap->Bdeposit));
                     else safecopy(swap->Bpayment,coinaddr,sizeof(swap->Bpayment));
@@ -72,7 +72,7 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
         if ( bits256_nonz(swap->I.pubAm) != 0 && bits256_nonz(swap->I.pubBn) != 0 )
         {
             basilisk_alicescript(redeemscript,&len,script,0,coinaddr,swap->alicecoin.p2shtype,swap->I.pubAm,swap->I.pubBn);
-            LP_importaddress(swap->alicecoin.symbol,coinaddr);
+            //LP_importaddress(swap->alicecoin.symbol,coinaddr);
             fprintf(fp,",\"Apayment\":\"%s\"",coinaddr);
         }
         if ( rawtx->I.redeemlen > 0 )

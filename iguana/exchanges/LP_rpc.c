@@ -101,6 +101,20 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     return(bitcoin_json(coin,"getrawtransaction",buf));
 }
 
+cJSON *LP_getblock(char *symbol,bits256 txid)
+{
+    char buf[128],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
+    sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
+    return(bitcoin_json(coin,"getblock",buf));
+}
+
+cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
+{
+    char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
+    sprintf(buf,"[\"%s\"]",blockhashstr);
+    return(bitcoin_json(coin,"getblock",buf));
+}
+
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
     char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
@@ -185,6 +199,19 @@ uint64_t LP_txfee(char *symbol)
     return(txfee);
 }
 
+char *LP_blockhashstr(char *symbol,int32_t height)
+{
+    cJSON *array; char *paramstr,*retstr; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( coin == 0 )
+        return(0);
+    array = cJSON_CreateArray();
+    jaddinum(array,height);
+    paramstr = jprint(array,1);
+    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"getblockhash",paramstr);
+    free(paramstr);
+    return(retstr);
+}
+
 char *LP_sendrawtransaction(char *symbol,char *signedtx)
 {
     cJSON *array; char *paramstr,*retstr; struct iguana_info *coin = LP_coinfind(symbol);
@@ -238,3 +265,31 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
     free(paramstr);
     return(signedtx);
 }
+
+cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t height)
+{
+    cJSON *json = 0; int32_t flag = 0;
+    if ( blockhashstr == 0 )
+        blockhashstr = LP_blockhashstr(symbol,height), flag = 1;
+    if ( blockhashstr != 0 )
+    {
+        if ( (json= LP_getblockhashstr(symbol,blockhashstr)) != 0 )
+        {
+            if ( *heightp != 0 )
+            {
+                *heightp = juint(json,"height");
+                if ( height >= 0 && *heightp != height )
+                {
+                    printf("unexpected height %d vs %d\n",*heightp,height);
+                    *heightp = -1;
+                    free_json(json);
+                    json = 0;
+                }
+            }
+        }
+        if ( flag != 0 && blockhashstr != 0 )
+            free(blockhashstr);
+    }
+    return(json);
+}
+
