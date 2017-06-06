@@ -79,7 +79,7 @@ uint64_t oldLP_txvalue(char *symbol,bits256 txid,int32_t vout)
                 {
                     if ( (interest= jdouble(utxoobj,"interest")) != 0. )
                     {
-                        printf("add interest of %.8f to %.8f\n",interest,dstr(value));
+                        //printf("add interest of %.8f to %.8f\n",interest,dstr(value));
                         value += SATOSHIDEN * interest;
                     }
                     free_json(utxoobj);
@@ -104,7 +104,7 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
         {
             if ( (interest= jdouble(txobj,"interest")) != 0. )
             {
-                printf("add interest of %.8f to %.8f\n",interest,dstr(value));
+                //printf("add interest of %.8f to %.8f\n",interest,dstr(value));
                 value += SATOSHIDEN * interest;
             }
         }

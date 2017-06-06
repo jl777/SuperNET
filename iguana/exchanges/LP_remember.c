@@ -889,6 +889,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
 char *basilisk_swaplist()
 {
     char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i;
+    portable_mutex_lock(&LP_swaplistmutex);
     memset(KMDtotals,0,sizeof(KMDtotals));
     memset(BTCtotals,0,sizeof(BTCtotals));
     //,statebits; int32_t optionduration; struct basilisk_request R; bits256 privkey;
@@ -949,6 +950,7 @@ char *basilisk_swaplist()
             jaddi(array,linfo_json(&myinfo->linfos[i]));
     }
     jadd(retjson,"quotes",array);*/
+    portable_mutex_unlock(&LP_swaplistmutex);
     return(jprint(retjson,1));
 }
 

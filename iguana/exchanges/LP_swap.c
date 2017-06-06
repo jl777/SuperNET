@@ -677,15 +677,17 @@ void LP_bobloop(void *_utxo)
                 printf("error sending bobdeposit\n");
             else if ( LP_waitfor(utxo->pair,swap,10,LP_verify_alicepayment) < 0 )
                 printf("error waiting for alicepayment\n");
-            else if ( basilisk_bobscripts_set(swap,0,1) < 0 )
-                printf("error bobscripts payment\n");
-            else if ( LP_swapdata_rawtxsend(utxo->pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
-                printf("error sending bobpayment\n");
             else
             {
                 swap->bobreclaim.utxovout = 0;
                 swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
                 basilisk_bobpayment_reclaim(swap,swap->I.callduration);
+                while ( LP_numconfirms(swap,&swap->alicepayment) < 1 )
+                    sleep(3);
+                if ( basilisk_bobscripts_set(swap,0,1) < 0 )
+                    printf("error bobscripts payment\n");
+                else if ( LP_swapdata_rawtxsend(utxo->pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
+                    printf("error sending bobpayment\n"); 
                 LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,600);
             }
         }
@@ -724,11 +726,20 @@ void LP_aliceloop(void *_qp)
                 printf("error waiting for bobdeposit\n");
             else if ( LP_swapdata_rawtxsend(qp->pair,swap,0x1000,data,maxlen,&swap->alicepayment,0x800,0) == 0 )
                 printf("error sending alicepayment\n");
-            else if ( LP_waitfor(qp->pair,swap,10,LP_verify_bobpayment) < 0 )
-                printf("error waiting for bobpayment\n");
             else
             {
-                LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,600);
+                while ( LP_numconfirms(swap,&swap->alicepayment) < 1 )
+                    sleep(3);
+                if ( LP_waitfor(qp->pair,swap,10,LP_verify_bobpayment) < 0 )
+                    printf("error waiting for bobpayment\n");
+                else
+                {
+                    while ( LP_numconfirms(swap,&swap->bobpayment) < 1 )
+                        sleep(3);
+                    if ( LP_swapdata_rawtxsend(qp->pair,swap,0x20000,data,maxlen,&swap->alicespend,0x0,0) == 0 )
+                        printf("error sending alicepayment\n");
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,600);
+                }
             }
         }
         basilisk_swap_finished(swap);
