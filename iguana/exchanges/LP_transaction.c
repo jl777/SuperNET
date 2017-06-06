@@ -182,7 +182,7 @@ int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
     int32_t numconfirms = 100;
 #ifndef BASILISK_DISABLEWAITTX
     cJSON *txobj;
-    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+    if ( (txobj= LP_gettx(rawtx->coin->symbol,rawtx->I.signedtxid)) != 0 )
     {
         numconfirms = jint(txobj,"confirmations");
         free_json(txobj);
