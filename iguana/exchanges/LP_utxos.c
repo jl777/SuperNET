@@ -202,7 +202,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
     }
     if ( IAMCLIENT == 0 && strcmp(ipaddr,"127.0.0.1") == 0 )
     {
-        printf("LP node got localhost utxo\n");
+        //printf("LP node got localhost utxo\n");
         return(0);
     }
     if ( (utxo= LP_utxofind(txid,vout)) != 0 || (utxo= LP_utxo2find(txid,vout)) != 0 )
