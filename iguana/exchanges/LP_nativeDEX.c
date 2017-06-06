@@ -162,7 +162,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             {
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
             }
-            if ( (counter % 2500) == 0 )
+            if ( (counter % 500) == 0 )
             {
                 char str[65];
                 //printf("start utxos updates\n");
