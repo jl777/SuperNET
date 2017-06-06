@@ -683,7 +683,10 @@ void LP_bobloop(void *_utxo)
                 swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
                 basilisk_bobpayment_reclaim(swap,swap->I.callduration);
                 while ( LP_numconfirms(swap,&swap->alicepayment) < 1 )
+                {
+                    printf("waiting for alicepayment to confirm\n");
                     sleep(3);
+                }
                 if ( basilisk_bobscripts_set(swap,0,1) < 0 )
                     printf("error bobscripts payment\n");
                 else if ( LP_swapdata_rawtxsend(utxo->pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
@@ -729,13 +732,19 @@ void LP_aliceloop(void *_qp)
             else
             {
                 while ( LP_numconfirms(swap,&swap->alicepayment) < 1 )
+                {
+                    printf("waiting for alicepayment to confirm\n");
                     sleep(3);
+                }
                 if ( LP_waitfor(qp->pair,swap,10,LP_verify_bobpayment) < 0 )
                     printf("error waiting for bobpayment\n");
                 else
                 {
                     while ( LP_numconfirms(swap,&swap->bobpayment) < 1 )
+                    {
+                        printf("waiting for bobpayment to confirm\n");
                         sleep(3);
+                    }
                     if ( LP_swapdata_rawtxsend(qp->pair,swap,0x20000,data,maxlen,&swap->alicespend,0x40000,0) == 0 )
                         printf("error sending alicespend\n");
                     LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,600);
