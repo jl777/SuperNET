@@ -952,3 +952,32 @@ char *basilisk_swaplist()
     return(jprint(retjson,1));
 }
 
+char *basilisk_swapfinished(uint32_t requestid,uint32_t quoteid)
+{
+    char *liststr,*retstr = 0; cJSON *array,*item; int32_t i,n;
+    if ( (liststr= basilisk_swaplist()) != 0 )
+    {
+        if ( (array= cJSON_Parse(liststr)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( juint(item,"requestid") == requestid && juint(item,"quoteid") == quoteid )
+                    {
+                        if ( jstr(item,"status") != 0 && strcmp(jstr(item,"status"),"finished") == 0 )
+                            retstr = jprint(item,0);
+                        break;
+                    }
+                }
+            }
+            free_json(array);
+        }
+    }
+    free(liststr);
+    return(retstr);
+}
+
+
+

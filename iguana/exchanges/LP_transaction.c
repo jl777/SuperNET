@@ -135,7 +135,7 @@ int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 se
         return(0);
     while ( errs == 0 && *indp < 0 )
     {
-        printf("search %s ht.%d\n",symbol,loadheight);
+        //printf("search %s ht.%d\n",symbol,loadheight);
         if ( (blockjson= LP_blockjson(&h,symbol,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )

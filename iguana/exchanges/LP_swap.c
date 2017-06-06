@@ -619,7 +619,7 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
 
 void LP_bobloop(void *_utxo)
 {
-    uint8_t *data; char *retstr; int32_t maxlen; uint32_t expiration; struct basilisk_swap *swap; struct LP_utxoinfo *utxo = _utxo;
+    uint8_t *data; int32_t maxlen; char *retstr; uint32_t expiration; struct basilisk_swap *swap; struct LP_utxoinfo *utxo = _utxo;
     fprintf(stderr,"start swap iambob\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
@@ -658,16 +658,13 @@ void LP_bobloop(void *_utxo)
                 swap->bobreclaim.utxovout = 0;
                 swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
                 basilisk_bobpayment_reclaim(swap,swap->I.callduration);
-                printf("looping on swaplist\n");
-                while ( 1 )
+                printf("wait for SWAP to complete\n");
+                while ( (retstr= basilisk_swapfinished(swap->I.req.requestid,swap->I.req.quoteid)) == 0 )
                 {
-                    if ( (retstr= basilisk_swaplist()) != 0 )
-                    {
-                        printf("%s\n",retstr);
-                        free(retstr);
-                    }
                     sleep(100);
                 }
+                printf("SWAP completed! %u-%u %s\n",swap->I.req.requestid,swap->I.req.quoteid,retstr);
+                free(retstr);
             }
         }
         basilisk_swap_finished(swap);
@@ -709,16 +706,13 @@ void LP_aliceloop(void *_qp)
                 printf("error waiting for bobpayment\n");
             else
             {
-                printf("looping on swaplist\n");
-                while ( 1 )
+                printf("wait for SWAP to complete\n");
+                while ( (retstr= basilisk_swapfinished(swap->I.req.requestid,swap->I.req.quoteid)) == 0 )
                 {
-                    if ( (retstr= basilisk_swaplist()) != 0 )
-                    {
-                        printf("%s\n",retstr);
-                        free(retstr);
-                    }
                     sleep(100);
                 }
+                printf("SWAP completed! %u-%u %s\n",swap->I.req.requestid,swap->I.req.quoteid,retstr);
+                free(retstr);
             }
         }
         basilisk_swap_finished(swap);
