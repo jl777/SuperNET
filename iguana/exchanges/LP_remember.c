@@ -888,7 +888,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
 
 char *basilisk_swaplist()
 {
-    char fname[512],*status; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i;
+    char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i;
     memset(KMDtotals,0,sizeof(KMDtotals));
     memset(BTCtotals,0,sizeof(BTCtotals));
     //,statebits; int32_t optionduration; struct basilisk_request R; bits256 privkey;
@@ -914,8 +914,8 @@ char *basilisk_swaplist()
                 if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
                 {
                     jaddi(array,item);
-                    if ( (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
-                        break;
+                    //if ( (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
+                    //    break;
                 }
             }
         }
@@ -952,7 +952,7 @@ char *basilisk_swaplist()
     return(jprint(retjson,1));
 }
 
-char *basilisk_swapfinished(uint32_t requestid,uint32_t quoteid)
+char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
 {
     char *liststr,*retstr = 0; cJSON *retjson,*array,*item; int32_t i,n;
     if ( (liststr= basilisk_swaplist()) != 0 )
@@ -967,8 +967,7 @@ char *basilisk_swapfinished(uint32_t requestid,uint32_t quoteid)
                     //printf("(%s) check r%u/q%u\n",jprint(item,0),juint(item,"requestid"),juint(item,"quoteid"));
                     if ( juint(item,"requestid") == requestid && juint(item,"quoteid") == quoteid )
                     {
-                        if ( jstr(item,"status") != 0 && strcmp(jstr(item,"status"),"finished") == 0 )
-                            retstr = jprint(item,0);
+                        retstr = jprint(item,0);
                         break;
                     }
                 }

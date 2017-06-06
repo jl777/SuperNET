@@ -617,9 +617,37 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
     return(0);
 }
 
+int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t sleeptime)
+{
+    char *retstr; cJSON *retjson=0; uint32_t expiration = (uint32_t)(time(NULL) + duration);
+    printf("wait %d:%d for SWAP.(r%u/q%u) to complete\n",duration,sleeptime,requestid,quoteid);
+    while ( time(NULL) < expiration )
+    {
+        sleep(3);
+        if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( jstr(retjson,"status") != 0 && strcmp(jstr(retjson,"status"),"finished") == 0 )
+                    break;
+                free_json(retjson);
+                retjson = 0;
+            }
+            free(retstr);
+        }
+        sleep(sleeptime);
+    }
+    if ( retjson != 0 )
+    {
+        printf("SWAP completed! %u-%u %s\n",requestid,quoteid,jprint(retjson,0));
+        free_json(retjson);
+        return(0);
+    } else return(-1);
+}
+
 void LP_bobloop(void *_utxo)
 {
-    uint8_t *data; int32_t maxlen; char *retstr; uint32_t expiration; struct basilisk_swap *swap; struct LP_utxoinfo *utxo = _utxo;
+    uint8_t *data; int32_t maxlen; uint32_t expiration; struct basilisk_swap *swap; struct LP_utxoinfo *utxo = _utxo;
     fprintf(stderr,"start swap iambob\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
@@ -658,13 +686,7 @@ void LP_bobloop(void *_utxo)
                 swap->bobreclaim.utxovout = 0;
                 swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
                 basilisk_bobpayment_reclaim(swap,swap->I.callduration);
-                printf("wait for SWAP to complete\n");
-                while ( (retstr= basilisk_swapfinished(swap->I.req.requestid,swap->I.req.quoteid)) == 0 )
-                {
-                    sleep(100);
-                }
-                printf("SWAP completed! %u-%u %s\n",swap->I.req.requestid,swap->I.req.quoteid,retstr);
-                free(retstr);
+                LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,600);
             }
         }
         basilisk_swap_finished(swap);
@@ -677,7 +699,7 @@ void LP_bobloop(void *_utxo)
 
 void LP_aliceloop(void *_qp)
 {
-    uint8_t *data; char *retstr; int32_t maxlen; uint32_t expiration; struct basilisk_swap *swap = 0; struct LP_quoteinfo *qp = _qp;
+    uint8_t *data; int32_t maxlen; uint32_t expiration; struct basilisk_swap *swap = 0; struct LP_quoteinfo *qp = _qp;
     fprintf(stderr,"start swap iamalice pair.%d\n",qp->pair);
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
@@ -706,13 +728,7 @@ void LP_aliceloop(void *_qp)
                 printf("error waiting for bobpayment\n");
             else
             {
-                printf("wait for SWAP to complete\n");
-                while ( (retstr= basilisk_swapfinished(swap->I.req.requestid,swap->I.req.quoteid)) == 0 )
-                {
-                    sleep(100);
-                }
-                printf("SWAP completed! %u-%u %s\n",swap->I.req.requestid,swap->I.req.quoteid,retstr);
-                free(retstr);
+                LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,600);
             }
         }
         basilisk_swap_finished(swap);

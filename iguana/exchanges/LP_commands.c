@@ -281,11 +281,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         {
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
-            {
-                if ( (retstr= basilisk_swapfinished(requestid,quoteid)) == 0 )
-                    return(clonestr("{\"result\":\"swap pending\"}"));
-                else return(retstr);
-            } else return(basilisk_swaplist());
+                return(basilisk_swapentry(requestid,quoteid));
+            else return(basilisk_swaplist());
         }
     }
     amclient = (LP_mypeer == 0);
