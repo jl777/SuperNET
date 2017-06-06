@@ -52,7 +52,7 @@ struct LP_utxoinfo *_LP_utxo2find(bits256 txid,int32_t vout)
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
     memcpy(key,txid.bytes,sizeof(txid));
     memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
-    HASH_FIND(hh,LP_utxoinfos2,key,sizeof(key),utxo);
+    //HASH_FIND(hh,LP_utxoinfos2,key,sizeof(key),utxo);
     return(utxo);
 }
 
