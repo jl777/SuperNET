@@ -165,13 +165,19 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 {
                     if ( LP_txvalue(utxo->coin,utxo->txid,utxo->vout) == 0 )
                     {
-                        printf("txid.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->value));
-                        LP_spentnotify(utxo,0);
+                        if ( utxo->spentflag == 0 )
+                        {
+                            printf("txid.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->value));
+                            LP_spentnotify(utxo,0);
+                        }
                     }
                     else if ( LP_txvalue(utxo->coin,utxo->txid2,utxo->vout2) == 0 )
                     {
-                        printf("txid2.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,utxo->txid2),utxo->vout2,dstr(utxo->value2));
-                        LP_spentnotify(utxo,1);
+                        if ( utxo->spentflag == 0 )
+                        {
+                            printf("txid2.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,utxo->txid2),utxo->vout2,dstr(utxo->value2));
+                            LP_spentnotify(utxo,1);
+                        }
                     }
                     else if ( LP_ismine(utxo) != 0 )
                     {
