@@ -401,7 +401,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
             }
             //printf("array.%d\n",n);
             used = 0;
-            while ( used < n )
+            while ( used < n-1 )
             {
                 printf("used.%d of n.%d\n",used,n);
                 if ( (i= LP_maxvalue(values,n)) >= 0 )
@@ -444,6 +444,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         }
         free_json(array);
     }
+    printf("privkey.%s %.8f\n",symbol,dstr(total));
     return(total);
 }
 
