@@ -747,6 +747,11 @@ void LP_aliceloop(void *_qp)
                     }
                     if ( LP_swapdata_rawtxsend(qp->pair,swap,0x20000,data,maxlen,&swap->alicespend,0x40000,0) == 0 )
                         printf("error sending alicespend\n");
+                    while ( LP_numconfirms(swap,&swap->alicespend) < 1 )
+                    {
+                        printf("waiting for alicespend to confirm\n");
+                        sleep(3);
+                    }
                     LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,600);
                 }
             }
