@@ -471,7 +471,7 @@ void LP_swapsfp_update(struct basilisk_request *rp)
         if ( (swapsfp= fopen(fname,"rb+")) == 0 )
             swapsfp = fopen(fname,"wb+");
         else fseek(swapsfp,0,SEEK_END);
-        printf("LIST fp.%p\n",swapsfp);
+        //printf("LIST fp.%p\n",swapsfp);
     }
     if ( swapsfp != 0 )
     {

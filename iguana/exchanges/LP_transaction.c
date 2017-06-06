@@ -494,14 +494,14 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t pubtype,uint8_t p2shty
                 {
                     flag++;
                     numsigs++;
-                    int32_t z; char tmpaddr[64];
+                    /*int32_t z; char tmpaddr[64];
                     for (z=0; z<siglen-1; z++)
                         printf("%02x",sig[z]);
                     printf(" <- sig[%d]\n",j);
                     for (z=0; z<33; z++)
                         printf("%02x",vp->signers[j].pubkey[z]);
                     bitcoin_address(tmpaddr,60,vp->signers[j].pubkey,33);
-                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);
+                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);*/
                 }
             }
             if ( numsigs >= vp->M )
@@ -723,7 +723,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         if ( vinaddr != 0 )
             bitcoin_addr2rmd160(&addrtype,rmd160,vinaddr);
         spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
-        printf("P2SH path.%s\n",vinaddr!=0?vinaddr:0);
+        //printf("P2SH path.%s\n",vinaddr!=0?vinaddr:0);
     } else spendlen = bitcoin_standardspend(spendscript,0,rmd160);
     init_hexbytes_noT(hexstr,spendscript,spendlen);
     jaddstr(item,"scriptPubKey",hexstr);
@@ -788,7 +788,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
     {
         changeaddr = _changeaddr;
         bitcoin_address(changeaddr,coin->pubtype,changermd160,20);
-        printf("changeaddr.(%s) vs destaddr.(%s)\n",changeaddr,rawtx->I.destaddr);
+        //printf("changeaddr.(%s) vs destaddr.(%s)\n",changeaddr,rawtx->I.destaddr);
     }
     for (iter=0; iter<2; iter++)
     {
@@ -819,7 +819,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
 int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen,int32_t ignore_cltverr,uint8_t *changermd160,char *vinaddr)
 {
     char *signedtx,*changeaddr = 0,_changeaddr[64]; int64_t txfee,newtxfee=0,destamount; uint32_t timestamp,locktime=0,sequenceid = 0xffffffff; int32_t iter,retval = -1; double estimatedrate;
-    char str2[65]; printf("%s rawtxsign.(%s/v%d)\n",dest->name,bits256_str(str2,dest->utxotxid),dest->utxovout);
+    //char str2[65]; printf("%s rawtxsign.(%s/v%d)\n",dest->name,bits256_str(str2,dest->utxotxid),dest->utxovout);
     timestamp = swap->I.started;
     if ( dest == &swap->aliceclaim )
         locktime = swap->bobdeposit.I.locktime + 1, sequenceid = 0;

@@ -221,7 +221,7 @@ char *LP_sendrawtransaction(char *symbol,char *signedtx)
     jaddistr(array,signedtx);
     paramstr = jprint(array,1);
     retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"sendrawtransaction",paramstr);
-    printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
+    //printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
     free(paramstr);
     return(retstr);
 }
