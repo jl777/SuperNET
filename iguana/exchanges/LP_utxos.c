@@ -455,7 +455,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         }
         free_json(array);
     }
-    //printf("privkey.%s %.8f\n",symbol,dstr(total));
+    printf("privkey.%s %.8f\n",symbol,dstr(total));
     return(total);
 }
 
