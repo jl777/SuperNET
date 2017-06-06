@@ -164,14 +164,14 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
                 printf("done privkey updates\n");
             }
-            if ( 0 && (counter % 500) == 0 )
+            if ( (counter % 500) == 0 )
             {
                 char str[65];
-                printf("start utxos updates\n");
+                //printf("start utxos updates\n");
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
                     now = (uint32_t)time(NULL);
-                    printf("%s lag.%d\n",bits256_str(str,utxo->txid),now-utxo->lastspentcheck);
+                    //printf("%s lag.%d\n",bits256_str(str,utxo->txid),now-utxo->lastspentcheck);
                     if ( utxo->spentflag == 0 && now > utxo->lastspentcheck+60 )
                     {
                         utxo->lastspentcheck = now;
@@ -193,13 +193,13 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                         }
                     }
                 }
-                printf("done utxos updates\n");
+                //printf("done utxos updates\n");
             }
             now = (uint32_t)time(NULL);
-            printf("start peers updates\n");
+            //printf("start peers updates\n");
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
-                printf("updatepeer.%s lag.%d\n",peer->ipaddr,now-peer->lastpeers);
+                //printf("updatepeer.%s lag.%d\n",peer->ipaddr,now-peer->lastpeers);
                 if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0) )
                 {
                     peer->lastpeers = now;
@@ -236,8 +236,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                         nn_freemsg(ptr), ptr = 0;
                 }
             }
-            printf("done peers updates\n");
-            while ( 0 && pullsock >= 0 && (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
+            while ( pullsock >= 0 && (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
             {
                 nonz++;
                 if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
@@ -260,7 +259,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             }
             if ( nonz == 0 )
                 usleep(50000);
-            printf("nonz.%d in mainloop\n",nonz);
+            //printf("nonz.%d in mainloop\n",nonz);
         }
     }
 }
