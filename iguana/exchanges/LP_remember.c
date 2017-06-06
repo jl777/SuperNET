@@ -636,7 +636,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     if ( txbytes[BASILISK_ALICESPEND] != 0 )
                     {
-                        txids[BASILISK_ALICESPEND] = LP_broadcast("alicespend",bobcoin,txbytes[BASILISK_ALICESPEND]);
+                        txids[BASILISK_ALICESPEND] = LP_broadcast("alicespend",bobcoin,txbytes[BASILISK_ALICESPEND],zero);
                         if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 ) // tested
                         {
                             sentflags[BASILISK_ALICESPEND] = 1;
@@ -661,7 +661,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     if ( txbytes[BASILISK_ALICECLAIM] != 0 )
                     {
-                        txids[BASILISK_ALICECLAIM] = LP_broadcast("aliceclaim",bobcoin,txbytes[BASILISK_ALICECLAIM]);
+                        txids[BASILISK_ALICECLAIM] = LP_broadcast("aliceclaim",bobcoin,txbytes[BASILISK_ALICECLAIM],zero);
                         if ( bits256_nonz(txids[BASILISK_ALICECLAIM]) != 0 ) // tested
                         {
                             sentflags[BASILISK_ALICECLAIM] = 1;
@@ -683,7 +683,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 }
                 if ( txbytes[BASILISK_ALICERECLAIM] != 0 )
                 {
-                    txids[BASILISK_ALICERECLAIM] = LP_broadcast("alicereclaim",alicecoin,txbytes[BASILISK_ALICERECLAIM]);
+                    txids[BASILISK_ALICERECLAIM] = LP_broadcast("alicereclaim",alicecoin,txbytes[BASILISK_ALICERECLAIM],zero);
                     if ( bits256_nonz(txids[BASILISK_ALICERECLAIM]) != 0 ) // tested
                     {
                         sentflags[BASILISK_ALICERECLAIM] = 1;
@@ -713,7 +713,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     if ( txbytes[BASILISK_BOBSPEND] != 0 )
                     {
-                        txids[BASILISK_BOBSPEND] = LP_broadcast("bobspend",alicecoin,txbytes[BASILISK_BOBSPEND]);
+                        txids[BASILISK_BOBSPEND] = LP_broadcast("bobspend",alicecoin,txbytes[BASILISK_BOBSPEND],zero);
                         if ( bits256_nonz(txids[BASILISK_BOBSPEND]) != 0 ) // tested
                         {
                             sentflags[BASILISK_BOBSPEND] = 1;
@@ -742,7 +742,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 }
                 if ( txbytes[BASILISK_BOBRECLAIM] != 0 )
                 {
-                    txids[BASILISK_BOBRECLAIM] = LP_broadcast("bobreclaim",bobcoin,txbytes[BASILISK_BOBRECLAIM]);
+                    txids[BASILISK_BOBRECLAIM] = LP_broadcast("bobreclaim",bobcoin,txbytes[BASILISK_BOBRECLAIM],zero);
                     if ( bits256_nonz(txids[BASILISK_BOBRECLAIM]) != 0 ) // tested
                     {
                         sentflags[BASILISK_BOBRECLAIM] = 1;
@@ -766,7 +766,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     if ( txbytes[BASILISK_BOBREFUND] != 0 )
                     {
-                        txids[BASILISK_BOBREFUND] = LP_broadcast("bobrefund",bobcoin,txbytes[BASILISK_BOBREFUND]);
+                        txids[BASILISK_BOBREFUND] = LP_broadcast("bobrefund",bobcoin,txbytes[BASILISK_BOBREFUND],zero);
                         if ( bits256_nonz(txids[BASILISK_BOBREFUND]) != 0 ) // tested
                         {
                             sentflags[BASILISK_BOBREFUND] = 1;
