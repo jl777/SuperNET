@@ -492,6 +492,80 @@ struct basilisk_rawtx *LP_swapdata_rawtx(struct basilisk_swap *swap,uint8_t *dat
     return(0);
 }
 
+int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys)
+{
+    bits256 otherhash,myhash,txid; int32_t i,offset=0,datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr; uint32_t quoteid,msgbits;
+    for (i=0; i<32; i++)
+        otherhash.bytes[i] = recvbuf[offset++];
+    for (i=0; i<32; i++)
+        myhash.bytes[i] = recvbuf[offset++];
+    offset += iguana_rwnum(0,&recvbuf[offset],sizeof(quoteid),&quoteid);
+    offset += iguana_rwnum(0,&recvbuf[offset],sizeof(msgbits),&msgbits);
+    datalen = recvbuf[offset++];
+    datalen += (int32_t)recvbuf[offset++] << 8;
+    if ( datalen > 1024 )
+    {
+        printf("LP_rawtx_spendscript %s datalen.%d too big\n",rawtx->name,datalen);
+        return(-1);
+    }
+    rawtx->I.redeemlen = recvbuf[offset++];
+    data = &recvbuf[offset];
+    if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
+    {
+        memcpy(rawtx->redeemscript,&data[datalen],rawtx->I.redeemlen);
+        for (i=0; i<rawtx->I.redeemlen; i++)
+            printf("%02x",rawtx->redeemscript[i]);
+        printf(" received redeemscript\n");
+    }
+    //printf("recvlen.%d datalen.%d redeemlen.%d\n",recvlen,datalen,rawtx->redeemlen);
+    if ( rawtx->I.datalen == 0 )
+    {
+        for (i=0; i<datalen; i++)
+            printf("%02x",data[i]);
+        printf(" <- received\n");
+        memcpy(rawtx->txbytes,data,datalen);
+        rawtx->I.datalen = datalen;
+    }
+    else if ( datalen != rawtx->I.datalen || memcmp(rawtx->txbytes,data,datalen) != 0 )
+    {
+        for (i=0; i<rawtx->I.datalen; i++)
+            printf("%02x",rawtx->txbytes[i]);
+        printf(" <- rawtx\n");
+        printf("%s rawtx data compare error, len %d vs %d <<<<<<<<<< warning\n",rawtx->name,rawtx->I.datalen,datalen);
+        return(-1);
+    }
+    if ( recvlen != datalen+rawtx->I.redeemlen )
+        printf("RECVLEN %d != %d + %d\n",recvlen,datalen,rawtx->I.redeemlen);
+    txid = bits256_doublesha256(0,data,datalen);
+    //char str[65]; printf("rawtx.%s txid %s\n",rawtx->name,bits256_str(str,txid));
+    if ( bits256_cmp(txid,rawtx->I.actualtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
+        rawtx->I.actualtxid = txid;
+    if ( (txobj= bitcoin_data2json(rawtx->coin->pubtype,rawtx->coin->p2shtype,rawtx->coin->isPoS,height,&rawtx->I.signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
+    {
+        rawtx->I.actualtxid = rawtx->I.signedtxid;
+        char str[65]; printf("got %s txid.%s (%s)\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0));
+        rawtx->I.locktime = rawtx->msgtx.lock_time;
+        if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
+        {
+            vout = jitem(vouts,v);
+            if ( j64bits(vout,"satoshis") == rawtx->I.amount && (skey= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(skey,"hex")) != 0 )
+            {
+                if ( (hexlen= (int32_t)strlen(hexstr) >> 1) < sizeof(rawtx->spendscript) )
+                {
+                    decode_hex(rawtx->spendscript,hexlen,hexstr);
+                    rawtx->I.spendlen = hexlen;
+                    bitcoin_address(rawtx->p2shaddr,rawtx->coin->p2shtype,rawtx->spendscript,hexlen);
+                    //if ( swap != 0 )
+                    //    basilisk_txlog(swap->myinfoptr,swap,rawtx,-1); // bobdeposit, bobpayment or alicepayment
+                    retval = 0;
+                }
+            } else printf("%s ERROR.(%s)\n",rawtx->name,jprint(txobj,0));
+        }
+        free_json(txobj);
+    }
+    return(retval);
+}
+
 uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits,int32_t suppress_swapsend)
 {
     uint8_t sendbuf[32768]; int32_t sendlen;

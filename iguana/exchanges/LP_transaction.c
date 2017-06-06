@@ -108,7 +108,7 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
                 value += SATOSHIDEN * interest;
             }
         }
-        char str[65]; printf("%.8f <- %s.(%s) txobj.(%s)\n",dstr(value),symbol,bits256_str(str,txid),jprint(txobj,0));
+        // char str[65]; printf("%.8f <- %s.(%s) txobj.(%s)\n",dstr(value),symbol,bits256_str(str,txid),jprint(txobj,0));
         free_json(txobj);
     }
     return(value);
@@ -1397,73 +1397,6 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
     swap->otherfee.I.datalen = datalen;
     swap->otherfee.I.actualtxid = swap->otherfee.I.signedtxid = bits256_doublesha256(0,data,datalen);
     return(0);
-}
-
-int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys)
-{
-    bits256 otherhash,myhash,txid; int32_t i,offset=0,datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr; uint32_t quoteid,msgbits;
-    for (i=0; i<32; i++)
-        otherhash.bytes[i] = recvbuf[offset++];
-    for (i=0; i<32; i++)
-        myhash.bytes[i] = recvbuf[offset++];
-    offset += iguana_rwnum(0,&recvbuf[offset],sizeof(quoteid),&quoteid);
-    offset += iguana_rwnum(0,&recvbuf[offset],sizeof(msgbits),&msgbits);
-    datalen = recvbuf[offset++];
-    datalen += (int32_t)recvbuf[offset++] << 8;
-    if ( datalen > 1024 )
-    {
-        printf("LP_rawtx_spendscript %s datalen.%d too big\n",rawtx->name,datalen);
-        return(-1);
-    }
-    rawtx->I.redeemlen = recvbuf[offset++];
-    data = &recvbuf[offset++];
-    if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
-        memcpy(rawtx->redeemscript,&data[datalen],rawtx->I.redeemlen);
-    //printf("recvlen.%d datalen.%d redeemlen.%d\n",recvlen,datalen,rawtx->redeemlen);
-    if ( rawtx->I.datalen == 0 )
-    {
-        int32_t i; for (i=0; i<datalen; i++)
-            printf("%02x",data[i]);
-        printf(" <- received\n");
-        memcpy(rawtx->txbytes,data,datalen);
-        rawtx->I.datalen = datalen;
-    }
-    else if ( datalen != rawtx->I.datalen || memcmp(rawtx->txbytes,data,datalen) != 0 )
-    {
-        for (i=0; i<rawtx->I.datalen; i++)
-            printf("%02x",rawtx->txbytes[i]);
-        printf(" <- rawtx\n");
-        printf("%s rawtx data compare error, len %d vs %d <<<<<<<<<< warning\n",rawtx->name,rawtx->I.datalen,datalen);
-        return(-1);
-    }
-    txid = bits256_doublesha256(0,data,datalen);
-    //char str[65]; printf("rawtx.%s txid %s\n",rawtx->name,bits256_str(str,txid));
-    if ( bits256_cmp(txid,rawtx->I.actualtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
-        rawtx->I.actualtxid = txid;
-    if ( (txobj= bitcoin_data2json(rawtx->coin->pubtype,rawtx->coin->p2shtype,rawtx->coin->isPoS,height,&rawtx->I.signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
-    {
-        rawtx->I.actualtxid = rawtx->I.signedtxid;
-        char str[65]; printf("got %s txid.%s (%s)\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0));
-        rawtx->I.locktime = rawtx->msgtx.lock_time;
-        if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
-        {
-            vout = jitem(vouts,v);
-            if ( j64bits(vout,"satoshis") == rawtx->I.amount && (skey= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(skey,"hex")) != 0 )
-            {
-                if ( (hexlen= (int32_t)strlen(hexstr) >> 1) < sizeof(rawtx->spendscript) )
-                {
-                    decode_hex(rawtx->spendscript,hexlen,hexstr);
-                    rawtx->I.spendlen = hexlen;
-                    bitcoin_address(rawtx->p2shaddr,rawtx->coin->p2shtype,rawtx->spendscript,hexlen);
-                    //if ( swap != 0 )
-                    //    basilisk_txlog(swap->myinfoptr,swap,rawtx,-1); // bobdeposit, bobpayment or alicepayment
-                    retval = 0;
-                }
-            } else printf("%s ERROR.(%s)\n",rawtx->name,jprint(txobj,0));
-        }
-        free_json(txobj);
-    }
-    return(retval);
 }
 
 /*    Bob deposit:
