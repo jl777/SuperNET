@@ -43,6 +43,8 @@ struct LP_utxoinfo *LP_utxofind(bits256 txid,int32_t vout)
     memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
     portable_mutex_lock(&LP_utxomutex);
     HASH_FIND(hh,LP_utxoinfos,key,sizeof(key),utxo);
+    if ( utxo == 0 )
+        HASH_FIND(hh,LP_utxoinfos2,key,sizeof(key),utxo);
     portable_mutex_unlock(&LP_utxomutex);
     return(utxo);
 }
@@ -107,6 +109,8 @@ void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
 {
     cJSON *argjson;
     utxo->spentflag = (uint32_t)time(NULL);
+    if ( LP_mypeer != 0 && LP_mypeer->numutxos > 0 )
+        LP_mypeer->numutxos--;
     if ( LP_mypubsock >= 0 )
     {
         argjson = cJSON_CreateObject();
@@ -181,7 +185,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         printf("LP node got localhost utxo\n");
         return(0);
     }
-     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
+    if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
         //printf("%.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(tmpsatoshis),dstr(utxo->value),dstr(utxo->value2),dstr(utxo->satoshis));
         if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(txid2,utxo->txid2) != 0 || vout != utxo->vout || value != utxo->value || tmpsatoshis != utxo->satoshis || vout2 != utxo->vout2 || value2 != utxo->value2 || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
@@ -211,8 +215,11 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         utxo->value2 = value2;
         memcpy(utxo->key,txid.bytes,sizeof(txid));
         memcpy(&utxo->key[sizeof(txid)],&vout,sizeof(vout));
+        memcpy(utxo->key2,txid2.bytes,sizeof(txid2));
+        memcpy(&utxo->key2[sizeof(txid2)],&vout2,sizeof(vout2));
         portable_mutex_lock(&LP_utxomutex);
         HASH_ADD_KEYPTR(hh,LP_utxoinfos,utxo->key,sizeof(utxo->key),utxo);
+        HASH_ADD_KEYPTR(hh,LP_utxoinfos2,utxo->key2,sizeof(utxo->key2),utxo);
         if ( mypeer != 0 )
             mypeer->numutxos++;
         portable_mutex_unlock(&LP_utxomutex);

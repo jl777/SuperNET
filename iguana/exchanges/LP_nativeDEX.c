@@ -23,7 +23,7 @@
 #include "LP_include.h"
 #include "LP_network.c"
 
-struct LP_utxoinfo  *LP_utxoinfos;
+struct LP_utxoinfo  *LP_utxoinfos,*LP_utxoinfos2;
 struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 
 char *activecoins[] = { "BTC", "KMD", "REVS", "JUMBLR" };//"LTC", "USD",   };

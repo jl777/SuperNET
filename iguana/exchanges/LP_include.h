@@ -169,6 +169,7 @@ struct LP_utxoinfo
     void *swap;
     uint64_t value,satoshis,value2;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
+    uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
     int32_t vout,vout2,pair;
     uint32_t lasttime,errors,swappending,published,spentflag;
     double profitmargin;
