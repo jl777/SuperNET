@@ -818,8 +818,8 @@ void LP_main(void *ptr)
 int main(int argc, const char * argv[])
 {
     char *base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
-    double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr,theoretical = 0.;
-    cJSON *retjson,*loginjson,*matchjson; int32_t i;
+    double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
+    cJSON *retjson,*loginjson; int32_t i;
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
@@ -830,7 +830,7 @@ int main(int argc, const char * argv[])
             exit(-1);
         } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
-        while ( (0) && IAMCLIENT != 0 )
+        /*while ( (0) && IAMCLIENT != 0 )
         {
             theoretical = marketmaker_updateprice("komodo","REVS","KMD",theoretical,&incr);
             sleep(3);
@@ -845,7 +845,7 @@ int main(int argc, const char * argv[])
                 }
             }
             sleep(1000);
-        }
+        }*/
         while ( 1 )
             sleep(1);
         profitmargin = jdouble(retjson,"profitmargin");
