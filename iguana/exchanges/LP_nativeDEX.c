@@ -118,6 +118,12 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         if ( strcmp(peer->ipaddr,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1") != 0 )
             LP_utxosquery(0,mypeer,pubsock,peer->ipaddr,peer->port,"",100,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
     }
+    if ( (retstr= basilisk_swaplist()) != 0 )
+    {
+        printf("%s\ngetchar to continue\n",retstr);
+        getchar();
+        free(retstr);
+    }
     if ( amclient != 0 )
     {
         while ( 1 )
