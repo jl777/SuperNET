@@ -199,7 +199,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             printf("start peers updates\n");
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
-                printf("updatepeer.%s lag.%d\n",now-peer->lastpeers);
+                printf("updatepeer.%s lag.%d\n",peer->ipaddr,now-peer->lastpeers);
                 if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0) )
                 {
                     peer->lastpeers = now;
