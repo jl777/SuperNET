@@ -81,6 +81,12 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
 {
     //static uint16_t tmpport;
     char *retstr; uint8_t r; int32_t i,n,j,len,recvsize,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now; struct LP_utxoinfo *utxo,*utmp; void *ptr; cJSON *argjson;
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+    {
+        printf("error launching stats rpcloop for port.%u\n",myport);
+        exit(-1);
+    }
+    printf("query peers queried\n");
     if ( amclient == 0 )
     {
         for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
@@ -99,14 +105,10 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             LP_peersquery(amclient,mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport,profitmargin);
         }
     }
+    printf("peers queried\n");
     //if ( amclient != 0 )
     //    tmpport = myport + 10;
     //else tmpport = myport;
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
-    {
-        printf("error launching stats rpcloop for port.%u\n",myport);
-        exit(-1);
-    }
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
         LP_coinfind(activecoins[i]);
