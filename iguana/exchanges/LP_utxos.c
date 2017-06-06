@@ -372,22 +372,20 @@ int32_t LP_nearestvalue(uint64_t *values,int32_t n,uint64_t targetval)
 
 uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symbol,char *passphrase,char *wifstr,int32_t amclient)
 {
-    static uint32_t counter;
     char *script; struct LP_utxoinfo *utxo; cJSON *array,*item,*retjson; bits256 userpass,userpub,txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
     {
         printf("cant add privkey for %s, coin not active\n",symbol);
         return(0);
     }
-    printf("privkey.%s init\n",symbol);
     if ( passphrase != 0 )
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else privkey = iguana_wif2privkey(wifstr);
     iguana_priv2pub(pubkey33,coin->smartaddr,privkey,coin->pubtype);
-    if ( counter == 0 )
+    if ( coin->counter == 0 )
     {
         char tmpstr[128];
-        counter++;
+        coin->counter++;
         bitcoin_priv2wif(USERPASS_WIFSTR,privkey,188);
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
         conv_NXTpassword(userpass.bytes,pubkey.bytes,(uint8_t *)tmpstr,(int32_t)strlen(tmpstr));
