@@ -954,12 +954,12 @@ char *basilisk_swaplist()
 
 char *basilisk_swapfinished(uint32_t requestid,uint32_t quoteid)
 {
-    char *liststr,*retstr = 0; cJSON *array,*item; int32_t i,n;
+    char *liststr,*retstr = 0; cJSON *retjson,*array,*item; int32_t i,n;
     if ( (liststr= basilisk_swaplist()) != 0 )
     {
-        if ( (array= cJSON_Parse(liststr)) != 0 )
+        if ( (retjson= cJSON_Parse(liststr)) != 0 )
         {
-            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            if ( (array= jarray(&n,retjson,"swaps")) != 0 )
             {
                 for (i=0; i<n; i++)
                 {
@@ -973,10 +973,10 @@ char *basilisk_swapfinished(uint32_t requestid,uint32_t quoteid)
                     }
                 }
             }
-            free_json(array);
+            free_json(retjson);
         }
+        free(liststr);
     }
-    free(liststr);
     return(retstr);
 }
 
