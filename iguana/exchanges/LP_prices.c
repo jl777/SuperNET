@@ -324,7 +324,7 @@ char *LP_orderbook(char *base,char *rel)
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     if ( numbids > 1 )
-        qsort(bids,numbids,sizeof(*bids),_cmp_orderbook);
+        qsort(bids,numbids,sizeof(*bids),_cmp_orderbookrev);
     for (i=0; i<numbids; i++)
         jaddi(array,LP_orderbookjson(bids[i],-1));
     jadd(retjson,"bids",array);
