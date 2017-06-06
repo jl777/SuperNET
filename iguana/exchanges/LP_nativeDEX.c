@@ -166,7 +166,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             }
             if ( (counter % 500) == 0 )
             {
-                char str[65];
+                //char str[65];
                 printf("start utxos updates\n");
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
