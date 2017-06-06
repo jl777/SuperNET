@@ -397,6 +397,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     {
         char tmpstr[128];
         coin->counter++;
+        bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
         if ( counter++ == 0 )
         {
             bitcoin_priv2wif(USERPASS_WIFSTR,privkey,188);
@@ -404,7 +405,6 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
             userpub = curve25519(userpass,curve25519_basepoint9());
             printf("userpass.(%s)\n",bits256_str(USERPASS,userpub));
         }
-        bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
         printf("%s (%s) %d wif.(%s) (%s)\n",symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
         if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
             printf("importprivkey -> (%s)\n",jprint(retjson,1));
