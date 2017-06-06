@@ -171,7 +171,7 @@ struct LP_utxoinfo
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
     int32_t vout,vout2,pair;
-    uint32_t lasttime,errors,swappending,published,spentflag;
+    uint32_t lasttime,errors,swappending,published,spentflag,lastspentcheck;
     double profitmargin;
     char ipaddr[64],coinaddr[64],spendscript[256],coin[16];
     uint16_t port;

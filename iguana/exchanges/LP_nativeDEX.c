@@ -165,9 +165,10 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 char str[65];
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
-                    if ( utxo->spentflag == 0 )
+                    now = (uint32_t)time(NULL);
+                    if ( utxo->spentflag == 0 && now > utxo->lastspentcheck+60 )
                     {
-                        printf("mainloop check spent\n");
+                        utxo->lastspentcheck = now;
                         if ( LP_txvalue(utxo->coin,utxo->txid,utxo->vout) == 0 )
                         {
                             printf("txid.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->value));
