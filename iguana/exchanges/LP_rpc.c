@@ -71,6 +71,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             retjson = cJSON_Parse(retstr);
             free(retstr);
         }
+        usleep(1000);
         //printf("dpow_gettxout.(%s)\n",retstr);
     }
     return(retjson);
