@@ -23,7 +23,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes)
 {
     char *retstr; bits256 txid; int32_t i,sentflag = 0;
     memset(&txid,0,sizeof(txid));
-    for (i=0; i<3; i++)
+    for (i=0; i<1; i++)
     {
         if ( (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
         {
@@ -877,7 +877,7 @@ char *basilisk_swap_Aspend(char *name,char *symbol,uint8_t pubtype,uint8_t p2sht
          for (i=0; i<32; i++)
          privBn.bytes[i] = rev.bytes[31 - i];*/
         txfee = LP_txfee(symbol);
-        signedtx = basilisk_swap_bobtxspend(&signedtxid,txfee,name,symbol,pubtype,p2shtype,isPoS,wiftype,ctx,privAm,&privBn,redeemscript,redeemlen,0,0,utxotxid,vout,0,pubkey33,1,expiration,destamountp,0,0,vinaddr,0);
+        signedtx = basilisk_swap_bobtxspend(&signedtxid,txfee,name,symbol,pubtype,p2shtype,isPoS,wiftype,ctx,privAm,&privBn,redeemscript,redeemlen,0,0,utxotxid,vout,0,pubkey33,1,expiration,destamountp,0,0,vinaddr,1);
     }
     return(signedtx);
 }
