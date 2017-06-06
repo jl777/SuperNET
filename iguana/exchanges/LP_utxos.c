@@ -52,7 +52,7 @@ struct LP_utxoinfo *_LP_utxo2find(bits256 txid,int32_t vout)
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
     memcpy(key,txid.bytes,sizeof(txid));
     memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
-    //HASH_FIND(hh,LP_utxoinfos2,key,sizeof(key),utxo);
+    HASH_FIND(hh2,LP_utxoinfos2,key,sizeof(key),utxo);
     return(utxo);
 }
 
@@ -61,9 +61,9 @@ struct LP_utxoinfo *LP_utxo2find(bits256 txid,int32_t vout)
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
     memcpy(key,txid.bytes,sizeof(txid));
     memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
-    //portable_mutex_lock(&LP_utxomutex);
+    portable_mutex_lock(&LP_utxomutex);
     utxo = _LP_utxo2find(txid,vout);
-    //portable_mutex_unlock(&LP_utxomutex);
+    portable_mutex_unlock(&LP_utxomutex);
     return(utxo);
 }
 
@@ -241,7 +241,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         portable_mutex_lock(&LP_utxomutex);
         HASH_ADD_KEYPTR(hh,LP_utxoinfos,utxo->key,sizeof(utxo->key),utxo);
         if ( _LP_utxo2find(txid2,vout2) == 0 )
-            HASH_ADD_KEYPTR(hh,LP_utxoinfos2,utxo->key2,sizeof(utxo->key2),utxo);
+            HASH_ADD_KEYPTR(hh2,LP_utxoinfos2,utxo->key2,sizeof(utxo->key2),utxo);
         if ( mypeer != 0 )
             mypeer->numutxos++;
         portable_mutex_unlock(&LP_utxomutex);

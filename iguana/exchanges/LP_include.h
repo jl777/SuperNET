@@ -164,7 +164,7 @@ struct basilisk_swap
 
 struct LP_utxoinfo
 {
-    UT_hash_handle hh;
+    UT_hash_handle hh,hh2;
     bits256 txid,txid2,feetxid,otherpubkey,mypub;
     void *swap;
     uint64_t value,satoshis,value2;
