@@ -159,10 +159,15 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         {
             nonz = 0;
             if ( (++counter % 2000) == 0 )
+            {
+                printf("start privkey updates\n");
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
+                printf("done privkey updates\n");
+            }
             if ( (counter % 500) == 0 )
             {
                 char str[65];
+                printf("start utxos updates\n");
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
                     now = (uint32_t)time(NULL);
@@ -187,8 +192,10 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                         }
                     }
                 }
+                printf("done utxos updates\n");
             }
             now = (uint32_t)time(NULL);
+            printf("start peers updates\n");
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
                 if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0) )
@@ -227,6 +234,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                         nn_freemsg(ptr), ptr = 0;
                 }
             }
+            printf("done peers updates\n");
             while ( pullsock >= 0 && (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
             {
                 nonz++;
@@ -250,6 +258,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
             }
             if ( nonz == 0 )
                 usleep(50000);
+            printf("nonz.%d in mainloop\n",nonz);
         }
     }
 }
