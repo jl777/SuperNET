@@ -494,7 +494,7 @@ struct basilisk_rawtx *LP_swapdata_rawtx(struct basilisk_swap *swap,uint8_t *dat
 
 int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys)
 {
-    bits256 otherhash,myhash,txid; int32_t i,offset=0,datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr; uint32_t quoteid,msgbits;
+    bits256 otherhash,myhash,txid; int32_t i,offset=0,datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr,redeemaddr[64]; uint32_t quoteid,msgbits;
     for (i=0; i<32; i++)
         otherhash.bytes[i] = recvbuf[offset++];
     for (i=0; i<32; i++)
@@ -515,7 +515,8 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
         memcpy(rawtx->redeemscript,&data[datalen],rawtx->I.redeemlen);
         for (i=0; i<rawtx->I.redeemlen; i++)
             printf("%02x",rawtx->redeemscript[i]);
-        printf(" received redeemscript\n");
+        bitcoin_address(redeemaddr,rawtx->coin->p2shtype,rawtx->redeemscript,rawtx->I.redeemlen);
+        printf(" received redeemscript.(%s)\n",redeemaddr);
     }
     //printf("recvlen.%d datalen.%d redeemlen.%d\n",recvlen,datalen,rawtx->redeemlen);
     if ( rawtx->I.datalen == 0 )
@@ -557,7 +558,9 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
                     bitcoin_address(rawtx->p2shaddr,rawtx->coin->p2shtype,rawtx->spendscript,hexlen);
                     //if ( swap != 0 )
                     //    basilisk_txlog(swap->myinfoptr,swap,rawtx,-1); // bobdeposit, bobpayment or alicepayment
-                    retval = 0;
+                    if ( strcmp(redeemaddr,rawtx->p2shaddr) == 0 )
+                        retval = 0;
+                    else printf("mismatched redeemscript %s != %s\n",redeemaddr,rawtx->p2shaddr);
                 }
             } else printf("%s ERROR.(%s)\n",rawtx->name,jprint(txobj,0));
         }
