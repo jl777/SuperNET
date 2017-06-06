@@ -160,16 +160,17 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
             if ( (counter % 500) == 0 )
             {
+                char str[65];
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
                     if ( LP_txvalue(utxo->coin,utxo->txid,utxo->vout) == 0 )
                     {
-                        printf("txid %s %.8f has been spent\n",utxo->coin,dstr(utxo->value));
+                        printf("txid.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->value));
                         LP_spentnotify(utxo,0);
                     }
                     else if ( LP_txvalue(utxo->coin,utxo->txid2,utxo->vout2) == 0 )
                     {
-                        printf("txid2 %s %.8f has been spent\n",utxo->coin,dstr(utxo->value2));
+                        printf("txid2.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,utxo->txid2),utxo->vout2,dstr(utxo->value2));
                         LP_spentnotify(utxo,1);
                     }
                     else if ( LP_ismine(utxo) != 0 )
