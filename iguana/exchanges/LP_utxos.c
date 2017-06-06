@@ -378,6 +378,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         printf("cant add privkey for %s, coin not active\n",symbol);
         return(0);
     }
+    printf("privkey init.(%s) %s\n",symbol,coin->symbol);
     if ( passphrase != 0 )
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else privkey = iguana_wif2privkey(wifstr);
@@ -413,7 +414,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
             used = 0;
             while ( used < n-1 )
             {
-                printf("used.%d of n.%d\n",used,n);
+                //printf("used.%d of n.%d\n",used,n);
                 if ( (i= LP_maxvalue(values,n)) >= 0 )
                 {
                     item = jitem(array,i);
@@ -454,7 +455,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         }
         free_json(array);
     }
-    printf("privkey.%s %.8f\n",symbol,dstr(total));
+    //printf("privkey.%s %.8f\n",symbol,dstr(total));
     return(total);
 }
 
