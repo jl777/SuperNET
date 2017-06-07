@@ -648,6 +648,7 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
     fee = JUMBLR_INCR * JUMBLR_FEE;
     OS_randombytes(&r,sizeof(r));
 //r = 0;
+    // randomize size chosen and order of chunks
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 )
     {
         //printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);

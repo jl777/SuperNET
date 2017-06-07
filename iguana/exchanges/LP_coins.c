@@ -208,6 +208,16 @@ struct iguana_info *LP_coinsearch(char *symbol)
     return(0);
 }
 
+int32_t LP_isdisabled(char *base,char *rel)
+{
+    struct iguana_info *coin;
+    if ( base != 0 && (coin= LP_coinsearch(base)) != 0 && coin->inactive != 0 )
+        return(1);
+    else if ( rel != 0 && (coin= LP_coinsearch(rel)) != 0 && coin->inactive != 0 )
+        return(1);
+    else return(0);
+}
+
 struct iguana_info *LP_coinfind(char *symbol)
 {
     struct iguana_info *coin,cdata; int32_t isPoS,longestchain = 1000000; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*assetname;

@@ -222,6 +222,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 )
         {
             //char str[65];
+            if ( LP_isdisabled(base,rel) != 0 )
+                return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             if ( strcmp(method,"setprice") == 0 )
             {
                 if ( LP_mypriceset(base,rel,jdouble(argjson,"price")) < 0 )
@@ -256,12 +258,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         }
         else if ( (coin= jstr(argjson,"coin")) != 0 )
         {
-            if ( strcmp(method,"inventory") == 0 )
-            {
-                LP_privkey_init(0,-1,coin,0,USERPASS_WIFSTR,1);
-                return(LP_inventory(coin));
-            }
-            else if ( strcmp(method,"enable") == 0 )
+            if ( strcmp(method,"enable") == 0 )
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     ptr->inactive = 0;
@@ -272,6 +269,13 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     ptr->inactive = (uint32_t)time(NULL);
                 return(jprint(LP_coinsjson(),1));
+            }
+            if ( LP_isdisabled(coin,0) != 0 )
+                return(clonestr("{\"error\":\"coin is disabled\"}"));
+            if ( strcmp(method,"inventory") == 0 )
+            {
+                LP_privkey_init(0,-1,coin,0,USERPASS_WIFSTR,1);
+                return(LP_inventory(coin));
             }
             else if ( IAMCLIENT != 0 && (strcmp(method,"candidates") == 0 || strcmp(method,"autotrade") == 0) )
             {
@@ -297,6 +301,10 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             else return(basilisk_swaplist());
         }
     }
+    if ( LP_isdisabled(jstr(argjson,"base"),jstr(argjson,"base")) != 0 )
+        return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
+    if ( LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
+        return(clonestr("{\"error\":\"coin is disabled\"}"));
     amclient = (LP_mypeer == 0);
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
     {
