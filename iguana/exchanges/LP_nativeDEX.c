@@ -54,6 +54,7 @@ void tradebot_pendingadd(cJSON *tradejson,char *base,double basevolume,char *rel
 {
     // add to trades
 }
+
 char *LP_getdatadir()
 {
     return(USERHOME);
@@ -77,10 +78,10 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_quotes.c"
 #include "LP_commands.c"
 
-void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,int32_t pullsock,uint16_t myport,int32_t amclient,char *passphrase,double profitmargin)
+void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,int32_t pullsock,uint16_t myport,int32_t amclient,char *passphrase,double profitmargin,cJSON *coins)
 {
     //static uint16_t tmpport;
-    char *retstr; uint8_t r; int32_t i,n,j,len,recvsize,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now; struct LP_utxoinfo *utxo,*utmp; void *ptr; cJSON *argjson;
+    char *retstr; uint8_t r; int32_t i,n,j,len,recvsize,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now; struct LP_utxoinfo *utxo,*utmp; void *ptr; cJSON *argjson,*item;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
@@ -111,6 +112,11 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     {
         LP_coinfind(activecoins[i]);
         LP_priceinfoadd(activecoins[i]);
+    }
+    if ( (n= cJSON_GetArraySize(coins)) > 0 )
+    {
+        for (i=0; i<n; i++)
+            LP_coincreate(jitem(coins,i));
     }
     LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
@@ -262,7 +268,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     }
 }
 
-void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome)
+void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
     char *myipaddr=0; long filesize,n; int32_t timeout,maxsize,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128];
     IAMCLIENT = amclient;
@@ -327,7 +333,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         }
         //printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));
     }
-    LP_mainloop(mypeer,mypubport,pubsock,pullsock,myport,amclient,passphrase,profitmargin);
+    LP_mainloop(mypeer,mypubport,pubsock,pullsock,myport,amclient,passphrase,profitmargin,jobj(argjson,"coins"));
 }
 
 

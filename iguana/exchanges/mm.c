@@ -811,7 +811,7 @@ void LP_main(void *ptr)
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
-        LPinit(7779,7780,7781,profitmargin,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"));
+        LPinit(7779,7780,7781,profitmargin,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 

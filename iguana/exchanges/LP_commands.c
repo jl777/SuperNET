@@ -38,6 +38,8 @@ double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,
                 if ( bits256_nonz(qp->desthash) != 0 )
                     flag = 1;
                 jaddstr(reqjson,"method",method);
+                if ( strcmp(method,"price") != 0 )
+                    printf("QUERY.(%s)\n",jprint(reqjson,0));
                 LP_send(pushsock,jprint(reqjson,1),1);
                 for (i=0; i<30; i++)
                 {

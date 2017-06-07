@@ -18,7 +18,16 @@
 //  marketmaker
 //
 
-char *portstrs[][2] = { { "BTC", "8332" }, { "KMD", "7771" }, { "LTC", "9332" }, { "REVS", "10196" }, { "JUMBLR", "15106" }, };
+char *portstrs[][2] = { { "BTC", "8332" }, { "KMD", "7771" }, { "REVS", "10196" }, { "JUMBLR", "15106" }, };
+
+uint16_t LP_rpcport(char *symbol)
+{
+    int32_t i;
+    for (i=0; i<sizeof(portstrs)/sizeof(*portstrs); i++)
+        if ( strcmp(portstrs[i][0],symbol) == 0 )
+            return(atoi(portstrs[i][1]));
+    return(0);
+}
 
 char *parse_conf_line(char *line,char *field)
 {
@@ -132,15 +141,6 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot)
     return(-1);
 }
 
-uint16_t LP_rpcport(char *symbol)
-{
-    int32_t i;
-    for (i=0; i<sizeof(portstrs)/sizeof(*portstrs); i++)
-        if ( strcmp(portstrs[i][0],symbol) == 0 )
-            return(atoi(portstrs[i][1]));
-    return(0);
-}
-
 cJSON *LP_coinjson(struct iguana_info *coin)
 {
     cJSON *item = cJSON_CreateObject();
@@ -162,46 +162,87 @@ cJSON *LP_coinsjson()
     return(array);
 }
 
-struct iguana_info *LP_coinfind(char *symbol)
+void LP_coininit(struct iguana_info *coin,char *symbol,char *name,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain)
 {
-    struct iguana_info *coin,cdata; int32_t i; uint16_t port;
+    memset(coin,0,sizeof(*coin));
+    safecopy(coin->symbol,symbol,sizeof(coin->symbol));
+    sprintf(coin->serverport,"127.0.0.1:%u",port);
+    coin->longestchain = longestchain;
+    coin->txfee = txfee;
+    coin->estimatedrate = estimatedrate;
+    coin->pubtype = pubtype;
+    coin->p2shtype = p2shtype;
+    coin->wiftype = wiftype;
+    LP_userpass(coin->userpass,symbol,"",name);
+}
+
+struct iguana_info *LP_coinadd(struct iguana_info *cdata)
+{
+    struct iguana_info *coin;
+    //printf("%s: (%s) (%s)\n",symbol,cdata.serverport,cdata.userpass);
+    LP_coins = realloc(LP_coins,sizeof(*LP_coins) * (LP_numcoins+1));
+    coin = &LP_coins[LP_numcoins];
+    *coin = *cdata;
+    LP_numcoins++;
+    return(coin);
+}
+
+struct iguana_info *LP_coinsearch(char *symbol)
+{
+    int32_t i;
     for (i=0; i<LP_numcoins; i++)
         if ( strcmp(LP_coins[i].symbol,symbol) == 0 )
             return(&LP_coins[i]);
-    memset(&cdata,0,sizeof(cdata));
-    coin = &cdata;
-    safecopy(cdata.symbol,symbol,sizeof(cdata.symbol));
-    port = LP_rpcport(symbol);
-    sprintf(cdata.serverport,"127.0.0.1:%u",port);
-    cdata.longestchain = 100000;
-    cdata.txfee = 10000;
-    cdata.estimatedrate = 20;
+    return(0);
+}
+
+struct iguana_info *LP_coinfind(char *symbol)
+{
+    struct iguana_info *coin,cdata; int32_t longestchain = 1000000; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name;
+    if ( (coin= LP_coinsearch(symbol)) != 0 )
+        return(coin);
+    if ( (port= LP_rpcport(symbol)) == 0 )
+        return(0);
+    txfee = 10000;
+    estimatedrate = 20;
+    pubtype = 60;
+    p2shtype = 85;
+    wiftype = 188;
     if ( strcmp(symbol,"BTC") == 0 )
     {
-        cdata.txfee = 50000;
-        cdata.estimatedrate = 300;
-        cdata.p2shtype = 5;
-        cdata.wiftype = 128;
-        LP_userpass(cdata.userpass,symbol,"","bitcoin");
+        txfee = 50000;
+        estimatedrate = 300;
+        p2shtype = 5;
+        wiftype = 128;
+        name = "bitcoin";
     }
-    else if ( strcmp(symbol,"LTC") == 0 )
+    else name = (strcmp(symbol,"KMD") == 0) ? "komodo" : symbol;
+    LP_coininit(&cdata,symbol,name,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain);
+    return(LP_coinadd(&cdata));
+}
+
+// "coins":[{"coin":"<assetchain>", "rpcport":pppp}, {"coin":"LTC", "name":"litecoin", "rpcport":9332, "pubtype":48, "p2shtype":5, "wiftype":176, "txfee":100000 }]
+
+struct iguana_info *LP_coincreate(cJSON *item)
+{
+    struct iguana_info cdata; int32_t longestchain = 1000000; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*symbol;
+    if ( (symbol= jstr(item,"coin")) != 0 && symbol[0] != 0 && strlen(symbol) < 16 && LP_coinfind(symbol) == 0 && (port= juint(item,"rpcport")) != 0 )
     {
-        cdata.pubtype = 48;
-        cdata.p2shtype = 5;
-        cdata.wiftype = 176;
-        LP_userpass(cdata.userpass,symbol,"","litecoin");
+        if ( (txfee= j64bits(item,"txfee")) == 0 )
+            txfee = 10000;
+        if ( (estimatedrate= jdouble(item,"estimatedrate")) == 0. )
+            estimatedrate = 20;
+        if ( (pubtype= juint(item,"pubtype")) == 0 )
+            pubtype = 60;
+        if ( (p2shtype= juint(item,"p2shtype")) == 0 )
+            p2shtype = 85;
+        if ( (wiftype= juint(item,"wiftype")) == 0 )
+            wiftype = 188;
+        if ( (name= jstr(item,"name")) == 0 )
+            name = symbol;
+        LP_coininit(&cdata,symbol,name,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain);
+        return(LP_coinadd(&cdata));
     }
-    else
-    {
-        cdata.pubtype = 60;
-        cdata.p2shtype = 85;
-        cdata.wiftype = 188;
-        LP_userpass(cdata.userpass,symbol,symbol,strcmp(symbol,"KMD") == 0 ? "komodo" : symbol);
-    }
-    //printf("%s: (%s) (%s)\n",symbol,cdata.serverport,cdata.userpass);
-    LP_coins = realloc(LP_coins,sizeof(*LP_coins) * (LP_numcoins+1));
-    coin = &LP_coins[LP_numcoins++];
-    *coin = cdata;
-    return(coin);
+    return(0);
 }
 

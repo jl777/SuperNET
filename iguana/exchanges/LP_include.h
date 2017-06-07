@@ -37,7 +37,7 @@
 //#define BASILISK_DISABLEWAITTX
 //#define BASILISK_DISABLESENDTX
 
-#define LP_PROPAGATION_SLACK 10 // txid ordering is not enforced, so getting extra recent txid
+#define LP_PROPAGATION_SLACK 100 // txid ordering is not enforced, so getting extra recent txid
 #define LP_RESERVETIME 60
 #define LP_AVETXSIZE 200
 #define LP_CACHEDURATION 60
