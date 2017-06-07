@@ -1,2 +1,7 @@
 source randval
-pkill -15 marketmaker; git pull; cd ..; ./m_mm; ./marketmaker "{\"client\":1,\"coins\":[{\"coin\":\"REVS\", \"asset\":\"REVS\", \"rpcport\":10196}, {\"coin\":\"JUMBLR\", \"asset\":\"JUMBLR\", \"rpcport\":15106}, {\"coin\":\"LTC\", \"name\":\"litecoin\", \"rpcport\":9332, \"pubtype\":48, \"p2shtype\":5, \"wiftype\":176, \"txfee\":100000 }], \"userhome\":\"/${HOME#"/"}\",\"passphrase\":\"$randval\"}" &
+pkill -15 marketmaker; 
+git pull;
+ cd ..; 
+./m_mm;
+#./marketmaker "{\"client\":1,\"coins\":[{\"coin\":\"REVS\", \"asset\":\"REVS\", \"rpcport\":10196}, {\"coin\":\"JUMBLR\", \"asset\":\"JUMBLR\", \"rpcport\":15106}, {\"coin\":\"LTC\", \"name\":\"litecoin\", \"rpcport\":9332, \"pubtype\":48, \"p2shtype\":5, \"wiftype\":176, \"txfee\":100000 }], \"userhome\":\"/${HOME#"/"}\",\"passphrase\":\"$randval\"}" &
+ ./marketmaker "{\"client\":1,\"coins\":[{\"coin\":\"REVS\", \"asset\":\"REVS\", \"rpcport\":10196}, {\"coin\":\"JUMBLR\", \"asset\":\"JUMBLR\", \"rpcport\":15106}], \"userhome\":\"/${HOME#"/"}\",\"passphrase\":\"$randval\"}" &
