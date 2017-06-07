@@ -265,13 +265,13 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     ptr->inactive = 0;
-                return(jprint(LP_coins(),1));
+                return(jprint(LP_coinsjson(),1));
             }
             else if ( strcmp(method,"disable") == 0 )
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     ptr->inactive = (uint32_t)time(NULL);
-                return(jprint(LP_coins(),1));
+                return(jprint(LP_coinsjson(),1));
             }
             else if ( IAMCLIENT != 0 && (strcmp(method,"candidates") == 0 || strcmp(method,"autotrade") == 0) )
             {
