@@ -1,2 +1,2 @@
 source randval
-pkill -15 marketmaker; git pull; cd ..; ./m_mm; ./marketmaker "{\"client\":1,\"userhome\":\"/${HOME#"/"}\",\"passphrase\":\"$randval\"}" &
+pkill -15 marketmaker; git pull; cd ..; ./m_mm; ./marketmaker "{\"client\":1,\"coins\":[{\"coin\":\"REVS\", \"rpcport\":10196}, {\"coin\":\"JUMBLR\", \"rpcport\":15106}], \"userhome\":\"/${HOME#"/"}\",\"passphrase\":\"$randval\"}" &

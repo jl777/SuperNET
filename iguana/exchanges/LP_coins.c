@@ -18,7 +18,7 @@
 //  marketmaker
 //
 
-char *portstrs[][2] = { { "BTC", "8332" }, { "KMD", "7771" }, { "REVS", "10196" }, { "JUMBLR", "15106" }, };
+char *portstrs[][2] = { { "BTC", "8332" }, { "KMD", "7771" } };
 
 uint16_t LP_rpcport(char *symbol)
 {
