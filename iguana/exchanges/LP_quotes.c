@@ -207,6 +207,7 @@ cJSON *LP_tradecandidates(char *base)
     totaladded = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        printf("%s:%u %s\n",peer->ipaddr,peer->port,base);
         n = added = 0;
         if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,base,100)) != 0 )
         {
