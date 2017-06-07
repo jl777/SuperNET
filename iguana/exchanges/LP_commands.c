@@ -204,7 +204,7 @@ char *LP_connected(cJSON *argjson)
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t amclient,otherpeers,othernumutxos; struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer; cJSON *retjson;
+    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t amclient,otherpeers,othernumutxos; struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
@@ -260,6 +260,18 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             {
                 LP_privkey_init(0,-1,coin,0,USERPASS_WIFSTR,1);
                 return(LP_inventory(coin));
+            }
+            else if ( strcmp(method,"enable") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                    ptr->inactive = 0;
+                return(jprint(LP_coins(),1));
+            }
+            else if ( strcmp(method,"disable") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                    ptr->inactive = (uint32_t)time(NULL);
+                return(jprint(LP_coins(),1));
             }
             else if ( IAMCLIENT != 0 && (strcmp(method,"candidates") == 0 || strcmp(method,"autotrade") == 0) )
             {
