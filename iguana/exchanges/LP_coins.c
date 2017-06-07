@@ -141,7 +141,7 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot)
         sprintf(userpass,"%s:%s",username,password);
         fclose(fp);
         return((int32_t)strlen(userpass));
-    }
+    } else printf("cant open.(%s)\n",fname);
     return(-1);
 }
 
