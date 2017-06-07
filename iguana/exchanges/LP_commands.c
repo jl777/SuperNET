@@ -207,6 +207,26 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t amclient,otherpeers,othernumutxos; struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
+    else if ( strcmp(method,"help") == 0 )
+        return(clonestr("{\"result\":\" \
+available localhost RPC commands:\n \
+setprice(base, rel, price)\n\
+myprice(base, rel)\n\
+enable(coin)\n\
+disable(coin)\n\
+inventory(coin)\n\
+candidates(txid, vout)\n\
+autotrade(txid, vout, maxprice)\n\
+swapstatus()\n\
+swapstatus(requestid, quoteid)\n\
+public API:\n \
+getcoins()\n\
+getpeers()\n\
+getutxos()\n\
+getutxos(coin, lastn)\n\
+orderbook(base, rel)\n\
+getprice(base, rel)\n\
+\"}"));
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
     {
         if ( USERPASS_COUNTER == 0 )
