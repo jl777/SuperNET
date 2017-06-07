@@ -45,7 +45,7 @@ char *parse_conf_line(char *line,char *field)
     return(clonestr(line));
 }
 
-void LP_userpassfp(char *username,char *password,FILE *fp)
+void LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
 {
     char *rpcuser,*rpcpassword,*str,line[8192];
     rpcuser = rpcpassword = 0;
@@ -65,7 +65,7 @@ void LP_userpassfp(char *username,char *password,FILE *fp)
         strcpy(username,rpcuser);
         strcpy(password,rpcpassword);
     }
-    //printf("rpcuser.(%s) rpcpassword.(%s) KMDUSERPASS.(%s) %u\n",rpcuser,rpcpassword,KMDUSERPASS,port);
+    printf("%s rpcuser.(%s) rpcpassword.(%s) %u\n",symbol,rpcuser,rpcpassword,port);
     if ( rpcuser != 0 )
         free(rpcuser);
     if ( rpcpassword != 0 )
@@ -137,7 +137,7 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot)
     LP_statefname(fname,symbol,assetname,confname);
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
-        LP_userpassfp(username,password,fp);
+        LP_userpassfp(symbol,username,password,fp);
         sprintf(userpass,"%s:%s",username,password);
         fclose(fp);
         return((int32_t)strlen(userpass));
