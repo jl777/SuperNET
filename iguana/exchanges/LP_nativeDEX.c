@@ -123,13 +123,16 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         }
     }
     LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
+    if ( (retstr= basilisk_swaplist()) != 0 )
+        free(retstr);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( strcmp(peer->ipaddr,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1") != 0 )
+        {
+            printf("query utxo from %s\n",peer->ipaddr);
             LP_utxosquery(0,mypeer,pubsock,peer->ipaddr,peer->port,"",100,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
+        }
     }
-    if ( (retstr= basilisk_swaplist()) != 0 )
-        free(retstr);
     if ( amclient != 0 )
     {
         while ( 1 )
