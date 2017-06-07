@@ -309,7 +309,7 @@ getprice(base, rel)\n\
                 if ( (utxo= LP_utxofind(txid,vout)) == 0 )
                     return(clonestr("{\"error\":\"txid/vout not found\"}"));
                 if ( strcmp(method,"candidates") == 0 )
-                    return(jprint(LP_tradecandidates(utxo,coin),1));
+                    return(jprint(LP_tradecandidates(coin),1));
                 else return(jprint(LP_autotrade(utxo,coin,jdouble(argjson,"maxprice")),1));
             }
         }

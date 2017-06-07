@@ -356,6 +356,8 @@ char *LP_orderbook(char *base,char *rel)
     jaddstr(retjson,"base",base);
     jaddstr(retjson,"rel",rel);
     jaddnum(retjson,"timestamp",now);
+    if ( numbids == 0 && numasks == 0 )
+        LP_quotesinit(base,rel);
     return(jprint(retjson,1));
 }
 

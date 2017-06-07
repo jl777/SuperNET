@@ -196,14 +196,14 @@ int32_t LP_arrayfind(cJSON *array,bits256 txid,int32_t vout)
     return(-1);
 }
 
-cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
+cJSON *LP_tradecandidates(char *base)
 {
     struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*retarray=0,*item; int32_t i,n,totaladded,added; double price;
-    if ( (price= LP_price(base,myutxo->coin)) == .0 )
+    /*if ( (price= LP_price(base,myutxo->coin)) == .0 )
     {
         printf("no LP_price (%s -> %s)\n",base,myutxo->coin);
         return(0);
-    }
+    }*/
     totaladded = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
@@ -246,6 +246,30 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
         }
     }
     return(retarray);
+}
+
+void LP_quotesinit(char *base,char *rel)
+{
+    cJSON *array,*item; struct LP_quoteinfo Q; bits256 zero; int32_t i,n,iter;
+    memset(&zero,0,sizeof(zero));
+    for (iter=0; iter<2; iter++)
+    if ( (array= LP_tradecandidates(iter == 0 ? base : rel)) != 0 )
+    {
+        //printf("candidates.(%s)\nn.%d\n",jprint(array,0),cJSON_GetArraySize(array));
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            memset(&Q,0,sizeof(Q));
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                LP_quoteparse(&Q,item);
+                if ( iter == 0 )
+                    LP_query("price",&Q,jstr(item,"ipaddr"),jint(item,"port"),base,rel,zero);
+                else LP_query("price",&Q,jstr(item,"ipaddr"),jint(item,"port"),rel,base,zero);
+            }
+        }
+        free_json(array);
+    }
 }
 
 cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)

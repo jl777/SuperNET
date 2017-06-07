@@ -282,10 +282,7 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                         utxo = LP_addutxo(amclient,mypeer,mypubsock,jstr(item,"coin"),txid,jint(item,"vout"),j64bits(item,"value"),jbits256(item,"txid2"),jint(item,"vout2"),j64bits(item,"value2"),jstr(item,"script"),jstr(item,"address"),argipaddr,argport,jdouble(item,"profit"));
                         if ( utxo != 0 )
                         {
-                            struct LP_quoteinfo Q;
-                            memset(&Q,0,sizeof(Q));
                             utxo->lasttime = now;
-                            LP_query("price",&Q,utxo->ipaddr,utxo->port,utxo->coin,"KMD",utxo->mypub);
                         }
                     }
                 } // else printf("skip.(%s)\n",jprint(item,0));
