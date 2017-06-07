@@ -380,7 +380,7 @@ char *LP_pricestr(char *base,char *rel)
     } else return(clonestr("{\"error\":\"cant find baserel pair\"}"));
 }
 
-
+// bids disappear?
 
 
 

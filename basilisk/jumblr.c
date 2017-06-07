@@ -642,7 +642,7 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,char *dest,struct iguana_inf
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval)
 {
     //static uint32_t lasttime;
-    char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 privkey; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r;
+    char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 privkey; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r,s;
     if ( myinfo->IAMNOTARY != 0 )
         return;
     fee = JUMBLR_INCR * JUMBLR_FEE;
@@ -651,8 +651,9 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
     // randomize size chosen and order of chunks
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 )
     {
+        s = (selector + (r>>1)) % 3;
         //printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
-        switch ( selector )
+        switch ( s )
         {
             case 0: // public -> z, need to importprivkey
                 jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,JUMBLR_DEPOSITPREFIX);
@@ -662,12 +663,14 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
                     {
                         if ( (zaddr= jumblr_zgetnewaddress(myinfo,coin)) != 0 )
                         {
+                            amount = 0;
                             if ( total >= SATOSHIDEN * ((JUMBLR_INCR + 3*fee)*100 + 3*JUMBLR_TXFEE) )
                                 amount = SATOSHIDEN * ((JUMBLR_INCR + 3*fee)*100 + 3*JUMBLR_TXFEE);
-                            else if ( total >= SATOSHIDEN * ((JUMBLR_INCR + 3*fee)*10 + 3*JUMBLR_TXFEE) )
+                            if ( (r & 2) != 0 && total >= SATOSHIDEN * ((JUMBLR_INCR + 3*fee)*10 + 3*JUMBLR_TXFEE) )
                                 amount = SATOSHIDEN * ((JUMBLR_INCR + 3*fee)*10 + 3*JUMBLR_TXFEE);
-                            else amount = SATOSHIDEN * ((JUMBLR_INCR + 3*fee) + 3*JUMBLR_TXFEE);
-                            if ( (retstr= jumblr_sendt_to_z(myinfo,coin,KMDaddr,zaddr,dstr(amount))) != 0 )
+                            if ( (r & 4) != 0 )
+                                amount = SATOSHIDEN * ((JUMBLR_INCR + 3*fee) + 3*JUMBLR_TXFEE);
+                            if ( amount > 0 && (retstr= jumblr_sendt_to_z(myinfo,coin,KMDaddr,zaddr,dstr(amount))) != 0 )
                             {
                                 printf("sendt_to_z.(%s)\n",retstr);
                                 free(retstr);
