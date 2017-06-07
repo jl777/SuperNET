@@ -198,7 +198,7 @@ struct iguana_info *LP_coinsearch(char *symbol)
 
 struct iguana_info *LP_coinfind(char *symbol)
 {
-    struct iguana_info *coin,cdata; int32_t longestchain = 1000000; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name;
+    struct iguana_info *coin,cdata; int32_t longestchain = 1000000; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,namebuf[512];
     if ( (coin= LP_coinsearch(symbol)) != 0 )
         return(coin);
     if ( (port= LP_rpcport(symbol)) == 0 )
@@ -216,7 +216,13 @@ struct iguana_info *LP_coinfind(char *symbol)
         wiftype = 128;
         name = "bitcoin";
     }
-    else name = (strcmp(symbol,"KMD") == 0) ? "komodo" : symbol;
+    else if ( strcmp(symbol,"KMD") == 0 )
+        name = "komodo";
+    else
+    {
+        sprintf(namebuf,"komodo/%s",symbol);
+        name = namebuf;
+    }
     LP_coininit(&cdata,symbol,name,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain);
     return(LP_coinadd(&cdata));
 }
