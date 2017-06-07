@@ -411,7 +411,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     }
     bitcoin_addr2rmd160(&tmptype,rmd160,coin->smartaddr);
     LP_privkeyadd(privkey,rmd160);
-    if ( (array= LP_listunspent(symbol,coin->smartaddr)) != 0 )
+    if ( coin->inactive == 0 && (array= LP_listunspent(symbol,coin->smartaddr)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
