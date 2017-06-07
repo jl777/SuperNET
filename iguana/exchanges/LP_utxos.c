@@ -406,7 +406,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
             printf("userpass.(%s)\n",bits256_str(USERPASS,userpub));
         }
         printf("%s (%s) %d wif.(%s) (%s)\n",symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
-        if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
+        if ( coin->inactive == 0 && (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
             printf("importprivkey -> (%s)\n",jprint(retjson,1));
     }
     bitcoin_addr2rmd160(&tmptype,rmd160,coin->smartaddr);
