@@ -198,7 +198,7 @@ int32_t LP_arrayfind(cJSON *array,bits256 txid,int32_t vout)
 
 cJSON *LP_tradecandidates(char *base)
 {
-    struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*retarray=0,*item; int32_t i,n,totaladded,added; 
+    struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*retarray=0,*item; int32_t i,n,totaladded,added;
     /*if ( (price= LP_price(base,myutxo->coin)) == .0 )
     {
         printf("no LP_price (%s -> %s)\n",base,myutxo->coin);
@@ -210,7 +210,7 @@ cJSON *LP_tradecandidates(char *base)
         n = added = 0;
         if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,base,100)) != 0 )
         {
-            //printf("%s:%u %s %s\n",peer->ipaddr,peer->port,base,utxostr);
+            printf("%s:%u %s %s\n",peer->ipaddr,peer->port,base,utxostr);
             if ( (array= cJSON_Parse(utxostr)) != 0 )
             {
                 if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
@@ -281,7 +281,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
         maxprice = LP_price(base,myutxo->coin) / 0.975;
     if ( (array= LP_tradecandidates(base)) != 0 )
     {
-        //printf("candidates.(%s)\nn.%d\n",jprint(array,0),cJSON_GetArraySize(array));
+        printf("candidates.(%s)\nn.%d\n",jprint(array,0),cJSON_GetArraySize(array));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             memset(prices,0,sizeof(prices));
