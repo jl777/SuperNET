@@ -261,7 +261,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
             name = symbol;
         LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain);
         if ( (coin= LP_coinadd(&cdata)) != 0 )
-            coin->inactive = jint(item,"inactive");
+            coin->inactive = !jint(item,"active");
     }
     return(0);
 }
