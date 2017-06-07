@@ -193,11 +193,26 @@ int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
 {
     int32_t numconfirms = 100;
 #ifndef BASILISK_DISABLEWAITTX
-    cJSON *txobj;
+    cJSON *txobj,*array; int32_t i,n;
+    numconfirms = -1;
     if ( (txobj= LP_gettx(rawtx->coin->symbol,rawtx->I.signedtxid)) != 0 )
     {
         numconfirms = jint(txobj,"confirmations");
         free_json(txobj);
+    }
+    else if ( (array= LP_getmempool(rawtx->coin->symbol)) != 0 )
+    {
+        if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+                if ( bits256_cmp(rawtx->I.signedtxid,jbits256i(array,i)) == 0 )
+                {
+                    numconfirms = 0;
+                    printf("found tx in mempool slot.%d\n",i);
+                    break;
+                }
+        }
+        free_json(array);
     }
 #endif
     return(numconfirms);
