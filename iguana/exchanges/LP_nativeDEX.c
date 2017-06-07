@@ -81,7 +81,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,int32_t pullsock,uint16_t myport,int32_t amclient,char *passphrase,double profitmargin,cJSON *coins)
 {
     //static uint16_t tmpport;
-    char *retstr; uint8_t r; int32_t i,n,j,len,recvsize,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now; struct LP_utxoinfo *utxo,*utmp; void *ptr; cJSON *argjson;
+    char *retstr; uint8_t r; int32_t i,n,j,len,recvsize,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now; struct LP_utxoinfo *utxo,*utmp; void *ptr; cJSON *argjson,*item;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
@@ -116,7 +116,11 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     if ( (n= cJSON_GetArraySize(coins)) > 0 )
     {
         for (i=0; i<n; i++)
-            LP_coincreate(jitem(coins,i));
+        {
+            item = jitem(coins,i);
+            LP_coincreate(item);
+            LP_priceinfoadd(jstr(item,"coin"));
+        }
     }
     LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)

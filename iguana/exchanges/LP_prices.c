@@ -224,6 +224,8 @@ cJSON *LP_priceinfomatrix(int32_t usemyprices)
 struct LP_priceinfo *LP_priceinfoadd(char *symbol)
 {
     struct LP_priceinfo *pp; cJSON *retjson;
+    if ( symbol == 0 )
+        return(0);
     if ( LP_numpriceinfos >= sizeof(LP_priceinfos)/sizeof(*LP_priceinfos) )
     {
         printf("cant add any more priceinfos\n");
