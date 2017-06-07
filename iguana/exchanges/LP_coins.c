@@ -128,7 +128,11 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot)
     userpass[0] = 0;
     sprintf(confname,"%s.conf",confroot);
 #ifdef __APPLE__
+    int32_t len;
     confname[0] = toupper(confname[0]);
+    len = (int32_t)strlen(confname);
+    if ( strcmp(&confname[len-4],"coin") == 0 )
+        confname[len - 4] = 'C';
 #endif
     LP_statefname(fname,symbol,assetname,confname);
     if ( (fp= fopen(fname,"rb")) != 0 )
