@@ -3,7 +3,7 @@ pkill -15 marketmaker;
 git pull;
  cd ..; 
 ./m_mm;
-./marketmaker "{\"client\":1,\"coins\":[{\"coin\":\"SUPERNET\",\"asset\":\"SUPERNET\",\"rpcport\":11341},{\"coin\":\"REVS\",\"active\":1, \"asset\":\"REVS\",\"rpcport\":10196},{\"coin\":\"WLC\",\"asset\":\"WLC\",\"rpcport\":11667},{\"coin\":\"PANGEA\",\"asset\":\"PANGEA\",\"rpcport\":10074},{\"coin\":\"DEX\",\"asset\":\"DEX\",\"rpcport\":9503},{\"coin\":\"JUMBLR\",\"active\":1, \"asset\":\"JUMBLR\",\"rpcport\":15106},{\"coin\":\"BET\",\"asset\":\"BET\",\"rpcport\":11222},{\"coin\":\"CRYPTO\",\"asset\":\"CRYPTO\",\"rpcport\":10420},{\"coin\":\"HODL\",\"asset\":\"HODL\",\"rpcport\":8010},{\"coin\":\"SHARK\",\"asset\":\"SHARK\",\"rpcport\":14104},{\"coin\":\"BOTS\",\"asset\":\"BOTS\",\"rpcport\":10151},{\"coin\":\"MGW\",\"asset\":\"MGW\",\"rpcport\":15524},{\"coin\":\"MVP\",\"asset\":\"MVP\",\"rpcport\":11676},{\"coin\":\"KV\",\"asset\":\"KV\",\"rpcport\":9747},{\"coin\":\"CEAL\",\"asset\":\"CEAL\",\"rpcport\":13097},{\"coin\":\"MESH\",\"asset\":\"MESH\",\"rpcport\":8400}, 
+./marketmaker "{\"client\":1,\"coins\":[{\"coin\":\"REVS\",\"active\":1, \"asset\":\"REVS\",\"rpcport\":10196},{\"coin\":\"JUMBLR\",\"active\":1, \"asset\":\"JUMBLR\",\"rpcport\":15106},
 {\"coin\":\"DOGE\", \"name\":\"dogecoin\", \"pubtype\":30, \"p2shtype\":5, \"wiftype\":128, \"txfee\":100000000},
 {\"coin\":\"DGB\", \"name\":\"digibyte\", \"pubtype\":30, \"p2shtype\":5, \"wiftype\":128, \"txfee\":10000},
 {\"coin\":\"MZC\", \"name\":\"mazacoin\", \"pubtype\":50, \"p2shtype\":9, \"wiftype\":224, \"txfee\":0},
@@ -16,5 +16,7 @@ git pull;
 {\"coin\":\"ANC\", \"name\":\"anoncoin\", \"pubtype\":23, \"p2shtype\":5, \"wiftype\":151, \"txfee\":2000000},
 {\"coin\":\"FRK\", \"name\":\"franko\", \"pubtype\":35, \"p2shtype\":5, \"wiftype\":163, \"txfee\":0},
 {\"coin\":\"GAME\", \"name\":\"gamecredits\", \"pubtype\":38, \"p2shtype\":5, \"wiftype\":166, \"txfee\":100000},
-{\"coin\":\"LTC\", \"name\":\"litecoin\", \"rpcport\":9332, \"pubtype\":48, \"p2shtype\":5, \"wiftype\":176, \"txfee\":100000 }], \"userhome\":\"/${HOME#"/"}\",\"passphrase\":\"$randval\"}" &
+{\"coin\":\"LTC\", \"name\":\"litecoin\", \"rpcport\":9332, \"pubtype\":48, \"p2shtype\":5, \"wiftype\":176, \"txfee\":100000 },
+{\"coin\":\"SUPERNET\",\"asset\":\"SUPERNET\",\"rpcport\":11341},{\"coin\":\"WLC\",\"asset\":\"WLC\",\"rpcport\":15432},{\"coin\":\"PANGEA\",\"asset\":\"PANGEA\",\"rpcport\":14068},{\"coin\":\"DEX\",\"asset\":\"DEX\",\"rpcport\":11890},{\"coin\":\"BET\",\"asset\":\"BET\",\"rpcport\":14250},{\"coin\":\"CRYPTO\",\"asset\":\"CRYPTO\",\"rpcport\":8516},{\"coin\":\"HODL\",\"asset\":\"HODL\",\"rpcport\":14431},{\"coin\":\"SHARK\",\"asset\":\"SHARK\",\"rpcport\":10114},{\"coin\":\"BOTS\",\"asset\":\"BOTS\",\"rpcport\":11964},{\"coin\":\"MGW\",\"asset\":\"MGW\",\"rpcport\":12386},{\"coin\":\"MVP\",\"asset\":\"MVP\",\"rpcport\":8655},{\"coin\":\"KV\",\"asset\":\"KV\",\"rpcport\":8299},{\"coin\":\"CEAL\",\"asset\":\"CEAL\",\"rpcport\":11116},{\"coin\":\"MESH\",\"asset\":\"MESH\",\"rpcport\":9455}
+], \"userhome\":\"/${HOME#"/"}\",\"passphrase\":\"$randval\"}" &
 
