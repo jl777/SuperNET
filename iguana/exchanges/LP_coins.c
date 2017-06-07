@@ -213,6 +213,7 @@ struct iguana_info *LP_coinfind(char *symbol)
     {
         txfee = 50000;
         estimatedrate = 300;
+        pubtype = 0;
         p2shtype = 5;
         wiftype = 128;
         name = "bitcoin";
