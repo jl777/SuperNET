@@ -147,6 +147,7 @@ cJSON *LP_coinjson(struct iguana_info *coin)
     jaddstr(item,"coin",coin->symbol);
     if ( coin->inactive != 0 )
         jaddstr(item,"status","inactive");
+    else jaddstr(item,"status","active");
     if ( coin->isPoS != 0 )
         jaddstr(item,"type","PoS");
     jaddstr(item,"smartaddress",coin->smartaddr);
