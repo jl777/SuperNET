@@ -344,3 +344,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
 }
 
 
+// splitfunds cant trade?
+// timeout on bad peers
+
+
