@@ -82,8 +82,8 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
 {
     //static uint16_t tmpport;
     char *retstr; uint8_t r; int32_t i,n,j,len,recvsize,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now; struct LP_utxoinfo *utxo,*utmp; void *ptr; cJSON *argjson,*item;
-    if ( amclient != 0 )
-        myport += amclient * 10;
+    //if ( amclient != 0 )
+    //    myport += amclient * 10;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
