@@ -173,7 +173,7 @@ void LP_utxo_updates(int32_t pubsock,char *passphrase,double profitmargin)
 
 void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins)
 {
-    char *retstr; uint8_t r; int32_t i,n,j,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now,lastforward = 0; cJSON *item;
+    char *retstr; uint8_t r; int32_t i,n,j,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now,lastforward = 0; cJSON *item; struct LP_utxoinfo *utxo,*utmp;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
@@ -287,6 +287,17 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
                         LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer->ipaddr,myport,profitmargin);
                 }
                 nonz += LP_subsock_check(peer);
+            }
+            if ( (counter % 100) == 0 )
+            {
+                HASH_ITER(hh,LP_utxoinfos[0],utxo,utmp)
+                {
+                    LP_utxo_spentcheck(pubsock,utxo,profitmargin);
+                }
+                HASH_ITER(hh,LP_utxoinfos[1],utxo,utmp)
+                {
+                    LP_utxo_spentcheck(pubsock,utxo,profitmargin);
+                }
             }
             if ( pullsock >= 0 )
                 nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
