@@ -310,8 +310,8 @@ char *LP_spentcheck(cJSON *argjson)
             }
             if ( LP_txvalue(utxo->coin,checktxid,checkvout) == 0 )
             {
-                //if ( LP_mypeer != 0 && LP_mypeer->numutxos > 0 )
-                //    LP_mypeer->numutxos--;
+                if ( LP_mypeer != 0 && LP_mypeer->numutxos > 0 )
+                    LP_mypeer->numutxos--;
                 utxo->T.spentflag = (uint32_t)time(NULL);
                 retval++;
                 //printf("indeed txid was spent\n");
@@ -409,6 +409,8 @@ struct LP_utxoinfo *LP_addutxo(int32_t iambob,int32_t mypubsock,char *symbol,bit
         portable_mutex_unlock(&LP_utxomutex);
         if ( mypubsock >= 0 )
             LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
+        if ( LP_mypeer != 0 && LP_ismine(utxo) > 0 )
+            LP_mypeer->numutxos++;
     }
     return(utxo);
 }
@@ -508,10 +510,10 @@ cJSON *LP_inventory(char *symbol,int32_t iambob)
     else myipaddr = "127.0.0.1";
     HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
     {
-        char str[65]; printf("iambob.%d iterate %s\n",iambob,bits256_str(str,LP_mypubkey));
+        //char str[65]; printf("iambob.%d iterate %s\n",iambob,bits256_str(str,LP_mypubkey));
         if ( LP_isunspent(utxo) != 0 && strcmp(symbol,utxo->coin) == 0 && utxo->iambob == iambob && LP_ismine(utxo) > 0 )
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
-        else printf("skip %s %d %d %d %d\n",bits256_str(str,utxo->pubkey),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
+        //else printf("skip %s %d %d %d %d\n",bits256_str(str,utxo->pubkey),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
     }
     return(array);
 }
@@ -553,7 +555,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
         printf("coin not active\n");
         return(0);
     }
-    printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
+    //printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )

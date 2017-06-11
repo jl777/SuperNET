@@ -282,7 +282,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
                     lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
                     if ( lastn < LP_PROPAGATION_SLACK * 2 )
                         lastn = LP_PROPAGATION_SLACK * 2;
-                    printf("%s numutxos.%d vs %d lastn.%d\n",peer->ipaddr,peer->numutxos,mypeer->numutxos,lastn);
+                    // printf("%s numutxos.%d vs %d lastn.%d\n",peer->ipaddr,peer->numutxos,mypeer->numutxos,lastn);
                     if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
                         LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer->ipaddr,myport,profitmargin);
                 }
