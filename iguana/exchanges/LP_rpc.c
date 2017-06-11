@@ -61,6 +61,8 @@ char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utx
 char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *pushaddr)
 {
     char url[512],str[65];
+    if ( strncmp("tcp://",pushaddr,strlen("tcp://")) != 0 || strlen(pushaddr) <= strlen("tcp://") )
+        return(clonestr("{\"error\":\"illegal pushaddr\"}"));
     sprintf(url,"http://%s:%u/api/stats/register?pubkey=%s&pushaddr=%s",destip,destport,bits256_str(str,pubkey),pushaddr);
     //printf("getutxo.(%s)\n",url);
     return(issue_curl(url));

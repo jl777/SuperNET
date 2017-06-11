@@ -225,7 +225,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",100,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
         }
     }
-    printf("mainloop\n");
+    printf("mainloop pushaddr.(%s)\n",pushaddr);
     if ( IAMLP == 0 )
     {
         while ( 1 )
