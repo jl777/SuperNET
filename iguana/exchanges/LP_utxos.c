@@ -629,7 +629,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
 {
     static uint32_t counter;
     bits256 privkey,userpub,userpass; char tmpstr[128],str[65],str2[65]; cJSON *retjson; uint8_t tmptype,rmd160[20];
-    if ( passphrase != 0 )
+    if ( passphrase != 0 && passphrase[0] != 0 )
         conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else
     {
