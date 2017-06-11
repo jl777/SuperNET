@@ -89,7 +89,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
         }
         //usleep(1000);
         //printf("dpow_gettxout.(%s)\n",retstr);
-    }
+    } else printf("bitcoin_json cant talk to NULL coin\n");
     return(retjson);
 }
 

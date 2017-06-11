@@ -219,10 +219,14 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             LP_priceinfoadd(jstr(item,"coin"));
         }
     }
+    printf("update alice\n");
     LP_privkey_updates(pubsock,passphrase,0);
+    printf("update bob\n");
     LP_privkey_updates(pubsock,passphrase,1);
+    printf("update swaps\n");
     if ( (retstr= basilisk_swaplist()) != 0 )
         free(retstr);
+    printf("update peers\n");
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( strcmp(peer->ipaddr,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1") != 0 )
@@ -231,6 +235,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",100,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
         }
     }
+    printf("mainloop\n");
     if ( IAMLP == 0 )
     {
         while ( 1 )
