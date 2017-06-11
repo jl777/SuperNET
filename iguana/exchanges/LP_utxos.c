@@ -20,6 +20,7 @@
 
 int32_t LP_ismine(struct LP_utxoinfo *utxo)
 {
+    char str[65],str2[65]; printf("cmp.(%s) vs (%s)\n",bits256_str(str,utxo->pubkey),bits256_str(str2,LP_mypubkey));
     if ( bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 )
         return(1);
     else return(0);
@@ -188,7 +189,7 @@ int32_t LP_utxopurge(int32_t allutxos)
         {
             if ( LP_isavailable(utxo) > 0 )
             {
-                printf("purge.(%s) ?\n",bits256_str(str,utxo->payment.txid));
+                printf("purge2.(%s) ?\n",bits256_str(str,utxo->payment.txid));
                 if ( allutxos != 0 || LP_ismine(utxo) == 0 )
                 {
                     printf("delete.(%s)\n",bits256_str(str,utxo->payment.txid));
