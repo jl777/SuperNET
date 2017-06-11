@@ -634,7 +634,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
     else
     {
         privkey = iguana_wif2privkey(wifstr);
-        printf("WIF.(%s) -> %s\n",wifstr,bits256_str(str,privkey));
+        //printf("WIF.(%s) -> %s\n",wifstr,bits256_str(str,privkey));
     }
     iguana_priv2pub(pubkey33,coin->smartaddr,privkey,coin->pubtype);
     if ( coin->counter == 0 )
@@ -656,7 +656,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
             printf("importprivkey -> (%s)\n",jprint(retjson,1));
     }
     LP_mypubkey = *pubkeyp = curve25519(privkey,curve25519_basepoint9());
-    printf("privkey.(%s) -> LP_mypubkey.(%s)\n",bits256_str(str,privkey),bits256_str(str2,LP_mypubkey));
+    //printf("privkey.(%s) -> LP_mypubkey.(%s)\n",bits256_str(str,privkey),bits256_str(str2,LP_mypubkey));
     return(privkey);
 }
 
