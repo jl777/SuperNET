@@ -167,7 +167,7 @@ void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitma
 
 void LP_utxo_updates(int32_t pubsock,char *passphrase,double profitmargin)
 {
-    LP_utxopurge(0);
+    //LP_utxopurge(0);
     LP_privkey_updates(pubsock,passphrase);
 }
 
