@@ -652,6 +652,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
             printf("importprivkey -> (%s)\n",jprint(retjson,1));
     }
     LP_mypubkey = *pubkeyp = curve25519(privkey,curve25519_basepoint9());
+    char str[65],str2[65]; printf("privkey.(%s) -> LP_mypubkey.(%s)\n",bits256_str(str,privkey),bits256_str(str2,LP_mypubkey));
     return(privkey);
 }
 
