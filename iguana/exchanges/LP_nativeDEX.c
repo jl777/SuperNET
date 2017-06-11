@@ -167,16 +167,8 @@ void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitma
 
 void LP_utxo_updates(int32_t pubsock,char *passphrase,double profitmargin)
 {
-    int32_t iambob; struct LP_utxoinfo *utxo,*tmp;
     LP_utxopurge(0);
-    for (iambob=0; iambob<=1; iambob++)
-    {
-        LP_privkey_updates(pubsock,passphrase,iambob);
-        HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
-        {
-            LP_utxo_spentcheck(pubsock,utxo,profitmargin);
-        }
-    }
+    LP_privkey_updates(pubsock,passphrase);
 }
 
 void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins)
@@ -219,10 +211,8 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             LP_priceinfoadd(jstr(item,"coin"));
         }
     }
-    printf("update alice\n");
-    LP_privkey_updates(pubsock,passphrase,0);
-    printf("update bob\n");
-    LP_privkey_updates(pubsock,passphrase,1);
+    printf("update utxos\n");
+    LP_privkey_updates(pubsock,passphrase);
     printf("update swaps\n");
     if ( (retstr= basilisk_swaplist()) != 0 )
         free(retstr);

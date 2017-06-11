@@ -527,73 +527,79 @@ int32_t LP_nearestvalue(uint64_t *values,int32_t n,uint64_t targetval)
     return(mini);
 }
 
-uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub,uint8_t *pubkey33,int32_t iambob)
+uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub,uint8_t *pubkey33)
 {
-    char *script; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0;
+    char *script; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,iambob,vout,depositvout; uint64_t *values=0,satoshis,depositval,targetval,value,total = 0;
     if ( coin == 0 )
     {
         printf("coin not active\n");
         return(0);
     }
-    //printf("privkey init.(%s) %s\n",symbol,coin->symbol);
+    printf("privkey init.(%s)\n",coin->symbol);
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
-            values = calloc(n,sizeof(*values));
-            for (i=0; i<n; i++)
+            for (iambob=0; iambob<=1; iambob++)
             {
-                item = jitem(array,i);
-                satoshis = SATOSHIDEN * jdouble(item,"amount");
-                values[i] = satoshis;
-                //printf("%.8f ",dstr(satoshis));
-            }
-            //printf("array.%d\n",n);
-            used = 0;
-            while ( used < n-1 )
-            {
-                //printf("used.%d of n.%d\n",used,n);
-                if ( (i= LP_maxvalue(values,n)) >= 0 )
+                if ( iambob == 0 )
+                    values = calloc(n,sizeof(*values));
+                else memset(values,0,n * sizeof(*values));
+                for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    deposittxid = jbits256(item,"txid");
-                    depositvout = juint(item,"vout");
-                    script = jstr(item,"scriptPubKey");
-                    depositval = values[i];
-                    values[i] = 0, used++;
-                    if ( iambob == 0 )
-                        targetval = (depositval / 776) + 100000;
-                    else targetval = (depositval / 9) * 8 + 100000;
-                    //printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
-                    if ( (i= LP_nearestvalue(values,n,targetval)) >= 0 )
+                    satoshis = SATOSHIDEN * jdouble(item,"amount");
+                    values[i] = satoshis;
+                    //printf("%.8f ",dstr(satoshis));
+                }
+                //printf("array.%d\n",n);
+                used = 0;
+                while ( used < n-1 )
+                {
+                    //printf("used.%d of n.%d\n",used,n);
+                    if ( (i= LP_maxvalue(values,n)) >= 0 )
                     {
                         item = jitem(array,i);
-                        txid = jbits256(item,"txid");
-                        vout = juint(item,"vout");
-                        if ( jstr(item,"scriptPubKey") != 0 && strcmp(script,jstr(item,"scriptPubKey")) == 0 )
+                        deposittxid = jbits256(item,"txid");
+                        depositvout = juint(item,"vout");
+                        script = jstr(item,"scriptPubKey");
+                        depositval = values[i];
+                        values[i] = 0, used++;
+                        if ( iambob == 0 )
+                            targetval = (depositval / 776) + 100000;
+                        else targetval = (depositval / 9) * 8 + 100000;
+                        //printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
+                        if ( (i= LP_nearestvalue(values,n,targetval)) >= 0 )
                         {
-                            value = values[i];
-                            values[i] = 0, used++;
-                            if ( iambob != 0 )
+                            item = jitem(array,i);
+                            txid = jbits256(item,"txid");
+                            vout = juint(item,"vout");
+                            if ( jstr(item,"scriptPubKey") != 0 && strcmp(script,jstr(item,"scriptPubKey")) == 0 )
                             {
-                                if ( (utxo= LP_addutxo(1,mypubsock,coin->symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coin->smartaddr,mypub,LP_peerinfos[0].profitmargin)) != 0 )
+                                value = values[i];
+                                values[i] = 0, used++;
+                                if ( iambob != 0 )
                                 {
-                                    //utxo->S.mypub = curve25519(privkey,curve25519_basepoint9());
+                                    if ( (utxo= LP_addutxo(1,mypubsock,coin->symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coin->smartaddr,mypub,LP_peerinfos[0].profitmargin)) != 0 )
+                                    {
+                                        //utxo->S.mypub = curve25519(privkey,curve25519_basepoint9());
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                if ( (utxo= LP_addutxo(0,mypubsock,coin->symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coin->smartaddr,mypub,0)) != 0 )
+                                else
                                 {
-                                    //utxo->S.mypub = curve25519(privkey,curve25519_basepoint9());
+                                    if ( (utxo= LP_addutxo(0,mypubsock,coin->symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coin->smartaddr,mypub,0)) != 0 )
+                                    {
+                                        //utxo->S.mypub = curve25519(privkey,curve25519_basepoint9());
+                                    }
                                 }
+                                total += value;
                             }
-                            total += value;
                         }
-                    }
-                } else break;
+                    } else break;
+                }
+                if ( iambob == 1 )
+                    free(values);
             }
-            free(values);
         }
         free_json(array);
     }
@@ -630,7 +636,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
     return(privkey);
 }
 
-void LP_privkey_updates(int32_t pubsock,char *passphrase,int32_t iambob)
+void LP_privkey_updates(int32_t pubsock,char *passphrase)
 {
     int32_t i; struct iguana_info *coin; bits256 pubkey,privkey; uint8_t pubkey33[33];
     memset(privkey.bytes,0,sizeof(privkey));
@@ -643,7 +649,7 @@ void LP_privkey_updates(int32_t pubsock,char *passphrase,int32_t iambob)
             if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
                 privkey = LP_privkeycalc(pubkey33,&pubkey,coin,passphrase,"");
             if ( coin->inactive == 0 )
-                LP_privkey_init(pubsock,coin,privkey,pubkey,pubkey33,iambob);
+                LP_privkey_init(pubsock,coin,privkey,pubkey,pubkey33);
         }
     }
 }

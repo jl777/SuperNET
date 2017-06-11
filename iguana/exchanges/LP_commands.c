@@ -309,8 +309,7 @@ forward(pubkey,hexstr)\n\
                 {
                     privkey = LP_privkeycalc(pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
                     LP_utxopurge(0);
-                    LP_privkey_init(-1,ptr,privkey,pubkey,pubkey33,0);
-                    LP_privkey_init(-1,ptr,privkey,pubkey,pubkey33,1);
+                    LP_privkey_init(-1,ptr,privkey,pubkey,pubkey33);
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
                     jadd(retjson,"alice",LP_inventory(coin,0));
