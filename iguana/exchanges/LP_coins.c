@@ -250,7 +250,9 @@ struct iguana_info *LP_coinfind(char *symbol)
         assetname = symbol;
     }
     LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain);
-    return(LP_coinadd(&cdata));
+    if ( (coin= LP_coinadd(&cdata)) != 0 && strcmp(symbol,"KMD") == 0 )
+        coin->inactive = 0;
+    return(coin);
 }
 
 // "coins":[{"coin":"<assetchain>", "rpcport":pppp}, {"coin":"LTC", "name":"litecoin", "rpcport":9332, "pubtype":48, "p2shtype":5, "wiftype":176, "txfee":100000 }]
