@@ -81,6 +81,14 @@ struct LP_utxoinfo *LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)
     return(utxo);
 }
 
+struct LP_utxoinfo *LP_utxofinds(int32_t iambob,bits256 txid,int32_t vout,bits256 txid2,int32_t vout2)
+{
+    struct LP_utxoinfo *utxo;
+    if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 || (utxo= LP_utxofind(iambob,txid2,vout2)) != 0 || (utxo= LP_utxo2find(iambob,txid,vout)) != 0 || (utxo= LP_utxo2find(iambob,txid2,vout2)) != 0 )
+        return(utxo);
+    else return(0);
+}
+
 int32_t LP_utxoaddptrs(struct LP_utxoinfo *ptrs[],int32_t n,struct LP_utxoinfo *utxo)
 {
     int32_t i;
@@ -331,22 +339,27 @@ int32_t LP_iseligible(int32_t iambob,char *coin,bits256 txid,int32_t vout,uint64
 
 struct LP_utxoinfo *LP_addutxo(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin)
 {
-    uint64_t tmpsatoshis; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    uint64_t tmpsatoshis; int32_t spendvini,selector; bits256 spendtxid; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     char str[65],str2[65],str3[65]; printf("iambob.%d %s %s LP_addutxo.(%.8f %.8f) %s %s\n",iambob,bits256_str(str3,pubkey),symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
-    if ( iambob != 0 && value2 < 9 * (value >> 3) + 100000 )
-        tmpsatoshis = (((value2-100000) / 9) << 3);
+    if ( iambob != 0 && value2 < 9 * (value >> 3) + 100000 ) // big txfee padding
+        tmpsatoshis = (((value2 - 100000) / 9) << 3);
     else tmpsatoshis = value;
     if ( LP_iseligible(iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
     {
         printf("LP_addutxo got spent txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",dstr(value),dstr(value2),dstr(tmpsatoshis));
         return(0);
     }
-    if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 || (utxo= LP_utxo2find(iambob,txid,vout)) != 0 )
+    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,txid,vout,txid2,vout2)) >= 0 )
+    {
+        printf("LP_addutxo selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
+        return(0);
+    }
+    if ( (utxo= LP_utxofinds(iambob,txid,vout,txid2,vout2)) != 0 )
     {
         //printf("%.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(tmpsatoshis),dstr(utxo->value),dstr(utxo->value2),dstr(utxo->satoshis));
         u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;

@@ -126,9 +126,45 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
     return(value);
 }
 
+int32_t LP_vinscan(bits256 *spendtxidp,int32_t *spendvinip,char *symbol,bits256 txid,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
+{
+    cJSON *txobj,*vins,*vin; bits256 spenttxid; int32_t j,numvins,spentvout,retval = -1;
+    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+    {
+        if ( bits256_cmp(txid,jbits256(txobj,"txid")) != 0 )
+        {
+            printf("txid mismatch error\n");
+            return(-2);
+        }
+        vins = jarray(&numvins,txobj,"vin");
+        for (j=0; j<numvins; j++)
+        {
+            vin = jitem(vins,j);
+            spenttxid = jbits256(vin,"txid");
+            spentvout = jint(vin,"vout");
+            if ( spentvout == searchvout && bits256_cmp(spenttxid,searchtxid) == 0 )
+            {
+                *spendtxidp = txid;
+                *spendvinip = j;
+                retval = 0;
+                break;
+            }
+            else if ( spentvout == searchvout2 && bits256_cmp(spenttxid,searchtxid2) == 0 )
+            {
+                *spendtxidp = txid;
+                *spendvinip = j;
+                retval = 1;
+                break;
+            }
+        }
+        free_json(txobj);
+    } else printf("unexpected missing txid\n"), retval = -3;
+    return(retval);
+}
+
 int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 searchtxid,int32_t searchvout)
 {
-    cJSON *blockjson,*txids,*txobj,*vins,*vin; bits256 hash,txid,spenttxid; int32_t h,i,j,numtxids,numvins,spentvout,loadheight,errs = 0;
+    cJSON *blockjson,*txids,*txobj; bits256 hash,txid; int32_t h,i,j,numtxids,loadheight,errs = 0;
     *indp = -1;
     memset(spendtxidp,0,sizeof(*spendtxidp));
     if ( LP_txvalue(symbol,searchtxid,searchvout) > 0 )
@@ -155,28 +191,8 @@ int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 se
                 for (i=0; i<numtxids; i++)
                 {
                     txid = jbits256(jitem(txids,i),0);
-                    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
-                    {
-                        if ( bits256_cmp(txid,jbits256(txobj,"txid")) != 0 )
-                        {
-                            printf("txid mismatch error ht.%d i.%d\n",loadheight,i);
-                            errs++;
-                            break;
-                        }
-                        vins = jarray(&numvins,txobj,"vin");
-                        for (j=0; j<numvins; j++)
-                        {
-                            vin = jitem(vins,j);
-                            spenttxid = jbits256(vin,"txid");
-                            spentvout = jint(vin,"vout");
-                            if ( spentvout == searchvout && bits256_cmp(spenttxid,searchtxid) == 0 )
-                            {
-                                *spendtxidp = txid;
-                                *indp = j;
-                            }
-                        }
-                        free_json(txobj);
-                    } else printf("unexpected missing txid height.%d %d\n",loadheight,i), errs++;
+                    if ( (j= LP_vinscan(spendtxidp,indp,symbol,txid,searchtxid,searchvout,searchtxid,searchvout)) >= 0 )
+                        break;
                 }
             }
             free_json(blockjson);
@@ -204,6 +220,25 @@ int32_t LP_mempoolscan(char *symbol,bits256 txid)
                 }
         }
         free_json(array);
+    }
+    return(-1);
+}
+
+int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
+{
+    int32_t i,n; cJSON *array; bits256 mempooltxid;
+    if ( (array= LP_getmempool(symbol)) != 0 )
+    {
+        if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                mempooltxid = jbits256i(array,i);
+                if ( (*spendvinp= LP_vinscan(spendtxidp,spendvinp,symbol,mempooltxid,searchtxid,searchvout,searchtxid2,searchvout2)) >= 0 )
+                    return(i);
+            }
+            free_json(array);
+        }
     }
     return(-1);
 }

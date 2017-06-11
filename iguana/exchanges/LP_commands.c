@@ -120,11 +120,21 @@ int32_t LP_connectstart(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,
 
 char *LP_connected(cJSON *argjson) // alice
 {
-    cJSON *retjson; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *utxo; struct LP_quoteinfo Q; struct basilisk_swap *swap;
-    retjson = cJSON_CreateObject();
+    cJSON *retjson; bits256 spendtxid; int32_t spendvini,selector,pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *utxo; struct LP_quoteinfo Q; struct basilisk_swap *swap;
     LP_quoteparse(&Q,argjson);
     if ( IAMLP == 0 && bits256_cmp(Q.desthash,LP_mypubkey) == 0 && (utxo= LP_utxofind(0,Q.desttxid,Q.destvout)) != 0 && LP_ismine(utxo) > 0 && LP_isavailable(utxo) > 0 )
     {
+        if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,Q.srccoin,Q.txid,Q.vout,Q.txid2,Q.vout2)) >= 0 )
+        {
+            char str[65]; printf("LP_connected src selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
+            return(clonestr("{\"error\",\"src txid in mempool\"}"));
+        }
+        if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,Q.srccoin,Q.txid,Q.vout,Q.txid2,Q.vout2)) >= 0 )
+        {
+            char str[65]; printf("LP_connected src selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
+            return(clonestr("{\"error\",\"dest txid in mempool\"}"));
+        }
+        retjson = cJSON_CreateObject();
         if ( (pairstr= jstr(argjson,"pair")) == 0 || (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
             jaddstr(retjson,"error","couldnt create pairsock");
         else if ( nn_connect(pairsock,pairstr) >= 0 )
@@ -145,19 +155,25 @@ char *LP_connected(cJSON *argjson) // alice
                 jaddnum(retjson,"quoteid",Q.R.quoteid);
             } else jaddstr(retjson,"error","couldnt aliceloop");
         }
-    } else jaddstr(retjson,"result","update stats");
-    return(jprint(retjson,1));
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"result\",\"update stats\"}"));
 }
 
 int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
-    char *method,*base,*rel,*retstr; cJSON *retjson; double price; bits256 txid; struct LP_utxoinfo *utxo; int32_t retval = -1; struct LP_quoteinfo Q;
+    char *method,*base,*rel,*retstr; cJSON *retjson; double price; bits256 txid,spendtxid; struct LP_utxoinfo *utxo; int32_t selector,spendvini,retval = -1; struct LP_quoteinfo Q;
     if ( (method= jstr(argjson,"method")) != 0 )
     {
         txid = jbits256(argjson,"txid");
         if ( (utxo= LP_utxofind(1,txid,jint(argjson,"vout"))) != 0 && LP_ismine(utxo) != 0 && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )
         {
             printf("LP_command.(%s)\n",jprint(argjson,0));
+            if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout)) >= 0 )
+            {
+                char str[65]; printf("LP_tradecommand selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
+                utxo->T.spentflag = (uint32_t)time(NULL);
+                return(0);
+            }
             if ( utxo->S.swap == 0 && time(NULL) > utxo->T.swappending )
                 utxo->T.swappending = 0;
             if ( strcmp(method,"price") == 0 || strcmp(method,"request") == 0 ) // bob
@@ -200,6 +216,11 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
             else if ( strcmp(method,"connect") == 0 ) // bob
             {
                 retval = 4;
+                if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,jstr(argjson,"destcoin"),jbits256(argjson,"desttxid"),jint(argjson,"destvout"),jbits256(argjson,"feetxid"),jint(argjson,"feevout"))) >= 0 )
+                {
+                    char str[65]; printf("LP_tradecommand fee selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
+                    return(0);
+                }
                 if ( utxo->T.swappending != 0 && utxo->S.swap == 0 )
                     LP_connectstart(pubsock,utxo,argjson,myipaddr,base,rel,profitmargin);
                 else printf("swap %p when connect came in (%s)\n",utxo->S.swap,jprint(argjson,0));
