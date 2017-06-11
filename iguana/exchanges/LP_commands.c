@@ -348,7 +348,7 @@ forward(pubkey,hexstr)\n\
                 if ( jobj(argjson,"vout") == 0 )
                     return(clonestr("{\"error\":\"missing vout\"}"));
                 vout = jint(argjson,"vout");
-                if ( (utxo= LP_utxofind(1,txid,vout)) == 0 )
+                if ( (utxo= LP_utxofind(0,txid,vout)) == 0 )
                     return(clonestr("{\"error\":\"txid/vout not found\"}"));
                 if ( strcmp(method,"candidates") == 0 )
                     return(jprint(LP_tradecandidates(coin),1));
