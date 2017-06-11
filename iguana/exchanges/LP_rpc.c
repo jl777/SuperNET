@@ -71,7 +71,7 @@ char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *push
 char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
 {
     char url[512],str[65];
-    sprintf(url,"http://%s:%u/api/stats/register?pubkey=%s",destip,destport,bits256_str(str,pubkey));
+    sprintf(url,"http://%s:%u/api/stats/lookup?pubkey=%s",destip,destport,bits256_str(str,pubkey));
     //printf("getutxo.(%s)\n",url);
     return(issue_curl(url));
 }

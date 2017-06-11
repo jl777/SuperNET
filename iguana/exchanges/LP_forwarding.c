@@ -41,6 +41,8 @@ struct LP_forwardinfo *LP_forwardfind(bits256 pubkey)
 
 char *LP_lookup(bits256 pubkey)
 {
+    if ( bits256_nonz(pubkey) == 0 )
+        return(clonestr("{\"error\":\"illegal pubkey\"}"));
     if ( LP_forwardfind(pubkey) != 0 )
         return(clonestr("{\"result\":\"success\",\"forwarding\":1}"));
     else return(clonestr("{\"error\":\"notfound\"}"));
@@ -49,6 +51,8 @@ char *LP_lookup(bits256 pubkey)
 char *LP_register(bits256 pubkey,char *pushaddr)
 {
     struct LP_forwardinfo *ptr=0; int32_t pushsock;
+    if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
+        return(clonestr("{\"error\":\"illegal ipaddr\"}"));
     if ( strlen(pushaddr) <= strlen("tcp://") || is_ipaddr(pushaddr+strlen("tcp://")) == 0 )
         return(clonestr("{\"error\":\"illegal ipaddr\"}"));
     if ( (ptr= LP_forwardfind(pubkey)) != 0 )
@@ -111,6 +115,8 @@ char *LP_forward(bits256 pubkey,char *hexstr)
 void LP_forwarding_register(bits256 pubkey,char *pushaddr)
 {
     char *retstr; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t retval = -1;
+    if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
+        return;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,pushaddr)) != 0 )
@@ -131,6 +137,8 @@ void LP_forwarding_register(bits256 pubkey,char *pushaddr)
 int32_t LP_pubkey_send(bits256 pubkey,char *jsonstr,int32_t freeflag)
 {
     struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *hexstr,*retstr; int32_t len,retval = -1; cJSON *retjson;
+    if ( jsonstr == 0 || jsonstr[0] == 0 || bits256_nonz(pubkey) == 0 )
+        return(-1);
     if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 && ptr->lasttime > time(NULL)-LP_KEEPALIVE )
     {
         return(LP_send(ptr->pushsock,jsonstr,1));
