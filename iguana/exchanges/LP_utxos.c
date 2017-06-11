@@ -508,9 +508,10 @@ cJSON *LP_inventory(char *symbol,int32_t iambob)
     else myipaddr = "127.0.0.1";
     HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
     {
-        //char str[65]; printf("iterate %s\n",bits256_str(str,utxo->txid));
+        char str[65]; printf("iambob.%d iterate %s\n",iambob,bits256_str(str,utxo->payment.txid));
         if ( LP_isunspent(utxo) != 0 && strcmp(symbol,utxo->coin) == 0 && utxo->iambob == iambob && LP_ismine(utxo) > 0 )
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
+        else printf("skip %s %d %d %d %d\n",bits256_str(str,utxo->payment.txid),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
     }
     return(array);
 }
