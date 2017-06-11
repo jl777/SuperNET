@@ -251,7 +251,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
                     lastforward = now;
                 }
             }
-            if ( nonz == 0 )
+            //if ( nonz == 0 )
                 usleep(200000);
         }
     }
@@ -289,7 +289,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             }
             if ( pullsock >= 0 )
                 nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
-            if ( nonz == 0 )
+            //if ( nonz == 0 )
                 usleep(100000);
             //printf("nonz.%d in mainloop\n",nonz);
         }
