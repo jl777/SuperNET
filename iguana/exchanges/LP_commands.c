@@ -258,6 +258,7 @@ register(pubkey,pushaddr)\n\
 lookup(pubkey)\n\
 forward(pubkey,hexstr)\n\
 \"}"));
+    printf("CMD.(%s)\n",jprint(argjson,0));
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
     {
         if ( USERPASS_COUNTER == 0 )
@@ -387,7 +388,6 @@ forward(pubkey,hexstr)\n\
             } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
         }
     }
-    //printf("CMD.(%s)\n",jprint(argjson,0));
     if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
         retstr = LP_quotereceived(argjson);
     else if ( strcmp(method,"connected") == 0 )
