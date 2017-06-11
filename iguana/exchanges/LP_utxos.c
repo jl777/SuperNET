@@ -168,16 +168,18 @@ void LP_availableset(struct LP_utxoinfo *utxo)
 
 int32_t LP_utxopurge(int32_t allutxos)
 {
-    struct LP_utxoinfo *utxo,*tmp; int32_t iambob,n = 0;
+    char str[65]; struct LP_utxoinfo *utxo,*tmp; int32_t iambob,n = 0;
     portable_mutex_lock(&LP_utxomutex);
     for (iambob=0; iambob<=1; iambob++)
     {
         HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
         {
+            printf("purge.(%s) ?\n",bits256_str(str,utxo->payment.txid));
             if ( allutxos != 0 || LP_ismine(utxo) == 0 )
             {
                 if ( LP_isavailable(utxo) == 0 )
                 {
+                    printf("delete.(%s)\n",bits256_str(str,utxo->payment.txid));
                     HASH_DELETE(hh,LP_utxoinfos[iambob],utxo);
                     free(utxo);
                 } else n++;
@@ -185,10 +187,12 @@ int32_t LP_utxopurge(int32_t allutxos)
         }
         HASH_ITER(hh,LP_utxoinfos2[iambob],utxo,tmp)
         {
+            printf("purge.(%s) ?\n",bits256_str(str,utxo->payment.txid));
             if ( allutxos != 0 || LP_ismine(utxo) == 0 )
             {
                 if ( LP_isavailable(utxo) == 0 )
                 {
+                    printf("delete.(%s)\n",bits256_str(str,utxo->payment.txid));
                     HASH_DELETE(hh,LP_utxoinfos2[iambob],utxo);
                     free(utxo);
                 } else n++;
@@ -634,7 +638,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
         bitcoin_addr2rmd160(&tmptype,rmd160,coin->smartaddr);
         LP_privkeyadd(privkey,rmd160);
-        if ( coin->pubtype != 188 || strcmp(coin->symbol,"KMD") == 0 )
+        if ( coin->pubtype != 60 || strcmp(coin->symbol,"KMD") == 0 )
             printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
         if ( counter++ == 0 )
         {
