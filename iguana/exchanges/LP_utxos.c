@@ -628,10 +628,14 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
 bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     static uint32_t counter;
-    bits256 privkey,userpub,userpass; char tmpstr[128]; cJSON *retjson; uint8_t tmptype,rmd160[20];
+    bits256 privkey,userpub,userpass; char tmpstr[128],str[65],str2[65]; cJSON *retjson; uint8_t tmptype,rmd160[20];
     if ( passphrase != 0 )
         conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-    else privkey = iguana_wif2privkey(wifstr);
+    else
+    {
+        privkey = iguana_wif2privkey(wifstr);
+        printf("WIF.(%s) -> %s\n",wifstr,bits256_str(str,privkey));
+    }
     iguana_priv2pub(pubkey33,coin->smartaddr,privkey,coin->pubtype);
     if ( coin->counter == 0 )
     {
@@ -652,7 +656,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
             printf("importprivkey -> (%s)\n",jprint(retjson,1));
     }
     LP_mypubkey = *pubkeyp = curve25519(privkey,curve25519_basepoint9());
-    char str[65],str2[65]; printf("privkey.(%s) -> LP_mypubkey.(%s)\n",bits256_str(str,privkey),bits256_str(str2,LP_mypubkey));
+    printf("privkey.(%s) -> LP_mypubkey.(%s)\n",bits256_str(str,privkey),bits256_str(str2,LP_mypubkey));
     return(privkey);
 }
 
