@@ -600,7 +600,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 values[i] = 0, used++;
                                 if ( iambob != 0 )
                                 {
-                                    if ( (utxo= LP_addutxo(1,mypubsock,coin->symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coin->smartaddr,mypub,LP_peerinfos[0].profitmargin)) != 0 )
+                                    if ( (utxo= LP_addutxo(1,mypubsock,coin->symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coin->smartaddr,mypub,LP_mypeer != 0 ? LP_mypeer->profitmargin : 0.01)) != 0 )
                                     {
                                         //utxo->S.mypub = curve25519(privkey,curve25519_basepoint9());
                                     }
