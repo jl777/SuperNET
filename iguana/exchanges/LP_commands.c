@@ -258,7 +258,7 @@ register(pubkey,pushaddr)\n\
 lookup(pubkey)\n\
 forward(pubkey,hexstr)\n\
 \"}"));
-    printf("CMD.(%s)\n",jprint(argjson,0));
+    //printf("CMD.(%s)\n",jprint(argjson,0));
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
     {
         if ( USERPASS_COUNTER == 0 )
@@ -404,9 +404,9 @@ forward(pubkey,hexstr)\n\
         retstr = LP_peers();
     else if ( IAMLP != 0 )
     {
-        if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
+        if ( strcmp(method,"getutxos") == 0 )
         {
-            retstr = LP_utxos(1,LP_mypeer,coin,jint(argjson,"lastn"));
+            retstr = LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn"));
             //printf("RETURN. %d utxos\n",cJSON_GetArraySize(cJSON_Parse(retstr)));
         }
         else if ( strcmp(method,"register") == 0 )

@@ -249,7 +249,7 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
     return(item);
 }
 
-char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *coin,int32_t lastn)
+char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t lastn)
 {
     int32_t i,firsti; struct LP_utxoinfo *utxo,*tmp; cJSON *utxosjson = cJSON_CreateArray();
     i = 0;
@@ -260,7 +260,7 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *coin,int32_t last
     {
         if ( i++ < firsti )
             continue;
-        if ( (coin == 0 || coin[0] == 0 || strcmp(coin,utxo->coin) == 0) && utxo->T.spentflag == 0 )//&& LP_ismine(utxo) > 0 )
+        if ( (symbol == 0 || symbol[0] == 0 || strcmp(symbol,utxo->coin) == 0) && utxo->T.spentflag == 0 )//&& LP_ismine(utxo) > 0 )
         {
             jaddi(utxosjson,LP_utxojson(utxo));
         }
