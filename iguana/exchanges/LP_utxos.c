@@ -20,10 +20,8 @@
 
 int32_t LP_ismine(struct LP_utxoinfo *utxo)
 {
-    if ( bits256_cmp(utxo->pubkey,LP_mypubkey) != 0 )
+    if ( bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 )
         return(1);
-    else if ( LP_mypeer == 0 )
-        return(0);
     else return(0);
 }
 
@@ -263,7 +261,7 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *coin,int32_t last
     {
         if ( i++ < firsti )
             continue;
-        if ( (coin == 0 || coin[0] == 0 || strcmp(coin,utxo->coin) == 0) && utxo->T.spentflag == 0 )//&& LP_ismine(utxo) != 0 )
+        if ( (coin == 0 || coin[0] == 0 || strcmp(coin,utxo->coin) == 0) && utxo->T.spentflag == 0 )//&& LP_ismine(utxo) > 0 )
         {
             jaddi(utxosjson,LP_utxojson(utxo));
         }
@@ -509,7 +507,7 @@ cJSON *LP_inventory(char *symbol,int32_t iambob)
     HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
     {
         //char str[65]; printf("iterate %s\n",bits256_str(str,utxo->txid));
-        if ( LP_isunspent(utxo) != 0 && strcmp(symbol,utxo->coin) == 0 && utxo->iambob == iambob && LP_ismine(utxo) != 0 )
+        if ( LP_isunspent(utxo) != 0 && strcmp(symbol,utxo->coin) == 0 && utxo->iambob == iambob && LP_ismine(utxo) > 0 )
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
     }
     return(array);

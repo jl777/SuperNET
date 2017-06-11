@@ -165,7 +165,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
     if ( (method= jstr(argjson,"method")) != 0 )
     {
         txid = jbits256(argjson,"txid");
-        if ( (utxo= LP_utxofind(1,txid,jint(argjson,"vout"))) != 0 && LP_ismine(utxo) != 0 && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )
+        if ( (utxo= LP_utxofind(1,txid,jint(argjson,"vout"))) != 0 && LP_ismine(utxo) > 0 && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )
         {
             printf("LP_command.(%s)\n",jprint(argjson,0));
             if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout)) >= 0 )
@@ -285,7 +285,7 @@ forward(pubkey,hexstr)\n\
                     {
                         HASH_ITER(hh,LP_utxoinfos[1],utxo,tmp)
                         {
-                            if ( LP_ismine(utxo) != 0 && (strcmp(utxo->coin,base) == 0 || strcmp(utxo->coin,rel) == 0) )
+                            if ( LP_ismine(utxo) > 0 && (strcmp(utxo->coin,base) == 0 || strcmp(utxo->coin,rel) == 0) )
                                 LP_priceping(LP_mypubsock,utxo,rel,LP_profitratio - 1.);
                             //else printf("notmine.(%s %s)\n",utxo->coin,bits256_str(str,utxo->txid));
                         }

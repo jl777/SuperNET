@@ -156,7 +156,7 @@ void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitma
             printf("txid2.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,u.txid),u.vout,dstr(u.value));
             LP_spentnotify(utxo,1);
         }
-        else if ( LP_ismine(utxo) != 0 )
+        else if ( LP_ismine(utxo) > 0 )
         {
             if ( strcmp(utxo->coin,"KMD") == 0 )
                 LP_priceping(pubsock,utxo,"BTC",profitmargin);
