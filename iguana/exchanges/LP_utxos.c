@@ -565,6 +565,8 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                 if ( iambob == 0 )
                     values = calloc(n,sizeof(*values));
                 else memset(values,0,n * sizeof(*values));
+                if ( iambob == 0 && IAMLP != 0 )
+                    continue;
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
