@@ -624,7 +624,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
         printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
         if ( counter++ == 0 )
         {
-            bitcoin_priv2wif(USERPASS_WIFSTR,privkey,188);
+            bitcoin_priv2wif(USERPASS_WIFSTR,privkey,0);
             conv_NXTpassword(userpass.bytes,pubkeyp->bytes,(uint8_t *)USERPASS_WIFSTR,(int32_t)strlen(USERPASS_WIFSTR));
             userpub = curve25519(userpass,curve25519_basepoint9());
             printf("userpass.(%s)\n",bits256_str(USERPASS,userpub));
