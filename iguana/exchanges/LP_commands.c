@@ -304,8 +304,19 @@ forward(pubkey,hexstr)\n\
                 return(clonestr("{\"error\":\"coin is disabled\"}"));
             if ( strcmp(method,"inventory") == 0 )
             {
-                LP_privkey_init(-1,coin,0,USERPASS_WIFSTR,0);
-                return(LP_inventory(coin,jobj(argjson,"client") != 0 ? jint(argjson,"client") : 0));
+                struct iguana_info *ptr; bits256 privkey,pubkey; uint8_t pubkey33[33];
+                if ( (ptr= LP_coinfind(coin)) != 0 )
+                {
+                    privkey = LP_privkeycalc(pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
+                    LP_utxopurge(0);
+                    LP_privkey_init(-1,ptr,privkey,pubkey,pubkey33,0);
+                    LP_privkey_init(-1,ptr,privkey,pubkey,pubkey33,1);
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result","success");
+                    jadd(retjson,"alice",LP_inventory(coin,0));
+                    jadd(retjson,"bob",LP_inventory(coin,1));
+                    return(jprint(retjson,1));
+                }
             }
             else if ( (strcmp(method,"candidates") == 0 || strcmp(method,"autotrade") == 0) )
             {

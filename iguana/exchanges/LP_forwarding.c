@@ -49,7 +49,7 @@ char *LP_lookup(bits256 pubkey)
 char *LP_register(bits256 pubkey,char *pushaddr)
 {
     struct LP_forwardinfo *ptr=0; int32_t pushsock;
-    if ( is_ipaddr(pushaddr) == 0 )
+    if ( is_ipaddr(pushaddr+strlen("tcp://")) == 0 )
         return(clonestr("{\"error\":\"illegal ipaddr\"}"));
     if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {

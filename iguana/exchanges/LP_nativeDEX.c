@@ -247,7 +247,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
                 lastforward = now;
             }
             nonz = n = 0;
-            if ( (++counter % 5000) == 0 )
+            if ( (++counter % 6000) == 0 )
                 LP_utxo_updates(pubsock,passphrase,profitmargin);
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
@@ -270,7 +270,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
         while ( 1 )
         {
             nonz = 0;
-            if ( (counter % 500) == 0 )
+            if ( (counter % 600) == 0 )
                 LP_utxo_updates(pubsock,passphrase,profitmargin);
             now = (uint32_t)time(NULL);
             //printf("start peers updates\n");
