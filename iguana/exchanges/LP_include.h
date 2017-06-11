@@ -218,5 +218,6 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
 double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits256 mypub);
 int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys);
 void LP_quotesinit(char *base,char *rel);
+int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double profitmargin);
 
 #endif

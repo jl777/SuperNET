@@ -373,27 +373,6 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
     return(bestitem);
 }
 
-int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double profitmargin)
-{
-    double price,bid,ask; uint32_t now; cJSON *retjson; struct LP_quoteinfo Q; char *retstr;
-    if ( (now= (uint32_t)time(NULL)) > utxo->T.swappending )
-        utxo->T.swappending = 0;
-    if ( now > utxo->T.published+60 && utxo->T.swappending == 0 && utxo->S.swap == 0 && (price= LP_myprice(&bid,&ask,utxo->coin,rel)) != 0. )
-    {
-        if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
-            return(-1);
-        Q.timestamp = (uint32_t)time(NULL);
-        retjson = LP_quotejson(&Q);
-        jaddstr(retjson,"method","quote");
-        retstr = jprint(retjson,1);
-        //printf("PING.(%s)\n",retstr);
-        LP_send(pubsock,retstr,1);
-        utxo->T.published = now;
-        return(0);
-    }
-    return(-1);
-}
-
 
 
 

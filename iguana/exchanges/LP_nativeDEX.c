@@ -138,6 +138,27 @@ int32_t LP_subsock_check(struct LP_peerinfo *peer)
     return(nonz);
 }
 
+int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double profitmargin)
+{
+    double price,bid,ask; uint32_t now; cJSON *retjson; struct LP_quoteinfo Q; char *retstr;
+    if ( (now= (uint32_t)time(NULL)) > utxo->T.swappending )
+        utxo->T.swappending = 0;
+    if ( now > utxo->T.published+60 && utxo->T.swappending == 0 && utxo->S.swap == 0 && (price= LP_myprice(&bid,&ask,utxo->coin,rel)) != 0. )
+    {
+        if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
+            return(-1);
+        Q.timestamp = (uint32_t)time(NULL);
+        retjson = LP_quotejson(&Q);
+        jaddstr(retjson,"method","quote");
+        retstr = jprint(retjson,1);
+        //printf("PING.(%s)\n",retstr);
+        LP_send(pubsock,retstr,1);
+        utxo->T.published = now;
+        return(0);
+    }
+    return(-1);
+}
+
 void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitmargin)
 {
     struct _LP_utxoinfo u; char str[65]; uint32_t now = (uint32_t)time(NULL);
@@ -173,7 +194,7 @@ void LP_utxo_updates(int32_t pubsock,char *passphrase,double profitmargin)
 
 void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
 {
-    char *retstr,*lpnode; uint8_t r; int32_t i,n,j,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now,lastforward = 0; cJSON *item; struct LP_utxoinfo *utxo,*utmp;
+    char *retstr; uint8_t r; int32_t i,n,j,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now,lastforward = 0; cJSON *item; struct LP_utxoinfo *utxo,*utmp;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
