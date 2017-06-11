@@ -179,7 +179,7 @@ int32_t LP_utxopurge(int32_t allutxos)
                 {
                     printf("iambob.%d delete.(%s)\n",iambob,bits256_str(str,utxo->payment.txid));
                     HASH_DELETE(hh,LP_utxoinfos[iambob],utxo);
-                    free(utxo); 
+                    //free(utxo); let the LP_utxoinfos2 free the utxo, should be 1:1
                 } else n++;
             } else n++;
         }
@@ -398,7 +398,10 @@ struct LP_utxoinfo *LP_addutxo(int32_t iambob,int32_t mypubsock,char *symbol,bit
         }
         LP_utxosetkey(utxo->key,txid,vout);
         LP_utxosetkey(utxo->key2,txid2,vout2);
-        char str[65],str2[65],str3[65]; printf("iambob.%d %s %s LP_addutxo.(%.8f %.8f) %s %s\n",iambob,bits256_str(str3,utxo->pubkey),utxo->coin,dstr(value),dstr(value2),bits256_str(str,utxo->payment.txid),bits256_str(str2,txid2));
+        if ( LP_ismine(utxo) == 0 )
+        {
+            char str[65],str2[65],str3[65]; printf("iambob.%d %s %s LP_addutxo.(%.8f %.8f) %s %s\n",iambob,bits256_str(str3,utxo->pubkey),utxo->coin,dstr(value),dstr(value2),bits256_str(str,utxo->payment.txid),bits256_str(str2,txid2));
+        }
         portable_mutex_lock(&LP_utxomutex);
         HASH_ADD_KEYPTR(hh,LP_utxoinfos[iambob],utxo->key,sizeof(utxo->key),utxo);
         if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
