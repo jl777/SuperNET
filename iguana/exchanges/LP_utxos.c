@@ -179,7 +179,7 @@ int32_t LP_utxopurge(int32_t allutxos)
                 {
                     printf("delete.(%s)\n",bits256_str(str,utxo->payment.txid));
                     HASH_DELETE(hh,LP_utxoinfos[iambob],utxo);
-                    free(utxo);
+                    //free(utxo); let the LP_utxoinfos2 free the utxo
                 } else n++;
             } else n++;
         }
