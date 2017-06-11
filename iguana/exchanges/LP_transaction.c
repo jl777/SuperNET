@@ -189,33 +189,50 @@ int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 se
     else return(0);
 }
 
+int32_t LP_mempoolscan(char *symbol,bits256 txid)
+{
+    int32_t i,n; cJSON *array;
+    if ( (array= LP_getmempool(symbol)) != 0 )
+    {
+        if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+                if ( bits256_cmp(txid,jbits256i(array,i)) == 0 )
+                {
+                    printf("found tx in mempool slot.%d\n",i);
+                    return(i);
+                }
+        }
+        free_json(array);
+    }
+    return(-1);
+}
+
 int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
 {
     int32_t numconfirms = 100;
 #ifndef BASILISK_DISABLEWAITTX
-    cJSON *txobj,*array; int32_t i,n;
+    cJSON *txobj;
     numconfirms = -1;
     if ( (txobj= LP_gettx(rawtx->coin->symbol,rawtx->I.signedtxid)) != 0 )
     {
         numconfirms = jint(txobj,"confirmations");
         free_json(txobj);
-    }
-    else if ( (array= LP_getmempool(rawtx->coin->symbol)) != 0 )
-    {
-        if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
-        {
-            for (i=0; i<n; i++)
-                if ( bits256_cmp(rawtx->I.signedtxid,jbits256i(array,i)) == 0 )
-                {
-                    numconfirms = 0;
-                    printf("found tx in mempool slot.%d\n",i);
-                    break;
-                }
-        }
-        free_json(array);
-    }
+    } else if ( LP_mempoolscan(rawtx->coin->symbol,rawtx->I.signedtxid) >= 0 )
+        numconfirms = 0;
 #endif
     return(numconfirms);
+}
+
+int32_t LP_waitmempool(char *symbol,bits256 txid,int32_t duration)
+{
+    uint32_t expiration = (uint32_t)time(NULL) + duration;
+    while ( time(NULL) < expiration )
+    {
+        if ( LP_mempoolscan(symbol,txid) >= 0 )
+            return(0);
+    }
+    return(-1);
 }
 
 int32_t iguana_msgtx_Vset(uint8_t *serialized,int32_t maxlen,struct iguana_msgtx *msgtx,struct vin_info *V)
@@ -1530,7 +1547,7 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
                 printf("%02x",swap->aliceclaim.txbytes[i]);
             printf(" <- aliceclaim\n");
             //basilisk_txlog(swap,&swap->aliceclaim,swap->I.putduration+swap->I.callduration);
-            return(retval);
+            return(LP_waitmempool(swap->bobcoin.symbol,swap->bobdeposit.I.signedtxid,10));
         } else printf("error signing aliceclaim suppress.%d vin.(%s)\n",swap->aliceclaim.I.suppress_pubkeys,swap->bobdeposit.I.destaddr);
     }
     printf("error with bobdeposit\n");
@@ -1548,7 +1565,8 @@ int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t 
         if ( bits256_nonz(swap->alicepayment.I.signedtxid) != 0 )
             swap->aliceunconf = 1;
         basilisk_dontforget_update(swap,&swap->alicepayment);
-        printf("import alicepayment address.(%s)\n",swap->alicepayment.p2shaddr);
+        return(LP_waitmempool(swap->alicecoin.symbol,swap->alicepayment.I.signedtxid,10));
+        //printf("import alicepayment address.(%s)\n",swap->alicepayment.p2shaddr);
         //LP_importaddress(swap->alicecoin.symbol,swap->alicepayment.p2shaddr);
         return(0);
     }
@@ -1594,8 +1612,7 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
                 printf("%02x",swap->alicespend.txbytes[i]);
             printf(" <- alicespend\n\n");
             swap->I.alicespent = 1;
-            //basilisk_txlog(swap,&swap->alicespend,-1);
-            return(retval);
+            return(LP_waitmempool(swap->bobcoin.symbol,swap->bobpayment.I.signedtxid,10));
         } else printf("error signing aliceclaim suppress.%d vin.(%s)\n",swap->alicespend.I.suppress_pubkeys,swap->bobpayment.I.destaddr);
     }
     printf("error validating bobpayment\n");

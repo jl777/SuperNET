@@ -46,7 +46,7 @@
 #define BASILISK_KEYSIZE ((int32_t)(2*sizeof(bits256)+sizeof(uint32_t)*2))
 
 extern char GLOBAL_DBDIR[],USERPASS[],USERPASS_WIFSTR[];
-extern int32_t IAMCLIENT,USERPASS_COUNTER;
+extern int32_t IAMLP,USERPASS_COUNTER;
 
 struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; };
 
@@ -139,42 +139,34 @@ struct basilisk_swapinfo
 
 struct iguana_info
 {
-    uint64_t txfee; double estimatedrate;
+    uint64_t txfee; double estimatedrate,profitmargin;
     int32_t longestchain; uint32_t counter,inactive;
     uint8_t pubtype,p2shtype,isPoS,wiftype;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
 };
 
-struct basilisk_swap
-{
-    void *ctx; struct iguana_info bobcoin,alicecoin;
-    void (*balancingtrade)(struct basilisk_swap *swap,int32_t iambob);
-    int32_t subsock,pushsock,connected,aliceunconf,depositunconf,paymentunconf; uint32_t lasttime,aborted;
-    FILE *fp;
-    bits256 persistent_privkey,persistent_pubkey;
-    struct basilisk_swapinfo I;
-    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
-    bits256 privkeys[INSTANTDEX_DECKSIZE];
-    struct basilisk_swapmessage *messages; int32_t nummessages;
-    char Bdeposit[64],Bpayment[64];
-    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
-    uint8_t persistent_pubkey33[33],changermd160[20],pad[15],verifybuf[65536];
-    
-};
+struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout; };
+
+struct LP_utxostats { uint32_t lasttime,errors,swappending,published,spentflag,lastspentcheck; };
+
+struct LP_utxobob { struct _LP_utxoinfo utxo,deposit; };
+
+struct LP_utxoalice { struct _LP_utxoinfo utxo,fee; };
+
+struct LP_utxoswap { bits256 otherpubkey,mypub; void *swap; uint64_t satoshis; double profitmargin;  };
 
 struct LP_utxoinfo
 {
     UT_hash_handle hh,hh2;
-    bits256 txid,txid2,feetxid,otherpubkey,mypub;
-    void *swap;
-    uint64_t value,satoshis,value2;
+    bits256 pubkey;
+    struct _LP_utxoinfo payment,deposit,fee;
+    struct LP_utxostats T;
+    struct LP_utxoswap S;
+    //struct LP_utxonetwork N;
+    int32_t iambob,iamlp;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
-    int32_t vout,vout2,pair;
-    uint32_t lasttime,errors,swappending,published,spentflag,lastspentcheck;
-    double profitmargin;
-    char ipaddr[64],coinaddr[64],spendscript[256],coin[16];
-    uint16_t port;
+    char coin[16],coinaddr[64],spendscript[256];
 };
 
 struct LP_peerinfo
@@ -197,13 +189,33 @@ struct LP_quoteinfo
     char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
 };
 
+struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };
+
+struct basilisk_swap
+{
+    void *ctx; struct iguana_info bobcoin,alicecoin; struct LP_utxoinfo *utxo;
+    struct LP_endpoint N;
+    void (*balancingtrade)(struct basilisk_swap *swap,int32_t iambob);
+    int32_t subsock,pushsock,connected,aliceunconf,depositunconf,paymentunconf; uint32_t lasttime,aborted;
+    FILE *fp;
+    bits256 persistent_privkey,persistent_pubkey;
+    struct basilisk_swapinfo I;
+    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
+    bits256 privkeys[INSTANTDEX_DECKSIZE];
+    struct basilisk_swapmessage *messages; int32_t nummessages;
+    char Bdeposit[64],Bpayment[64];
+    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    uint8_t persistent_pubkey33[33],changermd160[20],pad[15],verifybuf[65536];
+    
+};
+
 void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
 uint32_t basilisk_requestid(struct basilisk_request *rp);
 uint32_t basilisk_quoteid(struct basilisk_request *rp);
 struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp,struct LP_quoteinfo *qp);
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params);
 uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits,int32_t suppress_swapsend);
-double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,char *base,char *rel,bits256 mypub);
+double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits256 mypub);
 int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys);
 void LP_quotesinit(char *base,char *rel);
 
