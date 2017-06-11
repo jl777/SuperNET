@@ -30,7 +30,7 @@ char *activecoins[] = { "BTC", "KMD" };
 char GLOBAL_DBDIR[] = { "DB" };
 char USERPASS[65],USERPASS_WIFSTR[64],USERHOME[512] = { "/root" };
 
-char *default_LPnodes[] = { "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //"5.9.253.195",
+char *default_LPnodes[] = { "5.9.253.196" };//, "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //"5.9.253.195",
 
 portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex;
 int32_t LP_mypubsock = -1;
@@ -171,9 +171,9 @@ void LP_utxo_updates(int32_t pubsock,char *passphrase,double profitmargin)
     LP_privkey_updates(pubsock,passphrase);
 }
 
-void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins)
+void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
 {
-    char *retstr; uint8_t r; int32_t i,n,j,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now,lastforward = 0; cJSON *item; struct LP_utxoinfo *utxo,*utmp;
+    char *retstr,*lpnode; uint8_t r; int32_t i,n,j,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now,lastforward = 0; cJSON *item; struct LP_utxoinfo *utxo,*utmp;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
@@ -181,21 +181,27 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
     }
     if ( IAMLP != 0 )
     {
-        for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
+        if ( seednode == 0 || seednode[0] == 0 )
         {
-            if ( (rand() % 100) > 25 )
-                continue;
-            LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,mypeer->ipaddr,myport,profitmargin);
-        }
+            for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
+            {
+                if ( (rand() % 100) > 25 )
+                    continue;
+                LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,mypeer->ipaddr,myport,profitmargin);
+            }
+        } else LP_peersquery(mypeer,pubsock,seednode,myport,mypeer->ipaddr,myport,profitmargin);
     }
     else
     {
-        OS_randombytes((void *)&r,sizeof(r));
-        for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
+        if ( seednode == 0 || seednode[0] == 0 )
         {
-            i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
-            LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport,profitmargin);
-        }
+            OS_randombytes((void *)&r,sizeof(r));
+            for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
+            {
+                i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
+                LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport,profitmargin);
+            }
+        } else LP_peersquery(mypeer,pubsock,seednode,myport,"127.0.0.1",myport,profitmargin);
     }
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
@@ -385,7 +391,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         printf("couldnt get myipaddr\n");
         exit(-1);
     }
-LP_mainloop(myipaddr,mypeer,mypubport,pubsock,pushaddr,pullsock,myport,passphrase,profitmargin,jobj(argjson,"coins"));
+LP_mainloop(myipaddr,mypeer,mypubport,pubsock,pushaddr,pullsock,myport,passphrase,profitmargin,jobj(argjson,"coins"),jstr(argjson,"seednode"));
 }
 
 
