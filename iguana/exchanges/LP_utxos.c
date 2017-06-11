@@ -329,19 +329,19 @@ int32_t LP_iseligible(int32_t iambob,char *coin,bits256 txid,int32_t vout,uint64
     return(0);
 }
 
-struct LP_utxoinfo *LP_addutxo(int32_t iambob,int32_t mypubsock,char *coin,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin)
+struct LP_utxoinfo *LP_addutxo(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin)
 {
     uint64_t tmpsatoshis; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
-    char str[65],str2[65],str3[65]; printf("iambob.%d %s %s LP_addutxo.(%.8f %.8f) %s %s\n",iambob,bits256_str(str3,utxo->pubkey),utxo->coin,dstr(value),dstr(value2),bits256_str(str,utxo->payment.txid),bits256_str(str2,txid2));
-    if ( coin == 0 || coin[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
+    char str[65],str2[65],str3[65]; printf("iambob.%d %s %s LP_addutxo.(%.8f %.8f) %s %s\n",iambob,bits256_str(str3,pubkey),symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
+    if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
-        printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", coin == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
+        printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
     if ( iambob != 0 && value2 < 9 * (value >> 3) + 100000 )
         tmpsatoshis = (((value2-100000) / 9) << 3);
     else tmpsatoshis = value;
-    if ( LP_iseligible(iambob,coin,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
+    if ( LP_iseligible(iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
     {
         printf("LP_addutxo got spent txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",dstr(value),dstr(value2),dstr(tmpsatoshis));
         return(0);
@@ -350,10 +350,10 @@ struct LP_utxoinfo *LP_addutxo(int32_t iambob,int32_t mypubsock,char *coin,bits2
     {
         //printf("%.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(tmpsatoshis),dstr(utxo->value),dstr(utxo->value2),dstr(utxo->satoshis));
         u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
-        if ( bits256_cmp(txid,utxo->payment.txid) != 0 || bits256_cmp(txid2,u.txid) != 0 || vout != utxo->payment.vout || value != utxo->payment.value || tmpsatoshis != utxo->S.satoshis || vout2 != u.vout || value2 != u.value || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || bits256_cmp(pubkey,utxo->pubkey) != 0 )
+        if ( bits256_cmp(txid,utxo->payment.txid) != 0 || bits256_cmp(txid2,u.txid) != 0 || vout != utxo->payment.vout || value != utxo->payment.value || tmpsatoshis != utxo->S.satoshis || vout2 != u.vout || value2 != u.value || strcmp(symbol,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || bits256_cmp(pubkey,utxo->pubkey) != 0 )
         {
             utxo->T.errors++;
-            char str[65],str2[65],str3[65],str4[65]; printf("error on subsequent utxo add.(%s v %s) %d %d %d %d %d %d %d %d %d %d %d pubkeys.(%s vs %s)\n",bits256_str(str,txid),bits256_str(str2,utxo->payment.txid),bits256_cmp(txid,utxo->payment.txid) != 0,bits256_cmp(txid2,u.txid) != 0,vout != utxo->payment.vout,tmpsatoshis != utxo->S.satoshis,vout2 != u.vout,value2 != u.value,strcmp(coin,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,bits256_cmp(pubkey,utxo->pubkey) != 0,value != utxo->payment.value,bits256_str(str3,pubkey),bits256_str(str4,utxo->pubkey));
+            char str[65],str2[65],str3[65],str4[65]; printf("error on subsequent utxo add.(%s v %s) %d %d %d %d %d %d %d %d %d %d %d pubkeys.(%s vs %s)\n",bits256_str(str,txid),bits256_str(str2,utxo->payment.txid),bits256_cmp(txid,utxo->payment.txid) != 0,bits256_cmp(txid2,u.txid) != 0,vout != utxo->payment.vout,tmpsatoshis != utxo->S.satoshis,vout2 != u.vout,value2 != u.value,strcmp(symbol,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,bits256_cmp(pubkey,utxo->pubkey) != 0,value != utxo->payment.value,bits256_str(str3,pubkey),bits256_str(str4,utxo->pubkey));
         }
         else if ( profitmargin != 0. )
             utxo->S.profitmargin = profitmargin;
@@ -363,7 +363,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t iambob,int32_t mypubsock,char *coin,bits2
         utxo = calloc(1,sizeof(*utxo));
         utxo->S.profitmargin = profitmargin;
         utxo->pubkey = pubkey;
-        safecopy(utxo->coin,coin,sizeof(utxo->coin));
+        safecopy(utxo->coin,symbol,sizeof(utxo->coin));
         safecopy(utxo->coinaddr,coinaddr,sizeof(utxo->coinaddr));
         safecopy(utxo->spendscript,spendscript,sizeof(utxo->spendscript));
         utxo->payment.txid = txid;
