@@ -361,7 +361,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t iambob,int32_t mypubsock,char *symbol,bit
     }
     if ( (utxo= LP_utxofinds(iambob,txid,vout,txid2,vout2)) != 0 )
     {
-        //printf("%.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(tmpsatoshis),dstr(utxo->value),dstr(utxo->value2),dstr(utxo->satoshis));
+        printf("duplicate %.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(tmpsatoshis),dstr(utxo->payment.value),dstr(utxo->deposit.value),dstr(utxo->S.satoshis));
         u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
         if ( bits256_cmp(txid,utxo->payment.txid) != 0 || bits256_cmp(txid2,u.txid) != 0 || vout != utxo->payment.vout || value != utxo->payment.value || tmpsatoshis != utxo->S.satoshis || vout2 != u.vout || value2 != u.value || strcmp(symbol,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || bits256_cmp(pubkey,utxo->pubkey) != 0 )
         {
