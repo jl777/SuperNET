@@ -339,8 +339,7 @@ int32_t LP_iseligible(int32_t iambob,char *coin,bits256 txid,int32_t vout,uint64
 
 struct LP_utxoinfo *LP_addutxo(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin)
 {
-    uint64_t tmpsatoshis; int32_t spendvini,selector; bits256 spendtxid; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
-    char str[65],str2[65],str3[65]; printf("iambob.%d %s %s LP_addutxo.(%.8f %.8f) %s %s\n",iambob,bits256_str(str3,pubkey),symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
+    char str[65]; uint64_t tmpsatoshis; int32_t spendvini,selector; bits256 spendtxid; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
@@ -361,6 +360,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t iambob,int32_t mypubsock,char *symbol,bit
     }
     if ( (utxo= LP_utxofinds(iambob,txid,vout,txid2,vout2)) != 0 )
     {
+        char str2[65],str3[65]; printf("iambob.%d %s %s LP_addutxo.(%.8f %.8f) %s %s\n",iambob,bits256_str(str3,pubkey),symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
         printf("duplicate %.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(tmpsatoshis),dstr(utxo->payment.value),dstr(utxo->deposit.value),dstr(utxo->S.satoshis));
         u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
         if ( bits256_cmp(txid,utxo->payment.txid) != 0 || bits256_cmp(txid2,u.txid) != 0 || vout != utxo->payment.vout || value != utxo->payment.value || tmpsatoshis != utxo->S.satoshis || vout2 != u.vout || value2 != u.value || strcmp(symbol,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || bits256_cmp(pubkey,utxo->pubkey) != 0 )
@@ -634,7 +634,8 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
         bitcoin_addr2rmd160(&tmptype,rmd160,coin->smartaddr);
         LP_privkeyadd(privkey,rmd160);
-        printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
+        if ( coin->pubtype != 188 || strcmp(coin->symbol,"KMD") == 0 )
+            printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
         if ( counter++ == 0 )
         {
             bitcoin_priv2wif(USERPASS_WIFSTR,privkey,0);
