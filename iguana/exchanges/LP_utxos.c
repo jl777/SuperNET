@@ -167,15 +167,16 @@ void LP_availableset(struct LP_utxoinfo *utxo)
 int32_t LP_utxopurge(int32_t allutxos)
 {
     char str[65]; struct LP_utxoinfo *utxo,*tmp; int32_t iambob,n = 0;
+    printf("LP_utxopurge mypub.(%s)\n",bits256_str(str,LP_mypubkey));
     portable_mutex_lock(&LP_utxomutex);
     for (iambob=0; iambob<=1; iambob++)
     {
         HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
         {
-            printf("purge.(%s) ?\n",bits256_str(str,utxo->payment.txid));
-            if ( allutxos != 0 || LP_ismine(utxo) == 0 )
+            if ( LP_isavailable(utxo) > 0 )
             {
-                if ( LP_isavailable(utxo) == 0 )
+                printf("purge.(%s) ?\n",bits256_str(str,utxo->payment.txid));
+                if ( allutxos != 0 || LP_ismine(utxo) == 0 )
                 {
                     printf("delete.(%s)\n",bits256_str(str,utxo->payment.txid));
                     HASH_DELETE(hh,LP_utxoinfos[iambob],utxo);
@@ -185,10 +186,10 @@ int32_t LP_utxopurge(int32_t allutxos)
         }
         HASH_ITER(hh,LP_utxoinfos2[iambob],utxo,tmp)
         {
-            printf("purge.(%s) ?\n",bits256_str(str,utxo->payment.txid));
-            if ( allutxos != 0 || LP_ismine(utxo) == 0 )
+            if ( LP_isavailable(utxo) > 0 )
             {
-                if ( LP_isavailable(utxo) == 0 )
+                printf("purge.(%s) ?\n",bits256_str(str,utxo->payment.txid));
+                if ( allutxos != 0 || LP_ismine(utxo) == 0 )
                 {
                     printf("delete.(%s)\n",bits256_str(str,utxo->payment.txid));
                     HASH_DELETE(hh,LP_utxoinfos2[iambob],utxo);
