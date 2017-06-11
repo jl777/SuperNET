@@ -190,7 +190,7 @@ int32_t LP_utxopurge(int32_t allutxos)
                 if ( allutxos != 0 || LP_ismine(utxo) > 0 )
                 {
                     printf("iambob.%d delete2.(%s)\n",iambob,bits256_str(str,utxo->payment.txid));
-                    HASH_DELETE(hh,LP_utxoinfos2[iambob],utxo);
+                    HASH_DELETE(hh2,LP_utxoinfos2[iambob],utxo);
                     free(utxo);
                 } else n++;
             } else n++;
