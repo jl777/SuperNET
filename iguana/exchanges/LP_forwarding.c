@@ -26,7 +26,7 @@ struct LP_forwardinfo
     int32_t pushsock;
     uint32_t lasttime;
 } *LP_forwardinfos;
-#define LP_KEEPALIVE 300
+#define LP_KEEPALIVE (3600 * 24)
 
 struct LP_forwardinfo *LP_forwardfind(bits256 pubkey)
 {
@@ -69,6 +69,7 @@ char *LP_register(bits256 pubkey,char *pushaddr)
     }
     else
     {
+        char str[65]; printf("registered (%s) -> (%s)\n",bits256_str(str,pubkey),pushaddr);
         ptr = calloc(1,sizeof(*ptr));
         ptr->pubkey = pubkey;
         strcpy(ptr->pushaddr,pushaddr);
@@ -112,13 +113,15 @@ char *LP_forward(bits256 pubkey,char *hexstr)
     } else return(clonestr("{\"error\":\"notfound\"}"));
 }
 
-void LP_forwarding_register(bits256 pubkey,char *pushaddr)
+void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t broadcastflag)
 {
-    char *retstr; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t retval = -1;
+    char *retstr; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t n=0,retval = -1;
     if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
         return;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        if ( broadcastflag == 0 && (rand() % 100) < 66 )
+            continue;
         if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,pushaddr)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -129,8 +132,9 @@ void LP_forwarding_register(bits256 pubkey,char *pushaddr)
             }
             free(retstr);
         }
-        if ( retval == 0 )
+        if ( broadcastflag == 0 && retval == 0 )
             break;
+        n++;
     }
 }
 
@@ -149,7 +153,7 @@ int32_t LP_pubkey_send(bits256 pubkey,char *jsonstr,int32_t freeflag)
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( jint(retjson,"forwarding") != 0 )
+                if ( jint(retjson,"forwarding") != 0 && peer->pushsock >= 0 )
                     retval = 0;
                 free_json(retjson);
             }
@@ -157,6 +161,7 @@ int32_t LP_pubkey_send(bits256 pubkey,char *jsonstr,int32_t freeflag)
         }
         if ( retval == 0 )
         {
+            printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
             len = (int32_t)strlen(jsonstr) + 1;
             hexstr = malloc(len*2 + 1);
             init_hexbytes_noT(hexstr,(uint8_t *)jsonstr,len);

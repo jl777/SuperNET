@@ -30,7 +30,7 @@ char *activecoins[] = { "BTC", "KMD" };
 char GLOBAL_DBDIR[] = { "DB" };
 char USERPASS[65],USERPASS_WIFSTR[64],USERHOME[512] = { "/root" };
 
-char *default_LPnodes[] = { "5.9.253.196" };//, "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //"5.9.253.195",
+char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196" , "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //
 
 portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex;
 int32_t LP_mypubsock = -1;
@@ -179,6 +179,7 @@ void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitma
         }
         else if ( LP_ismine(utxo) > 0 )
         {
+            // jl777: iterated Q's
             if ( strcmp(utxo->coin,"KMD") == 0 )
                 LP_priceping(pubsock,utxo,"BTC",profitmargin);
             else LP_priceping(pubsock,utxo,"KMD",profitmargin);
@@ -250,9 +251,9 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
         while ( 1 )
         {
             now = (uint32_t)time(NULL);
-            if ( lastforward < now-LP_KEEPALIVE )
+            if ( lastforward < now-600 )
             {
-                LP_forwarding_register(LP_mypubkey,pushaddr);
+                LP_forwarding_register(LP_mypubkey,pushaddr,0);
                 lastforward = now;
             }
             nonz = n = 0;
@@ -291,6 +292,11 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             if ( (counter % 600) == 0 )
                 LP_utxo_updates(pubsock,passphrase,profitmargin);
             now = (uint32_t)time(NULL);
+            if ( lastforward < now-3600 )
+            {
+                LP_forwarding_register(LP_mypubkey,pushaddr,1);
+                lastforward = now;
+            }
             //printf("start peers updates\n");
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
