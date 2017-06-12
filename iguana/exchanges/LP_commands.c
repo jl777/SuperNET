@@ -230,6 +230,18 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
     return(retval);
 }
 
+cJSON *LP_dereference(cJSON *argjson,char *excludemethod)
+{
+    cJSON *reqjson = 0;
+    if ( jstr(argjson,"method2") != 0 && strncmp(excludemethod,jstr(argjson,"method2"),strlen(excludemethod)) != 0 )
+    {
+        reqjson = jduplicate(argjson);
+        jdelete(reqjson,"method");
+        jaddstr(reqjson,"method",jstr(argjson,"method2"));
+    }
+    return(reqjson);
+}
+
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos; struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
@@ -402,16 +414,15 @@ forward(pubkey,hexstr)\n\
         retstr = LP_orderbook(jstr(argjson,"base"),jstr(argjson,"rel"));
     else if ( strcmp(method,"forward") == 0 )
     {
-        cJSON *reqjson = jduplicate(argjson);
+        cJSON *reqjson;
         printf("FORWARDED.(%s)\n",jprint(argjson,0));
-        jdelete(reqjson,"method");
-        if ( jstr(reqjson,"method2") != 0 && strncmp("forward",jstr(reqjson,"method2"),strlen("forward")) != 0 )
+        if ( (reqjson= LP_dereference(argjson,"forward")) != 0 )
         {
-            jaddstr(reqjson,"method",jstr(argjson,"method2"));
             if ( LP_forward(jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
                 retstr = clonestr("{\"result\":\"success\"}");
             else retstr = clonestr("{\"error\":\"error forwarding\"}");
         } else retstr = clonestr("{\"error\":\"cant recurse forwards\"}");
+
     }
     else if ( strcmp(method,"getpeers") == 0 )
         retstr = LP_peers();
