@@ -442,9 +442,9 @@ forwardhex(pubkey,hex)\n\
             //printf("RETURN. %d utxos\n",cJSON_GetArraySize(cJSON_Parse(retstr)));
         }
         else if ( strcmp(method,"register") == 0 )
-            retstr = LP_register(jbits256(argjson,"pubkey"),jstr(argjson,"pushaddr"));
+            retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"));
         else if ( strcmp(method,"lookup") == 0 )
-            retstr = LP_lookup(jbits256(argjson,"pubkey"));
+            retstr = LP_lookup(jbits256(argjson,"client"));
         else if ( strcmp(method,"forwardhex") == 0 )
             retstr = LP_forwardhex(jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
         else if ( strcmp(method,"notify") == 0 )

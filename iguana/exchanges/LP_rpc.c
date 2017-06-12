@@ -63,7 +63,7 @@ char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *push
     char url[512],str[65];
     if ( strncmp("tcp://",pushaddr,strlen("tcp://")) != 0 || strlen(pushaddr) <= strlen("tcp://") )
         return(clonestr("{\"error\":\"illegal pushaddr\"}"));
-    sprintf(url,"http://%s:%u/api/stats/register?pubkey=%s&pushaddr=%s",destip,destport,bits256_str(str,pubkey),pushaddr+strlen("tcp://"));
+    sprintf(url,"http://%s:%u/api/stats/register?client=%s&pushaddr=%s",destip,destport,bits256_str(str,pubkey),pushaddr+strlen("tcp://"));
     //printf("getutxo.(%s)\n",url);
     return(issue_curl(url));
 }
@@ -71,7 +71,7 @@ char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *push
 char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
 {
     char url[512],str[65];
-    sprintf(url,"http://%s:%u/api/stats/lookup?pubkey=%s",destip,destport,bits256_str(str,pubkey));
+    sprintf(url,"http://%s:%u/api/stats/lookup?client=%s",destip,destport,bits256_str(str,pubkey));
     //printf("getutxo.(%s)\n",url);
     return(issue_curl(url));
 }
