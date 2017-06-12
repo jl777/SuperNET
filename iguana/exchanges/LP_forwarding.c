@@ -117,13 +117,17 @@ void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t broadcastflag)
 {
     char *retstr; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t n=0,retval = -1;
     if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
+    {
+        printf("LP_forwarding_register illegal pushaddr or null pubkey\n");
         return;
+    }
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( broadcastflag == 0 && (rand() % 100) < 66 )
             continue;
         if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,pushaddr)) != 0 )
         {
+            printf("LP_register.(%s) returned.(%s)\n",peer->ipaddr,retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 if ( jint(retjson,"registered") != 0 )
