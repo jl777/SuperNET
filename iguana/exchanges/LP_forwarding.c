@@ -53,8 +53,9 @@ char *LP_register(bits256 pubkey,char *pushaddr)
     struct LP_forwardinfo *ptr=0; int32_t pushsock;
     if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
         return(clonestr("{\"error\":\"illegal ipaddr or null pubkey\"}"));
-    if ( strlen(pushaddr) <= strlen("tcp://") || is_ipaddr(pushaddr+strlen("tcp://")) == 0 )
-        return(clonestr("{\"error\":\"illegal ipaddr\"}"));
+    //if ( strlen(pushaddr) <= strlen("tcp://") || is_ipaddr(pushaddr+strlen("tcp://")) == 0 )
+    //    return(clonestr("{\"error\":\"illegal ipaddr\"}"));
+    char str[65]; printf("register.(%s) %s\n",pushaddr,bits256_str(str,pubkey));
     if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
         ptr->lasttime = (uint32_t)time(NULL);
