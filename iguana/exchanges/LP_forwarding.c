@@ -122,6 +122,7 @@ char *LP_forwardhex(bits256 pubkey,char *hexstr)
             datalen = (int32_t)strlen(hexstr) >> 1;
             data = malloc(datalen);
             decode_hex(data,datalen,hexstr);
+            printf("forwardhex.(%s)\n",(char *)data);
             sentbytes = LP_send(ptr->pushsock,(char *)data,1);
         }
         retjson = cJSON_CreateObject();
@@ -139,6 +140,7 @@ char *LP_forwardhex(bits256 pubkey,char *hexstr)
             return(jprint(retjson,1));
         }
     } else return(clonestr("{\"error\":\"notfound\"}"));
+    printf("couldnt find pubkey\n");
 }
 
 int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag)
