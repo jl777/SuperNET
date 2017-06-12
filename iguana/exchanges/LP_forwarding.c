@@ -115,7 +115,7 @@ char *LP_forward(bits256 pubkey,char *hexstr)
     } else return(clonestr("{\"error\":\"notfound\"}"));
 }
 
-void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t broadcastflag)
+void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t max)
 {
     char *retstr; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t n=0,retval = -1;
     if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
@@ -125,22 +125,19 @@ void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t broadcastflag)
     }
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        if ( broadcastflag == 0 && (rand() % 100) < 66 )
-            continue;
         if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,pushaddr)) != 0 )
         {
             printf("[%s] LP_register.(%s) returned.(%s)\n",pushaddr,peer->ipaddr,retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( jint(retjson,"registered") != 0 )
+                if ( jint(retjson,"registered") != 0 && ++n >= max )
                     retval = 0;
                 free_json(retjson);
             }
             free(retstr);
         }
-        if ( broadcastflag == 0 && retval == 0 )
+        if ( retval == 0 )
             break;
-        n++;
     }
 }
 

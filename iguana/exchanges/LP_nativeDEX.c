@@ -253,7 +253,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             now = (uint32_t)time(NULL);
             if ( lastforward < now-3600 )
             {
-                LP_forwarding_register(LP_mypubkey,pushaddr,1);
+                LP_forwarding_register(LP_mypubkey,pushaddr,10);
                 lastforward = now;
             }
             nonz = n = 0;
@@ -294,7 +294,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             now = (uint32_t)time(NULL);
             if ( lastforward < now-3600 )
             {
-                LP_forwarding_register(LP_mypubkey,pushaddr,1);
+                LP_forwarding_register(LP_mypubkey,pushaddr,10);
                 lastforward = now;
             }
             //printf("start peers updates\n");
