@@ -52,7 +52,7 @@ char *LP_register(bits256 pubkey,char *pushaddr)
 {
     struct LP_forwardinfo *ptr=0; int32_t pushsock;
     if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
-        return(clonestr("{\"error\":\"illegal ipaddr\"}"));
+        return(clonestr("{\"error\":\"illegal ipaddr or null pubkey\"}"));
     if ( strlen(pushaddr) <= strlen("tcp://") || is_ipaddr(pushaddr+strlen("tcp://")) == 0 )
         return(clonestr("{\"error\":\"illegal ipaddr\"}"));
     if ( (ptr= LP_forwardfind(pubkey)) != 0 )
@@ -127,7 +127,7 @@ void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t broadcastflag)
             continue;
         if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,pushaddr)) != 0 )
         {
-            printf("LP_register.(%s) returned.(%s)\n",peer->ipaddr,retstr);
+            printf("[%s] LP_register.(%s) returned.(%s)\n",pushaddr,peer->ipaddr,retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 if ( jint(retjson,"registered") != 0 )
