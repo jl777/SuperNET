@@ -100,7 +100,7 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
             if ( jstr(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"forwardhex") == 0 )
             {
                 printf("forwardhex\n");
-                if ( (retstr= LP_forwardhex(jbits256(argjson,"pubkey"),jstr(argjson,"hexstr"))) != 0 )
+                if ( (retstr= LP_forwardhex(jbits256(argjson,"pubkey"),jstr(argjson,"hex"))) != 0 )
                     free(retstr);
             }
             else if ( LP_tradecommand(myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin) == 0 )

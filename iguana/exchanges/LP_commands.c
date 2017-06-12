@@ -427,7 +427,7 @@ forward(pubkey,hexstr)\n\
         else if ( strcmp(method,"lookup") == 0 )
             retstr = LP_lookup(jbits256(argjson,"pubkey"));
         else if ( strcmp(method,"forwardhex") == 0 )
-            retstr = LP_forwardhex(jbits256(argjson,"pubkey"),jstr(argjson,"hexstr"));
+            retstr = LP_forwardhex(jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
         else if ( strcmp(method,"notify") == 0 )
             retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
         else if ( strcmp(method,"notified") == 0 )
