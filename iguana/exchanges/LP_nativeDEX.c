@@ -81,7 +81,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 
 int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double profitmargin)
 {
-    int32_t recvsize,len,datalen,nonz = 0; void *ptr; char *retstr,*jsonstr=0; cJSON *argjson;
+    int32_t recvsize,len,datalen=0,nonz = 0; void *ptr; char *retstr,*jsonstr=0; cJSON *argjson;
     while ( (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
     {
         nonz++;
@@ -92,6 +92,7 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
             decode_hex((void *)jsonstr,datalen,(char *)ptr);
             jsonstr[datalen] = 0;
         } else jsonstr = (char *)ptr;
+        printf("PULLED %d, datalen.%d (%s)\n",recvsize,datalen,jsonstr);
         if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
         {
             len = (int32_t)strlen(jsonstr) + 1;
