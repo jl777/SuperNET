@@ -122,7 +122,7 @@ char *LP_forwardhex(bits256 pubkey,char *hexstr)
             datalen = (int32_t)strlen(hexstr) >> 1;
             data = malloc(datalen);
             decode_hex(data,datalen,hexstr);
-            printf("forwardhex.(%s)\n",(char *)data);
+            //printf("forwardhex.(%s)\n",(char *)data);
             sentbytes = LP_send(ptr->pushsock,(char *)data,1);
         }
         retjson = cJSON_CreateObject();

@@ -92,7 +92,7 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
             decode_hex((void *)jsonstr,datalen,(char *)ptr);
             jsonstr[datalen] = 0;
         } else jsonstr = (char *)ptr;
-        printf("PULLED %d, datalen.%d (%s)\n",recvsize,datalen,jsonstr);
+        //printf("PULLED %d, datalen.%d (%s)\n",recvsize,datalen,jsonstr);
         if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
         {
             len = (int32_t)strlen(jsonstr) + 1;
@@ -107,12 +107,8 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
                 if ( jobj(argjson,"method2") != 0 )
                     jdelete(argjson,"method2");
                 jaddstr(argjson,"method2","broadcast");
-                printf("pub?.(%s)\n",jprint(argjson,0));
                 if ( pubsock >= 0 && (reqjson= LP_dereference(argjson,"publish")) != 0 )
-                {
-                    printf("publish.(%s)\n",jprint(reqjson,0));
                     LP_send(pubsock,jprint(reqjson,1),1);
-                }
             }
             else if ( LP_tradecommand(myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin) <= 0 )
             {
