@@ -227,6 +227,8 @@ int32_t LP_mempoolscan(char *symbol,bits256 txid)
 int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
 {
     int32_t i,n; cJSON *array; bits256 mempooltxid;
+    if ( symbol == 0 || symbol[0] == 0 || bits256_nonz(searchtxid) == 0 || bits256_nonz(searchtxid2) == 0 )
+        return(-1);
     if ( (array= LP_getmempool(symbol)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )

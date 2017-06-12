@@ -329,7 +329,7 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                     bestprice = prices[i];
                     item = jitem(array,i);
                     bestitem = LP_quotejson(&Q[i]);
-                    printf("bestprice %f vs maxprice %f\n",bestprice,maxprice);
+                    printf("bestprice %f vs maxprice %f (%s)\n",bestprice,maxprice,jprint(bestitem,0));
                     if ( maxprice == 0. || bestprice <= maxprice )
                     {
                         Q[i].desttxid = myutxo->payment.txid;
@@ -337,6 +337,9 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                         Q[i].feetxid = myutxo->fee.txid;
                         Q[i].feevout = myutxo->fee.vout;
                         strcpy(Q[i].destaddr,myutxo->coinaddr);
+                        Q[i].desthash = LP_mypubkey;
+                        strcpy(Q[i].srccoin,base);
+                        strcpy(Q[i].destcoin,myutxo->coin);
                         price = LP_query("request",&Q[i],base,myutxo->coin,myutxo->S.mypub);
                         if ( jobj(bestitem,"price") != 0 )
                             jdelete(bestitem,"price");
@@ -348,6 +351,9 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                             Q[i].feetxid = myutxo->fee.txid;
                             Q[i].feevout = myutxo->fee.vout;
                             strcpy(Q[i].destaddr,myutxo->coinaddr);
+                            Q[i].desthash = LP_mypubkey;
+                            strcpy(Q[i].srccoin,base);
+                            strcpy(Q[i].destcoin,myutxo->coin);
                             price = LP_query("connect",&Q[i],base,myutxo->coin,myutxo->S.mypub);
                             LP_requestinit(&R,Q[i].srchash,Q[i].desthash,base,Q[i].satoshis,Q[i].destcoin,Q[i].destsatoshis,Q[i].timestamp,Q[i].quotetime,DEXselector);
                             jaddstr(bestitem,"status","connected");
