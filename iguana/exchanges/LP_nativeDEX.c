@@ -104,7 +104,9 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
             }
             else if ( jstr(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"publish") == 0 )
             {
-                jdelete(argjson,"method2");
+                if ( jobj(argjson,"method2") != 0 )
+                    jdelete(argjson,"method2");
+                jaddstr(argjson,"method2","broadcast");
                 printf("pub?.(%s)\n",jprint(argjson,0));
                 if ( pubsock >= 0 && (reqjson= LP_dereference(argjson,"publish")) != 0 )
                 {
