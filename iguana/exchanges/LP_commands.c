@@ -402,13 +402,10 @@ forward(pubkey,hexstr)\n\
         retstr = LP_orderbook(jstr(argjson,"base"),jstr(argjson,"rel"));
     else if ( strcmp(method,"forward") == 0 )
     {
-        cJSON *reqjson = jduplicate(argjson);
         printf("FORWARDED.(%s)\n",jprint(argjson,0));
-        jdelete(reqjson,"method");
-        if ( jstr(reqjson,"method2") != 0 && strncmp("forward",jstr(reqjson,"method2"),strlen("forward")) != 0 )
+        if ( jstr(argjson,"method2") != 0 && strncmp("forward",jstr(argjson,"method2"),strlen("forward")) != 0 )
         {
-            jaddstr(reqjson,"method",jstr(argjson,"method2"));
-            if ( LP_forward(jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
+            if ( LP_forward(jbits256(argjson,"pubkey"),jprint(argjson,1),1) > 0 )
                 retstr = clonestr("{\"result\":\"success\"}");
             else retstr = clonestr("{\"error\":\"error forwarding\"}");
         } else retstr = clonestr("{\"error\":\"cant recurse forwards\"}");
