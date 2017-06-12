@@ -184,4 +184,10 @@ int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag)
 }
 
 
+char *LP_broadcasted(cJSON *argjson)
+{
+    printf("RECV BROADCAST.(%s)\n",jprint(argjson,0));
+    return(clonestr("{\"result\":\"need to update broadcast messages\"}"));
+}
+
 

@@ -386,5 +386,11 @@ char *LP_pricestr(char *base,char *rel)
     } else return(clonestr("{\"error\":\"cant find baserel pair\"}"));
 }
 
+char *LP_postedprice(cJSON *argjson)
+{
+    printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
+    return(clonestr("{\"result\":\"need to update stats\"}"));
+}
+
 
 

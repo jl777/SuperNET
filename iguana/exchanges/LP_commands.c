@@ -268,7 +268,9 @@ orderbook(base, rel)\n\
 getprice(base, rel)\n\
 register(pubkey,pushaddr)\n\
 lookup(pubkey)\n\
-forward(pubkey,hexstr)\n\
+forward(pubkey,method2,<argjson>)\n\
+forward(pubkey,method2=publish,<argjson>)\n\
+forwardhex(pubkey,hex)\n\
 \"}"));
     //printf("CMD.(%s)\n",jprint(argjson,0));
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
@@ -408,6 +410,10 @@ forward(pubkey,hexstr)\n\
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"getcoins") == 0 )
         retstr = jprint(LP_coinsjson(),1);
+    else if ( strcmp(method,"postprice") == 0 )
+        retstr = LP_postedprice(argjson);
+    else if ( strcmp(method,"broadcast") == 0 )
+        retstr = LP_broadcasted(argjson);
     else if ( strcmp(method,"getprice") == 0 )
         retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
     else if ( strcmp(method,"orderbook") == 0 )
