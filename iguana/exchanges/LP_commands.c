@@ -167,7 +167,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
         txid = jbits256(argjson,"txid");
         if ( (utxo= LP_utxofind(1,txid,jint(argjson,"vout"))) != 0 && LP_ismine(utxo) > 0 && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )
         {
-            printf("LP_command.(%s)\n",jprint(argjson,0));
+            printf("LP_tradecommand.(%s)\n",jprint(argjson,0));
             if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout)) >= 0 )
             {
                 char str[65]; printf("LP_tradecommand selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
@@ -403,6 +403,7 @@ forward(pubkey,hexstr)\n\
     else if ( strcmp(method,"forward") == 0 )
     {
         cJSON *reqjson = jduplicate(argjson);
+        printf("FORWARDED.(%s)\n",jprint(argjson,0));
         jdelete(reqjson,"method");
         if ( jstr(reqjson,"method2") != 0 && strncmp("forward",jstr(reqjson,"method2"),strlen("forward")) != 0 )
         {

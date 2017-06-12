@@ -100,13 +100,13 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
             {
                 if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
                 {
-                    printf("%s PULL.[%d] %s\n",myipaddr != 0 ? myipaddr : "127.0.0.1",recvsize,(char *)ptr);
+                    printf("%s PULL.[%d] %s\n",myipaddr != 0 ? myipaddr : "127.0.0.1",recvsize,jsonstr);
                     free(retstr);
                 }
             }
             portable_mutex_unlock(&LP_commandmutex);
             free_json(argjson);
-        }
+        } else printf("error parsing(%s)\n",jsonstr);
         if ( (void *)jsonstr != ptr )
             free(jsonstr);
         if ( ptr != 0 )
