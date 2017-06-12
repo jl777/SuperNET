@@ -24,6 +24,7 @@ double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits25
     qp->desthash = mypub;
     strcpy(qp->srccoin,base);
     strcpy(qp->destcoin,rel);
+    qp->desthash = LP_mypubkey;
     if ( strcmp(method,"request") == 0 )
     {
         qp->quotetime = (uint32_t)time(NULL);
