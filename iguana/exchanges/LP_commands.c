@@ -162,7 +162,7 @@ char *LP_connected(cJSON *argjson) // alice
 int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
     char *method,*base,*rel,*retstr; cJSON *retjson; double price; bits256 txid,spendtxid; struct LP_utxoinfo *utxo; int32_t selector,spendvini,retval = -1; struct LP_quoteinfo Q;
-    if ( (method= jstr(argjson,"method")) != 0 )
+    if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 || strcmp(method,"price") == 0 || strcmp(method,"connect") == 0) )
     {
         txid = jbits256(argjson,"txid");
         if ( (utxo= LP_utxofind(1,txid,jint(argjson,"vout"))) != 0 && LP_ismine(utxo) > 0 && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )

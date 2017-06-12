@@ -103,7 +103,7 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
                 if ( (retstr= LP_forwardhex(jbits256(argjson,"pubkey"),jstr(argjson,"hex"))) != 0 )
                     free(retstr);
             }
-            else if ( LP_tradecommand(myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin) == 0 )
+            else if ( LP_tradecommand(myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin) <= 0 )
             {
                 if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
                 {
