@@ -41,7 +41,7 @@ double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits25
     jaddstr(reqjson,"method",method);
     if ( strcmp(method,"price") != 0 )
         printf("QUERY.(%s)\n",jprint(reqjson,0));
-    LP_pubkey_send(qp->srchash,jprint(reqjson,1),1);
+    LP_forward(qp->srchash,jprint(reqjson,1),1);
     for (i=0; i<30; i++)
     {
         if ( (price= LP_pricecache(qp,base,rel,qp->txid,qp->vout)) != 0. )
@@ -99,7 +99,7 @@ int32_t LP_connectstart(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,
                     retstr = jprint(retjson,1);
                     if ( pubsock >= 0 )
                         LP_send(pubsock,retstr,1);
-                    else LP_pubkey_send(utxo->S.otherpubkey,retstr,1);
+                    else LP_forward(utxo->S.otherpubkey,retstr,1);
                     retval = 0;
                 } else printf("error launching swaploop\n");
             } else printf("printf error nn_connect to %s\n",pairstr);
@@ -208,7 +208,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                         retstr = jprint(retjson,1);
                         if ( pubsock >= 0 )
                             LP_send(pubsock,retstr,1);
-                        else LP_pubkey_send(utxo->S.otherpubkey,retstr,1);
+                        else LP_forward(utxo->S.otherpubkey,retstr,1);
                         utxo->T.published = (uint32_t)time(NULL);
                     } else printf("null price\n");
                 } else printf("swappending.%u swap.%p\n",utxo->T.swappending,utxo->S.swap);
@@ -400,6 +400,18 @@ forward(pubkey,hexstr)\n\
         retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
     else if ( strcmp(method,"orderbook") == 0 )
         retstr = LP_orderbook(jstr(argjson,"base"),jstr(argjson,"rel"));
+    else if ( strcmp(method,"forward") == 0 )
+    {
+        cJSON *reqjson = jduplicate(argjson);
+        jdelete(reqjson,"method");
+        if ( jstr(reqjson,"method2") != 0 && strncmp("forward",jstr(reqjson,"method2"),strlen("forward")) != 0 )
+        {
+            jaddstr(reqjson,"method",jstr(argjson,"method2"));
+            if ( LP_forward(jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
+                retstr = clonestr("{\"result\":\"success\"}");
+            else retstr = clonestr("{\"error\":\"error forwarding\"}");
+        } else retstr = clonestr("{\"error\":\"cant recurse forwards\"}");
+    }
     else if ( strcmp(method,"getpeers") == 0 )
         retstr = LP_peers();
     else if ( IAMLP != 0 )
@@ -413,8 +425,8 @@ forward(pubkey,hexstr)\n\
             retstr = LP_register(jbits256(argjson,"pubkey"),jstr(argjson,"pushaddr"));
         else if ( strcmp(method,"lookup") == 0 )
             retstr = LP_lookup(jbits256(argjson,"pubkey"));
-        else if ( strcmp(method,"forward") == 0 )
-            retstr = LP_forward(jbits256(argjson,"pubkey"),jstr(argjson,"hexstr"));
+        else if ( strcmp(method,"forwardhex") == 0 )
+            retstr = LP_forwardhex(jbits256(argjson,"pubkey"),jstr(argjson,"hexstr"));
         else if ( strcmp(method,"notify") == 0 )
             retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
         else if ( strcmp(method,"notified") == 0 )

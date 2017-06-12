@@ -60,7 +60,7 @@ char *LP_register(bits256 pubkey,char *ipaddr)
     if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
         ptr->lasttime = (uint32_t)time(NULL);
-        return(clonestr("{\"error\":\"already registered\"}"));
+        return(clonestr("{\"error\":\"already registered\",\"registered\":1}"));
     }
     else if ( (pushsock= nn_socket(AF_SP,NN_PUSH)) < 0 )
         return(clonestr("{\"error\":\"out of sockets\"}"));
@@ -84,7 +84,33 @@ char *LP_register(bits256 pubkey,char *ipaddr)
     }
 }
 
-char *LP_forward(bits256 pubkey,char *hexstr) 
+void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t max)
+{
+    char *retstr; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t n=0,retval = -1;
+    if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
+    {
+        printf("LP_forwarding_register illegal pushaddr or null pubkey\n");
+        return;
+    }
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,pushaddr)) != 0 )
+        {
+            //printf("[%s] LP_register.(%s) returned.(%s)\n",pushaddr,peer->ipaddr,retstr);
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( jint(retjson,"registered") != 0 && ++n >= max )
+                    retval = 0;
+                free_json(retjson);
+            }
+            free(retstr);
+        }
+        if ( retval == 0 )
+            break;
+    }
+}
+
+char *LP_forwardhex(bits256 pubkey,char *hexstr)
 {
     struct LP_forwardinfo *ptr=0; uint8_t *data; int32_t datalen=0,sentbytes=0; cJSON *retjson;
     if ( hexstr == 0 || hexstr[0] == 0 )
@@ -115,35 +141,9 @@ char *LP_forward(bits256 pubkey,char *hexstr)
     } else return(clonestr("{\"error\":\"notfound\"}"));
 }
 
-void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t max)
+int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag)
 {
-    char *retstr; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t n=0,retval = -1;
-    if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
-    {
-        printf("LP_forwarding_register illegal pushaddr or null pubkey\n");
-        return;
-    }
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,pushaddr)) != 0 )
-        {
-            printf("[%s] LP_register.(%s) returned.(%s)\n",pushaddr,peer->ipaddr,retstr);
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( jint(retjson,"registered") != 0 && ++n >= max )
-                    retval = 0;
-                free_json(retjson);
-            }
-            free(retstr);
-        }
-        if ( retval == 0 )
-            break;
-    }
-}
-
-int32_t LP_pubkey_send(bits256 pubkey,char *jsonstr,int32_t freeflag)
-{
-    struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *hexstr,*retstr; int32_t len,retval = -1; cJSON *retjson;
+    struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *hexstr,*retstr; int32_t len,retval = -1; cJSON *retjson,*reqjson;
     if ( jsonstr == 0 || jsonstr[0] == 0 || bits256_nonz(pubkey) == 0 )
         return(-1);
     if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 && ptr->lasttime > time(NULL)-LP_KEEPALIVE )
@@ -162,7 +162,7 @@ int32_t LP_pubkey_send(bits256 pubkey,char *jsonstr,int32_t freeflag)
             }
             free(retstr);
         }
-        if ( retval == 0 )
+        if ( retval == 0 && peer->pushsock >= 0 )
         {
             printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
             len = (int32_t)strlen(jsonstr) + 1;
@@ -170,8 +170,11 @@ int32_t LP_pubkey_send(bits256 pubkey,char *jsonstr,int32_t freeflag)
             init_hexbytes_noT(hexstr,(uint8_t *)jsonstr,len);
             if ( freeflag != 0 )
                 free(jsonstr);
-            if ( peer->pushsock >= 0 )
-                return(LP_send(peer->pushsock,hexstr,1));
+            reqjson = cJSON_CreateObject();
+            jaddstr(reqjson,"method","forwardhex");
+            jaddstr(reqjson,"hex",hexstr);
+            free(hexstr);
+            return(LP_send(peer->pushsock,jprint(reqjson,1),1));
         }
     }
     return(-1);
