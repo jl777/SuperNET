@@ -375,6 +375,8 @@ char *LP_pricestr(char *base,char *rel)
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
+        jaddstr(retjson,"method","postprice");
+        jaddbits256(retjson,"pubkey",LP_mypubkey);
         jaddstr(retjson,"base",base);
         jaddstr(retjson,"rel",rel);
         jaddnum(retjson,"price",price);
