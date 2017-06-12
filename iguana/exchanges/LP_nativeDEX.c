@@ -107,7 +107,7 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
             {
                 if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
                 {
-                    printf("%s PULL.[%d] %s\n",myipaddr != 0 ? myipaddr : "127.0.0.1",recvsize,jsonstr);
+                    printf("%s PULL.[%d] %s -> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",recvsize,jsonstr,retstr);
                     free(retstr);
                 }
             }
