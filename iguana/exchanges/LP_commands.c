@@ -280,6 +280,7 @@ forwardhex(pubkey,hex)\n\
             USERPASS_COUNTER = 1;
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"userpass",USERPASS);
+            jaddbits256(retjson,"mypubkey",LP_mypubkey);
             jadd(retjson,"coins",LP_coinsjson());
             return(jprint(retjson,1));
         }
