@@ -173,6 +173,7 @@ int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag)
             reqjson = cJSON_CreateObject();
             jaddstr(reqjson,"method","forwardhex");
             jaddstr(reqjson,"hex",hexstr);
+            jaddbits256(reqjson,"pubkey",pubkey);
             free(hexstr);
             return(LP_send(peer->pushsock,jprint(reqjson,1),1));
         }
