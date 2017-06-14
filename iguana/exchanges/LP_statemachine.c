@@ -1264,3 +1264,45 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
  }
  portable_mutex_unlock(&myinfo->DEX_swapmutex);
  }*/
+
+/*int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double origprice)
+ {
+ double price,bid,ask; uint32_t now; cJSON *retjson; struct LP_quoteinfo Q; char *retstr;
+ if ( (now= (uint32_t)time(NULL)) > utxo->T.swappending && utxo->S.swap == 0 )
+ utxo->T.swappending = 0;
+ if ( now > utxo->T.published+60 && LP_isavailable(utxo) && (price= LP_myprice(&bid,&ask,utxo->coin,rel)) != 0. )
+ {
+ if ( origprice < price )
+ price = origprice;
+ if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
+ return(-1);
+ Q.timestamp = (uint32_t)time(NULL);
+ retjson = LP_quotejson(&Q);
+ jaddstr(retjson,"method","quote");
+ retstr = jprint(retjson,1);
+ //printf("PING.(%s)\n",retstr);
+ if ( pubsock >= 0 )
+ LP_send(pubsock,retstr,1);
+ else
+ {
+ // verify it is in list
+ // push if it isnt
+ }
+ utxo->T.published = now;
+ return(0);
+ }
+ return(-1);
+ }*/
+/*if ( addflag != 0 && LP_utxofind(1,Q.txid,Q.vout) == 0 )
+ {
+ LP_utxoadd(1,-1,Q.srccoin,Q.txid,Q.vout,Q.value,Q.txid2,Q.vout2,Q.value2,"",Q.srcaddr,Q.srchash,0.);
+ LP_utxoadd(0,-1,Q.destcoin,Q.desttxid,Q.destvout,Q.destvalue,Q.feetxid,Q.feevout,Q.feevalu,"",Q.destaddr,Q.desthash,0.);
+ }*/
+
+/*struct LP_utxoinfo *utxo,*tmp;
+ HASH_ITER(hh,LP_utxoinfos[1],utxo,tmp)
+ {
+ if ( LP_ismine(utxo) > 0 && strcmp(utxo->coin,base) == 0 )
+ LP_priceping(LP_mypubsock,utxo,rel,price * LP_profitratio);
+ }*/
+

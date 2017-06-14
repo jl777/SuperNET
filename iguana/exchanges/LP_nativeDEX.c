@@ -32,7 +32,7 @@ char USERPASS[65],USERPASS_WIFSTR[64],USERHOME[512] = { "/root" };
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196" , "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //
 
-portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex;
+portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex;
 int32_t LP_mypubsock = -1;
 int32_t USERPASS_COUNTER,IAMLP = 0;
 double LP_profitratio = 1.;
@@ -154,27 +154,6 @@ int32_t LP_subsock_check(struct LP_peerinfo *peer)
     return(nonz);
 }
 
-int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double profitmargin)
-{
-    double price,bid,ask; uint32_t now; cJSON *retjson; struct LP_quoteinfo Q; char *retstr;
-    if ( (now= (uint32_t)time(NULL)) > utxo->T.swappending )
-        utxo->T.swappending = 0;
-    if ( now > utxo->T.published+60 && utxo->T.swappending == 0 && utxo->S.swap == 0 && (price= LP_myprice(&bid,&ask,utxo->coin,rel)) != 0. )
-    {
-        if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
-            return(-1);
-        Q.timestamp = (uint32_t)time(NULL);
-        retjson = LP_quotejson(&Q);
-        jaddstr(retjson,"method","quote");
-        retstr = jprint(retjson,1);
-        //printf("PING.(%s)\n",retstr);
-        LP_send(pubsock,retstr,1);
-        utxo->T.published = now;
-        return(0);
-    }
-    return(-1);
-}
-
 void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitmargin)
 {
     struct _LP_utxoinfo u; char str[65]; uint32_t now = (uint32_t)time(NULL);
@@ -193,13 +172,14 @@ void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitma
             printf("txid2.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,u.txid),u.vout,dstr(u.value));
             LP_spentnotify(utxo,1);
         }
-        else if ( LP_ismine(utxo) > 0 )
+        /*else if ( LP_ismine(utxo) > 0 )
         {
+            printf("iterate through all locally generated quotes and update, or change to price feed\n");
             // jl777: iterated Q's
             if ( strcmp(utxo->coin,"KMD") == 0 )
                 LP_priceping(pubsock,utxo,"BTC",profitmargin);
             else LP_priceping(pubsock,utxo,"KMD",profitmargin);
-        }
+        }*/
     }
 }
 
@@ -209,9 +189,23 @@ void LP_utxo_updates(int32_t pubsock,char *passphrase,double profitmargin)
     LP_privkey_updates(pubsock,passphrase);
 }
 
+void LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pubsock,struct LP_peerinfo *peer,uint32_t now,double profitmargin,int32_t interval)
+{
+    int32_t lastn;
+    if ( now > peer->lastutxos+interval )
+    {
+        peer->lastutxos = now;
+        //lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
+        //if ( lastn < LP_PROPAGATION_SLACK * 2 )
+        lastn = LP_PROPAGATION_SLACK * 2;
+        if ( mypeer == 0 || strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
+            LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
+    }
+}
+
 void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
 {
-    char *retstr; uint8_t r; int32_t i,n,j,counter=0,nonz,lastn; struct LP_peerinfo *peer,*tmp; uint32_t now,lastforward = 0; cJSON *item; struct LP_utxoinfo *utxo,*utmp;
+    char *retstr; uint8_t r; int32_t i,n,j,counter=0,nonz; struct LP_peerinfo *peer,*tmp; uint32_t now,lastforward = 0; cJSON *item; struct LP_utxoinfo *utxo,*utmp;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
@@ -278,6 +272,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
                 nonz += LP_subsock_check(peer);
+                LP_peer_utxosquery(LP_mypeer,myport,pubsock,peer,now,profitmargin,600);
             }
             if ( pullsock >= 0 )
             {
@@ -325,17 +320,8 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
                     if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
                         LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,mypeer->ipaddr,myport,profitmargin);
                 }
-                if ( peer->numutxos != mypeer->numutxos && now > peer->lastutxos+60 )
-                {
-                    peer->lastutxos = now;
-                    lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
-                    if ( lastn < LP_PROPAGATION_SLACK * 2 )
-                        lastn = LP_PROPAGATION_SLACK * 2;
-                    // printf("%s numutxos.%d vs %d lastn.%d\n",peer->ipaddr,peer->numutxos,mypeer->numutxos,lastn);
-                    if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
-                        LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer->ipaddr,myport,profitmargin);
-                }
                 nonz += LP_subsock_check(peer);
+                LP_peer_utxosquery(LP_mypeer,myport,pubsock,peer,now,profitmargin,60);
             }
             if ( (counter % 100) == 0 )
             {
@@ -373,6 +359,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     portable_mutex_init(&LP_swaplistmutex);
     portable_mutex_init(&LP_cachemutex);
     portable_mutex_init(&LP_forwardmutex);
+    portable_mutex_init(&LP_pubkeymutex);
     if ( profitmargin == 0. || profitmargin == 0.01 )
     {
         profitmargin = 0.01 + (double)(rand() % 100)/100000;

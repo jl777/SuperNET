@@ -45,7 +45,7 @@ double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits25
     LP_forward(qp->srchash,jprint(reqjson,1),1);
     for (i=0; i<30; i++)
     {
-        if ( (price= LP_pricecache(qp,base,rel,qp->txid,qp->vout)) != 0. )
+        if ( (price= LP_pricecache(qp,base,rel,qp->txid,qp->vout)) > SMALLVAL )
         {
             if ( flag == 0 || bits256_nonz(qp->desthash) != 0 )
             {
@@ -61,7 +61,7 @@ double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits25
 int32_t LP_connectstart(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin)
 {
     char *retstr,pairstr[512]; cJSON *retjson; double price; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; uint64_t destvalue; struct LP_quoteinfo Q; struct basilisk_swap *swap;
-    if ( (price= LP_price(base,rel)) != 0. )
+    if ( (price= LP_price(base,rel)) > SMALLVAL )
     {
         price *= (1. + profitmargin);
         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
@@ -182,7 +182,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                 retval = 1;
                 if ( LP_isavailable(utxo) > 0 )
                 {
-                    if ( (price= LP_price(base,rel)) != 0. )
+                    if ( (price= LP_price(base,rel)) > SMALLVAL )
                     {
                         price *= (1. + profitmargin);
                         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
@@ -210,7 +210,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                         if ( pubsock >= 0 )
                             LP_send(pubsock,retstr,1);
                         else LP_forward(utxo->S.otherpubkey,retstr,1);
-                        utxo->T.published = (uint32_t)time(NULL);
+                        utxo->T.lasttime = (uint32_t)time(NULL);
                     } else printf("null price\n");
                 } else printf("swappending.%u swap.%p\n",utxo->T.swappending,utxo->S.swap);
             }
@@ -245,7 +245,7 @@ cJSON *LP_dereference(cJSON *argjson,char *excludemethod)
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos; struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
+    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
     else if ( strcmp(method,"help") == 0 )
@@ -289,31 +289,22 @@ forwardhex(pubkey,hex)\n\
             return(clonestr("{\"error\":\"authentication error\"}"));
         if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 )
         {
-            //char str[65];
+            double price;
             if ( LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             if ( strcmp(method,"setprice") == 0 )
             {
-                if ( LP_mypriceset(base,rel,jdouble(argjson,"price")) < 0 )
-                    return(clonestr("{\"error\":\"couldnt set price\"}"));
-                else
+                if ( (price= jdouble(argjson,"price")) > SMALLVAL )
                 {
-                    if ( IAMLP != 0 )
-                    {
-                        HASH_ITER(hh,LP_utxoinfos[1],utxo,tmp)
-                        {
-                            if ( LP_ismine(utxo) > 0 && strcmp(utxo->coin,base) == 0 )//|| strcmp(utxo->coin,rel) == 0) )
-                                LP_priceping(LP_mypubsock,utxo,rel,LP_profitratio - 1.);
-                            //else printf("notmine.(%s %s)\n",utxo->coin,bits256_str(str,utxo->txid));
-                        }
-                    }
-                    return(clonestr("{\"result\":\"success\"}"));
-                }
+                    if ( LP_mypriceset(base,rel,price) < 0 )
+                        return(clonestr("{\"error\":\"couldnt set price\"}"));
+                    else return(LP_pricepings(LP_mypubsock,base,rel,price * LP_profitratio));
+                } else return(clonestr("{\"error\":\"no price\"}"));
             }
             else if ( strcmp(method,"myprice") == 0 )
             {
                 double bid,ask;
-                if ( LP_myprice(&bid,&ask,base,rel) != 0. )
+                if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )
                 {
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"base",base);
@@ -417,7 +408,7 @@ forwardhex(pubkey,hex)\n\
     else if ( strcmp(method,"broadcast") == 0 )
         retstr = LP_broadcasted(argjson);
     else if ( strcmp(method,"getprice") == 0 )
-        retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
+        retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"),0.);
     else if ( strcmp(method,"orderbook") == 0 )
         retstr = LP_orderbook(jstr(argjson,"base"),jstr(argjson,"rel"));
     else if ( strcmp(method,"forward") == 0 )
@@ -454,7 +445,7 @@ forwardhex(pubkey,hex)\n\
             if ( juint(argjson,"timestamp") > time(NULL)-60 )
             {
                 printf("utxonotify.(%s)\n",jprint(argjson,0));
-                LP_addutxo(1,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"valuesats"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"valuesats2"),jstr(argjson,"script"),jstr(argjson,"address"),jbits256(argjson,"pubkey"),jdouble(argjson,"profit"));
+                LP_utxoaddjson(1,LP_mypubsock,argjson);
             }
             retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
         }

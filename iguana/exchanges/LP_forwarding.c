@@ -146,24 +146,30 @@ char *LP_forwardhex(bits256 pubkey,char *hexstr)
 int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag)
 {
     struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *hexstr,*retstr; int32_t len,retval = -1; cJSON *retjson,*reqjson;
-    if ( jsonstr == 0 || jsonstr[0] == 0 || bits256_nonz(pubkey) == 0 )
+    if ( jsonstr == 0 || jsonstr[0] == 0 )
         return(-1);
-    if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 && ptr->lasttime > time(NULL)-LP_KEEPALIVE )
+    if ( bits256_nonz(pubkey) != 0 )
     {
-        return(LP_send(ptr->pushsock,jsonstr,1));
+        if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 && ptr->lasttime > time(NULL)-LP_KEEPALIVE )
+        {
+            return(LP_send(ptr->pushsock,jsonstr,1));
+        }
     }
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        if ( (retstr= issue_LP_lookup(peer->ipaddr,peer->port,pubkey)) != 0 )
+        if ( bits256_nonz(pubkey) != 0 )
         {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            if ( (retstr= issue_LP_lookup(peer->ipaddr,peer->port,pubkey)) != 0 )
             {
-                if ( jint(retjson,"forwarding") != 0 && peer->pushsock >= 0 )
-                    retval = 0;
-                free_json(retjson);
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( jint(retjson,"forwarding") != 0 && peer->pushsock >= 0 )
+                        retval = 0;
+                    free_json(retjson);
+                }
+                free(retstr);
             }
-            free(retstr);
-        }
+        } else retval = 0;
         if ( retval == 0 && peer->pushsock >= 0 )
         {
             printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
@@ -178,7 +184,7 @@ int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag)
             jaddbits256(reqjson,"pubkey",pubkey);
             free(hexstr);
             return(LP_send(peer->pushsock,jprint(reqjson,1),1));
-        }
+        } else retval = -1;
     }
     return(-1);
 }

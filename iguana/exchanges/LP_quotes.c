@@ -13,6 +13,7 @@
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
  ******************************************************************************/
+
 //
 //  LP_quotes.c
 //  marketmaker
@@ -172,9 +173,47 @@ char *LP_quotereceived(cJSON *argjson)
     if ( (ptr= LP_cacheadd(Q.srccoin,Q.destcoin,Q.txid,Q.vout,price,&Q)) != 0 )
     {
         ptr->Q = Q;
-        //char str[65]; printf("received.(%s) quote %.8f\n",bits256_str(str,Q.txid),price);
+        char str[65]; printf("received.(%s) quote %.8f\n",bits256_str(str,Q.txid),price);
         return(clonestr("{\"result\":\"updated\"}"));
     } else return(clonestr("{\"error\":\"nullptr\"}"));
+}
+
+char *LP_pricepings(int32_t pubsock,char *base,char *rel,double price)
+{
+    bits256 zero; cJSON *reqjson = cJSON_CreateObject();
+    jaddbits256(reqjson,"pubkey",LP_mypubkey);
+    jaddstr(reqjson,"base",base);
+    jaddstr(reqjson,"rel",rel);
+    jaddnum(reqjson,"price",price);
+    if ( pubsock >= 0 )
+    {
+        jaddstr(reqjson,"method","postprice");
+        LP_send(pubsock,jprint(reqjson,1),1);
+    }
+    else
+    {
+        jaddstr(reqjson,"method","forward");
+        jaddstr(reqjson,"method2","postprice");
+        memset(zero.bytes,0,sizeof(zero));
+        LP_forward(zero,jprint(reqjson,1),1);
+    }
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
+char *LP_postedprice(cJSON *argjson)
+{
+    bits256 pubkey; double price; char *base,*rel,str[65];
+    if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
+    {
+        pubkey = jbits256(argjson,"pubkey");
+        if ( bits256_nonz(pubkey) != 0 )
+        {
+            LP_pricefeedupdate(pubkey,base,rel,price);
+            printf("PRICE POSTED.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
+            return(clonestr("{\"result\":\"success\"}"));
+        }
+    }
+    return(clonestr("{\"error\":\"missing fields in posted price\"}"));
 }
 
 int32_t LP_sizematch(uint64_t mysatoshis,uint64_t othersatoshis)
@@ -199,11 +238,6 @@ int32_t LP_arrayfind(cJSON *array,bits256 txid,int32_t vout)
 cJSON *LP_tradecandidates(char *base)
 {
     struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*retarray=0,*item; int32_t i,n,totaladded,added;
-    /*if ( (price= LP_price(base,myutxo->coin)) == .0 )
-    {
-        printf("no LP_price (%s -> %s)\n",base,myutxo->coin);
-        return(0);
-    }*/
     totaladded = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
@@ -296,17 +330,17 @@ cJSON *LP_autotrade(struct LP_utxoinfo *myutxo,char *base,double maxprice)
                     price = LP_query("price",&Q[i],base,myutxo->coin,zero);
                     Q[i].destsatoshis = price * Q[i].satoshis;
                 }
-                if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
+                if ( (prices[i]= price) > SMALLVAL && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
                 char str[65]; printf("i.%d of %d: (%s) -> txid.%s price %.8f best %.8f dest %.8f\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid),price,bestprice,dstr(Q[i].destsatoshis));
             }
-            if ( bestprice != 0. )
+            if ( bestprice > SMALLVAL )
             {
                 bestmetric = 0.;
                 besti = -1;
                 for (i=0; i<n && i<sizeof(prices)/sizeof(*prices); i++)
                 {
-                    if ( (price= prices[i]) != 0. && myutxo->S.satoshis >= Q[i].destsatoshis+Q[i].desttxfee )
+                    if ( (price= prices[i]) > SMALLVAL && myutxo->S.satoshis >= Q[i].destsatoshis+Q[i].desttxfee )
                     {
                         metric = price / bestprice;
                         printf("%f %f %f %f ",price,metric,dstr(Q[i].destsatoshis),metric * metric * metric);
