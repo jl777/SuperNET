@@ -258,13 +258,13 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
         lastn = LP_PROPAGATION_SLACK * 2;
     if ( lastn >= n )
         firsti = -1;
-    else firsti = (n - lastn);
-    printf("LP_utxos iambob.%d symbol.%s lastn.%d\n",iambob,symbol==0?"":symbol,lastn);
+    else firsti = (lastn - n);
+    printf("LP_utxos iambob.%d symbol.%s firsti.%d lastn.%d\n",iambob,symbol==0?"":symbol,firsti,lastn);
     HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
     {
         if ( i++ < firsti )
             continue;
-        if ( (symbol == 0 || symbol[0] == 0 || strcmp(symbol,utxo->coin) == 0) && utxo->T.spentflag == 0 )//&& LP_ismine(utxo) > 0 )
+        if ( (symbol == 0 || symbol[0] == 0 || strcmp(symbol,utxo->coin) == 0) && utxo->T.spentflag == 0 )
         {
             jaddi(utxosjson,LP_utxojson(utxo));
         }
