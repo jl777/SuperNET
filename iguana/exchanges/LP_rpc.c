@@ -22,7 +22,7 @@ char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
 {
     char *retstr = 0; struct LP_peerinfo *peer = 0;
     peer = LP_peerfind((uint32_t)calc_ipbits(destip),port);
-    if ( peer == 0 || peer->errors < 3 )
+    if ( peer == 0 || peer->errors < LP_MAXPEER_ERRORS )
     {
         if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) == 0 )
         {
