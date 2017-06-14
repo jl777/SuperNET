@@ -106,7 +106,7 @@ uint64_t oldLP_txvalue(char *symbol,bits256 txid,int32_t vout)
 uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 {
     uint64_t value = 0; double interest; cJSON *txobj,*sobj,*array; int32_t n;
-    coinaddr = 0;
+    coinaddr[0] = 0;
     if ( (txobj= LP_gettxout(symbol,txid,vout)) != 0 )
     {
         if ( (value= jdouble(txobj,"amount")*SATOSHIDEN) == 0 && (value= jdouble(txobj,"value")*SATOSHIDEN) == 0 )
