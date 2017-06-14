@@ -194,12 +194,14 @@ void LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pubso
     int32_t lastn;
     if ( now > peer->lastutxos+interval )
     {
-        peer->lastutxos = now;
         //lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
         //if ( lastn < LP_PROPAGATION_SLACK * 2 )
         lastn = LP_PROPAGATION_SLACK * 2;
         if ( mypeer == 0 || strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
+        {
+            peer->lastutxos = now;
             LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
+        }
     }
 }
 
