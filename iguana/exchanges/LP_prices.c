@@ -439,13 +439,14 @@ char *LP_orderbook(char *base,char *rel)
         }
     }
     cachenumbids = numbids, cachenumasks = numasks;
+    printf("start cache.(%d %d) numbids.%d numasks.%d\n",cachenumbids,cachenumasks,numbids,numasks);
     HASH_ITER(hh,LP_pubkeyinfos,pubp,ptmp)
     {
         if ( pubp->matrix[baseid][relid] > SMALLVAL )
             numasks = LP_orderbook_utxoentries(now,base,rel,base,pubp->matrix[baseid][relid],&asks,numasks,cachenumasks,pubp->pubkey);
         if ( pubp->matrix[relid][baseid] > SMALLVAL )
             numbids = LP_orderbook_utxoentries(now,base,rel,rel,pubp->matrix[relid][baseid],&bids,numbids,cachenumbids,pubp->pubkey);
-        //printf("cache.(%d %d) numbids.%d numasks.%d\n",cachenumbids,cachenumasks,numbids,numasks);
+        printf("cache.(%d %d) numbids.%d numasks.%d\n",cachenumbids,cachenumasks,numbids,numasks);
     }
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
