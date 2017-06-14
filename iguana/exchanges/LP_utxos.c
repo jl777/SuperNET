@@ -259,10 +259,10 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
     if ( lastn >= n )
         firsti = -1;
     else firsti = (lastn - n);
-    printf("LP_utxos iambob.%d symbol.%s firsti.%d lastn.%d\n",iambob,symbol==0?"":symbol,firsti,lastn);
+    //printf("LP_utxos iambob.%d symbol.%s firsti.%d lastn.%d\n",iambob,symbol==0?"":symbol,firsti,lastn);
     HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
     {
-        char str[65]; printf("check %s.%s\n",utxo->coin,bits256_str(str,utxo->payment.txid));
+        //char str[65]; printf("check %s.%s\n",utxo->coin,bits256_str(str,utxo->payment.txid));
         if ( i++ < firsti )
             continue;
         if ( (symbol == 0 || symbol[0] == 0 || strcmp(symbol,utxo->coin) == 0) && utxo->T.spentflag == 0 )
@@ -434,7 +434,7 @@ struct LP_utxoinfo *LP_utxoaddjson(int32_t iambob,int32_t pubsock,cJSON *argjson
 int32_t LP_utxosparse(int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {
     struct LP_peerinfo *destpeer,*peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
-    printf("parse.(%s)\n",retstr);
+    //printf("parse.(%s)\n",retstr);
     if ( (array= cJSON_Parse(retstr)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -455,7 +455,7 @@ int32_t LP_utxosparse(int32_t mypubsock,char *destipaddr,uint16_t destport,char 
                 if ( jobj(item,"txid") != 0 )
                 {
                     txid = jbits256(item,"txid");
-                    printf("parse.(%s)\n",jprint(item,0));
+                    //printf("parse.(%s)\n",jprint(item,0));
                     if ( (utxo= LP_utxoaddjson(1,mypubsock,item)) != 0 )
                         utxo->T.lasttime = now;
                 }
