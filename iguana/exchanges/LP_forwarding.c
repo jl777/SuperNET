@@ -123,7 +123,7 @@ cJSON *LP_dereference(cJSON *argjson,char *excludemethod)
     return(reqjson);
 }
 
-char *LP_forwardhex(bits256 pubkey,char *hexstr)
+char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
 {
     struct LP_forwardinfo *ptr=0; uint8_t *data; int32_t datalen=0,sentbytes=0; char *retstr=0; cJSON *retjson,*argjson,*reqjson;
     if ( hexstr == 0 || hexstr[0] == 0 )
@@ -136,7 +136,9 @@ char *LP_forwardhex(bits256 pubkey,char *hexstr)
         if ( (argjson= cJSON_Parse((char *)data)) != 0 )
         {
             reqjson = LP_dereference(argjson,"forward");
-            retstr = LP_command_process(LP_mypeer != 0 ? LP_mypeer->ipaddr : "127.0.0.1",LP_mypubsock,reqjson,0,0,LP_profitratio - 1.);
+            if ( pubsock < 0 || bits256_cmp(pubkey,LP_mypubkey) == 0 )
+                retstr = LP_command_process(LP_mypeer != 0 ? LP_mypeer->ipaddr : "127.0.0.1",LP_mypubsock,reqjson,0,0,LP_profitratio - 1.);
+            else LP_send(pubsock,jprint(reqjson,0),1);
             free_json(reqjson);
             free_json(argjson);
         }

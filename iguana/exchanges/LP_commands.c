@@ -231,7 +231,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
     return(retval);
 }
 
-char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
+char *stats_JSON(int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
     if ( (method= jstr(argjson,"method")) == 0 )
@@ -422,7 +422,7 @@ forwardhex(pubkey,hex)\n\
         else if ( strcmp(method,"lookup") == 0 )
             retstr = LP_lookup(jbits256(argjson,"client"));
         else if ( strcmp(method,"forwardhex") == 0 )
-            retstr = LP_forwardhex(jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
+            retstr = LP_forwardhex(pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
         else if ( strcmp(method,"notify") == 0 )
             retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
         else if ( strcmp(method,"notified") == 0 )

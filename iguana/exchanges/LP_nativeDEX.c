@@ -84,7 +84,7 @@ char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *
     char *retstr=0;
     if ( LP_tradecommand(myipaddr,pubsock,argjson,data,datalen,profitmargin) <= 0 )
     {
-        if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
+        if ( (retstr= stats_JSON(pubsock,argjson,"127.0.0.1",0)) != 0 )
         {
             printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
             if ( pubsock >= 0 )
@@ -114,7 +114,7 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
             portable_mutex_lock(&LP_commandmutex);
             if ( jstr(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"forwardhex") == 0 )
             {
-                if ( (retstr= LP_forwardhex(jbits256(argjson,"pubkey"),jstr(argjson,"hex"))) != 0 )
+                if ( (retstr= LP_forwardhex(pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"))) != 0 )
                     free(retstr);
             }
             else if ( jstr(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"publish") == 0 )
@@ -147,7 +147,7 @@ int32_t LP_subsock_check(struct LP_peerinfo *peer)
         if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
         {
             portable_mutex_lock(&LP_commandmutex);
-            if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
+            if ( (retstr= stats_JSON(-1,argjson,"127.0.0.1",0)) != 0 )
             {
                 //printf("%s SUB.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                 free(retstr);

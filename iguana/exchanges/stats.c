@@ -489,7 +489,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
                     jaddstr(argjson,"userpass",userpass);
                 //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
-                if ( (retstr= stats_JSON(argjson,remoteaddr,port)) != 0 )
+                if ( (retstr= stats_JSON(-1,argjson,remoteaddr,port)) != 0 )
                 {
                     if ( (retitem= cJSON_Parse(retstr)) != 0 )
                         jaddi(retarray,retitem);
@@ -512,7 +512,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             //printf("ARGJSON.(%s)\n",jprint(arg,0));
             if ( userpass != 0 && jstr(arg,"userpass") == 0 )
                 jaddstr(arg,"userpass",userpass);
-            retstr = stats_JSON(arg,remoteaddr,port);
+            retstr = stats_JSON(-1,arg,remoteaddr,port);
         }
         free_json(argjson);
         free_json(json);
