@@ -203,14 +203,14 @@ char *LP_pricepings(int32_t pubsock,char *base,char *rel,double price)
 
 char *LP_postedprice(cJSON *argjson)
 {
-    bits256 pubkey; double price; char *base,*rel,str[65];
+    bits256 pubkey; double price; char *base,*rel;
+    printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
     if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
     {
         pubkey = jbits256(argjson,"pubkey");
         if ( bits256_nonz(pubkey) != 0 )
         {
             LP_pricefeedupdate(pubkey,base,rel,price);
-            printf("PRICE POSTED.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
             return(clonestr("{\"result\":\"success\"}"));
         }
     }
