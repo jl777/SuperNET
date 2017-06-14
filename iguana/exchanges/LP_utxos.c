@@ -340,7 +340,7 @@ int32_t LP_iseligible(int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin)
 {
-    char str[65],destaddr[64],destaddr2[64]; uint64_t val,val2=0,tmpsatoshis; int32_t spendvini,selector; bits256 spendtxid; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    char str[65],str2[65],destaddr[64],destaddr2[64]; uint64_t val,val2=0,tmpsatoshis; int32_t spendvini,selector; bits256 spendtxid; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
@@ -349,7 +349,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     destaddr2[0] = 0;
     if ( (val= LP_txvalue(destaddr,symbol,txid,vout)) != value || (val2= LP_txvalue(destaddr2,symbol,txid2,vout2)) != value2 || strcmp(destaddr,destaddr2) != 0 || strcmp(coinaddr,destaddr) != 0 )
     {
-        printf("utxoadd mismatch (%s %.8f) + (%s %.8f) != %s %.8f %.8f\n",destaddr,dstr(val),destaddr2,dstr(val2),coinaddr,dstr(value),dstr(value2));
+        printf("utxoadd mismatch %s/v%d (%s %.8f) + %s/v%d (%s %.8f) != %s %.8f %.8f\n",bits256_str(str,txid),vout,destaddr,dstr(val),bits256_str(str2,txid2),vout2,destaddr2,dstr(val2),coinaddr,dstr(value),dstr(value2));
         return(0);
     }
     if ( iambob != 0 && value2 < 9 * (value >> 3) + 100000 ) // big txfee padding
