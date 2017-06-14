@@ -225,6 +225,7 @@ int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag);
 int32_t LP_ismine(struct LP_utxoinfo *utxo);
 int32_t LP_isavailable(struct LP_utxoinfo *utxo);
 struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port);
+char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin);
 
 
 #endif

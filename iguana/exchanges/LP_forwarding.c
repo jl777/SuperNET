@@ -113,10 +113,22 @@ void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t max)
 
 char *LP_forwardhex(bits256 pubkey,char *hexstr)
 {
-    struct LP_forwardinfo *ptr=0; uint8_t *data; int32_t datalen=0,sentbytes=0; cJSON *retjson;
+    struct LP_forwardinfo *ptr=0; uint8_t *data; int32_t datalen=0,sentbytes=0; char *retstr=0; cJSON *retjson,*argjson;
     if ( hexstr == 0 || hexstr[0] == 0 )
         return(clonestr("{\"error\":\"nohex\"}"));
-    if ( (ptr= LP_forwardfind(pubkey)) != 0 )
+    if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,LP_mypubkey) == 0 )
+    {
+        datalen = (int32_t)strlen(hexstr) >> 1;
+        data = malloc(datalen);
+        decode_hex(data,datalen,hexstr);
+        if ( (argjson= cJSON_Parse((char *)data)) != 0 )
+        {
+            retstr = LP_command_process(LP_mypeer != 0 ? LP_mypeer->ipaddr : "127.0.0.1",LP_mypubsock,argjson,0,0,LP_profitratio - 1.);
+            free_json(argjson);
+        }
+        return(retstr);
+    }
+    else if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
         if ( ptr->pushsock >= 0 )
         {

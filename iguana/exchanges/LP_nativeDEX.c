@@ -79,6 +79,21 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_forwarding.c"
 #include "LP_commands.c"
 
+char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
+{
+    char *retstr=0;
+    if ( LP_tradecommand(myipaddr,pubsock,argjson,data,datalen,profitmargin) <= 0 )
+    {
+        if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
+        {
+            printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
+            if ( pubsock >= 0 )
+                LP_send(pubsock,retstr,1);
+        }
+    }
+    return(retstr);
+}
+
 int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double profitmargin)
 {
     int32_t recvsize,len,datalen=0,nonz = 0; void *ptr; char *retstr,*jsonstr=0; cJSON *argjson,*reqjson;
@@ -110,16 +125,8 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
                 if ( pubsock >= 0 && (reqjson= LP_dereference(argjson,"publish")) != 0 )
                     LP_send(pubsock,jprint(reqjson,1),1);
             }
-            else if ( LP_tradecommand(myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin) <= 0 )
-            {
-                if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
-                {
-                    printf("%s PULL.[%d] %s -> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",recvsize,jsonstr,retstr);
-                    if ( pubsock >= 0 )
-                        LP_send(pubsock,retstr,1);
-                    else free(retstr);
-                }
-            }
+            else if ( (retstr= LP_command_process(myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin)) != 0 )
+                free(retstr);
             portable_mutex_unlock(&LP_commandmutex);
             free_json(argjson);
         } else printf("error parsing(%s)\n",jsonstr);
