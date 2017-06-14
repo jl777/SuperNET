@@ -252,17 +252,22 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t lastn)
 {
     int32_t i,firsti; struct LP_utxoinfo *utxo,*tmp; cJSON *utxosjson = cJSON_CreateArray();
-    i = 0;
-    if ( lastn >= mypeer->numutxos )
-        firsti = -1;
-    else firsti = (mypeer->numutxos - lastn);
-    HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
+    if ( symbol != 0 && symbol[0] != 0 )
     {
-        if ( i++ < firsti )
-            continue;
-        if ( (symbol == 0 || symbol[0] == 0 || strcmp(symbol,utxo->coin) == 0) && utxo->T.spentflag == 0 )//&& LP_ismine(utxo) > 0 )
+        i = 0;
+        if ( lastn <= 0 )
+            lastn = LP_PROPAGATION_SLACK * 2;
+        if ( lastn >= mypeer->numutxos )
+            firsti = -1;
+        else firsti = (mypeer->numutxos - lastn);
+        HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
         {
-            jaddi(utxosjson,LP_utxojson(utxo));
+            if ( i++ < firsti )
+                continue;
+            if ( (symbol == 0 || symbol[0] == 0 || strcmp(symbol,utxo->coin) == 0) && utxo->T.spentflag == 0 )//&& LP_ismine(utxo) > 0 )
+            {
+                jaddi(utxosjson,LP_utxojson(utxo));
+            }
         }
     }
     return(jprint(utxosjson,1));
