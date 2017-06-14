@@ -192,7 +192,7 @@ void LP_utxo_updates(int32_t pubsock,char *passphrase,double profitmargin)
 void LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pubsock,struct LP_peerinfo *peer,uint32_t now,double profitmargin,int32_t interval)
 {
     int32_t lastn;
-    if ( now > peer->lastutxos+interval )
+    if ( peer->lastutxos < now-interval )
     {
         //lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
         //if ( lastn < LP_PROPAGATION_SLACK * 2 )
