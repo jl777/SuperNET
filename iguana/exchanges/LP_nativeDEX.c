@@ -30,7 +30,7 @@ char *activecoins[] = { "BTC", "KMD" };
 char GLOBAL_DBDIR[] = { "DB" };
 char USERPASS[65],USERPASS_WIFSTR[64],USERHOME[512] = { "/root" };
 
-char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196" , "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //
+char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196" , };//'"5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //
 
 portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex;
 int32_t LP_mypubsock = -1;
