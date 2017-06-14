@@ -18,6 +18,11 @@
 //  marketmaker
 //
 
+// price query is redundant as there is a pricefeed for all pubkeys now
+// get orderbook, find pubkey of the one offering it and directly reserve it
+// then it is the same as current logic, just skip the "price" step
+// "notified" push is wrong
+
 double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits256 mypub)
 {
     cJSON *reqjson; int32_t i,flag = 0; double price = 0.; struct LP_utxoinfo *utxo;

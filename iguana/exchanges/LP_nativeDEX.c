@@ -366,7 +366,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     OS_randombytes((void *)&n,sizeof(n));
     srand((int32_t)n);
     if ( userhome != 0 && userhome[0] != 0 )
+    {
         safecopy(USERHOME,userhome,sizeof(USERHOME));
+#ifdef __APPLE__
+        strcat(USERHOME,"/Library/Application Support");
+#endif
+    }
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
     portable_mutex_init(&LP_commandmutex);
