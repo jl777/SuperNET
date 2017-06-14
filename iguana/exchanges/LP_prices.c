@@ -378,7 +378,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,char *base,char *rel,char *symbol,
         {
             if ( LP_orderbookfind(*arrayp,cachednum,utxo->payment.txid,utxo->payment.vout) < 0 )
             {
-                char str[65]; printf("found utxo not in orderbook %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
+                //char str[65]; printf("found utxo not in orderbook %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
                 *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                 if ( strcmp(base,symbol) == 0 )
                     basesatoshis = utxo->payment.value;
@@ -441,7 +441,7 @@ char *LP_orderbook(char *base,char *rel)
             numasks = LP_orderbook_utxoentries(now,base,rel,base,pubp->matrix[baseid][relid],&asks,numasks,cachenumasks,pubp->pubkey);
         if ( pubp->matrix[relid][baseid] > SMALLVAL )
             numbids = LP_orderbook_utxoentries(now,base,rel,rel,pubp->matrix[relid][baseid],&bids,numbids,cachenumbids,pubp->pubkey);
-        printf("cache.(%d %d) numbids.%d numasks.%d\n",cachenumbids,cachenumasks,numbids,numasks);
+        //printf("cache.(%d %d) numbids.%d numasks.%d\n",cachenumbids,cachenumasks,numbids,numasks);
     }
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
