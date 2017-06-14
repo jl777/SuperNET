@@ -92,7 +92,7 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
             decode_hex((void *)jsonstr,datalen,(char *)ptr);
             jsonstr[datalen] = 0;
         } else jsonstr = (char *)ptr;
-        //printf("PULLED %d, datalen.%d (%s)\n",recvsize,datalen,jsonstr);
+        printf("PULLED %d, datalen.%d (%s)\n",recvsize,datalen,jsonstr);
         if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
         {
             len = (int32_t)strlen(jsonstr) + 1;
