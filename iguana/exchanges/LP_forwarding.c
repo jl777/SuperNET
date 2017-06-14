@@ -137,7 +137,7 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
         {
             reqjson = LP_dereference(argjson,"forward");
             retstr = LP_command_process(LP_mypeer != 0 ? LP_mypeer->ipaddr : "127.0.0.1",LP_mypubsock,reqjson,0,0,LP_profitratio - 1.);
-            if ( pubsock >= 0 && bits256_cmp(pubkey,LP_mypubkey) != 0 )
+            if ( pubsock >= 0 )
                 LP_send(pubsock,jprint(reqjson,0),1);
             free_json(reqjson);
             free_json(argjson);
