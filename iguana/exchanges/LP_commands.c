@@ -235,7 +235,10 @@ char *stats_JSON(int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) 
 {
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
     if ( (method= jstr(argjson,"method")) == 0 )
+    {
+        printf("(%s)\n",jprint(argjson,0));
         return(clonestr("{\"error\":\"need method in request\"}"));
+    }
     else if ( strcmp(method,"help") == 0 )
         return(clonestr("{\"result\":\" \
 available localhost RPC commands:\n \
