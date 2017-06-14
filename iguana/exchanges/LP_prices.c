@@ -97,6 +97,8 @@ struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
     {
         printf("pub add\n");
         portable_mutex_lock(&LP_pubkeymutex);
+        pubp = calloc(1,sizeof(*pubp));
+        pubp->pubkey = pubkey;
         HASH_ADD(hh,LP_pubkeyinfos,pubkey,sizeof(pubkey),pubp);
         portable_mutex_unlock(&LP_pubkeymutex);
         printf("pub add.%p\n",pubp);
