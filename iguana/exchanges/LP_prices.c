@@ -440,7 +440,7 @@ char *LP_orderbook(char *base,char *rel)
         if ( pubp->matrix[baseid][relid] > SMALLVAL )
             numasks = LP_orderbook_utxoentries(now,base,rel,base,pubp->matrix[baseid][relid],asks,numasks,cachenumasks,pubp->pubkey);
         if ( pubp->matrix[relid][baseid] > SMALLVAL )
-            numasks = LP_orderbook_utxoentries(now,base,rel,rel,pubp->matrix[relid][baseid],bids,numbids,cachenumbids,pubp->pubkey);
+            numbids = LP_orderbook_utxoentries(now,base,rel,rel,pubp->matrix[relid][baseid],bids,numbids,cachenumbids,pubp->pubkey);
     }
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
