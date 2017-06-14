@@ -96,7 +96,7 @@ struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
         portable_mutex_lock(&LP_pubkeymutex);
         pubp = calloc(1,sizeof(*pubp));
         pubp->pubkey = pubkey;
-        HASH_ADD(hh,LP_pubkeyinfos,pubkey,sizeof(pubkey),pubp);
+        HASH_ADD_KEYPTR(hh,LP_pubkeyinfos,&pubp->pubkey,sizeof(pubp->pubkey),pubp);
         portable_mutex_unlock(&LP_pubkeymutex);
         if ( (pubp= LP_pubkeyfind(pubkey)) == 0 )
             printf("pubkeyadd find error after add\n");
@@ -442,6 +442,7 @@ char *LP_orderbook(char *base,char *rel)
     printf("start cache.(%d %d) numbids.%d numasks.%d\n",cachenumbids,cachenumasks,numbids,numasks);
     HASH_ITER(hh,LP_pubkeyinfos,pubp,ptmp)
     {
+        char str[65]; printf("pubkey.(%s)\n",bits256_str(str,pubp->pubkey));
         if ( pubp->matrix[baseid][relid] > SMALLVAL )
             numasks = LP_orderbook_utxoentries(now,base,rel,base,pubp->matrix[baseid][relid],&asks,numasks,cachenumasks,pubp->pubkey);
         if ( pubp->matrix[relid][baseid] > SMALLVAL )
