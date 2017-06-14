@@ -378,6 +378,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,char *base,char *rel,char *symbol,
     struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer,*ptmp; char *retstr; cJSON *retjson; struct LP_orderbookentry *op; uint64_t basesatoshis;
     HASH_ITER(hh,LP_utxoinfos[1],utxo,tmp)
     {
+        char str[65],str2[65]; printf("check utxo.%s/v%d from %s\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,utxo->pubkey));
         if ( bits256_cmp(pubkey,utxo->pubkey) == 0 && strcmp(symbol,utxo->coin) == 0 && LP_isavailable(utxo) > 0 )
         {
             if ( LP_orderbookfind(*arrayp,cachednum,utxo->payment.txid,utxo->payment.vout) < 0 )
