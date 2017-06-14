@@ -51,8 +51,8 @@ char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,
 
 char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
 {
-    char url[4096],str[65],str2[65];
-    sprintf(url,"http://%s:%u/api/stats/notified?pubkey=%s&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%llu&txid2=%s&vout2=%d&value2=%llu&script=%s&address=%s&timestamp=%u",destip,destport,bits256_str(str2,utxo->pubkey),utxo->S.profitmargin,utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout,(long long)utxo->payment.value,bits256_str(str2,utxo->deposit.txid),utxo->deposit.vout,(long long)utxo->deposit.value,utxo->spendscript,utxo->coinaddr,(uint32_t)time(NULL));
+    char url[4096],str[65],str2[65],str3[65];
+    sprintf(url,"http://%s:%u/api/stats/notified?pubkey=%s&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%llu&txid2=%s&vout2=%d&value2=%llu&script=%s&address=%s&timestamp=%u",destip,destport,bits256_str(str3,utxo->pubkey),utxo->S.profitmargin,utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout,(long long)utxo->payment.value,bits256_str(str2,utxo->deposit.txid),utxo->deposit.vout,(long long)utxo->deposit.value,utxo->spendscript,utxo->coinaddr,(uint32_t)time(NULL));
     if ( strlen(url) > 1024 )
         printf("WARNING long url.(%s)\n",url);
     return(issue_curl(url));
