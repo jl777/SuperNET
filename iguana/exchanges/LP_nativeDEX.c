@@ -88,7 +88,7 @@ char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *
         {
             printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
             if ( pubsock >= 0 )
-                LP_send(pubsock,retstr,1);
+                LP_send(pubsock,retstr,0);
         }
     }
     return(retstr);
