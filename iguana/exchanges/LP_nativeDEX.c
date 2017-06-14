@@ -142,7 +142,7 @@ int32_t LP_subsock_check(struct LP_peerinfo *peer)
             portable_mutex_lock(&LP_commandmutex);
             if ( (retstr= stats_JSON(argjson,"127.0.0.1",0)) != 0 )
             {
-                //printf("%s SUB.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
+                printf("%s SUB.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                 free(retstr);
             }
             portable_mutex_unlock(&LP_commandmutex);
