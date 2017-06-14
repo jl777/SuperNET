@@ -82,11 +82,9 @@ struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout
 struct LP_pubkeyinfo *LP_pubkeyfind(bits256 pubkey)
 {
     struct LP_pubkeyinfo *pubp=0;
-    printf("pub find\n");
     portable_mutex_lock(&LP_pubkeymutex);
     HASH_FIND(hh,LP_pubkeyinfos,&pubkey,sizeof(pubkey),pubp);
     portable_mutex_unlock(&LP_pubkeymutex);
-    printf("pub find.%p\n",pubp);
     return(pubp);
 }
 
@@ -95,17 +93,14 @@ struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
     struct LP_pubkeyinfo *pubp=0;
     if ( (pubp= LP_pubkeyfind(pubkey)) == 0 )
     {
-        printf("pub add\n");
         portable_mutex_lock(&LP_pubkeymutex);
         pubp = calloc(1,sizeof(*pubp));
         pubp->pubkey = pubkey;
         HASH_ADD(hh,LP_pubkeyinfos,pubkey,sizeof(pubkey),pubp);
         portable_mutex_unlock(&LP_pubkeymutex);
-        printf("pub add.%p\n",pubp);
         if ( (pubp= LP_pubkeyfind(pubkey)) == 0 )
             printf("pubkeyadd find error after add\n");
     }
-    printf("pub add ret.%p\n",pubp);
     return(pubp);
 }
 
