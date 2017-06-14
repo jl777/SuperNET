@@ -267,6 +267,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             {
                 printf("LP_forwarding_register\n");
                 LP_forwarding_register(LP_mypubkey,pushaddr,10);
+                printf("done LP_forwarding_register\n");
                 lastforward = now;
             }
             nonz = n = 0;
