@@ -231,18 +231,6 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
     return(retval);
 }
 
-cJSON *LP_dereference(cJSON *argjson,char *excludemethod)
-{
-    cJSON *reqjson = 0;
-    if ( jstr(argjson,"method2") != 0 && strncmp(excludemethod,jstr(argjson,"method2"),strlen(excludemethod)) != 0 )
-    {
-        reqjson = jduplicate(argjson);
-        jdelete(reqjson,"method");
-        jaddstr(reqjson,"method",jstr(argjson,"method2"));
-    }
-    return(reqjson);
-}
-
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
