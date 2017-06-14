@@ -425,14 +425,11 @@ forwardhex(pubkey,hex)\n\
     }
     else if ( strcmp(method,"getpeers") == 0 )
         retstr = LP_peers();
+    else if ( strcmp(method,"getutxos") == 0 )
+        retstr = LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn"));
     else if ( IAMLP != 0 )
     {
-        if ( strcmp(method,"getutxos") == 0 )
-        {
-            retstr = LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn"));
-            //printf("RETURN. %d utxos\n",cJSON_GetArraySize(cJSON_Parse(retstr)));
-        }
-        else if ( strcmp(method,"register") == 0 )
+        if ( strcmp(method,"register") == 0 )
             retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"));
         else if ( strcmp(method,"lookup") == 0 )
             retstr = LP_lookup(jbits256(argjson,"client"));
