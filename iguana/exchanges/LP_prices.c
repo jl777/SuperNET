@@ -373,20 +373,25 @@ int32_t LP_orderbookfind(struct LP_orderbookentry **array,int32_t num,bits256 tx
     return(-1);
 }
 
-int32_t LP_orderbook_utxoentries(uint32_t now,char *base,char *rel,double price,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum,bits256 pubkey)
+int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum)
 {
-    struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer,*ptmp; char *retstr; cJSON *retjson; struct LP_orderbookentry *op; uint64_t basesatoshis;
+    struct LP_utxoinfo *utxo,*tmp; struct LP_pubkeyinfo *pubp; struct LP_peerinfo *peer,*ptmp; char *retstr; cJSON *retjson; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; double price; int32_t baseid,relid; uint64_t basesatoshis;
+    if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
+        baseid = basepp->ind;
+    else return(num);
     HASH_ITER(hh,LP_utxoinfos[1],utxo,tmp)
     {
         //char str[65],str2[65]; printf("check utxo.%s/v%d from %s\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,utxo->pubkey));
-        if ( bits256_cmp(pubkey,utxo->pubkey) == 0 && strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 )
+        if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && (pubp= LP_pubkeyfind(utxo->pubkey)) != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL )
         {
             if ( LP_orderbookfind(*arrayp,cachednum,utxo->payment.txid,utxo->payment.vout) < 0 )
             {
                 //char str[65]; printf("found utxo not in orderbook %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
                 *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
-                basesatoshis = utxo->payment.value;
-                if ( (op= LP_orderbookentry(base,rel,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout,price,basesatoshis,pubkey)) != 0 )
+                if ( polarity > 0 )
+                    basesatoshis = utxo->payment.value;
+                else basesatoshis = utxo->payment.value * price;
+                if ( (op= LP_orderbookentry(base,rel,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout,polarity > 0 ? price : 1./price,basesatoshis,utxo->pubkey)) != 0 )
                     (*arrayp)[num++] = op;
                 if ( bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 && utxo->T.lasttime == 0 )
                 {
@@ -414,7 +419,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,char *base,char *rel,double price,
 
 char *LP_orderbook(char *base,char *rel)
 {
-    uint32_t now,i; double price; struct LP_priceinfo *basepp=0,*relpp=0; struct LP_pubkeyinfo *pubp,*ptmp; struct LP_cacheinfo *ptr,*tmp; struct LP_orderbookentry *op,**bids = 0,**asks = 0; cJSON *retjson,*array; int32_t numbids=0,numasks=0,cachenumbids,cachenumasks,baseid,relid;
+    uint32_t now,i; struct LP_priceinfo *basepp=0,*relpp=0; struct LP_cacheinfo *ptr,*tmp; struct LP_orderbookentry *op,**bids = 0,**asks = 0; cJSON *retjson,*array; int32_t numbids=0,numasks=0,cachenumbids,cachenumasks,baseid,relid;
     if ( (basepp= LP_priceinfofind(base)) == 0 || (relpp= LP_priceinfofind(rel)) == 0 )
         return(clonestr("{\"error\":\"base or rel not added\"}"));
     baseid = basepp->ind;
@@ -439,15 +444,8 @@ char *LP_orderbook(char *base,char *rel)
     }
     cachenumbids = numbids, cachenumasks = numasks;
     //printf("start cache.(%d %d) numbids.%d numasks.%d\n",cachenumbids,cachenumasks,numbids,numasks);
-    HASH_ITER(hh,LP_pubkeyinfos,pubp,ptmp)
-    {
-        //char str[65]; printf("pubkey.(%s)\n",bits256_str(str,pubp->pubkey));
-        if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL )
-            numasks = LP_orderbook_utxoentries(now,base,rel,price,&asks,numasks,cachenumasks,pubp->pubkey);
-        if ( (price= pubp->matrix[relid][baseid]) > SMALLVAL )
-            numbids = LP_orderbook_utxoentries(now,base,rel,1./price,&bids,numbids,cachenumbids,pubp->pubkey);
-        //printf("cache.(%d %d) numbids.%d numasks.%d\n",cachenumbids,cachenumasks,numbids,numasks);
-    }
+    numasks = LP_orderbook_utxoentries(now,1,base,rel,&asks,numasks,cachenumasks);
+    numbids = LP_orderbook_utxoentries(now,-1,rel,base,&bids,numbids,cachenumbids);
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     if ( numbids > 1 )
