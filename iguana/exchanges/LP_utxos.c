@@ -259,7 +259,7 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
     if ( lastn >= n )
         firsti = -1;
     else firsti = (n - lastn);
-    printf("LP_utxos iambob.%d symbol.%p lastn.%d\n",iambob,symbol,lastn);
+    printf("LP_utxos iambob.%d symbol.%s lastn.%d\n",iambob,symbol==0?"":symbol,lastn);
     HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
     {
         if ( i++ < firsti )
