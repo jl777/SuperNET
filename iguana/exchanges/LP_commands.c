@@ -419,6 +419,15 @@ forwardhex(pubkey,hex)\n\
         retstr = LP_peers();
     else if ( strcmp(method,"getutxos") == 0 )
         retstr = LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn"));
+    else if ( strcmp(method,"notified") == 0 )
+    {
+        if ( juint(argjson,"timestamp") > time(NULL)-60 )
+        {
+            printf("utxonotify.(%s)\n",jprint(argjson,0));
+            LP_utxoaddjson(1,LP_mypubsock,argjson);
+        }
+        retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
+    }
     else if ( IAMLP != 0 )
     {
         if ( strcmp(method,"register") == 0 )
@@ -429,15 +438,6 @@ forwardhex(pubkey,hex)\n\
             retstr = LP_forwardhex(pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
         else if ( strcmp(method,"notify") == 0 )
             retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
-        else if ( strcmp(method,"notified") == 0 )
-        {
-            if ( juint(argjson,"timestamp") > time(NULL)-60 )
-            {
-                printf("utxonotify.(%s)\n",jprint(argjson,0));
-                LP_utxoaddjson(1,LP_mypubsock,argjson);
-            }
-            retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
-        }
     }
     if ( retstr != 0 )
         return(retstr);
