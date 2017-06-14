@@ -188,6 +188,7 @@ char *LP_pricepings(int32_t pubsock,char *base,char *rel,double price)
     if ( pubsock >= 0 )
     {
         jaddstr(reqjson,"method","postprice");
+        printf("pricepings.(%s)\n",jprint(reqjson,0));
         LP_send(pubsock,jprint(reqjson,1),1);
     }
     else
