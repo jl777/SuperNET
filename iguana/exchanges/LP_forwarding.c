@@ -94,10 +94,10 @@ void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t max)
     }
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        printf("register with (%s)\n",peer->ipaddr);
+        //printf("register with (%s)\n",peer->ipaddr);
         if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,pushaddr)) != 0 )
         {
-            printf("[%s] LP_register.(%s) returned.(%s)\n",pushaddr,peer->ipaddr,retstr);
+            //printf("[%s] LP_register.(%s) returned.(%s)\n",pushaddr,peer->ipaddr,retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 if ( jint(retjson,"registered") != 0 && ++n >= max )

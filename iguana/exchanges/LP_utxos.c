@@ -433,7 +433,8 @@ struct LP_utxoinfo *LP_utxoaddjson(int32_t iambob,int32_t pubsock,cJSON *argjson
 
 int32_t LP_utxosparse(int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {
-    struct LP_peerinfo *destpeer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
+    struct LP_peerinfo *destpeer,*peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
+    printf("parse.(%s)\n",retstr);
     if ( (array= cJSON_Parse(retstr)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -448,16 +449,16 @@ int32_t LP_utxosparse(int32_t mypubsock,char *destipaddr,uint16_t destport,char 
                     if ( (subport= juint(item,"sub")) == 0 )
                         subport = argport + 2;
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
-                    //if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
-                    //    peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
-                    if ( jobj(item,"txid") != 0 )
-                    {
-                        txid = jbits256(item,"txid");
-                        printf("parse.(%s)\n",jprint(item,0));
-                        if ( (utxo= LP_utxoaddjson(1,mypubsock,item)) != 0 )
-                            utxo->T.lasttime = now;
-                    }
-                } // else printf("skip.(%s)\n",jprint(item,0));
+                    if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
+                        peer = LP_addpeer(LP_mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
+                }
+                if ( jobj(item,"txid") != 0 )
+                {
+                    txid = jbits256(item,"txid");
+                    printf("parse.(%s)\n",jprint(item,0));
+                    if ( (utxo= LP_utxoaddjson(1,mypubsock,item)) != 0 )
+                        utxo->T.lasttime = now;
+                }
             }
             if ( (destpeer= LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport)) != 0 )
             {
