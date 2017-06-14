@@ -202,7 +202,7 @@ try_again:
     if ( res != CURLE_OK )
     {
         numretries++;
-        if ( specialcase != 0 )
+        if ( specialcase != 0 || timeout != 0 )
         {
             printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,s.ptr,res);
             free(s.ptr);

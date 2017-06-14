@@ -156,8 +156,6 @@ void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
 {
     char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now,flag = 0;
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
-    if ( peer != 0 && peer->errors > 0 )
-        return;
     if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,mypeer!=0?mypeer->numpeers:0,mypeer!=0?mypeer->numutxos:0)) != 0 )
     {
         //printf("got.(%s)\n",retstr);
@@ -179,6 +177,5 @@ void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
             if ( flag != 0 )
                 printf(" <- missing peers\n");
         }
-    } else if ( peer != 0 )
-        peer->errors++;
+    }
 }

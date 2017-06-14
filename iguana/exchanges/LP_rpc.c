@@ -17,14 +17,28 @@
 //  LP_rpc.c
 //  marketmaker
 //
+
+char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
+{
+    char *retstr = 0; struct LP_peerinfo *peer = 0;
+    peer = LP_peerfind((uint32_t)calc_ipbits(destip),port);
+    if ( peer == 0 || peer->errors < 3 )
+    {
+        if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) == 0 )
+        {
+            if ( peer != 0 )
+                peer->errors++;
+            else printf("%s error on (%s:%u) without peer\n",debugstr,destip,port);
+        }
+    }
+    return(retstr);
+}
+
 char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
-    char url[512],*retstr;
+    char url[512];
     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
-    //printf("send.(%s)\n",url);
-    retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
-    //printf("GETPEERS.(%s)\n",retstr);
-    return(retstr);
+    return(LP_issue_curl("getpeers",destip,port,url));
 }
 
 char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)

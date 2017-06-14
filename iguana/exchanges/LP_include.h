@@ -222,6 +222,7 @@ void LP_quotesinit(char *base,char *rel);
 int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag);
 int32_t LP_ismine(struct LP_utxoinfo *utxo);
 int32_t LP_isavailable(struct LP_utxoinfo *utxo);
+struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port);
 
 
 #endif

@@ -501,8 +501,7 @@ void LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
         }
         if ( flag != 0 )
             printf(" <- missing utxos\n");*/
-    } else if ( peer != 0 )
-        peer->errors++;
+    } 
 }
 
 cJSON *LP_inventory(char *symbol,int32_t iambob)
