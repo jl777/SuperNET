@@ -476,12 +476,15 @@ void LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
     if ( coin == 0 )
         coin = "";
-    printf("utxo query.(%s)\n",destipaddr);
-    if ( (retstr= issue_LP_getutxos(destipaddr,destport,coin,lastn,myipaddr,myport,myprofit,mypeer != 0 ? mypeer->numpeers : 0,mypeer != 0 ? mypeer->numutxos : 0)) != 0 )
+    //printf("utxo query.(%s)\n",destipaddr);
+    if ( IAMLP != 0 )
+        retstr = issue_LP_getutxos(destipaddr,destport,coin,lastn,myipaddr,myport,myprofit,mypeer != 0 ? mypeer->numpeers : 0,mypeer != 0 ? mypeer->numutxos : 0);
+    else retstr = issue_LP_clientgetutxos(destipaddr,destport,coin,100);
+    if ( retstr != 0 )
     {
         now = (uint32_t)time(NULL);
         LP_utxosparse(mypubsock,destipaddr,destport,retstr,now);
-        printf("got.(%s)\n",retstr);
+        //printf("got.(%s)\n",retstr);
         free(retstr);
         /*i = 0;
         if ( lastn >= mypeer->numutxos )
