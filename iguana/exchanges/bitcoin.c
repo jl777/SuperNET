@@ -19,7 +19,7 @@ cJSON *instantdex_statemachinejson(struct bitcoin_swapinfo *swap);
 
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params)
 {
-    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params));
+    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,0));
 }
 
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)

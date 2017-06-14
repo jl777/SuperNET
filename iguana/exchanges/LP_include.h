@@ -21,6 +21,7 @@
 #ifndef LP_INCLUDE_H
 #define LP_INCLUDE_H
 
+#define LP_HTTP_TIMEOUT 1
 #define LP_DEXFEE(destsatoshis) ((destsatoshis) / INSTANTDEX_INSURANCEDIV)
 #define LP_DEPOSITSATOSHIS(satoshis) ((satoshis) + (satoshis >> 3))
 

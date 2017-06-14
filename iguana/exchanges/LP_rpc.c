@@ -22,7 +22,7 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
     char url[512],*retstr;
     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
     //printf("send.(%s)\n",url);
-    retstr = issue_curl(url);
+    retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
     //printf("GETPEERS.(%s)\n",retstr);
     return(retstr);
 }
@@ -31,7 +31,7 @@ char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,
 {
     char url[512];
     sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,profitmargin,numpeers,numutxos);
-    return(issue_curl(url));
+    return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
 char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t lastn)
@@ -39,14 +39,14 @@ char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t 
     char url[512];
     sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=127.0.0.1&port=0",destip,destport,coin,lastn);
     //printf("getutxo.(%s)\n",url);
-    return(issue_curl(url));
+    return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
 char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
     char url[512];
     sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
-    return(issue_curl(url));
+    return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
 char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
@@ -55,7 +55,7 @@ char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utx
     sprintf(url,"http://%s:%u/api/stats/notified?pubkey=%s&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%llu&txid2=%s&vout2=%d&value2=%llu&script=%s&address=%s&timestamp=%u",destip,destport,bits256_str(str3,utxo->pubkey),utxo->S.profitmargin,utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout,(long long)utxo->payment.value,bits256_str(str2,utxo->deposit.txid),utxo->deposit.vout,(long long)utxo->deposit.value,utxo->spendscript,utxo->coinaddr,(uint32_t)time(NULL));
     if ( strlen(url) > 1024 )
         printf("WARNING long url.(%s)\n",url);
-    return(issue_curl(url));
+    return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
 char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *pushaddr)
@@ -65,7 +65,7 @@ char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *push
         return(clonestr("{\"error\":\"illegal pushaddr\"}"));
     sprintf(url,"http://%s:%u/api/stats/register?client=%s&pushaddr=%s",destip,destport,bits256_str(str,pubkey),pushaddr+strlen("tcp://"));
     //printf("getutxo.(%s)\n",url);
-    return(issue_curl(url));
+    return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
 char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
@@ -73,7 +73,7 @@ char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
     char url[512],str[65];
     sprintf(url,"http://%s:%u/api/stats/lookup?client=%s",destip,destport,bits256_str(str,pubkey));
     //printf("getutxo.(%s)\n",url);
-    return(issue_curl(url));
+    return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)

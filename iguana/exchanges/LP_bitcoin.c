@@ -2025,7 +2025,7 @@ int32_t bitcoin_p2shscript(uint8_t *script,int32_t n,const uint8_t *p2shscript,c
 
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params)
 {
-    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params));
+    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,0));
 }
 
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)

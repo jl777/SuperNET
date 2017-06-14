@@ -115,7 +115,7 @@ char *Jay_NXTrequest(char *command,char *params)
     return(retstr);
 }
 
-char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params)
+char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
     static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
     struct curl_slist *headers = NULL; struct return_string s; CURLcode res; CURL *curl_handle;
@@ -153,7 +153,8 @@ try_again:
     curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,		&s); 			// we pass our 's' struct to the callback
     curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
 	curl_easy_setopt(curl_handle,CURLOPT_NOPROGRESS,	1L);			// no progress callback
-    //curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,	60L); // causes problems with iguana timeouts
+    if ( timeout > 0 )
+        curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,	timeout); // causes problems with iguana timeouts
     if ( strncmp(url,"https",5) == 0 )
     {
         curl_easy_setopt(curl_handle,CURLOPT_SSL_VERIFYPEER,0);

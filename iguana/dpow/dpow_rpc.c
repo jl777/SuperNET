@@ -13,7 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
+#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0,0)
 
 cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 {
@@ -839,7 +839,7 @@ char *dpow_issuemethod(char *userpass,char *method,char *params,uint16_t port)
         sprintf(url,(char *)"http://127.0.0.1:%u",port);
         sprintf(postdata,"{\"method\":\"%s\",\"params\":%s}",method,params);
         //printf("postdata.(%s) USERPASS.(%s)\n",postdata,KMDUSERPASS);
-        retstr2 = bitcoind_RPC(&retstr,(char *)"debug",url,userpass,method,params);
+        retstr2 = bitcoind_RPC(&retstr,(char *)"debug",url,userpass,method,params,0);
     }
     return(retstr2);
 }
