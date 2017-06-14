@@ -202,7 +202,7 @@ void LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pubso
             peer->lastutxos = now;
             LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
         }
-    } else printf("skip.(%s) %u\n",peer->ipaddr,peer->lastutxos);
+    } else printf("LP_peer_utxosquery skip.(%s) %u\n",peer->ipaddr,peer->lastutxos);
 }
 
 void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
@@ -271,6 +271,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             nonz = n = 0;
             if ( (counter % 6000) == 0 )
                 LP_utxo_updates(pubsock,passphrase,profitmargin);
+            printf("checkpeers\n");
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
                 nonz += LP_subsock_check(peer);
