@@ -442,7 +442,7 @@ int32_t LP_utxosparse(int32_t mypubsock,char *destipaddr,uint16_t destport,char 
                     if ( jobj(item,"txid") != 0 )
                     {
                         txid = jbits256(item,"txid");
-                        //printf("parse.(%s)\n",jprint(item,0));
+                        printf("parse.(%s)\n",jprint(item,0));
                         if ( (utxo= LP_utxoaddjson(1,mypubsock,item)) != 0 )
                             utxo->T.lasttime = now;
                     }
