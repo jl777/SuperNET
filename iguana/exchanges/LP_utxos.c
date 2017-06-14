@@ -483,7 +483,7 @@ void LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
     {
         now = (uint32_t)time(NULL);
         LP_utxosparse(mypubsock,destipaddr,destport,retstr,now);
-        printf("got.(%s)\n",retstr);
+        //printf("got.(%s)\n",retstr);
         free(retstr);
         /*i = 0;
         if ( lastn >= mypeer->numutxos )
