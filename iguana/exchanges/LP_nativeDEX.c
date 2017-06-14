@@ -265,18 +265,17 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             now = (uint32_t)time(NULL);
             if ( lastforward < now-3600 )
             {
-                printf("LP_forwarding_register\n");
+                //printf("LP_forwarding_register\n");
                 LP_forwarding_register(LP_mypubkey,pushaddr,10);
-                printf("done LP_forwarding_register\n");
+                //printf("done LP_forwarding_register\n");
                 lastforward = now;
             }
             nonz = n = 0;
             if ( (counter % 6000) == 0 )
             {
-                printf("LP_utxo_updates\n");
+                //printf("LP_utxo_updates\n");
                 LP_utxo_updates(pubsock,passphrase,profitmargin);
             }
-            printf("checkpeers\n");
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
                 nonz += LP_subsock_check(peer);
