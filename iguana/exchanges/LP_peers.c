@@ -42,7 +42,7 @@ char *LP_peers()
     struct LP_peerinfo *peer,*tmp; cJSON *peersjson = cJSON_CreateArray();
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        if ( peer->errors < LP_MAXPEER_ERRORS )
+        //if ( peer->errors < LP_MAXPEER_ERRORS )
             jaddi(peersjson,LP_peerjson(peer));
     }
     return(jprint(peersjson,1));
