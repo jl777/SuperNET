@@ -156,18 +156,18 @@ int32_t LP_subsock_check(struct LP_peerinfo *peer)
 
 void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitmargin)
 {
-    struct _LP_utxoinfo u; char str[65]; uint32_t now = (uint32_t)time(NULL);
+    struct _LP_utxoinfo u; char str[65],destaddr[64]; uint32_t now = (uint32_t)time(NULL);
     //printf("%s lag.%d\n",bits256_str(str,utxo->txid),now-utxo->lastspentcheck);
     if ( utxo->T.spentflag == 0 && now > utxo->T.lastspentcheck+60 )
     {
         u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
         utxo->T.lastspentcheck = now;
-        if ( LP_txvalue(utxo->coin,utxo->payment.txid,utxo->payment.vout) == 0 )
+        if ( LP_txvalue(destaddr,utxo->coin,utxo->payment.txid,utxo->payment.vout) == 0 )
         {
             printf("txid.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout,dstr(utxo->payment.value));
             LP_spentnotify(utxo,0);
         }
-        else if ( LP_txvalue(utxo->coin,u.txid,u.vout) == 0 )
+        else if ( LP_txvalue(destaddr,utxo->coin,u.txid,u.vout) == 0 )
         {
             printf("txid2.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,u.txid),u.vout,dstr(u.value));
             LP_spentnotify(utxo,1);
