@@ -204,7 +204,7 @@ char *LP_pricepings(int32_t pubsock,char *base,char *rel,double price)
 char *LP_postedprice(cJSON *argjson)
 {
     bits256 pubkey; double price; char *base,*rel;
-    printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
+    //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
     if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
     {
         pubkey = jbits256(argjson,"pubkey");
