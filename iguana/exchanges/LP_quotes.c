@@ -392,7 +392,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
         txid = jbits256(argjson,"txid");
         if ( (utxo= LP_utxofind(1,txid,jint(argjson,"vout"))) != 0 && LP_ismine(utxo) > 0 && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )
         {
-            printf("LP_tradecommand.(%s)\n",jprint(argjson,0));
+            printf("pend.%u LP_tradecommand.(%s)\n",utxo->T.swappending,jprint(argjson,0));
             if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout)) >= 0 )
             {
                 char str[65]; printf("LP_tradecommand selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
@@ -425,12 +425,14 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                         jaddnum(retjson,"quotetime",juint(argjson,"quotetime"));
                         jaddnum(retjson,"pending",utxo->T.swappending);
                         jaddbits256(retjson,"desthash",utxo->S.otherpubkey);
+                        jaddbits256(retjson,"pubkey",utxo->S.otherpubkey);
                         jaddstr(retjson,"method","reserved");
                         retstr = jprint(retjson,1);
                         if ( pubsock >= 0 )
                             LP_send(pubsock,retstr,1);
                         else LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,retstr,1);
                         utxo->T.lasttime = (uint32_t)time(NULL);
+                        printf("set swappending.%u\n",utxo->T.swappending);
                     } else printf("null price\n");
                 } else printf("swappending.%u swap.%p\n",utxo->T.swappending,utxo->S.swap);
             }
