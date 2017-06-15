@@ -46,7 +46,7 @@ char *stats_JSON(int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) 
     }
     if ( (method= jstr(argjson,"method")) == 0 )
     {
-        if ( flag == 0 || jobj(argjson,"result") == 0 )
+        if ( flag == 0 || jobj(argjson,"result") != 0 )
             printf("stats_JSON no method: (%s)\n",jprint(argjson,0));
         return(clonestr("{\"error\":\"need method in request\"}"));
     }

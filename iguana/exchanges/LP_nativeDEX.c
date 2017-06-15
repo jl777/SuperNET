@@ -114,11 +114,13 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
             portable_mutex_lock(&LP_commandmutex);
             if ( jstr(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"forwardhex") == 0 )
             {
+                printf("got forwardhex\n");
                 if ( (retstr= LP_forwardhex(pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"))) != 0 )
                     free(retstr);
             }
             else if ( jstr(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"publish") == 0 )
             {
+                printf("got publish\n");
                 if ( jobj(argjson,"method2") != 0 )
                     jdelete(argjson,"method2");
                 jaddstr(argjson,"method2","broadcast");
@@ -138,16 +140,16 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
     return(nonz);
 }
 
-int32_t LP_subsock_check(struct LP_peerinfo *peer)
+int32_t LP_subsock_check(char *myipaddr,int32_t pubsock,int32_t sock,double profitmargin)
 {
     int32_t recvsize,nonz = 0; char *retstr; void *ptr; cJSON *argjson;
-    while ( peer->subsock >= 0 && (recvsize= nn_recv(peer->subsock,&ptr,NN_MSG,0)) >= 0 )
+    while ( sock >= 0 && (recvsize= nn_recv(sock,&ptr,NN_MSG,0)) >= 0 )
     {
         nonz++;
         if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
         {
             portable_mutex_lock(&LP_commandmutex);
-            if ( (retstr= stats_JSON(-1,argjson,"127.0.0.1",0)) != 0 )
+            if ( (retstr= LP_command_process(myipaddr,pubsock,argjson,0,0,profitmargin)) != 0 )
             {
                 //printf("%s SUB.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                 free(retstr);
@@ -236,7 +238,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
         }
-        nonz += LP_subsock_check(peer);
+        nonz += LP_subsock_check(myipaddr,pubsock,peer->pushsock,profitmargin);
         if ( peer->diduquery == 0 )
         {
             LP_peer_utxosquery(mypeer,myport,pubsock,peer,now,profitmargin,60);
