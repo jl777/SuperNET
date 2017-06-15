@@ -125,58 +125,59 @@ cJSON *LP_dereference(cJSON *argjson,char *excludemethod)
 
 char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
 {
-    struct LP_forwardinfo *ptr=0; uint8_t *data; int32_t datalen=0,sentbytes=0; char *retstr=0; cJSON *retjson,*argjson,*reqjson;
+    struct LP_forwardinfo *ptr=0; uint8_t *data; int32_t datalen=0,sentbytes=0; char *retstr=0; cJSON *retjson=0,*argjson=0,*reqjson=0;
     if ( hexstr == 0 || hexstr[0] == 0 )
         return(clonestr("{\"error\":\"nohex\"}"));
+    datalen = (int32_t)strlen(hexstr) >> 1;
+    data = malloc(datalen);
+    decode_hex(data,datalen,hexstr);
+    if ( (argjson= cJSON_Parse((char *)data)) != 0 )
+        reqjson = LP_dereference(argjson,"forward");
     if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,LP_mypubkey) == 0 )
     {
-        datalen = (int32_t)strlen(hexstr) >> 1;
-        data = malloc(datalen);
-        decode_hex(data,datalen,hexstr);
-        if ( (argjson= cJSON_Parse((char *)data)) != 0 )
+        if ( reqjson != 0 )
         {
-            reqjson = LP_dereference(argjson,"forward");
             retstr = LP_command_process(LP_mypeer != 0 ? LP_mypeer->ipaddr : "127.0.0.1",LP_mypubsock,reqjson,0,0,LP_profitratio - 1.);
             printf("LP_forwardhex.(%s) -> (%s)\n",jprint(reqjson,0),retstr!=0?retstr:"");
             if ( pubsock >= 0 )
-                LP_send(pubsock,jprint(reqjson,0),1);
-            free_json(reqjson);
-            free_json(argjson);
+                LP_send(pubsock,jprint(reqjson,0),0);
         } else printf("LP_forwardhex couldnt parse (%s)\n",(char *)data);
-        free(data);
-        return(retstr);
     }
     else if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
         if ( ptr->pushsock >= 0 )
         {
-            datalen = (int32_t)strlen(hexstr) >> 1;
-            data = malloc(datalen);
-            decode_hex(data,datalen,hexstr);
             printf("forwardhex.(%s)\n",(char *)data);
-            sentbytes = LP_send(ptr->pushsock,(char *)data,1);
+            sentbytes = LP_send(ptr->pushsock,(char *)data,0);
         }
         retjson = cJSON_CreateObject();
         if ( sentbytes == datalen )
         {
             jaddstr(retjson,"result","success");
             jaddnum(retjson,"forwarded",sentbytes);
-            return(jprint(retjson,1));
+            retstr = jprint(retjson,1);
         }
         else
         {
             jaddstr(retjson,"error","send error");
             jaddnum(retjson,"sentbytes",sentbytes);
             jaddnum(retjson,"datalen",datalen);
-            return(jprint(retjson,1));
+            retstr = jprint(retjson,1);
         }
     }
     else
     {
         char str[65]; printf("couldnt find %s to forward to\n",bits256_str(str,pubkey));
-        return(clonestr("{\"error\":\"notfound\"}"));
+        if ( pubsock >= 0 )
+            LP_send(pubsock,jprint(reqjson,0),0);
+        retstr = clonestr("{\"error\":\"notfound\"}");
     }
-    printf("couldnt find pubkey\n");
+    free(data);
+    if ( reqjson != 0 )
+        free_json(reqjson);
+    if ( argjson != 0 )
+        free_json(argjson);
+    return(retstr);
 }
 
 int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag)
