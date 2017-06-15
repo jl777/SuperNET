@@ -168,7 +168,7 @@ forwardhex(pubkey,hex)\n\
     if ( strcmp(method,"reserved") == 0 )
         retstr = LP_quotereceived(argjson);
     else if ( strcmp(method,"connected") == 0 )
-        retstr = LP_connected(argjson);
+        retstr = LP_connectedalice(argjson);
     else if ( strcmp(method,"checktxid") == 0 )
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"getcoins") == 0 )

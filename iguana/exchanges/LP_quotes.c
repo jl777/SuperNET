@@ -264,7 +264,7 @@ double LP_query(char *method,struct LP_quoteinfo *qp)
     return(price);
 }
 
-int32_t LP_connectstart(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin)
+int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin)
 {
     char *retstr,pairstr[512],destaddr[64]; cJSON *retjson; double price; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; uint64_t destvalue; struct LP_quoteinfo Q; struct basilisk_swap *swap;
     if ( (price= LP_price(base,rel)) > SMALLVAL )
@@ -326,14 +326,15 @@ int32_t LP_connectstart(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,
         if ( pair >= 0 )
             nn_close(pair);
         LP_availableset(utxo);
-    }
+    } else LP_unavailableset(utxo,utxo->S.otherpubkey);
     return(retval);
 }
 
-char *LP_connected(cJSON *argjson) // alice
+char *LP_connectedalice(cJSON *argjson) // alice
 {
     cJSON *retjson; bits256 spendtxid; int32_t spendvini,selector,pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *utxo; struct LP_quoteinfo Q; struct basilisk_swap *swap;
     LP_quoteparse(&Q,argjson);
+    printf("CONNECTED.(%s)\n",jprint(argjson,0));
     if ( IAMLP == 0 && bits256_cmp(Q.desthash,LP_mypubkey) == 0 && (utxo= LP_utxofind(0,Q.desttxid,Q.destvout)) != 0 && LP_ismine(utxo) > 0 && LP_isavailable(utxo) > 0 )
     {
         if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,Q.srccoin,Q.txid,Q.vout,Q.txid2,Q.vout2)) >= 0 )
@@ -408,7 +409,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                         retjson = LP_quotejson(&Q);
                         utxo->S.otherpubkey = jbits256(argjson,"desthash");
                         retval |= 2;
-                        LP_unavailableset(utxo,jbits256(argjson,"desthash"));
+                        LP_unavailableset(utxo,utxo->S.otherpubkey);
                         jaddnum(retjson,"quotetime",juint(argjson,"quotetime"));
                         jaddnum(retjson,"pending",utxo->T.swappending);
                         jaddbits256(retjson,"desthash",utxo->S.otherpubkey);
@@ -430,7 +431,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                     return(0);
                 }
                 if ( utxo->T.swappending != 0 && utxo->S.swap == 0 )
-                    LP_connectstart(pubsock,utxo,argjson,myipaddr,base,rel,profitmargin);
+                    LP_connectstartbob(pubsock,utxo,argjson,myipaddr,base,rel,profitmargin);
                 else printf("swap %p when connect came in (%s)\n",utxo->S.swap,jprint(argjson,0));
             }
         }
@@ -440,7 +441,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
 
 char *LP_autotrade(char *base,char *rel,double maxprice,double volume)
 {
-    uint64_t destsatoshis,asatoshis; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item,*bestitem=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; int32_t i,vout,numasks,DEXselector=0; double ordermatchprice,bestmetric,metric,bestprice=0.,vol,price; struct LP_quoteinfo Q;
+    uint64_t destsatoshis,asatoshis; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item,*bestitem=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; int32_t i,vout,numasks,DEXselector=0; uint32_t expiration; double ordermatchprice,bestmetric,metric,bestprice=0.,vol,price; struct LP_quoteinfo Q;
     if ( maxprice <= 0. || volume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
     destsatoshis = SATOSHIDEN * volume;
@@ -507,7 +508,19 @@ char *LP_autotrade(char *base,char *rel,double maxprice,double volume)
         bestitem = LP_quotejson(&Q);
         price = LP_query("connect",&Q);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,base,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
-        jaddstr(bestitem,"status","connected");
+        expiration = (uint32_t)time(NULL) + 10;
+        while ( time(NULL) < expiration )
+        {
+            if ( autxo->S.swap != 0 )
+                break;
+            sleep(1);
+        }
+        if ( autxo->S.swap == 0 )
+        {
+            jaddstr(bestitem,"status","couldnt establish connection");
+            LP_availableset(autxo);
+        }
+        else jaddstr(bestitem,"status","connected");
         jaddnum(bestitem,"maxprice",maxprice);
         jaddnum(bestitem,"requestid",Q.R.requestid);
         jaddnum(bestitem,"quoteid",Q.R.quoteid);
