@@ -202,7 +202,7 @@ int32_t LP_forward(char *myipaddr,int32_t pubsock,double profitmargin,bits256 pu
         {
             printf("GOT FORWARDED.(%s) -> pushsock.%d\n",jsonstr,ptr->pushsock);
             len = (int32_t)strlen(jsonstr);
-            if ( LP_send(ptr->pushsock,jsonstr,1) == len+1 )
+            if ( LP_send(ptr->pushsock,jsonstr,0) == len+1 )
                 return(1);
         }
     }
@@ -237,6 +237,8 @@ int32_t LP_forward(char *myipaddr,int32_t pubsock,double profitmargin,bits256 pu
             return(LP_send(peer->pushsock,jprint(reqjson,1),1));
         } else retval = -1;
     }
+    if ( freeflag != 0 )
+        free(jsonstr);
     return(-1);
 }
 
