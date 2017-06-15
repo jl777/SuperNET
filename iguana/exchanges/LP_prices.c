@@ -483,7 +483,7 @@ cJSON *LP_orderbookjson(struct LP_orderbookentry *op)
     cJSON *item = cJSON_CreateObject();
     if ( op->price > SMALLVAL )
     {
-        jaddnum(item,"price",op->price );
+        jaddnum(item,"price",op->price);
         jaddnum(item,"volume",dstr(op->basesatoshis));
         jaddbits256(item,"txid",op->txid);
         jaddnum(item,"vout",op->vout);

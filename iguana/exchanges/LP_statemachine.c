@@ -1305,4 +1305,121 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
  if ( LP_ismine(utxo) > 0 && strcmp(utxo->coin,base) == 0 )
  LP_priceping(LP_mypubsock,utxo,rel,price * LP_profitratio);
  }*/
+/*
+bestprice = 0.;
+if ( (array= LP_tradecandidates(base)) != 0 )
+{
+    printf("candidates.(%s)\nn.%d\n",jprint(array,0),cJSON_GetArraySize(array));
+    if ( (n= cJSON_GetArraySize(array)) > 0 )
+    {
+        memset(prices,0,sizeof(prices));
+        memset(Q,0,sizeof(Q));
+        for (i=0; i<n && i<sizeof(prices)/sizeof(*prices); i++)
+        {
+            item = jitem(array,i);
+            LP_quoteparse(&Q[i],item);
+            if ( (price= jdouble(item,"price")) == 0. )
+            {
+                price = LP_query("price",&Q[i],base,myutxo->coin,zero);
+                Q[i].destsatoshis = price * Q[i].satoshis;
+            }
+            if ( (prices[i]= price) > SMALLVAL && (bestprice == 0. || price < bestprice) )
+                bestprice = price;
+            char str[65]; printf("i.%d of %d: (%s) -> txid.%s price %.8f best %.8f dest %.8f\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid),price,bestprice,dstr(Q[i].destsatoshis));
+        }
+        if ( bestprice > SMALLVAL )
+        {
+            bestmetric = 0.;
+            besti = -1;
+            for (i=0; i<n && i<sizeof(prices)/sizeof(*prices); i++)
+            {
+                if ( (price= prices[i]) > SMALLVAL && myutxo->S.satoshis >= Q[i].destsatoshis+Q[i].desttxfee )
+                {
+                    metric = price / bestprice;
+                    printf("%f %f %f %f ",price,metric,dstr(Q[i].destsatoshis),metric * metric * metric);
+                    if ( metric < 1.1 )
+                    {
+                        metric = dstr(Q[i].destsatoshis) * metric * metric * metric;
+                        printf("%f\n",metric);
+                        if ( bestmetric == 0. || metric < bestmetric )
+                        {
+                            besti = i;
+                            bestmetric = metric;
+                        }
+                    }
+                } else printf("(%f %f) ",dstr(myutxo->S.satoshis),dstr(Q[i].destsatoshis));
+            }
+            printf("metrics, best %f\n",bestmetric);
+*/
 
+/*cJSON *LP_tradecandidates(char *base)
+ {
+ struct LP_peerinfo *peer,*tmp; struct LP_quoteinfo Q; char *utxostr,coinstr[16]; cJSON *array,*retarray=0,*item; int32_t i,n,totaladded,added;
+ totaladded = 0;
+ HASH_ITER(hh,LP_peerinfos,peer,tmp)
+ {
+ printf("%s:%u %s\n",peer->ipaddr,peer->port,base);
+ n = added = 0;
+ if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,base,100)) != 0 )
+ {
+ printf("%s:%u %s %s\n",peer->ipaddr,peer->port,base,utxostr);
+ if ( (array= cJSON_Parse(utxostr)) != 0 )
+ {
+ if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+ {
+ retarray = cJSON_CreateArray();
+ for (i=0; i<n; i++)
+ {
+ item = jitem(array,i);
+ LP_quoteparse(&Q,item);
+ safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
+ if ( strcmp(coinstr,base) == 0 )
+ {
+ if ( LP_iseligible(1,Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) != 0 )
+ {
+ if ( LP_arrayfind(retarray,Q.txid,Q.vout) < 0 )
+ {
+ jaddi(retarray,jduplicate(item));
+ added++;
+ totaladded++;
+ }
+ } else printf("ineligible.(%s)\n",jprint(item,0));
+ }
+ }
+ }
+ free_json(array);
+ }
+ free(utxostr);
+ }
+ if ( n == totaladded && added == 0 )
+ {
+ printf("n.%d totaladded.%d vs added.%d\n",n,totaladded,added);
+ break;
+ }
+ }
+ return(retarray);
+ }
+ 
+ void LP_quotesinit(char *base,char *rel)
+ {
+ cJSON *array,*item; struct LP_quoteinfo Q; bits256 zero; int32_t i,n,iter;
+ memset(&zero,0,sizeof(zero));
+ for (iter=0; iter<2; iter++)
+ if ( (array= LP_tradecandidates(iter == 0 ? base : rel)) != 0 )
+ {
+ //printf("candidates.(%s)\nn.%d\n",jprint(array,0),cJSON_GetArraySize(array));
+ if ( (n= cJSON_GetArraySize(array)) > 0 )
+ {
+ memset(&Q,0,sizeof(Q));
+ for (i=0; i<n; i++)
+ {
+ item = jitem(array,i);
+ LP_quoteparse(&Q,item);
+ if ( iter == 0 )
+ LP_query("price",&Q,base,rel,zero);
+ else LP_query("price",&Q,rel,base,zero);
+ }
+ }
+ free_json(array);
+ }
+ }*/

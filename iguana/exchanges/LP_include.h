@@ -218,7 +218,7 @@ uint32_t basilisk_quoteid(struct basilisk_request *rp);
 struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp,struct LP_quoteinfo *qp);
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params);
 uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits,int32_t suppress_swapsend);
-double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits256 mypub);
+//double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits256 mypub);
 int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys);
 void LP_quotesinit(char *base,char *rel);
 int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag);

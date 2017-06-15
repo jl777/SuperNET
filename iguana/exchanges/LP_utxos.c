@@ -274,6 +274,23 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
     return(jprint(utxosjson,1));
 }
 
+struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
+{
+    struct LP_utxoinfo *utxo,*tmp,*bestutxo = 0;
+    if ( symbol == 0 || destsatoshis == 0 )
+        return(0);
+    HASH_ITER(hh,LP_utxoinfos[0],utxo,tmp)
+    {
+        //char str[65]; printf("check %s.%s\n",utxo->coin,bits256_str(str,utxo->payment.txid));
+        if ( strcmp(symbol,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && LP_ismine(utxo) > 0 )
+        {
+            if ( utxo->payment.value >= destsatoshis && (bestutxo == 0 || utxo->payment.value < bestutxo->payment.value) )
+                bestutxo = utxo;
+        }
+    }
+    return(bestutxo);
+}
+
 void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
 {
     cJSON *argjson; struct _LP_utxoinfo u;
