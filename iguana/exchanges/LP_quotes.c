@@ -332,7 +332,7 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
         }
         else
         {
-            printf("dest %.8f < required %.8f (%d %d %d %d %d %d) %.8f %.8f\n",dstr(Q.destsatoshis),dstr(price*(utxo->S.satoshis-Q.txfee)),bits256_nonz(privkey) != 0 ,Q.timestamp == utxo->T.swappending-LP_RESERVETIME ,Q.quotetime >= Q.timestamp ,Q.quotetime < utxo->T.swappending ,bits256_cmp(utxo->S.mypub,Q.srchash) == 0 ,   LP_txvalue(destaddr,rel,Q.desttxid,Q.destvout) >= price*Q.satoshis+Q.desttxfee,dstr(LP_txvalue(destaddr,rel,Q.desttxid,Q.destvout)),dstr(price*Q.satoshis+Q.desttxfee));
+            printf("dest %.8f < required %.8f (%d %d %d %d %d %d) %.8f %.8f\n",dstr(Q.destsatoshis),dstr(price*(utxo->S.satoshis-Q.txfee)),bits256_nonz(privkey) != 0 ,Q.timestamp == utxo->T.swappending-LP_RESERVETIME ,Q.quotetime >= Q.timestamp ,Q.quotetime < utxo->T.swappending,bits256_cmp(utxo->S.mypub,Q.srchash) == 0 ,destvalue >= price*Q.satoshis+Q.desttxfee,dstr(destvalue),dstr(price*Q.satoshis+Q.desttxfee));
         }
     } else printf("no price for %s/%s\n",base,rel);
     if ( retval < 0 )
@@ -522,7 +522,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
         return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
     if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
-    asatoshis = Q.satoshis * ordermatchprice + Q.desttxfee;
+    asatoshis = Q.satoshis * ordermatchprice + Q.desttxfee + 1;
     printf("asatoshis %.8f = bvalue %.8f * ordermatch %.8f\n",dstr(asatoshis),dstr(Q.satoshis),ordermatchprice);
     if ( LP_quotedestinfo(&Q,Q.timestamp+1,asatoshis,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypubkey,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
