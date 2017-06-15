@@ -272,11 +272,17 @@ double LP_myprice(double *bidp,double *askp,char *base,char *rel)
 
 int32_t LP_mypriceset(char *base,char *rel,double price)
 {
-    struct LP_priceinfo *basepp,*relpp;
+    struct LP_priceinfo *basepp,*relpp; struct LP_pubkeyinfo *pubp;
     if ( base != 0 && rel != 0 && price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         basepp->myprices[relpp->ind] = price;          // ask
-        relpp->myprices[basepp->ind] = (1. / price);   // bid
+        //relpp->myprices[basepp->ind] = (1. / price);   // bid
+        if ( (pubp= LP_pubkeyadd(LP_mypubkey)) != 0 )
+        {
+            pubp->matrix[basepp->ind][relpp->ind] = price;
+            //pubp->matrix[relpp->ind][basepp->ind] = (1. / price);
+            pubp->timestamp = (uint32_t)time(NULL);
+        }
         return(0);
     } else return(-1);
 }
