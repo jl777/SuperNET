@@ -417,6 +417,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                             return(-1);
                         }
                         Q.timestamp = (uint32_t)time(NULL);
+                        utxo->T.swappending = Q.timestamp + LP_RESERVETIME;
                         retjson = LP_quotejson(&Q);
                         utxo->S.otherpubkey = jbits256(argjson,"desthash");
                         retval |= 2;
@@ -443,7 +444,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                 }
                 if ( utxo->T.swappending != 0 && utxo->S.swap == 0 )
                     LP_connectstartbob(pubsock,utxo,argjson,myipaddr,base,rel,profitmargin);
-                else printf("swap %p when connect came in (%s)\n",utxo->S.swap,jprint(argjson,0));
+                else printf("pend.%u swap %p when connect came in (%s)\n",utxo->T.swappending,utxo->S.swap,jprint(argjson,0));
             }
         }
     }
