@@ -256,6 +256,7 @@ double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *metho
     {
         jaddstr(reqjson,"method2",method);
         jaddstr(reqjson,"method","forward");
+        jaddbits256(reqjson,"pubkey",qp->srchash);
         LP_forward(myipaddr,mypubsock,profitmargin,qp->srchash,jprint(reqjson,1),1);
     }
     for (i=0; i<30; i++)
