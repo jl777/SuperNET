@@ -181,7 +181,7 @@ char *LP_pricepings(char *myipaddr,int32_t pubsock,double profitmargin,char *bas
     if ( pubsock >= 0 )
     {
         jaddstr(reqjson,"method","postprice");
-        printf("pricepings.(%s)\n",jprint(reqjson,0));
+        printf("%d pricepings.(%s)\n",pubsock,jprint(reqjson,0));
         LP_send(pubsock,jprint(reqjson,1),1);
     }
     else
@@ -197,7 +197,7 @@ char *LP_pricepings(char *myipaddr,int32_t pubsock,double profitmargin,char *bas
 char *LP_postedprice(cJSON *argjson)
 {
     bits256 pubkey; double price; char *base,*rel;
-    //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
+    printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
     if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
     {
         pubkey = jbits256(argjson,"pubkey");
