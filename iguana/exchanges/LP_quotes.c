@@ -319,7 +319,7 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
                     jaddnum(retjson,"requestid",Q.R.requestid);
                     jaddnum(retjson,"quoteid",Q.R.quoteid);
                     retstr = jprint(retjson,1);
-                    printf("BOB sends back.(%s)\n",retstr);
+                    char str[65]; printf("BOB pubsock.%d sends back.(%s) to (%s)\n",pubsock,retstr,bits256_str(str,utxo->S.otherpubkey));
                     if ( pubsock >= 0 )
                         LP_send(pubsock,retstr,0);
                     LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,retstr,1);

@@ -140,27 +140,28 @@ void _LP_unavailableset(struct LP_utxoinfo *utxo,bits256 otherpubkey)
 
 void LP_unavailableset(struct LP_utxoinfo *utxo,bits256 otherpubkey)
 {
-    struct LP_utxoinfo *ptrs[8]; int32_t i,n;
+    struct LP_utxoinfo *ptrs[8]; int32_t i,n; struct _LP_utxoinfo u;
     memset(ptrs,0,sizeof(ptrs));
     if ( (n= LP_utxocollisions(ptrs,utxo)) > 0 )
     {
         for (i=0; i<n; i++)
             _LP_unavailableset(ptrs[i],otherpubkey);
     }
-    char str[65]; printf("UTXO RESERVED %s/v%d collisions.%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,n);
+    char str[65],str2[65]; printf("UTXO.[%d] RESERVED %s/v%d %s/v%d collisions.%d\n",utxo->iambob,bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,u.txid),u.vout,n);
     _LP_unavailableset(utxo,otherpubkey);
 }
 
 void LP_availableset(struct LP_utxoinfo *utxo)
 {
-    struct LP_utxoinfo *ptrs[8]; int32_t i,n;
+    struct LP_utxoinfo *ptrs[8]; int32_t i,n; struct _LP_utxoinfo u;
     memset(ptrs,0,sizeof(ptrs));
     if ( (n= LP_utxocollisions(ptrs,utxo)) > 0 )
     {
         for (i=0; i<n; i++)
             _LP_availableset(ptrs[i]);
     }
-    char str[65]; printf("UTXO AVAIL %s/v%d collisions.%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,n);
+    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+    char str[65],str2[65]; printf("UTXO.[%d] AVAIL %s/v%d %s/v%d collisions.%d\n",utxo->iambob,bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,u.txid),u.vout,n);
     _LP_availableset(utxo);
 }
 
