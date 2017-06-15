@@ -150,7 +150,7 @@ int32_t LP_subsock_check(char *myipaddr,int32_t pubsock,int32_t sock,double prof
         nonz++;
         if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
         {
-            printf("%s SUB.[%d] %s\n",myipaddr,recvsize,jprint(argjson,0));
+            //printf("%s SUB.[%d] %s\n",myipaddr,recvsize,jprint(argjson,0));
             portable_mutex_lock(&LP_commandmutex);
             if ( (retstr= LP_command_process(myipaddr,-1,argjson,0,0,profitmargin)) != 0 )
             {

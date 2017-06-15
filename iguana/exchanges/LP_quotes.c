@@ -181,7 +181,7 @@ char *LP_pricepings(char *myipaddr,int32_t pubsock,double profitmargin,char *bas
     if ( pubsock >= 0 )
     {
         jaddstr(reqjson,"method","postprice");
-        printf("%d pricepings.(%s)\n",pubsock,jprint(reqjson,0));
+        //printf("%d pricepings.(%s)\n",pubsock,jprint(reqjson,0));
         LP_send(pubsock,jprint(reqjson,1),1);
     }
     else
@@ -197,7 +197,7 @@ char *LP_pricepings(char *myipaddr,int32_t pubsock,double profitmargin,char *bas
 char *LP_postedprice(cJSON *argjson)
 {
     bits256 pubkey; double price; char *base,*rel;
-    printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
+    //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
     if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
     {
         pubkey = jbits256(argjson,"pubkey");
@@ -246,7 +246,7 @@ double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *metho
     reqjson = LP_quotejson(qp);
     if ( bits256_nonz(qp->desthash) != 0 )
         flag = 1;
-    printf("QUERY.(%s)\n",jprint(reqjson,0));
+    //printf("QUERY.(%s)\n",jprint(reqjson,0));
     if ( IAMLP != 0 )
     {
         jaddstr(reqjson,"method",method);
@@ -384,7 +384,13 @@ char *LP_connectedalice(cJSON *argjson) // alice
             } else jaddstr(retjson,"error","couldnt aliceloop");
         }
         return(jprint(retjson,1));
-    } else return(clonestr("{\"result\",\"update stats\"}"));
+    }
+    else
+    {
+        utxo = LP_utxofind(0,Q.desttxid,Q.destvout);
+        printf("alice fails %d %d %d %d %d\n",IAMLP == 0,bits256_cmp(Q.desthash,LP_mypubkey) == 0, utxo != 0,LP_ismine(utxo) > 0,LP_isavailable(utxo) > 0);
+        return(clonestr("{\"result\",\"update stats\"}"));
+    }
 }
 
 int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)

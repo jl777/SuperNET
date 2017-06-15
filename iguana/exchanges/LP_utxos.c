@@ -20,21 +20,21 @@
 
 int32_t LP_ismine(struct LP_utxoinfo *utxo)
 {
-    if ( bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 )
+    if ( utxo != 0 && bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 )
         return(1);
     else return(0);
 }
 
 int32_t LP_isavailable(struct LP_utxoinfo *utxo)
 {
-    if ( utxo->T.swappending == 0 && utxo->S.swap == 0 )
+    if ( utxo != 0 && utxo->T.swappending == 0 && utxo->S.swap == 0 )
         return(1);
     else return(0);
 }
 
 int32_t LP_isunspent(struct LP_utxoinfo *utxo)
 {
-    if ( utxo->T.spentflag == 0 && LP_isavailable(utxo) > 0 )
+    if ( utxo != 0 && utxo->T.spentflag == 0 && LP_isavailable(utxo) > 0 )
         return(1);
     else return(0);
 }
