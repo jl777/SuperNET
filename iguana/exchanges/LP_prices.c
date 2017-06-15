@@ -461,9 +461,30 @@ int32_t LP_orderbookfind(struct LP_orderbookentry **array,int32_t num,bits256 tx
     return(-1);
 }
 
+int32_t LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
+{
+    struct LP_peerinfo *peer,*tmp; cJSON *retjson; char *retstr;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        if ( (retstr= issue_LP_notifyutxo(peer->ipaddr,peer->port,utxo)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( jobj(retjson,"error") == 0 )
+                    utxo->T.lasttime = (uint32_t)time(NULL);
+                free_json(retjson);
+            }
+            free(retstr);
+        }
+        if ( utxo->T.lasttime != 0 )
+            return(0);
+    }
+    return(-1);
+}
+
 int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum)
 {
-    struct LP_utxoinfo *utxo,*tmp; struct LP_pubkeyinfo *pubp; struct LP_peerinfo *peer,*ptmp; char *retstr; cJSON *retjson; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; double price; int32_t baseid,relid; uint64_t basesatoshis;
+    struct LP_utxoinfo *utxo,*tmp; struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; double price; int32_t baseid,relid; uint64_t basesatoshis;
     if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
         baseid = basepp->ind;
     else return(num);
@@ -482,23 +503,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
                 if ( (op= LP_orderbookentry(base,rel,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout,polarity > 0 ? price : 1./price,basesatoshis,utxo->pubkey)) != 0 )
                     (*arrayp)[num++] = op;
                 if ( bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 && utxo->T.lasttime == 0 )
-                {
-                    HASH_ITER(hh,LP_peerinfos,peer,ptmp)
-                    {
-                        if ( (retstr= issue_LP_notifyutxo(peer->ipaddr,peer->port,utxo)) != 0 )
-                        {
-                            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                            {
-                                if ( jobj(retjson,"error") == 0 )
-                                    utxo->T.lasttime = (uint32_t)time(NULL);
-                                free_json(retjson);
-                            }
-                            free(retstr);
-                        }
-                        if ( utxo->T.lasttime != 0 )
-                            break;
-                    }
-                }
+                    LP_utxo_clientpublish(utxo);
             }
         }
     }

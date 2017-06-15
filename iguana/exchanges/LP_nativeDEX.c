@@ -260,6 +260,8 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
         HASH_ITER(hh,LP_utxoinfos[1],utxo,utmp)
         {
             LP_utxo_spentcheck(pubsock,utxo,profitmargin);
+            if ( utxo->T.lasttime == 0 )
+                LP_utxo_clientpublish(utxo);
         }
     }
     if ( pullsock >= 0 )
