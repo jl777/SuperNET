@@ -200,6 +200,7 @@ int32_t LP_forward(char *myipaddr,int32_t pubsock,double profitmargin,bits256 pu
         }
         else if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 && ptr->lasttime > time(NULL)-LP_KEEPALIVE )
         {
+            printf("GOT FORWARDED.(%s)\n",jsonstr);
             return(LP_send(ptr->pushsock,jsonstr,1));
         }
     }
@@ -220,7 +221,7 @@ int32_t LP_forward(char *myipaddr,int32_t pubsock,double profitmargin,bits256 pu
         } else retval = 0;
         if ( retval >= 0 && peer->pushsock >= 0 )
         {
-            //printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
+            printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
             len = (int32_t)strlen(jsonstr) + 1;
             hexstr = malloc(len*2 + 1);
             init_hexbytes_noT(hexstr,(uint8_t *)jsonstr,len);

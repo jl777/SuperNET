@@ -147,6 +147,7 @@ void LP_unavailableset(struct LP_utxoinfo *utxo,bits256 otherpubkey)
         for (i=0; i<n; i++)
             _LP_unavailableset(ptrs[i],otherpubkey);
     }
+    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
     char str[65],str2[65]; printf("UTXO.[%d] RESERVED %s/v%d %s/v%d collisions.%d\n",utxo->iambob,bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,u.txid),u.vout,n);
     _LP_unavailableset(utxo,otherpubkey);
 }

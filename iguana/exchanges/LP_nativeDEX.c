@@ -148,10 +148,10 @@ int32_t LP_subsock_check(char *myipaddr,int32_t pubsock,int32_t sock,double prof
         nonz++;
         if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
         {
+            printf("%s SUB.[%d] %s\n",myipaddr,recvsize,jprint(argjson,0));
             portable_mutex_lock(&LP_commandmutex);
             if ( (retstr= LP_command_process(myipaddr,pubsock,argjson,0,0,profitmargin)) != 0 )
             {
-                //printf("%s SUB.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                 free(retstr);
             }
             portable_mutex_unlock(&LP_commandmutex);
