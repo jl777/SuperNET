@@ -429,8 +429,8 @@ forwardhex(pubkey,hex)\n\
         retstr = LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn"));
     else if ( strcmp(method,"notified") == 0 )
     {
-        printf("utxonotify.(%s)\n",jprint(argjson,0));
-        if ( juint(argjson,"timestamp") > time(NULL)-60 )
+        //printf("utxonotify.(%s)\n",jprint(argjson,0));
+        //if ( juint(argjson,"timestamp") > time(NULL)-60 )
             LP_utxoaddjson(1,LP_mypubsock,argjson);
         retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
     }
