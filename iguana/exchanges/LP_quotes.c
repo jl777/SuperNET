@@ -68,7 +68,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
         jaddbits256(retjson,"txid2",qp->txid2);
         jaddnum(retjson,"vout2",qp->vout2);
     }
-    if ( bits256_nonz(qp->desttxid) != 0 )
+    //if ( bits256_nonz(qp->desttxid) != 0 )
     {
         if ( qp->destaddr[0] != 0 )
             jaddstr(retjson,"destaddr",qp->destaddr);
@@ -277,7 +277,7 @@ double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *metho
 int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin)
 {
     char pairstr[512],destaddr[64]; cJSON *retjson; double bid,ask,price; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; uint64_t destvalue; struct LP_quoteinfo Q; struct basilisk_swap *swap;
-    //printf("LP_connectstartbob with.(%s)\n",jprint(argjson,0));
+    printf("LP_connectstartbob with.(%s)\n",jprint(argjson,0));
     if ( (price= LP_myprice(&bid,&ask,base,rel)) > SMALLVAL )
     {
         price = ask;
@@ -333,7 +333,7 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
         }
         else
         {
-            printf("dest %.8f < required %.8f (%d %d %d %d %d %d) %.8f %.8f\n",dstr(Q.destsatoshis),dstr(price*(utxo->S.satoshis-Q.txfee)),bits256_nonz(privkey) != 0 ,Q.timestamp == utxo->T.swappending-LP_RESERVETIME,Q.quotetime >= Q.timestamp-3,Q.quotetime < utxo->T.swappending,bits256_cmp(utxo->S.mypub,Q.srchash) == 0 ,destvalue >= price*Q.satoshis+Q.desttxfee,dstr(destvalue),dstr(price*Q.satoshis+Q.desttxfee));
+            printf("dest %.8f vs required %.8f (%d %d %d %d %d %d) %.8f %.8f\n",dstr(Q.destsatoshis),dstr(price*(utxo->S.satoshis-Q.txfee)),bits256_nonz(privkey) != 0 ,Q.timestamp == utxo->T.swappending-LP_RESERVETIME,Q.quotetime >= Q.timestamp-3,Q.quotetime < utxo->T.swappending,bits256_cmp(utxo->S.mypub,Q.srchash) == 0 ,destvalue >= price*Q.satoshis+Q.desttxfee,dstr(destvalue),dstr(price*Q.satoshis+Q.desttxfee));
         }
     } else printf("no price for %s/%s\n",base,rel);
     if ( retval < 0 )
@@ -398,10 +398,17 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
         if ( (utxo= LP_utxofind(1,txid,jint(argjson,"vout"))) != 0 && LP_ismine(utxo) > 0 && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )
         {
             printf("pend.%u LP_tradecommand.(%s)\n",utxo->T.swappending,jprint(argjson,0));
+            if ( LP_quoteparse(&Q,argjson) < 0 )
+                return(-2);
             if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout)) >= 0 )
             {
                 char str[65]; printf("LP_tradecommand selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
                 utxo->T.spentflag = (uint32_t)time(NULL);
+                return(0);
+            }
+            if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,Q.destcoin,Q.desttxid,Q.destvout,Q.feetxid,Q.feevout)) >= 0 )
+            {
+                char str[65]; printf("LP_tradecommand dest selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
                 return(0);
             }
             if ( utxo->S.swap == 0 && time(NULL) > utxo->T.swappending )
@@ -415,8 +422,8 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                     {
                         price = ask;
                         //price *= (1. + profitmargin);
-                        if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
-                            return(-1);
+                        //if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
+                        //    return(-1);
                         if ( LP_iseligible(1,Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) == 0 )
                         {
                             printf("not eligible\n");
