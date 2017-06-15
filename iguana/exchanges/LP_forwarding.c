@@ -133,6 +133,7 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
         datalen = (int32_t)strlen(hexstr) >> 1;
         data = malloc(datalen);
         decode_hex(data,datalen,hexstr);
+        printf("LP_forwardhex.(%s)\n",(char *)data);
         if ( (argjson= cJSON_Parse((char *)data)) != 0 )
         {
             reqjson = LP_dereference(argjson,"forward");
@@ -141,7 +142,8 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
                 LP_send(pubsock,jprint(reqjson,0),1);
             free_json(reqjson);
             free_json(argjson);
-        }
+        } else printf("LP_forwardhex couldnt parse (%s)\n",(char *)data);
+        free(data);
         return(retstr);
     }
     else if ( (ptr= LP_forwardfind(pubkey)) != 0 )
@@ -151,7 +153,7 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
             datalen = (int32_t)strlen(hexstr) >> 1;
             data = malloc(datalen);
             decode_hex(data,datalen,hexstr);
-            //printf("forwardhex.(%s)\n",(char *)data);
+            printf("forwardhex.(%s)\n",(char *)data);
             sentbytes = LP_send(ptr->pushsock,(char *)data,1);
         }
         retjson = cJSON_CreateObject();
