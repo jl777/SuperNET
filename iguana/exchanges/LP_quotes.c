@@ -246,9 +246,18 @@ double LP_query(char *method,struct LP_quoteinfo *qp)
     reqjson = LP_quotejson(qp);
     if ( bits256_nonz(qp->desthash) != 0 )
         flag = 1;
-    jaddstr(reqjson,"method",method);
     printf("QUERY.(%s)\n",jprint(reqjson,0));
-    LP_forward(qp->srchash,jprint(reqjson,1),1);
+    if ( IAMLP != 0 )
+    {
+        jaddstr(reqjson,"method",method);
+        LP_send(LP_mypubsock,jprint(reqjson,1),1);
+    }
+    else
+    {
+        jaddstr(reqjson,"method2",method);
+        jaddstr(reqjson,"method","forward");
+        LP_forward(qp->srchash,jprint(reqjson,1),1);
+    }
     for (i=0; i<30; i++)
     {
         if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )

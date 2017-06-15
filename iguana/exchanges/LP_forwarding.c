@@ -133,11 +133,11 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
         datalen = (int32_t)strlen(hexstr) >> 1;
         data = malloc(datalen);
         decode_hex(data,datalen,hexstr);
-        printf("LP_forwardhex.(%s)\n",(char *)data);
         if ( (argjson= cJSON_Parse((char *)data)) != 0 )
         {
             reqjson = LP_dereference(argjson,"forward");
             retstr = LP_command_process(LP_mypeer != 0 ? LP_mypeer->ipaddr : "127.0.0.1",LP_mypubsock,reqjson,0,0,LP_profitratio - 1.);
+            printf("LP_forwardhex.(%s) -> (%s)\n",jprint(reqjson,0),retstr!=0?retstr:"");
             if ( pubsock >= 0 )
                 LP_send(pubsock,jprint(reqjson,0),1);
             free_json(reqjson);
