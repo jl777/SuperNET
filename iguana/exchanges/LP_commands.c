@@ -188,7 +188,7 @@ forwardhex(pubkey,hex)\n\
         cJSON *reqjson;
         if ( (reqjson= LP_dereference(argjson,"forward")) != 0 )
         {
-            printf("FORWARDED.(%s)\n",jprint(argjson,0));
+            //printf("FORWARDED.(%s)\n",jprint(argjson,0));
             if ( LP_forward(myipaddr,pubsock,profitmargin,jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
                 retstr = clonestr("{\"result\":\"success\"}");
             else retstr = clonestr("{\"error\":\"error forwarding\"}");
