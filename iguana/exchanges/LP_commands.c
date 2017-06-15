@@ -19,7 +19,7 @@
 //
 
 
-char *stats_JSON(int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
+char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
@@ -100,7 +100,7 @@ forwardhex(pubkey,hex)\n\
                 {
                     if ( LP_mypriceset(base,rel,price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
-                    else return(LP_pricepings(LP_mypubsock,base,rel,price * LP_profitratio));
+                    else return(LP_pricepings(myipaddr,LP_mypubsock,profitmargin,base,rel,price * LP_profitratio));
                 } else return(clonestr("{\"error\":\"no price\"}"));
             }
             else if ( strcmp(method,"myprice") == 0 )
@@ -117,7 +117,7 @@ forwardhex(pubkey,hex)\n\
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"autotrade") == 0 )
-                return(LP_autotrade(base,rel,jdouble(argjson,"price"),jdouble(argjson,"volume")));
+                return(LP_autotrade(myipaddr,pubsock,profitmargin,base,rel,jdouble(argjson,"price"),jdouble(argjson,"volume")));
         }
         else if ( (coin= jstr(argjson,"coin")) != 0 )
         {
@@ -189,7 +189,7 @@ forwardhex(pubkey,hex)\n\
         printf("FORWARDED.(%s)\n",jprint(argjson,0));
         if ( (reqjson= LP_dereference(argjson,"forward")) != 0 )
         {
-            if ( LP_forward(jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
+            if ( LP_forward(myipaddr,pubsock,profitmargin,jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
                 retstr = clonestr("{\"result\":\"success\"}");
             else retstr = clonestr("{\"error\":\"error forwarding\"}");
         } else retstr = clonestr("{\"error\":\"cant recurse forwards\"}");

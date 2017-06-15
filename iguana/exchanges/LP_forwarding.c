@@ -180,14 +180,25 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
     return(retstr);
 }
 
-int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag)
+int32_t LP_forward(char *myipaddr,int32_t pubsock,double profitmargin,bits256 pubkey,char *jsonstr,int32_t freeflag)
 {
-    struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *hexstr,*retstr; int32_t len,retval = -1; cJSON *retjson,*reqjson;
+    struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *hexstr,*retstr; int32_t len,retval = -1; cJSON *retjson,*reqjson,*argjson;
     if ( jsonstr == 0 || jsonstr[0] == 0 )
         return(-1);
     if ( bits256_nonz(pubkey) != 0 )
     {
-        if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 && ptr->lasttime > time(NULL)-LP_KEEPALIVE )
+        if ( bits256_cmp(pubkey,LP_mypubkey) == 0 )
+        {
+            printf("GOT FORWARDED.(%s)\n",jsonstr);
+            if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
+            {
+                if ( (retstr= LP_command_process(myipaddr,pubsock,argjson,0,0,profitmargin)) != 0 )
+                    free(retstr);
+                free_json(argjson);
+            }
+            return(1);
+        }
+        else if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 && ptr->lasttime > time(NULL)-LP_KEEPALIVE )
         {
             return(LP_send(ptr->pushsock,jsonstr,1));
         }
@@ -207,7 +218,7 @@ int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag)
                 free(retstr);
             }
         } else retval = 0;
-        if ( retval == 0 && peer->pushsock >= 0 )
+        if ( retval >= 0 && peer->pushsock >= 0 )
         {
             //printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
             len = (int32_t)strlen(jsonstr) + 1;

@@ -84,7 +84,7 @@ char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *
     char *retstr=0;
     if ( LP_tradecommand(myipaddr,pubsock,argjson,data,datalen,profitmargin) <= 0 )
     {
-        if ( (retstr= stats_JSON(pubsock,argjson,"127.0.0.1",0)) != 0 )
+        if ( (retstr= stats_JSON(myipaddr,pubsock,profitmargin,argjson,"127.0.0.1",0)) != 0 )
         {
             printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
             if ( pubsock >= 0 )

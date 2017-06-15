@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include "OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
-char *stats_JSON(int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
+char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 

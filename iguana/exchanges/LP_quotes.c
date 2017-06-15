@@ -171,7 +171,7 @@ char *LP_quotereceived(cJSON *argjson)
     } else return(clonestr("{\"error\":\"nullptr\"}"));
 }
 
-char *LP_pricepings(int32_t pubsock,char *base,char *rel,double price)
+char *LP_pricepings(char *myipaddr,int32_t pubsock,double profitmargin,char *base,char *rel,double price)
 {
     bits256 zero; cJSON *reqjson = cJSON_CreateObject();
     jaddbits256(reqjson,"pubkey",LP_mypubkey);
@@ -189,7 +189,7 @@ char *LP_pricepings(int32_t pubsock,char *base,char *rel,double price)
         jaddstr(reqjson,"method","forward");
         jaddstr(reqjson,"method2","postprice");
         memset(zero.bytes,0,sizeof(zero));
-        LP_forward(zero,jprint(reqjson,1),1);
+        LP_forward(myipaddr,pubsock,profitmargin,zero,jprint(reqjson,1),1);
     }
     return(clonestr("{\"result\":\"success\"}"));
 }
@@ -229,7 +229,7 @@ int32_t LP_arrayfind(cJSON *array,bits256 txid,int32_t vout)
     return(-1);
 }
 
-double LP_query(char *method,struct LP_quoteinfo *qp)
+double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *method,struct LP_quoteinfo *qp)
 {
     cJSON *reqjson; int32_t i,flag = 0; double price = 0.; struct LP_utxoinfo *utxo;
     if ( strcmp(method,"request") == 0 )
@@ -256,7 +256,7 @@ double LP_query(char *method,struct LP_quoteinfo *qp)
     {
         jaddstr(reqjson,"method2",method);
         jaddstr(reqjson,"method","forward");
-        LP_forward(qp->srchash,jprint(reqjson,1),1);
+        LP_forward(myipaddr,mypubsock,profitmargin,qp->srchash,jprint(reqjson,1),1);
     }
     for (i=0; i<30; i++)
     {
@@ -320,7 +320,7 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
                     retstr = jprint(retjson,1);
                     if ( pubsock >= 0 )
                         LP_send(pubsock,retstr,1);
-                    else LP_forward(utxo->S.otherpubkey,retstr,1);
+                    else LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,retstr,1);
                     retval = 0;
                 } else printf("error launching swaploop\n");
             } else printf("printf error nn_connect to %s\n",pairstr);
@@ -427,7 +427,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                         retstr = jprint(retjson,1);
                         if ( pubsock >= 0 )
                             LP_send(pubsock,retstr,1);
-                        else LP_forward(utxo->S.otherpubkey,retstr,1);
+                        else LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,retstr,1);
                         utxo->T.lasttime = (uint32_t)time(NULL);
                     } else printf("null price\n");
                 } else printf("swappending.%u swap.%p\n",utxo->T.swappending,utxo->S.swap);
@@ -449,7 +449,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
     return(retval);
 }
 
-char *LP_autotrade(char *base,char *rel,double maxprice,double volume)
+char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *base,char *rel,double maxprice,double volume)
 {
     uint64_t destsatoshis,asatoshis; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item,*bestitem=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; int32_t i,vout,numasks,DEXselector=0; uint32_t expiration; double ordermatchprice,bestmetric,metric,bestprice=0.,vol,price; struct LP_quoteinfo Q;
     if ( maxprice <= 0. || volume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
@@ -512,11 +512,11 @@ char *LP_autotrade(char *base,char *rel,double maxprice,double volume)
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,Q.timestamp+1,asatoshis,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypubkey,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
-    price = LP_query("request",&Q);
+    price = LP_query(myipaddr,mypubsock,profitmargin,"request",&Q);
     if ( price <= maxprice )
     {
         bestitem = LP_quotejson(&Q);
-        price = LP_query("connect",&Q);
+        price = LP_query(myipaddr,mypubsock,profitmargin,"connect",&Q);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,base,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
         expiration = (uint32_t)time(NULL) + 10;
         while ( time(NULL) < expiration )
