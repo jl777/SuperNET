@@ -281,7 +281,6 @@ getpeers()\n\
 getutxos()\n\
 getutxos(coin, lastn)\n\
 orderbook(base, rel)\n\
-getprice(base, rel)\n\
 getprices(base, rel)\n\
 register(pubkey,pushaddr)\n\
 lookup(pubkey)\n\
@@ -405,8 +404,8 @@ forwardhex(pubkey,hex)\n\
         retstr = LP_postedprice(argjson);
     else if ( strcmp(method,"broadcast") == 0 )
         retstr = LP_broadcasted(argjson);
-    else if ( strcmp(method,"getprice") == 0 )
-        retstr = LP_pricestr(base,rel,0.);
+    //else if ( strcmp(method,"getprice") == 0 )
+    //    retstr = LP_pricestr(base,rel,0.);
     else if ( strcmp(method,"getprices") == 0 )
         retstr = LP_prices();
     else if ( strcmp(method,"orderbook") == 0 )
