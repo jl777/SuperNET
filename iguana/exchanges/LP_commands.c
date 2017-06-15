@@ -266,7 +266,7 @@ forward(pubkey,method2,<argjson>)\n\
 forward(pubkey,method2=publish,<argjson>)\n\
 forwardhex(pubkey,hex)\n\
 \"}"));
-    //printf("CMD.(%s)\n",jprint(argjson,0));
+    printf("CMD.(%s)\n",jprint(argjson,0));
     base = jstr(argjson,"base");
     rel = jstr(argjson,"rel");
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
