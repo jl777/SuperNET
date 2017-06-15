@@ -229,7 +229,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     {
         if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
         {
-            printf("updatepeer.%s lag.%d\n",peer->ipaddr,now-peer->lastpeers);
+            printf("numpeers.%d updatepeer.%s lag.%d\n",numpeers,peer->ipaddr,now-peer->lastpeers);
             peer->lastpeers = now;
             if ( peer->numpeers != numpeers )
                 printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,numpeers);
