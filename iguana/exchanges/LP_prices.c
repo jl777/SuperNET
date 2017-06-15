@@ -46,7 +46,37 @@ struct LP_pubkeyinfo
     UT_hash_handle hh;
     bits256 pubkey;
     double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
+    uint32_t timestamp;
 } *LP_pubkeyinfos;
+
+struct LP_priceinfo *LP_priceinfofind(char *symbol)
+{
+    int32_t i; struct LP_priceinfo *pp; uint64_t coinbits;
+    if ( LP_numpriceinfos > 0 )
+    {
+        coinbits = stringbits(symbol);
+        pp = LP_priceinfos;
+        for (i=0; i<LP_numpriceinfos; i++,pp++)
+            if ( pp->coinbits == coinbits )
+                return(pp);
+    }
+    return(0);
+}
+
+struct LP_priceinfo *LP_priceinfoptr(int32_t *indp,char *base,char *rel)
+{
+    struct LP_priceinfo *basepp,*relpp;
+    if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    {
+        *indp = relpp->ind;
+        return(basepp);
+    }
+    else
+    {
+        *indp = -1;
+        return(0);
+    }
+}
 
 int32_t LP_cachekey(uint8_t *key,char *base,char *rel,bits256 txid,int32_t vout)
 {
@@ -104,6 +134,85 @@ struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
     return(pubp);
 }
 
+cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
+{
+    int32_t baseid,relid; char *base; double price; cJSON *item,*array,*obj;
+    obj = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    for (baseid=0; baseid<LP_numpriceinfos; baseid++)
+    {
+        base = LP_priceinfos[baseid].symbol;
+        for (relid=0; relid<LP_numpriceinfos; relid++)
+        {
+            if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL )
+            {
+                item = cJSON_CreateArray();
+                jaddistr(item,base);
+                jaddistr(item,LP_priceinfos[relid].symbol);
+                jaddinum(item,price);
+                jaddi(array,item);
+            }
+        }
+    }
+    jaddbits256(obj,"pubkey",pubp->pubkey);
+    jaddnum(obj,"timestamp",pubp->timestamp);
+    jadd(obj,"asks",array);
+    return(obj);
+}
+
+char *LP_prices()
+{
+    struct LP_pubkeyinfo *pubp,*tmp; cJSON *array = cJSON_CreateArray();
+    HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
+    {
+        jaddi(array,LP_pubkeyjson(pubp));
+    }
+    return(jprint(array,1));
+}
+
+void LP_prices_parse(cJSON *obj)
+{
+    struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; int32_t i,n,relid; char *base,*rel; double askprice;
+    pubkey = jbits256(obj,"pubkey");
+    if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
+    {
+        if ( (timestamp= juint(obj,"timestamp")) > pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
+        {
+            pubp->timestamp = timestamp;
+            for (i=0; i<n; i++)
+            {
+                item = jitem(asks,i);
+                base = jstri(item,0);
+                rel = jstri(item,1);
+                askprice = jdoublei(item,2);
+                if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
+                {
+                    char str[65]; printf("%s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
+                    pubp->matrix[basepp->ind][relid] = askprice;
+                }
+            }
+        }
+    }
+}
+
+void LP_peer_pricesquery(char *destipaddr,uint16_t destport)
+{
+    char *retstr; cJSON *array; int32_t i,n;
+    if ( (retstr= issue_LP_getprices(destipaddr,destport)) != 0 )
+    {
+        if ( (array= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( is_cJSON_Array(array) && (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                    LP_prices_parse(jitem(array,i));
+            }
+            free_json(array);
+        }
+        free(retstr);
+    }
+}
+
 double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,int32_t vout)
 {
     struct LP_cacheinfo *ptr;
@@ -121,35 +230,6 @@ double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,i
     }
     //char str[65]; printf("cachemiss %s/%s %s/v%d\n",base,rel,bits256_str(str,txid),vout);
     return(0.);
-}
-
-struct LP_priceinfo *LP_priceinfofind(char *symbol)
-{
-    int32_t i; struct LP_priceinfo *pp; uint64_t coinbits;
-    if ( LP_numpriceinfos > 0 )
-    {
-        coinbits = stringbits(symbol);
-        pp = LP_priceinfos;
-        for (i=0; i<LP_numpriceinfos; i++,pp++)
-            if ( pp->coinbits == coinbits )
-                return(pp);
-    }
-    return(0);
-}
-
-struct LP_priceinfo *LP_priceinfoptr(int32_t *indp,char *base,char *rel)
-{
-    struct LP_priceinfo *basepp,*relpp;
-    if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
-    {
-        *indp = relpp->ind;
-        return(basepp);
-    }
-    else
-    {
-        *indp = -1;
-        return(0);
-    }
 }
 
 void LP_priceinfoupdate(char *base,char *rel,double price)
@@ -193,7 +273,7 @@ double LP_myprice(double *bidp,double *askp,char *base,char *rel)
 int32_t LP_mypriceset(char *base,char *rel,double price)
 {
     struct LP_priceinfo *basepp,*relpp;
-    if ( price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    if ( base != 0 && rel != 0 && price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         basepp->myprices[relpp->ind] = price;          // ask
         relpp->myprices[basepp->ind] = (1. / price);   // bid
@@ -282,6 +362,8 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
 struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,double price,struct LP_quoteinfo *qp)
 {
     char str[65]; struct LP_cacheinfo *ptr=0;
+    if ( base == 0 || rel == 0 )
+        return(0);
     if ( (ptr= LP_cachefind(base,rel,txid,vout)) == 0 )
     {
         ptr = calloc(1,sizeof(*ptr));
@@ -523,8 +605,10 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
     {
         printf("PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
+        {
             pubp->matrix[basepp->ind][relpp->ind] = price;
-        else printf("error creating pubkey entry\n");
+            pubp->timestamp = (uint32_t)time(NULL);
+        } else printf("error creating pubkey entry\n");
     } else printf("error finding %s/%s %.8f\n",base,rel,price);
 }
 

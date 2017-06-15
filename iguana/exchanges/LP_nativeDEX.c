@@ -190,9 +190,9 @@ void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitma
     }
 }
 
-void LP_utxo_updates(int32_t pubsock,char *passphrase,double profitmargin)
+void LP_myutxo_updates(int32_t pubsock,char *passphrase,double profitmargin)
 {
-    //LP_utxopurge(0);
+    //LP_utxopurge(0); not good to disrupt existing pointers
     LP_privkey_updates(pubsock,passphrase);
 }
 
@@ -212,9 +212,60 @@ void LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pubso
     } //else printf("LP_peer_utxosquery skip.(%s) %u\n",peer->ipaddr,peer->lastutxos);
 }
 
+int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin)
+{
+    static uint32_t counter,lastforward,numpeers;
+    struct LP_utxoinfo *utxo,*utmp; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t n,nonz = 0;
+    now = (uint32_t)time(NULL);
+    //printf("start peers updates\n");
+    n = 0;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        //printf("updatepeer.%s lag.%d\n",peer->ipaddr,now-peer->lastpeers);
+        if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
+        {
+            peer->lastpeers = now;
+            if ( peer->numpeers != numpeers )
+                printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,numpeers);
+            if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
+                LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
+        }
+        nonz += LP_subsock_check(peer);
+        if ( peer->diduquery == 0 )
+        {
+            LP_peer_utxosquery(LP_mypeer,myport,pubsock,peer,now,profitmargin,60);
+            LP_peer_pricesquery(peer->ipaddr,peer->port);
+            peer->diduquery = now;
+        }
+    }
+    numpeers = n;
+    if ( lastforward < now-3600 )
+    {
+        LP_forwarding_register(LP_mypubkey,pushaddr,10);
+        lastforward = now;
+    }
+    if ( (counter % 600) == 0 )
+        LP_myutxo_updates(pubsock,passphrase,profitmargin);
+    if ( (counter % 600) == 0 )
+    {
+        HASH_ITER(hh,LP_utxoinfos[0],utxo,utmp)
+        {
+            LP_utxo_spentcheck(pubsock,utxo,profitmargin);
+        }
+        HASH_ITER(hh,LP_utxoinfos[1],utxo,utmp)
+        {
+            LP_utxo_spentcheck(pubsock,utxo,profitmargin);
+        }
+    }
+    if ( pullsock >= 0 )
+        nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
+    counter++;
+    return(nonz);
+}
+
 void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
 {
-    char *retstr; uint8_t r; int32_t i,n,j,counter=0,nonz; struct LP_peerinfo *peer,*tmp; uint32_t now,lastforward = 0; cJSON *item; struct LP_utxoinfo *utxo,*utmp;
+    char *retstr; uint8_t r; int32_t i,n,j; cJSON *item;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
@@ -258,103 +309,13 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             LP_priceinfoadd(jstr(item,"coin"));
         }
     }
-    printf("update utxos\n");
     LP_privkey_updates(pubsock,passphrase);
-    printf("update swaps\n");
     if ( (retstr= basilisk_swaplist()) != 0 )
         free(retstr);
-    printf("update peers\n");
-    printf("mainloop pushaddr.(%s)\n",pushaddr);
-    if ( IAMLP == 0 )
+    while ( 1 )
     {
-        while ( 1 )
-        {
-            now = (uint32_t)time(NULL);
-            if ( lastforward < now-3600 )
-            {
-                //printf("LP_forwarding_register\n");
-                LP_forwarding_register(LP_mypubkey,pushaddr,10);
-                //printf("done LP_forwarding_register\n");
-                lastforward = now;
-            }
-            nonz = n = 0;
-            if ( (counter % 6000) == 0 )
-            {
-                //printf("LP_utxo_updates\n");
-                LP_utxo_updates(pubsock,passphrase,profitmargin);
-            }
-            HASH_ITER(hh,LP_peerinfos,peer,tmp)
-            {
-                nonz += LP_subsock_check(peer);
-                LP_peer_utxosquery(LP_mypeer,myport,pubsock,peer,now,profitmargin,600);
-            }
-            if ( pullsock >= 0 )
-            {
-                if ( (n= LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin)) > 0 )
-                {
-                    nonz += n;
-                    lastforward = now;
-                }
-            }
-            if ( nonz == 0 )
-                usleep(200000);
-            counter++;
-        }
-    }
-    else
-    {
-        HASH_ITER(hh,LP_peerinfos,peer,tmp)
-        {
-            if ( strcmp(peer->ipaddr,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1") != 0 )
-            {
-                //printf("query utxo from %s\n",peer->ipaddr);
-                LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",100,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
-            }
-        }
-        while ( 1 )
-        {
-            nonz = 0;
-            if ( (counter % 600) == 0 )
-                LP_utxo_updates(pubsock,passphrase,profitmargin);
-            now = (uint32_t)time(NULL);
-            if ( lastforward < now-3600 )
-            {
-                LP_forwarding_register(LP_mypubkey,pushaddr,10);
-                lastforward = now;
-            }
-            //printf("start peers updates\n");
-            HASH_ITER(hh,LP_peerinfos,peer,tmp)
-            {
-                //printf("updatepeer.%s lag.%d\n",peer->ipaddr,now-peer->lastpeers);
-                if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0) )
-                {
-                    peer->lastpeers = now;
-                    if ( peer->numpeers != mypeer->numpeers )
-                        printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,mypeer->numpeers);
-                    if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
-                        LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,mypeer->ipaddr,myport,profitmargin);
-                }
-                nonz += LP_subsock_check(peer);
-                LP_peer_utxosquery(LP_mypeer,myport,pubsock,peer,now,profitmargin,60);
-            }
-            if ( (counter % 100) == 0 )
-            {
-                HASH_ITER(hh,LP_utxoinfos[0],utxo,utmp)
-                {
-                    LP_utxo_spentcheck(pubsock,utxo,profitmargin);
-                }
-                HASH_ITER(hh,LP_utxoinfos[1],utxo,utmp)
-                {
-                    LP_utxo_spentcheck(pubsock,utxo,profitmargin);
-                }
-            }
-            if ( pullsock >= 0 )
-                nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
-            if ( nonz == 0 )
-                usleep(100000);
-            counter++;
-            //printf("nonz.%d in mainloop\n",nonz);
-        }
+        if ( LP_mainloop_iter(myipaddr,mypeer,pubsock,pushaddr,pullsock,myport,passphrase,profitmargin) == 0 )
+            usleep(100000);
     }
 }
 

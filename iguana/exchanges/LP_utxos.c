@@ -203,8 +203,6 @@ int32_t LP_utxopurge(int32_t allutxos)
 cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
 {
     struct _LP_utxoinfo u;
-    jaddstr(item,"method","notified");
-    jaddstr(item,"method2","notified");
     jaddstr(item,"coin",utxo->coin);
     jaddnum(item,"now",time(NULL));
     jaddstr(item,"address",utxo->coinaddr);
@@ -433,7 +431,7 @@ struct LP_utxoinfo *LP_utxoaddjson(int32_t iambob,int32_t pubsock,cJSON *argjson
     return(LP_utxoadd(iambob,pubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jbits256(argjson,"pubkey"),jdouble(argjson,"profit")));
 }
 
-int32_t LP_utxosparse(int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
+int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {
     struct LP_peerinfo *destpeer,*peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
     //printf("parse.(%s)\n",retstr);
@@ -452,13 +450,13 @@ int32_t LP_utxosparse(int32_t mypubsock,char *destipaddr,uint16_t destport,char 
                         subport = argport + 2;
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
-                        peer = LP_addpeer(LP_mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
+                        peer = LP_addpeer(0,-1,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
                 }
                 if ( jobj(item,"txid") != 0 )
                 {
                     txid = jbits256(item,"txid");
                     //printf("parse.(%s)\n",jprint(item,0));
-                    if ( (utxo= LP_utxoaddjson(1,mypubsock,item)) != 0 )
+                    if ( (utxo= LP_utxoaddjson(1,-1,item)) != 0 )
                         utxo->T.lasttime = now;
                 }
             }
@@ -485,7 +483,7 @@ void LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
     if ( retstr != 0 )
     {
         now = (uint32_t)time(NULL);
-        LP_utxosparse(mypubsock,destipaddr,destport,retstr,now);
+        LP_utxosparse(destipaddr,destport,retstr,now);
         //printf("got.(%s)\n",retstr);
         free(retstr);
         /*i = 0;

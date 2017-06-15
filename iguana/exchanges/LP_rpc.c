@@ -89,6 +89,14 @@ char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
     return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
+char *issue_LP_getprices(char *destip,uint16_t destport)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/getprices",destip,destport);
+    //printf("getutxo.(%s)\n",url);
+    return(issue_curlt(url,LP_HTTP_TIMEOUT));
+}
+
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
 {
     char *retstr; cJSON *retjson = 0;

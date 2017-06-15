@@ -167,8 +167,8 @@ char *LP_connected(cJSON *argjson) // alice
 
 int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
-    char *method,*base,*rel,*retstr; cJSON *retjson; double price; bits256 txid,spendtxid; struct LP_utxoinfo *utxo; int32_t selector,spendvini,retval = -1; struct LP_quoteinfo Q;
-    if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 || strcmp(method,"price") == 0 || strcmp(method,"connect") == 0) )
+    char *method,*base,*rel,*retstr; cJSON *retjson; double price,bid,ask; bits256 txid,spendtxid; struct LP_utxoinfo *utxo; int32_t selector,spendvini,retval = -1; struct LP_quoteinfo Q;
+    if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
         retval = 1;
         txid = jbits256(argjson,"txid");
@@ -183,12 +183,12 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
             }
             if ( utxo->S.swap == 0 && time(NULL) > utxo->T.swappending )
                 utxo->T.swappending = 0;
-            if ( strcmp(method,"price") == 0 || strcmp(method,"request") == 0 ) // bob
+            if ( strcmp(method,"request") == 0 ) // bob
             {
                 retval = 1;
                 if ( LP_isavailable(utxo) > 0 )
                 {
-                    if ( (price= LP_price(base,rel)) > SMALLVAL )
+                    if ( (price= LP_myprice(&bid,&ask,base,rel)) > SMALLVAL )
                     {
                         price *= (1. + profitmargin);
                         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
@@ -198,20 +198,15 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                             printf("not eligible\n");
                             return(-1);
                         }
-                        if ( strcmp(method,"price") == 0 )
-                            Q.timestamp = (uint32_t)time(NULL);
+                        Q.timestamp = (uint32_t)time(NULL);
                         retjson = LP_quotejson(&Q);
                         utxo->S.otherpubkey = jbits256(argjson,"desthash");
-                        if ( strcmp(method,"request") == 0 )
-                        {
-                            retval |= 2;
-                            LP_unavailableset(utxo,jbits256(argjson,"desthash"));
-                            jaddnum(retjson,"quotetime",juint(argjson,"quotetime"));
-                            jaddnum(retjson,"pending",utxo->T.swappending);
-                            jaddbits256(retjson,"desthash",utxo->S.otherpubkey);
-                            jaddstr(retjson,"method","reserved");
-                        }
-                        else jaddstr(retjson,"method","quote");
+                        retval |= 2;
+                        LP_unavailableset(utxo,jbits256(argjson,"desthash"));
+                        jaddnum(retjson,"quotetime",juint(argjson,"quotetime"));
+                        jaddnum(retjson,"pending",utxo->T.swappending);
+                        jaddbits256(retjson,"desthash",utxo->S.otherpubkey);
+                        jaddstr(retjson,"method","reserved");
                         retstr = jprint(retjson,1);
                         if ( pubsock >= 0 )
                             LP_send(pubsock,retstr,1);
@@ -264,6 +259,7 @@ getutxos()\n\
 getutxos(coin, lastn)\n\
 orderbook(base, rel)\n\
 getprice(base, rel)\n\
+getprices(base, rel)\n\
 register(pubkey,pushaddr)\n\
 lookup(pubkey)\n\
 forward(pubkey,method2,<argjson>)\n\
@@ -271,6 +267,8 @@ forward(pubkey,method2=publish,<argjson>)\n\
 forwardhex(pubkey,hex)\n\
 \"}"));
     //printf("CMD.(%s)\n",jprint(argjson,0));
+    base = jstr(argjson,"base");
+    rel = jstr(argjson,"rel");
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
     {
         if ( USERPASS_COUNTER == 0 )
@@ -284,7 +282,7 @@ forwardhex(pubkey,hex)\n\
         }
         if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
             return(clonestr("{\"error\":\"authentication error\"}"));
-        if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 )
+        if ( base != 0 && rel != 0 )
         {
             double price;
             if ( LP_isdisabled(base,rel) != 0 )
@@ -367,7 +365,7 @@ forwardhex(pubkey,hex)\n\
             else return(basilisk_swaplist());
         }
     }
-    if ( LP_isdisabled(jstr(argjson,"base"),jstr(argjson,"base")) != 0 )
+    if ( LP_isdisabled(base,rel) != 0 )
         return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
     if ( LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
         return(clonestr("{\"error\":\"coin is disabled\"}"));
@@ -392,7 +390,7 @@ forwardhex(pubkey,hex)\n\
             } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
         }
     }
-    if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
+    if ( strcmp(method,"reserved") == 0 )
         retstr = LP_quotereceived(argjson);
     else if ( strcmp(method,"connected") == 0 )
         retstr = LP_connected(argjson);
@@ -405,9 +403,11 @@ forwardhex(pubkey,hex)\n\
     else if ( strcmp(method,"broadcast") == 0 )
         retstr = LP_broadcasted(argjson);
     else if ( strcmp(method,"getprice") == 0 )
-        retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"),0.);
+        retstr = LP_pricestr(base,rel,0.);
+    else if ( strcmp(method,"getprices") == 0 )
+        retstr = LP_prices();
     else if ( strcmp(method,"orderbook") == 0 )
-        retstr = LP_orderbook(jstr(argjson,"base"),jstr(argjson,"rel"));
+        retstr = LP_orderbook(base,rel);
     else if ( strcmp(method,"forward") == 0 )
     {
         cJSON *reqjson;

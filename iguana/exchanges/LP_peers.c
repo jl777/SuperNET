@@ -57,7 +57,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     {
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
-            if ( peer->profitmargin == 0. )
+            if ( profitmargin != 0. )
                 peer->profitmargin = profitmargin;
             if ( numpeers > peer->numpeers )
                 peer->numpeers = numpeers;
