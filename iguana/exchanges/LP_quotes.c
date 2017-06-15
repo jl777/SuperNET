@@ -166,7 +166,7 @@ char *LP_quotereceived(cJSON *argjson)
     if ( (ptr= LP_cacheadd(Q.srccoin,Q.destcoin,Q.txid,Q.vout,price,&Q)) != 0 )
     {
         ptr->Q = Q;
-        char str[65]; printf("received.(%s) quote %.8f\n",bits256_str(str,Q.txid),price);
+        printf("\n>>>>>>>>>> received.(%s) quote %.8f\n\n",jprint(argjson,0),price);
         return(clonestr("{\"result\":\"updated\"}"));
     } else return(clonestr("{\"error\":\"nullptr\"}"));
 }
@@ -276,6 +276,7 @@ double LP_query(char *method,struct LP_quoteinfo *qp)
 int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin)
 {
     char *retstr,pairstr[512],destaddr[64]; cJSON *retjson; double price; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; uint64_t destvalue; struct LP_quoteinfo Q; struct basilisk_swap *swap;
+    printf("LP_connectstartbob with.(%s)\n",jprint(argjson,0));
     if ( (price= LP_price(base,rel)) > SMALLVAL )
     {
         price *= (1. + profitmargin);
@@ -283,7 +284,6 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
             return(-1);
         if ( LP_quoteparse(&Q,argjson) < 0 )
             return(-2);
-        printf("connect with.(%s)\n",jprint(argjson,0));
         Q.destsatoshis = Q.satoshis * price;
         privkey = LP_privkey(utxo->coinaddr);
         if ( bits256_nonz(utxo->S.mypub) == 0 )
