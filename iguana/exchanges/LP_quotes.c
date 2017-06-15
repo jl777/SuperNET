@@ -523,6 +523,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
     asatoshis = bestutxo->payment.value * ordermatchprice;
     if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
+    printf("asatoshis %.8f = bvalue %.8f * ordermatch %.8f\n",dstr(asatoshis),dstr(bestutxo->payment.value),ordermatchprice);
     if ( LP_quotedestinfo(&Q,Q.timestamp+1,asatoshis,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypubkey,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
     price = LP_query(myipaddr,mypubsock,profitmargin,"request",&Q);
