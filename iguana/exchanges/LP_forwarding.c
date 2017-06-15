@@ -170,7 +170,12 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
             jaddnum(retjson,"datalen",datalen);
             return(jprint(retjson,1));
         }
-    } else return(clonestr("{\"error\":\"notfound\"}"));
+    }
+    else
+    {
+        char str[65]; printf("couldnt find %s to forward to\n",bits256_str(str,pubkey));
+        return(clonestr("{\"error\":\"notfound\"}"));
+    }
     printf("couldnt find pubkey\n");
 }
 
