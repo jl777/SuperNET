@@ -318,11 +318,13 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
                     jaddstr(retjson,"pair",pairstr);
                     jaddnum(retjson,"requestid",Q.R.requestid);
                     jaddnum(retjson,"quoteid",Q.R.quoteid);
-                    retstr = jprint(retjson,1);
-                    char str[65]; printf("BOB pubsock.%d sends back.(%s) to (%s)\n",pubsock,retstr,bits256_str(str,utxo->S.otherpubkey));
+                    char str[65]; printf("BOB pubsock.%d sends to (%s)\n",pubsock,bits256_str(str,utxo->S.otherpubkey));
                     if ( pubsock >= 0 )
-                        LP_send(pubsock,retstr,0);
-                    LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,retstr,1);
+                        LP_send(pubsock,jprint(retjson,0),1);
+                    jdelete(retjson,"method");
+                    jaddstr(retjson,"method2","connected");
+                    jaddstr(retjson,"method","forward");
+                    LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,jprint(retjson,1),1);
                     retval = 0;
                 } else printf("error launching swaploop\n");
             } else printf("printf error nn_connect to %s\n",pairstr);
@@ -428,10 +430,12 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                         jaddbits256(retjson,"desthash",utxo->S.otherpubkey);
                         jaddbits256(retjson,"pubkey",utxo->S.otherpubkey);
                         jaddstr(retjson,"method","reserved");
-                        retstr = jprint(retjson,1);
                         if ( pubsock >= 0 )
-                            LP_send(pubsock,retstr,0);
-                        LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,retstr,1);
+                            LP_send(pubsock,jprint(retjson,0),1);
+                        jdelete(retjson,"method");
+                        jaddstr(retjson,"method2","reserved");
+                        jaddstr(retjson,"method","forward");
+                        LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,jprint(retjson,1),1);
                         utxo->T.lasttime = (uint32_t)time(NULL);
                         printf("set swappending.%u\n",utxo->T.swappending);
                     } else printf("null price\n");
