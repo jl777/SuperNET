@@ -286,7 +286,7 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
             return(-1);
         if ( LP_quoteparse(&Q,argjson) < 0 )
             return(-2);
-        Q.destsatoshis = Q.satoshis * price;
+        Q.destsatoshis = Q.satoshis * price + Q.desttxfee + 1;
         privkey = LP_privkey(utxo->coinaddr);
         if ( bits256_nonz(utxo->S.mypub) == 0 )
             utxo->S.mypub = LP_pubkey(privkey);
@@ -523,7 +523,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
         return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
     if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
-    asatoshis = 1.001 * (Q.satoshis * ordermatchprice + Q.desttxfee + 1);
+    asatoshis = (Q.satoshis * ordermatchprice + Q.desttxfee + 1);
     printf("asatoshis %.8f = bvalue %.8f * ordermatch %.8f\n",dstr(asatoshis),dstr(Q.satoshis),ordermatchprice);
     if ( LP_quotedestinfo(&Q,Q.timestamp+1,asatoshis,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypubkey,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
