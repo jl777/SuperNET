@@ -39,7 +39,7 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
     {
         pfd.fd = sock;
         pfd.events = NN_POLLOUT;
-        if ( nn_poll(&pfd,1,100) > 0 )
+        if ( nn_poll(&pfd,1,1) > 0 )
         {
             if ( (sentbytes= nn_send(sock,msg,len,0)) != len )
                 printf("LP_send sent %d instead of %d\n",sentbytes,len);
