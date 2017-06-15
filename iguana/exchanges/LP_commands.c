@@ -116,6 +116,8 @@ forwardhex(pubkey,hex)\n\
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
+            else if ( strcmp(method,"autotrade") == 0 )
+                return(LP_autotrade(base,rel,jdouble(argjson,"price"),jdouble(argjson,"volume")));
         }
         else if ( (coin= jstr(argjson,"coin")) != 0 )
         {
@@ -148,8 +150,6 @@ forwardhex(pubkey,hex)\n\
                     return(jprint(retjson,1));
                 }
             }
-            else if ( strcmp(method,"autotrade") == 0 )
-                return(LP_autotrade(base,rel,jdouble(argjson,"price"),jdouble(argjson,"volume")));
         }
         else if ( strcmp(method,"swapstatus") == 0 )
         {
