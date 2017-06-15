@@ -238,7 +238,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
         }
-        nonz += LP_subsock_check(myipaddr,pubsock,peer->pushsock,profitmargin);
+        nonz += LP_subsock_check(myipaddr,pubsock,peer->subsock,profitmargin);
         if ( peer->diduquery == 0 )
         {
             LP_peer_utxosquery(mypeer,myport,pubsock,peer,now,profitmargin,60);
