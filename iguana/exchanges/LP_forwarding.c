@@ -147,7 +147,7 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
     {
         if ( ptr->pushsock >= 0 )
         {
-            printf("forwardhex.(%s)\n",(char *)data);
+            printf("%s forwardhex.(%s)\n",ptr->pushaddr,(char *)data);
             sentbytes = LP_send(ptr->pushsock,(char *)data,0);
         }
         retjson = cJSON_CreateObject();
@@ -209,7 +209,7 @@ int32_t LP_forward(bits256 pubkey,char *jsonstr,int32_t freeflag)
         } else retval = 0;
         if ( retval == 0 && peer->pushsock >= 0 )
         {
-            printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
+            //printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
             len = (int32_t)strlen(jsonstr) + 1;
             hexstr = malloc(len*2 + 1);
             init_hexbytes_noT(hexstr,(uint8_t *)jsonstr,len);
