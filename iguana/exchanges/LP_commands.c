@@ -271,8 +271,7 @@ myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
 inventory(coin)\n\
-candidates(txid, vout)\n\
-autotrade(txid, vout, maxprice)\n\
+autotrade(base, rel, maxvolume, maxprice)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
