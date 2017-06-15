@@ -82,6 +82,8 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
     char *retstr=0;
+    if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
+        return(0);
     if ( LP_tradecommand(myipaddr,pubsock,argjson,data,datalen,profitmargin) <= 0 )
     {
         if ( (retstr= stats_JSON(myipaddr,pubsock,profitmargin,argjson,"127.0.0.1",0)) != 0 )
