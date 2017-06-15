@@ -237,7 +237,7 @@ char *stats_JSON(int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) 
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
     if ( (method= jstr(argjson,"method")) == 0 )
     {
-        printf("(%s)\n",jprint(argjson,0));
+        printf("stats_JSON no method: (%s)\n",jprint(argjson,0));
         return(clonestr("{\"error\":\"need method in request\"}"));
     }
     else if ( strcmp(method,"help") == 0 )
@@ -266,7 +266,6 @@ forward(pubkey,method2,<argjson>)\n\
 forward(pubkey,method2=publish,<argjson>)\n\
 forwardhex(pubkey,hex)\n\
 \"}"));
-    printf("CMD.(%s)\n",jprint(argjson,0));
     base = jstr(argjson,"base");
     rel = jstr(argjson,"rel");
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
