@@ -217,6 +217,8 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     static uint32_t counter,lastforward,numpeers;
     struct LP_utxoinfo *utxo,*utmp; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t n,nonz = 0;
     now = (uint32_t)time(NULL);
+    if ( mypeer == 0 )
+        myipaddr = "127.0.0.1";
     //printf("start peers updates\n");
     n = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
@@ -227,13 +229,13 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             peer->lastpeers = now;
             if ( peer->numpeers != numpeers )
                 printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,numpeers);
-            if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
-                LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
+            if ( strcmp(peer->ipaddr,myipaddr) != 0 )
+                LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
         }
         nonz += LP_subsock_check(peer);
         if ( peer->diduquery == 0 )
         {
-            LP_peer_utxosquery(LP_mypeer,myport,pubsock,peer,now,profitmargin,60);
+            LP_peer_utxosquery(mypeer,myport,pubsock,peer,now,profitmargin,60);
             LP_peer_pricesquery(peer->ipaddr,peer->port);
             peer->diduquery = now;
         }
