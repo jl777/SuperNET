@@ -34,13 +34,13 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
             free(msg);
         return(-1);
     }
-    for (i=0; i<100; i++)
+    len = (int32_t)strlen(msg) + 1;
+    for (i=0; i<1000; i++)
     {
         pfd.fd = sock;
         pfd.events = NN_POLLOUT;
         if ( nn_poll(&pfd,1,100) > 0 )
         {
-            len = (int32_t)strlen(msg) + 1;
             if ( (sentbytes= nn_send(sock,msg,len,0)) != len )
                 printf("LP_send sent %d instead of %d\n",sentbytes,len);
             //else printf("SENT.(%s)\n",msg);
@@ -50,10 +50,12 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
         }
         usleep(1000);
     }
-    printf("error LP_send\n");
+    printf("error LP_send, pipeline timeout\n");
+    if ( (sentbytes= nn_send(sock,msg,len,0)) != len )
+        printf("LP_send sent %d instead of %d\n",sentbytes,len);
     if ( freeflag != 0 )
         free(msg);
-    return(-1);
+    return(sentbytes);
 }
 
 uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])

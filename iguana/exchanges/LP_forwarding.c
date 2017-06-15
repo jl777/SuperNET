@@ -200,8 +200,10 @@ int32_t LP_forward(char *myipaddr,int32_t pubsock,double profitmargin,bits256 pu
         }
         else if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 && ptr->lasttime > time(NULL)-LP_KEEPALIVE )
         {
-            printf("GOT FORWARDED.(%s)\n",jsonstr);
-            return(LP_send(ptr->pushsock,jsonstr,1));
+            printf("GOT FORWARDED.(%s) -> pushsock.%d\n",jsonstr,ptr->pushsock);
+            len = (int32_t)strlen(jsonstr);
+            if ( LP_send(ptr->pushsock,jsonstr,1) == len+1 )
+                return(1);
         }
     }
     HASH_ITER(hh,LP_peerinfos,peer,tmp)

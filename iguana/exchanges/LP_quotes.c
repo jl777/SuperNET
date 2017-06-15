@@ -276,11 +276,12 @@ double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *metho
 
 int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin)
 {
-    char pairstr[512],destaddr[64]; cJSON *retjson; double price; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; uint64_t destvalue; struct LP_quoteinfo Q; struct basilisk_swap *swap;
+    char pairstr[512],destaddr[64]; cJSON *retjson; double bid,ask,price; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; uint64_t destvalue; struct LP_quoteinfo Q; struct basilisk_swap *swap;
     //printf("LP_connectstartbob with.(%s)\n",jprint(argjson,0));
-    if ( (price= LP_price(base,rel)) > SMALLVAL )
+    if ( (price= LP_myprice(&bid,&ask,base,rel)) > SMALLVAL )
     {
-        price *= (1. + profitmargin);
+        price = ask;
+        //price *= (1. + profitmargin);
         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
             return(-1);
         if ( LP_quoteparse(&Q,argjson) < 0 )
@@ -411,7 +412,8 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                 {
                     if ( (price= LP_myprice(&bid,&ask,base,rel)) > SMALLVAL )
                     {
-                        price *= (1. + profitmargin);
+                        price = ask;
+                        //price *= (1. + profitmargin);
                         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
                             return(-1);
                         if ( LP_iseligible(1,Q.srccoin,Q.txid,Q.vout,Q.satoshis,Q.txid2,Q.vout2) == 0 )
@@ -524,9 +526,9 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
     if ( LP_quotedestinfo(&Q,Q.timestamp+1,asatoshis,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypubkey,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
     price = LP_query(myipaddr,mypubsock,profitmargin,"request",&Q);
+    bestitem = LP_quotejson(&Q);
     if ( price <= maxprice )
     {
-        bestitem = LP_quotejson(&Q);
         price = LP_query(myipaddr,mypubsock,profitmargin,"connect",&Q);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,base,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
         expiration = (uint32_t)time(NULL) + timeout;
@@ -542,11 +544,18 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
             LP_availableset(autxo);
         }
         else jaddstr(bestitem,"status","connected");
+        jaddnum(bestitem,"quotedprice",price);
         jaddnum(bestitem,"maxprice",maxprice);
         jaddnum(bestitem,"requestid",Q.R.requestid);
         jaddnum(bestitem,"quoteid",Q.R.quoteid);
         printf("Alice r.%u q.%u\n",Q.R.requestid,Q.R.quoteid);
-    } else jaddstr(bestitem,"status","too expensive");
+    }
+    else
+    {
+        jaddnum(bestitem,"quotedprice",price);
+        jaddnum(bestitem,"maxprice",maxprice);
+        jaddstr(bestitem,"status","too expensive");
+    }
     return(jprint(bestitem,0));
 }
 
