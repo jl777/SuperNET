@@ -215,12 +215,16 @@ void LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pubso
 int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin)
 {
     static uint32_t counter,lastforward,numpeers;
-    struct LP_utxoinfo *utxo,*utmp; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t n,nonz = 0;
+    struct LP_utxoinfo *utxo,*utmp; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t nonz = 0;
     now = (uint32_t)time(NULL);
     if ( mypeer == 0 )
         myipaddr = "127.0.0.1";
     //printf("start peers updates\n");
-    n = 0;
+    numpeers = 0;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        numpeers++;
+    }
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         //printf("updatepeer.%s lag.%d\n",peer->ipaddr,now-peer->lastpeers);
@@ -240,7 +244,6 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             peer->diduquery = now;
         }
     }
-    numpeers = n;
     if ( lastforward < now-3600 )
     {
         LP_forwarding_register(LP_mypubkey,pushaddr,10);
