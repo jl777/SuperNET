@@ -234,13 +234,36 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
 
 char *stats_JSON(int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
+    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
+    if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
+    {
+        if ( strcmp(ipaddr,"127.0.0.1") != 0 && port >= 1000 )
+        {
+            flag = 1;
+            if ( (pushport= juint(argjson,"push")) == 0 )
+                pushport = argport + 1;
+            if ( (subport= juint(argjson,"sub")) == 0 )
+                subport = argport + 2;
+            if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
+            {
+                if ( 0 && (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
+                    peer->numpeers = otherpeers;
+                if ( 0 && (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
+                {
+                    printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
+                    peer->numutxos = othernumutxos;
+                }
+                //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
+            } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
+        }
+    }
     if ( (method= jstr(argjson,"method")) == 0 )
     {
-        printf("stats_JSON no method: (%s)\n",jprint(argjson,0));
+        if ( flag == 0 )
+            printf("stats_JSON no method: (%s)\n",jprint(argjson,0));
         return(clonestr("{\"error\":\"need method in request\"}"));
     }
-    else if ( strcmp(method,"help") == 0 )
+    if ( strcmp(method,"help") == 0 )
         return(clonestr("{\"result\":\" \
 available localhost RPC commands:\n \
 setprice(base, rel, price)\n\
@@ -368,27 +391,6 @@ forwardhex(pubkey,hex)\n\
         return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
     if ( LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
         return(clonestr("{\"error\":\"coin is disabled\"}"));
-    if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
-    {
-        if ( strcmp(ipaddr,"127.0.0.1") != 0 && port >= 1000 )
-        {
-            if ( (pushport= juint(argjson,"push")) == 0 )
-                pushport = argport + 1;
-            if ( (subport= juint(argjson,"sub")) == 0 )
-                subport = argport + 2;
-            if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
-            {
-                if ( 0 && (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
-                    peer->numpeers = otherpeers;
-                if ( 0 && (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
-                {
-                    printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
-                    peer->numutxos = othernumutxos;
-                }
-                //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
-            } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
-        }
-    }
     if ( strcmp(method,"reserved") == 0 )
         retstr = LP_quotereceived(argjson);
     else if ( strcmp(method,"connected") == 0 )
