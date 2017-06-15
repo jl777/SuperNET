@@ -23,6 +23,7 @@
 
 #define LP_HTTP_TIMEOUT 1
 #define LP_MAXPEER_ERRORS 3
+#define LP_AUTOTRADE_TIMEOUT 3
 
 #define LP_DEXFEE(destsatoshis) ((destsatoshis) / INSTANTDEX_INSURANCEDIV)
 #define LP_DEPOSITSATOSHIS(satoshis) ((satoshis) + (satoshis >> 3))

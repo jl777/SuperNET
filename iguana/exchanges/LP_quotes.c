@@ -319,9 +319,10 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
                     jaddnum(retjson,"requestid",Q.R.requestid);
                     jaddnum(retjson,"quoteid",Q.R.quoteid);
                     retstr = jprint(retjson,1);
+                    printf("BOB sends back.(%s)\n",retstr);
                     if ( pubsock >= 0 )
-                        LP_send(pubsock,retstr,1);
-                    else LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,retstr,1);
+                        LP_send(pubsock,retstr,0);
+                    LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,retstr,1);
                     retval = 0;
                 } else printf("error launching swaploop\n");
             } else printf("printf error nn_connect to %s\n",pairstr);
@@ -429,8 +430,8 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                         jaddstr(retjson,"method","reserved");
                         retstr = jprint(retjson,1);
                         if ( pubsock >= 0 )
-                            LP_send(pubsock,retstr,1);
-                        else LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,retstr,1);
+                            LP_send(pubsock,retstr,0);
+                        LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,retstr,1);
                         utxo->T.lasttime = (uint32_t)time(NULL);
                         printf("set swappending.%u\n",utxo->T.swappending);
                     } else printf("null price\n");
@@ -453,7 +454,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
     return(retval);
 }
 
-char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *base,char *rel,double maxprice,double volume)
+char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *base,char *rel,double maxprice,double volume,int32_t timeout)
 {
     uint64_t destsatoshis,asatoshis; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item,*bestitem=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; int32_t i,vout,numasks,DEXselector=0; uint32_t expiration; double ordermatchprice,bestmetric,metric,bestprice=0.,vol,price; struct LP_quoteinfo Q;
     if ( maxprice <= 0. || volume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
@@ -462,6 +463,8 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
     if ( (autxo= LP_utxo_bestfit(rel,destsatoshis)) == 0 )
         return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
     bestmetric = ordermatchprice = 0.;
+    if ( timeout == 0 )
+        timeout = LP_AUTOTRADE_TIMEOUT;
     if ( (obookstr= LP_orderbook(base,rel)) != 0 )
     {
         if ( (orderbook= cJSON_Parse(obookstr)) != 0 )
@@ -522,7 +525,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
         bestitem = LP_quotejson(&Q);
         price = LP_query(myipaddr,mypubsock,profitmargin,"connect",&Q);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,base,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
-        expiration = (uint32_t)time(NULL) + 10;
+        expiration = (uint32_t)time(NULL) + timeout;
         while ( time(NULL) < expiration )
         {
             if ( autxo->S.swap != 0 )

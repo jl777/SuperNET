@@ -58,7 +58,7 @@ myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
 inventory(coin)\n\
-autotrade(base, rel, price, volume)\n\
+autotrade(base, rel, price, volume, timeout)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
@@ -117,7 +117,7 @@ forwardhex(pubkey,hex)\n\
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"autotrade") == 0 )
-                return(LP_autotrade(myipaddr,pubsock,profitmargin,base,rel,jdouble(argjson,"price"),jdouble(argjson,"volume")));
+                return(LP_autotrade(myipaddr,pubsock,profitmargin,base,rel,jdouble(argjson,"price"),jdouble(argjson,"volume"),jint(argjson,"timeout")));
         }
         else if ( (coin= jstr(argjson,"coin")) != 0 )
         {
