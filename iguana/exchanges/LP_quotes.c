@@ -276,8 +276,8 @@ double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *metho
 
 int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin)
 {
-    char *retstr,pairstr[512],destaddr[64]; cJSON *retjson; double price; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; uint64_t destvalue; struct LP_quoteinfo Q; struct basilisk_swap *swap;
-    printf("LP_connectstartbob with.(%s)\n",jprint(argjson,0));
+    char pairstr[512],destaddr[64]; cJSON *retjson; double price; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; uint64_t destvalue; struct LP_quoteinfo Q; struct basilisk_swap *swap;
+    //printf("LP_connectstartbob with.(%s)\n",jprint(argjson,0));
     if ( (price= LP_price(base,rel)) > SMALLVAL )
     {
         price *= (1. + profitmargin);
@@ -387,7 +387,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
 
 int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
-    char *method,*base,*rel,*retstr; cJSON *retjson; double price,bid,ask; bits256 txid,spendtxid; struct LP_utxoinfo *utxo; int32_t selector,spendvini,retval = -1; struct LP_quoteinfo Q;
+    char *method,*base,*rel; cJSON *retjson; double price,bid,ask; bits256 txid,spendtxid; struct LP_utxoinfo *utxo; int32_t selector,spendvini,retval = -1; struct LP_quoteinfo Q;
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
         //printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
@@ -437,7 +437,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                         jaddstr(retjson,"method","forward");
                         LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,jprint(retjson,1),1);
                         utxo->T.lasttime = (uint32_t)time(NULL);
-                        printf("set swappending.%u\n",utxo->T.swappending);
+                        //printf("set swappending.%u\n",utxo->T.swappending);
                     } else printf("null price\n");
                 } else printf("swappending.%u swap.%p\n",utxo->T.swappending,utxo->S.swap);
             }
@@ -523,6 +523,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,Q.timestamp+1,asatoshis,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypubkey,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
+    LP_unavailableset(autxo,bestutxo->pubkey);
     price = LP_query(myipaddr,mypubsock,profitmargin,"request",&Q);
     if ( price <= maxprice )
     {
