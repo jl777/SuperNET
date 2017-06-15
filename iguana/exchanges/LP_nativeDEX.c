@@ -89,7 +89,7 @@ char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *
         if ( (retstr= stats_JSON(myipaddr,pubsock,profitmargin,argjson,"127.0.0.1",0)) != 0 )
         {
             //printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
-            if ( pubsock >= 0 )
+            if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 && 
                 LP_send(pubsock,retstr,0);
         }
     }
@@ -152,7 +152,7 @@ int32_t LP_subsock_check(char *myipaddr,int32_t pubsock,int32_t sock,double prof
         {
             printf("%s SUB.[%d] %s\n",myipaddr,recvsize,jprint(argjson,0));
             portable_mutex_lock(&LP_commandmutex);
-            if ( (retstr= LP_command_process(myipaddr,pubsock,argjson,0,0,profitmargin)) != 0 )
+            if ( (retstr= LP_command_process(myipaddr,-1,argjson,0,0,profitmargin)) != 0 )
             {
                 free(retstr);
             }
