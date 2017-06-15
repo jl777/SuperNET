@@ -259,7 +259,7 @@ char *stats_JSON(int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) 
     }
     if ( (method= jstr(argjson,"method")) == 0 )
     {
-        if ( flag == 0 )
+        if ( flag == 0 && jobj(argjson,"result") == 0 )
             printf("stats_JSON no method: (%s)\n",jprint(argjson,0));
         return(clonestr("{\"error\":\"need method in request\"}"));
     }
@@ -386,6 +386,8 @@ forwardhex(pubkey,hex)\n\
                 return(basilisk_swapentry(requestid,quoteid));
             else return(basilisk_swaplist());
         }
+        else if ( strcmp(method,"myprices") == 0 )
+            return(LP_myprices());
     }
     if ( LP_isdisabled(base,rel) != 0 )
         return(clonestr("{\"error\":\"at least one of coins disabled\"}"));

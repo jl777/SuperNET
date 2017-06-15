@@ -244,7 +244,7 @@ void LP_priceinfoupdate(char *base,char *rel,double price)
     }
 }
 
-double LP_myprice(double *bidp,double *askp,char *base,char *rel)
+/*double LP_myprice(double *bidp,double *askp,char *base,char *rel)
 {
     struct LP_priceinfo *basepp,*relpp; double val;
     *bidp = *askp = 0.;
@@ -268,6 +268,62 @@ double LP_myprice(double *bidp,double *askp,char *base,char *rel)
         }
     }
     return(0.);
+}*/
+
+double LP_myprice(double *bidp,double *askp,char *base,char *rel)
+{
+    struct LP_priceinfo *basepp,*relpp; double val;
+    *bidp = *askp = 0.;
+    if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    {
+        if ( (*askp= basepp->myprices[relpp->ind]) > SMALLVAL )
+        {
+            if ( (val= relpp->myprices[basepp->ind]) > SMALLVAL )
+            {
+                *bidp = 1. / val;
+                return((*askp + *bidp) * 0.5);
+            }
+            else
+            {
+                *bidp = 0.;
+                return(*askp);
+            }
+        }
+        else
+        {
+            if ( (val= relpp->myprices[basepp->ind]) > SMALLVAL )
+            {
+                *bidp = 1. / val;
+                *askp = 0.;
+                return(*bidp);
+            }
+        }
+    }
+    return(0.);
+}
+
+char *LP_myprices()
+{
+    int32_t baseid,relid; double bid,ask; char *base,*rel; cJSON *item,*array;
+    array = cJSON_CreateArray();
+    for (baseid=0; baseid<LP_numpriceinfos; baseid++)
+    {
+        base = LP_priceinfos[baseid].symbol;
+        for (relid=0; relid<LP_numpriceinfos; relid++)
+        {
+            rel = LP_priceinfos[relid].symbol;
+            if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )
+            {
+                item = cJSON_CreateObject();
+                jaddstr(item,"base",base);
+                jaddstr(item,"rel",rel);
+                jaddnum(item,"bid",bid);
+                jaddnum(item,"ask",ask);
+                jaddi(array,item);
+            }
+        }
+    }
+    return(jprint(array,1));
 }
 
 int32_t LP_mypriceset(char *base,char *rel,double price)
@@ -497,9 +553,9 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
             {
                 //char str[65]; printf("found utxo not in orderbook %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
                 *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
-                if ( polarity > 0 )
+                //if ( polarity > 0 )
                     basesatoshis = utxo->payment.value;
-                else basesatoshis = utxo->payment.value * price;
+                //else basesatoshis = utxo->payment.value * price;
                 if ( (op= LP_orderbookentry(base,rel,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout,polarity > 0 ? price : 1./price,basesatoshis,utxo->pubkey)) != 0 )
                     (*arrayp)[num++] = op;
                 if ( bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 && utxo->T.lasttime == 0 )
