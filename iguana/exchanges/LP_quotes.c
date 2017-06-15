@@ -350,7 +350,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     cJSON *retjson; bits256 spendtxid; int32_t spendvini,selector,pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *utxo; struct LP_quoteinfo Q; struct basilisk_swap *swap;
     LP_quoteparse(&Q,argjson);
     printf("CONNECTED.(%s)\n",jprint(argjson,0));
-    if ( IAMLP == 0 && bits256_cmp(Q.desthash,LP_mypubkey) == 0 && (utxo= LP_utxofind(0,Q.desttxid,Q.destvout)) != 0 && LP_ismine(utxo) > 0 && LP_isavailable(utxo) > 0 )
+    if ( IAMLP == 0 && bits256_cmp(Q.desthash,LP_mypubkey) == 0 && (utxo= LP_utxofind(0,Q.desttxid,Q.destvout)) != 0 && LP_ismine(utxo) > 0 )//&& LP_isavailable(utxo) > 0 )
     {
         if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,Q.srccoin,Q.txid,Q.vout,Q.txid2,Q.vout2)) >= 0 )
         {
