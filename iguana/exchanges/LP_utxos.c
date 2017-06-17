@@ -114,19 +114,25 @@ int32_t LP_utxocollisions(struct LP_utxoinfo *ptrs[],struct LP_utxoinfo *refutxo
             n = LP_utxoaddptrs(ptrs,n,utxo);
     }
     portable_mutex_unlock(&LP_utxomutex);
-    if ( n > 0 )
+    if ( 0 && n > 0 )
         printf("LP_utxocollisions n.%d\n",n);
     return(n);
 }
 
-void _LP_availableset(struct LP_utxoinfo *utxo)
+int32_t _LP_availableset(struct LP_utxoinfo *utxo)
 {
+    int32_t flag = 0;
     if ( utxo != 0 )
     {
-        memset(&utxo->S.otherpubkey,0,sizeof(utxo->S.otherpubkey));
-        utxo->S.swap = 0;
-        utxo->T.swappending = 0;
+        if ( bits256_nonz(utxo->S.otherpubkey) != 0 )
+            flag = 1, memset(&utxo->S.otherpubkey,0,sizeof(utxo->S.otherpubkey));
+        if ( utxo->S.swap != 0 )
+            flag = 1, utxo->S.swap = 0;
+        if ( utxo->T.swappending != 0 )
+            flag = 1, utxo->T.swappending = 0;
+        return(flag);
     }
+    return(0);
 }
 
 void _LP_unavailableset(struct LP_utxoinfo *utxo,bits256 otherpubkey)
@@ -154,16 +160,19 @@ void LP_unavailableset(struct LP_utxoinfo *utxo,bits256 otherpubkey)
 
 void LP_availableset(struct LP_utxoinfo *utxo)
 {
-    struct LP_utxoinfo *ptrs[8]; int32_t i,n; struct _LP_utxoinfo u;
+    struct LP_utxoinfo *ptrs[8]; int32_t i,n,count = 0; struct _LP_utxoinfo u;
     memset(ptrs,0,sizeof(ptrs));
     if ( (n= LP_utxocollisions(ptrs,utxo)) > 0 )
     {
         for (i=0; i<n; i++)
-            _LP_availableset(ptrs[i]);
+            count += _LP_availableset(ptrs[i]);
     }
-    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
-    char str[65],str2[65]; printf("UTXO.[%d] AVAIL %s/v%d %s/v%d collisions.%d\n",utxo->iambob,bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,u.txid),u.vout,n);
-    _LP_availableset(utxo);
+    count += _LP_availableset(utxo);
+    if ( count > 0 )
+    {
+        u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+        char str[65],str2[65]; printf("UTXO.[%d] AVAIL %s/v%d %s/v%d collisions.%d\n",utxo->iambob,bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,u.txid),u.vout,n);
+    }
 }
 
 int32_t LP_utxopurge(int32_t allutxos)
