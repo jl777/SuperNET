@@ -48,6 +48,21 @@ char *LP_lookup(bits256 pubkey)
     else return(clonestr("{\"error\":\"notfound\"}"));
 }
 
+int32_t LP_pushsock_create(char *pushaddr)
+{
+    int32_t pushsock,timeout;
+    if ( (pushsock= nn_socket(AF_SP,NN_PUSH)) < 0 )
+        return(-1);
+    else if ( nn_connect(pushsock,pushaddr) < 0 )
+    {
+        nn_close(pushsock);
+        return(-1);
+    }
+    timeout = 100;
+    nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+    return(pushsock);
+}
+
 char *LP_register(bits256 pubkey,char *ipaddr)
 {
     struct LP_forwardinfo *ptr=0; int32_t pushsock; char pushaddr[64];
@@ -60,15 +75,17 @@ char *LP_register(bits256 pubkey,char *ipaddr)
     if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
         ptr->lasttime = (uint32_t)time(NULL);
+        if ( ptr->pushsock >= 0 )
+        {
+            nn_close(ptr->pushsock);
+            printf("recreate pushsock for %s\n",pushaddr);
+            if ( (ptr->pushsock= LP_pushsock_create(pushaddr)) < 0 )
+                return(clonestr("{\"error\":\"couldnt recreate pushsock\",\"registered\":0}"));
+        }
         return(clonestr("{\"error\":\"already registered\",\"registered\":1}"));
     }
-    else if ( (pushsock= nn_socket(AF_SP,NN_PUSH)) < 0 )
-        return(clonestr("{\"error\":\"out of sockets\"}"));
-    else if ( nn_connect(pushsock,pushaddr) < 0 )
-    {
-        nn_close(pushsock);
-        return(clonestr("{\"error\":\"cant connect\"}"));
-    }
+    else if ( (pushsock= LP_pushsock_create(pushaddr)) < 0 )
+        return(clonestr("{\"error\":\"couldnt create pushsock\"}"));
     else
     {
         char str[65]; printf("registered (%s) -> (%s)\n",bits256_str(str,pubkey),pushaddr);
