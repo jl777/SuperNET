@@ -843,7 +843,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
             printf("incomplete signing suppress.%d %s (%s)\n",suppress_pubkeys,name,jprint(vins,0));
             if ( signedtx != 0 )
                 free(signedtx), signedtx = 0;
-        } else printf("%s -> %s\n",name,bits256_str(str,*signedtxidp));
+        } else printf("basilisk_swap_bobtxspend %s -> %s\n",name,bits256_str(str,*signedtxidp));
         free(rawtxbytes);
     } else printf("error making rawtx suppress.%d\n",suppress_pubkeys);
     free_json(privkeys);

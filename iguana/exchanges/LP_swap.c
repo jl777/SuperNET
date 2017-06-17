@@ -747,14 +747,14 @@ void LP_aliceloop(void *_swap)
                 {
                     while ( LP_numconfirms(swap,&swap->bobpayment) < swap->I.bobconfirms )
                     {
-                        printf("waiting for bobpayment to confirm\n");
+                        char str[65];printf("waiting for bobpayment to be confirmed %s %s\n",swap->bobcoin.symbol,bits256_str(str,swap->bobpayment.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
                     }
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x20000,data,maxlen,&swap->alicespend,0x40000,0) == 0 )
                         printf("error sending alicespend\n");
                     while ( LP_numconfirms(swap,&swap->alicespend) < swap->I.aliceconfirms )
                     {
-                        printf("waiting for alicespend to confirm\n");
+                        char str[65];printf("waiting for alicespend to be confirmed %s %s\n",swap->bobcoin.symbol,bits256_str(str,swap->alicespend.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
                     }
                     LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,60);
