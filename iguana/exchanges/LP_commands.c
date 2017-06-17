@@ -121,7 +121,7 @@ forwardhex(pubkey,hex)\n\
             {
                 if ( price > SMALLVAL )
                 {
-                    LP_mypriceset(base,rel,price);
+                    LP_mypriceset(rel,base,1./price);
                     return(LP_autotrade(myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"volume"),jint(argjson,"timeout")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
