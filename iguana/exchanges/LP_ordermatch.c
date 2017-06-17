@@ -552,6 +552,9 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                     item = jitem(asks,i);
                     if ( (price= jdouble(item,"price")) > SMALLVAL && price <= maxprice )
                     {
+                        price *= 1.0001;
+                        if ( price > maxprice )
+                            price = maxprice;
                         pubkey = jbits256(item,"pubkey");
                         if ( bits256_cmp(pubkey,LP_mypubkey) != 0 )
                         {
