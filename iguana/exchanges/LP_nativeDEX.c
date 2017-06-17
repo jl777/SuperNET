@@ -17,7 +17,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// jl777: profitmargin per coin, ignore peers with errors
 
 #include <stdio.h>
 #include "LP_include.h"
@@ -75,7 +74,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_swap.c"
 #include "LP_peers.c"
 #include "LP_utxos.c"
-#include "LP_quotes.c"
+#include "LP_ordermatch.c"
 #include "LP_forwarding.c"
 #include "LP_commands.c"
 
@@ -183,14 +182,6 @@ void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitma
             printf("txid2.%s %s/v%d %.8f has been spent\n",utxo->coin,bits256_str(str,u.txid),u.vout,dstr(u.value));
             LP_spentnotify(utxo,1);
         }
-        /*else if ( LP_ismine(utxo) > 0 )
-        {
-            printf("iterate through all locally generated quotes and update, or change to price feed\n");
-            // jl777: iterated Q's
-            if ( strcmp(utxo->coin,"KMD") == 0 )
-                LP_priceping(pubsock,utxo,"BTC",profitmargin);
-            else LP_priceping(pubsock,utxo,"KMD",profitmargin);
-        }*/
     }
 }
 
@@ -415,8 +406,5 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
 LP_mainloop(myipaddr,mypeer,mypubport,pubsock,pushaddr,pullsock,myport,passphrase,profitmargin,jobj(argjson,"coins"),jstr(argjson,"seednode"));
 }
 
-
-// splitfunds cant trade?
-// timeout on bad peers
 
 

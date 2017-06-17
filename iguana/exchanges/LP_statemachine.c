@@ -1423,3 +1423,13 @@ if ( (array= LP_tradecandidates(base)) != 0 )
  free_json(array);
  }
  }*/
+
+/*else if ( LP_ismine(utxo) > 0 )
+ {
+ printf("iterate through all locally generated quotes and update, or change to price feed\n");
+ // jl777: iterated Q's
+ if ( strcmp(utxo->coin,"KMD") == 0 )
+ LP_priceping(pubsock,utxo,"BTC",profitmargin);
+ else LP_priceping(pubsock,utxo,"KMD",profitmargin);
+ }*/
+

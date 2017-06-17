@@ -94,9 +94,10 @@ forwardhex(pubkey,hex)\n\
             double price;
             if ( LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
+            price = jdouble(argjson,"price");
             if ( strcmp(method,"setprice") == 0 )
             {
-                if ( (price= jdouble(argjson,"price")) > SMALLVAL )
+                if ( price > SMALLVAL )
                 {
                     if ( LP_mypriceset(base,rel,price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
@@ -117,7 +118,13 @@ forwardhex(pubkey,hex)\n\
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"autotrade") == 0 )
-                return(LP_autotrade(myipaddr,pubsock,profitmargin,base,rel,jdouble(argjson,"price"),jdouble(argjson,"volume"),jint(argjson,"timeout")));
+            {
+                if ( price > SMALLVAL )
+                {
+                    LP_mypriceset(base,rel,price);
+                    return(LP_autotrade(myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"volume"),jint(argjson,"timeout")));
+                } else return(clonestr("{\"error\":\"no price set\"}"));
+            }
         }
         else if ( (coin= jstr(argjson,"coin")) != 0 )
         {

@@ -271,6 +271,7 @@ int32_t LP_waitmempool(char *symbol,bits256 txid,int32_t duration)
     {
         if ( LP_mempoolscan(symbol,txid) >= 0 )
             return(0);
+        usleep(250000);
     }
     return(-1);
 }

@@ -157,7 +157,7 @@ struct LP_utxobob { struct _LP_utxoinfo utxo,deposit; };
 
 struct LP_utxoalice { struct _LP_utxoinfo utxo,fee; };
 
-struct LP_utxoswap { bits256 otherpubkey,mypub; void *swap; uint64_t satoshis; double profitmargin;  };
+struct LP_utxoswap { bits256 otherpubkey; void *swap; uint64_t satoshis; double profitmargin;  };
 
 struct LP_utxoinfo
 {
