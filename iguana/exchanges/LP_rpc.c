@@ -214,7 +214,7 @@ int32_t LP_importaddress(char *symbol,char *address)
     {
         //printf("importaddress.(%s %s) -> (%s)\n",symbol,address,retstr);
         free(retstr);
-    } else printf("importaddress.(%s %s)\n",symbol,address);
+    } //else printf("importaddress.(%s %s)\n",symbol,address);
     return(1);
 }
 

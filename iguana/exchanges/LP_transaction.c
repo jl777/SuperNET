@@ -1316,16 +1316,16 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,b
 
 int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay)
 {
-    uint8_t userdata[512]; int32_t i,retval,len = 0; static bits256 zero;
-    printf("basilisk_bobpayment_reclaim\n");
+    uint8_t userdata[512]; int32_t retval,len = 0; static bits256 zero;
+    //printf("basilisk_bobpayment_reclaim\n");
     len = basilisk_swapuserdata(userdata,zero,1,swap->I.myprivs[1],swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
     memcpy(swap->I.userdata_bobreclaim,userdata,len);
     swap->I.userdata_bobreclaimlen = len;
     if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->bobreclaim,&swap->bobpayment,swap->I.myprivs[1],0,userdata,len,1,swap->changermd160,swap->bobpayment.I.destaddr)) == 0 )
     {
-        for (i=0; i<swap->bobreclaim.I.datalen; i++)
-            printf("%02x",swap->bobreclaim.txbytes[i]);
-        printf(" <- bobreclaim\n");
+        //for (i=0; i<swap->bobreclaim.I.datalen; i++)
+        //    printf("%02x",swap->bobreclaim.txbytes[i]);
+        //printf(" <- bobreclaim\n");
         //basilisk_txlog(swap,&swap->bobreclaim,delay);
         return(retval);
     }
@@ -1478,7 +1478,7 @@ int32_t basilisk_alicepayment_spend(struct basilisk_swap *swap,struct basilisk_r
 
 void basilisk_alicepayment(struct basilisk_swap *swap,struct iguana_info *coin,struct basilisk_rawtx *alicepayment,bits256 pubAm,bits256 pubBn)
 {
-    int32_t i; char coinaddr[64];
+    char coinaddr[64];
     alicepayment->I.spendlen = basilisk_alicescript(alicepayment->redeemscript,&alicepayment->I.redeemlen,alicepayment->spendscript,0,alicepayment->I.destaddr,coin->p2shtype,pubAm,pubBn);
     /*for (i=0; i<33; i++)
         printf("%02x",swap->persistent_pubkey33[i]);
@@ -1554,7 +1554,7 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
 
 int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    uint8_t userdata[512]; char str[65]; int32_t i,retval=-1,len = 0; static bits256 zero;
+    uint8_t userdata[512]; int32_t retval=-1,len = 0; static bits256 zero;
     if ( LP_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->bobdeposit,0,data,datalen,0) == 0 )
     {
         swap->aliceclaim.utxovout = 0;
@@ -1617,7 +1617,7 @@ int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t 
 
 int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    uint8_t userdata[512]; char str[65]; int32_t i,retval=-1,len = 0; bits256 revAm;
+    uint8_t userdata[512]; int32_t i,retval=-1,len = 0; bits256 revAm;
     memset(revAm.bytes,0,sizeof(revAm));
     if ( LP_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->bobpayment,0,data,datalen,0) == 0 )
     {
