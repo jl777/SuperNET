@@ -24,7 +24,7 @@ char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjs
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
     {
-        if ( strcmp(ipaddr,"127.0.0.1") != 0 && port >= 1000 )
+        if ( strcmp(ipaddr,"127.0.0.1") != 0 && argport >= 1000 )
         {
             flag = 1;
             if ( (pushport= juint(argjson,"push")) == 0 )
