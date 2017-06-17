@@ -208,7 +208,7 @@ forwardhex(pubkey,hex)\n\
     else if ( strcmp(method,"notified") == 0 )
     {
         LP_utxoaddjson(1,LP_mypubsock,argjson);
-        retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
+        return(clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}"));
     }
     else if ( IAMLP != 0 )
     {
