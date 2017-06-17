@@ -549,7 +549,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                             {
                                 if ( (destsatoshis= (butxo->payment.value * price)) > autxo->payment.value-desttxfee && destsatoshis > 2*desttxfee )
                                 {
-                                    destsatoshis *= ((double)autxo->payment.value / destsatoshis - desttxfee*2);
+                                    destsatoshis *= ((double)autxo->payment.value / (destsatoshis - desttxfee*2));
                                     if ( destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value >> 1) && destsatoshis/price-txfee > (butxo->payment.value >> 1) )
                                     {
                                         printf("best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
