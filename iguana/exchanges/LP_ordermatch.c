@@ -36,6 +36,7 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
     rp->desthash = desthash;
     rp->destamount = destsatoshis;
     rp->quoteid = basilisk_quoteid(rp);
+    printf("r.%u %u, q.%u %u: %s %.8f -> %s %.8f\n",rp->timestamp,rp->requestid,rp->quotetime,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount));
     return(rp);
 }
 
@@ -424,8 +425,9 @@ char *LP_connectedalice(cJSON *argjson) // alice
         return(clonestr("{\"error\":\"no price set\"}"));
     }
     price = 1. / ask;
-    //if ( qprice > price+0.00000001 )
+    if ( qprice > price+0.00000001 )
     {
+        printf("qprice %.8f too big vs %.8f\n",qprice,price);
         LP_availableset(autxo);
         return(clonestr("{\"error\":\"quote price too expensive\"}"));
     }
