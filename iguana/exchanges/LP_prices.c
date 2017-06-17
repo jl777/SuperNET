@@ -46,7 +46,7 @@ struct LP_pubkeyinfo
     UT_hash_handle hh;
     bits256 pubkey;
     double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
-    uint32_t timestamp;
+    uint32_t timestamp,istrusted;
 } *LP_pubkeyinfos;
 
 struct LP_priceinfo *LP_priceinfofind(char *symbol)
@@ -134,6 +134,25 @@ struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
     return(pubp);
 }
 
+int32_t LP_pubkey_istrusted(bits256 pubkey)
+{
+    struct LP_pubkeyinfo *pubp;
+    if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
+        return(pubp->istrusted != 0);
+    return(0);
+}
+
+char *LP_pubkey_trustedset(bits256 pubkey,uint32_t trustval)
+{
+    struct LP_pubkeyinfo *pubp;
+    if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
+    {
+        pubp->istrusted = trustval;
+        return(clonestr("{\"result\":\"success\"}"));
+    }
+    return(clonestr("{\"error\":\"pubkey not found\"}"));
+}
+
 cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
 {
     int32_t baseid,relid; char *base; double price; cJSON *item,*array,*obj;
@@ -157,6 +176,8 @@ cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
     jaddbits256(obj,"pubkey",pubp->pubkey);
     jaddnum(obj,"timestamp",pubp->timestamp);
     jadd(obj,"asks",array);
+    if ( pubp->istrusted != 0 )
+        jaddnum(obj,"istrusted",pubp->istrusted);
     return(obj);
 }
 

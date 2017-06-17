@@ -38,11 +38,6 @@ double LP_profitratio = 1.;
 bits256 LP_mypubkey;
 
 // stubs
-int32_t basilisk_istrustedbob(struct basilisk_swap *swap)
-{
-    // for BTC and if trusted LP
-    return(0);
-}
 
 void tradebot_swap_balancingtrade(struct basilisk_swap *swap,int32_t iambob)
 {

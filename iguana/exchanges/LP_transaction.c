@@ -251,16 +251,17 @@ int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,b
 int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
 {
     int32_t numconfirms = 100;
-#ifndef BASILISK_DISABLEWAITTX
+//#ifndef BASILISK_DISABLEWAITTX
     cJSON *txobj;
     numconfirms = -1;
     if ( (txobj= LP_gettx(rawtx->coin->symbol,rawtx->I.signedtxid)) != 0 )
     {
         numconfirms = jint(txobj,"confirmations");
         free_json(txobj);
-    } else if ( LP_mempoolscan(rawtx->coin->symbol,rawtx->I.signedtxid) >= 0 )
+    }
+    else if ( LP_mempoolscan(rawtx->coin->symbol,rawtx->I.signedtxid) >= 0 )
         numconfirms = 0;
-#endif
+//#endif
     return(numconfirms);
 }
 

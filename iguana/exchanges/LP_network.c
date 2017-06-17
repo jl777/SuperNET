@@ -77,7 +77,7 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
         {
         }
     }
-    printf("sent %d bytes\n",sentbytes);
+    //printf("sent %d bytes\n",sentbytes);
     //else printf("send.[%d] %x offset.%d datalen.%d [%llx]\n",sentbytes,msgbits,offset,datalen,*(long long *)data);
     free(buf);
     return(nextbits);

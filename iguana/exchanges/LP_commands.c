@@ -68,6 +68,7 @@ getutxos()\n\
 getutxos(coin, lastn)\n\
 orderbook(base, rel)\n\
 getprices(base, rel)\n\
+trust(pubkey, trust)\n\
 register(pubkey,pushaddr)\n\
 lookup(pubkey)\n\
 forward(pubkey,method2,<argjson>)\n\
@@ -168,6 +169,8 @@ forwardhex(pubkey,hex)\n\
         }
         else if ( strcmp(method,"myprices") == 0 )
             return(LP_myprices());
+        else if ( strcmp(method,"trust") == 0 )
+            return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
     }
     if ( LP_isdisabled(base,rel) != 0 )
         retstr = clonestr("{\"error\":\"at least one of coins disabled\"}");
