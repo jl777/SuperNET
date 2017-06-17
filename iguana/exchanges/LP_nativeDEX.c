@@ -97,7 +97,7 @@ char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *
 
 void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double profitmargin,void *ptr,int32_t recvlen)
 {
-    int32_t len,datalen=0,nonz = 0; char *retstr,*jsonstr=0; cJSON *argjson,*reqjson;
+    int32_t len,datalen=0; char *retstr,*jsonstr=0; cJSON *argjson,*reqjson;
     if ( (datalen= is_hexstr((char *)ptr,0)) > 0 )
     {
         datalen >>= 1;
@@ -383,7 +383,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         {
             pubsock = -1;
             nanomsg_tcpname(subaddr,myipaddr,mypubport);
-            printf(">>>>>>>>> myipaddr.%s (%s %s)\n",myipaddr,pushaddr,subaddr);
             if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
             {
                 if ( nn_bind(pubsock,subaddr) >= 0 )
@@ -398,6 +397,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
                         nn_close(pubsock), pubsock = -1;
                 }
             } else printf("error getting sockets %d %d\n",pullsock,pubsock);
+            printf(">>>>>>>>> myipaddr.%s (%s %s) pubsock.%d pullsock.%d\n",myipaddr,pushaddr,subaddr,pubsock,pullsock);
             LP_mypubsock = pubsock;
             LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,0,0,profitmargin,0,0);
         }

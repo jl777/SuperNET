@@ -348,6 +348,7 @@ int32_t LP_nanobind(int32_t pair,char *pairstr,char *myipaddr)
             timeout = 100;
             nn_setsockopt(pair,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             nn_setsockopt(pair,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+            printf("nanobind %s to %d\n",pairstr,pair);
             return(0);
         }
     }
@@ -444,7 +445,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
             swap->N.pair = pairsock;
             autxo->S.swap = swap;
             swap->utxo = autxo;
-            printf("alice pairstr.(%s)\n",pairstr);
+            printf("alice pairstr.(%s) pairsock.%d\n",pairstr,pairsock);
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)swap) == 0 )
             {
                 jaddstr(retjson,"result","success");

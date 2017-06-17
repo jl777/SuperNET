@@ -88,7 +88,6 @@ char *LP_register(bits256 pubkey,char *ipaddr)
         return(clonestr("{\"error\":\"couldnt create pushsock\"}"));
     else
     {
-        char str[65]; printf("registered (%s) -> (%s)\n",bits256_str(str,pubkey),pushaddr);
         ptr = calloc(1,sizeof(*ptr));
         ptr->pubkey = pubkey;
         strcpy(ptr->pushaddr,pushaddr);
@@ -97,6 +96,7 @@ char *LP_register(bits256 pubkey,char *ipaddr)
         portable_mutex_lock(&LP_forwardmutex);
         HASH_ADD_KEYPTR(hh,LP_forwardinfos,&ptr->pubkey,sizeof(ptr->pubkey),ptr);
         portable_mutex_unlock(&LP_forwardmutex);
+        char str[65]; printf("registered (%s) -> (%s) pushsock.%d\n",bits256_str(str,pubkey),pushaddr,ptr->pushsock);
         return(LP_lookup(pubkey));
     }
 }
