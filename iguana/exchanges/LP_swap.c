@@ -508,10 +508,10 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
     {
         memcpy(rawtx->redeemscript,&data[datalen],rawtx->I.redeemlen);
-        for (i=0; i<rawtx->I.redeemlen; i++)
-            printf("%02x",rawtx->redeemscript[i]);
+        //for (i=0; i<rawtx->I.redeemlen; i++)
+        //    printf("%02x",rawtx->redeemscript[i]);
         bitcoin_address(redeemaddr,rawtx->coin->p2shtype,rawtx->redeemscript,rawtx->I.redeemlen);
-        printf(" received redeemscript.(%s)\n",redeemaddr);
+        //printf(" received redeemscript.(%s)\n",redeemaddr);
         LP_swap_coinaddr(swap,rawtx->coin,checkaddr,data,datalen);
         if ( strcmp(redeemaddr,checkaddr) != 0 )
         {
@@ -522,9 +522,9 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     //printf("recvlen.%d datalen.%d redeemlen.%d\n",recvlen,datalen,rawtx->redeemlen);
     if ( rawtx->I.datalen == 0 )
     {
-        for (i=0; i<datalen; i++)
-            printf("%02x",data[i]);
-        printf(" <- received\n");
+        //for (i=0; i<datalen; i++)
+        //    printf("%02x",data[i]);
+        //printf(" <- received\n");
         memcpy(rawtx->txbytes,data,datalen);
         rawtx->I.datalen = datalen;
     }
@@ -545,7 +545,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     if ( (txobj= bitcoin_data2json(rawtx->coin->pubtype,rawtx->coin->p2shtype,rawtx->coin->isPoS,height,&rawtx->I.signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
     {
         rawtx->I.actualtxid = rawtx->I.signedtxid;
-        char str[65]; printf("got %s txid.%s (%s)\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0));
+        //char str[65]; printf("got %s txid.%s (%s)\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0));
         rawtx->I.locktime = rawtx->msgtx.lock_time;
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
         {
