@@ -125,8 +125,8 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     if ( qp->timestamp == 0 )
         qp->timestamp = (uint32_t)time(NULL);
     safecopy(qp->destcoin,destcoin,sizeof(qp->destcoin));
-    if ( (qp->txfee= LP_getestimatedrate(utxo->coin)*LP_AVETXSIZE) < 10000 )
-        qp->txfee = 10000;
+    if ( (qp->txfee= LP_getestimatedrate(utxo->coin)*LP_AVETXSIZE) < LP_MIN_TXFEE )
+        qp->txfee = LP_MIN_TXFEE;
     qp->satoshis = destsatoshis / price + 0.49;
     if ( utxo->iambob == 0 || qp->txfee >= qp->satoshis || qp->txfee >= utxo->deposit.value || utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis) )
     {
@@ -138,8 +138,8 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     qp->txid2 = utxo->deposit.txid;
     qp->vout2 = utxo->deposit.vout;
     qp->destsatoshis = destsatoshis;
-    if ( (qp->desttxfee= LP_getestimatedrate(qp->destcoin) * LP_AVETXSIZE) < 10000 )
-        qp->desttxfee = 10000;
+    if ( (qp->desttxfee= LP_getestimatedrate(qp->destcoin) * LP_AVETXSIZE) < LP_MIN_TXFEE )
+        qp->desttxfee = LP_MIN_TXFEE;
     if ( qp->desttxfee >= qp->destsatoshis )
     {
         printf("quoteinit desttxfee %.8f < %.8f destsatoshis\n",dstr(qp->desttxfee),dstr(qp->destsatoshis));
@@ -535,8 +535,10 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
     if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * volume)) == 0 )
         return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
     bestmetric = ordermatchprice = 0.;
-    desttxfee = LP_getestimatedrate(rel) * LP_AVETXSIZE;
-    txfee = LP_getestimatedrate(base) * LP_AVETXSIZE;
+    if ( (desttxfee= LP_getestimatedrate(rel) * LP_AVETXSIZE) < LP_MINTXFEE )
+        desttxfee = LP_MIN_TXFEE;
+    if ( (txfee= LP_getestimatedrate(base) * LP_AVETXSIZE) < LP_MINTXFEE )
+        txfee = LP_MIN_TXFEE;
     if ( timeout == 0 )
         timeout = LP_AUTOTRADE_TIMEOUT;
     if ( (obookstr= LP_orderbook(base,rel)) != 0 )
@@ -567,7 +569,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                                 satoshis = destsatoshis / price;
                                 if ( destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value >> 1) && satoshis-txfee > (butxo->S.satoshis >> 1) && satoshis < butxo->payment.value-txfee )
                                 {
-                                    printf("price %.8f/%.8f best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",price,bestprice,bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
+                                    printf("value %.8f price %.8f/%.8f best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",dstr(autxo->payment.value),price,bestprice,bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
                                     metric = dstr(destsatoshis) * metric * metric * metric;
                                     if ( bestmetric == 0. || metric < bestmetric )
                                     {
