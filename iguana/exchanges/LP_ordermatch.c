@@ -87,7 +87,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
         jadd64bits(retjson,"destsatoshis",qp->destsatoshis);
         if ( qp->satoshis != 0 )
         {
-            price = (double)(qp->destsatoshis + qp->desttxfee) / qp->satoshis;
+            price = (double)qp->destsatoshis / qp->satoshis;
             jaddnum(retjson,"price",price);
         }
     }
@@ -127,13 +127,12 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     safecopy(qp->destcoin,destcoin,sizeof(qp->destcoin));
     if ( (qp->txfee= LP_getestimatedrate(utxo->coin)*LP_AVETXSIZE) < 10000 )
         qp->txfee = 10000;
-    qp->satoshis = destsatoshis / price;
+    qp->satoshis = destsatoshis / price + 0.49;
     if ( utxo->iambob == 0 || qp->txfee >= qp->satoshis || qp->txfee >= utxo->deposit.value || utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis) )
     {
         printf("quoteinit error.(%d %d %d %d) %.8f vs %.8f\n",utxo->iambob == 0,qp->txfee >= qp->satoshis,qp->txfee >= utxo->deposit.value,utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis),dstr(utxo->deposit.value),dstr(LP_DEPOSITSATOSHIS(qp->satoshis)));
         return(-1);
     }
-    qp->satoshis -= qp->txfee;
     qp->txid = utxo->payment.txid;
     qp->vout = utxo->payment.vout;
     qp->txid2 = utxo->deposit.txid;
@@ -146,7 +145,6 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
         printf("quoteinit desttxfee %.8f < %.8f destsatoshis\n",dstr(qp->desttxfee),dstr(qp->destsatoshis));
         return(-2);
     }
-    qp->destsatoshis -= qp->desttxfee;
     safecopy(qp->srccoin,utxo->coin,sizeof(qp->srccoin));
     safecopy(qp->coinaddr,utxo->coinaddr,sizeof(qp->coinaddr));
     qp->srchash = utxo->pubkey;
@@ -263,12 +261,12 @@ int32_t LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxo
         if ( strcmp((*autxop)->coinaddr,qp->destaddr) != 0 )
             return(-10);
     }
-    if ( destvalue <= qp->desttxfee || srcvalue <= qp->txfee )
+    if ( destvalue < qp->desttxfee+qp->destsatoshis || srcvalue < qp->txfee+qp->satoshis )
     {
         printf("destsatoshis %.8f or satoshis %.8f is too small txfees %.8f %.8f?\n",dstr(qp->destsatoshis),dstr(qp->satoshis),dstr(qp->desttxfee),dstr(qp->txfee));
         return(-11);
     }
-    qprice = ((double)(qp->destsatoshis - qp->desttxfee) / (qp->satoshis - qp->txfee));
+    qprice = ((double)qp->destsatoshis / qp->satoshis);
     if ( qp->satoshis < (srcvalue >> 1) )
     {
         printf("utxo payment %.8f is less than half covered by Q %.8f\n",dstr(srcvalue),dstr(qp->satoshis));
@@ -279,6 +277,7 @@ int32_t LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxo
         printf("destsatoshis %.8f is less than half of value %.8f\n",dstr(qp->destsatoshis),dstr(destvalue));
         return(-13);
     }
+    printf("qprice %.8f <- %.8f/%.8f txfees.(%.8f %.8f)\n",qprice,dstr(qp->destsatoshis),dstr(qp->satoshis),dstr(qp->txfee),dstr(qp->desttxfee));
     return(qprice);
 }
 
@@ -479,7 +478,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
             }
             if ( qprice < price )
             {
-                printf("quote price %.8f too low vs %.8f for %s/%s\n",qprice,price,Q.srccoin,Q.destcoin);
+                printf("(%.8f %.8f) quote price %.8f too low vs %.8f for %s/%s\n",bid,ask,qprice,price,Q.srccoin,Q.destcoin);
                 return(-5);
             }
             if ( butxo->S.swap == 0 && time(NULL) > butxo->T.swappending )
