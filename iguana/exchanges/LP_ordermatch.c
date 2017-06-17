@@ -418,7 +418,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
         return(clonestr("{\"error\":\"no price set\"}"));
     }
     price = 1. / ask;
-    if ( qprice > price+SMALLVAL )
+    //if ( qprice > price+SMALLVAL )
     {
         LP_availableset(autxo);
         return(clonestr("{\"error\":\"quote price too expensive\"}"));

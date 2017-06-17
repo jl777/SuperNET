@@ -403,12 +403,13 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
     void *data; int32_t datalen,retval = -1; uint32_t expiration = (uint32_t)time(NULL) + timeout;
     while ( time(NULL) < expiration )
     {
-        //printf("start wait\n");
+        printf("start wait\n");
         if ( (datalen= nn_recv(pairsock,&data,NN_MSG,0)) >= 0 )
         {
-            //printf("wait for got.%d\n",datalen);
+            printf("wait for got.%d\n",datalen);
             retval = (*verify)(swap,data,datalen);
             nn_freemsg(data);
+            printf("retval.%d\n",retval);
             return(retval);
         } else printf("error nn_recv\n");
     }
