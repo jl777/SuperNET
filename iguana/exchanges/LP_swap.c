@@ -680,19 +680,22 @@ void LP_bobloop(void *_swap)
                 printf("error waiting for alicepayment\n");
             else
             {
-                swap->bobreclaim.utxovout = 0;
-                swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
-                basilisk_bobpayment_reclaim(swap,swap->I.callduration);
-                while ( LP_numconfirms(swap,&swap->alicepayment) < swap->I.aliceconfirms )
-                {
-                    printf("waiting for alicepayment to confirm\n");
-                    sleep(3);
-                }
                 if ( basilisk_bobscripts_set(swap,0,1) < 0 )
                     printf("error bobscripts payment\n");
-                else if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
-                    printf("error sending bobpayment\n"); 
-                LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,60);
+                else
+                {
+                    swap->bobreclaim.utxovout = 0;
+                    swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
+                    basilisk_bobpayment_reclaim(swap,swap->I.callduration);
+                    while ( LP_numconfirms(swap,&swap->alicepayment) < 1 )
+                    {
+                        char str[65];printf("waiting for alicepayment to be confirmed %s %s\n",swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
+                        sleep(3);
+                    }
+                    if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
+                        printf("error sending bobpayment\n");
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,60);
+                }
             }
         }
         basilisk_swap_finished(swap);
@@ -728,10 +731,10 @@ void LP_aliceloop(void *_swap)
                 printf("error sending alicepayment\n");
             else
             {
-                while ( LP_numconfirms(swap,&swap->alicepayment) < swap->I.aliceconfirms )
+                while ( LP_numconfirms(swap,&swap->alicepayment) < 1 )
                 {
-                    printf("waiting for alicepayment to confirm\n");
-                    sleep(3);
+                    char str[65];printf("waiting for alicepayment to be confirmed %s %s\n",swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
+                    sleep(LP_SWAPSTEP_TIMEOUT);
                 }
                 if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT,LP_verify_bobpayment) < 0 )
                     printf("error waiting for bobpayment\n");
