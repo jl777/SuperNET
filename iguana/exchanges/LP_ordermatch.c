@@ -529,7 +529,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
 
 char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *base,char *rel,double maxprice,double volume,int32_t timeout)
 {
-    int64_t destsatoshis,desttxfee,txfee,bestdestsatoshis=0; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item,*bestitem=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; int32_t i,vout,numasks,DEXselector=0; uint32_t expiration; double ordermatchprice,bestmetric,metric,bestprice=0.,vol,price; struct LP_quoteinfo Q;
+    int64_t satoshis,destsatoshis,desttxfee,txfee,bestdestsatoshis=0; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item,*bestitem=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; int32_t i,vout,numasks,DEXselector=0; uint32_t expiration; double ordermatchprice,bestmetric,metric,bestprice=0.,vol,price; struct LP_quoteinfo Q;
     if ( maxprice <= 0. || volume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
     if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * volume)) == 0 )
@@ -562,9 +562,10 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                             if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && metric < 1.2 && vol*SATOSHIDEN == butxo->payment.value && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 )
                             {
                                 destsatoshis = (butxo->S.satoshis * price);
-                                if ( destsatoshis > autxo->payment.value-desttxfee )
-                                    destsatoshis *= ((double)autxo->payment.value / (destsatoshis + desttxfee));
-                                if ( destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value >> 1) && destsatoshis/price-txfee > (butxo->S.satoshis >> 1) )
+                                if ( destsatoshis > autxo->payment.value-2*desttxfee )
+                                    destsatoshis *= ((double)autxo->payment.value / (destsatoshis + 2*desttxfee));
+                                satoshis = destsatoshis / price;
+                                if ( destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value >> 1) && satoshis-txfee > (butxo->S.satoshis >> 1) && satoshis < butxo->payment.value-txfee )
                                 {
                                     printf("price %.8f/%.8f best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",price,bestprice,bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
                                     metric = dstr(destsatoshis) * metric * metric * metric;
