@@ -657,14 +657,14 @@ void LP_bobloop(void *_swap)
     fprintf(stderr,"start swap iambob\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
-    expiration = (uint32_t)time(NULL) + 10;
+    expiration = (uint32_t)time(NULL) + 3;
     if ( swap != 0 )
     {
-        if ( LP_waitsend("pubkeys",10,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
+        if ( LP_waitsend("pubkeys",3,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
             printf("error waitsend pubkeys\n");
-        else if ( LP_waitsend("choosei",10,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
+        else if ( LP_waitsend("choosei",3,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
             printf("error waitsend choosei\n");
-        else if ( LP_waitsend("mostprivs",10,swap->N.pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
+        else if ( LP_waitsend("mostprivs",3,swap->N.pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
             printf("error waitsend mostprivs\n");
         else if ( basilisk_bobscripts_set(swap,1,1) < 0 )
             printf("error bobscripts deposit\n");
@@ -675,11 +675,11 @@ void LP_bobloop(void *_swap)
             basilisk_bobdeposit_refund(swap,swap->I.putduration);
             //printf("depositlen.%d\n",swap->bobdeposit.I.datalen);
             LP_swapsfp_update(&swap->I.req);
-            if ( LP_waitfor(swap->N.pair,swap,10,LP_verify_otherfee) < 0 )
+            if ( LP_waitfor(swap->N.pair,swap,3,LP_verify_otherfee) < 0 )
                 printf("error waiting for alicefee\n");
             else if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 )
                 printf("error sending bobdeposit\n");
-            else if ( LP_waitfor(swap->N.pair,swap,10,LP_verify_alicepayment) < 0 )
+            else if ( LP_waitfor(swap->N.pair,swap,3,LP_verify_alicepayment) < 0 )
                 printf("error waiting for alicepayment\n");
             else
             {
@@ -708,15 +708,15 @@ void LP_aliceloop(void *_swap)
     uint8_t *data; int32_t maxlen; uint32_t expiration; struct basilisk_swap *swap = _swap;
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
-    expiration = (uint32_t)time(NULL) + 10;
+    expiration = (uint32_t)time(NULL) + 3;
     if ( swap != 0 )
     {
         fprintf(stderr,"start swap iamalice pair.%d\n",swap->N.pair);
-        if ( LP_sendwait("pubkeys",10,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
+        if ( LP_sendwait("pubkeys",3,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
             printf("error LP_sendwait pubkeys\n");
-        else if ( LP_sendwait("choosei",10,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
+        else if ( LP_sendwait("choosei",3,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
             printf("error LP_sendwait choosei\n");
-        else if ( LP_sendwait("mostprivs",10,swap->N.pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
+        else if ( LP_sendwait("mostprivs",3,swap->N.pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
             printf("error LP_sendwait mostprivs\n");
         else if ( basilisk_alicetxs(swap->N.pair,swap,data,maxlen) != 0 )
             printf("basilisk_alicetxs error\n");
@@ -725,7 +725,7 @@ void LP_aliceloop(void *_swap)
             LP_swapsfp_update(&swap->I.req);
             if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
                 printf("error sending alicefee\n");
-            else if ( LP_waitfor(swap->N.pair,swap,10,LP_verify_bobdeposit) < 0 )
+            else if ( LP_waitfor(swap->N.pair,swap,3,LP_verify_bobdeposit) < 0 )
                 printf("error waiting for bobdeposit\n");
             else if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x1000,data,maxlen,&swap->alicepayment,0x800,0) == 0 )
                 printf("error sending alicepayment\n");
