@@ -21,7 +21,7 @@
 
 char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
+    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
     {
         if ( strcmp(ipaddr,"127.0.0.1") != 0 && port >= 1000 )
@@ -47,7 +47,7 @@ char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjs
     if ( (method= jstr(argjson,"method")) == 0 )
     {
         if ( flag == 0 || jobj(argjson,"result") != 0 )
-            printf("stats_JSON no method: (%s)\n",jprint(argjson,0));
+            printf("stats_JSON no method: (%s) (%s:%u)\n",jprint(argjson,0),ipaddr,argport);
         return(clonestr("{\"error\":\"need method in request\"}"));
     }
     if ( strcmp(method,"help") == 0 )
