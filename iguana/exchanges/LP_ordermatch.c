@@ -241,7 +241,7 @@ int32_t LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxo
     }
     if ( LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) == 0 )
     {
-        printf("alice not eligible (%.8f %.8f)\n",dstr(destvalue),dstr(destvalue2));
+        char str[65]; printf("alice not eligible (%.8f %.8f) %s/v%d\n",dstr(destvalue),dstr(destvalue2),bits256_str(str,qp->feetxid),qp->feevout);
         return(-3);
     }
     if ( LP_quote_checkmempool(qp) < 0 )
