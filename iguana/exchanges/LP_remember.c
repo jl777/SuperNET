@@ -867,6 +867,24 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     if ( finishedflag != 0 )
         jaddstr(item,"status","finished");
     else jaddstr(item,"status","pending");
+    if ( bits256_nonz(paymentspent) == 0 )
+    {
+        if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 )
+            paymentspent = txids[BASILISK_ALICESPEND];
+        else paymentspent = txids[BASILISK_BOBRECLAIM];
+    }
+    if ( bits256_nonz(depositspent) == 0 )
+    {
+        if ( bits256_nonz(txids[BASILISK_BOBREFUND]) != 0 )
+            depositspent = txids[BASILISK_BOBREFUND];
+        else depositspent = txids[BASILISK_ALICECLAIM];
+    }
+    if ( bits256_nonz(Apaymentspent) == 0 )
+    {
+        if ( bits256_nonz(txids[BASILISK_BOBSPEND]) != 0 )
+            Apaymentspent = txids[BASILISK_BOBSPEND];
+        else Apaymentspent = txids[BASILISK_ALICERECLAIM];
+    }
     bits256_str(str,paymentspent), jaddbits256(item,"paymentspent",paymentspent);
     bits256_str(str,Apaymentspent), jaddbits256(item,"Apaymentspent",Apaymentspent);
     bits256_str(str,depositspent), jaddbits256(item,"depositspent",depositspent);
