@@ -47,7 +47,7 @@
 #define LP_RESERVETIME 60
 #define LP_AVETXSIZE 200
 #define LP_CACHEDURATION 60
-#define BASILISK_DEFAULT_NUMCONFIRMS 2
+#define BASILISK_DEFAULT_NUMCONFIRMS 1
 #define DEX_SLEEP 3
 #define BASILISK_KEYSIZE ((int32_t)(2*sizeof(bits256)+sizeof(uint32_t)*2))
 
