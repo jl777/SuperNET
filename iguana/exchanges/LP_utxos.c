@@ -291,7 +291,7 @@ int32_t LP_inventory_prevent(int32_t iambob,bits256 txid,int32_t vout)
     struct LP_utxoinfo *utxo;
     if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 || (utxo= LP_utxo2find(iambob,txid,vout)) != 0 )
     {
-        if ( utxo->T.spentflag != 0 )
+        //if ( utxo->T.spentflag != 0 )
         {
             char str[65]; printf("prevent adding %s/v%d to inventory\n",bits256_str(str,txid),vout);
             return(1);
