@@ -149,7 +149,7 @@ int32_t LP_subsock_check(char *myipaddr,int32_t pubsock,int32_t sock,double prof
         nonz++;
         if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
         {
-            //printf("%s SUB.[%d] %s\n",myipaddr,recvsize,jprint(argjson,0));
+            printf("%s SUB.[%d] %s\n",myipaddr,recvsize,jprint(argjson,0));
             portable_mutex_lock(&LP_commandmutex);
             if ( (retstr= LP_command_process(myipaddr,-1,argjson,0,0,profitmargin)) != 0 )
             {
@@ -316,6 +316,8 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
         free(retstr);
     while ( 1 )
     {
+        if ( (rand() % 100) == 0 )
+            printf("mainloop\n");
         if ( LP_mainloop_iter(myipaddr,mypeer,pubsock,pushaddr,pullsock,myport,passphrase,profitmargin) == 0 )
             usleep(100000);
     }
