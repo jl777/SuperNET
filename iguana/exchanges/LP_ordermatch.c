@@ -423,7 +423,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
         return(clonestr("{\"error\":\"no price set\"}"));
     }
     price = 1. / ask;
-    //if ( qprice > price+SMALLVAL )
+    //if ( qprice > price+0.00000001 )
     {
         LP_availableset(autxo);
         return(clonestr("{\"error\":\"quote price too expensive\"}"));
@@ -484,7 +484,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                 printf("quote validate error %.0f\n",qprice);
                 return(-4);
             }
-            if ( qprice < price-SMALLVAL )
+            if ( qprice < price-0.00000001 )
             {
                 printf("(%.8f %.8f) quote price %.8f too low vs %.8f for %s/%s\n",bid,ask,qprice,price,Q.srccoin,Q.destcoin);
                 return(-5);
