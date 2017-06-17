@@ -141,7 +141,10 @@ void basilisk_swap_finished(struct basilisk_swap *swap)
     if ( swap->N.pair >= 0 )
         nn_close(swap->N.pair);
     if ( swap->utxo != 0 )
-        swap->utxo->S.swap = 0;
+    {
+        printf("make available\n");
+        LP_availableset(swap->utxo);
+    }
 }
 
 uint32_t basilisk_quoteid(struct basilisk_request *rp)
