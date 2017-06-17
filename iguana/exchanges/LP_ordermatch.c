@@ -263,7 +263,7 @@ double LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxop
     }
     if ( destvalue < qp->desttxfee+qp->destsatoshis || srcvalue < qp->txfee+qp->satoshis )
     {
-        printf("destsatoshis %.8f or satoshis %.8f is too small txfees %.8f %.8f?\n",dstr(qp->destsatoshis),dstr(qp->satoshis),dstr(qp->desttxfee),dstr(qp->txfee));
+        printf("destvalue %.8f srcvalue %.8f, destsatoshis %.8f or satoshis %.8f is too small txfees %.8f %.8f?\n",dstr(destvalue),dstr(srcvalue),dstr(qp->destsatoshis),dstr(qp->satoshis),dstr(qp->desttxfee),dstr(qp->txfee));
         return(-11);
     }
     qprice = ((double)qp->destsatoshis / qp->satoshis);
@@ -562,8 +562,8 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                             if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && metric < 1.2 && vol*SATOSHIDEN == butxo->payment.value && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 )
                             {
                                 destsatoshis = (butxo->S.satoshis * price);
-                                if ( destsatoshis > autxo->payment.value-2*desttxfee )
-                                    destsatoshis *= ((double)autxo->payment.value / (destsatoshis + 2*desttxfee));
+                                if ( destsatoshis > autxo->payment.value-desttxfee-1 )
+                                    destsatoshis = autxo->payment.value-desttxfee-1;
                                 satoshis = destsatoshis / price;
                                 if ( destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value >> 1) && satoshis-txfee > (butxo->S.satoshis >> 1) && satoshis < butxo->payment.value-txfee )
                                 {
