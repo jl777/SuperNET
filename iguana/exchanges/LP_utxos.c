@@ -293,7 +293,7 @@ int32_t LP_inventory_prevent(int32_t iambob,bits256 txid,int32_t vout)
     {
         //if ( utxo->T.spentflag != 0 )
         {
-            char str[65]; printf("prevent adding %s/v%d to inventory\n",bits256_str(str,txid),vout);
+            //char str[65]; printf("prevent adding %s/v%d to inventory\n",bits256_str(str,txid),vout);
             return(1);
         }
     }

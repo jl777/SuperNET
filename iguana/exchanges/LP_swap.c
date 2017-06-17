@@ -655,7 +655,7 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
 
 void LP_bobloop(void *_swap)
 {
-    uint8_t *data; int32_t maxlen; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    uint8_t *data; int32_t maxlen,n; uint32_t expiration; struct basilisk_swap *swap = _swap;
     fprintf(stderr,"start swap iambob\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
@@ -689,9 +689,9 @@ void LP_bobloop(void *_swap)
                     printf("error bobscripts payment\n");
                 else
                 {
-                    while ( LP_numconfirms(swap,&swap->alicepayment) < 1 )
+                    while ( (n= LP_numconfirms(swap,&swap->alicepayment)) < 1 )
                     {
-                        char str[65];printf("waiting for alicepayment to be confirmed %s %s\n",swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
+                        char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,swap->I.aliceconfirms,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                         sleep(3);
                     }
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
@@ -710,7 +710,7 @@ void LP_bobloop(void *_swap)
 
 void LP_aliceloop(void *_swap)
 {
-    uint8_t *data; int32_t maxlen; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    uint8_t *data; int32_t maxlen,n; uint32_t expiration; struct basilisk_swap *swap = _swap;
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
@@ -736,25 +736,25 @@ void LP_aliceloop(void *_swap)
                 printf("error sending alicepayment\n");
             else
             {
-                while ( LP_numconfirms(swap,&swap->alicepayment) < 1 )
+                while ( (n= LP_numconfirms(swap,&swap->alicepayment)) < 1 )
                 {
-                    char str[65];printf("waiting for alicepayment to be confirmed %s %s\n",swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
+                    char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,swap->I.aliceconfirms,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                     sleep(LP_SWAPSTEP_TIMEOUT);
                 }
                 if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT,LP_verify_bobpayment) < 0 )
                     printf("error waiting for bobpayment\n");
                 else
                 {
-                    while ( LP_numconfirms(swap,&swap->bobpayment) < swap->I.bobconfirms )
+                    while ( (n= LP_numconfirms(swap,&swap->bobpayment)) < swap->I.bobconfirms )
                     {
-                        char str[65];printf("waiting for bobpayment to be confirmed %s %s\n",swap->bobcoin.symbol,bits256_str(str,swap->bobpayment.I.signedtxid));
+                        char str[65];printf("%d waiting for bobpayment to be confirmed.%d %s %s\n",n,swap->I.bobconfirms,swap->bobcoin.symbol,bits256_str(str,swap->bobpayment.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
                     }
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x20000,data,maxlen,&swap->alicespend,0x40000,0) == 0 )
                         printf("error sending alicespend\n");
-                    while ( LP_numconfirms(swap,&swap->alicespend) < swap->I.aliceconfirms )
+                    while ( (n= LP_numconfirms(swap,&swap->alicespend)) < swap->I.aliceconfirms )
                     {
-                        char str[65];printf("waiting for alicespend to be confirmed %s %s\n",swap->bobcoin.symbol,bits256_str(str,swap->alicespend.I.signedtxid));
+                        char str[65];printf("%d waiting for alicespend to be confirmed.%d %s %s\n",n,swap->I.aliceconfirms,swap->bobcoin.symbol,bits256_str(str,swap->alicespend.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
                     }
                     LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,60);
