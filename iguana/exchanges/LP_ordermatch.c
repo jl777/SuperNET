@@ -230,7 +230,7 @@ int32_t LP_quote_checkmempool(struct LP_quoteinfo *qp)
     return(0);
 }
 
-int32_t LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxop,struct LP_quoteinfo *qp,int32_t iambob)
+double LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxop,struct LP_quoteinfo *qp,int32_t iambob)
 {
     double qprice; uint64_t srcvalue,srcvalue2,destvalue,destvalue2;
     *autxop = *butxop = 0;
