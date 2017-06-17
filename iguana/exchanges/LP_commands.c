@@ -213,7 +213,7 @@ forwardhex(pubkey,hex)\n\
     else if ( IAMLP != 0 )
     {
         if ( strcmp(method,"register") == 0 )
-            retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"));
+            return(LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr")));
         else if ( strcmp(method,"lookup") == 0 )
             return(LP_lookup(jbits256(argjson,"client")));
         else if ( strcmp(method,"forwardhex") == 0 )
