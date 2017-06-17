@@ -286,7 +286,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
         //char str[65]; printf("check %s.%s\n",utxo->coin,bits256_str(str,utxo->payment.txid));
         if ( strcmp(symbol,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && LP_ismine(utxo) > 0 )
         {
-            if ( utxo->payment.value >= destsatoshis && (bestutxo == 0 || utxo->payment.value < bestutxo->payment.value) )
+            if ( utxo->S.satoshis >= destsatoshis && (bestutxo == 0 || utxo->S.satoshis < bestutxo->S.satoshis) )
                 bestutxo = utxo;
         }
     }
