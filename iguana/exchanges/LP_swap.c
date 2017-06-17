@@ -689,9 +689,9 @@ void LP_bobloop(void *_swap)
                     printf("error bobscripts payment\n");
                 else
                 {
-                    while ( (n= LP_numconfirms(swap,&swap->alicepayment)) < 1 )
+                    while ( (n= LP_numconfirms(swap,&swap->alicepayment)) < 1 ) // sync with alice
                     {
-                        char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,swap->I.aliceconfirms,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
+                        char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                         sleep(3);
                     }
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
@@ -738,7 +738,7 @@ void LP_aliceloop(void *_swap)
             {
                 while ( (n= LP_numconfirms(swap,&swap->alicepayment)) < 1 )
                 {
-                    char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,swap->I.aliceconfirms,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
+                    char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                     sleep(LP_SWAPSTEP_TIMEOUT);
                 }
                 if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT,LP_verify_bobpayment) < 0 )
@@ -942,12 +942,12 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     if ( strcmp("BTC",swap->bobcoin.symbol) == 0 )
     {
         swap->I.bobconfirms = (1 + sqrt(dstr(swap->I.bobsatoshis) * .1));
-        swap->I.aliceconfirms = MIN(BASILISK_DEFAULT_NUMCONFIRMS,swap->I.bobconfirms + 1);
+        swap->I.aliceconfirms = MIN(BASILISK_DEFAULT_NUMCONFIRMS,swap->I.bobconfirms);
     }
     else if ( strcmp("BTC",swap->alicecoin.symbol) == 0 )
     {
         swap->I.aliceconfirms = (1 + sqrt(dstr(swap->I.alicesatoshis) * .1));
-        swap->I.bobconfirms = MIN(BASILISK_DEFAULT_NUMCONFIRMS,swap->I.aliceconfirms + 1);
+        swap->I.bobconfirms = MIN(BASILISK_DEFAULT_NUMCONFIRMS,swap->I.aliceconfirms);
     }
     else
     {
