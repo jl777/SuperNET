@@ -170,27 +170,25 @@ forwardhex(pubkey,hex)\n\
             return(LP_myprices());
     }
     if ( LP_isdisabled(base,rel) != 0 )
-        return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
-    if ( LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
-        return(clonestr("{\"error\":\"coin is disabled\"}"));
-    if ( strcmp(method,"reserved") == 0 )
+        retstr = clonestr("{\"error\":\"at least one of coins disabled\"}");
+    else if ( LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
+        retstr = clonestr("{\"error\":\"coin is disabled\"}");
+    else if ( strcmp(method,"reserved") == 0 )
         retstr = LP_quotereceived(argjson);
     else if ( strcmp(method,"connected") == 0 )
         retstr = LP_connectedalice(argjson);
     else if ( strcmp(method,"checktxid") == 0 )
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"getcoins") == 0 )
-        retstr = jprint(LP_coinsjson(),1);
+        return(jprint(LP_coinsjson(),1));
     else if ( strcmp(method,"postprice") == 0 )
         retstr = LP_postedprice(argjson);
     else if ( strcmp(method,"broadcast") == 0 )
         retstr = LP_broadcasted(argjson);
-    //else if ( strcmp(method,"getprice") == 0 )
-    //    retstr = LP_pricestr(base,rel,0.);
     else if ( strcmp(method,"getprices") == 0 )
-        retstr = LP_prices();
+        return(LP_prices());
     else if ( strcmp(method,"orderbook") == 0 )
-        retstr = LP_orderbook(base,rel);
+       return(LP_orderbook(base,rel));
     else if ( strcmp(method,"forward") == 0 )
     {
         cJSON *reqjson;
@@ -204,14 +202,12 @@ forwardhex(pubkey,hex)\n\
 
     }
     else if ( strcmp(method,"getpeers") == 0 )
-        retstr = LP_peers();
+        return(LP_peers());
     else if ( strcmp(method,"getutxos") == 0 )
-        retstr = LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn"));
+        return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
     else if ( strcmp(method,"notified") == 0 )
     {
-        //printf("utxonotify.(%s)\n",jprint(argjson,0));
-        //if ( juint(argjson,"timestamp") > time(NULL)-60 )
-            LP_utxoaddjson(1,LP_mypubsock,argjson);
+        LP_utxoaddjson(1,LP_mypubsock,argjson);
         retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
     }
     else if ( IAMLP != 0 )
@@ -219,16 +215,17 @@ forwardhex(pubkey,hex)\n\
         if ( strcmp(method,"register") == 0 )
             retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"));
         else if ( strcmp(method,"lookup") == 0 )
-            retstr = LP_lookup(jbits256(argjson,"client"));
+            return(LP_lookup(jbits256(argjson,"client")));
         else if ( strcmp(method,"forwardhex") == 0 )
             retstr = LP_forwardhex(pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
         else if ( strcmp(method,"notify") == 0 )
             retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
     }
     if ( retstr != 0 )
-        return(retstr);
-    retjson = cJSON_CreateObject();
-    jaddstr(retjson,"error","unrecognized command");
+    {
+        free(retstr);
+        return(0);
+    }
     printf("ERROR.(%s)\n",jprint(argjson,0));
-    return(clonestr(jprint(retjson,1)));
+    return(0);
 }
