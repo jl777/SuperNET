@@ -142,7 +142,7 @@ int32_t LP_pubkey_istrusted(bits256 pubkey)
     return(0);
 }
 
-char *LP_pubkey_trustedset(bits256 pubkey,uint32_t trustval)
+char *LP_pubkey_trustset(bits256 pubkey,uint32_t trustval)
 {
     struct LP_pubkeyinfo *pubp;
     if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
