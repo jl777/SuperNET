@@ -546,7 +546,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                             if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && vol*SATOSHIDEN == butxo->payment.value && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 )
                             {
                                 asatoshis = butxo->payment.value * price;
-                                if ( asatoshis <= destsatoshis && destsatoshis > (asatoshis >> 1) )
+                                if ( asatoshis <= destsatoshis && destsatoshis > (asatoshis >> 1) && asatoshis > (autxo->payment.value >> 1) )
                                 {
                                     metric = price / bestprice;
                                     printf("%f %f %f %f ",price,metric,dstr(asatoshis),metric * metric * metric);
