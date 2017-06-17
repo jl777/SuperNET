@@ -406,13 +406,13 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
     void *data; int32_t datalen,retval = -1; uint32_t expiration = (uint32_t)time(NULL) + timeout;
     while ( time(NULL) < expiration )
     {
-        printf("start wait\n");
+        //printf("start wait\n");
         if ( (datalen= nn_recv(pairsock,&data,NN_MSG,0)) >= 0 )
         {
-            printf("wait for got.%d\n",datalen);
+            //printf("wait for got.%d\n",datalen);
             retval = (*verify)(swap,data,datalen);
             nn_freemsg(data);
-            printf("retval.%d\n",retval);
+            //printf("retval.%d\n",retval);
             return(retval);
         } else printf("error nn_recv\n");
     }
@@ -423,15 +423,15 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
 int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen),int32_t (*datagen)(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen))
 {
     int32_t datalen,sendlen,retval = -1;
-    printf("waitsend.%s\n",statename);
+    //printf("waitsend.%s\n",statename);
     if ( LP_waitfor(pairsock,swap,timeout,verify) == 0 )
     {
-        printf("waited for %s\n",statename);
+        //printf("waited for %s\n",statename);
         if ( (datalen= (*datagen)(swap,data,maxlen)) > 0 )
         {
             if ( (sendlen= nn_send(pairsock,data,datalen,0)) == datalen )
             {
-                printf("sent.%d after waitfor.%s\n",sendlen,statename);
+                //printf("sent.%d after waitfor.%s\n",sendlen,statename);
                 retval = 0;
             } else printf("send %s error\n",statename);
         } else printf("%s datagen no data\n",statename);

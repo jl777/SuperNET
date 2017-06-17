@@ -1501,8 +1501,7 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
     {
         bitcoin_address(swap->alicepayment.I.destaddr,swap->alicecoin.p2shtype,swap->alicepayment.redeemscript,swap->alicepayment.I.redeemlen);
         //LP_importaddress(swap->alicecoin.symbol,swap->alicepayment.I.destaddr);
-        if ( strcmp(swap->alicepayment.I.destaddr,swap->alicepayment.p2shaddr) != 0 )
-            printf("alice addr mismatch %s vs %s\n",swap->alicepayment.I.destaddr,swap->alicepayment.p2shaddr);
+        strcpy(swap->alicepayment.p2shaddr,swap->alicepayment.I.destaddr);
         retval = 0;
         for (i=0; i<swap->alicepayment.I.datalen; i++)
             printf("%02x",swap->alicepayment.txbytes[i]);
