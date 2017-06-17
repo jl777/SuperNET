@@ -471,7 +471,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
     {
         //printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
         retval = 1;
-        if ( LP_quoteparse(&Q,argjson) == 0 )
+        if ( LP_quoteparse(&Q,argjson) == 0 && bits256_cmp(LP_mypubkey,Q.srchash) == 0 )
         {
             if ( (price= LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin)) <= SMALLVAL || ask <= SMALLVAL )
             {

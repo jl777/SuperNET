@@ -48,7 +48,7 @@ char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjs
     {
         if ( flag == 0 || jobj(argjson,"result") != 0 )
             printf("stats_JSON no method: (%s) (%s:%u)\n",jprint(argjson,0),ipaddr,argport);
-        return(clonestr("{\"error\":\"need method in request\"}"));
+        return(0);
     }
     if ( strcmp(method,"help") == 0 )
         return(clonestr("{\"result\":\" \
