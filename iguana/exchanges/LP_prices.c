@@ -540,26 +540,30 @@ int32_t LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
 
 int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum)
 {
-    struct LP_utxoinfo *utxo,*tmp; struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; double price; int32_t baseid,relid; uint64_t basesatoshis;
+    struct LP_utxoinfo *utxo,*tmp; struct LP_pubkeyinfo *pubp=0; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; double price; int32_t baseid,relid; uint64_t basesatoshis;
     if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
         baseid = basepp->ind;
     else return(num);
     HASH_ITER(hh,LP_utxoinfos[1],utxo,tmp)
     {
+        if ( pubp == 0 || bits256_cmp(pubp->pubkey,utxo->pubkey) != 0 )
+            pubp = LP_pubkeyfind(utxo->pubkey);
         //char str[65],str2[65]; printf("check utxo.%s/v%d from %s\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,utxo->pubkey));
-        if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && (pubp= LP_pubkeyfind(utxo->pubkey)) != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL )
+        if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && pubp != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL )
         {
             if ( LP_orderbookfind(*arrayp,cachednum,utxo->payment.txid,utxo->payment.vout) < 0 )
             {
                 //char str[65]; printf("found utxo not in orderbook %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
-                *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                 if ( polarity > 0 )
                     basesatoshis = utxo->S.satoshis;
                 else basesatoshis = utxo->S.satoshis * price;
                 if ( (op= LP_orderbookentry(base,rel,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout,polarity > 0 ? price : 1./price,basesatoshis,utxo->pubkey)) != 0 )
+                {
+                    *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                     (*arrayp)[num++] = op;
-                if ( bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 && utxo->T.lasttime == 0 )
-                    LP_utxo_clientpublish(utxo);
+                    if ( bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 && utxo->T.lasttime == 0 )
+                        LP_utxo_clientpublish(utxo);
+                }
             }
         }
     }
