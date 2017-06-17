@@ -339,12 +339,17 @@ double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *metho
 
 int32_t LP_nanobind(int32_t pair,char *pairstr,char *myipaddr)
 {
-    int32_t i;
+    int32_t i,timeout;
     for (i=0; i<10; i++)
     {
         nanomsg_tcpname(pairstr,myipaddr,10000+(rand() % 50000));
         if ( nn_bind(pair,pairstr) >= 0 )
+        {
+            timeout = 100;
+            nn_setsockopt(pair,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+            nn_setsockopt(pair,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             return(0);
+        }
     }
     return(-1);
 }
@@ -399,7 +404,7 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
 
 char *LP_connectedalice(cJSON *argjson) // alice
 {
-    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap;
+    cJSON *retjson; double bid,ask,price,qprice; int32_t timeout,pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap;
     if ( LP_quoteparse(&Q,argjson) < 0 )
         clonestr("{\"error\":\"cant parse quote\"}");
     if ( bits256_cmp(Q.desthash,LP_mypubkey) != 0 )
@@ -431,6 +436,9 @@ char *LP_connectedalice(cJSON *argjson) // alice
             jaddstr(retjson,"error","couldnt create pairsock");
         else if ( nn_connect(pairsock,pairstr) >= 0 )
         {
+            timeout = 100;
+            nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+            nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
             swap = LP_swapinit(0,0,Q.privkey,&Q.R,&Q);
             swap->N.pair = pairsock;
