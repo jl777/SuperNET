@@ -270,6 +270,11 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
 void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
 {
     char *retstr; uint8_t r; int32_t i,n,j; cJSON *item;
+    if ( (retstr= basilisk_swapentry(0,0)) != 0 )
+    {
+        //printf("SWAPS.(%s)\n",retstr);
+        free(retstr);
+    }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
