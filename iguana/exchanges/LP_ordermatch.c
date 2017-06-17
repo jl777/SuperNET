@@ -585,34 +585,42 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
     price = LP_query(myipaddr,mypubsock,profitmargin,"request",&Q);
     bestitem = LP_quotejson(&Q);
-    if ( price <= maxprice )
+    if ( price > SMALLVAL )
     {
-        price = LP_query(myipaddr,mypubsock,profitmargin,"connect",&Q);
-        LP_requestinit(&Q.R,Q.srchash,Q.desthash,base,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
-        expiration = (uint32_t)time(NULL) + timeout;
-        while ( time(NULL) < expiration )
+        if ( price <= maxprice )
         {
-            if ( autxo->S.swap != 0 )
-                break;
-            sleep(1);
+            price = LP_query(myipaddr,mypubsock,profitmargin,"connect",&Q);
+            LP_requestinit(&Q.R,Q.srchash,Q.desthash,base,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
+            expiration = (uint32_t)time(NULL) + timeout;
+            while ( time(NULL) < expiration )
+            {
+                if ( autxo->S.swap != 0 )
+                    break;
+                sleep(1);
+            }
+            if ( autxo->S.swap == 0 )
+            {
+                jaddstr(bestitem,"status","couldnt establish connection");
+                LP_availableset(autxo);
+            }
+            else jaddstr(bestitem,"status","connected");
+            jaddnum(bestitem,"quotedprice",price);
+            jaddnum(bestitem,"maxprice",maxprice);
+            jaddnum(bestitem,"requestid",Q.R.requestid);
+            jaddnum(bestitem,"quoteid",Q.R.quoteid);
+            printf("Alice r.%u q.%u\n",Q.R.requestid,Q.R.quoteid);
         }
-        if ( autxo->S.swap == 0 )
+        else
         {
-            jaddstr(bestitem,"status","couldnt establish connection");
-            LP_availableset(autxo);
+            jaddnum(bestitem,"quotedprice",price);
+            jaddnum(bestitem,"maxprice",maxprice);
+            jaddstr(bestitem,"status","too expensive");
         }
-        else jaddstr(bestitem,"status","connected");
-        jaddnum(bestitem,"quotedprice",price);
-        jaddnum(bestitem,"maxprice",maxprice);
-        jaddnum(bestitem,"requestid",Q.R.requestid);
-        jaddnum(bestitem,"quoteid",Q.R.quoteid);
-        printf("Alice r.%u q.%u\n",Q.R.requestid,Q.R.quoteid);
     }
     else
     {
-        jaddnum(bestitem,"quotedprice",price);
         jaddnum(bestitem,"maxprice",maxprice);
-        jaddstr(bestitem,"status","too expensive");
+        jaddstr(bestitem,"status","no response to request");
     }
     return(jprint(bestitem,0));
 }
