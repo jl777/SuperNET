@@ -557,6 +557,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                         {
                             if ( bestprice == 0. ) // assumes price ordered asks
                                 bestprice = price;
+                            printf("item.[%d] %s\n",i,jprint(item,0));
                             txid = jbits256(item,"txid");
                             vout = jint(item,"vout");
                             vol = jdouble(item,"volume");
