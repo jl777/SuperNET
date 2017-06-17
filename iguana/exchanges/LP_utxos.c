@@ -17,6 +17,7 @@
 //  LP_utxos.c
 //  marketmaker
 //
+// jl777: invalidate utxo when either part is spent. if not expected spend, mark as bad and generate new utxopair using other half
 
 int32_t LP_ismine(struct LP_utxoinfo *utxo)
 {
@@ -283,6 +284,20 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
         }
     }
     return(jprint(utxosjson,1));
+}
+
+int32_t LP_inventory_prevent(int32_t iambob,bits256 txid,int32_t vout)
+{
+    struct LP_utxoinfo *utxo;
+    if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 || (utxo= LP_utxo2find(iambob,txid,vout)) != 0 )
+    {
+        if ( utxo->T.spentflag != 0 )
+        {
+            char str[65]; printf("prevent adding %s/v%d to inventory\n",bits256_str(str,txid),vout);
+            return(1);
+        }
+    }
+    return(0);
 }
 
 struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
@@ -608,17 +623,19 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                 if ( iambob == 0 )
                     values = calloc(n,sizeof(*values));
                 else memset(values,0,n * sizeof(*values));
-                if ( iambob == 0 && IAMLP != 0 )
-                    continue;
+                //if ( iambob == 0 && IAMLP != 0 )
+                //    continue;
+                used = 0;
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
                     satoshis = SATOSHIDEN * jdouble(item,"amount");
-                    values[i] = satoshis;
+                    if ( LP_inventory_prevent(iambob,jbits256(item,"txid"),juint(item,"vout")) == 0 )
+                        values[i] = satoshis;
+                    else used++;
                     //printf("%.8f ",dstr(satoshis));
                 }
                 //printf("array.%d\n",n);
-                used = 0;
                 while ( used < n-1 )
                 {
                     //printf("used.%d of n.%d\n",used,n);

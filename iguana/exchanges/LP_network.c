@@ -17,6 +17,7 @@
 //  LP_network.c
 //  marketmaker
 //
+// jl777: might need to queue outbound packets and send via separate thread
 
 char *nanomsg_tcpname(char *str,char *ipaddr,uint16_t port)
 {
