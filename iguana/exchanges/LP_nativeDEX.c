@@ -323,7 +323,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
         free(retstr);
     while ( 1 )
     {
-        if ( (rand() % 100) == 0 )
+        if ( 0 && (rand() % 100) == 0 )
             printf("mainloop\n");
         if ( LP_mainloop_iter(myipaddr,mypeer,pubsock,pushaddr,pullsock,myport,passphrase,profitmargin) == 0 )
             usleep(100000);

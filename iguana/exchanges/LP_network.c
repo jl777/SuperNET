@@ -35,7 +35,7 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
         return(-1);
     }
     len = (int32_t)strlen(msg) + 1;
-    for (i=0; i<100; i++)
+    for (i=0; i<1000; i++)
     {
         pfd.fd = sock;
         pfd.events = NN_POLLOUT;
