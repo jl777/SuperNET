@@ -561,7 +561,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                                             bestmetric = metric;
                                         }
                                     }
-                                } printf("skip %.8f < half of %.8f\n",dstr(asatoshis),dstr(autxo->payment.value));
+                                } printf("skip.(%d %d %d) destsatoshis %.8f asatoshis %.8f < half of %.8f\n",asatoshis <= destsatoshis,destsatoshis > (asatoshis >> 1),asatoshis > (autxo->payment.value >> 1),dstr(destsatoshis),dstr(asatoshis),dstr(autxo->payment.value));
                             } else printf("cant find butxo.%p or value mismatch %.8f != %.8f\n",butxo,vol,butxo!=0?dstr(butxo->payment.value):0);
                         }
                     } else break;
