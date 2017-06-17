@@ -553,10 +553,10 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
         {
             if ( LP_orderbookfind(*arrayp,cachednum,utxo->payment.txid,utxo->payment.vout) < 0 )
             {
-                //char str[65]; printf("found utxo not in orderbook %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
                 if ( polarity > 0 )
                     basesatoshis = utxo->S.satoshis;
                 else basesatoshis = utxo->S.satoshis * price;
+                char str[65]; printf("found utxo not in orderbook %s/v%d %.8f %.8f\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,dstr(basesatoshis),polarity > 0 ? price : 1./price);
                 if ( (op= LP_orderbookentry(base,rel,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout,polarity > 0 ? price : 1./price,basesatoshis,utxo->pubkey)) != 0 )
                 {
                     *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
