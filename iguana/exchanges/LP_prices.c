@@ -453,9 +453,9 @@ static int _cmp_orderbook(const void *a,const void *b)
 #define ptr_a (*(struct LP_orderbookentry **)a)->price
 #define ptr_b (*(struct LP_orderbookentry **)b)->price
     if ( ptr_b > ptr_a )
-        retval = 1;
-    else if ( ptr_b < ptr_a )
         retval = -1;
+    else if ( ptr_b < ptr_a )
+        retval = 1;
     else
     {
 #undef ptr_a
@@ -463,19 +463,14 @@ static int _cmp_orderbook(const void *a,const void *b)
 #define ptr_a ((struct LP_orderbookentry *)a)->basesatoshis
 #define ptr_b ((struct LP_orderbookentry *)b)->basesatoshis
         if ( ptr_b > ptr_a )
-            return(1);
-        else if ( ptr_b < ptr_a )
             return(-1);
+        else if ( ptr_b < ptr_a )
+            return(1);
     }
    // printf("%.8f vs %.8f -> %d\n",ptr_a,ptr_b,retval);
     return(retval);
 #undef ptr_a
 #undef ptr_b
-}
-
-static int _cmp_orderbookrev(const void *a,const void *b)
-{
-    return(-_cmp_orderbook(a,b));
 }
 
 cJSON *LP_orderbookjson(struct LP_orderbookentry *op)
@@ -603,13 +598,13 @@ char *LP_orderbook(char *base,char *rel)
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     if ( numbids > 1 )
-        qsort(bids,numbids,sizeof(*bids),_cmp_orderbookrev);
+        qsort(bids,numbids,sizeof(*bids),_cmp_orderbook);
     if ( numasks > 1 )
     {
         for (i=0; i<numasks; i++)
             printf("%.8f ",asks[i]->price);
         printf(" -> ");
-        qsort(asks,numasks,sizeof(*asks),_cmp_orderbookrev);
+        qsort(asks,numasks,sizeof(*asks),_cmp_orderbook);
         for (i=0; i<numasks; i++)
             printf("%.8f ",asks[i]->price);
         printf("sorted asks.%d\n",numasks);

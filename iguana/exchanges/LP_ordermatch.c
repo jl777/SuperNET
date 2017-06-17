@@ -170,7 +170,7 @@ char *LP_quotereceived(cJSON *argjson)
     if ( (ptr= LP_cacheadd(Q.srccoin,Q.destcoin,Q.txid,Q.vout,price,&Q)) != 0 )
     {
         ptr->Q = Q;
-        printf("\n>>>>>>>>>> received.(%s) quote %.8f\n\n",jprint(argjson,0),price);
+        printf("\n>>>>>>>>>> received quote %.8f\n\n",price);
         return(clonestr("{\"result\":\"updated\"}"));
     } else return(clonestr("{\"error\":\"nullptr\"}"));
 }
