@@ -129,7 +129,10 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
         qp->txfee = 10000;
     qp->satoshis = destsatoshis / price;
     if ( utxo->iambob == 0 || qp->txfee >= qp->satoshis || qp->txfee >= utxo->deposit.value || utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis) )
+    {
+        printf("quoteinit error.(%d %d %d %d)\n",utxo->iambob == 0,qp->txfee >= qp->satoshis,qp->txfee >= utxo->deposit.value,utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis));
         return(-1);
+    }
     qp->satoshis -= qp->txfee;
     qp->txid = utxo->payment.txid;
     qp->vout = utxo->payment.vout;
@@ -139,7 +142,10 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     if ( (qp->desttxfee= LP_getestimatedrate(qp->destcoin) * LP_AVETXSIZE) < 10000 )
         qp->desttxfee = 10000;
     if ( qp->desttxfee >= qp->destsatoshis )
+    {
+        printf("quoteinit desttxfee %.8f < %.8f destsatoshis\n",dstr(qp->desttxfee),dstr(qp->destsatoshis));
         return(-2);
+    }
     qp->destsatoshis -= qp->desttxfee;
     safecopy(qp->srccoin,utxo->coin,sizeof(qp->srccoin));
     safecopy(qp->coinaddr,utxo->coinaddr,sizeof(qp->coinaddr));
