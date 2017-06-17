@@ -456,6 +456,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
                 jaddnum(retjson,"quoteid",Q.R.quoteid);
             } else jaddstr(retjson,"error","couldnt aliceloop");
         }
+        printf("connected result.(%s)\n",jprint(retjson,0));
         if ( jobj(retjson,"error") != 0 )
             LP_availableset(autxo);
         return(jprint(retjson,1));
@@ -463,6 +464,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     else
     {
         LP_availableset(autxo);
+        printf("no privkey found\n");
         return(clonestr("{\"error\",\"no privkey\"}"));
     }
 }
