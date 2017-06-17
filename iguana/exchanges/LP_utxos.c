@@ -406,7 +406,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( iambob != 0 && value2 < 9 * (value >> 3) + 100000 ) // big txfee padding
         tmpsatoshis = (((value2 - 100000) / 9) << 3);
     else tmpsatoshis = value;
-    char str2[65],str3[65]; printf("%s iambob.%d %s %s utxoadd.(%.8f %.8f) %s %s\n",utxo->coinaddr,iambob,bits256_str(str3,utxo->pubkey),utxo->coin,dstr(value),dstr(value2),bits256_str(str,utxo->payment.txid),bits256_str(str2,txid2));
+    char str2[65]; printf("%s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
     if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
     {
         printf("utxoadd got spent txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",dstr(value),dstr(value2),dstr(tmpsatoshis));
