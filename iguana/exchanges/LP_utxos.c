@@ -554,9 +554,9 @@ int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
     return(n);
 }
 
-void LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport,double myprofit)
+int32_t LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport,double myprofit)
 {
-    char *retstr; struct LP_peerinfo *peer; uint32_t now;
+    char *retstr; struct LP_peerinfo *peer; uint32_t now; int32_t retval = -1;
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
     if ( coin == 0 )
         coin = "";
@@ -567,7 +567,7 @@ void LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
     if ( retstr != 0 )
     {
         now = (uint32_t)time(NULL);
-        LP_utxosparse(destipaddr,destport,retstr,now);
+        retval = LP_utxosparse(destipaddr,destport,retstr,now);
         //printf("got.(%s)\n",retstr);
         free(retstr);
         /*i = 0;
@@ -588,7 +588,8 @@ void LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
         }
         if ( flag != 0 )
             printf(" <- missing utxos\n");*/
-    } 
+    }
+    return(retval);
 }
 
 cJSON *LP_inventory(char *symbol,int32_t iambob)
