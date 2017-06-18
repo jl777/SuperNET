@@ -383,7 +383,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         {
             if ( strcmp(destaddr,destaddr2) != 0 )
                 printf("mismatched %s destaddr %s vs %s\n",symbol,destaddr,destaddr2);
-            else if ( (iambob == 0 && val2 > val) || (iambob != 0 && val2 < val) )
+            else if ( (iambob == 0 && val2 >= val) || (iambob != 0 && val2 < val) )
                 printf("ineligible due to offsides: val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
             else
             {
