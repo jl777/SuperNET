@@ -220,12 +220,13 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     now = (uint32_t)time(NULL);
     if ( mypeer == 0 )
         myipaddr = "127.0.0.1";
-    //printf("start peers updates\n");
+    printf("start peers updates\n");
     numpeers = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         numpeers++;
     }
+    printf("counter.%d numpeers %d\n",counter,numpeers);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
@@ -319,6 +320,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
     }
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
+        fprintf(stderr,"%s ",activecoins[i]);
         LP_coinfind(activecoins[i]);
         LP_priceinfoadd(activecoins[i]);
     }
@@ -327,10 +329,12 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
         for (i=0; i<n; i++)
         {
             item = jitem(coins,i);
+            fprintf(stderr,"%s ",jstr(item,"coin"));
             LP_coincreate(item);
             LP_priceinfoadd(jstr(item,"coin"));
         }
     }
+    fprintf(stderr,"privkey updates\n");
     LP_privkey_updates(pubsock,passphrase,1);
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
