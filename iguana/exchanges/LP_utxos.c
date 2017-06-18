@@ -494,7 +494,8 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         portable_mutex_unlock(&LP_utxomutex);
         if ( mypubsock >= 0 )
             LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
-        else LP_utxo_clientpublish(utxo);
+        else if ( iambob != 0 )
+            LP_utxo_clientpublish(utxo);
         if ( LP_mypeer != 0 && LP_ismine(utxo) > 0 )
             LP_mypeer->numutxos++;
     }
