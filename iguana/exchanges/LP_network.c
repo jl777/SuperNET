@@ -43,7 +43,7 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
         //portable_mutex_lock(&LP_networkmutex);
         if ( nn_poll(&pfd,1,1) > 0 )
         {
-            if ( (sentbytes= nn_send(sock,msg,len,NN_DONTWAIT)) != len )
+            if ( (sentbytes= nn_send(sock,msg,len,0*NN_DONTWAIT)) != len )
                 printf("LP_send sent %d instead of %d\n",sentbytes,len);
             //else printf("SENT.(%s)\n",msg);
             if ( freeflag != 0 )
