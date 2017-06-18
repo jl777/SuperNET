@@ -493,12 +493,15 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
             HASH_ADD_KEYPTR(hh2,LP_utxoinfos2[iambob],utxo->key2,sizeof(utxo->key2),utxo);
         portable_mutex_unlock(&LP_utxomutex);
-        if ( mypubsock >= 0 )
-            LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
-        else if ( iambob != 0 )
-            LP_utxo_clientpublish(utxo);
-        if ( LP_mypeer != 0 && LP_ismine(utxo) > 0 )
-            LP_mypeer->numutxos++;
+        if ( iambob != 0 )
+        {
+            if ( mypubsock >= 0 )
+                LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
+            else
+                LP_utxo_clientpublish(utxo);
+            if ( LP_mypeer != 0 && LP_ismine(utxo) > 0 )
+                LP_mypeer->numutxos++;
+        }
     }
     return(utxo);
 }
