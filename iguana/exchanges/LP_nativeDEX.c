@@ -101,7 +101,8 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
         decode_hex((void *)jsonstr,datalen,(char *)ptr);
         jsonstr[datalen] = 0;
     } else jsonstr = (char *)ptr;
-    //printf("%s %d, datalen.%d (%s)\n",typestr,recvlen,datalen,jsonstr);
+    if ( IAMLP == 0 )
+        printf("%s %d, datalen.%d (%s)\n",typestr,recvlen,datalen,jsonstr);
     if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
     {
         len = (int32_t)strlen(jsonstr) + 1;
@@ -138,8 +139,6 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
     while ( pullsock >= 0 && (recvlen= nn_recv(pullsock,&ptr,NN_MSG,NN_DONTWAIT)) >= 0 )
     {
         nonz++;
-        if ( IAMLP == 0 )
-            printf("pulled.%d (%s)\n",recvlen,(char *)ptr);
         LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen);
     }
     return(nonz);
