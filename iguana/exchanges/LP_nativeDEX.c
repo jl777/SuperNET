@@ -353,10 +353,10 @@ void nn_tests(int32_t pullsock,char *pushaddr)
             printf("connect error %s\n",nn_strerror(nn_errno()));
         else
         {
-            timeout = 100;
+            timeout = 3000;
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDPRIO,&sndprio,sizeof(sndprio));
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0*NN_DONTWAIT);
+            n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0);
             LP_pullsock_check("127.0.0.1",-1,pullsock,0.);
             // n = LP_send(sock,"nn_tests",0);
             printf("sent %d bytes\n",n);
