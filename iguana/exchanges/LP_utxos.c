@@ -267,11 +267,6 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
 {
     uint64_t val,val2=0,threshold; char destaddr[64],destaddr2[64];
     destaddr[0] = destaddr2[0] = 0;
-    if ( iambob == 0 && bits256_cmp(pubkey,LP_mypubkey) != 0 )
-    {
-        char str[65]; printf("external Alice utxo.(%s) rejected\n",bits256_str(str,txid));
-        return(0);
-    }
     if ( (val= LP_txvalue(destaddr,symbol,txid,vout)) >= satoshis )
     {
         threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);

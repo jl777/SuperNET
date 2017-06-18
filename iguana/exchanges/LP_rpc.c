@@ -84,6 +84,11 @@ char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utx
         free(retstr);
         return(0);
     }
+    if ( utxo->iambob == 0 )
+    {
+        printf("issue_LP_notifyutxo trying to send Alice %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
+        return(0);
+    }
     u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
     if ( LP_iseligible(&val,&val2,utxo->iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout,utxo->pubkey) > 0 )
     {
