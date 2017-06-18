@@ -399,7 +399,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     nanomsg_tcpname(pushaddr,myipaddr,mypullport);
     if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 )
     {
-        nanomsg_tcpname(bindaddr,"0.0.0.0",mypullport);
+        nanomsg_tcpname(bindaddr,"127.0.0.1",mypullport);
         if ( nn_bind(pullsock,bindaddr) >= 0 )
         {
             timeout = 1;
