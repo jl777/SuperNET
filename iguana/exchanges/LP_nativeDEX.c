@@ -347,7 +347,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
 void nn_tests(int32_t pullsock,char *pushaddr)
 {
     int32_t sock,n,timeout;
-    if ( (sock= nn_socket(AF_SP,NN_BUS)) >= 0 )
+    if ( (sock= nn_socket(AF_SP,NN_PAIR)) >= 0 )
     {
         if ( nn_connect(sock,pushaddr) < 0 )
             printf("connect error %s\n",nn_strerror(nn_errno()));
@@ -401,7 +401,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
     nanomsg_tcpname(pushaddr,myipaddr,mypullport);
-    if ( (pullsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
+    if ( (pullsock= nn_socket(AF_SP,NN_PAIR)) >= 0 )
     {
         timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
