@@ -101,7 +101,7 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
         decode_hex((void *)jsonstr,datalen,(char *)ptr);
         jsonstr[datalen] = 0;
     } else jsonstr = (char *)ptr;
-    if ( 1 && IAMLP == 0 )
+    if ( 0 && IAMLP == 0 )
         printf("%s %d, datalen.%d (%s)\n",typestr,recvlen,datalen,jsonstr);
     if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
     {
@@ -139,8 +139,7 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
     while ( pullsock >= 0 && (recvlen= nn_recv(pullsock,&ptr,NN_MSG,NN_DONTWAIT)) >= 0 )
     {
         nonz++;
-        //LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen);
-        LP_process_message("PULL",myipaddr,pullsock,profitmargin,ptr,recvlen);
+        LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen);
     }
     return(nonz);
 }
@@ -347,24 +346,19 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
 
 void nn_tests(int32_t pullsock,char *pushaddr)
 {
-    int32_t sock,n,m,timeout; void *ptr;
+    int32_t sock,n,timeout;
     if ( (sock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
         if ( nn_connect(sock,pushaddr) < 0 )
             printf("connect error %s\n",nn_strerror(nn_errno()));
         else
         {
-            timeout = 1;
-            //nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDPRIO,&sndprio,sizeof(sndprio));
-            nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             timeout = 1000;
-            nn_setsockopt(sock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            n = nn_send(sock,"{\"method\":\"nn_tests\"}",(int32_t)strlen("{\"method\":\"nn_tests\"}")+1,0);
-            usleep(100000);
+            nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+            n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0*NN_DONTWAIT);
             LP_pullsock_check("127.0.0.1",-1,pullsock,0.);
-            m = nn_recv(sock,&ptr,NN_MSG,0);
             // n = LP_send(sock,"nn_tests",0);
-            printf("sent %d bytes, recv.%d\n",n,m);
+            printf("sent %d bytes\n",n);
         }
     }
 }
@@ -410,13 +404,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     if ( (pullsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
         timeout = 1;
-        //rcvprio = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-        timeout = 100;
-        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-        //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVPRIO,&rcvprio,sizeof(rcvprio));
 #ifdef __APPLE__
-        nanomsg_tcpname(bindaddr,"0.0.0.0",mypullport);
+        nanomsg_tcpname(bindaddr,"*",mypullport);
 #else
         nanomsg_tcpname(bindaddr,myipaddr,mypullport);
 #endif
@@ -424,6 +414,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         {
             maxsize = 2 * 1024 * 1024;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
+            LP_pullsock_check(myipaddr,-1,pullsock,0.);
         } else printf("bind to %s error for %s: %s\n",bindaddr,pushaddr,nn_strerror(nn_errno()));
     }
     nn_tests(pullsock,pushaddr);
