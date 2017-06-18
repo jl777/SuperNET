@@ -218,6 +218,7 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
     jaddstr(item,"method","notified");
     jaddstr(item,"coin",utxo->coin);
     jaddnum(item,"now",time(NULL));
+    jaddnum(item,"iambob",utxo->iambob);
     jaddstr(item,"address",utxo->coinaddr);
     jaddbits256(item,"txid",utxo->payment.txid);
     jaddnum(item,"vout",utxo->payment.vout);
@@ -500,6 +501,11 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
 struct LP_utxoinfo *LP_utxoaddjson(int32_t iambob,int32_t pubsock,cJSON *argjson)
 {
     struct LP_utxoinfo *utxo;
+    if ( jobj(argjson,"iambob") == 0 || iambob != jint(argjson,"iambob") )
+    {
+        printf("LP_utxoaddjson: iambob.%d != arg.%d obj.%p\n",iambob,jint(argjson,"iambob"),jobj(argjson,"iambob"));
+        return(0);
+    }
     portable_mutex_lock(&LP_UTXOmutex);
     utxo = LP_utxoadd(iambob,pubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jbits256(argjson,"pubkey"),jdouble(argjson,"profit"));
     portable_mutex_unlock(&LP_UTXOmutex);
