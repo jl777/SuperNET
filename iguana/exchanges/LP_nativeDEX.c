@@ -212,7 +212,7 @@ void LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pubso
 int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin)
 {
     static uint32_t counter,lastforward,numpeers;
-    struct LP_utxoinfo *utxo,*utmp; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t nonz = 0;
+    struct LP_utxoinfo *utxo,*utmp; char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t nonz = 0;
     now = (uint32_t)time(NULL);
     if ( mypeer == 0 )
         myipaddr = "127.0.0.1";
@@ -263,6 +263,14 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
                 LP_utxo_clientpublish(utxo);
         }
     }
+    if ( (counter % 600) == 599 )
+    {
+        if ( (retstr= basilisk_swapentry(0,0)) != 0 )
+        {
+            //printf("SWAPS.(%s)\n",retstr);
+            free(retstr);
+        }
+    }
     if ( pullsock >= 0 )
         nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
     counter++;
@@ -272,11 +280,6 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
 void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
 {
     char *retstr; uint8_t r; int32_t i,n,j; cJSON *item;
-    if ( (retstr= basilisk_swapentry(0,0)) != 0 )
-    {
-        //printf("SWAPS.(%s)\n",retstr);
-        free(retstr);
-    }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
