@@ -763,11 +763,14 @@ void LP_privkey_updates(int32_t pubsock,char *passphrase,int32_t initonly)
     pubkey = privkey;
     for (i=0; i<LP_numcoins; i++)
     {
-        //printf("i.%d of %d\n",i,LP_numcoins);
+        printf("i.%d of %d\n",i,LP_numcoins);
         if ( (coin= LP_coinfind(LP_coins[i].symbol)) != 0 )
         {
             if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
+            {
+                printf("LP_privkeycalc\n");
                 privkey = LP_privkeycalc(pubkey33,&pubkey,coin,passphrase,"");
+            }
             if ( coin->inactive == 0 && initonly == 0 )
                 LP_privkey_init(pubsock,coin,privkey,pubkey,pubkey33);
         }
