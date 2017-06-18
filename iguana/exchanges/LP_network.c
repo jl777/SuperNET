@@ -51,7 +51,7 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
         }
         usleep(1000);
     }
-    printf("error LP_send sock.%d, pipeline timeout.(%s)\n",sock,msg);
+    printf("error LP_send sock.%d, pipeline timeout.(%s) %s\n",sock,msg,nn_strerror(nn_errno()));
     //if ( (sentbytes= nn_send(sock,msg,len,0)) != len )
     //   printf("LP_send sent %d instead of %d\n",sentbytes,len);
     if ( freeflag != 0 )
