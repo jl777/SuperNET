@@ -416,7 +416,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
         //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVPRIO,&rcvprio,sizeof(rcvprio));
 #ifdef __APPLE__
-        nanomsg_tcpname(bindaddr,"*",mypullport);
+        nanomsg_tcpname(bindaddr,myipaddr,mypullport);
 #else
         nanomsg_tcpname(bindaddr,myipaddr,mypullport);
 #endif
