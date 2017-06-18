@@ -397,7 +397,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin)
 {
-    char str[65]; uint64_t val,val2=0,tmpsatoshis; int32_t spendvini,selector; bits256 spendtxid; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    uint64_t val,val2=0,tmpsatoshis; int32_t spendvini,selector; bits256 spendtxid; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
@@ -406,7 +406,14 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( iambob != 0 && value2 < 9 * (value >> 3) + 100000 ) // big txfee padding
         tmpsatoshis = (((value2 - 100000) / 9) << 3);
     else tmpsatoshis = value;
-    //char str2[65]; printf("%s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
+    
+    char str[65],str2[65],dispflag = 0;
+    bits256_str(str,txid);
+    bits256_str(str2,txid2);
+    if ( strcmp(str,"7ea7481baf03698cbeb7b9cd0ed3f86f3c40debab72626516dda7e8d155630eb") == 0 || strcmp(str2,"7ea7481baf03698cbeb7b9cd0ed3f86f3c40debab72626516dda7e8d155630eb") == 0 )
+        dispflag = 1;
+    if ( dispflag != 0 )
+        printf("%s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
     if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
     {
         printf("utxoadd got spent txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",dstr(value),dstr(value2),dstr(tmpsatoshis));
@@ -428,7 +435,9 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         if ( bits256_cmp(txid,utxo->payment.txid) != 0 || bits256_cmp(txid2,u.txid) != 0 || vout != utxo->payment.vout || value != utxo->payment.value || tmpsatoshis != utxo->S.satoshis || vout2 != u.vout || value2 != u.value || strcmp(symbol,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || bits256_cmp(pubkey,utxo->pubkey) != 0 )
         {
             utxo->T.errors++;
-            char str[65],str2[65],str3[65],str4[65]; printf("error on subsequent utxo add.(%s %s) %d %d %d %d %d %d %d %d %d %d %d pubkeys.(%s vs %s)\n",bits256_str(str,utxo->payment.txid),bits256_str(str2,u.txid),bits256_cmp(txid,utxo->payment.txid) != 0,bits256_cmp(txid2,u.txid) != 0,vout != utxo->payment.vout,tmpsatoshis != utxo->S.satoshis,vout2 != u.vout,value2 != u.value,strcmp(symbol,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,bits256_cmp(pubkey,utxo->pubkey) != 0,value != utxo->payment.value,bits256_str(str3,pubkey),bits256_str(str4,utxo->pubkey));
+            char str[65],str2[65],str3[65],str4[65];
+            if ( dispflag != 0 )
+                printf("error on subsequent utxo add.(%s %s) %d %d %d %d %d %d %d %d %d %d %d pubkeys.(%s vs %s)\n",bits256_str(str,utxo->payment.txid),bits256_str(str2,u.txid),bits256_cmp(txid,utxo->payment.txid) != 0,bits256_cmp(txid2,u.txid) != 0,vout != utxo->payment.vout,tmpsatoshis != utxo->S.satoshis,vout2 != u.vout,value2 != u.value,strcmp(symbol,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,bits256_cmp(pubkey,utxo->pubkey) != 0,value != utxo->payment.value,bits256_str(str3,pubkey),bits256_str(str4,utxo->pubkey));
         }
         else if ( profitmargin > SMALLVAL )
             utxo->S.profitmargin = profitmargin;
