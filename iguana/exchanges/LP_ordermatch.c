@@ -340,11 +340,13 @@ double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *metho
 
 int32_t LP_nanobind(int32_t pair,char *pairstr,char *myipaddr)
 {
-    int32_t i,timeout;
+    int32_t i,timeout,r; char bindaddr[128];
     for (i=0; i<10; i++)
     {
-        nanomsg_tcpname(pairstr,myipaddr,10000+(rand() % 50000));
-        if ( nn_bind(pair,pairstr) >= 0 )
+        r = (10000 + (rand() % 50000)) & 0xffff;
+        nanomsg_tcpname(pairstr,myipaddr,r);
+        nanomsg_tcpname(bindaddr,myipaddr,r);
+        if ( nn_bind(pair,bindaddr) >= 0 )
         {
             timeout = 100;
             nn_setsockopt(pair,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));

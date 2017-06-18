@@ -344,9 +344,14 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
     }
 }
 
+void nn_tests()
+{
+    
+}
+
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128];
+    char *myipaddr=0; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128];
     IAMLP = !amclient;
     LP_profitratio += profitmargin;
     OS_randombytes((void *)&n,sizeof(n));
@@ -382,9 +387,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
     nanomsg_tcpname(pushaddr,myipaddr,mypullport);
+    nn_tests();
     if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 )
     {
-        if ( nn_bind(pullsock,pushaddr) >= 0 )
+        nanomsg_tcpname(bindaddr,"0.0.0.0",mypullport);
+        if ( nn_bind(pullsock,bindaddr) >= 0 )
         {
             timeout = 1;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
@@ -399,9 +406,10 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         {
             pubsock = -1;
             nanomsg_tcpname(subaddr,myipaddr,mypubport);
+            nanomsg_tcpname(bindaddr,"0.0.0.0",mypubport);
             if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
             {
-                if ( nn_bind(pubsock,subaddr) >= 0 )
+                if ( nn_bind(pubsock,bindaddr) >= 0 )
                 {
                     timeout = 10;
                     nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
