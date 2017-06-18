@@ -241,7 +241,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             peer->diduquery = now;
         }
     }
-    if ( (counter % 600) == 300 )
+    if ( (counter % 600) == 100 )
     {
         LP_myutxo_updates(pubsock,passphrase,profitmargin);
         if ( lastforward < now-3600 )
