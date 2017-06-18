@@ -503,7 +503,7 @@ struct LP_utxoinfo *LP_utxoaddjson(int32_t iambob,int32_t pubsock,cJSON *argjson
     struct LP_utxoinfo *utxo;
     if ( jobj(argjson,"iambob") == 0 || iambob != jint(argjson,"iambob") )
     {
-        printf("LP_utxoaddjson: iambob.%d != arg.%d obj.%p\n",iambob,jint(argjson,"iambob"),jobj(argjson,"iambob"));
+        printf("LP_utxoaddjson: iambob.%d != arg.%d obj.%p (%s)\n",iambob,jint(argjson,"iambob"),jobj(argjson,"iambob"),jprint(argjson,0));
         return(0);
     }
     portable_mutex_lock(&LP_UTXOmutex);
