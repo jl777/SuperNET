@@ -246,6 +246,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             LP_peer_pricesquery(peer->ipaddr,peer->port);
             peer->diduquery = now;
         }
+        nonz += LP_subsock_check(myipaddr,pubsock,peer->subsock,profitmargin);
     }
     if ( (counter % 600) == 60 )
     {
@@ -271,7 +272,6 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     }
     if ( (counter % 600) == 599 )
     {
-        printf("check swaps\n");
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
         {
             //printf("SWAPS.(%s)\n",retstr);
