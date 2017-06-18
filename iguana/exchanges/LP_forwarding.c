@@ -58,8 +58,9 @@ int32_t LP_pushsock_create(char *pushaddr)
         nn_close(pushsock);
         return(-1);
     }
-    timeout = 100;
+    timeout = 1;
     nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+    LP_send(pushsock,"{\"method\":\"hello\"}",0);
     return(pushsock);
 }
 
