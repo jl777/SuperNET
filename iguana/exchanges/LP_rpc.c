@@ -80,8 +80,8 @@ char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utx
         return(retstr);
     if ( LP_mypeer != 0 && strcmp(destip,LP_mypeer->ipaddr) == 0 && LP_mypeer->port == destport )
     {
-        printf("no need to notify ourselves\n");
-        return(clonestr("{\"result\":\"success\"}"));
+        //printf("no need to notify ourselves\n");
+        return(0);//clonestr("{\"result\":\"success\"}"));
     }
     u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
     if ( LP_iseligible(&val,&val2,utxo->iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout,utxo->pubkey) > 0 )
