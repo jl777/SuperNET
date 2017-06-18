@@ -410,7 +410,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         tmpsatoshis = (((value2 - 100000) / 9) << 3);
     else tmpsatoshis = value;
     
-    char str[65],str2[65],dispflag = 0;
+    char str[65],str2[65],dispflag = 1;
     bits256_str(str,txid);
     bits256_str(str2,txid2);
     if ( strcmp(str,"7ea7481baf03698cbeb7b9cd0ed3f86f3c40debab72626516dda7e8d155630eb") == 0 || strcmp(str2,"7ea7481baf03698cbeb7b9cd0ed3f86f3c40debab72626516dda7e8d155630eb") == 0 )
