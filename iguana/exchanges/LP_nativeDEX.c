@@ -346,15 +346,15 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
 
 void nn_tests(int32_t pullsock,char *pushaddr)
 {
-    int32_t sock,n,timeout,sndprio = 1;
-    if ( (sock= nn_socket(AF_SP,NN_PAIR)) >= 0 )
+    int32_t sock,n,timeout;//,sndprio = 1;
+    if ( (sock= nn_socket(AF_SP,NN_REQ)) >= 0 )
     {
         if ( nn_connect(sock,pushaddr) < 0 )
             printf("connect error %s\n",nn_strerror(nn_errno()));
         else
         {
-            timeout = 3000;
-            nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDPRIO,&sndprio,sizeof(sndprio));
+            timeout = 100;
+            //nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDPRIO,&sndprio,sizeof(sndprio));
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0);
             LP_pullsock_check("127.0.0.1",-1,pullsock,0.);
@@ -366,7 +366,7 @@ void nn_tests(int32_t pullsock,char *pushaddr)
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t rcvprio,maxsize,timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128];
+    char *myipaddr=0; long filesize,n; int32_t maxsize,timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128];
     IAMLP = !amclient;
     LP_profitratio += profitmargin;
     OS_randombytes((void *)&n,sizeof(n));
@@ -402,12 +402,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
     nanomsg_tcpname(pushaddr,myipaddr,mypullport);
-    if ( (pullsock= nn_socket(AF_SP,NN_PAIR)) >= 0 )
+    if ( (pullsock= nn_socket(AF_SP,NN_REP)) >= 0 )
     {
         timeout = 1;
-        rcvprio = 1;
+        //rcvprio = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVPRIO,&rcvprio,sizeof(rcvprio));
+        //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVPRIO,&rcvprio,sizeof(rcvprio));
 #ifdef __APPLE__
         nanomsg_tcpname(bindaddr,"*",mypullport);
 #else
