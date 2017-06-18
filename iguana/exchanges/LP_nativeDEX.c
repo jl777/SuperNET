@@ -361,7 +361,7 @@ void nn_tests(char *pushaddr)
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128];
+    char *myipaddr=0; long filesize,n; int32_t maxsize,timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128];
     IAMLP = !amclient;
     LP_profitratio += profitmargin;
     OS_randombytes((void *)&n,sizeof(n));
@@ -399,13 +399,13 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     nanomsg_tcpname(pushaddr,myipaddr,mypullport);
     if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 )
     {
+        timeout = 100;
+        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
         nanomsg_tcpname(bindaddr,"127.0.0.1",mypullport);
         if ( nn_bind(pullsock,bindaddr) >= 0 )
         {
-            timeout = 1;
-            nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            //maxsize = 2 * 1024 * 1024;
-            //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
+            maxsize = 2 * 1024 * 1024;
+            nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
         } else printf("bind to %s error for %s: %s\n",bindaddr,pushaddr,nn_strerror(nn_errno()));
     }
     nn_tests(pushaddr);
