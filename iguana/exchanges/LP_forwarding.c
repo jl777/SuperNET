@@ -51,20 +51,24 @@ char *LP_lookup(bits256 pubkey)
 int32_t LP_hello(struct LP_forwardinfo *ptr)
 {
     int32_t i,n=10; char msg[512]; struct nn_pollfd pfd;
-    pfd.fd = ptr->pushsock;
-    pfd.events = NN_POLLOUT;
-    for (i=0; i<n; i++)
+    if ( bits256_cmp(ptr->pubkey,LP_mypubkey) != 0 )
     {
-        if ( nn_poll(&pfd,1,1) > 0 )
+        pfd.fd = ptr->pushsock;
+        pfd.events = NN_POLLOUT;
+        for (i=0; i<n; i++)
         {
-            sprintf(msg,"{\"method\":\"hello\",\"from\":\"%s\"}",LP_mypeer != 0 ? LP_mypeer->ipaddr : "");
-            printf("HELLO sent.%d bytes to %s on i.%d\n",LP_send(ptr->pushsock,msg,0),ptr->pushaddr,i);
-            ptr->hello = (uint32_t)time(NULL);
-            return(i);
+            if ( nn_poll(&pfd,1,1) > 0 )
+            {
+                sprintf(msg,"{\"method\":\"hello\",\"from\":\"%s\"}",LP_mypeer != 0 ? LP_mypeer->ipaddr : "");
+                printf("HELLO sent.%d bytes to %s on i.%d\n",LP_send(ptr->pushsock,msg,0),ptr->pushaddr,i);
+                ptr->hello = (uint32_t)time(NULL);
+                return(i);
+            }
         }
+        printf("%d iterations on nn_poll and %s pushsock still not ready\n",i,ptr->pushaddr);
+        return(-1);
     }
-    printf("%d iterations on nn_poll and %s pushsock still not ready\n",i,ptr->pushaddr);
-    return(-1);
+    return(0);
 }
 
 int32_t LP_hellos()
