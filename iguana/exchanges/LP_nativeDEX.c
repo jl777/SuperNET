@@ -31,7 +31,7 @@ char USERPASS[65],USERPASS_WIFSTR[64],USERHOME[512] = { "/root" };
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //
 
-portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex;
 int32_t LP_mypubsock = -1;
 int32_t USERPASS_COUNTER,IAMLP = 0;
 double LP_profitratio = 1.;
@@ -346,6 +346,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     }
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
+    portable_mutex_init(&LP_UTXOmutex);
     portable_mutex_init(&LP_commandmutex);
     portable_mutex_init(&LP_swaplistmutex);
     portable_mutex_init(&LP_cachemutex);

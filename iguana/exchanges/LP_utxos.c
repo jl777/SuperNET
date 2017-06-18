@@ -420,11 +420,6 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("trying to add Alice utxo when not mine? %s/v%d\n",bits256_str(str,txid),vout);
         return(0);
     }
-    
-    bits256_str(str,txid);
-    bits256_str(str2,txid2);
-    if ( strcmp(str,"7ea7481baf03698cbeb7b9cd0ed3f86f3c40debab72626516dda7e8d155630eb") == 0 || strcmp(str2,"7ea7481baf03698cbeb7b9cd0ed3f86f3c40debab72626516dda7e8d155630eb") == 0 )
-        dispflag = 1;
     if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
     {
         printf("iambob.%d utxoadd got ineligible txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",iambob,dstr(value),dstr(value2),dstr(tmpsatoshis));
@@ -504,7 +499,11 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
 
 struct LP_utxoinfo *LP_utxoaddjson(int32_t iambob,int32_t pubsock,cJSON *argjson)
 {
-    return(LP_utxoadd(iambob,pubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jbits256(argjson,"pubkey"),jdouble(argjson,"profit")));
+    struct LP_utxoinfo *utxo;
+    portable_mutex_lock(&LP_UTXOmutex);
+    utxo = LP_utxoadd(iambob,pubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jbits256(argjson,"pubkey"),jdouble(argjson,"profit"));
+    portable_mutex_unlock(&LP_UTXOmutex);
+    return(utxo);
 }
 
 int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
@@ -684,6 +683,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                             {
                                 value = values[i];
                                 values[i] = 0, used++;
+                                portable_mutex_lock(&LP_UTXOmutex);
                                 if ( iambob != 0 )
                                 {
                                     if ( (utxo= LP_utxoadd(1,mypubsock,coin->symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coin->smartaddr,mypub,LP_mypeer != 0 ? LP_mypeer->profitmargin : 0.01)) != 0 )
@@ -696,6 +696,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                     {
                                     }
                                 }
+                                portable_mutex_unlock(&LP_UTXOmutex);
                                 total += value;
                             }
                         }
