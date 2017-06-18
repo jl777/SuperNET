@@ -203,7 +203,7 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
     }
     else if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
-        if ( ptr->pushsock >= 0 )
+        if ( ptr->pushsock >= 0 && ptr->hello != 0 )
         {
             //printf("%s forwardhex.(%s)\n",ptr->pushaddr,(char *)data);
             sentbytes = LP_send(ptr->pushsock,(char *)data,0);
@@ -220,6 +220,7 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
             jaddstr(retjson,"error","send error");
             jaddnum(retjson,"sentbytes",sentbytes);
             jaddnum(retjson,"datalen",datalen);
+            jaddnum(retjson,"hello",ptr->hello);
             retstr = jprint(retjson,1);
         }
     }
