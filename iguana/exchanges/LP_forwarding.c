@@ -66,7 +66,7 @@ int32_t LP_pushsock_create(char *pushaddr)
     {
         if ( nn_poll(&pfd,1,1) > 0 )
         {
-            LP_send(pushsock,"{\"method\":\"hello\"}",0);
+            printf("HELLO sent.%d bytes\n",LP_send(pushsock,"{\"method\":\"hello\"}",0));
             break;
         }
     }
