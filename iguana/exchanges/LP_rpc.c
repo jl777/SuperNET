@@ -110,8 +110,8 @@ char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *push
     if ( strncmp("tcp://",pushaddr,strlen("tcp://")) != 0 || strlen(pushaddr) <= strlen("tcp://") )
         return(clonestr("{\"error\":\"illegal pushaddr\"}"));
     sprintf(url,"http://%s:%u/api/stats/register?client=%s&pushaddr=%s",destip,destport,bits256_str(str,pubkey),pushaddr+strlen("tcp://"));
-    retstr = issue_curlt(url,5);
-    printf("getutxo.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
+    retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
+    //printf("getutxo.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
     return(retstr);
 }
 
