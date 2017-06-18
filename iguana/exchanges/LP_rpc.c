@@ -59,9 +59,12 @@ char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,
 
 char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t lastn)
 {
-    char url[512];
+    char url[512],*retstr;
     sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=127.0.0.1&port=0",destip,destport,coin,lastn);
-    return(issue_curlt(url,LP_HTTP_TIMEOUT));
+    retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
+    
+    printf("%s clientgetutxos.(%s)\n",url,retstr);
+    return(retstr);
 }
 
 char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
