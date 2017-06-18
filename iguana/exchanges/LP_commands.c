@@ -55,6 +55,7 @@ char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjs
     else if ( strcmp(method,"nn_tests") == 0 )
     {
         LP_send(pubsock,"nn_test return",0);
+        printf("send back nn_test return -> %d\n",pubsock);
         return(0);
     }
     else if ( strcmp(method,"help") == 0 )
