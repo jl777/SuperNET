@@ -346,7 +346,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
 
 void nn_tests(int32_t pullsock,char *pushaddr)
 {
-    int32_t sock,n,timeout,m=0; //void *ptr;
+    int32_t sock,n,timeout,m=0; void *ptr;
     if ( (sock= nn_socket(AF_SP,NN_SUB)) >= 0 )
     {
         if ( nn_connect(sock,pushaddr) < 0 )
@@ -359,7 +359,7 @@ void nn_tests(int32_t pullsock,char *pushaddr)
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             n = nn_send(pullsock,"nn_tests",(int32_t)strlen("nn_tests")+1,0*NN_DONTWAIT);
             //n = LP_send(sock,"nn_tests",0);//
-            //m = nn_recv(pullsock,&ptr,NN_MSG,0);
+            m = nn_recv(sock,&ptr,NN_MSG,0);
             //LP_pullsock_check("127.0.0.1",-1,pullsock,0.);
             // n = LP_send(sock,"nn_tests",0);
             printf("sent %d bytes, recv.%d\n",n,m);
