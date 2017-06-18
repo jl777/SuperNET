@@ -344,17 +344,20 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
     }
 }
 
-void nn_tests(char *pushaddr)
+void nn_tests(int32_t pullsock,char *pushaddr)
 {
-    int32_t sock,n;
+    int32_t sock,n,timeout;
     if ( (sock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
     {
         if ( nn_connect(sock,pushaddr) < 0 )
             printf("connect error %s\n",nn_strerror(nn_errno()));
         else
         {
+            timeout = 1000;
+            nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0*NN_DONTWAIT);
-           // n = LP_send(sock,"nn_tests",0);
+            LP_pullsock_check("127.0.0.1",-1,pullsock,0.);
+            // n = LP_send(sock,"nn_tests",0);
             printf("sent %d bytes\n",n);
         }
     }
@@ -411,9 +414,10 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         {
             maxsize = 2 * 1024 * 1024;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
+            LP_pullsock_check(myipaddr,-1,pullsock,0.);
         } else printf("bind to %s error for %s: %s\n",bindaddr,pushaddr,nn_strerror(nn_errno()));
     }
-    nn_tests(pushaddr);
+    nn_tests(pullsock,pushaddr);
     printf("my command address is (%s) pullsock.%d\n",pushaddr,pullsock);
     if ( IAMLP != 0 )
     {
