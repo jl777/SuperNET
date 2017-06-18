@@ -346,7 +346,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
 
 void nn_tests(int32_t pullsock,char *pushaddr)
 {
-    int32_t sock,n,timeout,m; void *ptr;
+    int32_t sock,n,timeout,m=0; //void *ptr;
     if ( (sock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
         if ( nn_connect(sock,pushaddr) < 0 )
@@ -357,7 +357,7 @@ void nn_tests(int32_t pullsock,char *pushaddr)
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             //n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0*NN_DONTWAIT);
             n = LP_send(sock,"nn_tests",0);//
-            m = nn_recv(pullsock,&ptr,NN_MSG,0);
+            //m = nn_recv(pullsock,&ptr,NN_MSG,0);
             //LP_pullsock_check("127.0.0.1",-1,pullsock,0.);
             // n = LP_send(sock,"nn_tests",0);
             printf("sent %d bytes, recv.%d\n",n,m);
@@ -405,7 +405,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     nanomsg_tcpname(pushaddr,myipaddr,mypullport);
     if ( (pullsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
-        timeout = 1000;
+        timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
 #ifdef __APPLE__
         nanomsg_tcpname(bindaddr,"127.0.0.1",mypullport);
