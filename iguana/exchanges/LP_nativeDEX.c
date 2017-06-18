@@ -394,6 +394,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
         }
     }
+    printf("my command address is (%s)\n",pushaddr);
     if ( IAMLP != 0 )
     {
         if ( myipaddr != 0 )
