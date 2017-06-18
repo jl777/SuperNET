@@ -247,6 +247,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             peer->diduquery = now;
         }
     }
+    printf("counter.%d numpeers %d\n",counter,numpeers);
     if ( (counter % 600) == 60 )
     {
         nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
