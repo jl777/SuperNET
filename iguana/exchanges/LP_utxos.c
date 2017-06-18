@@ -263,10 +263,15 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
     return(item);
 }
 
-int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
+int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2,bits256 pubkey)
 {
     uint64_t val,val2=0,threshold; char destaddr[64],destaddr2[64];
     destaddr[0] = destaddr2[0] = 0;
+    if ( iambob == 0 && bits256_cmp(pubkey,LP_mypubkey) != 0 )
+    {
+        char str[65]; printf("external Alice utxo.(%s) rejected\n",bits256_str(str,txid));
+        return(0);
+    }
     if ( (val= LP_txvalue(destaddr,symbol,txid,vout)) >= satoshis )
     {
         threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
@@ -308,7 +313,7 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
         if ( (symbol == 0 || symbol[0] == 0 || strcmp(symbol,utxo->coin) == 0) && utxo->T.spentflag == 0 )
         {
             u = (iambob != 0) ? utxo->deposit : utxo->fee;
-            if ( LP_iseligible(&val,&val2,iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) == 0 )
+            if ( LP_iseligible(&val,&val2,iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout,utxo->pubkey) == 0 )
             {
                 char str[65]; printf("iambob.%d not eligible (%.8f %.8f) %s %s/v%d\n",iambob,dstr(val),dstr(val2),utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout);
                 continue;
@@ -421,7 +426,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("trying to add Alice utxo when not mine? %s/v%d\n",bits256_str(str,txid),vout);
         return(0);
     }
-    if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
+    if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2,pubkey) <= 0 )
     {
         printf("iambob.%d utxoadd got ineligible txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",iambob,dstr(value),dstr(value2),dstr(tmpsatoshis));
         return(0);

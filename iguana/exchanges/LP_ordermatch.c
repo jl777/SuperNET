@@ -235,12 +235,12 @@ double LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxop
 {
     double qprice; uint64_t srcvalue,srcvalue2,destvalue,destvalue2;
     *autxop = *butxop = 0;
-    if ( LP_iseligible(&srcvalue,&srcvalue2,1,qp->srccoin,qp->txid,qp->vout,qp->satoshis,qp->txid2,qp->vout2) == 0 )
+    if ( LP_iseligible(&srcvalue,&srcvalue2,1,qp->srccoin,qp->txid,qp->vout,qp->satoshis,qp->txid2,qp->vout2,qp->srchash) == 0 )
     {
         printf("bob not eligible\n");
         return(-2);
     }
-    if ( LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) == 0 )
+    if ( LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout,qp->desthash) == 0 )
     {
         char str[65]; printf("alice not eligible (%.8f %.8f) %s/v%d\n",dstr(destvalue),dstr(destvalue2),bits256_str(str,qp->feetxid),qp->feevout);
         return(-3);
