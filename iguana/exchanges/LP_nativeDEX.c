@@ -101,7 +101,7 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
         decode_hex((void *)jsonstr,datalen,(char *)ptr);
         jsonstr[datalen] = 0;
     } else jsonstr = (char *)ptr;
-    if ( IAMLP == 0 )
+    if ( 0 && IAMLP == 0 )
         printf("%s %d, datalen.%d (%s)\n",typestr,recvlen,datalen,jsonstr);
     if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
     {
