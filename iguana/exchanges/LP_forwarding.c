@@ -50,7 +50,7 @@ char *LP_lookup(bits256 pubkey)
 
 int32_t LP_pushsock_create(char *pushaddr)
 {
-    int32_t pushsock,timeout;
+    int32_t pushsock,timeout,i; struct nn_pollfd pfd;
     if ( (pushsock= nn_socket(AF_SP,NN_PUSH)) < 0 )
         return(-1);
     else if ( nn_connect(pushsock,pushaddr) < 0 )
@@ -60,7 +60,18 @@ int32_t LP_pushsock_create(char *pushaddr)
     }
     timeout = 1;
     nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-    LP_send(pushsock,"{\"method\":\"hello\"}",0);
+    pfd.fd = pushsock;
+    pfd.events = NN_POLLOUT;
+    for (i=0; i<1000; i++)
+    {
+        if ( nn_poll(&pfd,1,1) > 0 )
+        {
+            LP_send(pushsock,"{\"method\":\"hello\"}",0);
+            break;
+        }
+    }
+    if ( i == 100 )
+        printf("%d iterations on nn_poll and %s pushsock still not ready\n",i,pushaddr);
     return(pushsock);
 }
 
