@@ -344,9 +344,19 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
     }
 }
 
-void nn_tests()
+void nn_tests(char *pushaddr)
 {
-    nn_socket(AF_SP,NN_BUS);
+    int32_t sock,n;
+    if ( (sock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
+    {
+        if ( nn_connect(sock,pushaddr) < 0 )
+            printf("connect error %s\n",nn_strerror(nn_errno()));
+        else
+        {
+            n = LP_send(sock,"nn_tests",0);
+            printf("sent %d bytes\n",n);
+        }
+    }
 }
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
@@ -387,7 +397,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
     nanomsg_tcpname(pushaddr,myipaddr,mypullport);
-    nn_tests();
     if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 )
     {
         nanomsg_tcpname(bindaddr,"0.0.0.0",mypullport);
@@ -399,6 +408,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
             //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
         } else printf("bind to %s error for %s: %s\n",bindaddr,pushaddr,nn_strerror(nn_errno()));
     }
+    nn_tests(pushaddr);
     printf("my command address is (%s) pullsock.%d\n",pushaddr,pullsock);
     if ( IAMLP != 0 )
     {
