@@ -50,7 +50,9 @@ char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjs
             printf("stats_JSON no method: (%s) (%s:%u)\n",jprint(argjson,0),ipaddr,argport);
         return(0);
     }
-    if ( strcmp(method,"help") == 0 )
+    if ( strcmp(method,"hello") == 0 )
+        return(0);
+    else if ( strcmp(method,"help") == 0 )
         return(clonestr("{\"result\":\" \
 available localhost RPC commands:\n \
 setprice(base, rel, price)\n\
