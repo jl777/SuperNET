@@ -355,8 +355,8 @@ void nn_tests(int32_t pullsock,char *pushaddr)
         {
             timeout = 1000;
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            //n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0*NN_DONTWAIT);
-            n = LP_send(sock,"nn_tests",0);//
+            n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0*NN_DONTWAIT);
+            //n = LP_send(sock,"nn_tests",0);//
             //m = nn_recv(pullsock,&ptr,NN_MSG,0);
             //LP_pullsock_check("127.0.0.1",-1,pullsock,0.);
             // n = LP_send(sock,"nn_tests",0);
@@ -408,7 +408,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
 #ifdef __APPLE__
-        nanomsg_tcpname(bindaddr,"0.0.0.0",mypullport);
+        nanomsg_tcpname(bindaddr,myipaddr,mypullport);
 #else
         nanomsg_tcpname(bindaddr,myipaddr,mypullport);
 #endif
