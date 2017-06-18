@@ -415,7 +415,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( iambob != 0 && value2 < 9 * (value >> 3) + 100000 ) // big txfee padding
         tmpsatoshis = (((value2 - 100000) / 9) << 3);
     else tmpsatoshis = value;
-    char str[65],str2[65],dispflag = 0;
+    char str[65],str2[65],dispflag = (iambob == 0);
     if ( iambob == 0 && bits256_cmp(pubkey,LP_mypubkey) != 0 )
     {
         printf("trying to add Alice utxo when not mine? %s/v%d\n",bits256_str(str,txid),vout);
