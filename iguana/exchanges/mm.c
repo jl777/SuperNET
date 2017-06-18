@@ -28,7 +28,8 @@ char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjs
 #include "stats.c"
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 
-#if defined(__APPLE__) || defined(WIN32) || defined(USE_STATIC_NANOMSG)
+//defined(__APPLE__) ||
+#if defined(WIN32) || defined(USE_STATIC_NANOMSG)
 #include "../../crypto777/nanosrc/nn.h"
 #include "../../crypto777/nanosrc/bus.h"
 #include "../../crypto777/nanosrc/pubsub.h"
