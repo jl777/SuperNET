@@ -417,7 +417,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         dispflag = 1;
     if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
     {
-        printf("utxoadd got ineligible txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",dstr(value),dstr(value2),dstr(tmpsatoshis));
+        printf("iambob.%d utxoadd got ineligible txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",iambob,dstr(value),dstr(value2),dstr(tmpsatoshis));
         return(0);
     }
     if ( dispflag != 0 )
