@@ -204,7 +204,7 @@ void basilisk_swapgotdata(struct basilisk_swap *swap,uint32_t crc32,bits256 srch
 int32_t basilisk_swapget(struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,int32_t (*basilisk_verify_func)(void *ptr,uint8_t *data,int32_t datalen))
 {
     uint8_t *ptr; bits256 srchash,desthash; uint32_t crc32,_msgbits,quoteid; int32_t i,size,offset,retval = -1; struct basilisk_swapmessage *mp = 0;
-    while ( (size= nn_recv(swap->subsock,&ptr,NN_MSG,0)) >= 0 )
+    while ( (size= nn_recv(swap->subsock,&ptr,NN_MSG,NN_DONTWAIT)) >= 0 )
     {
         swap->lasttime = (uint32_t)time(NULL);
         memset(srchash.bytes,0,sizeof(srchash));
