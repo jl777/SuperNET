@@ -281,6 +281,8 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
         }
     }
     nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
+    if ( (counter % 60) == 42 )
+        LP_hellos();
     counter++;
     return(nonz);
 }

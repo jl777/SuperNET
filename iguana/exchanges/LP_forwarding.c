@@ -24,7 +24,7 @@ struct LP_forwardinfo
     bits256 pubkey;
     char pushaddr[64];
     int32_t pushsock;
-    uint32_t lasttime;
+    uint32_t lasttime,hello;
 } *LP_forwardinfos;
 #define LP_KEEPALIVE (3600 * 24)
 
@@ -48,9 +48,39 @@ char *LP_lookup(bits256 pubkey)
     else return(clonestr("{\"error\":\"notfound\"}"));
 }
 
-int32_t LP_pushsock_create(char *pushaddr)
+int32_t LP_hello(struct LP_forwardinfo *ptr)
 {
-    int32_t pushsock,timeout,i,n=10; char msg[512]; struct nn_pollfd pfd;
+    int32_t i,n=10; char msg[512]; struct nn_pollfd pfd;
+    pfd.fd = ptr->pushsock;
+    pfd.events = NN_POLLOUT;
+    for (i=0; i<n; i++)
+    {
+        if ( nn_poll(&pfd,1,1) > 0 )
+        {
+            sprintf(msg,"{\"method\":\"hello\",\"from\":\"%s\"}",LP_mypeer != 0 ? LP_mypeer->ipaddr : "");
+            printf("HELLO sent.%d bytes to %s on i.%d\n",LP_send(ptr->pushsock,msg,0),ptr->pushaddr,i);
+            ptr->hello = (uint32_t)time(NULL);
+            return(i);
+        }
+    }
+    printf("%d iterations on nn_poll and %s pushsock still not ready\n",i,ptr->pushaddr);
+    return(-1);
+}
+
+int32_t LP_hellos()
+{
+    struct LP_forwardinfo *ptr,*tmp; int32_t nonz = 0;
+    HASH_ITER(hh,LP_forwardinfos,ptr,tmp)
+    {
+        if ( ptr->hello == 0 && LP_hello(ptr) >= 0 )
+            nonz++;
+    }
+    return(nonz);
+}
+
+int32_t LP_pushsock_create(struct LP_forwardinfo *ptr,char *pushaddr)
+{
+    int32_t pushsock,timeout;
     if ( (pushsock= nn_socket(AF_SP,NN_PUSH)) < 0 )
     {
         printf("LP_pushsock_create couldnt allocate socket for %s\n",pushaddr);
@@ -64,19 +94,8 @@ int32_t LP_pushsock_create(char *pushaddr)
     }
     timeout = 1;
     nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-    pfd.fd = pushsock;
-    pfd.events = NN_POLLOUT;
-    for (i=0; i<n; i++)
-    {
-        if ( nn_poll(&pfd,1,1) > 0 )
-        {
-            sprintf(msg,"{\"method\":\"hello\",\"from\":\"%s\"}",LP_mypeer != 0 ? LP_mypeer->ipaddr : "");
-            printf("HELLO sent.%d bytes to %s\n",LP_send(pushsock,msg,0),pushaddr);
-            break;
-        }
-    }
-    if ( i == n )
-        printf("%d iterations on nn_poll and %s pushsock still not ready\n",i,pushaddr);
+    if ( ptr != 0 )
+        LP_hello(ptr);
     return(pushsock);
 }
 
@@ -96,12 +115,12 @@ char *LP_register(bits256 pubkey,char *ipaddr)
         {
             nn_close(ptr->pushsock);
             printf("recreate pushsock for %s\n",pushaddr);
-            if ( (ptr->pushsock= LP_pushsock_create(pushaddr)) < 0 )
+            if ( (ptr->pushsock= LP_pushsock_create(ptr,pushaddr)) < 0 )
                 return(clonestr("{\"error\":\"couldnt recreate pushsock\",\"registered\":0}"));
         }
         return(clonestr("{\"error\":\"already registered\",\"registered\":1}"));
     }
-    else if ( (pushsock= LP_pushsock_create(pushaddr)) < 0 )
+    else if ( (pushsock= LP_pushsock_create(0,pushaddr)) < 0 )
         return(clonestr("{\"error\":\"couldnt create pushsock\"}"));
     else
     {
@@ -114,6 +133,7 @@ char *LP_register(bits256 pubkey,char *ipaddr)
         HASH_ADD_KEYPTR(hh,LP_forwardinfos,&ptr->pubkey,sizeof(ptr->pubkey),ptr);
         portable_mutex_unlock(&LP_forwardmutex);
         char str[65]; printf("registered (%s) -> (%s) pushsock.%d\n",bits256_str(str,pubkey),pushaddr,ptr->pushsock);
+        LP_hello(ptr);
         return(LP_lookup(pubkey));
     }
 }
