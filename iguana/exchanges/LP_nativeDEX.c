@@ -227,6 +227,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     }
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
         if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
         {
             printf("numpeers.%d updatepeer.%s lag.%d\n",numpeers,peer->ipaddr,now-peer->lastpeers);
@@ -246,10 +247,12 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     }
     if ( (counter % 600) == 60 )
     {
+        nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
         LP_myutxo_updates(pubsock,passphrase,profitmargin);
         if ( lastforward < now-3600 )
         {
             LP_forwarding_register(LP_mypubkey,pushaddr,10);
+            nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
             lastforward = now;
         }
     }
@@ -257,10 +260,12 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     {
         HASH_ITER(hh,LP_utxoinfos[0],utxo,utmp)
         {
+            nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
             LP_utxo_spentcheck(pubsock,utxo,profitmargin);
         }
         HASH_ITER(hh,LP_utxoinfos[1],utxo,utmp)
         {
+            nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
             LP_utxo_spentcheck(pubsock,utxo,profitmargin);
             if ( utxo->T.lasttime == 0 )
                 LP_utxo_clientpublish(utxo);
@@ -268,14 +273,14 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     }
     if ( (counter % 600) == 599 )
     {
+        nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
         {
             //printf("SWAPS.(%s)\n",retstr);
             free(retstr);
         }
     }
-    if ( pullsock >= 0 )
-        nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
+    nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
     counter++;
     return(nonz);
 }
@@ -380,7 +385,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         {
             timeout = 1;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            timeout = 1;
             maxsize = 2 * 1024 * 1024;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
         }

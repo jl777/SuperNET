@@ -50,7 +50,7 @@ char *LP_lookup(bits256 pubkey)
 
 int32_t LP_pushsock_create(char *pushaddr)
 {
-    int32_t pushsock,timeout,i,n=1000; char msg[512]; struct nn_pollfd pfd;
+    int32_t pushsock,timeout,i,n=10; char msg[512]; struct nn_pollfd pfd;
     if ( (pushsock= nn_socket(AF_SP,NN_PUSH)) < 0 )
     {
         printf("LP_pushsock_create couldnt allocate socket for %s\n",pushaddr);
