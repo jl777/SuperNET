@@ -34,6 +34,15 @@ char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
     return(retstr);
 }
 
+char *LP_isitme(char *destip,uint16_t destport)
+{
+    if ( LP_mypeer != 0 && strcmp(destip,LP_mypeer->ipaddr) == 0 && LP_mypeer->port == destport )
+    {
+        printf("no need to notify ourselves\n");
+        return(clonestr("{\"result\":\"success\"}"));
+    } else return(0);
+}
+
 char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
     char url[512];
@@ -57,14 +66,18 @@ char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t 
 
 char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
-    char url[512];
+    char url[512],*retstr;
+    if ( (retstr= LP_isitme(destip,destport)) != 0 )
+        return(retstr);
     sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
     return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
 char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
 {
-    char url[4096],str[65],str2[65],str3[65]; struct _LP_utxoinfo u; uint64_t val,val2;
+    char url[4096],str[65],str2[65],str3[65],*retstr; struct _LP_utxoinfo u; uint64_t val,val2;
+    if ( (retstr= LP_isitme(destip,destport)) != 0 )
+        return(retstr);
     if ( LP_mypeer != 0 && strcmp(destip,LP_mypeer->ipaddr) == 0 && LP_mypeer->port == destport )
     {
         printf("no need to notify ourselves\n");
