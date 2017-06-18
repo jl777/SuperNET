@@ -403,7 +403,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
     nanomsg_tcpname(pushaddr,myipaddr,mypullport);
-    if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 )
+    if ( (pullsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
         timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
