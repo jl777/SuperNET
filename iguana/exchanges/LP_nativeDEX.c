@@ -138,6 +138,8 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
     while ( pullsock >= 0 && (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
     {
         nonz++;
+        if ( IAMLP == 0 )
+            printf("pulled.%d (%s)\n",recvlen,(char *)ptr);
         LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen);
     }
     return(nonz);
