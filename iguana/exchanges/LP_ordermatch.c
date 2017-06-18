@@ -345,7 +345,11 @@ int32_t LP_nanobind(int32_t pair,char *pairstr,char *myipaddr)
     {
         r = (10000 + (rand() % 50000)) & 0xffff;
         nanomsg_tcpname(pairstr,myipaddr,r);
-        nanomsg_tcpname(bindaddr,"0.0.0.0",r);
+#ifdef __APPLE__
+        nanomsg_tcpname(bindaddr,"*",r);
+#else
+        nanomsg_tcpname(bindaddr,myipaddr,r);
+#endif
         if ( nn_bind(pair,bindaddr) >= 0 )
         {
             timeout = 100;
