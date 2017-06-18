@@ -246,7 +246,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
         LP_forwarding_register(LP_mypubkey,pushaddr,10);
         lastforward = now;
     }
-    if ( (counter % 600) == 0 )
+    if ( (counter % 600) == 300 )
         LP_myutxo_updates(pubsock,passphrase,profitmargin);
     if ( (counter % 600) == 0 )
     {
@@ -318,7 +318,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
             LP_priceinfoadd(jstr(item,"coin"));
         }
     }
-    LP_privkey_updates(pubsock,passphrase);
+    //LP_privkey_updates(pubsock,passphrase);
     if ( (retstr= basilisk_swaplist()) != 0 )
         free(retstr);
     while ( 1 )
