@@ -40,6 +40,7 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
     {
         pfd.fd = sock;
         pfd.events = NN_POLLOUT;
+        portable_mutex_lock(&LP_networkmutex);
         if ( nn_poll(&pfd,1,1) > 0 )
         {
             if ( (sentbytes= nn_send(sock,msg,len,0)) != len )
@@ -47,8 +48,10 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
             //else printf("SENT.(%s)\n",msg);
             if ( freeflag != 0 )
                 free(msg);
+            portable_mutex_unlock(&LP_networkmutex);
             return(sentbytes);
         }
+        portable_mutex_unlock(&LP_networkmutex);
         usleep(1000);
     }
     printf("error LP_send sock.%d, pipeline timeout.(%s) %s\n",sock,msg,nn_strerror(nn_errno()));
