@@ -353,7 +353,7 @@ int32_t LP_nanobind(int32_t pair,char *pairstr,char *myipaddr)
             nn_setsockopt(pair,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             printf("nanobind %s to %d\n",pairstr,pair);
             return(0);
-        }
+        } else printf("error binding to %s for %s\n",bindaddr,pairstr);
     }
     return(-1);
 }
