@@ -592,7 +592,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                             else
                             {
                                 if ( butxo != 0 )
-                                    printf("%d %d %d: ",vol*SATOSHIDEN == butxo->S.satoshis,LP_isavailable(butxo) > 0,LP_ismine(butxo) == 0);
+                                    printf("%llu %llu %d %d %d: ",(long long)vol*SATOSHIDEN,(long long)butxo->S.satoshis,vol*SATOSHIDEN == butxo->S.satoshis,LP_isavailable(butxo) > 0,LP_ismine(butxo) == 0);
                                 printf("cant find butxo.%p or value mismatch %.8f != %.8f\n",butxo,vol,butxo!=0?dstr(butxo->S.satoshis):0);
                             }
                         }
