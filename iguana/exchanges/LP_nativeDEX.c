@@ -279,12 +279,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
 
 void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
 {
-    char *retstr; uint8_t r; int32_t i,n,j; cJSON *item;
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
-    {
-        printf("error launching stats rpcloop for port.%u\n",myport);
-        exit(-1);
-    }
+    uint8_t r; int32_t i,n,j; cJSON *item;
     if ( IAMLP != 0 )
     {
         if ( seednode == 0 || seednode[0] == 0 )
@@ -324,8 +319,11 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
         }
     }
     //LP_privkey_updates(pubsock,passphrase);
-    if ( (retstr= basilisk_swaplist()) != 0 )
-        free(retstr);
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+    {
+        printf("error launching stats rpcloop for port.%u\n",myport);
+        exit(-1);
+    }
     while ( 1 )
     {
         if ( 0 && (rand() % 100) == 0 )
