@@ -619,10 +619,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                 sleep(1);
             }
             if ( autxo->S.swap == 0 )
-            {
                 jaddstr(bestitem,"status","couldnt establish connection");
-                LP_availableset(autxo);
-            }
             else jaddstr(bestitem,"status","connected");
             jaddnum(bestitem,"quotedprice",price);
             jaddnum(bestitem,"maxprice",maxprice);
@@ -642,6 +639,8 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
         jaddnum(bestitem,"maxprice",maxprice);
         jaddstr(bestitem,"status","no response to request");
     }
+    if ( autxo->S.swap == 0 )
+        LP_availableset(autxo);
     return(jprint(bestitem,0));
 }
 
