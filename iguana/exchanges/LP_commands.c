@@ -52,6 +52,11 @@ char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjs
     }
     if ( strcmp(method,"hello") == 0 )
         return(0);
+    else if ( strcmp(method,"nn_tests") == 0 )
+    {
+        LP_send(pubsock,"nn_test return",0);
+        return(0);
+    }
     else if ( strcmp(method,"help") == 0 )
         return(clonestr("{\"result\":\" \
 available localhost RPC commands:\n \

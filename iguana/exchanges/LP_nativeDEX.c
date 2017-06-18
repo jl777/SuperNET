@@ -359,7 +359,7 @@ void nn_tests(int32_t pullsock,char *pushaddr)
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             timeout = 1000;
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0);
+            n = nn_send(sock,"{\"method\":\"nn_tests\"}",(int32_t)strlen("{\"method\":\"nn_tests\"}")+1,0);
             LP_pullsock_check("127.0.0.1",-1,pullsock,0.);
             // n = LP_send(sock,"nn_tests",0);
             printf("sent %d bytes\n",n);
