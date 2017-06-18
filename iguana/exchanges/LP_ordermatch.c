@@ -569,7 +569,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                             vout = jint(item,"vout");
                             vol = jdouble(item,"volume");
                             metric = price / bestprice;
-                            if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && vol*SATOSHIDEN == butxo->S.satoshis && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 )
+                            if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && (long long)(vol*SATOSHIDEN) == butxo->S.satoshis && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 )
                             {
                                 destsatoshis = (butxo->S.satoshis * price);
                                 if ( destsatoshis > autxo->payment.value-desttxfee-1 )
