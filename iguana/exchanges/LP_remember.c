@@ -427,13 +427,13 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             if ( bits256_nonz(privkey) != 0 )
             {
                 privAm = privkey;
-                printf("set privAm <- %s\n",bits256_str(str,privAm));
+                //printf("set privAm <- %s\n",bits256_str(str,privAm));
             }
             privkey = jbits256(item,"privBn");
             if ( bits256_nonz(privkey) != 0 )
             {
                 privBn = privkey;
-                printf("set privBn <- %s\n",bits256_str(str,privBn));
+                //printf("set privBn <- %s\n",bits256_str(str,privBn));
             }
             expiration = juint(item,"expiration");
             state = jint(item,"state");
@@ -554,7 +554,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         } else if ( finishedflag == 0 )
             printf("%s not finished\n",fname);
     }
-    printf("alicepayment.%s bobpayment.%s bobdeposit.%s\n",alicepaymentaddr,bobpaymentaddr,bobdepositaddr);
+    //printf("alicepayment.%s bobpayment.%s bobdeposit.%s\n",alicepaymentaddr,bobpaymentaddr,bobdepositaddr);
     //printf("iambob.%d src.%s dest.%s bob.%s alice.%s pubA0.(%s)\n",iambob,src,dest,bobcoin,alicecoin,bits256_str(str,pubA0));
     Adestaddr[0] = destaddr[0] = 0;
     Adest = Bdest = AAdest = ABdest = 0;
