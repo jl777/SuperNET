@@ -353,7 +353,8 @@ void nn_tests(char *pushaddr)
             printf("connect error %s\n",nn_strerror(nn_errno()));
         else
         {
-            n = LP_send(sock,"nn_tests",0);
+            n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,NN_DONTWAIT);
+           // n = LP_send(sock,"nn_tests",0);
             printf("sent %d bytes\n",n);
         }
     }
