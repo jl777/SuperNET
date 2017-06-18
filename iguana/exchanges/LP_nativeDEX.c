@@ -190,7 +190,7 @@ void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo,double profitma
 void LP_myutxo_updates(int32_t pubsock,char *passphrase,double profitmargin)
 {
     //LP_utxopurge(0); not good to disrupt existing pointers
-    LP_privkey_updates(pubsock,passphrase);
+    LP_privkey_updates(pubsock,passphrase,0);
 }
 
 void LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pubsock,struct LP_peerinfo *peer,uint32_t now,double profitmargin,int32_t interval)
@@ -376,11 +376,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
         }
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
-    {
-        printf("error launching stats rpcloop for port.%u\n",myport);
-        exit(-1);
-    }
     if ( IAMLP != 0 )
     {
         if ( myipaddr != 0 )
@@ -414,6 +409,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     else if ( myipaddr == 0 )
     {
         printf("couldnt get myipaddr\n");
+        exit(-1);
+    }
+    LP_privkey_updates(pubsock,passphrase,1);
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+    {
+        printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
 LP_mainloop(myipaddr,mypeer,mypubport,pubsock,pushaddr,pullsock,myport,passphrase,profitmargin,jobj(argjson,"coins"),jstr(argjson,"seednode"));

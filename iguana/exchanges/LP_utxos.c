@@ -756,7 +756,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
     return(privkey);
 }
 
-void LP_privkey_updates(int32_t pubsock,char *passphrase)
+void LP_privkey_updates(int32_t pubsock,char *passphrase,int32_t initonly)
 {
     int32_t i; struct iguana_info *coin; bits256 pubkey,privkey; uint8_t pubkey33[33];
     memset(privkey.bytes,0,sizeof(privkey));
@@ -768,7 +768,7 @@ void LP_privkey_updates(int32_t pubsock,char *passphrase)
         {
             if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
                 privkey = LP_privkeycalc(pubkey33,&pubkey,coin,passphrase,"");
-            if ( coin->inactive == 0 )
+            if ( coin->inactive == 0 && initonly == 0 )
                 LP_privkey_init(pubsock,coin,privkey,pubkey,pubkey33);
         }
     }
