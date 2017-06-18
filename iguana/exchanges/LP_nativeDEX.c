@@ -346,7 +346,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
 
 void nn_tests()
 {
-    
+    nn_socket(AF_SP,NN_BUS);
 }
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
