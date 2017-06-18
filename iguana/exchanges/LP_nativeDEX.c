@@ -414,7 +414,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         {
             maxsize = 2 * 1024 * 1024;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
-            LP_pullsock_check(myipaddr,-1,pullsock,0.);
+            //LP_pullsock_check(myipaddr,-1,pullsock,0.);
         } else printf("bind to %s error for %s: %s\n",bindaddr,pushaddr,nn_strerror(nn_errno()));
     }
     nn_tests(pullsock,pushaddr);
