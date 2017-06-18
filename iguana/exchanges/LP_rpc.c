@@ -65,6 +65,11 @@ char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,
 char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
 {
     char url[4096],str[65],str2[65],str3[65]; struct _LP_utxoinfo u; uint64_t val,val2;
+    if ( LP_mypeer != 0 && strcmp(destip,LP_mypeer->ipaddr) == 0 && LP_mypeer->port == destport )
+    {
+        printf("no need to notify ourselves\n");
+        return(clonestr("{\"result\":\"success\"}"));
+    }
     u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
     if ( LP_iseligible(&val,&val2,utxo->iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout,utxo->pubkey) > 0 )
     {
