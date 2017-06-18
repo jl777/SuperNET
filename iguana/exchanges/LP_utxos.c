@@ -381,14 +381,17 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
         if ( (val2= LP_txvalue(destaddr2,symbol,txid2,vout2)) >= threshold )
         {
-            //printf("val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
-            if ( strcmp(destaddr,destaddr2) == 0 && ((iambob == 0 && val2 <= val) || (iambob != 0 && val2 >= val)) )
+            if ( strcmp(destaddr,destaddr2) == 0 )
+                printf("mismatched %s destaddr %s vs %s\n",symbol,destaddr,destaddr2);
+            else if ( (iambob == 0 && val2 > val) || (iambob != 0 && val2 < val) )
+                printf("ineligible due to offsides: val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
+            else
             {
                 *valp = val;
                 *val2p = val2;
                 return(1);
-            } else printf("mismatched %s destaddr %s vs %s\n",symbol,destaddr,destaddr2);
-        } else printf("mismatched %s txid value2 %.8f < %.8f\n",symbol,dstr(val2),dstr(LP_DEPOSITSATOSHIS(satoshis)));
+            }
+        }
     } else printf("mismatched %s txid value %.8f < %.8f\n",symbol,dstr(val),dstr(satoshis));
     *valp = val;
     *val2p = val2;
@@ -414,7 +417,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         dispflag = 1;
     if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
     {
-        printf("utxoadd got spent txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",dstr(value),dstr(value2),dstr(tmpsatoshis));
+        printf("utxoadd got ineligible txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",dstr(value),dstr(value2),dstr(tmpsatoshis));
         return(0);
     }
     if ( dispflag != 0 )
