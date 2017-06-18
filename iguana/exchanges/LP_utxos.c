@@ -262,9 +262,35 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
     return(item);
 }
 
+int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
+{
+    uint64_t val,val2=0,threshold; char destaddr[64],destaddr2[64];
+    destaddr[0] = destaddr2[0] = 0;
+    if ( (val= LP_txvalue(destaddr,symbol,txid,vout)) >= satoshis )
+    {
+        threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
+        if ( (val2= LP_txvalue(destaddr2,symbol,txid2,vout2)) >= threshold )
+        {
+            if ( strcmp(destaddr,destaddr2) != 0 )
+                printf("mismatched %s destaddr %s vs %s\n",symbol,destaddr,destaddr2);
+            else if ( (iambob == 0 && val2 >= val) || (iambob != 0 && val2 < val) )
+                printf("ineligible due to offsides: val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
+            else
+            {
+                *valp = val;
+                *val2p = val2;
+                return(1);
+            }
+        }
+    } else printf("mismatched %s txid value %.8f < %.8f\n",symbol,dstr(val),dstr(satoshis));
+    *valp = val;
+    *val2p = val2;
+    return(0);
+}
+
 char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t lastn)
 {
-    int32_t i,firsti,n; struct LP_utxoinfo *utxo,*tmp; cJSON *utxosjson = cJSON_CreateArray();
+    int32_t i,firsti,n; uint64_t val,val2; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo,*tmp; cJSON *utxosjson = cJSON_CreateArray();
     i = 0;
     n = mypeer != 0 ? mypeer->numutxos : 0;
     if ( lastn <= 0 )
@@ -280,7 +306,12 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
             continue;
         if ( (symbol == 0 || symbol[0] == 0 || strcmp(symbol,utxo->coin) == 0) && utxo->T.spentflag == 0 )
         {
-            jaddi(utxosjson,LP_utxojson(utxo));
+            u = (iambob != 0) ? utxo->deposit : utxo->fee;
+            if ( LP_iseligible(&val,&val2,0,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) == 0 )
+            {
+                char str[65]; printf("iambob.%d not eligible (%.8f %.8f) %s/v%d\n",iambob,dstr(val),dstr(val2),bits256_str(str,utxo->payment.txid),utxo->payment.vout);
+                continue;
+            } else jaddi(utxosjson,LP_utxojson(utxo));
         }
     }
     return(jprint(utxosjson,1));
@@ -370,32 +401,6 @@ char *LP_spentcheck(cJSON *argjson)
     if ( retval > 0 )
         return(clonestr("{\"result\":\"marked as spent\"}"));
     return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
-}
-
-int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
-{
-    uint64_t val,val2=0,threshold; char destaddr[64],destaddr2[64];
-    destaddr[0] = destaddr2[0] = 0;
-    if ( (val= LP_txvalue(destaddr,symbol,txid,vout)) >= satoshis )
-    {
-        threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
-        if ( (val2= LP_txvalue(destaddr2,symbol,txid2,vout2)) >= threshold )
-        {
-            if ( strcmp(destaddr,destaddr2) != 0 )
-                printf("mismatched %s destaddr %s vs %s\n",symbol,destaddr,destaddr2);
-            else if ( (iambob == 0 && val2 >= val) || (iambob != 0 && val2 < val) )
-                printf("ineligible due to offsides: val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
-            else
-            {
-                *valp = val;
-                *val2p = val2;
-                return(1);
-            }
-        }
-    } else printf("mismatched %s txid value %.8f < %.8f\n",symbol,dstr(val),dstr(satoshis));
-    *valp = val;
-    *val2p = val2;
-    return(0);
 }
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin)
