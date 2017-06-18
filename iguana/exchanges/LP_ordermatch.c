@@ -268,12 +268,12 @@ double LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxop
         return(-11);
     }
     qprice = ((double)qp->destsatoshis / qp->satoshis);
-    if ( qp->satoshis < (srcvalue >> 1) )
+    if ( qp->satoshis < (srcvalue >> LP_MINVOL) )
     {
         printf("utxo payment %.8f is less than half covered by Q %.8f\n",dstr(srcvalue),dstr(qp->satoshis));
         return(-12);
     }
-    if ( qp->destsatoshis < (destvalue >> 1) )
+    if ( qp->destsatoshis < (destvalue >> LP_MINVOL) )
     {
         printf("destsatoshis %.8f is less than half of value %.8f\n",dstr(qp->destsatoshis),dstr(destvalue));
         return(-13);
@@ -575,7 +575,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                                 if ( destsatoshis > autxo->payment.value-desttxfee-1 )
                                     destsatoshis = autxo->payment.value-desttxfee-1;
                                 satoshis = destsatoshis / price;
-                                if ( metric < 1.2 && destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value >> 1) && satoshis-txfee > (butxo->S.satoshis >> 1) && satoshis < butxo->payment.value-txfee )
+                                if ( metric < 1.2 && destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value >> LP_MINVOL) && satoshis-txfee > (butxo->S.satoshis >> LP_MINVOL) && satoshis < butxo->payment.value-txfee )
                                 {
                                     printf("value %.8f price %.8f/%.8f best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",dstr(autxo->payment.value),price,bestprice,bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
                                     metric = dstr(destsatoshis) * metric * metric * metric;
@@ -587,7 +587,7 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
                                         bestmetric = metric;
                                         printf("set best!\n");
                                     }
-                                } else printf("skip.(%d %d) metric %f destsatoshis %.8f value %.8f destvalue %.8f txfees %.8f %.8f\n",destsatoshis > (autxo->payment.value >> 1),destsatoshis/price > (butxo->S.satoshis >> 1),metric,dstr(destsatoshis),dstr(butxo->S.satoshis),dstr(autxo->payment.value),dstr(txfee),dstr(desttxfee));
+                                } else printf("skip.(%d %d) metric %f destsatoshis %.8f value %.8f destvalue %.8f txfees %.8f %.8f\n",destsatoshis > (autxo->payment.value >> LP_MINVOL),destsatoshis/price > (butxo->S.satoshis >> LP_MINVOL),metric,dstr(destsatoshis),dstr(butxo->S.satoshis),dstr(autxo->payment.value),dstr(txfee),dstr(desttxfee));
                             }
                             else
                             {
