@@ -50,7 +50,7 @@ char *LP_lookup(bits256 pubkey)
 
 int32_t LP_pushsock_create(char *pushaddr)
 {
-    int32_t pushsock,timeout,i,n=1000; struct nn_pollfd pfd;
+    int32_t pushsock,timeout,i,n=1000; char msg[512]; struct nn_pollfd pfd;
     if ( (pushsock= nn_socket(AF_SP,NN_PUSH)) < 0 )
     {
         printf("LP_pushsock_create couldnt allocate socket for %s\n",pushaddr);
@@ -70,7 +70,8 @@ int32_t LP_pushsock_create(char *pushaddr)
     {
         if ( nn_poll(&pfd,1,1) > 0 )
         {
-            printf("HELLO sent.%d bytes to %s\n",LP_send(pushsock,"{\"method\":\"hello\"}",0),pushaddr);
+            sprintf(msg,"{\"method\":\"hello\",\"from\":\"%s\"}",LP_mypeer != 0 ? LP_mypeer->ipaddr : "");
+            printf("HELLO sent.%d bytes to %s\n",LP_send(pushsock,msg,0),pushaddr);
             break;
         }
     }
