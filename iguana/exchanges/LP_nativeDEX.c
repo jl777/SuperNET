@@ -136,7 +136,7 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
 int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double profitmargin)
 {
     void *ptr; int32_t recvlen,nonz = 0;
-    while ( pullsock >= 0 && (recvlen= nn_recv(pullsock,&ptr,NN_MSG,NN_DONTWAIT)) >= 0 )
+    while ( pullsock >= 0 && (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
     {
         nonz++;
         LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen);
@@ -147,7 +147,7 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
 int32_t LP_subsock_check(char *myipaddr,int32_t pubsock,int32_t sock,double profitmargin)
 {
     int32_t recvlen,nonz = 0; void *ptr;
-    while ( sock >= 0 && (recvlen= nn_recv(sock,&ptr,NN_MSG,NN_DONTWAIT)) >= 0 )
+    while ( sock >= 0 && (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) >= 0 )
     {
         nonz++;
         LP_process_message("SUB",myipaddr,pubsock,profitmargin,ptr,recvlen);
