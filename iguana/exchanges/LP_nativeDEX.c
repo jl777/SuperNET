@@ -241,13 +241,15 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             peer->diduquery = now;
         }
     }
-    if ( lastforward < now-3600 )
-    {
-        LP_forwarding_register(LP_mypubkey,pushaddr,10);
-        lastforward = now;
-    }
     if ( (counter % 600) == 300 )
+    {
         LP_myutxo_updates(pubsock,passphrase,profitmargin);
+        if ( lastforward < now-3600 )
+        {
+            LP_forwarding_register(LP_mypubkey,pushaddr,10);
+            lastforward = now;
+        }
+    }
     if ( (counter % 600) == 0 )
     {
         HASH_ITER(hh,LP_utxoinfos[0],utxo,utmp)
