@@ -381,7 +381,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
         if ( (val2= LP_txvalue(destaddr2,symbol,txid2,vout2)) >= threshold )
         {
-            printf("val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
+            //printf("val %.8f and val2 %.8f vs %.8f\n",dstr(val),dstr(val2),dstr(satoshis));
             if ( strcmp(destaddr,destaddr2) == 0 && ((iambob == 0 && val2 <= val) || (iambob != 0 && val2 >= val)) )
             {
                 *valp = val;
