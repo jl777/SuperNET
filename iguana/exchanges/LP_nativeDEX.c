@@ -401,7 +401,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     {
         timeout = 100;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-        nanomsg_tcpname(bindaddr,"127.0.0.1",mypullport);
+        nanomsg_tcpname(bindaddr,myipaddr,mypullport);
         if ( nn_bind(pullsock,bindaddr) >= 0 )
         {
             maxsize = 2 * 1024 * 1024;
@@ -416,7 +416,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         {
             pubsock = -1;
             nanomsg_tcpname(subaddr,myipaddr,mypubport);
-            nanomsg_tcpname(bindaddr,"0.0.0.0",mypubport);
+            nanomsg_tcpname(bindaddr,myipaddr,mypubport);
             if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
             {
                 if ( nn_bind(pubsock,bindaddr) >= 0 )
