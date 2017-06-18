@@ -135,8 +135,10 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
 int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double profitmargin)
 {
     void *ptr; int32_t recvlen,nonz = 0;
+    printf("call nn_recv\n");
     while ( pullsock >= 0 && (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
     {
+        printf("got %d\n",recvlen);
         nonz++;
         if ( IAMLP == 0 )
             printf("pulled.%d (%s)\n",recvlen,(char *)ptr);
