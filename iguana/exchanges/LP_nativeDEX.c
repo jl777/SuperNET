@@ -399,7 +399,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
             //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
         } else printf("bind to %s error for %s: %s\n",bindaddr,pushaddr,nn_strerror(nn_errno()));
     }
-    printf("my command address is (%s)\n",pushaddr);
+    printf("my command address is (%s) pullsock.%d\n",pushaddr,pullsock);
     if ( IAMLP != 0 )
     {
         if ( myipaddr != 0 )
