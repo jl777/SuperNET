@@ -392,8 +392,8 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
     {
         timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
+        if ( nntype == NN_PAIR )
+            nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
         maxsize = 2 * 1024 * 1024;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
         if ( LP_canbind == 0 )
