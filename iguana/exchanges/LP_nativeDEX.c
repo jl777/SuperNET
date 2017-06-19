@@ -137,7 +137,7 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
                 }
                 free(retstr);
             }
-            if ( strcmp("PULL",typestr) == 0 )
+            else if ( strcmp("PULL",typestr) == 0 )
             {
                 printf("%d got REQ.(%s) -> null\n",recvsock,jprint(argjson,0));
                 LP_send(recvsock,"{\"result\":null}",0);
