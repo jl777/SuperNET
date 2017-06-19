@@ -250,7 +250,7 @@ int32_t LP_forward(char *myipaddr,int32_t pubsock,double profitmargin,bits256 pu
     {
         if ( bits256_cmp(pubkey,LP_mypubkey) == 0 )
         {
-            //printf("GOT FORWARDED.(%s)\n",jsonstr);
+            printf("GOT FORWARDED.(%s)\n",myipaddr);
             if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
             {
                 if ( (retstr= LP_command_process(myipaddr,pubsock,argjson,0,0,profitmargin)) != 0 )

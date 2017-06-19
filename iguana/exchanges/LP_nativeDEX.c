@@ -229,7 +229,7 @@ int32_t LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pu
         if ( mypeer == 0 || strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
         {
             peer->lastutxos = now;
-            printf("query utxos from %s\n",peer->ipaddr);
+            //printf("query utxos from %s\n",peer->ipaddr);
             n = LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,profitmargin);
         }
     } //else printf("LP_peer_utxosquery skip.(%s) %u\n",peer->ipaddr,peer->lastutxos);
@@ -271,7 +271,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             LP_peer_pricesquery(peer->ipaddr,peer->port);
             peer->diduquery = now;
         }
-        nonz += LP_subsock_check(myipaddr,pubsock,peer->subsock,profitmargin);
+        nonz += LP_subsock_check(origipaddr,pubsock,peer->subsock,profitmargin);
     }
     if ( (counter % 600) == 60 )
     {
@@ -303,7 +303,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             free(retstr);
         }
     }
-    nonz += LP_pullsock_check(&retstr,myipaddr,pubsock,pullsock,profitmargin);
+    nonz += LP_pullsock_check(&retstr,origipaddr,pubsock,pullsock,profitmargin);
     if ( retstr != 0 )
         free(retstr);
     if ( IAMLP != 0 && (counter % 600) == 42 )

@@ -369,7 +369,7 @@ int32_t LP_nanobind(char *pairstr,char *myipaddr)
 int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin,double price,struct LP_quoteinfo *qp)
 {
     char pairstr[512]; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap;
-    printf("LP_connectstartbob with.(%s)\n",jprint(argjson,0));
+    printf("LP_connectstartbob.(%s) with.(%s)\n",myipaddr,jprint(argjson,0));
     qp->quotetime = (uint32_t)time(NULL);
     privkey = LP_privkey(utxo->coinaddr);
     if ( bits256_nonz(privkey) != 0 && qp->quotetime >= qp->timestamp-3 && qp->quotetime <= utxo->T.swappending && bits256_cmp(LP_mypubkey,qp->srchash) == 0 )
