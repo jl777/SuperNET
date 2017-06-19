@@ -65,7 +65,7 @@ int32_t LP_hello(struct LP_forwardinfo *ptr)
                 return(i);
             }
         }
-        printf("%d iterations on nn_poll and %s pushsock still not ready\n",i,ptr->pushaddr);
+        //printf("%d iterations on nn_poll and %s pushsock still not ready\n",i,ptr->pushaddr);
         return(-1);
     }
     return(0);

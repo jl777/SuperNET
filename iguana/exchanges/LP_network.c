@@ -232,7 +232,7 @@ void LP_psockloop(void *_ptr)
                             portable_mutex_unlock(&LP_psockmutex);
                             break;
                         }
-                        else if ( now > ptr->lastping+600 )
+                        else if ( now > ptr->lastping+60 )
                         {
                             ptr->lastping = now;
                             sendsock = ptr->sendsock;
@@ -286,8 +286,9 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
-                timeout = 1;
+                timeout = 10;
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                timeout = 1;
                 nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 maxsize = 1024 * 1024;
                 nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
@@ -406,7 +407,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
             } else printf("nntype.%d NN_SUB.%d connect to %s\n",nntype,NN_SUB,connectaddr);
             if ( nntype == NN_SUB )
                 nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
-            while ( 1 )
+            while ( 0 )
             {
                 int32_t size; void *buf;
                 if ( (size= nn_recv(pullsock,&buf,NN_MSG,0)) > 0 )
