@@ -306,6 +306,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                 jaddnum(retjson,"ispaired",ispaired);
                 jaddstr(retjson,"publicaddr",pushaddr);
                 jaddnum(retjson,"publicport",pushport);
+                printf("pushaddr.(%s) for %s\n",pushaddr,subaddr);
                 break;
             }
             if ( pullsock >= 0 )
@@ -413,7 +414,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
             }
         }
     }
-    if ( ispaired == 0 && nn_tests(pullsock,publicaddr,LP_COMMAND_SENDSOCK) < 0 )
+    if ( 0 && ispaired == 0 && nn_tests(pullsock,publicaddr,LP_COMMAND_SENDSOCK) < 0 )
     {
         printf("command socket didnt work\n");
         exit(-1);
