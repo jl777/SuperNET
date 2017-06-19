@@ -370,7 +370,7 @@ void nn_tests(int32_t pullsock,char *pushaddr)
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             //n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0*NN_DONTWAIT);
-            sprintf(msg,"{\"nn_tests\":\"%s\"}",pushaddr);
+            sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
             n = LP_send(sock,msg,0);//
             sleep(1);
             //m = nn_recv(pullsock,&ptr,NN_MSG,0);
