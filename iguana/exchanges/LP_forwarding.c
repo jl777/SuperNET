@@ -85,7 +85,7 @@ int32_t LP_hellos()
 int32_t LP_pushsock_create(struct LP_forwardinfo *ptr,char *pushaddr)
 {
     int32_t pushsock,timeout;
-    if ( (pushsock= nn_socket(AF_SP,NN_PUSH)) < 0 )
+    if ( (pushsock= nn_socket(AF_SP,LP_COMMAND_SENDSOCK)) < 0 )
     {
         printf("LP_pushsock_create couldnt allocate socket for %s\n",pushaddr);
         return(-1);
