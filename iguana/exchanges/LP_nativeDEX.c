@@ -278,7 +278,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
         LP_myutxo_updates(pubsock,passphrase,profitmargin);
         if ( lastforward < now-3600 )
         {
-            LP_forwarding_register(LP_mypubkey,origipaddr,pushport,10);
+            LP_forwarding_register(LP_mypubkey,pushaddr,pushport,10);
             lastforward = now;
         }
     }
