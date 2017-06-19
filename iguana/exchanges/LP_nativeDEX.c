@@ -216,9 +216,11 @@ int32_t LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pu
 int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t pushport,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin)
 {
     static uint32_t counter,lastforward,numpeers;
-    struct LP_utxoinfo *utxo,*utmp; char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t nonz = 0,n=0,lastn=-1;
+    struct LP_utxoinfo *utxo,*utmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t nonz = 0,n=0,lastn=-1;
     now = (uint32_t)time(NULL);
-    if ( myipaddr == 0 )
+    if ( (origipaddr= myipaddr) == 0 )
+        origipaddr = "127.0.0.1";
+    if ( mypeer == 0 )
         myipaddr = "127.0.0.1";
     numpeers = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
@@ -253,7 +255,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
         LP_myutxo_updates(pubsock,passphrase,profitmargin);
         if ( lastforward < now-3600 )
         {
-            LP_forwarding_register(LP_mypubkey,myipaddr,pushport,10);
+            LP_forwarding_register(LP_mypubkey,origipaddr,pushport,10);
             lastforward = now;
         }
     }
