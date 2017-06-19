@@ -114,7 +114,7 @@ void LP_psockloop(void *_ptr)
                     if ( (sentbytes= nn_send(sendsock,buf,size,0)) > 0 )
                     {
                         ptr->lasttime = now;
-                        printf("PSOCKS (%d %d %d) -> %d/%d bytes\n",ptr->recvsock,ptr->sendsock,sendsock,size,sentbytes);
+                        printf("PSOCKS (%d %d %d) -> %d/%d bytes %s\n",ptr->recvsock,ptr->sendsock,sendsock,size,sentbytes,ptr->sendaddr);
                     } else printf("send error to %s\n",ptr->sendaddr);
                     if ( buf != 0 )
                     {
@@ -156,6 +156,7 @@ void LP_psockloop(void *_ptr)
                             {
                                 ptr->lasttime = now;
                                 sendsock = ptr->sendsock;
+                                printf("[%s]\n",(char *)buf);
                                 break;
                             }
                         }
@@ -208,14 +209,14 @@ void LP_psockloop(void *_ptr)
                     if ( i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
-                        if ( (size= nn_recv(ptr->recvsock,&buf,NN_MSG,0)) > 0 )
+                        /*if ( (size= nn_recv(ptr->recvsock,&buf,NN_MSG,0)) > 0 )
                         {
                             printf("got %d bytes for %s\n",size,ptr->sendaddr);
                             ptr->lasttime = now;
                             sendsock = ptr->sendsock;
                             break;
                         }
-                        else if ( now > ptr->lasttime+PSOCK_IDLETIMEOUT )
+                        else*/ if ( now > ptr->lasttime+PSOCK_IDLETIMEOUT )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->recvport,ptr->sendport,now - ptr->lasttime);
                             if ( ptr->recvsock >= 0 )
