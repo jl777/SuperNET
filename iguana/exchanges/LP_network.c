@@ -310,7 +310,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                 jaddnum(retjson,"publicport",pushport);
                 printf("pushaddr.(%s) for %s\n",pushaddr,subaddr);
                 break;
-            }
+            } else printf("bind error on %s or %s\n",pushaddr,subaddr);
             if ( pullsock >= 0 )
                 nn_close(pullsock);
             if ( pubsock >= 0 )
