@@ -193,7 +193,8 @@ void LP_psockloop(void *_ptr)
                 {
                     if ( (retval= nn_poll(pfds,n,10)) <= 0 )
                     {
-                        printf("nn_poll retval.%d\n",retval);
+                        if ( retval != 0 )
+                            printf("nn_poll retval.%d\n",retval);
                         break;
                     }
                 }
@@ -207,7 +208,14 @@ void LP_psockloop(void *_ptr)
                     if ( i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
-                        if ( now > ptr->lasttime+PSOCK_IDLETIMEOUT )
+                        if ( (size= nn_recv(ptr->recvsock,&buf,NN_MSG,0)) > 0 )
+                        {
+                            printf("got %d bytes for %s\n",size,ptr->sendaddr);
+                            ptr->lasttime = now;
+                            sendsock = ptr->sendsock;
+                            break;
+                        }
+                        else if ( now > ptr->lasttime+PSOCK_IDLETIMEOUT )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->recvport,ptr->sendport,now - ptr->lasttime);
                             if ( ptr->recvsock >= 0 )
