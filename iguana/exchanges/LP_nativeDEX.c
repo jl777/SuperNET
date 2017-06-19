@@ -303,7 +303,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             free(retstr);
         }
     }
-    nonz += LP_pullsock_check(&retstr,origipaddr,pubsock,pullsock,profitmargin);
+    nonz += LP_pullsock_check(&retstr,myipaddr,pubsock,pullsock,profitmargin);
     if ( retstr != 0 )
         free(retstr);
     if ( IAMLP != 0 && (counter % 600) == 42 )
