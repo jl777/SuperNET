@@ -160,6 +160,8 @@ int32_t LP_pullsock_check(char **retstrp,char *myipaddr,int32_t pubsock,int32_t 
     *retstrp = 0;
     while ( pullsock >= 0 && (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
     {
+        if ( IAMLP == 0 )
+            printf("pullsock.%d recv.%d (%s)\n",pullsock,recvlen,(char *)ptr);
         nonz++;
         *retstrp = LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen,pullsock);
     }

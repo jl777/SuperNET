@@ -383,7 +383,8 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
         *mypullportp = 0;
         while ( *mypullportp == 0 )
         {
-            *mypullportp = LP_psock_get(connectaddr,publicaddr,ispaired);
+            if ( (*mypullportp= LP_psock_get(connectaddr,publicaddr,ispaired)) != 0 )
+                break;
             sleep(10);
             printf("try to get publicaddr again\n");
         }
