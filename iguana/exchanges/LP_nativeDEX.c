@@ -213,7 +213,7 @@ int32_t LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pu
     return(n);
 }
 
-int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin)
+int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t pushport,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin)
 {
     static uint32_t counter,lastforward,numpeers;
     struct LP_utxoinfo *utxo,*utmp; char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t nonz = 0,n=0,lastn=-1;
@@ -253,7 +253,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
         LP_myutxo_updates(pubsock,passphrase,profitmargin);
         if ( lastforward < now-3600 )
         {
-            LP_forwarding_register(LP_mypubkey,pushaddr,10);
+            LP_forwarding_register(LP_mypubkey,myipaddr,pushport,10);
             lastforward = now;
         }
     }
@@ -285,7 +285,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     return(nonz);
 }
 
-void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
+void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,uint16_t pushport,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
 {
     uint8_t r; int32_t i,n,j; cJSON *item;
     if ( IAMLP != 0 )
@@ -339,7 +339,7 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
     {
         if ( 0 && (rand() % 100) == 0 )
             printf("mainloop\n");
-        if ( LP_mainloop_iter(myipaddr,mypeer,pubsock,pushaddr,pullsock,myport,passphrase,profitmargin) == 0 )
+        if ( LP_mainloop_iter(myipaddr,mypeer,pubsock,pushaddr,pushport,pullsock,myport,passphrase,profitmargin) == 0 )
             usleep(100000);
     }
 }
@@ -462,7 +462,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         printf("couldnt get myipaddr\n");
         exit(-1);
     }
-LP_mainloop(myipaddr,mypeer,mypubport,pubsock,pushaddr,pullsock,myport,passphrase,profitmargin,jobj(argjson,"coins"),jstr(argjson,"seednode"));
+LP_mainloop(myipaddr,mypeer,mypubport,pubsock,pushaddr,mypullport,pullsock,myport,passphrase,profitmargin,jobj(argjson,"coins"),jstr(argjson,"seednode"));
 }
 
 

@@ -98,17 +98,18 @@ int32_t LP_pushsock_create(struct LP_forwardinfo *ptr,char *pushaddr)
     }
     timeout = 1;
     nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+    nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
     if ( ptr != 0 )
         LP_hello(ptr);
     return(pushsock);
 }
 
-char *LP_register(bits256 pubkey,char *ip_port)
+char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
 {
     struct LP_forwardinfo *ptr=0; int32_t pushsock; char pushaddr[64];
-    if ( ip_port == 0 || ip_port[0] == 0 || is_ipaddr(ip_port) == 0 || bits256_nonz(pubkey) == 0 )
-        return(clonestr("{\"error\":\"illegal ip_port or null pubkey\"}"));
-    sprintf(pushaddr,"ws://%s",ip_port);
+    if ( ipaddr == 0 || ipaddr[0] == 0 || is_ipaddr(ipaddr) == 0 || bits256_nonz(pubkey) == 0 )
+        return(clonestr("{\"error\":\"illegal ipaddr or null pubkey\"}"));
+    nanomsg_transportname(0,pushaddr,ipaddr,port);
     char str[65]; printf("register.(%s) %s\n",pushaddr,bits256_str(str,pubkey));
     if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
@@ -140,7 +141,7 @@ char *LP_register(bits256 pubkey,char *ip_port)
     }
 }
 
-void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t max)
+void LP_forwarding_register(bits256 pubkey,char *pushaddr,uint16_t pushport,int32_t max)
 {
     char *retstr; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t n=0,retval = -1;
     if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
@@ -151,7 +152,7 @@ void LP_forwarding_register(bits256 pubkey,char *pushaddr,int32_t max)
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         //printf("register with (%s)\n",peer->ipaddr);
-        if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,pushaddr)) != 0 )
+        if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,pushaddr,pushport)) != 0 )
         {
             //printf("[%s] LP_register.(%s) returned.(%s)\n",pushaddr,peer->ipaddr,retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )

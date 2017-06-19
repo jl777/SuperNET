@@ -106,12 +106,10 @@ char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utx
     }
 }
 
-char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *pushaddr)
+char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *ipaddr,uint16_t pushport)
 {
     char url[512],str[65],*retstr;
-    if ( strncmp("tcp://",pushaddr,strlen("tcp://")) != 0 || strlen(pushaddr) <= strlen("tcp://") )
-        return(clonestr("{\"error\":\"illegal pushaddr\"}"));
-    sprintf(url,"http://%s:%u/api/stats/register?client=%s&pushaddr=%s",destip,destport,bits256_str(str,pubkey),pushaddr+strlen("tcp://"));
+     sprintf(url,"http://%s:%u/api/stats/register?client=%s&pushaddr=%s&pushport=%u",destip,destport,bits256_str(str,pubkey),ipaddr,pushport);
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
     //printf("getutxo.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
     return(retstr);
