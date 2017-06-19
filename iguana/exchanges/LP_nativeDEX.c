@@ -91,7 +91,7 @@ char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *
     return(retstr);
 }
 
-void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double profitmargin,void *ptr,int32_t recvlen)
+void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double profitmargin,void *ptr,int32_t recvlen,int32_t recvsock)
 {
     int32_t len,datalen=0; char *retstr,*jsonstr=0; cJSON *argjson,*reqjson;
     if ( (datalen= is_hexstr((char *)ptr,0)) > 0 )
@@ -111,7 +111,7 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
         {
             //printf("got forwardhex\n");
             if ( (retstr= LP_forwardhex(pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"))) != 0 )
-                free(retstr);
+                free(retstr), retstr = 0;
         }
         else if ( jstr(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"publish") == 0 )
         {
@@ -123,8 +123,18 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
                 LP_send(pubsock,jprint(reqjson,1),1);
         }
         else if ( (retstr= LP_command_process(myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len,profitmargin)) != 0 )
-            free(retstr);
+        {
+        }
         portable_mutex_unlock(&LP_commandmutex);
+        if ( retstr != 0 )
+        {
+            if ( strcmp("PULL",typestr) == 0 && LP_COMMAND_RECVSOCK == NN_REP )
+            {
+                printf("got REQ.(%s) -> (%s)\n",jprint(argjson,0),retstr);
+                LP_send(recvsock,retstr,0);
+            }
+            free(retstr);
+        }
         free_json(argjson);
     } else printf("error parsing(%s)\n",jsonstr);
     if ( (void *)jsonstr != ptr )
@@ -139,7 +149,7 @@ int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double
     while ( pullsock >= 0 && (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
     {
         nonz++;
-        LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen);
+        LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen,pullsock);
     }
     return(nonz);
 }
@@ -150,7 +160,7 @@ int32_t LP_subsock_check(char *myipaddr,int32_t pubsock,int32_t sock,double prof
     while ( sock >= 0 && (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) >= 0 )
     {
         nonz++;
-        LP_process_message("SUB",myipaddr,pubsock,profitmargin,ptr,recvlen);
+        LP_process_message("SUB",myipaddr,pubsock,profitmargin,ptr,recvlen,sock);
         /*if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
         {
             printf("%s SUB.[%d] %s\n",myipaddr,recvsize,jprint(argjson,0));
