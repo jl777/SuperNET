@@ -239,7 +239,15 @@ forwardhex(pubkey,hex)\n\
         else if ( strcmp(method,"forwardhex") == 0 )
             retstr = LP_forwardhex(pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
         else if ( strcmp(method,"psock") == 0 )
+        {
+            if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
+            {
+                if ( LP_mypeer != 0 )
+                    myipaddr = LP_mypeer->ipaddr;
+                else printf("LP_psock dont have actual ipaddr?\n");
+            }
             return(LP_psock(myipaddr,jint(argjson,"ispaired")));
+        }
         else if ( strcmp(method,"notify") == 0 )
             retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
     }
