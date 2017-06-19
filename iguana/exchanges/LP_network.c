@@ -279,8 +279,8 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                 nanomsg_transportname(0,subaddr,myipaddr,subport);
                 LP_psockadd(ispaired,pullsock,pushport,pubsock,subport,subaddr);
                 jaddstr(retjson,"result","success");
-                jaddstr(retjson,"connectaddr",subaddr);
                 jaddstr(retjson,"LPipaddr",myipaddr);
+                jaddstr(retjson,"connectaddr",subaddr);
                 jaddnum(retjson,"connectport",subport);
                 jaddnum(retjson,"ispaired",ispaired);
                 jaddstr(retjson,"publicaddr",pushaddr);
@@ -321,6 +321,7 @@ int32_t nn_tests(int32_t pullsock,char *pushaddr,int32_t nnother)
             printf("connect error %s\n",nn_strerror(nn_errno()));
         else
         {
+            sleep(3);
             timeout = 1;
             //nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
