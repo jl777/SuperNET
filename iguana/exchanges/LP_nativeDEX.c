@@ -353,7 +353,7 @@ void nn_tests(int32_t pullsock,char *pushaddr)
             printf("connect error %s\n",nn_strerror(nn_errno()));
         else
         {
-            sleep(3);
+            sleep(2);
             timeout = 1000;
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0*NN_DONTWAIT);
