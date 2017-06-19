@@ -414,6 +414,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
         nanomsg_transportname(1,bindaddr,myipaddr,mypullport);
         if ( nn_bind(pullsock,bindaddr) >= 0 )
         {
