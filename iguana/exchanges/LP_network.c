@@ -19,9 +19,9 @@
 //
 // jl777: might need to queue outbound packets and send via separate thread
 
-char *nanomsg_tcpname(char *str,char *ipaddr,uint16_t port)
+char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"tcp://%s:%u",ipaddr,port);
+    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port);
     return(str);
 }
 

@@ -403,18 +403,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
                 myipaddr[--n] = 0;
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
-    sprintf(pushaddr,"ws://%s:%u",myipaddr,mypullport);
-    //nanomsg_tcpname(pushaddr,myipaddr,mypullport);
+    nanomsg_transportname(0,pushaddr,myipaddr,mypullport);
     if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 )
     {
         timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-#ifdef __APPLE__
-        sprintf(bindaddr,"ws://*:%u",mypullport);
-        //nanomsg_tcpname(bindaddr,myipaddr,mypullport);
-#else
-        nanomsg_tcpname(bindaddr,myipaddr,mypullport);
-#endif
+        nanomsg_transportname(1,bindaddr,myipaddr,mypullport);
         if ( nn_bind(pullsock,bindaddr) >= 0 )
         {
             maxsize = 2 * 1024 * 1024;
@@ -434,8 +428,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         if ( myipaddr != 0 )
         {
             pubsock = -1;
-            nanomsg_tcpname(subaddr,myipaddr,mypubport);
-            nanomsg_tcpname(bindaddr,myipaddr,mypubport);
+            nanomsg_transportname(0,subaddr,myipaddr,mypubport);
+            nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
             if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
             {
                 if ( nn_bind(pubsock,bindaddr) >= 0 )

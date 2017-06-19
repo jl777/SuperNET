@@ -72,7 +72,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             strcpy(peer->ipaddr,ipaddr);
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
-                nanomsg_tcpname(pushaddr,peer->ipaddr,pushport);
+                nanomsg_transportname(0,pushaddr,peer->ipaddr,pushport);
                 if ( nn_connect(pushsock,pushaddr) >= 0 )
                 {
                     timeout = 100;
@@ -87,7 +87,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                         timeout = 1;
                         nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                         nn_setsockopt(subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
-                        nanomsg_tcpname(subaddr,peer->ipaddr,subport);
+                        nanomsg_transportname(0,subaddr,peer->ipaddr,subport);
                         if ( nn_connect(subsock,subaddr) >= 0 )
                         {
                             peer->subsock = subsock;
