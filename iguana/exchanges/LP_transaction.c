@@ -768,6 +768,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         jaddistr(privkeys,wifstr);
         V[0].N = V[0].M = 2;
     } else V[0].N = V[0].M = 1;
+    printf("what?\n");
     V[0].signers[0].privkey = privkey;
     bitcoin_pubkey33(ctx,V[0].signers[0].pubkey,privkey);
     bitcoin_priv2wif(wifstr,privkey,wiftype);
@@ -790,6 +791,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     jaddnum(item,"vout",vout);
     bitcoin_address(tmpaddr,pubtype,pubkey33,33);
     bitcoin_addr2rmd160(&addrtype,rmd160,tmpaddr);
+    printf("before redeem\n");
     if ( redeemlen != 0 )
     {
         init_hexbytes_noT(hexstr,redeemscript,redeemlen);
@@ -829,6 +831,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         changelen = bitcoin_standardspend(changescript,0,changermd160);
         txobj = bitcoin_txoutput(txobj,changescript,changelen,change);
     }
+    printf("call json2hex\n");
     if ( (rawtxbytes= bitcoin_json2hex(isPoS,&txid,txobj,V)) != 0 )
     {
         char str[65];
