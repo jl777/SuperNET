@@ -409,7 +409,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
 #ifdef __APPLE__
-        sprintf(bindaddr,"ws://[*]:%u",mypullport);
+        sprintf(bindaddr,"tcp://*:%u",mypullport);
         //nanomsg_tcpname(bindaddr,myipaddr,mypullport);
 #else
         nanomsg_tcpname(bindaddr,myipaddr,mypullport);
@@ -419,7 +419,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
             maxsize = 2 * 1024 * 1024;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
             //LP_pullsock_check(myipaddr,-1,pullsock,0.);
-        } else printf("bind to %s error for %s: %s\n",bindaddr,pushaddr,nn_strerror(nn_errno()));
+        }
+        else
+        {
+            printf("bind to %s error for %s: %s\n",bindaddr,pushaddr,nn_strerror(nn_errno()));
+            exit(-1);
+        }
     }
     nn_tests(pullsock,pushaddr);
     printf("my command address is (%s) pullsock.%d\n",pushaddr,pullsock);
