@@ -108,7 +108,7 @@ extern int32_t IGUANA_NUMHELPERS;
 #define MS_ASYNC	1		/* Sync memory asynchronously.  */
 #define MS_SYNC		4		/* Synchronous memory sync.  */
 #else
-#define PNACL_message printf
+#define PNACL_message //printf
 #endif
 
 #ifndef WIN32
