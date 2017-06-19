@@ -119,7 +119,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str)
     strcat(fname,"/");
 #endif
     strcat(fname,str);
-    printf("LP_statefname.(%s) <- %s %s %s\n",fname,symbol,assetname,str);
+    //printf("LP_statefname.(%s) <- %s %s %s\n",fname,symbol,assetname,str);
 }
 
 int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot)
