@@ -99,7 +99,7 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
 
 void LP_psockloop(void *_ptr)
 {
-    int32_t i,n,nonz,iter,size=0,sentbytes,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; struct nn_pollfd pfd,*pfds; char keepalive[512];//,*myipaddr = _ptr;
+    int32_t i,n,nonz,iter,retval,size=0,sentbytes,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; struct nn_pollfd pfd,*pfds; char keepalive[512];//,*myipaddr = _ptr;
     while ( 1 )
     {
         now = (uint32_t)time(NULL);
@@ -151,6 +151,7 @@ void LP_psockloop(void *_ptr)
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
+                            printf("%s has pollin\n",ptr->sendaddr);
                             if ( (size= nn_recv(ptr->recvsock,&buf,NN_MSG,0)) > 0 )
                             {
                                 ptr->lasttime = now;
@@ -176,17 +177,29 @@ void LP_psockloop(void *_ptr)
                             }
                             else if ( (pfds[n].revents & POLLIN) != 0 )
                             {
-                                ptr->lasttime = now;
-                                sendsock = ptr->recvsock;
+                                printf("%s paired has pollin\n",ptr->sendaddr);
+                                if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
+                                {
+                                    ptr->lasttime = now;
+                                    sendsock = ptr->recvsock;
+                                    break;
+                                }
                             }
                         }
                         n++;
                     }
                 }
-                if ( iter == 0 && nn_poll(pfds,n,10) <= 0 )
-                    break;
+                if ( iter == 0 )
+                {
+                    if ( (retval= nn_poll(pfds,n,10)) <= 0 )
+                    {
+                        printf("nn_poll retval.%d\n",retval);
+                        break;
+                    }
+                }
             }
             portable_mutex_unlock(&LP_psockmutex);
+            free(pfds);
             if ( sendsock < 0 )
             {
                 for (i=nonz=0; i<Numpsocks; i++)
@@ -321,10 +334,9 @@ int32_t nn_tests(int32_t pullsock,char *pushaddr,int32_t nnother)
             printf("connect error %s\n",nn_strerror(nn_errno()));
         else
         {
-            sleep(3);
+            sleep(1);
             timeout = 1;
-            //nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            nn_setsockopt(sock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+            nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
             n = LP_send(sock,msg,0);
             LP_pullsock_check(&retstr,"127.0.0.1",-1,pullsock,0.);
