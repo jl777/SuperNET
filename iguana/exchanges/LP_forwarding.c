@@ -146,16 +146,19 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
 
 void LP_forwarding_register(bits256 pubkey,char *pushaddr,uint16_t pushport,int32_t max)
 {
-    char *retstr,ipaddr[64];; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t n=0,retval = -1;
+    char *retstr,ipaddr[64]; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t j,n=0,retval = -1;
     if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
     {
         printf("LP_forwarding_register illegal pushaddr or null pubkey\n");
         return;
     }
-    parse_ipaddr(ipaddr,pushaddr);
+    for (j=0; pushaddr[j]!=0; j++)
+        if ( pushaddr[j] >= '0' && pushaddr[j] <= '9' )
+            break;
+    parse_ipaddr(ipaddr,pushaddr+j);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        printf("register %s %u with (%s)\n",ipaddr,pushport,peer->ipaddr);
+        printf("register.(%s) %s %u with (%s)\n",pushaddr,ipaddr,pushport,peer->ipaddr);
         if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,ipaddr,pushport)) != 0 )
         {
             //printf("[%s] LP_register.(%s) returned.(%s)\n",pushaddr,peer->ipaddr,retstr);
