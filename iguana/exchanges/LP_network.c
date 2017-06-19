@@ -403,9 +403,15 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
             {
                 printf("bind to %s error for %s: %s\n",connectaddr,publicaddr,nn_strerror(nn_errno()));
                 exit(-1);
-            } else printf("nntype.%d NN_SUB.%d to %s\n",nntype,NN_SUB,connectaddr);
+            } else printf("nntype.%d NN_SUB.%d connect to %s\n",nntype,NN_SUB,connectaddr);
             if ( nntype == NN_SUB )
                 nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
+            while ( 1 )
+            {
+                int32_t size; void *buf;
+                if ( (size= nn_recv(pullsock,&buf,NN_MSG,0)) > 0 )
+                    printf("SUBPULL.(%s)\n",(char *)buf);
+            }
         }
         else
         {
