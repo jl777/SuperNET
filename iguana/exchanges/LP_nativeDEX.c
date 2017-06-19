@@ -445,7 +445,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
             exit(-1);
         }
     }
-    nn_tests(pullsock,pushaddr);
+    //nn_tests(pullsock,pushaddr);
     printf("my command address is (%s) pullsock.%d\n",pushaddr,pullsock);
     if ( IAMLP != 0 )
     {

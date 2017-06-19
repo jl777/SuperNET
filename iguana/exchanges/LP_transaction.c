@@ -756,9 +756,13 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     } else if ( value > txfee )
         satoshis = value - txfee;
     else printf("unexpected small value %.8f vs txfee %.8f\n",dstr(value),dstr(txfee));
-    *destamountp = satoshis;
+    if ( destamountp != 0 )
+        *destamountp = satoshis;
+    printf("destamountp %p\n",destamountp);
     timestamp = (uint32_t)time(NULL);
+    printf("t %u V.%p %ld\n",timestamp,V,sizeof(V));
     memset(V,0,sizeof(V));
+    printf("cleared V\n");
     privkeys = cJSON_CreateArray();
     if ( privkey2p != 0 )
     {
