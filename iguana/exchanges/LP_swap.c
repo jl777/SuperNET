@@ -642,7 +642,7 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
     }
     if ( retjson != 0 )
     {
-        printf("SWAP completed! %u-%u %s\n",requestid,quoteid,jprint(retjson,0));
+        printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>\nSWAP completed! %u-%u %s\n",requestid,quoteid,jprint(retjson,0));
         free_json(retjson);
         if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
         {
