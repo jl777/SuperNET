@@ -93,7 +93,7 @@ char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *
 
 void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double profitmargin,void *ptr,int32_t recvlen,int32_t recvsock)
 {
-    int32_t len,datalen=0; char *retstr,*jsonstr=0; cJSON *argjson,*reqjson;
+    int32_t len,datalen=0; char *retstr=0,*jsonstr=0; cJSON *argjson,*reqjson;
     if ( (datalen= is_hexstr((char *)ptr,0)) > 0 )
     {
         datalen >>= 1;
@@ -126,14 +126,22 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
         {
         }
         portable_mutex_unlock(&LP_commandmutex);
-        if ( retstr != 0 )
+        if ( LP_COMMAND_RECVSOCK == NN_REP )
         {
-            if ( strcmp("PULL",typestr) == 0 && LP_COMMAND_RECVSOCK == NN_REP )
+            if ( retstr != 0 )
             {
-                printf("got REQ.(%s) -> (%s)\n",jprint(argjson,0),retstr);
-                LP_send(recvsock,retstr,0);
+                if ( strcmp("PULL",typestr) == 0 )
+                {
+                    printf("%d got REQ.(%s) -> (%s)\n",recvsock,jprint(argjson,0),retstr);
+                    LP_send(recvsock,retstr,0);
+                }
+                free(retstr);
             }
-            free(retstr);
+            if ( strcmp("PULL",typestr) == 0 )
+            {
+                printf("%d got REQ.(%s) -> null\n",recvsock,jprint(argjson,0));
+                LP_send(recvsock,"{\"result\":null}",0);
+            }
         }
         free_json(argjson);
     } else printf("error parsing(%s)\n",jsonstr);
@@ -375,7 +383,7 @@ void nn_tests(int32_t pullsock,char *pushaddr)
             sleep(1);
             //m = nn_recv(pullsock,&ptr,NN_MSG,0);
             LP_pullsock_check("127.0.0.1",-1,pullsock,0.);
-            printf(">>>>>>>>>>>>>>>>>>>>>> sent %d bytes, recv.%d\n",n,m);
+            printf(">>>>>>>>>>>>>>>>>>>>>> sent %d bytes -> %d, recv.%d\n",n,pullsock,m);
         }
     }
 }
