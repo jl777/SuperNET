@@ -109,10 +109,45 @@ char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utx
 char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *ipaddr,uint16_t pushport)
 {
     char url[512],str[65],*retstr;
-     sprintf(url,"http://%s:%u/api/stats/register?client=%s&pushaddr=%s&pushport=%u",destip,destport,bits256_str(str,pubkey),ipaddr,pushport);
+    sprintf(url,"http://%s:%u/api/stats/register?client=%s&pushaddr=%s&pushport=%u",destip,destport,bits256_str(str,pubkey),ipaddr,pushport);
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
     //printf("getutxo.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
     return(retstr);
+}
+
+char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
+{
+    char url[512],*retstr;
+    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport,ispaired);
+    retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
+    //printf("getutxo.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
+    return(retstr);
+}
+
+uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
+{
+    uint16_t publicport = 0; char *retstr,*addr; cJSON *retjson; struct LP_peerinfo *peer,*tmp;
+    connectaddr[0] = publicaddr[0] = 0;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        if ( (retstr= issue_LP_psock(peer->ipaddr,peer->port,ispaired)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (addr= jstr(retjson,"publicaddr")) != 0 )
+                    safecopy(publicaddr,addr,128);
+                if ( (addr= jstr(retjson,"connectaddr")) != 0 )
+                    safecopy(connectaddr,addr,128);
+                if ( publicaddr[0] != 0 && connectaddr[0] != 0 )
+                    publicport = juint(retjson,"publicport");
+                free_json(retjson);
+            }
+            free(retstr);
+        }
+        if ( publicport != 0 )
+            break;
+    }
+    return(publicport);
 }
 
 char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)

@@ -20,12 +20,13 @@
 
 #include <stdio.h>
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex;
-
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex;
+int32_t LP_canbind;
 #include "LP_network.c"
 
 struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
 struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
+struct LP_forwardinfo *LP_forwardinfos;
 
 char *activecoins[] = { "BTC", "KMD" };
 char GLOBAL_DBDIR[] = { "DB" };
@@ -33,6 +34,7 @@ char USERPASS[65],USERPASS_WIFSTR[64],USERHOME[512] = { "/root" };
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //
 
+uint32_t LP_deadman_switch;
 int32_t LP_mypubsock = -1;
 int32_t USERPASS_COUNTER,IAMLP = 0;
 double LP_profitratio = 1.;
@@ -91,7 +93,7 @@ char *LP_command_process(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *
     return(retstr);
 }
 
-void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double profitmargin,void *ptr,int32_t recvlen,int32_t recvsock)
+char *LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double profitmargin,void *ptr,int32_t recvlen,int32_t recvsock)
 {
     int32_t len,datalen=0; char *retstr=0,*jsonstr=0; cJSON *argjson,*reqjson;
     if ( (datalen= is_hexstr((char *)ptr,0)) > 0 )
@@ -111,7 +113,8 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
         {
             //printf("got forwardhex\n");
             if ( (retstr= LP_forwardhex(pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"))) != 0 )
-                free(retstr), retstr = 0;
+            {
+            }
         }
         else if ( jstr(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"publish") == 0 )
         {
@@ -135,7 +138,6 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
                     printf("%d got REQ.(%s) -> (%s)\n",recvsock,jprint(argjson,0),retstr);
                     LP_send(recvsock,retstr,0);
                 }
-                free(retstr);
             }
             else if ( strcmp("PULL",typestr) == 0 )
             {
@@ -149,26 +151,29 @@ void LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double prof
         free(jsonstr);
     if ( ptr != 0 )
         nn_freemsg(ptr), ptr = 0;
+    return(retstr);
 }
 
-int32_t LP_pullsock_check(char *myipaddr,int32_t pubsock,int32_t pullsock,double profitmargin)
+int32_t LP_pullsock_check(char **retstrp,char *myipaddr,int32_t pubsock,int32_t pullsock,double profitmargin)
 {
     void *ptr; int32_t recvlen,nonz = 0;
+    *retstrp = 0;
     while ( pullsock >= 0 && (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
     {
         nonz++;
-        LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen,pullsock);
+        *retstrp = LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen,pullsock);
     }
     return(nonz);
 }
 
 int32_t LP_subsock_check(char *myipaddr,int32_t pubsock,int32_t sock,double profitmargin)
 {
-    int32_t recvlen,nonz = 0; void *ptr;
+    int32_t recvlen,nonz = 0; void *ptr; char *retstr;
     while ( sock >= 0 && (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) >= 0 )
     {
         nonz++;
-        LP_process_message("SUB",myipaddr,pubsock,profitmargin,ptr,recvlen,sock);
+        if ( (retstr= LP_process_message("SUB",myipaddr,pubsock,profitmargin,ptr,recvlen,sock)) != 0 )
+            free(retstr);
         /*if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
         {
             printf("%s SUB.[%d] %s\n",myipaddr,recvsize,jprint(argjson,0));
@@ -298,40 +303,18 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             free(retstr);
         }
     }
-    nonz += LP_pullsock_check(myipaddr,pubsock,pullsock,profitmargin);
+    nonz += LP_pullsock_check(&retstr,myipaddr,pubsock,pullsock,profitmargin);
+    if ( retstr != 0 )
+        free(retstr);
     if ( IAMLP != 0 && (counter % 600) == 42 )
         LP_hellos();
     counter++;
     return(nonz);
 }
 
-void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,char *pushaddr,uint16_t pushport,int32_t pullsock,uint16_t myport,char *passphrase,double profitmargin,cJSON *coins,char *seednode)
+void LP_initcoins(int32_t pubsock,cJSON *coins,char *passphrase)
 {
-    uint8_t r; int32_t i,n,j; cJSON *item;
-    if ( IAMLP != 0 )
-    {
-        if ( seednode == 0 || seednode[0] == 0 )
-        {
-            for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
-            {
-                if ( (rand() % 100) > 25 )
-                    continue;
-                LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,mypeer->ipaddr,myport,profitmargin);
-            }
-        } else LP_peersquery(mypeer,pubsock,seednode,myport,mypeer->ipaddr,myport,profitmargin);
-    }
-    else
-    {
-        if ( seednode == 0 || seednode[0] == 0 )
-        {
-            OS_randombytes((void *)&r,sizeof(r));
-            for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
-            {
-                i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
-                LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport,profitmargin);
-            }
-        } else LP_peersquery(mypeer,pubsock,seednode,myport,"127.0.0.1",myport,profitmargin);
-    }
+    int32_t i,n; cJSON *item;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
         fprintf(stderr,"%s ",activecoins[i]);
@@ -350,50 +333,64 @@ void LP_mainloop(char *myipaddr,struct LP_peerinfo *mypeer,uint16_t mypubport,in
     }
     fprintf(stderr,"privkey updates\n");
     LP_privkey_updates(pubsock,passphrase,1);
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
-    {
-        printf("error launching stats rpcloop for port.%u\n",myport);
-        exit(-1);
-    }
-    while ( 1 )
-    {
-        if ( 0 && (rand() % 100) == 0 )
-            printf("mainloop\n");
-        if ( LP_mainloop_iter(myipaddr,mypeer,pubsock,pushaddr,pushport,pullsock,myport,passphrase,profitmargin) == 0 )
-            usleep(100000);
-    }
 }
 
-void nn_tests(int32_t pullsock,char *pushaddr)
+void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,char *seednode,double profitmargin)
 {
-    int32_t sock,n,timeout,m=0; char msg[512]; //void *ptr;
-    if ( (sock= nn_socket(AF_SP,LP_COMMAND_SENDSOCK)) >= 0 )
+    int32_t i,j; uint32_t r;
+    if ( IAMLP != 0 )
     {
-        if ( nn_connect(sock,pushaddr) < 0 )
-            printf("connect error %s\n",nn_strerror(nn_errno()));
-        else
+        LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,0,0,profitmargin,0,0);
+        if ( myipaddr == 0 || mypeer == 0 )
         {
-            sleep(2);
-            timeout = 1;
-            nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            nn_setsockopt(sock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            //n = nn_send(sock,"nn_tests",(int32_t)strlen("nn_tests")+1,0*NN_DONTWAIT);
-            sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
-            n = LP_send(sock,msg,0);//
-            sleep(1);
-            //m = nn_recv(pullsock,&ptr,NN_MSG,0);
-            LP_pullsock_check("127.0.0.1",-1,pullsock,0.);
-            printf(">>>>>>>>>>>>>>>>>>>>>> sent %d bytes -> %d, recv.%d\n",n,pullsock,m);
+            printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
+            exit(-1);
         }
+        if ( seednode == 0 || seednode[0] == 0 )
+        {
+            for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
+            {
+                if ( (rand() % 100) > 25 )
+                    continue;
+                LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,mypeer->ipaddr,myport,profitmargin);
+            }
+        } else LP_peersquery(mypeer,pubsock,seednode,myport,mypeer->ipaddr,myport,profitmargin);
+    }
+    else
+    {
+        if ( myipaddr == 0 )
+        {
+            printf("couldnt get myipaddr\n");
+            exit(-1);
+        }
+        if ( seednode == 0 || seednode[0] == 0 )
+        {
+            OS_randombytes((void *)&r,sizeof(r));
+            for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
+            {
+                i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
+                LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport,profitmargin);
+            }
+        } else LP_peersquery(mypeer,pubsock,seednode,myport,"127.0.0.1",myport,profitmargin);
     }
 }
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t maxsize,timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128];
+    char *myipaddr=0; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128];
     IAMLP = !amclient;
+#ifndef __linux__
+    if ( IAMLP != 0 )
+    {
+        printf("must run a unix node for LP node\n");
+        exit(-1);
+    }
+#endif
     LP_profitratio += profitmargin;
     OS_randombytes((void *)&n,sizeof(n));
+    if ( jobj(argjson,"canbind") == 0 )
+        LP_canbind = IAMLP;
+    else LP_canbind = jint(argjson,"canbind");
     srand((int32_t)n);
     if ( userhome != 0 && userhome[0] != 0 )
     {
@@ -410,6 +407,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     portable_mutex_init(&LP_cachemutex);
     portable_mutex_init(&LP_networkmutex);
     portable_mutex_init(&LP_forwardmutex);
+    portable_mutex_init(&LP_psockmutex);
     portable_mutex_init(&LP_pubkeymutex);
     if ( profitmargin == 0. || profitmargin == 0.01 )
     {
@@ -425,65 +423,59 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
                 myipaddr[--n] = 0;
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
-    nanomsg_transportname(0,pushaddr,myipaddr,mypullport);
-    if ( (pullsock= nn_socket(AF_SP,LP_COMMAND_RECVSOCK)) >= 0 )
-    {
-        timeout = 1;
-        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
-        nanomsg_transportname(1,bindaddr,myipaddr,mypullport);
-        if ( nn_bind(pullsock,bindaddr) >= 0 )
-        {
-            maxsize = 2 * 1024 * 1024;
-            nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
-            //LP_pullsock_check(myipaddr,-1,pullsock,0.);
-        }
-        else
-        {
-            printf("bind to %s error for %s: %s\n",bindaddr,pushaddr,nn_strerror(nn_errno()));
-            exit(-1);
-        }
-    }
-    //nn_tests(pullsock,pushaddr);
-    printf("my command address is (%s) pullsock.%d\n",pushaddr,pullsock);
     if ( IAMLP != 0 )
     {
-        if ( myipaddr != 0 )
+        pubsock = -1;
+        nanomsg_transportname(0,subaddr,myipaddr,mypubport);
+        nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
+        if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
         {
-            pubsock = -1;
-            nanomsg_transportname(0,subaddr,myipaddr,mypubport);
-            nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
-            if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
+            if ( nn_bind(pubsock,bindaddr) >= 0 )
             {
-                if ( nn_bind(pubsock,bindaddr) >= 0 )
-                {
-                    timeout = 10;
-                    nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                }
-                else
-                {
-                    printf("error binding to (%s).%d (%s).%d\n",pushaddr,pullsock,subaddr,pubsock);
-                     if ( pubsock >= 0 )
-                        nn_close(pubsock), pubsock = -1;
-                }
-            } else printf("error getting sockets %d %d\n",pullsock,pubsock);
-            printf(">>>>>>>>> myipaddr.%s (%s %s) pubsock.%d pullsock.%d\n",myipaddr,pushaddr,subaddr,pubsock,pullsock);
-            LP_mypubsock = pubsock;
-            LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,0,0,profitmargin,0,0);
-        }
-        if ( myipaddr == 0 || mypeer == 0 )
-        {
-            printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
-            exit(-1);
-        }
+                timeout = 10;
+                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+            }
+            else
+            {
+                printf("error binding to (%s).%d\n",subaddr,pubsock);
+                if ( pubsock >= 0 )
+                    nn_close(pubsock), pubsock = -1;
+            }
+        } else printf("error getting pubsock %d\n",pubsock);
+        printf(">>>>>>>>> myipaddr.%s (%s) pullsock.%d\n",myipaddr,subaddr,pubsock);
+        LP_mypubsock = pubsock;
     }
-    else if ( myipaddr == 0 )
+    LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),profitmargin);
+    pullsock = LP_initpublicaddr(&mypullport,pushaddr,myipaddr,mypullport,0);
+    LP_deadman_switch = (uint32_t)time(NULL);
+    printf("my command address is (%s) pullsock.%d pullport.%u\n",pushaddr,pullsock,mypullport);
+    LP_initcoins(pubsock,jobj(argjson,"coins"),passphrase);
+    if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)&myipaddr) != 0 )
     {
-        printf("couldnt get myipaddr\n");
+        printf("error launching LP_psockloop for (%s)\n",myipaddr);
         exit(-1);
     }
-LP_mainloop(myipaddr,mypeer,mypubport,pubsock,pushaddr,mypullport,pullsock,myport,passphrase,profitmargin,jobj(argjson,"coins"),jstr(argjson,"seednode"));
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+    {
+        printf("error launching stats rpcloop for port.%u\n",myport);
+        exit(-1);
+    }
+    while ( 1 )
+    {
+        if ( 0 && (rand() % 100) == 0 )
+            printf("mainloop\n");
+        if ( LP_mainloop_iter(myipaddr,mypeer,pubsock,pushaddr,mypullport,pullsock,myport,passphrase,profitmargin) == 0 )
+            usleep(100000);
+        if ( LP_canbind == 0 && LP_deadman_switch < time(NULL)-777 )
+        {
+            printf("DEAD man's switch activated, register forwarding again\n");
+            if ( pullsock >= 0 )
+                nn_close(pullsock);
+            pullsock = LP_initpublicaddr(&mypullport,pushaddr,myipaddr,mypullport,0);
+            LP_deadman_switch = (uint32_t)time(NULL);
+            LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,100000);
+        }
+    }
 }
 
 

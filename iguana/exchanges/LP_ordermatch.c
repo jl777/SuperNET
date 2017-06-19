@@ -338,24 +338,32 @@ double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *metho
     return(price);
 }
 
-int32_t LP_nanobind(int32_t pair,char *pairstr,char *myipaddr)
+int32_t LP_nanobind(char *pairstr,char *myipaddr)
 {
-    int32_t i,timeout,r; char bindaddr[128];
-    for (i=0; i<10; i++)
+    int32_t i,timeout,r,pairsock = -1; uint16_t mypullport; char bindaddr[128];
+    if ( LP_canbind != 0 )
     {
-        r = (10000 + (rand() % 50000)) & 0xffff;
-        nanomsg_transportname(0,pairstr,myipaddr,r);
-        nanomsg_transportname(1,bindaddr,myipaddr,r);
-        if ( nn_bind(pair,bindaddr) >= 0 )
+        if ( (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
+            printf("error creating utxo->pair\n");
+        else
         {
-            timeout = 100;
-            nn_setsockopt(pair,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            nn_setsockopt(pair,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            printf("nanobind %s to %d\n",pairstr,pair);
-            return(0);
-        } else printf("error binding to %s for %s\n",bindaddr,pairstr);
-    }
-    return(-1);
+            for (i=0; i<10; i++)
+            {
+                r = (10000 + (rand() % 50000)) & 0xffff;
+                nanomsg_transportname(0,pairstr,myipaddr,r);
+                nanomsg_transportname(1,bindaddr,myipaddr,r);
+                if ( nn_bind(pairsock,bindaddr) >= 0 )
+                {
+                    timeout = 100;
+                    nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                    nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+                    printf("nanobind %s to %d\n",pairstr,pairsock);
+                    return(pairsock);
+                } else printf("error binding to %s for %s\n",bindaddr,pairstr);
+            }
+        }
+    } else pairsock = LP_initpublicaddr(&mypullport,pairstr,myipaddr,0,0);
+    return(pairsock);
 }
 
 int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin,double price,struct LP_quoteinfo *qp)
@@ -366,9 +374,7 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
     privkey = LP_privkey(utxo->coinaddr);
     if ( bits256_nonz(privkey) != 0 && qp->quotetime >= qp->timestamp-3 && qp->quotetime <= utxo->T.swappending && bits256_cmp(LP_mypubkey,qp->srchash) == 0 )
     {
-        if ( (pair= nn_socket(AF_SP,NN_PAIR)) < 0 )
-            printf("error creating utxo->pair\n");
-        else if ( LP_nanobind(pair,pairstr,myipaddr) >= 0 )
+        if ( (pair= LP_nanobind(pairstr,myipaddr)) >= 0 )
         {
             LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis,rel,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
             swap = LP_swapinit(1,0,privkey,&qp->R,qp);

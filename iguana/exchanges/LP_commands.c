@@ -211,6 +211,12 @@ forwardhex(pubkey,hex)\n\
         } else retstr = clonestr("{\"error\":\"cant recurse forwards\"}");
 
     }
+    else if ( strcmp(method,"keepalive") == 0 )
+    {
+        printf("got keepalive lag.%d\n",(int32_t)time(NULL) - LP_deadman_switch);
+        LP_deadman_switch = (uint32_t)time(NULL);
+        return(0);
+    }
     else if ( strcmp(method,"getpeers") == 0 )
         return(LP_peers());
     else if ( strcmp(method,"getutxos") == 0 )
@@ -232,6 +238,8 @@ forwardhex(pubkey,hex)\n\
             return(LP_lookup(jbits256(argjson,"client")));
         else if ( strcmp(method,"forwardhex") == 0 )
             retstr = LP_forwardhex(pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
+        else if ( strcmp(method,"psock") == 0 )
+            return(LP_psock(myipaddr,jint(argjson,"ispaired")));
         else if ( strcmp(method,"notify") == 0 )
             retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
     }
