@@ -51,7 +51,10 @@ char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjs
         return(0);
     }
     if ( strcmp(method,"hello") == 0 )
+    {
+        printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
         return(0);
+    }
     else if ( strcmp(method,"nn_tests") == 0 )
         return(clonestr("{\"result\":\"success\"}"));
     else if ( strcmp(method,"help") == 0 )
