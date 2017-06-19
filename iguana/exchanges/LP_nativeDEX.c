@@ -218,7 +218,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     static uint32_t counter,lastforward,numpeers;
     struct LP_utxoinfo *utxo,*utmp; char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t nonz = 0,n=0,lastn=-1;
     now = (uint32_t)time(NULL);
-    if ( mypeer == 0 )
+    if ( myipaddr == 0 )
         myipaddr = "127.0.0.1";
     numpeers = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
