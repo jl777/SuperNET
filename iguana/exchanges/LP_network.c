@@ -275,6 +275,8 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                     nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
                     nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 }
+                nanomsg_transportname(0,pushaddr,myipaddr,pushport);
+                nanomsg_transportname(0,subaddr,myipaddr,subport);
                 LP_psockadd(ispaired,pullsock,pushport,pubsock,subport,subaddr);
                 jaddstr(retjson,"result","success");
                 jaddstr(retjson,"connectaddr",subaddr);
