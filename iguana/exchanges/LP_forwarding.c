@@ -108,9 +108,7 @@ char *LP_register(bits256 pubkey,char *ipaddr)
     struct LP_forwardinfo *ptr=0; int32_t pushsock; char pushaddr[64];
     if ( ipaddr == 0 || ipaddr[0] == 0 || is_ipaddr(ipaddr) == 0 || bits256_nonz(pubkey) == 0 )
         return(clonestr("{\"error\":\"illegal ipaddr or null pubkey\"}"));
-    //if ( strlen(pushaddr) <= strlen("tcp://") || is_ipaddr(pushaddr+strlen("tcp://")) == 0 )
-    //    return(clonestr("{\"error\":\"illegal ipaddr\"}"));
-    sprintf(pushaddr,"tcp://%s",ipaddr);
+    sprintf(pushaddr,"ws://%s:%u",ipaddr,7780);
     char str[65]; printf("register.(%s) %s\n",pushaddr,bits256_str(str,pubkey));
     if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
