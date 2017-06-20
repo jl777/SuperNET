@@ -32,7 +32,7 @@ uint16_t Numpsocks,Psockport = 10000;
 
 char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port);
+    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port);
     return(str);
 }
 
@@ -249,10 +249,10 @@ void LP_psockadd(int32_t ispaired,int32_t publicsock,uint16_t recvport,int32_t s
     PSOCKS = realloc(PSOCKS,sizeof(*PSOCKS) * (Numpsocks + 1));
     ptr = &PSOCKS[Numpsocks++];
     ptr->ispaired = ispaired;
-    ptr->publicsock = publicsock;
-    ptr->publicport = recvport;
-    ptr->sendsock = sendsock;
-    ptr->sendport = sendport;
+    ptr->publicsock = sendsock;//publicsock;
+    ptr->publicport = sendport;//recvport;
+    ptr->sendsock = publicsock;//sendsock;
+    ptr->sendport = recvport;//sendport;
     safecopy(ptr->sendaddr,subaddr,sizeof(ptr->sendaddr));
     safecopy(ptr->publicaddr,publicaddr,sizeof(ptr->publicaddr));
     ptr->lasttime = (uint32_t)time(NULL);
@@ -408,7 +408,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
             {
                 printf("bind to %s error for %s: %s\n",connectaddr,publicaddr,nn_strerror(nn_errno()));
                 exit(-1);
-            } else printf("nntype.%d NN_SUB.%d connect to %s pullsock.%d\n",nntype,NN_SUB,connectaddr,pullsock);
+            } else printf("nntype.%d NN_PAIR.%d connect to %s pullsock.%d\n",nntype,NN_PAIR,connectaddr,pullsock);
         }
         else
         {
