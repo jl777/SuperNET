@@ -119,6 +119,8 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
             if ( strcmp(pushaddr,ptr->pushaddr) != 0 )
             {
                 nn_close(ptr->pushsock);
+                if ( LP_psockmark(ptr->pushaddr) < 0 )
+                    printf("cant mark (%s)\n",ptr->pushaddr);
                 printf("recreate pushsock for %s\n",pushaddr);
                 strcpy(ptr->pushaddr,pushaddr);
                 if ( (ptr->pushsock= LP_pushsock_create(ptr,pushaddr)) < 0 )

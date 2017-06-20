@@ -24,7 +24,7 @@ struct psock
     uint32_t lasttime,lastping;
     int32_t recvsock,sendsock,ispaired;
     uint16_t recvport,sendport;
-    char sendaddr[128];
+    char sendaddr[128],publicaddr[128];
 } *PSOCKS;
 
 uint16_t Numpsocks,Psockport = 10000;
@@ -113,7 +113,6 @@ void LP_psockloop(void *_ptr)
                 {
                     if ( (sentbytes= nn_send(sendsock,buf,size,0)) > 0 )
                     {
-                        ptr->lasttime = now;
                         printf("PSOCKS (%d %d %d) -> %d/%d bytes %s\n",ptr->recvsock,ptr->sendsock,sendsock,size,sentbytes,ptr->sendaddr);
                     } else printf("send error to %s\n",ptr->sendaddr);
                     if ( buf != 0 )
@@ -251,7 +250,7 @@ void LP_psockloop(void *_ptr)
     }
 }
 
-void LP_psockadd(int32_t ispaired,int32_t recvsock,uint16_t recvport,int32_t sendsock,uint16_t sendport,char *subaddr)
+void LP_psockadd(int32_t ispaired,int32_t recvsock,uint16_t recvport,int32_t sendsock,uint16_t sendport,char *subaddr,char *publicaddr)
 {
     struct psock *ptr;
     portable_mutex_lock(&LP_psockmutex);
@@ -263,8 +262,28 @@ void LP_psockadd(int32_t ispaired,int32_t recvsock,uint16_t recvport,int32_t sen
     ptr->sendsock = sendsock;
     ptr->sendport = sendport;
     safecopy(ptr->sendaddr,subaddr,sizeof(ptr->sendaddr));
+    safecopy(ptr->publicaddr,publicaddr,sizeof(ptr->publicaddr));
     ptr->lasttime = (uint32_t)time(NULL);
     portable_mutex_unlock(&LP_psockmutex);
+}
+
+int32_t LP_psockmark(char *publicaddr)
+{
+    int32_t i,retval = -1; struct psock *ptr;
+    portable_mutex_lock(&LP_psockmutex);
+    for (i=0; i<Numpsocks; i++)
+    {
+        ptr = &PSOCKS[i];
+        if ( strcmp(publicaddr,ptr->publicaddr) == 0 )
+        {
+            printf("mark PSOCKS[%d] %s for deletion\n",i,publicaddr);
+            ptr->lasttime = 0;
+            retval = i;
+            break;
+        }
+    }
+    portable_mutex_unlock(&LP_psockmutex);
+    return(retval);
 }
 
 char *LP_psock(char *myipaddr,int32_t ispaired)
@@ -300,7 +319,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                 }
                 nanomsg_transportname(0,pushaddr,myipaddr,pushport);
                 nanomsg_transportname(0,subaddr,myipaddr,subport);
-                LP_psockadd(ispaired,pullsock,pushport,pubsock,subport,subaddr);
+                LP_psockadd(ispaired,pullsock,pushport,pubsock,subport,subaddr,pushaddr);
                 jaddstr(retjson,"result","success");
                 jaddstr(retjson,"LPipaddr",myipaddr);
                 jaddstr(retjson,"connectaddr",subaddr);
