@@ -123,7 +123,7 @@ void LP_psockloop(void *_ptr)
                 }
             }
         }
-        else if ( Numpsocks > 0 )
+        else if ( 0 && Numpsocks > 0 )
         {
             pfds = calloc(Numpsocks,sizeof(*pfds) * 2);
             portable_mutex_lock(&LP_psockmutex);
@@ -215,7 +215,19 @@ void LP_psockloop(void *_ptr)
                     if ( i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
-                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE*10 )
+                        if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
+                        {
+                            printf("publicsock got (%s)\n",(char *)buf);
+                            sendsock = ptr->sendsock;
+                            break;
+                        }
+                        else if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
+                        {
+                            printf("sendsock got (%s)\n",(char *)buf);
+                            sendsock = ptr->publicsock;
+                            break;
+                        }
+                        else if ( 0 && now > ptr->lasttime+PSOCK_KEEPALIVE*10 )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->publicport,ptr->sendport,now - ptr->lasttime);
                             if ( ptr->publicsock >= 0 )
@@ -300,7 +312,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         pullsock = pubsock = -1;
         nanomsg_transportname(1,pushaddr,myipaddr,publicport);
         nanomsg_transportname(1,subaddr,myipaddr,subport);
-        if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_BUS)) >= 0 && (pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_BUS)) >= 0 )
+        if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PAIR)) >= 0 )
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
@@ -389,7 +401,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
     {
         if ( LP_canbind != 0 )
             nntype = LP_COMMAND_RECVSOCK;
-        else nntype = NN_BUS;//NN_SUB;
+        else nntype = NN_PAIR;//NN_SUB;
     } else nntype = NN_PAIR;
     if ( LP_canbind != 0 )
     {
