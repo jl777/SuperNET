@@ -107,25 +107,37 @@ void LP_psockloop(void *_ptr)
         {
             if ( size > 0 )
             {
-                pfd.fd = ptr->sendsock;
-                pfd.events = NN_POLLOUT;
-                if ( nn_poll(&pfd,1,1) > 0 )
+                if ( (sentbytes= LP_send(sendsock,buf,0)) > 0 )
+                    printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->recvsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
+                else printf("send error to %s\n",ptr->sendaddr);
+                if ( buf != 0 )
                 {
-                    if ( (sentbytes= nn_send(sendsock,buf,size,0)) > 0 )
-                    {
-                        printf("PSOCKS (%d %d %d) -> %d/%d bytes %s\n",ptr->recvsock,ptr->sendsock,sendsock,size,sentbytes,ptr->sendaddr);
-                    } else printf("send error to %s\n",ptr->sendaddr);
-                    if ( buf != 0 )
-                    {
-                        if ( buf != keepalive )
-                            nn_freemsg(buf);
-                        buf = 0;
-                        size = 0;
-                        ptr = 0;
-                        sendsock = -1;
-                    }
+                    if ( buf != keepalive )
+                        nn_freemsg(buf);
+                    buf = 0;
+                    size = 0;
+                    ptr = 0;
+                    sendsock = -1;
                 }
             }
+            /* pfd.fd = ptr->sendsock;
+             pfd.events = NN_POLLOUT;
+             if ( nn_poll(&pfd,1,1) > 0 )
+             {
+             if ( (sentbytes= nn_send(sendsock,buf,size,0)) > 0 )
+             {
+             printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->recvsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
+             } else printf("send error to %s\n",ptr->sendaddr);
+             if ( buf != 0 )
+             {
+             if ( buf != keepalive )
+             nn_freemsg(buf);
+             buf = 0;
+             size = 0;
+             ptr = 0;
+             sendsock = -1;
+             }
+             }*/
         }
         else if ( Numpsocks > 0 )
         {
@@ -327,12 +339,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                 jaddnum(retjson,"ispaired",ispaired);
                 jaddstr(retjson,"publicaddr",pushaddr);
                 jaddnum(retjson,"publicport",pushport);
-                printf("publicaddr.(%s) for %s\n",pushaddr,subaddr);
-                while ( 0 )
-                {
-                    printf("LP_Send %d\n",LP_send(pubsock,"hello",0));
-                    sleep(10);
-                }
+                printf("i.%d publicaddr.(%s) for %s\n",i,pushaddr,subaddr);
                 break;
             } else printf("bind error on %s or %s\n",pushaddr,subaddr);
             if ( pullsock >= 0 )
