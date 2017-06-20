@@ -18,7 +18,8 @@
 //  marketmaker
 //
 
-#define PSOCK_IDLETIMEOUT (2 * INSTANTDEX_LOCKTIME + 600)
+#define PSOCK_KEEPALIVE 6
+
 struct psock
 {
     uint32_t lasttime,lastping;
@@ -99,7 +100,7 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
 
 void LP_psockloop(void *_ptr)
 {
-    int32_t i,n,nonz,iter,retval,size=0,sentbytes,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; struct nn_pollfd pfd,*pfds; char keepalive[512];//,*myipaddr = _ptr;
+    int32_t i,n,nonz,iter,retval,size=0,sentbytes,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; struct nn_pollfd *pfds; char keepalive[512];//,*myipaddr = _ptr;
     while ( 1 )
     {
         now = (uint32_t)time(NULL);
@@ -120,24 +121,6 @@ void LP_psockloop(void *_ptr)
                     sendsock = -1;
                 }
             }
-            /* pfd.fd = ptr->sendsock;
-             pfd.events = NN_POLLOUT;
-             if ( nn_poll(&pfd,1,1) > 0 )
-             {
-             if ( (sentbytes= nn_send(sendsock,buf,size,0)) > 0 )
-             {
-             printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->recvsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
-             } else printf("send error to %s\n",ptr->sendaddr);
-             if ( buf != 0 )
-             {
-             if ( buf != keepalive )
-             nn_freemsg(buf);
-             buf = 0;
-             size = 0;
-             ptr = 0;
-             sendsock = -1;
-             }
-             }*/
         }
         else if ( Numpsocks > 0 )
         {
@@ -165,7 +148,6 @@ void LP_psockloop(void *_ptr)
                             printf("%s has pollin\n",ptr->sendaddr);
                             if ( (size= nn_recv(ptr->recvsock,&buf,NN_MSG,0)) > 0 )
                             {
-                                ptr->lasttime = now;
                                 sendsock = ptr->sendsock;
                                 printf("[%s]\n",(char *)buf);
                                 break;
@@ -173,7 +155,7 @@ void LP_psockloop(void *_ptr)
                         }
                     }
                     n++;
-                    if ( ptr->ispaired != 0 )
+                    //if ( ptr->ispaired != 0 )
                     {
                         if ( iter == 0 )
                         {
@@ -220,14 +202,7 @@ void LP_psockloop(void *_ptr)
                     if ( i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
-                        /*if ( (size= nn_recv(ptr->recvsock,&buf,NN_MSG,0)) > 0 )
-                        {
-                            printf("got %d bytes for %s\n",size,ptr->sendaddr);
-                            ptr->lasttime = now;
-                            sendsock = ptr->sendsock;
-                            break;
-                        }
-                        else*/ if ( now > ptr->lasttime+PSOCK_IDLETIMEOUT )
+                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->recvport,ptr->sendport,now - ptr->lasttime);
                             if ( ptr->recvsock >= 0 )
@@ -243,11 +218,11 @@ void LP_psockloop(void *_ptr)
                             portable_mutex_unlock(&LP_psockmutex);
                             break;
                         }
-                        else if ( now > ptr->lastping+6 )
+                        else if ( now > ptr->lastping+PSOCK_KEEPALIVE )
                         {
                             ptr->lastping = now;
                             sendsock = ptr->sendsock;
-                            printf("keep %s alive\n",ptr->sendaddr);
+                            //printf("keep %s alive\n",ptr->sendaddr);
                             sprintf(keepalive,"{\"method\":\"keepalive\",\"endpoint\":\"%s\"}",ptr->sendaddr);
                             size = (int32_t)strlen(keepalive) + 1;
                             buf = keepalive;
@@ -304,7 +279,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
     retjson = cJSON_CreateObject();
     pushport = Psockport++;
     subport = Psockport++;
-    for (i=0; i<100; i++,pushport += 2,subport += 2)
+    for (i=0; i<100; i++,pushport+=2,subport+=2)
     {
         if ( pushport < 10000 )
             pushport = 10001;
