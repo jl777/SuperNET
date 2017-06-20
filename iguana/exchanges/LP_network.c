@@ -176,9 +176,9 @@ void LP_psockloop(void *_ptr)
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
                             if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
                             {
+                                printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
                                 ptr->lasttime = now;
                                 if ( ptr->ispaired != 0 )
                                 {
@@ -212,7 +212,7 @@ void LP_psockloop(void *_ptr)
             {
                 for (i=nonz=0; i<Numpsocks; i++)
                 {
-                    if ( i < Numpsocks )
+                    if ( 0 && i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
                         if ( 0 && now > ptr->lasttime+PSOCK_KEEPALIVE*10 )
