@@ -450,7 +450,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
             nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
         //LP_send(pullsock,"hello init",0);
     }
-    if ( 1 && ispaired == 0 && nn_tests(pullsock,publicaddr,NN_PUSH) < 0 )
+    if ( LP_canbind == 0 && ispaired == 0 && nn_tests(pullsock,publicaddr,NN_PUSH) < 0 )
     {
         printf("command socket didnt work\n");
         exit(-1);
