@@ -123,7 +123,7 @@ void LP_psockloop(void *_ptr)
                 }
             }
         }
-        else if ( 0 && Numpsocks > 0 )
+        else if ( Numpsocks > 0 )
         {
             pfds = calloc(Numpsocks,sizeof(*pfds) * 2);
             portable_mutex_lock(&LP_psockmutex);
