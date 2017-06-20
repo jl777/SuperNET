@@ -245,6 +245,8 @@ struct iguana_info *LP_coinfind(char *symbol)
     }
     else if ( strcmp(symbol,"KMD") == 0 )
         name = "komodo";
+    else if ( strcmp(symbol,"HUSH") == 0 )
+        name = "hush";
     else
     {
         name = symbol;
