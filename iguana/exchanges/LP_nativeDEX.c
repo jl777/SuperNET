@@ -162,11 +162,9 @@ int32_t LP_pullsock_check(char **retstrp,char *myipaddr,int32_t pubsock,int32_t 
     {
         if ( (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
         {
-            if ( IAMLP == 0 )
-                printf("pullsock.%d recv.%d (%s)\n",pullsock,recvlen,(char *)ptr);
             nonz++;
             *retstrp = LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen,pullsock);
-        } //else printf("pullsock.%d recvlen.%d\n",pullsock,recvlen);
+        }
     }
     return(nonz);
 }
@@ -369,7 +367,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128];
+    char *myipaddr=0; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],keepalive[128];
     IAMLP = !amclient;
 #ifndef __linux__
     if ( IAMLP != 0 )
@@ -458,14 +456,22 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
             printf("mainloop\n");
         if ( LP_mainloop_iter(myipaddr,mypeer,pubsock,pushaddr,mypullport,pullsock,myport,passphrase,profitmargin) == 0 )
             usleep(100000);
-        if ( LP_canbind == 0 && LP_deadman_switch < time(NULL)-777 )
+        if ( LP_canbind == 0 )
         {
-            printf("DEAD man's switch activated, register forwarding again\n");
-            if ( pullsock >= 0 )
-                nn_close(pullsock);
-            pullsock = LP_initpublicaddr(&mypullport,pushaddr,myipaddr,mypullport,0);
-            LP_deadman_switch = (uint32_t)time(NULL);
-            LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,100000);
+            if ( LP_deadman_switch < time(NULL)-PSOCK_KEEPALIVE )
+            {
+                printf("DEAD man's switch activated, register forwarding again\n");
+                if ( pullsock >= 0 )
+                    nn_close(pullsock);
+                pullsock = LP_initpublicaddr(&mypullport,pushaddr,myipaddr,mypullport,0);
+                LP_deadman_switch = (uint32_t)time(NULL);
+                LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,100000);
+            }
+            else
+            {
+                sprintf(keepalive,"{\"method\":\"keepalive\"}");
+                LP_send(pullsock,keepalive,0);
+            }
         }
     }
 }
