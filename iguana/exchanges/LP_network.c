@@ -224,7 +224,7 @@ void LP_psockloop(void *_ptr)
                             portable_mutex_unlock(&LP_psockmutex);
                             break;
                         }
-                        else if ( now > ptr->lastping+PSOCK_KEEPALIVE )
+                        else if ( now > ptr->lastping+PSOCK_KEEPALIVE/2 )
                         {
                             ptr->lastping = now;
                             sendsock = ptr->sendsock;
