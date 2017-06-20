@@ -32,7 +32,7 @@ uint16_t Numpsocks,Psockport = 10000;
 
 char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port);
+    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port);
     return(str);
 }
 
@@ -297,7 +297,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
-                timeout = 10;
+                timeout = 1;
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                 timeout = 1;
                 nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
@@ -319,7 +319,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                 jaddnum(retjson,"ispaired",ispaired);
                 jaddstr(retjson,"publicaddr",pushaddr);
                 jaddnum(retjson,"publicport",pushport);
-                printf("i.%d publicaddr.(%s) for %s, pullsock.%d pubsock.%d\n",i,pushaddr,subaddr,pullsock,pubsock);
+                printf("i.%d publicaddr.(%s) for subaddr.(%s), pullsock.%d pubsock.%d\n",i,pushaddr,subaddr,pullsock,pubsock);
                 break;
             } else printf("bind error on %s or %s\n",pushaddr,subaddr);
             if ( pullsock >= 0 )
@@ -420,7 +420,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
         }
         timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-        timeout = 10;
+        timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
         maxsize = 2 * 1024 * 1024;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
