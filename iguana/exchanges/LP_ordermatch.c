@@ -378,10 +378,15 @@ int32_t LP_nanobind(char *pairstr,char *myipaddr)
 
 int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin,double price,struct LP_quoteinfo *qp)
 {
-    char pairstr[512]; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap;
+    char pairstr[512]; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
     printf("LP_connectstartbob.(%s) with.(%s)\n",myipaddr,jprint(argjson,0));
     qp->quotetime = (uint32_t)time(NULL);
-    privkey = LP_privkey(utxo->coinaddr);
+    if ( (coin= LP_coinfind(utxo->coin)) == 0 )
+    {
+        printf("cant find coin.%s\n",utxo->coin);
+        return(-1);
+    }
+    privkey = LP_privkey(utxo->coinaddr,coin->taddr);
     if ( bits256_nonz(privkey) != 0 && qp->quotetime >= qp->timestamp-3 && qp->quotetime <= utxo->T.swappending && bits256_cmp(LP_mypubkey,qp->srchash) == 0 )
     {
         if ( (pair= LP_nanobind(pairstr,myipaddr)) >= 0 )
@@ -424,7 +429,7 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
 
 char *LP_connectedalice(cJSON *argjson) // alice
 {
-    cJSON *retjson; double bid,ask,price,qprice; int32_t timeout,pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap;
+    cJSON *retjson; double bid,ask,price,qprice; int32_t timeout,pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin;
     if ( LP_quoteparse(&Q,argjson) < 0 )
         clonestr("{\"error\":\"cant parse quote\"}");
     if ( bits256_cmp(Q.desthash,LP_mypubkey) != 0 )
@@ -449,7 +454,11 @@ char *LP_connectedalice(cJSON *argjson) // alice
         LP_availableset(autxo);
         return(clonestr("{\"error\":\"quote price too expensive\"}"));
     }
-    Q.privkey = LP_privkey(Q.destaddr);
+    if ( (coin= LP_coinfind(Q.destcoin)) == 0 )
+    {
+        return(clonestr("{\"error\":\"cant get alicecoin\"}"));
+    }
+    Q.privkey = LP_privkey(Q.destaddr,coin->taddr);
     if ( bits256_nonz(Q.privkey) != 0 && Q.quotetime >= Q.timestamp-3 )
     {
         retjson = cJSON_CreateObject();

@@ -173,12 +173,13 @@ cJSON *LP_coinsjson()
     return(array);
 }
 
-void LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain)
+void LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t taddr)
 {
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
     sprintf(coin->serverport,"127.0.0.1:%u",port);
     coin->isPoS = isPoS;
+    coin->taddr = taddr;
     coin->longestchain = longestchain;
     coin->txfee = txfee;
     coin->estimatedrate = estimatedrate;
@@ -249,7 +250,7 @@ struct iguana_info *LP_coinfind(char *symbol)
         name = symbol;
         assetname = symbol;
     }
-    LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain);
+    LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0);
     if ( (coin= LP_coinadd(&cdata)) != 0 && strcmp(symbol,"KMD") == 0 )
         coin->inactive = 0;
     return(coin);
@@ -278,7 +279,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
             name = assetname;
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
-        LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain);
+        LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr"));
         coin = LP_coinadd(&cdata);
     }
     if ( coin != 0 && item != 0 )

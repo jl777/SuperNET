@@ -738,7 +738,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
     {
         coin->counter++;
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
-        bitcoin_addr2rmd160(&tmptype,rmd160,coin->smartaddr);
+        bitcoin_addr2rmd160(coin->taddr,&tmptype,rmd160,coin->smartaddr);
         LP_privkeyadd(privkey,rmd160);
         if ( coin->pubtype != 60 || strcmp(coin->symbol,"KMD") == 0 )
             printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);

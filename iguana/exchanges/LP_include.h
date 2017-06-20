@@ -151,7 +151,7 @@ struct iguana_info
 {
     uint64_t txfee; double estimatedrate,profitmargin;
     int32_t longestchain; uint32_t counter,inactive;
-    uint8_t pubtype,p2shtype,isPoS,wiftype;
+    uint8_t pubtype,p2shtype,isPoS,wiftype,taddr;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
 };
 

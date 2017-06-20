@@ -52,7 +52,7 @@ char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjs
     }
     if ( strcmp(method,"hello") == 0 )
     {
-        printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
+        //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
         return(0);
     }
     else if ( strcmp(method,"nn_tests") == 0 )
