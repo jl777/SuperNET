@@ -448,7 +448,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
         if ( nntype == NN_SUB )
             nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
     }
-    if ( ispaired == 0 && nn_tests(pullsock,publicaddr,NN_PAIR) < 0 )
+    if ( 0 && ispaired == 0 && nn_tests(pullsock,publicaddr,NN_PAIR) < 0 )
     {
         printf("command socket didnt work\n");
         exit(-1);
