@@ -304,15 +304,15 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
     retjson = cJSON_CreateObject();
     pushport = Psockport++;
     subport = Psockport++;
-    for (i=0; i<100; i++)
+    for (i=0; i<100; i++,pushport += 2,subport += 2)
     {
         if ( pushport < 10000 )
             pushport = 10001;
         if ( subport <= pushport )
             subport = pushport +  1;
         pullsock = pubsock = -1;
-        nanomsg_transportname(1,pushaddr,myipaddr,pushport), pushport += 2;
-        nanomsg_transportname(1,subaddr,myipaddr,subport), subport += 2;
+        nanomsg_transportname(1,pushaddr,myipaddr,pushport);
+        nanomsg_transportname(1,subaddr,myipaddr,subport);
         if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PUB)) >= 0 )
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
