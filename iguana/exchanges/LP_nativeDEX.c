@@ -298,6 +298,13 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
         free(retstr);
     if ( IAMLP != 0 && (counter % 600) == 42 )
         LP_hellos();
+    if ( LP_canbind == 0 && (counter % 60) == 13 )
+    {
+        char keepalive[128];
+        sprintf(keepalive,"{\"method\":\"keepalive\"}");
+        LP_send(pullsock,keepalive,0);
+        printf("send keepalive\n");
+    }
     counter++;
     return(nonz);
 }
@@ -367,7 +374,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],keepalive[128];
+    char *myipaddr=0; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128];
     IAMLP = !amclient;
 #ifndef __linux__
     if ( IAMLP != 0 )
@@ -466,12 +473,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
                 pullsock = LP_initpublicaddr(&mypullport,pushaddr,myipaddr,mypullport,0);
                 LP_deadman_switch = (uint32_t)time(NULL);
                 LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,100000);
-            }
-            else if ( LP_deadman_switch < time(NULL)-PSOCK_KEEPALIVE/2 )
-            {
-                sprintf(keepalive,"{\"method\":\"keepalive\"}");
-                LP_send(pullsock,keepalive,0);
-                printf("send keepalive\n");
             }
         }
     }
