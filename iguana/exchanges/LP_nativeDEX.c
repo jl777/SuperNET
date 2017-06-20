@@ -129,7 +129,7 @@ char *LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double pro
         {
         }
         portable_mutex_unlock(&LP_commandmutex);
-        //if ( LP_COMMAND_RECVSOCK == NN_REP )
+        if ( LP_COMMAND_RECVSOCK == NN_REP )
         {
             if ( retstr != 0 )
             {
