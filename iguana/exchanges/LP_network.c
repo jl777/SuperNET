@@ -18,7 +18,7 @@
 //  marketmaker
 //
 
-#define PSOCK_KEEPALIVE 6
+#define PSOCK_KEEPALIVE 60
 
 struct psock
 {
