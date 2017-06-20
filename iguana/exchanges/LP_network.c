@@ -402,10 +402,9 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
     {
         if ( LP_canbind != 0 )
             nntype = LP_COMMAND_RECVSOCK;
-        else nntype = NN_SUB;
+        else nntype = NN_PAIR; //NN_SUB;
     }
-    //else
-        nntype = NN_PAIR;
+    else nntype = NN_PAIR;
     if ( LP_canbind != 0 )
     {
         nanomsg_transportname(0,publicaddr,myipaddr,mypullport);
