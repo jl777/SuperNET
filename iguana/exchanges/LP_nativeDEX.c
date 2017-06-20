@@ -467,7 +467,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
                 LP_deadman_switch = (uint32_t)time(NULL);
                 LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,100000);
             }
-            else
+            else if ( LP_deadman_switch < time(NULL)-PSOCK_KEEPALIVE/2 )
             {
                 sprintf(keepalive,"{\"method\":\"keepalive\"}");
                 LP_send(pullsock,keepalive,0);
