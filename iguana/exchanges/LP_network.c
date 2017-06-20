@@ -313,7 +313,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         pullsock = pubsock = -1;
         nanomsg_transportname(1,pushaddr,myipaddr,pushport);
         nanomsg_transportname(1,subaddr,myipaddr,subport);
-        if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PUB)) >= 0 )
+        if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PAIR)) >= 0 )
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
@@ -402,7 +402,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
     {
         if ( LP_canbind != 0 )
             nntype = LP_COMMAND_RECVSOCK;
-        else nntype = NN_SUB;
+        else nntype = NN_PAIR;//NN_SUB;
     }
     else nntype = NN_PAIR;
     if ( LP_canbind != 0 )
@@ -430,14 +430,6 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
                 printf("bind to %s error for %s: %s\n",connectaddr,publicaddr,nn_strerror(nn_errno()));
                 exit(-1);
             } else printf("nntype.%d NN_SUB.%d connect to %s pullsock.%d\n",nntype,NN_SUB,connectaddr,pullsock);
-            while ( 0 )
-            {
-                int32_t size; void *buf;
-                if ( (size= nn_recv(pullsock,&buf,NN_MSG,0)) > 0 )
-                    printf("SUBPULL.(%s)\n",(char *)buf);
-                else printf("size.%d\n",size);
-                sleep(10);
-            }
         }
         else
         {
@@ -456,7 +448,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
         if ( nntype == NN_SUB )
             nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
     }
-    if ( 0 && ispaired == 0 && nn_tests(pullsock,publicaddr,LP_COMMAND_SENDSOCK) < 0 )
+    if ( ispaired == 0 && nn_tests(pullsock,publicaddr,NN_PAIR) < 0 )
     {
         printf("command socket didnt work\n");
         exit(-1);
