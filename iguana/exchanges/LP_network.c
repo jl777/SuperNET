@@ -145,11 +145,11 @@ void LP_psockloop(void *_ptr)
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            printf("%s has pollin\n",ptr->sendaddr);
+                            //printf("%s has pollin\n",ptr->sendaddr);
                             if ( (size= nn_recv(ptr->recvsock,&buf,NN_MSG,0)) > 0 )
                             {
                                 sendsock = ptr->sendsock;
-                                printf("[%s]\n",(char *)buf);
+                                //printf("[%s]\n",(char *)buf);
                                 break;
                             }
                         }
@@ -169,7 +169,7 @@ void LP_psockloop(void *_ptr)
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            printf("%s paired has pollin\n",ptr->sendaddr);
+                            //printf("%s paired has pollin\n",ptr->sendaddr);
                             if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
                             {
                                 ptr->lasttime = now;
