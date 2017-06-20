@@ -22,7 +22,7 @@
 
 struct psock
 {
-    uint32_t lasttime,lastping;
+    uint32_t lasttime,lastping,errors;
     int32_t publicsock,sendsock,ispaired;
     uint16_t publicport,sendport;
     char sendaddr[128],publicaddr[128];
@@ -111,7 +111,12 @@ void LP_psockloop(void *_ptr)
                 if ( (sentbytes= LP_send(sendsock,buf,0)) > 0 )
                 {
                     printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->publicsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
-                } else printf("send error to %s\n",ptr->sendaddr);
+                }
+                else
+                {
+                    ptr->errors++;
+                    printf("send error.%d to %s\n",ptr->errors,ptr->sendaddr);
+                }
                 if ( buf != 0 )
                 {
                     if ( buf != keepalive )
@@ -215,7 +220,7 @@ void LP_psockloop(void *_ptr)
                     if ( i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
-                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE*10 )
+                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->publicport,ptr->sendport,now - ptr->lasttime);
                             if ( ptr->publicsock >= 0 )
@@ -231,7 +236,7 @@ void LP_psockloop(void *_ptr)
                             //portable_mutex_unlock(&LP_psockmutex);
                             break;
                         }
-                        else if ( now > ptr->lastping+PSOCK_KEEPALIVE/2 )
+                        else if ( now > ptr->lastping+PSOCK_KEEPALIVE/2 && ptr->errors < 3 )
                         {
                             ptr->lastping = now;
                             sendsock = ptr->sendsock;
