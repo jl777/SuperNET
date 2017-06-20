@@ -364,6 +364,7 @@ int32_t nn_tests(int32_t pullsock,char *pushaddr,int32_t nnother)
             printf("connect error %s\n",nn_strerror(nn_errno()));
         else
         {
+            sleep(3);
             timeout = 1;
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
