@@ -196,7 +196,7 @@ void LP_psockloop(void *_ptr)
                         if ( retval != 0 )
                             printf("nn_poll retval.%d\n",retval);
                         break;
-                    }
+                    } else printf("num pfds.%d\n",n);
                 }
             }
             portable_mutex_unlock(&LP_psockmutex);
