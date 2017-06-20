@@ -431,7 +431,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
             } else printf("nntype.%d NN_SUB.%d connect to %s\n",nntype,NN_SUB,connectaddr);
             if ( nntype == NN_SUB )
                 nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
-            while ( 1 )
+            while ( 0 )
             {
                 int32_t size; void *buf;
                 if ( (size= nn_recv(pullsock,&buf,NN_MSG,0)) > 0 )
