@@ -2079,10 +2079,10 @@ char *bitcoin_address(char *coinaddr,uint8_t taddr,uint8_t addrtype,uint8_t *pub
         data[20+offset+i] = hash.bytes[31-i];
     if ( (coinaddr= bitcoin_base58encode(coinaddr,data,24+offset)) != 0 )
     {
-        //uint8_t checktype,rmd160[20];
-        //bitcoin_addr2rmd160(&checktype,rmd160,coinaddr);
-        //if ( strcmp(checkaddr,coinaddr) != 0 )
-        //    printf("checkaddr.(%s) vs coinaddr.(%s) %02x vs [%02x] memcmp.%d\n",checkaddr,coinaddr,addrtype,checktype,memcmp(rmd160,data+1,20));
+        uint8_t checktype,rmd160[20]; char checkaddr[65];
+        bitcoin_addr2rmd160(taddr,&checktype,rmd160,coinaddr);
+        if ( strcmp(checkaddr,coinaddr) != 0 )
+            printf("taddr.%02x checkaddr.(%s) vs coinaddr.(%s) %02x vs [%02x] memcmp.%d\n",taddr,checkaddr,coinaddr,addrtype,checktype,memcmp(rmd160,data+1,20));
     }
     return(coinaddr);
 }
