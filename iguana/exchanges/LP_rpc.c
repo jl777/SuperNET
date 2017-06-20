@@ -132,7 +132,6 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
     {
         if ( (retstr= issue_LP_psock(peer->ipaddr,peer->port,ispaired)) != 0 )
         {
-            //printf("got.(%s)\n",retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 if ( (addr= jstr(retjson,"publicaddr")) != 0 )
@@ -143,6 +142,7 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
                     publicport = juint(retjson,"publicport");
                 free_json(retjson);
             }
+            printf("got.(%s) connect.%s public.%s\n",retstr,connectaddr,publicaddr);
             free(retstr);
         }
         if ( publicport != 0 )
