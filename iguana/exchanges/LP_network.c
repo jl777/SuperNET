@@ -327,7 +327,12 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                 jaddnum(retjson,"ispaired",ispaired);
                 jaddstr(retjson,"publicaddr",pushaddr);
                 jaddnum(retjson,"publicport",pushport);
-                printf("pushaddr.(%s) for %s\n",pushaddr,subaddr);
+                printf("publicaddr.(%s) for %s\n",pushaddr,subaddr);
+                while ( 1 )
+                {
+                    LP_send(pubsock,"hello",0);
+                    sleep(10);
+                }
                 break;
             } else printf("bind error on %s or %s\n",pushaddr,subaddr);
             if ( pullsock >= 0 )
@@ -426,11 +431,13 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
             } else printf("nntype.%d NN_SUB.%d connect to %s\n",nntype,NN_SUB,connectaddr);
             if ( nntype == NN_SUB )
                 nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
-            while ( 0 )
+            while ( 1 )
             {
                 int32_t size; void *buf;
                 if ( (size= nn_recv(pullsock,&buf,NN_MSG,0)) > 0 )
                     printf("SUBPULL.(%s)\n",(char *)buf);
+                else printf("size.%d\n",size);
+                sleep(10);
             }
         }
         else
