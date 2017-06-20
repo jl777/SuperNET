@@ -330,7 +330,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                 printf("publicaddr.(%s) for %s\n",pushaddr,subaddr);
                 while ( 1 )
                 {
-                    LP_send(pubsock,"hello",0);
+                    printf("LP_Send %d\n",LP_send(pubsock,"hello",0));
                     sleep(10);
                 }
                 break;
