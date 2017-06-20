@@ -424,13 +424,13 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
         if ( LP_canbind == 0 )
         {
+            if ( nntype == NN_SUB )
+                nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
             if ( nn_connect(pullsock,connectaddr) < 0 )
             {
                 printf("bind to %s error for %s: %s\n",connectaddr,publicaddr,nn_strerror(nn_errno()));
                 exit(-1);
-            } else printf("nntype.%d NN_SUB.%d connect to %s\n",nntype,NN_SUB,connectaddr);
-            if ( nntype == NN_SUB )
-                nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
+            } else printf("nntype.%d NN_SUB.%d connect to %s pullsock.%d\n",nntype,NN_SUB,connectaddr,pullsock);
             while ( 0 )
             {
                 int32_t size; void *buf;
