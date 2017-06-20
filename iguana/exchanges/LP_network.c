@@ -110,7 +110,7 @@ void LP_psockloop(void *_ptr)
             {
                 if ( (sentbytes= LP_send(sendsock,buf,0)) > 0 )
                 {
-                    //printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->publicsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
+                    printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->publicsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
                 } else printf("send error to %s\n",ptr->sendaddr);
                 if ( buf != 0 )
                 {
@@ -149,7 +149,7 @@ void LP_psockloop(void *_ptr)
                             printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
-                                printf("keepalive.%u [%s] -> sendsock.%d\n",now,(char *)buf,sendsock);
+                                printf("keepalive.%u [%s] -> sendsock.%d\n",now,(char *)buf,ptr->sendsock);
                                 cJSON *retjson;
                                 if ( (retjson= cJSON_Parse((char *)buf)) != 0 )
                                 {
@@ -254,10 +254,10 @@ void LP_psockloop(void *_ptr)
                         }
                     }
                 }
-                portable_mutex_unlock(&LP_psockmutex);
                 if ( nonz == 0 && i == Numpsocks )
                     usleep(100000);
             }
+            portable_mutex_unlock(&LP_psockmutex);
         } else usleep(100000);
     }
 }
