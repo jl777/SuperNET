@@ -164,6 +164,7 @@ int32_t LP_pullsock_check(char **retstrp,char *myipaddr,int32_t pubsock,int32_t 
         {
             nonz++;
             *retstrp = LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen,pullsock);
+            printf("got retstr.%p\n",*retstrp);
         }
     }
     return(nonz);
@@ -297,10 +298,11 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             free(retstr);
         }
     }
-    if ( LP_canbind == 0 ) printf("counter.%d canbind.%d\n",counter,LP_canbind);
+    if ( LP_canbind == 0 ) printf("counter.%d canbind.%d pullsock check\n",counter,LP_canbind);
     nonz += LP_pullsock_check(&retstr,myipaddr,pubsock,pullsock,profitmargin);
     if ( retstr != 0 )
         free(retstr);
+    if ( LP_canbind == 0 ) printf("counter.%d canbind.%d hellos\n",counter,LP_canbind);
     if ( IAMLP != 0 && (counter % 600) == 42 )
         LP_hellos();
     if ( LP_canbind == 0 ) printf("counter.%d canbind.%d\n",counter,LP_canbind);
@@ -308,8 +310,9 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     {
         char keepalive[128];
         sprintf(keepalive,"{\"method\":\"keepalive\"}");
-        LP_send(pullsock,keepalive,0);
         printf("send keepalive\n");
+        LP_send(pullsock,keepalive,0);
+        printf("sent keepalive\n");
     }
     counter++;
     return(nonz);
