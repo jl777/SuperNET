@@ -465,12 +465,13 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     }
     while ( 1 )
     {
-        if ( 0 && (rand() % 100) == 0 )
+        if ( LP_canbind == 0 )
             printf("mainloop\n");
         if ( LP_mainloop_iter(myipaddr,mypeer,pubsock,pushaddr,mypullport,pullsock,myport,passphrase,profitmargin) == 0 )
             usleep(100000);
         if ( LP_canbind == 0 )
         {
+            printf("check deadman %u vs %u\n",LP_deadman_switch,(uint32_t)time(NULL));
             if ( LP_deadman_switch < time(NULL)-PSOCK_KEEPALIVE )
             {
                 printf("DEAD man's switch activated, register forwarding again\n");
