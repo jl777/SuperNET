@@ -166,7 +166,7 @@ int32_t LP_pullsock_check(char **retstrp,char *myipaddr,int32_t pubsock,int32_t 
                 printf("pullsock.%d recv.%d (%s)\n",pullsock,recvlen,(char *)ptr);
             nonz++;
             *retstrp = LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen,pullsock);
-        } else printf("pullsock.%d recvlen.%d\n",pullsock,recvlen);
+        } //else printf("pullsock.%d recvlen.%d\n",pullsock,recvlen);
     }
     return(nonz);
 }
