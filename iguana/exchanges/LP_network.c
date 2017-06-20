@@ -149,15 +149,15 @@ void LP_psockloop(void *_ptr)
                             printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
+                                printf("keepalive.%u [%s] -> sendsock.%d\n",now,(char *)buf,sendsock);
                                 cJSON *retjson;
                                 if ( (retjson= cJSON_Parse((char *)buf)) != 0 )
                                 {
-                                    //ptr->lasttime = now;
-                                    //sendsock = ptr->sendsock;
                                     free_json(retjson);
+                                    ptr->lasttime = now;
+                                    sendsock = ptr->sendsock;
+                                    break;
                                 }
-                                printf("keepalive.%u [%s] -> sendsock.%d\n",now,(char *)buf,sendsock);
-                                break;
                             }
                         }
                     }
