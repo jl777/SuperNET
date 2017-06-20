@@ -228,7 +228,6 @@ void LP_psockloop(void *_ptr)
                         {
                             ptr->lastping = now;
                             sendsock = ptr->sendsock;
-                            //printf("keep %s alive\n",ptr->sendaddr);
                             sprintf(keepalive,"{\"method\":\"keepalive\",\"endpoint\":\"%s\"}",ptr->sendaddr);
                             size = (int32_t)strlen(keepalive) + 1;
                             buf = keepalive;
@@ -294,7 +293,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         pullsock = pubsock = -1;
         nanomsg_transportname(1,pushaddr,myipaddr,pushport);
         nanomsg_transportname(1,subaddr,myipaddr,subport);
-        if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_BUS)) >= 0 )
+        if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PAIR)) >= 0 )
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
@@ -383,7 +382,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
     {
         if ( LP_canbind != 0 )
             nntype = LP_COMMAND_RECVSOCK;
-        else nntype = NN_BUS;//NN_SUB;
+        else nntype = NN_PAIR;//NN_SUB;
     } else nntype = NN_PAIR;
     if ( LP_canbind != 0 )
     {
