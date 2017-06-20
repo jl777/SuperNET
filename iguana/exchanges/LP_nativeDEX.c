@@ -312,7 +312,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     {
         char keepalive[128];
         sprintf(keepalive,"{\"method\":\"keepalive\"}");
-        printf("send keepalive to %s pullsock.%d\n",pushaddr,pullsock);
+        //printf("send keepalive to %s pullsock.%d\n",pushaddr,pullsock);
         if ( LP_send(pullsock,keepalive,0) < 0 )
             LP_deadman_switch = 0;
     }

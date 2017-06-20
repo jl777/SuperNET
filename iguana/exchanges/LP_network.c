@@ -109,8 +109,9 @@ void LP_psockloop(void *_ptr)
             if ( size > 0 )
             {
                 if ( (sentbytes= LP_send(sendsock,buf,0)) > 0 )
-                    printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->publicsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
-                else printf("send error to %s\n",ptr->sendaddr);
+                {
+                    //printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->publicsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
+                } else printf("send error to %s\n",ptr->sendaddr);
                 if ( buf != 0 )
                 {
                     if ( buf != keepalive )
@@ -150,7 +151,7 @@ void LP_psockloop(void *_ptr)
                             {
                                 ptr->lasttime = now;
                                 sendsock = ptr->sendsock;
-                                printf("[%s] -> sendsock.%d\n",(char *)buf,sendsock);
+                                printf("keepalive.%u [%s] -> sendsock.%d\n",now,(char *)buf,sendsock);
                                 break;
                             }
                         }
