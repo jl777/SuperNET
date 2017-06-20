@@ -367,7 +367,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
 
 int32_t nn_tests(int32_t pullsock,char *pushaddr,int32_t nnother)
 {
-    int32_t sock,n,timeout,retval = -1; char msg[512],*retstr;
+    int32_t sock,n,m,timeout,retval = -1; char msg[512],*retstr;
     printf("nn_tests.(%s)\n",pushaddr);
     if ( (sock= nn_socket(AF_SP,nnother)) >= 0 )
     {
@@ -380,8 +380,10 @@ int32_t nn_tests(int32_t pullsock,char *pushaddr,int32_t nnother)
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
             n = LP_send(sock,msg,0);
+            sprintf(msg,"{\"method\":\"nn_tests2\",\"ipaddr\":\"%s\"}",pushaddr);
+            m = LP_send(pullsock,msg,0);
             LP_pullsock_check(&retstr,"127.0.0.1",-1,pullsock,0.);
-            printf(">>>>>>>>>>>>>>>>>>>>>> sent %d bytes -> %d (%s)\n",n,pullsock,retstr!=0?retstr:"");
+            printf(">>>>>>>>>>>>>>>>>>>>>> sent %d+%d bytes -> %d (%s)\n",n,m,pullsock,retstr!=0?retstr:"");
             if ( retstr != 0 )
             {
                 free(retstr);
@@ -447,7 +449,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
             nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
         //LP_send(pullsock,"hello init",0);
     }
-    if ( 0 && ispaired == 0 && nn_tests(pullsock,publicaddr,NN_PAIR) < 0 )
+    if ( 1 && ispaired == 0 && nn_tests(pullsock,publicaddr,NN_PAIR) < 0 )
     {
         printf("command socket didnt work\n");
         exit(-1);
