@@ -301,7 +301,11 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     if ( LP_canbind == 0 ) printf("counter.%d canbind.%d pullsock check\n",counter,LP_canbind);
     nonz += LP_pullsock_check(&retstr,myipaddr,pubsock,pullsock,profitmargin);
     if ( retstr != 0 )
+    {
+        printf("free (%s)\n",retstr);
         free(retstr);
+        printf("Freed\n");
+    }
     if ( LP_canbind == 0 ) printf("counter.%d canbind.%d hellos\n",counter,LP_canbind);
     if ( IAMLP != 0 && (counter % 600) == 42 )
         LP_hellos();
