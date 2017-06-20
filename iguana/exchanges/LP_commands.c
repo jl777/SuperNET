@@ -215,7 +215,7 @@ forwardhex(pubkey,hex)\n\
     {
         printf("got keepalive lag.%d\n",(int32_t)time(NULL) - LP_deadman_switch);
         LP_deadman_switch = (uint32_t)time(NULL);
-        return(0);
+        return(clonestr("{\"result\":\"success\"}"));
     }
     else if ( strcmp(method,"getpeers") == 0 )
         return(LP_peers());
