@@ -427,7 +427,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
             {
                 printf("bind to %s error for %s: %s\n",connectaddr,publicaddr,nn_strerror(nn_errno()));
                 exit(-1);
-            } else printf("nntype.%d NN_PAIR.%d connect to %s pullsock.%d\n",nntype,NN_PAIR,connectaddr,pullsock);
+            } else printf("nntype.%d NN_PAIR.%d connect to %s connectsock.%d\n",nntype,NN_PAIR,connectaddr,pullsock);
         }
         else
         {
@@ -445,7 +445,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
         if ( nntype == NN_SUB )
             nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
-        LP_send(pullsock,"hello init",0);
+        //LP_send(pullsock,"hello init",0);
     }
     if ( 0 && ispaired == 0 && nn_tests(pullsock,publicaddr,NN_PAIR) < 0 )
     {
