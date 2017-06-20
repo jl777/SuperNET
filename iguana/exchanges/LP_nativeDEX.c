@@ -471,6 +471,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
             {
                 sprintf(keepalive,"{\"method\":\"keepalive\"}");
                 LP_send(pullsock,keepalive,0);
+                printf("send keepalive\n");
             }
         }
     }
