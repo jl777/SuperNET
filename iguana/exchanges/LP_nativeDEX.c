@@ -476,7 +476,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
             //printf("check deadman %u vs %u\n",LP_deadman_switch,(uint32_t)time(NULL));
             if ( LP_deadman_switch < time(NULL)-PSOCK_KEEPALIVE )
             {
-                printf("DEAD man's switch activated, register forwarding again\n");
+                printf("DEAD man's switch %u activated at %u lag.%d, register forwarding again\n",LP_deadman_switch,(uint32_t)time(NULL),(uint32_t)(time(NULL) - LP_deadman_switch));
                 if ( pullsock >= 0 )
                     nn_close(pullsock);
                 pullsock = LP_initpublicaddr(&mypullport,pushaddr,myipaddr,mypullport,0);

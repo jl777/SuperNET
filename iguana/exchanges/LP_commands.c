@@ -213,7 +213,7 @@ forwardhex(pubkey,hex)\n\
     }
     else if ( strcmp(method,"keepalive") == 0 )
     {
-        printf("got keepalive lag.%d\n",(int32_t)time(NULL) - LP_deadman_switch);
+        printf("got keepalive lag.%d switch.%u\n",(int32_t)time(NULL) - LP_deadman_switch,LP_deadman_switch);
         LP_deadman_switch = (uint32_t)time(NULL);
         return(clonestr("{\"result\":\"success\"}"));
     }
