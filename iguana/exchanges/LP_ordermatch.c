@@ -343,6 +343,16 @@ int32_t LP_nanobind(char *pairstr,char *myipaddr)
     int32_t i,timeout,r,pairsock = -1; uint16_t mypullport; char bindaddr[128];
     if ( LP_canbind != 0 )
     {
+        if ( strcmp(myipaddr,"127.0.0.1") == 0 )
+        {
+            if ( LP_mypeer != 0 )
+                myipaddr = LP_mypeer->ipaddr;
+        }
+        if ( strcmp(myipaddr,"127.0.0.1") == 0 )
+        {
+            printf("cant nanobind to localhost\n");
+            return(-1);
+        }
         if ( (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
             printf("error creating utxo->pair\n");
         else
