@@ -2055,7 +2055,7 @@ int32_t bitcoin_addr2rmd160(uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],
             }
             for (i=0; i<len; i++)
                 printf("%02x ",buf[i]);
-            char str[65]; printf("\nhex checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",coinaddr,len,buf[len-1]&0xff,buf[len-2]&0xff,buf[len-3]&0xff,buf[len-4]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
+            char str[65]; printf("\ntaddr.%02x checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",taddr,coinaddr,len,buf[len-1]&0xff,buf[len-2]&0xff,buf[len-3]&0xff,buf[len-4]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
         }
     }
     return(0);
@@ -2085,6 +2085,33 @@ char *bitcoin_address(char *coinaddr,uint8_t taddr,uint8_t addrtype,uint8_t *pub
             printf("taddr.%02x checkaddr.(%s) vs coinaddr.(%s) %02x vs [%02x] memcmp.%d\n",taddr,checkaddr,coinaddr,addrtype,checktype,memcmp(rmd160,data+1,20));
     } else printf("null coinaddr taddr.%02x\n",taddr);
     return(coinaddr);
+}
+
+void iguana_priv2pub(void *ctx,uint8_t *pubkey33,char *coinaddr,bits256 privkey,uint8_t taddr,uint8_t addrtype)
+{
+    bits256 pub; //char privstr[65],url[512],postdata[1024],*retstr,*pubstr,*addr; cJSON *retjson;
+    memset(pubkey33,0,33);
+    coinaddr[0] = 0;
+    crypto_box_priv2pub(pub.bytes,privkey.bytes);
+    //jaddbits256(retjson,"curve25519",pub);
+    bitcoin_pubkey33(ctx,pubkey33,privkey);
+    bitcoin_address(coinaddr,taddr,addrtype,pubkey33,33);
+    
+    /*bits256_str(privstr,privkey);
+     sprintf(url,"%s/?",IGUANA_URL);
+     sprintf(postdata,"{\"agent\":\"SuperNET\",\"method\":\"priv2pub\",\"privkey\":\"%s\",\"addrtype\":%u,\"taddr\":%u}",privstr,addrtype,taddr);
+     if ( (retstr= bitcoind_RPC(0,"SuperNET",url,0,"priv2pub",postdata,0)) != 0 )
+     {
+     if ( (retjson= cJSON_Parse(retstr)) != 0 )
+     {
+     if ( (pubstr= jstr(retjson,"secp256k1")) != 0 && strlen(pubstr) == 66 )
+     decode_hex(pubkey33,33,pubstr);
+     if ( (addr= jstr(retjson,"result")) != 0 && strlen(addr) < 64 )
+     strcpy(coinaddr,addr);
+     free_json(retjson);
+     }
+     free(retstr);
+     }*/
 }
 
 int32_t bitcoin_validaddress(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,char *coinaddr)

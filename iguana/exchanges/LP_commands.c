@@ -19,7 +19,7 @@
 //
 
 
-char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
+char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
@@ -109,7 +109,7 @@ forwardhex(pubkey,hex)\n\
                 {
                     if ( LP_mypriceset(base,rel,price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
-                    else return(LP_pricepings(myipaddr,LP_mypubsock,profitmargin,base,rel,price * LP_profitratio));
+                    else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,profitmargin,base,rel,price * LP_profitratio));
                 } else return(clonestr("{\"error\":\"no price\"}"));
             }
             else if ( strcmp(method,"myprice") == 0 )
@@ -131,7 +131,7 @@ forwardhex(pubkey,hex)\n\
                 {
                     printf("price set (%s/%s) <- %.8f\n",rel,base,1./price);
                     LP_mypriceset(rel,base,1./price);
-                    return(LP_autotrade(myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"volume"),jint(argjson,"timeout")));
+                    return(LP_autotrade(ctx,myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"volume"),jint(argjson,"timeout")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
@@ -156,7 +156,7 @@ forwardhex(pubkey,hex)\n\
                 struct iguana_info *ptr; bits256 privkey,pubkey; uint8_t pubkey33[33];
                 if ( (ptr= LP_coinfind(coin)) != 0 )
                 {
-                    privkey = LP_privkeycalc(pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
+                    privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
                     //LP_utxopurge(0);
                     LP_privkey_init(-1,ptr,privkey,pubkey,pubkey33);
                     retjson = cJSON_CreateObject();
@@ -205,7 +205,7 @@ forwardhex(pubkey,hex)\n\
         if ( (reqjson= LP_dereference(argjson,"forward")) != 0 )
         {
             //printf("FORWARDED.(%s)\n",jprint(argjson,0));
-            if ( LP_forward(myipaddr,pubsock,profitmargin,jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
+            if ( LP_forward(ctx,myipaddr,pubsock,profitmargin,jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
                 retstr = clonestr("{\"result\":\"success\"}");
             else retstr = clonestr("{\"error\":\"error forwarding\"}");
         } else retstr = clonestr("{\"error\":\"cant recurse forwards\"}");
@@ -237,7 +237,7 @@ forwardhex(pubkey,hex)\n\
         else if ( strcmp(method,"lookup") == 0 )
             return(LP_lookup(jbits256(argjson,"client")));
         else if ( strcmp(method,"forwardhex") == 0 )
-            retstr = LP_forwardhex(pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
+            retstr = LP_forwardhex(ctx,pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
         else if ( strcmp(method,"psock") == 0 )
         {
             if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )

@@ -722,7 +722,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
     return(total);
 }
 
-bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
+bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     static uint32_t counter;
     bits256 privkey,userpub,userpass; char tmpstr[128]; cJSON *retjson; uint8_t tmptype,rmd160[20];
@@ -733,7 +733,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
         privkey = iguana_wif2privkey(wifstr);
         //printf("WIF.(%s) -> %s\n",wifstr,bits256_str(str,privkey));
     }
-    iguana_priv2pub(pubkey33,coin->smartaddr,privkey,coin->pubtype);
+    iguana_priv2pub(ctx,pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     if ( coin->counter == 0 )
     {
         coin->counter++;
@@ -757,7 +757,7 @@ bits256 LP_privkeycalc(uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *co
     return(privkey);
 }
 
-void LP_privkey_updates(int32_t pubsock,char *passphrase,int32_t initonly)
+void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase,int32_t initonly)
 {
     int32_t i; struct iguana_info *coin; bits256 pubkey,privkey; uint8_t pubkey33[33];
     memset(privkey.bytes,0,sizeof(privkey));
@@ -768,7 +768,7 @@ void LP_privkey_updates(int32_t pubsock,char *passphrase,int32_t initonly)
         if ( (coin= LP_coinfind(LP_coins[i].symbol)) != 0 )
         {
             if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
-                privkey = LP_privkeycalc(pubkey33,&pubkey,coin,passphrase,"");
+                privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
             if ( coin->inactive == 0 && initonly == 0 )
                 LP_privkey_init(pubsock,coin,privkey,pubkey,pubkey33);
         }

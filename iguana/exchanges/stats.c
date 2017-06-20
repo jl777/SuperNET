@@ -302,10 +302,15 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
     return(json);
 }
 
+extern void *bitcoin_ctx();
+
 char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
+    static void *ctx;
     cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; double profitmargin = 0.; char *myipaddr="127.0.0.1",symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
     //printf("rpcparse.(%s)\n",urlstr);
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
     urlmethod[i++] = 0;
@@ -488,7 +493,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
                     jaddstr(argjson,"userpass",userpass);
                 //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
-                if ( (retstr= stats_JSON(myipaddr,-1,profitmargin,argjson,remoteaddr,port)) != 0 )
+                if ( (retstr= stats_JSON(ctx,myipaddr,-1,profitmargin,argjson,remoteaddr,port)) != 0 )
                 {
                     if ( (retitem= cJSON_Parse(retstr)) != 0 )
                         jaddi(retarray,retitem);
@@ -511,7 +516,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             //printf("ARGJSON.(%s)\n",jprint(arg,0));
             if ( userpass != 0 && jstr(arg,"userpass") == 0 )
                 jaddstr(arg,"userpass",userpass);
-            retstr = stats_JSON(myipaddr,-1,profitmargin,arg,remoteaddr,port);
+            retstr = stats_JSON(ctx,myipaddr,-1,profitmargin,arg,remoteaddr,port);
         }
         free_json(argjson);
         free_json(json);

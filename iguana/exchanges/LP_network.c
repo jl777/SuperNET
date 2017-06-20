@@ -359,7 +359,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
 
 */
 
-int32_t nn_tests(int32_t pullsock,char *pushaddr,int32_t nnother)
+int32_t nn_tests(void *ctx,int32_t pullsock,char *pushaddr,int32_t nnother)
 {
     int32_t sock,n,m,timeout,retval = -1; char msg[512],*retstr;
     printf("nn_tests.(%s)\n",pushaddr);
@@ -375,7 +375,7 @@ int32_t nn_tests(int32_t pullsock,char *pushaddr,int32_t nnother)
             sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
             n = LP_send(sock,msg,0);
             sleep(3);
-            LP_pullsock_check(&retstr,"127.0.0.1",-1,pullsock,0.);
+            LP_pullsock_check(ctx,&retstr,"127.0.0.1",-1,pullsock,0.);
             sprintf(msg,"{\"method\":\"nn_tests2\",\"ipaddr\":\"%s\"}",pushaddr);
             m = LP_send(pullsock,msg,0);
             printf(">>>>>>>>>>>>>>>>>>>>>> sent %d+%d bytes -> pullsock.%d retstr.(%s)\n",n,m,pullsock,retstr!=0?retstr:"");
@@ -390,7 +390,7 @@ int32_t nn_tests(int32_t pullsock,char *pushaddr,int32_t nnother)
     return(retval);
 }
 
-int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
+int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
 {
     int32_t nntype,pullsock,timeout,maxsize; char bindaddr[128],connectaddr[128];
     *mypullportp = mypullport;
@@ -444,7 +444,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
             nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
         //LP_send(pullsock,"hello init",0);
     }
-    if ( LP_canbind == 0 && ispaired == 0 && nn_tests(pullsock,publicaddr,NN_PUSH) < 0 )
+    if ( LP_canbind == 0 && ispaired == 0 && nn_tests(ctx,pullsock,publicaddr,NN_PUSH) < 0 )
     {
         printf("command socket didnt work\n");
         exit(-1);

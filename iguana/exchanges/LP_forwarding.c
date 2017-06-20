@@ -190,7 +190,7 @@ cJSON *LP_dereference(cJSON *argjson,char *excludemethod)
     return(reqjson);
 }
 
-char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
+char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
 {
     struct LP_forwardinfo *ptr=0; uint8_t *data; int32_t datalen=0,sentbytes=0; char *retstr=0; cJSON *retjson=0,*argjson=0,*reqjson=0;
     if ( hexstr == 0 || hexstr[0] == 0 )
@@ -204,7 +204,7 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
     {
         if ( reqjson != 0 )
         {
-            retstr = LP_command_process(LP_mypeer != 0 ? LP_mypeer->ipaddr : "127.0.0.1",LP_mypubsock,reqjson,0,0,LP_profitratio - 1.);
+            retstr = LP_command_process(ctx,LP_mypeer != 0 ? LP_mypeer->ipaddr : "127.0.0.1",LP_mypubsock,reqjson,0,0,LP_profitratio - 1.);
             //printf("LP_forwardhex.(%s) -> (%s)\n",jprint(reqjson,0),retstr!=0?retstr:"");
             if ( pubsock >= 0 )
                 LP_send(pubsock,jprint(reqjson,0),0);
@@ -248,7 +248,7 @@ char *LP_forwardhex(int32_t pubsock,bits256 pubkey,char *hexstr)
     return(retstr);
 }
 
-int32_t LP_forward(char *myipaddr,int32_t pubsock,double profitmargin,bits256 pubkey,char *jsonstr,int32_t freeflag)
+int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,bits256 pubkey,char *jsonstr,int32_t freeflag)
 {
     struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *hexstr,*retstr; int32_t len,retval = -1; cJSON *retjson,*reqjson,*argjson;
     if ( jsonstr == 0 || jsonstr[0] == 0 )
@@ -260,7 +260,7 @@ int32_t LP_forward(char *myipaddr,int32_t pubsock,double profitmargin,bits256 pu
             printf("GOT FORWARDED.(%s)\n",myipaddr);
             if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
             {
-                if ( (retstr= LP_command_process(myipaddr,pubsock,argjson,0,0,profitmargin)) != 0 )
+                if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,0,0,profitmargin)) != 0 )
                     free(retstr);
                 free_json(argjson);
             }

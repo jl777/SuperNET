@@ -176,7 +176,7 @@ char *LP_quotereceived(cJSON *argjson)
     } else return(clonestr("{\"error\":\"nullptr\"}"));
 }
 
-char *LP_pricepings(char *myipaddr,int32_t pubsock,double profitmargin,char *base,char *rel,double price)
+char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,char *base,char *rel,double price)
 {
     bits256 zero; cJSON *reqjson = cJSON_CreateObject();
     jaddbits256(reqjson,"pubkey",LP_mypubkey);
@@ -194,7 +194,7 @@ char *LP_pricepings(char *myipaddr,int32_t pubsock,double profitmargin,char *bas
         jaddstr(reqjson,"method","forward");
         jaddstr(reqjson,"method2","postprice");
         memset(zero.bytes,0,sizeof(zero));
-        LP_forward(myipaddr,pubsock,profitmargin,zero,jprint(reqjson,1),1);
+        LP_forward(ctx,myipaddr,pubsock,profitmargin,zero,jprint(reqjson,1),1);
     }
     return(clonestr("{\"result\":\"success\"}"));
 }
@@ -294,7 +294,7 @@ int32_t LP_arrayfind(cJSON *array,bits256 txid,int32_t vout)
     return(-1);
 }
 
-double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *method,struct LP_quoteinfo *qp)
+double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargin,char *method,struct LP_quoteinfo *qp)
 {
     cJSON *reqjson; int32_t i,flag = 0; double price = 0.; struct LP_utxoinfo *utxo;
     if ( strcmp(method,"request") == 0 )
@@ -321,7 +321,7 @@ double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *metho
         jaddstr(reqjson,"method2",method);
         jaddstr(reqjson,"method","forward");
         jaddbits256(reqjson,"pubkey",qp->srchash);
-        LP_forward(myipaddr,mypubsock,profitmargin,qp->srchash,jprint(reqjson,1),1);
+        LP_forward(ctx,myipaddr,mypubsock,profitmargin,qp->srchash,jprint(reqjson,1),1);
     }
     for (i=0; i<30; i++)
     {
@@ -338,7 +338,7 @@ double LP_query(char *myipaddr,int32_t mypubsock,double profitmargin,char *metho
     return(price);
 }
 
-int32_t LP_nanobind(char *pairstr,char *myipaddr)
+int32_t LP_nanobind(void *ctx,char *pairstr,char *myipaddr)
 {
     int32_t i,timeout,r,pairsock = -1; uint16_t mypullport; char bindaddr[128];
     if ( LP_canbind != 0 )
@@ -372,11 +372,11 @@ int32_t LP_nanobind(char *pairstr,char *myipaddr)
                 } else printf("error binding to %s for %s\n",bindaddr,pairstr);
             }
         }
-    } else pairsock = LP_initpublicaddr(&mypullport,pairstr,myipaddr,0,0);
+    } else pairsock = LP_initpublicaddr(ctx,&mypullport,pairstr,myipaddr,0,0);
     return(pairsock);
 }
 
-int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin,double price,struct LP_quoteinfo *qp)
+int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin,double price,struct LP_quoteinfo *qp)
 {
     char pairstr[512]; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
     printf("LP_connectstartbob.(%s) with.(%s)\n",myipaddr,jprint(argjson,0));
@@ -389,7 +389,7 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
     privkey = LP_privkey(utxo->coinaddr,coin->taddr);
     if ( bits256_nonz(privkey) != 0 && qp->quotetime >= qp->timestamp-3 && qp->quotetime <= utxo->T.swappending && bits256_cmp(LP_mypubkey,qp->srchash) == 0 )
     {
-        if ( (pair= LP_nanobind(pairstr,myipaddr)) >= 0 )
+        if ( (pair= LP_nanobind(ctx,pairstr,myipaddr)) >= 0 )
         {
             LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis,rel,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
             swap = LP_swapinit(1,0,privkey,&qp->R,qp);
@@ -409,7 +409,7 @@ int32_t LP_connectstartbob(int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjs
                 jdelete(retjson,"method");
                 jaddstr(retjson,"method2","connected");
                 jaddstr(retjson,"method","forward");
-                LP_forward(myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,jprint(retjson,1),1);
+                LP_forward(ctx,myipaddr,pubsock,profitmargin,utxo->S.otherpubkey,jprint(retjson,1),1);
                 retval = 0;
             } else printf("error launching swaploop\n");
         } else printf("couldnt bind to any port %s\n",pairstr);
@@ -496,7 +496,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     }
 }
 
-int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
+int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
     char *method; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo *autxo,*butxo; int32_t retval = -1; struct LP_quoteinfo Q;
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
@@ -541,7 +541,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
                     jdelete(retjson,"method");
                     jaddstr(retjson,"method2","reserved");
                     jaddstr(retjson,"method","forward");
-                    LP_forward(myipaddr,pubsock,profitmargin,butxo->S.otherpubkey,jprint(retjson,1),1);
+                    LP_forward(ctx,myipaddr,pubsock,profitmargin,butxo->S.otherpubkey,jprint(retjson,1),1);
                     butxo->T.lasttime = (uint32_t)time(NULL);
                     printf("set swappending.%u accept qprice %.8f, min %.8f\n",butxo->T.swappending,qprice,price);
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
@@ -550,7 +550,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
             {
                 retval = 4;
                 if ( butxo->T.swappending != 0 && butxo->S.swap == 0 )
-                    LP_connectstartbob(pubsock,butxo,argjson,myipaddr,Q.srccoin,Q.destcoin,profitmargin,qprice,&Q);
+                    LP_connectstartbob(ctx,pubsock,butxo,argjson,myipaddr,Q.srccoin,Q.destcoin,profitmargin,qprice,&Q);
                 else printf("pend.%u swap %p when connect came in (%s)\n",butxo->T.swappending,butxo->S.swap,jprint(argjson,0));
             }
         }
@@ -558,7 +558,7 @@ int32_t LP_tradecommand(char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *d
     return(retval);
 }
 
-char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *base,char *rel,double maxprice,double volume,int32_t timeout)
+char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargin,char *base,char *rel,double maxprice,double volume,int32_t timeout)
 {
     int64_t satoshis,destsatoshis,desttxfee,txfee,bestdestsatoshis=0; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item,*bestitem=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; int32_t i,vout,numasks,DEXselector=0; uint32_t expiration; double ordermatchprice,bestmetric,metric,bestprice=0.,vol,price; struct LP_quoteinfo Q;
     if ( maxprice <= 0. || volume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
@@ -636,13 +636,13 @@ char *LP_autotrade(char *myipaddr,int32_t mypubsock,double profitmargin,char *ba
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypubkey,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
-    price = LP_query(myipaddr,mypubsock,profitmargin,"request",&Q);
+    price = LP_query(ctx,myipaddr,mypubsock,profitmargin,"request",&Q);
     bestitem = LP_quotejson(&Q);
     if ( price > SMALLVAL )
     {
         if ( price <= maxprice )
         {
-            price = LP_query(myipaddr,mypubsock,profitmargin,"connect",&Q);
+            price = LP_query(ctx,myipaddr,mypubsock,profitmargin,"connect",&Q);
             LP_requestinit(&Q.R,Q.srchash,Q.desthash,base,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
             expiration = (uint32_t)time(NULL) + timeout;
             while ( time(NULL) < expiration )

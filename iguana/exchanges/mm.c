@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include "OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
-char *stats_JSON(char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port);
+char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 
@@ -218,28 +218,6 @@ bits256 iguana_wif2privkey(char *wifstr)
         free(retstr);
     }
     return(privkey);
-}
-
-void iguana_priv2pub(uint8_t *pubkey33,char *coinaddr,bits256 privkey,uint8_t addrtype)
-{
-    char privstr[65],url[512],postdata[1024],*retstr,*pubstr,*addr; cJSON *retjson;
-    memset(pubkey33,0,33);
-    coinaddr[0] = 0;
-    bits256_str(privstr,privkey);
-    sprintf(url,"%s/?",IGUANA_URL);
-    sprintf(postdata,"{\"agent\":\"SuperNET\",\"method\":\"priv2pub\",\"privkey\":\"%s\",\"addrtype\":%u}",privstr,addrtype);
-    if ( (retstr= bitcoind_RPC(0,"SuperNET",url,0,"priv2pub",postdata,0)) != 0 )
-    {
-        if ( (retjson= cJSON_Parse(retstr)) != 0 )
-        {
-            if ( (pubstr= jstr(retjson,"secp256k1")) != 0 && strlen(pubstr) == 66 )
-                decode_hex(pubkey33,33,pubstr);
-            if ( (addr= jstr(retjson,"result")) != 0 && strlen(addr) < 64 )
-                strcpy(coinaddr,addr);
-            free_json(retjson);
-        }
-        free(retstr);
-    }
 }
 
 double bittrex_balance(char *base,char *coinaddr)
