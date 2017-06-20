@@ -155,28 +155,34 @@ void LP_psockloop(void *_ptr)
                         }
                     }
                     n++;
-                    //if ( ptr->ispaired != 0 )
+                    if ( iter == 0 )
                     {
-                        if ( iter == 0 )
+                        pfds[n].fd = ptr->sendsock;
+                        pfds[n].events = POLLIN;
+                    }
+                    else
+                    {
+                        if ( pfds[n].fd != ptr->sendsock )
                         {
-                            pfds[n].fd = ptr->sendsock;
-                            pfds[n].events = POLLIN;
+                            printf("unexpected fd.%d mismatched sendsock.%d\n",pfds[n].fd,ptr->sendsock);
+                            break;
                         }
-                        else
+                        else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            if ( pfds[n].fd != ptr->sendsock )
+                            printf("%s paired has pollin\n",ptr->sendaddr);
+                            if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
                             {
-                                printf("unexpected fd.%d mismatched sendsock.%d\n",pfds[n].fd,ptr->sendsock);
-                                break;
-                            }
-                            else if ( (pfds[n].revents & POLLIN) != 0 )
-                            {
-                                printf("%s paired has pollin\n",ptr->sendaddr);
-                                if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
+                                ptr->lasttime = now;
+                                if ( ptr->ispaired != 0 )
                                 {
-                                    ptr->lasttime = now;
                                     sendsock = ptr->recvsock;
                                     break;
+                                }
+                                else
+                                {
+                                    nn_freemsg(buf);
+                                    buf = 0;
+                                    size = 0;
                                 }
                             }
                         }
@@ -292,13 +298,13 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
-                timeout = 10;
+                timeout = 1;
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                 timeout = 1;
                 nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 maxsize = 1024 * 1024;
                 nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
-                if ( ispaired != 0 )
+                //if ( ispaired != 0 )
                 {
                     nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
@@ -378,8 +384,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
         if ( LP_canbind != 0 )
             nntype = LP_COMMAND_RECVSOCK;
         else nntype = NN_PAIR;//NN_SUB;
-    }
-    else nntype = NN_PAIR;
+    } else nntype = NN_PAIR;
     if ( LP_canbind != 0 )
     {
         nanomsg_transportname(0,publicaddr,myipaddr,mypullport);
