@@ -206,8 +206,8 @@ void LP_psockloop(void *_ptr)
                     } // else printf("num pfds.%d retval.%d\n",n,retval);
                 }
             }
-            portable_mutex_unlock(&LP_psockmutex);
             free(pfds);
+            printf("sendsock.%d Numpsocks.%d\n",sendsock,Numpsocks);
             if ( sendsock < 0 )
             {
                 for (i=nonz=0; i<Numpsocks; i++)
@@ -234,13 +234,13 @@ void LP_psockloop(void *_ptr)
                                 nn_close(ptr->publicsock);
                             if ( ptr->sendsock >= 0 )
                                 nn_close(ptr->sendsock);
-                            portable_mutex_lock(&LP_psockmutex);
+                            //portable_mutex_lock(&LP_psockmutex);
                             if ( Numpsocks > 1 )
                             {
                                 PSOCKS[i] = PSOCKS[--Numpsocks];
                                 memset(&PSOCKS[Numpsocks],0,sizeof(*ptr));
                             } else Numpsocks = 0;
-                            portable_mutex_unlock(&LP_psockmutex);
+                            //portable_mutex_unlock(&LP_psockmutex);
                             break;
                         }
                         else if ( now > ptr->lastping+PSOCK_KEEPALIVE/2 )
@@ -254,6 +254,7 @@ void LP_psockloop(void *_ptr)
                         }
                     }
                 }
+                portable_mutex_unlock(&LP_psockmutex);
                 if ( nonz == 0 && i == Numpsocks )
                     usleep(100000);
             }
