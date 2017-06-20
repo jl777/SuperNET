@@ -313,7 +313,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         pullsock = pubsock = -1;
         nanomsg_transportname(1,pushaddr,myipaddr,pushport), pushport += 2;
         nanomsg_transportname(1,subaddr,myipaddr,subport), subport += 2;
-        if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_BUS)) >= 0 )
+        if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PUB)) >= 0 )
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
@@ -402,7 +402,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
     {
         if ( LP_canbind != 0 )
             nntype = LP_COMMAND_RECVSOCK;
-        else nntype = NN_BUS; //NN_SUB;
+        else nntype = NN_SUB;
     }
     else nntype = NN_PAIR;
     if ( LP_canbind != 0 )
@@ -423,16 +423,8 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
     }
     if ( (pullsock= nn_socket(AF_SP,nntype)) >= 0 )
     {
-        timeout = 1;
-        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-        if ( nntype == NN_PAIR )
-            nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-        maxsize = 2 * 1024 * 1024;
-        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
         if ( LP_canbind == 0 )
         {
-            if ( nntype == NN_SUB )
-                nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
             if ( nn_connect(pullsock,connectaddr) < 0 )
             {
                 printf("bind to %s error for %s: %s\n",connectaddr,publicaddr,nn_strerror(nn_errno()));
@@ -455,6 +447,14 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
                 exit(-1);
             }
         }
+        timeout = 1;
+        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+        if ( nntype == NN_PAIR )
+            nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+        maxsize = 2 * 1024 * 1024;
+        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
+        if ( nntype == NN_SUB )
+            nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
     }
     if ( 0 && ispaired == 0 && nn_tests(pullsock,publicaddr,LP_COMMAND_SENDSOCK) < 0 )
     {
