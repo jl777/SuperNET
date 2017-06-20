@@ -2083,7 +2083,7 @@ char *bitcoin_address(char *coinaddr,uint8_t taddr,uint8_t addrtype,uint8_t *pub
         bitcoin_addr2rmd160(taddr,&checktype,rmd160,coinaddr);
         if ( strcmp(checkaddr,coinaddr) != 0 )
             printf("taddr.%02x checkaddr.(%s) vs coinaddr.(%s) %02x vs [%02x] memcmp.%d\n",taddr,checkaddr,coinaddr,addrtype,checktype,memcmp(rmd160,data+1,20));
-    }
+    } else printf("null coinaddr taddr.%02x\n",taddr);
     return(coinaddr);
 }
 
