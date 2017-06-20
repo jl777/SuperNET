@@ -160,7 +160,7 @@ int32_t LP_pullsock_check(char **retstrp,char *myipaddr,int32_t pubsock,int32_t 
     *retstrp = 0;
     if ( pullsock >= 0 )
     {
-        while ( (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
+        while ( (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) > 0 )
         {
             nonz++;
             *retstrp = LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen,pullsock);
@@ -174,7 +174,7 @@ int32_t LP_subsock_check(char *myipaddr,int32_t pubsock,int32_t sock,double prof
     int32_t recvlen,nonz = 0; void *ptr; char *retstr;
     if ( sock >= 0 )
     {
-        while ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) >= 0 )
+        while ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
         {
             nonz++;
             if ( (retstr= LP_process_message("SUB",myipaddr,pubsock,profitmargin,ptr,recvlen,sock)) != 0 )
