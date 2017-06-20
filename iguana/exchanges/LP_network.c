@@ -193,8 +193,8 @@ void LP_psockloop(void *_ptr)
                                 }
                             }
                         }
-                        n++;
                     }
+                    n++;
                 }
                 if ( iter == 0 )
                 {
