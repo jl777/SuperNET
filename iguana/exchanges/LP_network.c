@@ -380,10 +380,10 @@ int32_t nn_tests(int32_t pullsock,char *pushaddr,int32_t nnother)
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
             n = LP_send(sock,msg,0);
+            LP_pullsock_check(&retstr,"127.0.0.1",-1,pullsock,0.);
             sprintf(msg,"{\"method\":\"nn_tests2\",\"ipaddr\":\"%s\"}",pushaddr);
             m = LP_send(pullsock,msg,0);
-            LP_pullsock_check(&retstr,"127.0.0.1",-1,pullsock,0.);
-            printf(">>>>>>>>>>>>>>>>>>>>>> sent %d+%d bytes -> %d (%s)\n",n,m,pullsock,retstr!=0?retstr:"");
+            printf(">>>>>>>>>>>>>>>>>>>>>> sent %d+%d bytes -> pullsock.%d (%s)\n",n,m,pullsock,retstr!=0?retstr:"");
             if ( retstr != 0 )
             {
                 free(retstr);
