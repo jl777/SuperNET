@@ -249,10 +249,10 @@ void LP_psockadd(int32_t ispaired,int32_t publicsock,uint16_t recvport,int32_t s
     PSOCKS = realloc(PSOCKS,sizeof(*PSOCKS) * (Numpsocks + 1));
     ptr = &PSOCKS[Numpsocks++];
     ptr->ispaired = ispaired;
-    ptr->publicsock = sendsock;//publicsock;
-    ptr->publicport = sendport;//recvport;
-    ptr->sendsock = publicsock;//sendsock;
-    ptr->sendport = recvport;//sendport;
+    ptr->publicsock = publicsock;
+    ptr->publicport = recvport;
+    ptr->sendsock = sendsock;
+    ptr->sendport = sendport;
     safecopy(ptr->sendaddr,subaddr,sizeof(ptr->sendaddr));
     safecopy(ptr->publicaddr,publicaddr,sizeof(ptr->publicaddr));
     ptr->lasttime = (uint32_t)time(NULL);
