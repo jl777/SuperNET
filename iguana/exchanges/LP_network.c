@@ -191,7 +191,7 @@ void LP_psockloop(void *_ptr)
                 }
                 if ( iter == 0 )
                 {
-                    if ( (retval= nn_poll(pfds,n,10)) <= 0 )
+                    if ( (retval= nn_poll(pfds,n,1)) <= 0 )
                     {
                         if ( retval != 0 )
                             printf("nn_poll retval.%d\n",retval);
@@ -297,7 +297,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
-                timeout = 1;
+                timeout = 10;
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                 timeout = 1;
                 nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
@@ -420,6 +420,7 @@ int32_t LP_initpublicaddr(uint16_t *mypullportp,char *publicaddr,char *myipaddr,
         }
         timeout = 1;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+        timeout = 10;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
         maxsize = 2 * 1024 * 1024;
         nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
