@@ -156,14 +156,17 @@ char *LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double pro
 
 int32_t LP_pullsock_check(char **retstrp,char *myipaddr,int32_t pubsock,int32_t pullsock,double profitmargin)
 {
-    void *ptr; int32_t recvlen,nonz = 0;
+    void *ptr; int32_t recvlen=-1,nonz = 0;
     *retstrp = 0;
-    while ( pullsock >= 0 && (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
+    while ( pullsock >= 0 )
     {
-        if ( IAMLP == 0 )
-            printf("pullsock.%d recv.%d (%s)\n",pullsock,recvlen,(char *)ptr);
-        nonz++;
-        *retstrp = LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen,pullsock);
+        if ( (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
+        {
+            if ( IAMLP == 0 )
+                printf("pullsock.%d recv.%d (%s)\n",pullsock,recvlen,(char *)ptr);
+            nonz++;
+            *retstrp = LP_process_message("PULL",myipaddr,pubsock,profitmargin,ptr,recvlen,pullsock);
+        } else printf("pullsock.%d recvlen.%d\n",pullsock,recvlen);
     }
     return(nonz);
 }
