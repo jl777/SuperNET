@@ -2069,9 +2069,11 @@ char *bitcoin_address(char *coinaddr,uint8_t taddr,uint8_t addrtype,uint8_t *pub
         calc_rmd160_sha256(data+offset,pubkey_or_rmd160,len);
     else memcpy(data+offset,pubkey_or_rmd160,20);
     //btc_convrmd160(checkaddr,addrtype,data+1);
-    data[0] = addrtype;
     if ( taddr != 0 )
-        data[1] = taddr;
+    {
+        data[0] = taddr;
+        data[1] = addrtype;
+    } else data[0] = addrtype;
     hash = bits256_doublesha256(0,data,20+offset);
     for (i=0; i<4; i++)
         data[20+offset+i] = hash.bytes[31-i];
@@ -2103,9 +2105,11 @@ int32_t base58encode_checkbuf(uint8_t taddr,uint8_t addrtype,uint8_t *data,int32
 {
     uint8_t i,offset; bits256 hash;
     offset = 1 + (taddr != 0);
-    data[0] = addrtype;
     if ( taddr != 0 )
-        data[1] = taddr;
+    {
+        data[0] = taddr;
+        data[1] = addrtype;
+    } else data[0] = addrtype;
     //for (i=0; i<data_len+1; i++)
     //    printf("%02x",data[i]);
     //printf(" extpriv -> ");
