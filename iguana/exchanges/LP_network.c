@@ -145,7 +145,7 @@ void LP_psockloop(void *_ptr)
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            //printf("%s has pollin\n",ptr->sendaddr);
+                            printf("%s has pollin\n",ptr->sendaddr);
                             if ( (size= nn_recv(ptr->recvsock,&buf,NN_MSG,0)) > 0 )
                             {
                                 sendsock = ptr->sendsock;
@@ -169,9 +169,9 @@ void LP_psockloop(void *_ptr)
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
+                            printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
                             if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
                             {
-                                printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
                                 ptr->lasttime = now;
                                 if ( ptr->ispaired != 0 )
                                 {
@@ -196,7 +196,7 @@ void LP_psockloop(void *_ptr)
                         if ( retval != 0 )
                             printf("nn_poll retval.%d\n",retval);
                         break;
-                    } else printf("num pfds.%d\n",n);
+                    } else printf("num pfds.%d retval.%d\n",n,retval);
                 }
             }
             portable_mutex_unlock(&LP_psockmutex);
