@@ -148,6 +148,7 @@ void LP_psockloop(void *_ptr)
                             printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
+                                ptr->lasttime = now;
                                 sendsock = ptr->sendsock;
                                 printf("[%s] -> sendsock.%d\n",(char *)buf,sendsock);
                                 break;
