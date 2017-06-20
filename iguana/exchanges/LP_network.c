@@ -169,9 +169,9 @@ void LP_psockloop(void *_ptr)
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            //printf("%s paired has pollin\n",ptr->sendaddr);
                             if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
                             {
+                                printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
                                 ptr->lasttime = now;
                                 if ( ptr->ispaired != 0 )
                                 {
@@ -208,7 +208,7 @@ void LP_psockloop(void *_ptr)
                     if ( i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
-                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE )
+                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE*2 )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->recvport,ptr->sendport,now - ptr->lasttime);
                             if ( ptr->recvsock >= 0 )
