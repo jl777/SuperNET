@@ -207,7 +207,7 @@ void LP_psockloop(void *_ptr)
                 }
             }
             free(pfds);
-            printf("sendsock.%d Numpsocks.%d\n",sendsock,Numpsocks);
+            //printf("sendsock.%d Numpsocks.%d\n",sendsock,Numpsocks);
             if ( sendsock < 0 )
             {
                 for (i=nonz=0; i<Numpsocks; i++)
@@ -215,19 +215,7 @@ void LP_psockloop(void *_ptr)
                     if ( i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
-                        if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
-                        {
-                            printf("publicsock got (%s)\n",(char *)buf);
-                            sendsock = ptr->sendsock;
-                            break;
-                        }
-                        else if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
-                        {
-                            printf("sendsock got (%s)\n",(char *)buf);
-                            sendsock = ptr->publicsock;
-                            break;
-                        }
-                        else if ( 0 && now > ptr->lasttime+PSOCK_KEEPALIVE*10 )
+                        if ( 0 && now > ptr->lasttime+PSOCK_KEEPALIVE*10 )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->publicport,ptr->sendport,now - ptr->lasttime);
                             if ( ptr->publicsock >= 0 )
