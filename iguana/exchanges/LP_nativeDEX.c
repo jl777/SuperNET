@@ -103,7 +103,7 @@ char *LP_process_message(char *typestr,char *myipaddr,int32_t pubsock,double pro
         decode_hex((void *)jsonstr,datalen,(char *)ptr);
         jsonstr[datalen] = 0;
     } else jsonstr = (char *)ptr;
-    if ( 1 && IAMLP == 0 )
+    if ( 0 && IAMLP == 0 )
         printf("%s %d, datalen.%d (%s)\n",typestr,recvlen,datalen,jsonstr);
     if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
     {
@@ -312,7 +312,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
     {
         char keepalive[128];
         sprintf(keepalive,"{\"method\":\"keepalive\"}");
-        printf("send keepalive to %s pullsock.%d\n",pushaddr,pullsock);
+        //printf("send keepalive to %s pullsock.%d\n",pushaddr,pullsock);
         if ( LP_send(pullsock,keepalive,0) < 0 )
             LP_deadman_switch = 0;
     }

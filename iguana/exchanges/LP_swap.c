@@ -120,6 +120,8 @@ void basilisk_rawtx_purge(struct basilisk_rawtx *rawtx)
 void basilisk_swap_finished(struct basilisk_swap *swap)
 {
     int32_t i;
+    if ( swap->utxo != 0 && swap->sentflag == 0 )
+        LP_availableset(swap->utxo);
     swap->I.finished = (uint32_t)time(NULL);
     // save to permanent storage
     basilisk_rawtx_purge(&swap->bobdeposit);
@@ -140,8 +142,6 @@ void basilisk_swap_finished(struct basilisk_swap *swap)
     swap->nummessages = 0;
     if ( swap->N.pair >= 0 )
         nn_close(swap->N.pair), swap->N.pair = -1;
-    if ( swap->utxo != 0 )
-        LP_availableset(swap->utxo);
 }
 
 uint32_t basilisk_quoteid(struct basilisk_request *rp)
@@ -696,6 +696,7 @@ void LP_bobloop(void *_swap)
                     }
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
                         printf("error sending bobpayment\n");
+                    swap->sentflag = 1;
                     swap->bobreclaim.utxovout = 0;
                     swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
@@ -741,6 +742,7 @@ void LP_aliceloop(void *_swap)
                     char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                     sleep(LP_SWAPSTEP_TIMEOUT);
                 }
+                swap->sentflag = 1;
                 if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT,LP_verify_bobpayment) < 0 )
                     printf("error waiting for bobpayment\n");
                 else
