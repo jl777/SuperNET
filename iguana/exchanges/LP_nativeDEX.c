@@ -235,6 +235,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
         origipaddr = "127.0.0.1";
     if ( mypeer == 0 )
         myipaddr = "127.0.0.1";
+    if ( LP_canbind == 0 ) printf("counter.%d canbind.%d peers\n",counter,LP_canbind);
     numpeers = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
@@ -263,6 +264,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
         }
         nonz += LP_subsock_check(origipaddr,pubsock,peer->subsock,profitmargin);
     }
+    if ( LP_canbind == 0 ) printf("counter.%d canbind.%d forwarding\n",counter,LP_canbind);
     if ( (counter % 600) == 60 )
     {
         LP_myutxo_updates(pubsock,passphrase,profitmargin);
@@ -272,6 +274,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             lastforward = now;
         }
     }
+    if ( LP_canbind == 0 ) printf("counter.%d canbind.%d utxos\n",counter,LP_canbind);
     if ( (counter % 600) == 0 )
     {
         HASH_ITER(hh,LP_utxoinfos[0],utxo,utmp)
@@ -285,6 +288,7 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
                 LP_utxo_clientpublish(utxo);
         }
     }
+    if ( LP_canbind == 0 ) printf("counter.%d canbind.%d swapentry\n",counter,LP_canbind);
     if ( (counter % 600) == 599 )
     {
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
@@ -293,11 +297,13 @@ int32_t LP_mainloop_iter(char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubso
             free(retstr);
         }
     }
+    if ( LP_canbind == 0 ) printf("counter.%d canbind.%d\n",counter,LP_canbind);
     nonz += LP_pullsock_check(&retstr,myipaddr,pubsock,pullsock,profitmargin);
     if ( retstr != 0 )
         free(retstr);
     if ( IAMLP != 0 && (counter % 600) == 42 )
         LP_hellos();
+    if ( LP_canbind == 0 ) printf("counter.%d canbind.%d\n",counter,LP_canbind);
     if ( LP_canbind == 0 && (counter % 60) == 13 )
     {
         char keepalive[128];
