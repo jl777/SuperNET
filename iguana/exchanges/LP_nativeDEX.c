@@ -176,19 +176,6 @@ int32_t LP_subsock_check(char *myipaddr,int32_t pubsock,int32_t sock,double prof
         nonz++;
         if ( (retstr= LP_process_message("SUB",myipaddr,pubsock,profitmargin,ptr,recvlen,sock)) != 0 )
             free(retstr);
-        /*if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
-        {
-            printf("%s SUB.[%d] %s\n",myipaddr,recvsize,jprint(argjson,0));
-            portable_mutex_lock(&LP_commandmutex);
-            if ( (retstr= LP_command_process(myipaddr,-1,argjson,0,0,profitmargin)) != 0 )
-            {
-                free(retstr);
-            }
-            portable_mutex_unlock(&LP_commandmutex);
-            free_json(argjson);
-        } else printf("error parsing.(%s)\n",(char *)ptr);
-        if ( ptr != 0 )
-            nn_freemsg(ptr), ptr = 0;*/
     }
     return(nonz);
 }

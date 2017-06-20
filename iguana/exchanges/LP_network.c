@@ -231,7 +231,7 @@ void LP_psockloop(void *_ptr)
                             portable_mutex_unlock(&LP_psockmutex);
                             break;
                         }
-                        else if ( now > ptr->lastping+60 )
+                        else if ( now > ptr->lastping+6 )
                         {
                             ptr->lastping = now;
                             sendsock = ptr->sendsock;
@@ -328,7 +328,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                 jaddstr(retjson,"publicaddr",pushaddr);
                 jaddnum(retjson,"publicport",pushport);
                 printf("publicaddr.(%s) for %s\n",pushaddr,subaddr);
-                while ( 1 )
+                while ( 0 )
                 {
                     printf("LP_Send %d\n",LP_send(pubsock,"hello",0));
                     sleep(10);
