@@ -394,7 +394,7 @@ int32_t nn_tests(void *ctx,int32_t pullsock,char *pushaddr,int32_t nnother)
 
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
 {
-    int32_t nntype,pullsock,timeout,maxsize; char bindaddr[128],connectaddr[128];
+    int32_t nntype,pullsock,timeout; char bindaddr[128],connectaddr[128];
     *mypullportp = mypullport;
     if ( ispaired == 0 )
     {

@@ -372,7 +372,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr,char *myipaddr)
                 } else printf("error binding to %s for %s\n",bindaddr,pairstr);
             }
         }
-    } else pairsock = LP_initpublicaddr(ctx,&mypullport,pairstr,myipaddr,0,0);
+    } else pairsock = LP_initpublicaddr(ctx,&mypullport,pairstr,myipaddr,0,1);
     return(pairsock);
 }
 
