@@ -90,7 +90,19 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
     }
     else if ( name != 0 )
     {
-        strcat(fname,name);
+        char name2[64];
+#ifdef __APPLE__
+        int32_t len;
+        strcpy(name2,name);
+        name2[0] = toupper(name2[0]);
+        len = (int32_t)strlen(name2);
+        if ( strcmp(&name2[len-4],"coin") == 0 )
+            name2[len - 4] = 'C';
+#else
+        name2[0] = '.';
+        strcpy(name2+1,name);
+#endif
+       strcat(fname,name2);
     }
     else
     {
