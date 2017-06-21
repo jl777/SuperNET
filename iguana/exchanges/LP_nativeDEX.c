@@ -401,7 +401,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     if ( jobj(argjson,"canbind") == 0 )
     {
 #ifndef __linux__
-        LP_canbind = 1;
+        LP_canbind = IAMLP;
 #else
         LP_canbind = IAMLP;
 #endif
