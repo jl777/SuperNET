@@ -100,7 +100,8 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
 
 void LP_psockloop(void *_ptr)
 {
-    int32_t i,n,nonz,iter,retval,size=0,sentbytes,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; struct nn_pollfd *pfds; char keepalive[512];//,*myipaddr = _ptr;
+    static struct nn_pollfd *pfds;
+    int32_t i,n,nonz,iter,retval,size=0,sentbytes,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];//,*myipaddr = _ptr;
     while ( 1 )
     {
         now = (uint32_t)time(NULL);
@@ -130,8 +131,10 @@ void LP_psockloop(void *_ptr)
         }
         else if ( Numpsocks > 0 )
         {
-            pfds = calloc(Numpsocks,sizeof(*pfds) * 2);
+            if ( pfds == 0 )
+                pfds = calloc(60000,sizeof(*pfds));
             portable_mutex_lock(&LP_psockmutex);
+            memset(pfds,0,sizeof(*pfds) * ((Numpsocks < 30000) ? Numpsocks*2 : 60000));
             for (iter=0; iter<2; iter++)
             {
                 for (i=n=0; i<Numpsocks; i++)
@@ -211,7 +214,7 @@ void LP_psockloop(void *_ptr)
                     } // else printf("num pfds.%d retval.%d\n",n,retval);
                 }
             }
-            free(pfds);
+            //free(pfds);
             //printf("sendsock.%d Numpsocks.%d\n",sendsock,Numpsocks);
             if ( sendsock < 0 )
             {
