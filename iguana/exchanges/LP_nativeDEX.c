@@ -397,7 +397,13 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     LP_profitratio += profitmargin;
     OS_randombytes((void *)&n,sizeof(n));
     if ( jobj(argjson,"canbind") == 0 )
+    {
+#ifndef __linux__
+        LP_canbind = 1;
+#else
         LP_canbind = IAMLP;
+#endif
+    }
     else LP_canbind = jint(argjson,"canbind");
     srand((int32_t)n);
     if ( userhome != 0 && userhome[0] != 0 )
@@ -470,7 +476,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     }
     while ( 1 )
     {
-        fprintf(stderr,".");
+        //fprintf(stderr,".");
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,mypullport,pullsock,myport,passphrase,profitmargin) == 0 )
             usleep(100000);
         if ( LP_canbind == 0 )
