@@ -379,7 +379,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
     privkey = LP_privkey(utxo->coinaddr,coin->taddr);
     if ( bits256_nonz(privkey) != 0 && qp->quotetime >= qp->timestamp-3 && qp->quotetime <= utxo->T.swappending && bits256_cmp(LP_mypubkey,qp->srchash) == 0 )
     {
-        if ( (pair= LP_nanobind(ctx,pairstr,myipaddr)) >= 0 )
+        if ( (pair= LP_nanobind(ctx,pairstr)) >= 0 )
         {
             LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis,rel,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
             swap = LP_swapinit(1,0,privkey,&qp->R,qp);
