@@ -308,7 +308,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     if ( IAMLP != 0 && (counter % 600) == 42 )
         LP_hellos();
     //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d\n",counter,LP_canbind);
-    if ( LP_canbind == 0 && (counter % 60) == 13 )
+    if ( LP_canbind == 0 && (counter % (PSOCK_KEEPALIVE*MAINLOOP_PERSEC/2)) == 13 )
     {
         char keepalive[128];
         sprintf(keepalive,"{\"method\":\"keepalive\"}");
@@ -480,7 +480,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     {
         //fprintf(stderr,".");
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,mypullport,pullsock,myport,passphrase,profitmargin) == 0 )
-            usleep(100000);
+            usleep(1000000 / MAINLOOP_PERSEC);
         if ( LP_canbind == 0 )
         {
             //printf("check deadman %u vs %u\n",LP_deadman_switch,(uint32_t)time(NULL));

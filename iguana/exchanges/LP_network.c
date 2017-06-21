@@ -18,10 +18,6 @@
 //  marketmaker
 //
 
-#define PSOCK_KEEPALIVE 600
-#define MAX_PSOCK_PORT 60000
-#define MIN_PSOCK_PORT 10000
-
 struct psock
 {
     uint32_t lasttime,lastping,errors;
