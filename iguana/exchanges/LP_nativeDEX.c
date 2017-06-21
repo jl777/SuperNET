@@ -314,7 +314,9 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         sprintf(keepalive,"{\"method\":\"keepalive\"}");
         //printf("send keepalive to %s pullsock.%d\n",pushaddr,pullsock);
         if ( LP_send(pullsock,keepalive,0) < 0 )
-            LP_deadman_switch = 0;
+        {
+            //LP_deadman_switch = 0;
+        }
     }
     counter++;
     return(nonz);
