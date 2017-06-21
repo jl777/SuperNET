@@ -52,6 +52,8 @@ struct LP_pubkeyinfo
 struct LP_priceinfo *LP_priceinfofind(char *symbol)
 {
     int32_t i; struct LP_priceinfo *pp; uint64_t coinbits;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
     if ( LP_numpriceinfos > 0 )
     {
         coinbits = stringbits(symbol);
@@ -93,6 +95,8 @@ int32_t LP_cachekey(uint8_t *key,char *base,char *rel,bits256 txid,int32_t vout)
 struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout)
 {
     struct LP_cacheinfo *ptr=0; uint8_t key[sizeof(bits256)+sizeof(uint64_t)*2+sizeof(vout)];
+    if ( base == 0 || rel == 0 )
+        return(0);
     if ( LP_cachekey(key,base,rel,txid,vout) == sizeof(key) )
     {
         portable_mutex_lock(&LP_cachemutex);
@@ -264,32 +268,6 @@ void LP_priceinfoupdate(char *base,char *rel,double price)
         relpp->relvals[basepp->ind] = 1. / price;
     }
 }
-
-/*double LP_myprice(double *bidp,double *askp,char *base,char *rel)
-{
-    struct LP_priceinfo *basepp,*relpp; double val;
-    *bidp = *askp = 0.;
-    if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
-    {
-        if ( (*askp= basepp->myprices[relpp->ind]) > SMALLVAL )
-        {
-            if ( (val= relpp->myprices[basepp->ind]) > SMALLVAL )
-            {
-                *bidp = 1. / val;
-            } else *bidp = *askp * 0.99;
-            return((*askp + *bidp) * 0.5);
-        }
-        else
-        {
-            if ( (val= relpp->myprices[basepp->ind]) > SMALLVAL )
-            {
-                *bidp = 1. / val;
-                *askp = *bidp / 0.99;
-            }
-        }
-    }
-    return(0.);
-}*/
 
 double LP_myprice(double *bidp,double *askp,char *base,char *rel)
 {
