@@ -28,6 +28,8 @@ int32_t LP_ismine(struct LP_utxoinfo *utxo)
 
 int32_t LP_isavailable(struct LP_utxoinfo *utxo)
 {
+    if ( time(NULL) > utxo->T.swappending )
+        utxo->T.swappending = 0;
     if ( utxo != 0 && utxo->T.swappending == 0 && utxo->S.swap == 0 )
         return(1);
     else return(0);
