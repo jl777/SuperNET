@@ -482,7 +482,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
                     nn_close(pullsock);
                 pullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
                 LP_deadman_switch = (uint32_t)time(NULL);
-                LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,100000);
+                LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,MAX_PSOCK_PORT);
             }
         }
     }
