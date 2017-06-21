@@ -242,6 +242,7 @@ void LP_psockloop(void *_ptr)
                             sprintf(keepalive,"{\"method\":\"keepalive\",\"endpoint\":\"%s\"}",ptr->sendaddr);
                             size = (int32_t)strlen(keepalive) + 1;
                             buf = keepalive;
+                            printf("send keepalive.(%s)\n",keepalive);
                             break;
                         }
                     }
