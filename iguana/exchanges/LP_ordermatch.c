@@ -369,7 +369,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
 int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin,double price,struct LP_quoteinfo *qp)
 {
     char pairstr[512]; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
-    printf("LP_connectstartbob.(%s) with.(%s)\n",myipaddr,jprint(argjson,0));
+    printf("LP_connectstartbob.(%s) with.(%s) %s\n",myipaddr,jprint(argjson,0),LP_myipaddr);
     qp->quotetime = (uint32_t)time(NULL);
     if ( (coin= LP_coinfind(utxo->coin)) == 0 )
     {
