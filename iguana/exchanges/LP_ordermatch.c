@@ -338,21 +338,11 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargin,c
     return(price);
 }
 
-int32_t LP_nanobind(void *ctx,char *pairstr,char *myipaddr)
+int32_t LP_nanobind(void *ctx,char *pairstr)
 {
     int32_t i,timeout,r,pairsock = -1; uint16_t mypullport; char bindaddr[128];
     if ( LP_canbind != 0 )
     {
-        if ( strcmp(myipaddr,"127.0.0.1") == 0 )
-        {
-            if ( LP_mypeer != 0 )
-                myipaddr = LP_mypeer->ipaddr;
-        }
-        if ( strcmp(myipaddr,"127.0.0.1") == 0 )
-        {
-            printf("cant nanobind to localhost\n");
-            return(-1);
-        }
         if ( (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
             printf("error creating utxo->pair\n");
         else
@@ -360,8 +350,8 @@ int32_t LP_nanobind(void *ctx,char *pairstr,char *myipaddr)
             for (i=0; i<10; i++)
             {
                 r = (10000 + (rand() % 50000)) & 0xffff;
-                nanomsg_transportname(0,pairstr,myipaddr,r);
-                nanomsg_transportname(1,bindaddr,myipaddr,r);
+                nanomsg_transportname(0,pairstr,LP_myipaddr,r);
+                nanomsg_transportname(1,bindaddr,LP_myipaddr,r);
                 if ( nn_bind(pairsock,bindaddr) >= 0 )
                 {
                     timeout = 100;
@@ -372,7 +362,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr,char *myipaddr)
                 } else printf("error binding to %s for %s\n",bindaddr,pairstr);
             }
         }
-    } else pairsock = LP_initpublicaddr(ctx,&mypullport,pairstr,myipaddr,0,1);
+    } else pairsock = LP_initpublicaddr(ctx,&mypullport,pairstr,"127.0.0.1",0,1);
     return(pairsock);
 }
 
