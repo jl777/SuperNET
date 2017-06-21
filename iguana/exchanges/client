@@ -5,7 +5,7 @@ git pull;
 ./m_mm;
 ./marketmaker "{\"client\":1,\"coins\":[{\"coin\":\"REVS\",\"active\":1, \"asset\":\"REVS\",\"rpcport\":10196},{\"coin\":\"JUMBLR\",\"active\":1, \"asset\":\"JUMBLR\",\"rpcport\":15106},
 {\"coin\":\"DOGE\", \"name\":\"dogecoin\", \"pubtype\":30, \"p2shtype\":5, \"wiftype\":128, \"txfee\":100000000},
-{\"active\":1,\"coin\":\"HUSH\",\"name\":\"hushcoin\",\"rpcport\":8822,\"taddr\":28,\"pubtype\":184,\"p2shtype\":189,\"wiftype\":128,\"txfee\":10000 },
+{\"active\":1,\"coin\":\"HUSH\",\"name\":\"hush\",\"rpcport\":8822,\"taddr\":28,\"pubtype\":184,\"p2shtype\":189,\"wiftype\":128,\"txfee\":10000 },
 {\"coin\":\"DGB\", \"name\":\"digibyte\", \"pubtype\":30, \"p2shtype\":5, \"wiftype\":128, \"txfee\":10000},
 {\"coin\":\"MZC\", \"name\":\"mazacoin\", \"pubtype\":50, \"p2shtype\":9, \"wiftype\":224, \"txfee\":0},
 {\"coin\":\"SYS\", \"name\":\"syscoin\", \"pubtype\":0, \"p2shtype\":5, \"wiftype\":128, \"txfee\":100000},
