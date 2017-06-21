@@ -245,13 +245,7 @@ struct iguana_info *LP_coinfind(char *symbol)
     }
     else if ( strcmp(symbol,"KMD") == 0 )
         name = "komodo";
-    else if ( strcmp(symbol,"HUSH") == 0 )
-        name = "hush";
-    else
-    {
-        name = symbol;
-        assetname = symbol;
-    }
+    else return(0);
     LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0);
     if ( (coin= LP_coinadd(&cdata)) != 0 && strcmp(symbol,"KMD") == 0 )
         coin->inactive = 0;
@@ -281,6 +275,8 @@ struct iguana_info *LP_coincreate(cJSON *item)
             name = assetname;
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
+        if ( strcmp(symbol,"HUSH") == 0 )
+            printf("init HUSH %s %s %s\n",symbol,name,assetname);
         LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr"));
         coin = LP_coinadd(&cdata);
     }
