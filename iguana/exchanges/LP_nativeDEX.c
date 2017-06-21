@@ -470,6 +470,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     }
     while ( 1 )
     {
+        fprintf(stderr,".");
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,mypullport,pullsock,myport,passphrase,profitmargin) == 0 )
             usleep(100000);
         if ( LP_canbind == 0 )
