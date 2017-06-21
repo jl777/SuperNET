@@ -287,8 +287,6 @@ struct iguana_info *LP_coincreate(cJSON *item)
             name = assetname;
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
-        if ( strcmp(symbol,"HUSH") == 0 )
-            printf("init HUSH %s %s %s\n",symbol,name,assetname);
         LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr"));
         coin = LP_coinadd(&cdata);
     }
