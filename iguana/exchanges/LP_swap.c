@@ -432,7 +432,7 @@ int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basi
                 retval = 0;
             } else printf("send %s error\n",statename);
         } else printf("%s datagen no data\n",statename);
-    } else printf("didnt get valid data\n");
+    } else printf("didnt get valid data after %d\n",timeout);
     return(retval);
 }
 
@@ -662,7 +662,7 @@ void LP_bobloop(void *_swap)
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
     if ( swap != 0 )
     {
-        if ( LP_waitsend("pubkeys",LP_SWAPSTEP_TIMEOUT*3,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
+        if ( LP_waitsend("pubkeys",LP_SWAPSTEP_TIMEOUT*30,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
             printf("error waitsend pubkeys\n");
         else if ( LP_waitsend("choosei",LP_SWAPSTEP_TIMEOUT,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
             printf("error waitsend choosei\n");
