@@ -355,8 +355,8 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
                 if ( nn_bind(pairsock,bindaddr) >= 0 )
                 {
                     timeout = 100;
-                    nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                    nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+                    //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                    //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     printf("nanobind %s to %d\n",pairstr,pairsock);
                     return(pairsock);
                 } else printf("error binding to %s for %s\n",bindaddr,pairstr);
@@ -456,9 +456,9 @@ char *LP_connectedalice(cJSON *argjson) // alice
             jaddstr(retjson,"error","couldnt create pairsock");
         else if ( nn_connect(pairsock,pairstr) >= 0 )
         {
-            timeout = 100;
-            nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+            //timeout = 100;
+            //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+            //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
             swap = LP_swapinit(0,0,Q.privkey,&Q.R,&Q);
             swap->N.pair = pairsock;
@@ -472,7 +472,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
                 jaddnum(retjson,"requestid",Q.R.requestid);
                 jaddnum(retjson,"quoteid",Q.R.quoteid);
             } else jaddstr(retjson,"error","couldnt aliceloop");
-        }
+        } else printf("connect error %s\n",nn_strerror(nn_errno()));
         printf("connected result.(%s)\n",jprint(retjson,0));
         if ( jobj(retjson,"error") != 0 )
             LP_availableset(autxo);
