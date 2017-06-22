@@ -20,9 +20,12 @@
 
 char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
 {
-    char *retstr = 0; struct LP_peerinfo *peer = 0;
+    char *retstr = 0; int32_t maxerrs; struct LP_peerinfo *peer = 0;
     peer = LP_peerfind((uint32_t)calc_ipbits(destip),port);
-    if ( peer == 0 || peer->errors < LP_MAXPEER_ERRORS )
+    if ( strncmp("5.9.253",destip,strlen("5.9.253")) == 0 )
+        maxerrs = LP_MAXPEER_ERRORS;
+    else maxerrs = 1;
+    if ( peer == 0 || peer->errors < maxerrs )
     {
         if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) == 0 )
         {
