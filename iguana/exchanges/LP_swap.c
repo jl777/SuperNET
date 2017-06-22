@@ -718,8 +718,8 @@ void LP_aliceloop(void *_swap)
     if ( swap != 0 )
     {
         fprintf(stderr,"start swap iamalice pair.%d\n",swap->N.pair);
-        sleep(1);
-        if ( LP_sendwait("pubkeys",LP_SWAPSTEP_TIMEOUT*3,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
+        sleep(10);
+        if ( LP_sendwait("pubkeys",60,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
             printf("error LP_sendwait pubkeys\n");
         else if ( LP_sendwait("choosei",LP_SWAPSTEP_TIMEOUT,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
             printf("error LP_sendwait choosei\n");
