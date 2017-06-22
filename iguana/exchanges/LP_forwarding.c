@@ -207,7 +207,7 @@ char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
         if ( reqjson != 0 )
         {
             retstr = LP_command_process(ctx,LP_mypeer != 0 ? LP_mypeer->ipaddr : "127.0.0.1",LP_mypubsock,reqjson,0,0,LP_profitratio - 1.);
-            //printf("LP_forwardhex.(%s) -> (%s)\n",jprint(reqjson,0),retstr!=0?retstr:"");
+            printf("LP_forwardhex.(%s) -> (%s)\n",jprint(reqjson,0),retstr!=0?retstr:"");
             if ( pubsock >= 0 )
                 LP_send(pubsock,jprint(reqjson,0),0);
         } else printf("LP_forwardhex couldnt parse (%s)\n",(char *)data);
@@ -216,7 +216,7 @@ char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
     {
         if ( ptr->pushsock >= 0 )//&& ptr->hello != 0 )
         {
-            //printf("%s forwardhex.(%s)\n",ptr->pushaddr,(char *)data);
+            printf("%s forwardhex.(%s)\n",ptr->pushaddr,(char *)data);
             sentbytes = LP_send(ptr->pushsock,(char *)data,0);
         }
         retjson = cJSON_CreateObject();
@@ -293,7 +293,7 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
         } else retval = 0;
         if ( retval >= 0 && peer->pushsock >= 0 )
         {
-            //printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
+            printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
             len = (int32_t)strlen(jsonstr) + 1;
             hexstr = malloc(len*2 + 1);
             init_hexbytes_noT(hexstr,(uint8_t *)jsonstr,len);
