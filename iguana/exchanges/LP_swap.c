@@ -508,10 +508,10 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
     {
         memcpy(rawtx->redeemscript,&data[datalen],rawtx->I.redeemlen);
-        //for (i=0; i<rawtx->I.redeemlen; i++)
-        //    printf("%02x",rawtx->redeemscript[i]);
+        for (i=0; i<rawtx->I.redeemlen; i++)
+            printf("%02x",rawtx->redeemscript[i]);
         bitcoin_address(redeemaddr,rawtx->coin->taddr,rawtx->coin->p2shtype,rawtx->redeemscript,rawtx->I.redeemlen);
-        //printf(" received redeemscript.(%s)\n",redeemaddr);
+        printf(" received redeemscript.(%s) %s taddr.%d\n",redeemaddr,rawtx->coin->symbol,rawtx->coin->taddr);
         LP_swap_coinaddr(swap,rawtx->coin,checkaddr,data,datalen);
         if ( strcmp(redeemaddr,checkaddr) != 0 )
         {
@@ -624,9 +624,9 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
 {
     char *retstr; cJSON *retjson=0; uint32_t expiration = (uint32_t)(time(NULL) + duration);
     printf("wait %d:%d for SWAP.(r%u/q%u) to complete\n",duration,sleeptime,requestid,quoteid);
+    sleep(10);
     while ( time(NULL) < expiration )
     {
-        sleep(3);
         if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -700,7 +700,9 @@ void LP_bobloop(void *_swap)
                     swap->bobreclaim.utxovout = 0;
                     swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,60);
+                    if ( swap->N.pair >= 0 )
+                        nn_close(swap->N.pair), swap->N.pair = -1;
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,300);
                 }
             }
         }
@@ -759,7 +761,9 @@ void LP_aliceloop(void *_swap)
                         char str[65];printf("%d waiting for alicespend to be confirmed.%d %s %s\n",n,swap->I.aliceconfirms,swap->bobcoin.symbol,bits256_str(str,swap->alicespend.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
                     }
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,60);
+                    if ( swap->N.pair >= 0 )
+                        nn_close(swap->N.pair), swap->N.pair = -1;
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,300);
                 }
             }
         }
@@ -958,7 +962,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     }
     swap->I.bobconfirms *= !bobistrusted;
     swap->I.aliceconfirms *= !aliceistrusted;
-    printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< use smart address, %.8f bobconfs.%d, %.8f aliceconfs.%d\n",jumblrflag,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms);
+    printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< use smart address, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,swap->bobcoin.taddr,swap->alicecoin.taddr);
     if ( swap->I.iambob != 0 )
     {
         basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,&swap->bobcoin,0,0,LP_DEXFEE(swap->I.bobsatoshis),0,0,jumblrflag);
