@@ -543,8 +543,8 @@ int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
                     //printf("parse.(%s)\n",jprint(item,0));
                     if ( (utxo= LP_utxoaddjson(1,-1,item)) != 0 )
                     {
-                        if ( strcmp(utxo->coin,"HUSH") == 0 )
-                            printf("%s set lasttime (%s)\n",destipaddr,jprint(item,0));
+                        //if ( strcmp(utxo->coin,"HUSH") == 0 )
+                        //    printf("%s set lasttime (%s)\n",destipaddr,jprint(item,0));
                         utxo->T.lasttime = now;
                     }
                 }

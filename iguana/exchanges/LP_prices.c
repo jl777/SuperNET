@@ -522,8 +522,8 @@ int32_t LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
             {
                 if ( jobj(retjson,"error") == 0 )
                 {
-                    if ( strcmp("HUSH",utxo->coin) == 0 )
-                        printf("clientpublish %s (%s)\n",peer->ipaddr,retstr);
+                    //if ( strcmp("HUSH",utxo->coin) == 0 )
+                    //    printf("clientpublish %s (%s)\n",peer->ipaddr,retstr);
                     utxo->T.lasttime = (uint32_t)time(NULL);
                 }
                 free_json(retjson);

@@ -292,8 +292,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             LP_utxo_spentcheck(pubsock,utxo,profitmargin);
             if ( utxo->T.lasttime == 0 )
                 LP_utxo_clientpublish(utxo);
-            else if ( strcmp(utxo->coin,"HUSH") == 0 )
-                printf("lasttime set %s\n",bits256_str(str,utxo->payment.txid));
+            //else if ( strcmp(utxo->coin,"HUSH") == 0 )
+            //    printf("lasttime set %s\n",bits256_str(str,utxo->payment.txid));
         }
     }
     //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d swapentry\n",counter,LP_canbind);
