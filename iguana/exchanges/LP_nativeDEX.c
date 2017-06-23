@@ -270,7 +270,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         nonz += LP_subsock_check(ctx,origipaddr,pubsock,peer->subsock,profitmargin);
     }
     //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d forwarding\n",counter,LP_canbind);
-    if ( (counter % 600) == 60 )
+    if ( (counter % 600) == 20 )
     {
         LP_myutxo_updates(ctx,pubsock,passphrase,profitmargin);
         if ( lastforward < now-3600 )
@@ -280,7 +280,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
     }
     //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d utxos\n",counter,LP_canbind);
-    if ( (counter % 600) == 0 )
+    if ( (counter % 600) == 60 )
     {
         HASH_ITER(hh,LP_utxoinfos[0],utxo,utmp)
         {
@@ -288,9 +288,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         HASH_ITER(hh,LP_utxoinfos[1],utxo,utmp)
         {
+            char str[65];
             LP_utxo_spentcheck(pubsock,utxo,profitmargin);
             if ( utxo->T.lasttime == 0 )
                 LP_utxo_clientpublish(utxo);
+            else printf("lasttime set %s\n",bits256_str(str,utxo->payment.txid));
         }
     }
     //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d swapentry\n",counter,LP_canbind);
