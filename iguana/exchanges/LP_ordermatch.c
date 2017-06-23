@@ -350,6 +350,8 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
             for (i=0; i<10; i++)
             {
                 r = (10000 + (rand() % 50000)) & 0xffff;
+                if ( LP_fixed_pairport != 0 )
+                    r = LP_fixed_pairport;
                 nanomsg_transportname(0,pairstr,LP_myipaddr,r);
                 nanomsg_transportname(1,bindaddr,LP_myipaddr,r);
                 if ( nn_bind(pairsock,bindaddr) >= 0 )
@@ -360,6 +362,8 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
                     printf("nanobind %s to %d\n",pairstr,pairsock);
                     return(pairsock);
                 } else printf("error binding to %s for %s\n",bindaddr,pairstr);
+                if ( LP_fixed_pairport != 0 )
+                    break;
             }
         }
     } else pairsock = LP_initpublicaddr(ctx,&mypullport,pairstr,"127.0.0.1",0,1);
