@@ -17,7 +17,6 @@
 //  LP_utxos.c
 //  marketmaker
 //
-// jl777: invalidate utxo when either part is spent. if not expected spend, mark as bad and generate new utxopair using other half
 
 int32_t LP_ismine(struct LP_utxoinfo *utxo)
 {
@@ -450,54 +449,55 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
             char str[65],str2[65],str3[65],str4[65],str5[65],str6[65];
             if ( dispflag != 0 )
                 printf("error on subsequent utxo iambob.%d %.8f %.8f add.(%s %s) when.(%s %s) %d %d %d %d %d %d %d %d %d %d %d pubkeys.(%s vs %s)\n",iambob,dstr(val),dstr(val2),bits256_str(str,txid),bits256_str(str2,txid2),bits256_str(str3,utxo->payment.txid),bits256_str(str4,utxo->deposit.txid),bits256_cmp(txid,utxo->payment.txid) != 0,bits256_cmp(txid2,u.txid) != 0,vout != utxo->payment.vout,tmpsatoshis != utxo->S.satoshis,vout2 != u.vout,value2 != u.value,strcmp(symbol,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,bits256_cmp(pubkey,utxo->pubkey) != 0,value != utxo->payment.value,bits256_str(str5,pubkey),bits256_str(str6,utxo->pubkey));
+            if ( utxo->T.spentflag != 0 || LP_txvalue(utxo->coinaddr,utxo->coin,utxo->payment.txid,utxo->payment.vout) < utxo->payment.value || LP_txvalue(utxo->coinaddr,utxo->coin,u.txid,u.vout) < u.value )
+            {
+                if ( utxo->T.spentflag == 0 )
+                    utxo->T.spentflag = (uint32_t)time(NULL);
+                printf("original utxo pair not valid\n");
+                utxo = 0;
+            }
         }
         else if ( profitmargin > SMALLVAL )
             utxo->S.profitmargin = profitmargin;
+        if ( utxo != 0 )
+            return(utxo);
+    }
+    utxo = calloc(1,sizeof(*utxo));
+    utxo->S.profitmargin = profitmargin;
+    utxo->pubkey = pubkey;
+    safecopy(utxo->coin,symbol,sizeof(utxo->coin));
+    safecopy(utxo->coinaddr,coinaddr,sizeof(utxo->coinaddr));
+    safecopy(utxo->spendscript,spendscript,sizeof(utxo->spendscript));
+    utxo->payment.txid = txid;
+    utxo->payment.vout = vout;
+    utxo->payment.value = value;
+    utxo->S.satoshis = tmpsatoshis;
+    if ( (utxo->iambob= iambob) != 0 )
+    {
+        utxo->deposit.txid = txid2;
+        utxo->deposit.vout = vout2;
+        utxo->deposit.value = value2;
     }
     else
     {
-        /*if ( (val= LP_txvalue(destaddr,symbol,txid,vout)) != value || (val2= LP_txvalue(destaddr2,symbol,txid2,vout2)) != value2 || strcmp(destaddr,destaddr2) != 0 || strcmp(coinaddr,destaddr) != 0 )
-        {
-            printf("utxoadd mismatch %s/v%d (%s %.8f) + %s/v%d (%s %.8f) != %s %.8f %.8f\n",bits256_str(str,txid),vout,destaddr,dstr(val),bits256_str(str2,txid2),vout2,destaddr2,dstr(val2),coinaddr,dstr(value),dstr(value2));
-            return(0);
-        }*/
-        utxo = calloc(1,sizeof(*utxo));
-        utxo->S.profitmargin = profitmargin;
-        utxo->pubkey = pubkey;
-        safecopy(utxo->coin,symbol,sizeof(utxo->coin));
-        safecopy(utxo->coinaddr,coinaddr,sizeof(utxo->coinaddr));
-        safecopy(utxo->spendscript,spendscript,sizeof(utxo->spendscript));
-        utxo->payment.txid = txid;
-        utxo->payment.vout = vout;
-        utxo->payment.value = value;
-        utxo->S.satoshis = tmpsatoshis;
-        if ( (utxo->iambob= iambob) != 0 )
-        {
-            utxo->deposit.txid = txid2;
-            utxo->deposit.vout = vout2;
-            utxo->deposit.value = value2;
-        }
-        else
-        {
-            utxo->fee.txid = txid2;
-            utxo->fee.vout = vout2;
-            utxo->fee.value = value2;
-        }
-        LP_utxosetkey(utxo->key,txid,vout);
-        LP_utxosetkey(utxo->key2,txid2,vout2);
-        portable_mutex_lock(&LP_utxomutex);
-        HASH_ADD_KEYPTR(hh,LP_utxoinfos[iambob],utxo->key,sizeof(utxo->key),utxo);
-        if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
-            HASH_ADD_KEYPTR(hh2,LP_utxoinfos2[iambob],utxo->key2,sizeof(utxo->key2),utxo);
-        portable_mutex_unlock(&LP_utxomutex);
-        if ( iambob != 0 )
-        {
-            if ( mypubsock >= 0 )
-                LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
-            else LP_utxo_clientpublish(utxo);
-            if ( LP_mypeer != 0 && LP_ismine(utxo) > 0 )
-                LP_mypeer->numutxos++;
-        }
+        utxo->fee.txid = txid2;
+        utxo->fee.vout = vout2;
+        utxo->fee.value = value2;
+    }
+    LP_utxosetkey(utxo->key,txid,vout);
+    LP_utxosetkey(utxo->key2,txid2,vout2);
+    portable_mutex_lock(&LP_utxomutex);
+    HASH_ADD_KEYPTR(hh,LP_utxoinfos[iambob],utxo->key,sizeof(utxo->key),utxo);
+    if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
+        HASH_ADD_KEYPTR(hh2,LP_utxoinfos2[iambob],utxo->key2,sizeof(utxo->key2),utxo);
+    portable_mutex_unlock(&LP_utxomutex);
+    if ( iambob != 0 )
+    {
+        if ( mypubsock >= 0 )
+            LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
+        else LP_utxo_clientpublish(utxo);
+        if ( LP_mypeer != 0 && LP_ismine(utxo) > 0 )
+            LP_mypeer->numutxos++;
     }
     return(utxo);
 }

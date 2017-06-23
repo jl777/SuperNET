@@ -223,8 +223,9 @@ forwardhex(pubkey,hex)\n\
         return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
     else if ( strcmp(method,"notified") == 0 )
     {
-        LP_utxoaddjson(1,LP_mypubsock,argjson);
-        return(clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}"));
+        if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
+            return(clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}"));
+        else return(clonestr("{\"error\":\"couldnt add utxo\"}"));
     }
     else if ( IAMLP != 0 )
     {

@@ -127,7 +127,7 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
                 strcpy(ptr->pushaddr,pushaddr);
                 if ( (ptr->pushsock= LP_pushsock_create(ptr,pushaddr)) < 0 )
                     return(clonestr("{\"error\":\"couldnt recreate pushsock\",\"registered\":0}"));
-            } else printf("no need to create identical endpoint\n");
+            } //else printf("no need to create identical endpoint\n");
         }
         return(clonestr("{\"error\":\"already registered\",\"registered\":1}"));
     }
