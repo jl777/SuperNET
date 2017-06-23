@@ -2039,7 +2039,7 @@ int32_t bitcoin_addr2rmd160(uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],
     {
         // validate with trailing hash, then remove hash
         hash = bits256_doublesha256(0,buf,20+offset);
-        *addrtypep = *buf;
+        *addrtypep = (taddr == 0) ? *buf : buf[1];
         memcpy(rmd160,buf+offset,20);
         if ( (buf[20+offset]&0xff) == hash.bytes[31] && (buf[21+offset]&0xff) == hash.bytes[30] &&(buf[22+offset]&0xff) == hash.bytes[29] && (buf[23+offset]&0xff) == hash.bytes[28] )
         {
