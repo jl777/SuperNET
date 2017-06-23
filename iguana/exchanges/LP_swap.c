@@ -622,9 +622,11 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
 
 int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t sleeptime)
 {
-    char *retstr; cJSON *retjson=0; uint32_t expiration = (uint32_t)(time(NULL) + duration);
+    char *retstr; cJSON *retjson=0; uint32_t divisor=8,expiration = (uint32_t)(time(NULL) + duration);
     printf("wait %d:%d for SWAP.(r%u/q%u) to complete\n",duration,sleeptime,requestid,quoteid);
     sleep(10);
+    if ( sleeptime < divisor*60 )
+        sleeptime = divisor * 60;
     while ( time(NULL) < expiration )
     {
         if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
@@ -638,7 +640,9 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
             }
             free(retstr);
         }
-        sleep(sleeptime);
+        sleep(sleeptime/divisor);
+        if ( divisor > 1 )
+            divisor--;
     }
     if ( retjson != 0 )
     {

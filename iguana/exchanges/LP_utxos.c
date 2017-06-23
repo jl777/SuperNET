@@ -689,6 +689,8 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                             targetval = (depositval / 776) + 100000;
                         else targetval = (depositval / 9) * 8 + 100000;
                         //printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
+                        if ( (i= LP_nearestvalue(values,n,targetval)) < 0 && iambob != 0 )
+                            targetval /= 4;
                         if ( (i= LP_nearestvalue(values,n,targetval)) >= 0 )
                         {
                             item = jitem(array,i);
