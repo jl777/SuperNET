@@ -266,7 +266,7 @@ struct iguana_info *LP_coinfind(char *symbol)
 }
 
 // "coins":[{"coin":"<assetchain>", "rpcport":pppp}, {"coin":"LTC", "name":"litecoin", "rpcport":9332, "pubtype":48, "p2shtype":5, "wiftype":176, "txfee":100000 }]
-// {"coin":"HUSH", "name":"hushcoin", "rpcport":8822, "taddr":28, "pubtype":184, "p2shtype":189, "wiftype":128, "txfee":10000 }
+// {"coin":"HUSH", "name":"hush", "rpcport":8822, "taddr":28, "pubtype":184, "p2shtype":189, "wiftype":128, "txfee":10000 }
 
 struct iguana_info *LP_coincreate(cJSON *item)
 {
