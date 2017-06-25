@@ -608,7 +608,7 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargi
                                         bestmetric = metric;
                                         printf("set best!\n");
                                     }
-                                } else printf("skip.(%d %d) metric %f destsatoshis %.8f value %.8f destvalue %.8f txfees %.8f %.8f\n",destsatoshis > (autxo->payment.value >> LP_MINCLIENTVOL),destsatoshis/price > (butxo->S.satoshis >> LP_MINVOL),metric,dstr(destsatoshis),dstr(butxo->S.satoshis),dstr(autxo->payment.value),dstr(txfee),dstr(desttxfee));
+                                } else printf("skip.(%d %d %d %d %d) metric %f destsatoshis %.8f value %.8f destvalue %.8f txfees %.8f %.8f\n",metric < 1.2,destsatoshis > desttxfee,destsatoshis-desttxfee > (autxo->payment.value >> LP_MINCLIENTVOL),satoshis-txfee > (butxo->S.satoshis >> LP_MINVOL),satoshis < butxo->payment.value-txfee,metric,dstr(destsatoshis),dstr(butxo->S.satoshis),dstr(autxo->payment.value),dstr(txfee),dstr(desttxfee));
                             }
                             else
                             {
