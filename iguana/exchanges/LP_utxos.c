@@ -407,15 +407,18 @@ char *LP_spentcheck(cJSON *argjson)
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin)
 {
-    uint64_t val,val2=0,tmpsatoshis; int32_t spendvini,selector; bits256 spendtxid; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    uint64_t val,val2=0,tmpsatoshis,bigtxfee = 100000; int32_t spendvini,selector; bits256 spendtxid; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
-    if ( iambob != 0 && value2 < 9 * (value >> 3) + 100000 ) // big txfee padding
-        tmpsatoshis = (((value2 - 100000) / 9) << 3);
-    else tmpsatoshis = value;
+    if ( iambob != 0 && value2 < 9 * (value >> 3) + bigtxfee ) // big txfee padding
+    {
+        if ( value2 > bigtxfee+20000 )
+            tmpsatoshis = (((value2 - bigtxfee) / 9) << 3);
+        else return(0);
+    } else tmpsatoshis = value;
     char str[65],str2[65],dispflag = (iambob == 0);
     if ( iambob == 0 && bits256_cmp(pubkey,LP_mypubkey) != 0 )
     {
@@ -745,12 +748,12 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     {
         coin->counter++;
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
-        if ( coin->inactive == 0 )
-            LP_importprivkey(coin->symbol,tmpstr,"",0);
         bitcoin_addr2rmd160(coin->taddr,&tmptype,rmd160,coin->smartaddr);
         LP_privkeyadd(privkey,rmd160);
-        if ( coin->pubtype != 60 || strcmp(coin->symbol,"KMD") == 0 )
+        //if ( coin->pubtype != 60 || strcmp(coin->symbol,"KMD") == 0 )
             printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
+        if ( coin->inactive == 0 )
+            printf("importprivkey: %s\n",jprint(LP_importprivkey(coin->symbol,tmpstr,"",0),1));
         if ( counter++ == 0 )
         {
             bitcoin_priv2wif(USERPASS_WIFSTR,privkey,188);

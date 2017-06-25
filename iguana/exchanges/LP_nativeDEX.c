@@ -288,7 +288,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         HASH_ITER(hh,LP_utxoinfos[1],utxo,utmp)
         {
-            char str[65];
+            //char str[65];
             LP_utxo_spentcheck(pubsock,utxo,profitmargin);
             if ( utxo->T.lasttime == 0 )
                 LP_utxo_clientpublish(utxo);
