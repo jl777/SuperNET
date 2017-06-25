@@ -592,7 +592,7 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargi
                             metric = price / bestprice;
                             if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && (long long)(vol*SATOSHIDEN) == butxo->S.satoshis && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 )
                             {
-                                destsatoshis = (butxo->S.satoshis * price);
+                                destsatoshis = ((butxo->S.satoshis - txfee) * price);
                                 if ( destsatoshis > autxo->payment.value-desttxfee-1 )
                                     destsatoshis = autxo->payment.value-desttxfee-1;
                                 satoshis = (destsatoshis / price + 0.0000000049) - txfee;
