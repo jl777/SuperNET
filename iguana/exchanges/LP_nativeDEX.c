@@ -31,6 +31,7 @@ struct LP_forwardinfo *LP_forwardinfos;
 char *activecoins[] = { "BTC", "KMD" };
 char GLOBAL_DBDIR[] = { "DB" };
 char USERPASS[65],USERPASS_WIFSTR[64],LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
+char LP_gui[16] = { "cli" };
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", };//"5.9.253.204" }; //
 
@@ -410,6 +411,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
 #endif
     LP_profitratio += profitmargin;
     OS_randombytes((void *)&n,sizeof(n));
+    if ( jobj(argjson,"gui") != 0 )
+        safecopy(LP_gui,jstr(argjson,"gui"),sizeof(LP_gui));
     if ( jobj(argjson,"canbind") == 0 )
     {
 #ifndef __linux__

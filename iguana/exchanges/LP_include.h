@@ -186,7 +186,7 @@ struct LP_utxoinfo
     int32_t iambob,iamlp;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
-    char coin[16],coinaddr[64],spendscript[256];
+    char coin[16],coinaddr[64],spendscript[256],gui[16];
 };
 
 struct LP_peerinfo
