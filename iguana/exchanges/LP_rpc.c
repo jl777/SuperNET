@@ -32,7 +32,9 @@ char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
                 peer->errors++;
                 peer->good *= LP_PEERGOOD_ERRORDECAY;
             } else printf("%s error on (%s:%u) without peer\n",debugstr,destip,port);
-        } else peer->good++;
+        }
+        else if ( peer != 0 )
+            peer->good++;
     }
     return(retstr);
 }
