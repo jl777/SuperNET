@@ -174,7 +174,7 @@ int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicpo
                 free_json(retjson);
             }
             free(retstr);
-        } else printf("error registering with %s\n",peer->ipaddr);
+        } else printf("timeout registering with %s errs.%d good.%d\n",peer->ipaddr,peer->errors,peer->good);
         if ( retval == 0 )
             break;
     }

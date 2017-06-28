@@ -32,6 +32,9 @@
 
 #define LP_HTTP_TIMEOUT 2 // 1 is too small due to edge cases of time(NULL)
 #define LP_MAXPEER_ERRORS 3
+#define LP_MINPEER_GOOD 100
+#define LP_PEERGOOD_ERRORDECAY 0.9
+
 #define LP_SWAPSTEP_TIMEOUT 3
 #define LP_AUTOTRADE_TIMEOUT 3
 #define LP_MIN_TXFEE 10000
@@ -191,7 +194,7 @@ struct LP_peerinfo
     UT_hash_handle hh;
     uint64_t ip_port;
     double profitmargin;
-    uint32_t ipbits,errortime,errors,numpeers,numutxos,lasttime,connected,lastutxos,lastpeers,diduquery;
+    uint32_t ipbits,errortime,errors,numpeers,numutxos,lasttime,connected,lastutxos,lastpeers,diduquery,good;
     int32_t pushsock,subsock;
     uint16_t port;
     char ipaddr[64];

@@ -23,14 +23,16 @@ char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
     char *retstr = 0; int32_t maxerrs; struct LP_peerinfo *peer = 0;
     peer = LP_peerfind((uint32_t)calc_ipbits(destip),port);
     maxerrs = LP_MAXPEER_ERRORS;
-    if ( peer == 0 || peer->errors < maxerrs )
+    if ( peer == 0 || (peer->errors < maxerrs && peer->good < LP_MINPEER_GOOD) )
     {
         if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) == 0 )
         {
             if ( peer != 0 )
+            {
                 peer->errors++;
-            else printf("%s error on (%s:%u) without peer\n",debugstr,destip,port);
-        }
+                peer->good *= LP_PEERGOOD_ERRORDECAY;
+            } else printf("%s error on (%s:%u) without peer\n",debugstr,destip,port);
+        } else peer->good++;
     }
     return(retstr);
 }
