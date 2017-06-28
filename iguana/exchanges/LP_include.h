@@ -24,7 +24,7 @@
 #define LP_COMMAND_SENDSOCK NN_PUSH
 #define LP_COMMAND_RECVSOCK NN_PULL
 
-
+#define LP_MAXPUBKEY_ERRORS 3
 #define PSOCK_KEEPALIVE 600
 #define MAINLOOP_PERSEC 10
 #define MAX_PSOCK_PORT 60000
@@ -164,7 +164,7 @@ struct iguana_info
 
 struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout; };
 
-struct LP_utxostats { uint32_t lasttime,errors,swappending,spentflag,lastspentcheck; };
+struct LP_utxostats { uint32_t lasttime,errors,swappending,spentflag,lastspentcheck,bestflag; };
 
 struct LP_utxobob { struct _LP_utxoinfo utxo,deposit; };
 

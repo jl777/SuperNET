@@ -46,7 +46,7 @@ struct LP_pubkeyinfo
     UT_hash_handle hh;
     bits256 pubkey;
     double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
-    uint32_t timestamp,istrusted;
+    uint32_t timestamp,istrusted,numerrors;
 } *LP_pubkeyinfos;
 
 struct LP_priceinfo *LP_priceinfofind(char *symbol)
