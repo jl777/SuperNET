@@ -192,10 +192,11 @@ char *LP_registerall(int32_t numnodes)
         if ( (n= LP_forwarding_register(LP_mypubkey,LP_publicaddr,LP_publicport,numnodes)) >= numnodes )
             break;
     retjson = cJSON_CreateObject();
-    if ( i < numnodes )
+    if ( i == numnodes )
         jaddstr(retjson,"error","not enough nodes");
     jaddnum(retjson,"numnodes",numnodes);
     jaddnum(retjson,"registered",n);
+    jaddnum(retjson,"iters",i);
     return(jprint(retjson,1));
 }
 
