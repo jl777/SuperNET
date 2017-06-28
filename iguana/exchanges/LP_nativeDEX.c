@@ -243,6 +243,12 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     numpeers = LP_numpeers();
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        if ( peer->errors >= LP_MAXPEER_ERRORS )
+        {
+            if ( (rand() % 10000) == 0 )
+                peer->errors--;
+            else continue;
+        }
         if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
         {
             if ( IAMLP != 0 )
