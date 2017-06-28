@@ -149,24 +149,24 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
     }
 }
 
-int32_t LP_forwarding_register(bits256 pubkey,char *pushaddr,uint16_t pushport,int32_t max)
+int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicport,int32_t max)
 {
     char *retstr,ipaddr[64]; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t j,n=0,retval = -1;
-    if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
+    if ( publicaddr == 0 || publicaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
     {
-        printf("LP_forwarding_register illegal pushaddr or null pubkey\n");
+        char str[65]; printf("LP_forwarding_register illegal publicaddr.(%s) or null pubkey (%s)\n",publicaddr,bits256_str(str,pubkey));
         return(0);
     }
-    for (j=0; pushaddr[j]!=0; j++)
-        if ( pushaddr[j] >= '0' && pushaddr[j] <= '9' )
+    for (j=0; publicaddr[j]!=0; j++)
+        if ( publicaddr[j] >= '0' && publicaddr[j] <= '9' )
             break;
-    parse_ipaddr(ipaddr,pushaddr+j);
+    parse_ipaddr(ipaddr,publicaddr+j);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        printf("register.(%s) %s %u with (%s)\n",pushaddr,ipaddr,pushport,peer->ipaddr);
-        if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,ipaddr,pushport)) != 0 )
+        printf("register.(%s) %s %u with (%s)\n",publicaddr,ipaddr,publicport,peer->ipaddr);
+        if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,ipaddr,publicport)) != 0 )
         {
-            //printf("[%s] LP_register.(%s) returned.(%s)\n",pushaddr,peer->ipaddr,retstr);
+            //printf("[%s] LP_register.(%s) returned.(%s)\n",publicaddr,peer->ipaddr,retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 if ( jint(retjson,"registered") != 0 && ++n >= max )
