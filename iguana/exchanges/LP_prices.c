@@ -546,6 +546,8 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
     {
         if ( pubp == 0 || bits256_cmp(pubp->pubkey,utxo->pubkey) != 0 )
             pubp = LP_pubkeyfind(utxo->pubkey);
+        if ( pubp->numerrors >= LP_MAXPUBKEY_ERRORS )
+            continue;
         //char str[65],str2[65]; printf("check utxo.%s/v%d from %s\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,utxo->pubkey));
         if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && pubp != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL )
         {
