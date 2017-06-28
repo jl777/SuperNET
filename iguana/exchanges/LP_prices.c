@@ -513,7 +513,7 @@ int32_t LP_orderbookfind(struct LP_orderbookentry **array,int32_t num,bits256 tx
 
 int32_t LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
 {
-    struct LP_peerinfo *peer,*tmp; cJSON *retjson; char *retstr;
+    struct LP_peerinfo *peer,*tmp; cJSON *retjson; char *retstr; int32_t n = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( (retstr= issue_LP_notifyutxo(peer->ipaddr,peer->port,utxo)) != 0 )
@@ -525,15 +525,16 @@ int32_t LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
                     //if ( strcmp("HUSH",utxo->coin) == 0 )
                     //    printf("clientpublish %s (%s)\n",peer->ipaddr,retstr);
                     utxo->T.lasttime = (uint32_t)time(NULL);
+                    n++;
                 }
                 free_json(retjson);
             }
             free(retstr);
         }
-        if ( utxo->T.lasttime != 0 )
-            return(0);
+        //if ( utxo->T.lasttime != 0 )
+        //    return(0);
     }
-    return(-1);
+    return(n);
 }
 
 int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum)
