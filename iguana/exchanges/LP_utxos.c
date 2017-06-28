@@ -352,7 +352,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
 
 void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
 {
-    cJSON *argjson; struct _LP_utxoinfo u;
+    cJSON *argjson; struct _LP_utxoinfo u; char *msg;
     utxo->T.spentflag = (uint32_t)time(NULL);
     if ( LP_mypeer != 0 && LP_mypeer->numutxos > 0 )
         LP_mypeer->numutxos--;
@@ -370,7 +370,8 @@ void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
             jaddbits256(argjson,"checktxid",u.txid);
             jaddnum(argjson,"checkvout",u.vout);
         }
-        LP_send(LP_mypubsock,jprint(argjson,1),1);
+        msg = jprint(argjson,1);
+        LP_send(LP_mypubsock,msg,(int32_t)strlen(msg)+1,1);
     }
 }
 
@@ -407,7 +408,7 @@ char *LP_spentcheck(cJSON *argjson)
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin)
 {
-    uint64_t val,val2=0,tmpsatoshis,bigtxfee = 100000; int32_t spendvini,selector; bits256 spendtxid; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    uint64_t val,val2=0,tmpsatoshis,bigtxfee = 100000; int32_t spendvini,selector; bits256 spendtxid; char *msg; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
@@ -497,8 +498,10 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( iambob != 0 )
     {
         if ( mypubsock >= 0 )
-            LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
-        else LP_utxo_clientpublish(utxo);
+        {
+            msg = jprint(LP_utxojson(utxo),1);
+            LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
+        } else LP_utxo_clientpublish(utxo);
         if ( LP_mypeer != 0 && LP_ismine(utxo) > 0 )
             LP_mypeer->numutxos++;
     }

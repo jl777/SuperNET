@@ -178,7 +178,7 @@ char *LP_quotereceived(cJSON *argjson)
 
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,char *base,char *rel,double price)
 {
-    bits256 zero; cJSON *reqjson = cJSON_CreateObject();
+    bits256 zero; char *msg; cJSON *reqjson = cJSON_CreateObject();
     jaddbits256(reqjson,"pubkey",LP_mypubkey);
     jaddstr(reqjson,"base",base);
     jaddstr(reqjson,"rel",rel);
@@ -187,7 +187,8 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin
     {
         jaddstr(reqjson,"method","postprice");
         //printf("%d pricepings.(%s)\n",pubsock,jprint(reqjson,0));
-        LP_send(pubsock,jprint(reqjson,1),1);
+        msg = jprint(reqjson,1);
+        LP_send(pubsock,msg,(int32_t)strlen(msg)+1,1);
     }
     else
     {
@@ -296,7 +297,7 @@ int32_t LP_arrayfind(cJSON *array,bits256 txid,int32_t vout)
 
 double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargin,char *method,struct LP_quoteinfo *qp)
 {
-    cJSON *reqjson; int32_t i,flag = 0; double price = 0.; struct LP_utxoinfo *utxo;
+    cJSON *reqjson; char *msg; int32_t i,flag = 0; double price = 0.; struct LP_utxoinfo *utxo;
     if ( strcmp(method,"request") == 0 )
     {
         if ( (utxo= LP_utxofind(0,qp->desttxid,qp->destvout)) != 0 && LP_ismine(utxo) > 0 && LP_isavailable(utxo) > 0 )
@@ -314,7 +315,8 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargin,c
     if ( IAMLP != 0 )
     {
         jaddstr(reqjson,"method",method);
-        LP_send(LP_mypubsock,jprint(reqjson,1),1);
+        msg = jprint(reqjson,1);
+        LP_send(LP_mypubsock,msg,(int32_t)strlen(msg)+1,1);
     }
     else
     {
@@ -372,7 +374,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
 
 int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double profitmargin,double price,struct LP_quoteinfo *qp)
 {
-    char pairstr[512]; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
+    char pairstr[512],*msg; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
     printf("LP_connectstartbob.(%s) with.(%s) %s\n",myipaddr,jprint(argjson,0),LP_myipaddr);
     qp->quotetime = (uint32_t)time(NULL);
     if ( (coin= LP_coinfind(utxo->coin)) == 0 )
@@ -399,7 +401,10 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
                 jaddnum(retjson,"quoteid",qp->R.quoteid);
                 char str[65]; printf("BOB pubsock.%d sends to (%s)\n",pubsock,bits256_str(str,utxo->S.otherpubkey));
                 if ( pubsock >= 0 )
-                    LP_send(pubsock,jprint(retjson,0),1);
+                {
+                    msg = jprint(retjson,0);
+                    LP_send(pubsock,msg,(int32_t)strlen(msg)+1,1);
+                }
                 jdelete(retjson,"method");
                 jaddstr(retjson,"method2","connected");
                 jaddstr(retjson,"method","forward");
@@ -492,7 +497,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
-    char *method; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo *autxo,*butxo; int32_t retval = -1; struct LP_quoteinfo Q;
+    char *method,*msg; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo *autxo,*butxo; int32_t retval = -1; struct LP_quoteinfo Q;
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
         //printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
@@ -531,7 +536,10 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     jaddbits256(retjson,"pubkey",butxo->S.otherpubkey);
                     jaddstr(retjson,"method","reserved");
                     if ( pubsock >= 0 )
-                        LP_send(pubsock,jprint(retjson,0),1);
+                    {
+                        msg = jprint(retjson,0);
+                        LP_send(pubsock,msg,(int32_t)strlen(msg)+1,1);
+                    }
                     jdelete(retjson,"method");
                     jaddstr(retjson,"method2","reserved");
                     jaddstr(retjson,"method","forward");

@@ -114,7 +114,10 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             } else peer->numpeers = 1; // will become mypeer
             portable_mutex_unlock(&LP_peermutex);
             if ( mypubsock >= 0 )
-                LP_send(mypubsock,jprint(LP_peerjson(peer),1),1);
+            {
+                char *msg = jprint(LP_peerjson(peer),1);
+                LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
+            }
         }
     } else printf("LP_addpeer: checkip.(%s) vs (%s)\n",checkip,ipaddr);
     return(peer);

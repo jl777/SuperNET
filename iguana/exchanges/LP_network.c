@@ -34,9 +34,9 @@ char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t por
     return(str);
 }
 
-int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
+int32_t LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
 {
-    int32_t sentbytes,len,i; struct nn_pollfd pfd;
+    int32_t sentbytes,i; struct nn_pollfd pfd;
     if ( sock < 0 )
     {
         printf("LP_send.(%s) to illegal socket\n",msg);
@@ -44,7 +44,7 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
             free(msg);
         return(-1);
     }
-    len = (int32_t)strlen(msg) + 1;
+    //len = (int32_t)strlen(msg) + 1;
     for (i=0; i<1000; i++) // 1000 * (1 ms + 1000 us) = 2 seconds
     {
         pfd.fd = sock;
@@ -52,8 +52,8 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
         //portable_mutex_lock(&LP_networkmutex);
         if ( nn_poll(&pfd,1,1) > 0 )
         {
-            if ( (sentbytes= nn_send(sock,msg,len,0)) != len )
-                printf("LP_send sent %d instead of %d\n",sentbytes,len);
+            if ( (sentbytes= nn_send(sock,msg,sendlen,0)) != sendlen )
+                printf("LP_send sent %d instead of %d\n",sentbytes,sendlen);
             //else printf("SENT.(%s)\n",msg);
             if ( freeflag != 0 )
                 free(msg);
@@ -105,7 +105,7 @@ void LP_psockloop(void *_ptr)
         {
             if ( size > 0 )
             {
-                if ( (sentbytes= LP_send(sendsock,buf,0)) > 0 )
+                if ( (sentbytes= LP_send(sendsock,buf,size,0)) > 0 )
                 {
                     //printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->publicsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
                 }
@@ -153,15 +153,9 @@ void LP_psockloop(void *_ptr)
                             //printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
-                                printf("keepalive.%u [%s] -> sendsock.%d\n",now,(char *)buf,ptr->sendsock);
-                                cJSON *retjson;
-                                if ( (retjson= cJSON_Parse((char *)buf)) != 0 )
-                                {
-                                    free_json(retjson);
-                                    ptr->lasttime = now;
-                                    sendsock = ptr->sendsock;
-                                    break;
-                                }
+                                ptr->lasttime = now;
+                                sendsock = ptr->sendsock;
+                                break;
                             }
                         }
                     }
@@ -375,11 +369,11 @@ int32_t nn_tests(void *ctx,int32_t pullsock,char *pushaddr,int32_t nnother)
             timeout = 1;
             nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
-            n = LP_send(sock,msg,0);
+            n = LP_send(sock,msg,(int32_t)strlen(msg)+1,0);
             sleep(3);
             LP_pullsock_check(ctx,&retstr,"127.0.0.1",-1,pullsock,0.);
             sprintf(msg,"{\"method\":\"nn_tests2\",\"ipaddr\":\"%s\"}",pushaddr);
-            m = LP_send(pullsock,msg,0);
+            m = LP_send(pullsock,msg,(int32_t)strlen(msg)+1,0);
             printf(">>>>>>>>>>>>>>>>>>>>>> sent %d+%d bytes -> pullsock.%d retstr.(%s)\n",n,m,pullsock,retstr!=0?retstr:"");
             if ( retstr != 0 )
             {

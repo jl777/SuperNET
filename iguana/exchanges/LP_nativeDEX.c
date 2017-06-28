@@ -88,7 +88,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
         {
             //printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
             if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 && 
-                LP_send(pubsock,retstr,0);
+                LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
         }
     }
     return(retstr);
@@ -96,7 +96,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
 
 char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,double profitmargin,void *ptr,int32_t recvlen,int32_t recvsock)
 {
-    int32_t len,datalen=0; char *retstr=0,*jsonstr=0; cJSON *argjson,*reqjson;
+    int32_t len,datalen=0; char *msg,*retstr=0,*jsonstr=0; cJSON *argjson,*reqjson;
     if ( (datalen= is_hexstr((char *)ptr,0)) > 0 )
     {
         datalen >>= 1;
@@ -124,7 +124,10 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 jdelete(argjson,"method2");
             jaddstr(argjson,"method2","broadcast");
             if ( pubsock >= 0 && (reqjson= LP_dereference(argjson,"publish")) != 0 )
-                LP_send(pubsock,jprint(reqjson,1),1);
+            {
+                msg = jprint(reqjson,1);
+                LP_send(pubsock,msg,(int32_t)strlen(msg)+1,1);
+            }
         }
         else if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len,profitmargin)) != 0 )
         {
@@ -137,13 +140,13 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 if ( strcmp("PULL",typestr) == 0 )
                 {
                     printf("%d got REQ.(%s) -> (%s)\n",recvsock,jprint(argjson,0),retstr);
-                    LP_send(recvsock,retstr,0);
+                    LP_send(recvsock,retstr,(int32_t)strlen(retstr)+1,0);
                 }
             }
             else if ( strcmp("PULL",typestr) == 0 )
             {
                 printf("%d got REQ.(%s) -> null\n",recvsock,jprint(argjson,0));
-                LP_send(recvsock,"{\"result\":null}",0);
+                LP_send(recvsock,"{\"result\":null}",(int32_t)strlen("{\"result\":null}")+1,0);
             }
         }
         free_json(argjson);
@@ -322,7 +325,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         char keepalive[128];
         sprintf(keepalive,"{\"method\":\"keepalive\"}");
         //printf("send keepalive to %s pullsock.%d\n",pushaddr,pullsock);
-        if ( LP_send(pullsock,keepalive,0) < 0 )
+        if ( LP_send(pullsock,keepalive,(int32_t)strlen(keepalive)+1,0) < 0 )
         {
             //LP_deadman_switch = 0;
         }
