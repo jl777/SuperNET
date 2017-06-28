@@ -154,7 +154,7 @@ int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicpo
     char *retstr,ipaddr[64]; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t j,n=0,retval = -1;
     if ( publicaddr == 0 || publicaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
     {
-        char str[65]; printf("LP_forwarding_register illegal publicaddr.(%s) or null pubkey (%s)\n",publicaddr,bits256_str(str,pubkey));
+        char str[65]; printf("LP_forwarding_register illegal publicaddr.(%s):%u or null pubkey (%s)\n",publicaddr,publicport,bits256_str(str,pubkey));
         return(0);
     }
     for (j=0; publicaddr[j]!=0; j++)

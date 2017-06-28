@@ -470,6 +470,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     }
     LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),profitmargin);
     pullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
+    strcpy(LP_publicaddr,pushaddr);
+    LP_publicport = mypullport;
     LP_deadman_switch = (uint32_t)time(NULL);
     printf("my command address is (%s) pullsock.%d pullport.%u\n",pushaddr,pullsock,mypullport);
     LP_initcoins(ctx,pubsock,jobj(argjson,"coins"),passphrase);
