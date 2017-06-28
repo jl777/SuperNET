@@ -182,3 +182,13 @@ void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
         }
     }
 }
+
+int32_t LP_numpeers()
+{
+    struct LP_peerinfo *peer,*tmp; int32_t numpeers = 0;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        numpeers++;
+    }
+    return(numpeers);
+}

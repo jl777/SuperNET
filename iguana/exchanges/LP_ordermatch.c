@@ -554,7 +554,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
 
 char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargin,char *base,char *rel,double maxprice,double volume,int32_t timeout)
 {
-    int64_t satoshis,destsatoshis,desttxfee,txfee,bestdestsatoshis=0; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item,*bestitem=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; int32_t i,vout,numasks,DEXselector=0; uint32_t expiration; double ordermatchprice,bestmetric,metric,bestprice=0.,vol,price; struct LP_quoteinfo Q; struct LP_pubkeyinfo *pubp;
+    int64_t satoshis,destsatoshis,desttxfee,txfee,bestdestsatoshis=0; bits256 txid,pubkey; char *obookstr,*retstr; cJSON *orderbook,*asks,*item,*bestitem=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; int32_t i,vout,numasks,DEXselector=0; uint32_t expiration; double ordermatchprice,bestmetric,metric,bestprice=0.,vol,price; struct LP_quoteinfo Q; struct LP_pubkeyinfo *pubp;
     if ( maxprice <= 0. || volume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
     if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * volume)) == 0 )
@@ -631,6 +631,8 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargi
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypubkey,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
     bestutxo->T.bestflag = (uint32_t)time(NULL);
+    if ( (retstr= LP_registerall(0)) != 0 )
+        free(retstr);
     price = LP_query(ctx,myipaddr,mypubsock,profitmargin,"request",&Q);
     bestitem = LP_quotejson(&Q);
     if ( price > SMALLVAL )

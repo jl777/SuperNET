@@ -30,12 +30,12 @@ struct LP_forwardinfo *LP_forwardinfos;
 
 char *activecoins[] = { "BTC", "KMD" };
 char GLOBAL_DBDIR[] = { "DB" };
-char USERPASS[65],USERPASS_WIFSTR[64],LP_myipaddr[64],USERHOME[512] = { "/root" };
+char USERPASS[65],USERPASS_WIFSTR[64],LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", };//"5.9.253.204" }; //
 
 uint32_t LP_deadman_switch;
-uint16_t LP_fixed_pairport;
+uint16_t LP_fixed_pairport,LP_publicport;
 int32_t LP_mypubsock = -1;
 int32_t USERPASS_COUNTER,IAMLP = 0;
 double LP_profitratio = 1.;
@@ -73,8 +73,8 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_swap.c"
 #include "LP_peers.c"
 #include "LP_utxos.c"
-#include "LP_ordermatch.c"
 #include "LP_forwarding.c"
+#include "LP_ordermatch.c"
 #include "LP_commands.c"
 
 char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
@@ -240,11 +240,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     if ( mypeer == 0 )
         myipaddr = "127.0.0.1";
     //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d peers\n",counter,LP_canbind);
-    numpeers = 0;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        numpeers++;
-    }
+    numpeers = LP_numpeers();
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
@@ -275,7 +271,9 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         LP_myutxo_updates(ctx,pubsock,passphrase,profitmargin);
         if ( lastforward < now-3600 )
         {
-            LP_forwarding_register(LP_mypubkey,pushaddr,pushport,10);
+            if ( (retstr= LP_registerall(0)) != 0 )
+                free(retstr);
+            //LP_forwarding_register(LP_mypubkey,pushaddr,pushport,10);
             lastforward = now;
         }
     }
@@ -500,6 +498,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
                     nn_close(pullsock);
                 pullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
                 LP_deadman_switch = (uint32_t)time(NULL);
+                strcpy(LP_publicaddr,pushaddr);
+                LP_publicport = mypullport;
                 LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,MAX_PSOCK_PORT);
             }
         }

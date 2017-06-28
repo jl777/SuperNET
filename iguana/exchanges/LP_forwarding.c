@@ -149,13 +149,13 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
     }
 }
 
-void LP_forwarding_register(bits256 pubkey,char *pushaddr,uint16_t pushport,int32_t max)
+int32_t LP_forwarding_register(bits256 pubkey,char *pushaddr,uint16_t pushport,int32_t max)
 {
     char *retstr,ipaddr[64]; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t j,n=0,retval = -1;
     if ( pushaddr == 0 || pushaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
     {
         printf("LP_forwarding_register illegal pushaddr or null pubkey\n");
-        return;
+        return(0);
     }
     for (j=0; pushaddr[j]!=0; j++)
         if ( pushaddr[j] >= '0' && pushaddr[j] <= '9' )
@@ -178,6 +178,25 @@ void LP_forwarding_register(bits256 pubkey,char *pushaddr,uint16_t pushport,int3
         if ( retval == 0 )
             break;
     }
+    return(n);
+}
+
+char *LP_registerall(int32_t numnodes)
+{
+    int32_t i,maxnodes,n=0; cJSON *retjson;
+    if ( numnodes < sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
+        numnodes = (int32_t)(sizeof(default_LPnodes)/sizeof(*default_LPnodes));
+    if ( (maxnodes= LP_numpeers()) < numnodes )
+        numnodes = maxnodes;
+    for (i=0; i<numnodes; i++)
+        if ( (n= LP_forwarding_register(LP_mypubkey,LP_publicaddr,LP_publicport,numnodes)) >= numnodes )
+            break;
+    retjson = cJSON_CreateObject();
+    if ( i < numnodes )
+        jaddstr(retjson,"error","not enough nodes");
+    jaddnum(retjson,"numnodes",numnodes);
+    jaddnum(retjson,"registered",n);
+    return(jprint(retjson,1));
 }
 
 cJSON *LP_dereference(cJSON *argjson,char *excludemethod)

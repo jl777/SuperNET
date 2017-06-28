@@ -77,6 +77,7 @@ orderbook(base, rel)\n\
 getprices(base, rel)\n\
 trust(pubkey, trust)\n\
 register(pubkey,pushaddr)\n\
+registerall(numnodes)\n\
 lookup(pubkey)\n\
 forward(pubkey,method2,<argjson>)\n\
 forward(pubkey,method2=publish,<argjson>)\n\
@@ -199,6 +200,8 @@ forwardhex(pubkey,hex)\n\
         return(LP_prices());
     else if ( strcmp(method,"orderbook") == 0 )
        return(LP_orderbook(base,rel));
+    else if ( strcmp(method,"registerall") == 0 )
+        return(LP_registerall(jint(argjson,"numnodes")));
     else if ( strcmp(method,"forward") == 0 )
     {
         cJSON *reqjson;
