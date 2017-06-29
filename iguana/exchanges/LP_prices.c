@@ -20,7 +20,7 @@
 
 struct LP_orderbookentry { bits256 txid,txid2,pubkey; double price; uint64_t basesatoshis; int32_t vout,vout2; };
 
-#define LP_MAXPRICEINFOS 64
+#define LP_MAXPRICEINFOS 256
 struct LP_priceinfo
 {
     char symbol[16];
