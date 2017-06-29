@@ -136,7 +136,8 @@ int32_t LP_vinscan(bits256 *spendtxidp,int32_t *spendvinip,char *symbol,bits256 
     {
         if ( bits256_cmp(txid,jbits256(txobj,"txid")) != 0 )
         {
-            printf("txid mismatch error\n");
+            char str[65]; printf("txid mismatch error %s vs %s\n",bits256_str(str,txid),jprint(txobj,0));
+            free_json(txobj);
             return(-2);
         }
         vins = jarray(&numvins,txobj,"vin");

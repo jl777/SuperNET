@@ -162,6 +162,8 @@ forwardhex(pubkey,hex)\n\
                     LP_privkey_init(-1,ptr,privkey,pubkey,pubkey33);
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
+                    jaddstr(retjson,"coin",coin);
+                    jaddnum(retjson,"timestamp",time(NULL));
                     jadd(retjson,"alice",LP_inventory(coin,0));
                     jadd(retjson,"bob",LP_inventory(coin,1));
                     return(jprint(retjson,1));
