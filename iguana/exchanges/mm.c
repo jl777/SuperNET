@@ -24,11 +24,12 @@
 #include <stdint.h>
 #include "OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
-char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port);
+char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 
-#if defined(__APPLE__) || defined(WIN32) || defined(USE_STATIC_NANOMSG)
+//defined(__APPLE__) ||
+#if defined(WIN32) || defined(USE_STATIC_NANOMSG)
 #include "../../crypto777/nanosrc/nn.h"
 #include "../../crypto777/nanosrc/bus.h"
 #include "../../crypto777/nanosrc/pubsub.h"
@@ -70,7 +71,7 @@ char *DEX_swapstatus()
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"getswaplist\"}");
-    return(bitcoind_RPC(0,"InstantDEX",url,0,"getswaplist",postdata));
+    return(bitcoind_RPC(0,"InstantDEX",url,0,"getswaplist",postdata,0));
 }
 
 char *DEX_amlp(char *blocktrail)
@@ -78,7 +79,7 @@ char *DEX_amlp(char *blocktrail)
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"tradebot\",\"method\":\"amlp\",\"blocktrail\":\"%s\"}",blocktrail);
-    return(bitcoind_RPC(0,"tradebot",url,0,"amlp",postdata));
+    return(bitcoind_RPC(0,"tradebot",url,0,"amlp",postdata,0));
 }
 
 char *DEX_openorders(char *exchange)
@@ -86,7 +87,7 @@ char *DEX_openorders(char *exchange)
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"openorders\",\"exchange\":\"%s\"}",exchange);
-    return(bitcoind_RPC(0,"InstantDEX",url,0,"openorders",postdata));
+    return(bitcoind_RPC(0,"InstantDEX",url,0,"openorders",postdata,0));
 }
 
 char *DEX_tradehistory(char *exchange)
@@ -94,7 +95,7 @@ char *DEX_tradehistory(char *exchange)
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"tradehistory\",\"exchange\":\"%s\"}",exchange);
-    return(bitcoind_RPC(0,"InstantDEX",url,0,"tradehistory",postdata));
+    return(bitcoind_RPC(0,"InstantDEX",url,0,"tradehistory",postdata,0));
 }
 
 char *DEX_orderstatus(char *exchange,char *orderid)
@@ -102,7 +103,7 @@ char *DEX_orderstatus(char *exchange,char *orderid)
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"orderstatus\",\"exchange\":\"%s\",\"orderid\":\"%s\"}",exchange,orderid);
-    return(bitcoind_RPC(0,"InstantDEX",url,0,"orderstatus",postdata));
+    return(bitcoind_RPC(0,"InstantDEX",url,0,"orderstatus",postdata,0));
 }
 
 char *DEX_cancelorder(char *exchange,char *orderid)
@@ -110,7 +111,7 @@ char *DEX_cancelorder(char *exchange,char *orderid)
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"cancelorder\",\"exchange\":\"%s\",\"orderid\":\"%s\"}",exchange,orderid);
-    return(bitcoind_RPC(0,"InstantDEX",url,0,"cancelorder",postdata));
+    return(bitcoind_RPC(0,"InstantDEX",url,0,"cancelorder",postdata,0));
 }
 
 char *DEX_balance(char *exchange,char *base,char *coinaddr)
@@ -120,12 +121,12 @@ char *DEX_balance(char *exchange,char *base,char *coinaddr)
     if ( strcmp(exchange,"DEX") == 0 )
     {
         sprintf(postdata,"{\"agent\":\"dex\",\"method\":\"getbalance\",\"address\":\"%s\",\"symbol\":\"%s\"}",coinaddr,base);
-        return(bitcoind_RPC(0,"dex",url,0,"getbalance",postdata));
+        return(bitcoind_RPC(0,"dex",url,0,"getbalance",postdata,0));
     }
     else
     {
         sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"balance\",\"exchange\":\"%s\",\"base\":\"%s\"}",exchange,base);
-        return(bitcoind_RPC(0,"InstantDEX",url,0,"balance",postdata));
+        return(bitcoind_RPC(0,"InstantDEX",url,0,"balance",postdata,0));
     }
 }
 
@@ -134,7 +135,7 @@ char *DEX_apikeypair(char *exchange,char *apikey,char *apisecret)
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"apikeypair\",\"exchange\":\"%s\",\"apikey\":\"%s\",\"apisecret\":\"%s\"}",exchange,apikey,apisecret);
-    return(bitcoind_RPC(0,"InstantDEX",url,0,"apikeypair",postdata));
+    return(bitcoind_RPC(0,"InstantDEX",url,0,"apikeypair",postdata,0));
 }
 
 char *DEX_setuserid(char *exchange,char *userid,char *tradepassword)
@@ -142,7 +143,7 @@ char *DEX_setuserid(char *exchange,char *userid,char *tradepassword)
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"setuserid\",\"exchange\":\"%s\",\"userid\":\"%s\",\"tradepassword\":\"%s\"}",exchange,userid,tradepassword);
-    return(bitcoind_RPC(0,"InstantDEX",url,0,"setuserid",postdata));
+    return(bitcoind_RPC(0,"InstantDEX",url,0,"setuserid",postdata,0));
 }
 
 char *DEX_trade(char *exchange,char *base,char *rel,int32_t dir,double price,double volume)
@@ -151,7 +152,7 @@ char *DEX_trade(char *exchange,char *base,char *rel,int32_t dir,double price,dou
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"%s\",\"exchange\":\"%s\",\"base\":\"%s\",\"rel\":\"%s\",\"price\":%.8f,\"volume\":%.8f,\"dotrade\":1}",dir>0?"buy":"sell",exchange,base,rel,price,volume);
     //printf("DEX_trade.(%s)\n",postdata);
-    return(bitcoind_RPC(0,"InstantDEX",url,0,dir>0?"buy":"sell",postdata));
+    return(bitcoind_RPC(0,"InstantDEX",url,0,dir>0?"buy":"sell",postdata,0));
 }
 
 char *DEX_withdraw(char *exchange,char *base,char *destaddr,double amount)
@@ -159,7 +160,7 @@ char *DEX_withdraw(char *exchange,char *base,char *destaddr,double amount)
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"withdraw\",\"exchange\":\"%s\",\"destaddr\":\"%s\",\"amount\":%.8f}",exchange,destaddr,amount);
-    return(bitcoind_RPC(0,"InstantDEX",url,0,"withdraw",postdata));
+    return(bitcoind_RPC(0,"InstantDEX",url,0,"withdraw",postdata,0));
 }
 
 char *iguana_walletpassphrase(char *passphrase,int32_t timeout)
@@ -167,7 +168,7 @@ char *iguana_walletpassphrase(char *passphrase,int32_t timeout)
     char url[512],postdata[1024];
     sprintf(url,"%s/coin=KMD&agent=bitcoinrpc&method=walletpassphrase?",IGUANA_URL);
     sprintf(postdata,"[\"%s\", %d]",passphrase,timeout);
-    return(bitcoind_RPC(0,"",url,0,"walletpassphrase",postdata));
+    return(bitcoind_RPC(0,"",url,0,"walletpassphrase",postdata,0));
 }
 
 /*char *iguana_listunspent(char *coin,char *coinaddr)
@@ -194,7 +195,7 @@ char *DEX_listunspent(char *coin,char *coinaddr)
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"dex\",\"method\":\"listunspent\",\"address\":\"%s\",\"symbol\":\"%s\",\"timeout\":60000}",coinaddr,coin);
-    return(bitcoind_RPC(0,"dex",url,0,"listunspent",postdata));
+    return(bitcoind_RPC(0,"dex",url,0,"listunspent",postdata,0));
 }
 
 bits256 iguana_wif2privkey(char *wifstr)
@@ -203,7 +204,7 @@ bits256 iguana_wif2privkey(char *wifstr)
     memset(privkey.bytes,0,sizeof(privkey));
     sprintf(url,"%s/?",IGUANA_URL);
     sprintf(postdata,"{\"agent\":\"SuperNET\",\"method\":\"wif2priv\",\"wif\":\"%s\"}",wifstr);
-    if ( (retstr= bitcoind_RPC(0,"SuperNET",url,0,"wif2priv",postdata)) != 0 )
+    if ( (retstr= bitcoind_RPC(0,"SuperNET",url,0,"wif2priv",postdata,0)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
@@ -217,28 +218,6 @@ bits256 iguana_wif2privkey(char *wifstr)
         free(retstr);
     }
     return(privkey);
-}
-
-void iguana_priv2pub(uint8_t *pubkey33,char *coinaddr,bits256 privkey,uint8_t addrtype)
-{
-    char privstr[65],url[512],postdata[1024],*retstr,*pubstr,*addr; cJSON *retjson;
-    memset(pubkey33,0,33);
-    coinaddr[0] = 0;
-    bits256_str(privstr,privkey);
-    sprintf(url,"%s/?",IGUANA_URL);
-    sprintf(postdata,"{\"agent\":\"SuperNET\",\"method\":\"priv2pub\",\"privkey\":\"%s\",\"addrtype\":%u}",privstr,addrtype);
-    if ( (retstr= bitcoind_RPC(0,"SuperNET",url,0,"priv2pub",postdata)) != 0 )
-    {
-        if ( (retjson= cJSON_Parse(retstr)) != 0 )
-        {
-            if ( (pubstr= jstr(retjson,"secp256k1")) != 0 && strlen(pubstr) == 66 )
-                decode_hex(pubkey33,33,pubstr);
-            if ( (addr= jstr(retjson,"result")) != 0 && strlen(addr) < 64 )
-                strcpy(coinaddr,addr);
-            free_json(retjson);
-        }
-        free(retstr);
-    }
 }
 
 double bittrex_balance(char *base,char *coinaddr)
@@ -623,7 +602,7 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
                 sprintf(url,"%s/?",IGUANA_URL);
                 sprintf(postdata,"{\"agent\":\"tradebot\",\"method\":\"liquidity\",\"targetcoin\":\"%s\",\"vals\":%s}",base,jprint(vals,1));
                 //printf("(%s)\n",postdata);
-                if ( (retstr= bitcoind_RPC(0,"tradebot",url,0,"liqudity",postdata)) != 0 )
+                if ( (retstr= bitcoind_RPC(0,"tradebot",url,0,"liqudity",postdata,0)) != 0 )
                 {
                     //printf("(%s) -> (%s)\n",postdata,retstr);
                     free(retstr);
@@ -643,7 +622,7 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
                         jaddnum(vals,"minvol",MAX(1,(int32_t)(vol * 0.01 * PAXPRICES[i])));
                         sprintf(url,"%s/?",IGUANA_URL);
                         sprintf(postdata,"{\"agent\":\"tradebot\",\"method\":\"liquidity\",\"targetcoin\":\"%s\",\"vals\":%s}","KMD",jprint(vals,1));
-                        if ( (retstr= bitcoind_RPC(0,"tradebot",url,0,"liqudity",postdata)) != 0 )
+                        if ( (retstr= bitcoind_RPC(0,"tradebot",url,0,"liqudity",postdata,0)) != 0 )
                         {
                             //printf("(%s) -> (%s)\n",postdata,retstr);
                             free(retstr);
@@ -811,15 +790,15 @@ void LP_main(void *ptr)
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
-        LPinit(7779,7780,7781,profitmargin,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"));
+        LPinit(7779,7780,7781,profitmargin,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 
 int main(int argc, const char * argv[])
 {
     char *base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
-    double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr,theoretical = 0.;
-    cJSON *retjson,*loginjson,*matchjson; int32_t i;
+    double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
+    cJSON *retjson,*loginjson; int32_t i;
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
@@ -829,29 +808,7 @@ int main(int argc, const char * argv[])
             printf("error launching LP_main (%s)\n",jprint(retjson,0));
             exit(-1);
         } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
-        if ( (0) && (retstr= basilisk_swaplist()) != 0 )
-        {
-            printf("%s\ngetchar to continue\n",retstr);
-            getchar();
-            free(retstr);
-        }
         incr = 100.;
-        while ( (0) && IAMCLIENT != 0 )
-        {
-            theoretical = marketmaker_updateprice("komodo","REVS","KMD",theoretical,&incr);
-            sleep(3);
-            LP_privkey_updates(0,-1,passphrase,1);
-            if ( jint(retjson,"client") != 0 )
-            {
-                struct LP_utxoinfo *utxo,*utmp;
-                HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
-                {
-                    if ( strcmp(utxo->coin,"REVS") == 0 && (matchjson= LP_autotrade(utxo,"KMD",0.)) != 0 )
-                        printf("bestprice (%s)\n",jprint(matchjson,1));
-                }
-            }
-            sleep(1000);
-        }
         while ( 1 )
             sleep(1);
         profitmargin = jdouble(retjson,"profitmargin");

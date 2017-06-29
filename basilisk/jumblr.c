@@ -642,16 +642,18 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,char *dest,struct iguana_inf
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval)
 {
     //static uint32_t lasttime;
-    char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 privkey; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r;
+    char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; int32_t iter,counter,chosen_one,n; bits256 privkey; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r,s;
     if ( myinfo->IAMNOTARY != 0 )
         return;
     fee = JUMBLR_INCR * JUMBLR_FEE;
     OS_randombytes(&r,sizeof(r));
 //r = 0;
+    // randomize size chosen and order of chunks
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 )
     {
+        s = (selector + (r>>1)) % 3;
         //printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
-        switch ( selector )
+        switch ( s )
         {
             case 0: // public -> z, need to importprivkey
                 jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,JUMBLR_DEPOSITPREFIX);
@@ -661,12 +663,14 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
                     {
                         if ( (zaddr= jumblr_zgetnewaddress(myinfo,coin)) != 0 )
                         {
+                            amount = 0;
                             if ( total >= SATOSHIDEN * ((JUMBLR_INCR + 3*fee)*100 + 3*JUMBLR_TXFEE) )
                                 amount = SATOSHIDEN * ((JUMBLR_INCR + 3*fee)*100 + 3*JUMBLR_TXFEE);
-                            else if ( total >= SATOSHIDEN * ((JUMBLR_INCR + 3*fee)*10 + 3*JUMBLR_TXFEE) )
+                            if ( (r & 2) != 0 && total >= SATOSHIDEN * ((JUMBLR_INCR + 3*fee)*10 + 3*JUMBLR_TXFEE) )
                                 amount = SATOSHIDEN * ((JUMBLR_INCR + 3*fee)*10 + 3*JUMBLR_TXFEE);
-                            else amount = SATOSHIDEN * ((JUMBLR_INCR + 3*fee) + 3*JUMBLR_TXFEE);
-                            if ( (retstr= jumblr_sendt_to_z(myinfo,coin,KMDaddr,zaddr,dstr(amount))) != 0 )
+                            if ( (r & 4) != 0 )
+                                amount = SATOSHIDEN * ((JUMBLR_INCR + 3*fee) + 3*JUMBLR_TXFEE);
+                            if ( amount > 0 && (retstr= jumblr_sendt_to_z(myinfo,coin,KMDaddr,zaddr,dstr(amount))) != 0 )
                             {
                                 printf("sendt_to_z.(%s)\n",retstr);
                                 free(retstr);
@@ -678,24 +682,44 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
                 break;
             case 1: // z -> z
                 jumblr_opidsupdate(myinfo,coin);
-                HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
+                chosen_one = -1;
+                for (iter=counter=0; iter<2; iter++)
                 {
-                    if ( jumblr_addresstype(myinfo,coin,ptr->src) == 't' && jumblr_addresstype(myinfo,coin,ptr->dest) == 'z' )
+                    counter = n = 0;
+                    HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
                     {
-                        if ( (r & 1) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
+                        if ( jumblr_addresstype(myinfo,coin,ptr->src) == 't' && jumblr_addresstype(myinfo,coin,ptr->dest) == 'z' )
                         {
-                            if ( (zaddr= jumblr_zgetnewaddress(myinfo,coin)) != 0 )
+                            if ( (r & 1) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
                             {
-                                if ( (retstr= jumblr_sendz_to_z(myinfo,coin,ptr->dest,zaddr,dstr(total))) != 0 )
+                                if ( iter == 1 && counter == chosen_one )
                                 {
-                                    printf("sendz_to_z.(%s)\n",retstr);
-                                    free(retstr);
+                                    if ( (zaddr= jumblr_zgetnewaddress(myinfo,coin)) != 0 )
+                                    {
+                                        if ( (retstr= jumblr_sendz_to_z(myinfo,coin,ptr->dest,zaddr,dstr(total))) != 0 )
+                                        {
+                                            printf("n.%d counter.%d chosen_one.%d sendz_to_z.(%s)\n",n,counter,chosen_one,retstr);
+                                            free(retstr);
+                                        }
+                                        ptr->spent = (uint32_t)time(NULL);
+                                        free(zaddr);
+                                        break;
+                                    }
                                 }
-                                ptr->spent = (uint32_t)time(NULL);
-                                free(zaddr);
-                                break;
+                                counter++;
                             }
                         }
+                        n++;
+                    }
+                    if ( counter == 0 )
+                        break;
+                    if ( iter == 0 )
+                    {
+                        OS_randombytes((uint8_t *)&chosen_one,sizeof(chosen_one));
+                        if ( chosen_one < 0 )
+                            chosen_one = -chosen_one;
+                        chosen_one %= counter;
+                        printf("jumblr z->z chosen_one.%d of %d, from %d\n",chosen_one,counter,n);
                     }
                 }
                 break;
@@ -703,21 +727,41 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
                 if ( myinfo->runsilent == 0 )
                 {
                     jumblr_opidsupdate(myinfo,coin);
-                    HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
+                    chosen_one = -1;
+                    for (iter=0; iter<2; iter++)
                     {
-                        if ( jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && jumblr_addresstype(myinfo,coin,ptr->dest) == 'z' )
+                        counter = n = 0;
+                        HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
                         {
-                            if ( (r & 1) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
+                            if ( jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && jumblr_addresstype(myinfo,coin,ptr->dest) == 'z' )
                             {
-                                privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,"");
-                                if ( (retstr= jumblr_sendz_to_t(myinfo,coin,ptr->dest,KMDaddr,dstr(total))) != 0 )
+                                if ( (r & 1) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
                                 {
-                                    printf("sendz_to_t.(%s)\n",retstr);
-                                    free(retstr);
+                                    if ( iter == 1 && n == chosen_one )
+                                    {
+                                        privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,"");
+                                        if ( (retstr= jumblr_sendz_to_t(myinfo,coin,ptr->dest,KMDaddr,dstr(total))) != 0 )
+                                        {
+                                            printf("sendz_to_t.(%s)\n",retstr);
+                                            free(retstr);
+                                        }
+                                        ptr->spent = (uint32_t)time(NULL);
+                                        break;
+                                    }
+                                    counter++;
                                 }
-                                ptr->spent = (uint32_t)time(NULL);
-                                break;
                             }
+                            n++;
+                        }
+                        if ( counter == 0 )
+                            break;
+                        if ( iter == 0 )
+                        {
+                            OS_randombytes((uint8_t *)&chosen_one,sizeof(chosen_one));
+                            if ( chosen_one < 0 )
+                                chosen_one = -chosen_one;
+                            chosen_one %= counter;
+                            printf("jumblr z->t chosen_one.%d of %d, from %d\n",chosen_one,counter,n);
                         }
                     }
                 }

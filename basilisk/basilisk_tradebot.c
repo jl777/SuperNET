@@ -316,7 +316,6 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             }
         } else noquoteflag++;
     }
-    // MVP -> USD myrequest.0 pendingid.0 noquoteflag.1 havequoteflag.0 maxi.-1 0.00000000
     struct iguana_info *coin; char coinaddr[64]; double retvals[4],refprice=0.,profitmargin,aveprice,destvolume;
     destvolume = dstr(maxamount);
     //printf("destvolume <- %.8f\n",dstr(destvolume));

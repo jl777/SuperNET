@@ -42,21 +42,22 @@ char *LP_peers()
     struct LP_peerinfo *peer,*tmp; cJSON *peersjson = cJSON_CreateArray();
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        jaddi(peersjson,LP_peerjson(peer));
+        //if ( peer->errors < LP_MAXPEER_ERRORS )
+            jaddi(peersjson,LP_peerjson(peer));
     }
     return(jprint(peersjson,1));
 }
 
-struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,double profitmargin,int32_t numpeers,int32_t numutxos)
+struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
-    uint32_t ipbits; int32_t pushsock,subsock,timeout,enabled; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
+    uint32_t ipbits; int32_t maxsize,pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
     ipbits = (uint32_t)calc_ipbits(ipaddr);
     expand_ipbits(checkip,ipbits);
     if ( strcmp(checkip,ipaddr) == 0 )
     {
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
-            if ( peer->profitmargin == 0. )
+            if ( profitmargin != 0. )
                 peer->profitmargin = profitmargin;
             if ( numpeers > peer->numpeers )
                 peer->numpeers = numpeers;
@@ -65,34 +66,32 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
         }
         else
         {
-            //printf("LPaddpeer %s\n",ipaddr);
+            printf("LPaddpeer %s\n",ipaddr);
             peer = calloc(1,sizeof(*peer));
             peer->pushsock = peer->subsock = pushsock = subsock = -1;
             strcpy(peer->ipaddr,ipaddr);
-            if ( amclient == 0 )
-                enabled = 1;
-            else enabled = 1;//(rand() % (1 << Client_connections)) == 0;
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
-                timeout = 1000;
-                nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                nanomsg_tcpname(pushaddr,peer->ipaddr,pushport);
+                nanomsg_transportname(0,pushaddr,peer->ipaddr,pushport);
                 if ( nn_connect(pushsock,pushaddr) >= 0 )
                 {
+                    timeout = 100;
+                    nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                    maxsize = 2 * 1024 * 1024;
+                    nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDBUF,&maxsize,sizeof(maxsize));
                     printf("connected to push.(%s) %d\n",pushaddr,pushsock);
                     peer->connected = (uint32_t)time(NULL);
                     peer->pushsock = pushsock;
-                    if ( enabled != 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
+                    if ( (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
                     {
                         timeout = 1;
                         nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                         nn_setsockopt(subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
-                        nanomsg_tcpname(subaddr,peer->ipaddr,subport);
+                        nanomsg_transportname(0,subaddr,peer->ipaddr,subport);
                         if ( nn_connect(subsock,subaddr) >= 0 )
                         {
                             peer->subsock = subsock;
                             printf("connected to sub.(%s) %d\n",subaddr,peer->subsock);
-                            Client_connections += amclient;
                         } else nn_close(subsock);
                     }
                 }
@@ -115,13 +114,16 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
             } else peer->numpeers = 1; // will become mypeer
             portable_mutex_unlock(&LP_peermutex);
             if ( mypubsock >= 0 )
-                LP_send(mypubsock,jprint(LP_peerjson(peer),1),1);
+            {
+                char *msg = jprint(LP_peerjson(peer),1);
+                LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
+            }
         }
     } else printf("LP_addpeer: checkip.(%s) vs (%s)\n",checkip,ipaddr);
     return(peer);
 }
 
-int32_t LP_peersparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
+int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {
     struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0;
     if ( (array= cJSON_Parse(retstr)) != 0 )
@@ -140,7 +142,7 @@ int32_t LP_peersparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
                     {
-                        peer = LP_addpeer(amclient,mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
+                        peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
                     }
                     if ( peer != 0 )
                     {
@@ -156,19 +158,17 @@ int32_t LP_peersparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
     return(n);
 }
 
-void LP_peersquery(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport,double myprofit)
+void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport,double myprofit)
 {
     char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now,flag = 0;
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
-    if ( peer != 0 && peer->errors > 0 )
-        return;
     if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,mypeer!=0?mypeer->numpeers:0,mypeer!=0?mypeer->numutxos:0)) != 0 )
     {
         //printf("got.(%s)\n",retstr);
         now = (uint32_t)time(NULL);
-        LP_peersparse(amclient,mypeer,mypubsock,destipaddr,destport,retstr,now);
+        LP_peersparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
         free(retstr);
-        if ( amclient == 0 )
+        if ( IAMLP != 0 )
         {
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
@@ -183,6 +183,15 @@ void LP_peersquery(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock
             if ( flag != 0 )
                 printf(" <- missing peers\n");
         }
-    } else if ( peer != 0 )
-        peer->errors++;
+    }
+}
+
+int32_t LP_numpeers()
+{
+    struct LP_peerinfo *peer,*tmp; int32_t numpeers = 0;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        numpeers++;
+    }
+    return(numpeers);
 }
