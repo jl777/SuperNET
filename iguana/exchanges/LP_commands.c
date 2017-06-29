@@ -22,6 +22,7 @@
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
+    printf("stats_JSON(%s)\n",jprint(argjson,0));
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
     {
         if ( strcmp(ipaddr,"127.0.0.1") != 0 && argport >= 1000 )
