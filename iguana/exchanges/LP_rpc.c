@@ -219,7 +219,7 @@ cJSON *LP_getmempool(char *symbol)
 cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 {
     char buf[128],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"\"%s\", %d",bits256_str(str,txid),vout);
+    sprintf(buf,"\"%s\", %d, 1",bits256_str(str,txid),vout);
     return(bitcoin_json(coin,"gettxout",buf));
 }
 
