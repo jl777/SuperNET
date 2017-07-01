@@ -263,7 +263,7 @@ struct iguana_info *LP_coinfind(char *symbol)
     {
         if ( (coin= LP_coinadd(&cdata)) != 0 && strcmp(symbol,"KMD") == 0 )
             coin->inactive = 0;
-    }
+    } else coin->inactive = (uint32_t)time(NULL);
     return(coin);
 }
 
@@ -290,8 +290,11 @@ struct iguana_info *LP_coincreate(cJSON *item)
             name = assetname;
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
-        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr")) > 0 )
+        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr")) < 0 )
+        {
             coin = LP_coinadd(&cdata);
+            coin->inactive = (uint32_t)time(NULL);
+        } else coin = LP_coinadd(&cdata);
     }
     if ( coin != 0 && item != 0 )
     {
@@ -305,10 +308,10 @@ struct iguana_info *LP_coincreate(cJSON *item)
                     coin->inactive = (uint32_t)time(NULL);
                 else coin->inactive = 0;
             }
-            if ( coin->inactive != 0 )
-                printf("LPnode.%d %s disabled %p vs %p\n",IAMLP,coin->symbol,assetname,name);
         } else coin->inactive = 0;
     }
+    if ( coin != 0 && coin->inactive != 0 )
+        printf("LPnode.%d %s disabled %p vs %p\n",IAMLP,coin->symbol,assetname,name);
     return(0);
 }
 
