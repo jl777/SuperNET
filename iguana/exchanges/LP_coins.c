@@ -266,9 +266,12 @@ struct iguana_info *LP_coinfind(char *symbol)
             if ( strcmp(symbol,"KMD") == 0 )
                 coin->inactive = 0;
             else if ( strcmp(symbol,"BTC") == 0 )
+            {
                 coin->inactive = !IAMLP * (uint32_t)time(NULL);
+                printf("BTC inactive.%u\n",coin->inactive);
+            }
         }
-    } else coin->inactive = (uint32_t)time(NULL);
+    }
     return(coin);
 }
 

@@ -768,7 +768,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             printf("userpass.(%s)\n",bits256_str(USERPASS,userpub));
         }
         if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 ) //coin->inactive == 0 && 
-            printf("importprivkey -> (%s)\n",jprint(retjson,1));
+            printf("importprivkey.%s -> (%s)\n",coin->symbol,jprint(retjson,1));
     }
     LP_mypubkey = *pubkeyp = curve25519(privkey,curve25519_basepoint9());
     //printf("privkey.(%s) -> LP_mypubkey.(%s)\n",bits256_str(str,privkey),bits256_str(str2,LP_mypubkey));
