@@ -416,7 +416,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
-    if ( (coin= LP_coinfind(symbol)) == 0 && coin->inactive != 0 )
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
         return(0);
     if ( iambob != 0 && value2 < 9 * (value >> 3) + bigtxfee ) // big txfee padding
     {
