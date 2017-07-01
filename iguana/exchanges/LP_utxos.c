@@ -410,12 +410,14 @@ char *LP_spentcheck(cJSON *argjson)
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin,char *gui)
 {
-    uint64_t val,val2=0,tmpsatoshis,bigtxfee = 100000; int32_t spendvini,selector; bits256 spendtxid; char *msg; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    uint64_t val,val2=0,tmpsatoshis,bigtxfee = 100000; int32_t spendvini,selector; bits256 spendtxid; char *msg; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
+    if ( (coin= LP_coinfind(symbol)) == 0 && coin->inactive != 0 )
+        return(0);
     if ( iambob != 0 && value2 < 9 * (value >> 3) + bigtxfee ) // big txfee padding
     {
         if ( value2 > bigtxfee+20000 )
