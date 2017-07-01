@@ -1,0 +1,1 @@
+cp autotrade client run coins disable enable forward myprice myprices getcoins getpeers getpeersIP getprices getutxos help inv lookup pub randval run_osx setprice status userpass utxos ../dexscripts
