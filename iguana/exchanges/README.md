@@ -12,6 +12,8 @@ From ~/SuperNET/iguana/exchanges:
 
 Now in the ~/SuperNET/iguana/dexscripts directory you will have example scripts that you can change without new git updates overwriting them. Of course, if a new update to a script is made and you dont run install again then you wont have the latest versions. All these scripts are expecting a userpass file, which contains the definition of the $userpass variable to authenticate API access. This avoids evil webpages that try to issue port 7779 calls to steal your money. The userpass variable is linked to each passphrase and that is defined in the randval file. Put your passphrase in that file. You can find templates for these two files in the iguana/exchanges dir.
 
+Next step is to actually start the marketmaker from ~/SuperNET/iguana/dexscripts. Use ./run for LP node and ./client for client mode
+
 At first you wont know the value of userpass. To find out, just run any API script. The first one will return all the required data, the "userpass" field is first and you can copy that value and put it into ~/SuperNET/iguana/dexscripts/userpass file. If you dont, all subsequent API calls will get authorization errors.
 
 Assuming you created the userpass file properly, you can now issue barterDEX api calls using all the scripts in the dexscripts dir. Please look at these scripts, they are simple curl invocations of a couple lines. Nothing scary and should be self explanatory.
