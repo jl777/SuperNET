@@ -261,8 +261,13 @@ struct iguana_info *LP_coinfind(char *symbol)
     else return(0);
     if ( LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0) > 0 )
     {
-        if ( (coin= LP_coinadd(&cdata)) != 0 && strcmp(symbol,"KMD") == 0 )
-            coin->inactive = 0;
+        if ( (coin= LP_coinadd(&cdata)) != 0 )
+        {
+            if ( strcmp(symbol,"KMD") == 0 )
+                coin->inactive = 0;
+            else if ( strcmp(symbol,"BTC") == 0 )
+                coin->inactive = !IAMLP * (uint32_t)time(NULL);
+        }
     } else coin->inactive = (uint32_t)time(NULL);
     return(coin);
 }
