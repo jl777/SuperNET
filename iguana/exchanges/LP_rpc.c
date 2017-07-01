@@ -186,7 +186,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
     if ( coin != 0 )
     {
         //printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
-        if ( coin->inactive == 0 )
+        if ( coin->inactive == 0 && strcmp(method,"importprivkey") != 0 )
         {
             retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
             if ( retstr != 0 && retstr[0] != 0 )
