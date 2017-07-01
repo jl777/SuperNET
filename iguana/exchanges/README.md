@@ -20,4 +20,5 @@ Assuming you created the userpass file properly, you can now issue barterDEX api
 
 The help script displays all the api endpoints you should need. You can customize any of the dexscripts for your desired usage, make sure you edit them with the right coins, as if you issue a script for BTC it will do it for BTC instead of the coin you wanted. These scripts wont read your mind, they just do what is in them
 
+In order to start trading, you need to fund your smartaddress (as listed on the first API call return) from the getcoins API call. To make sure you have utxo pairs for both the bob and alice usage, it is best to send utxo in triplets of X, 1.2 X and 0.01 X. So if X is 10, send 10, 12, and 0.1 coins using sendtoaddress to your smartaddress. After this, it should appear in the inventory. After you setprice, then it will appear in orderbooks with that coin in either the base or rel.
 
