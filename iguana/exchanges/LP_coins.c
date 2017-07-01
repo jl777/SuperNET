@@ -182,7 +182,7 @@ cJSON *LP_coinsjson()
     return(array);
 }
 
-void LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t taddr)
+int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t taddr)
 {
     char *name2;
     memset(coin,0,sizeof(*coin));
@@ -200,7 +200,7 @@ void LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetnam
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;
     else name2 = name;
-    LP_userpass(coin->userpass,symbol,assetname,name,name2);
+    return(LP_userpass(coin->userpass,symbol,assetname,name,name2));
 }
 
 struct iguana_info *LP_coinadd(struct iguana_info *cdata)
@@ -259,9 +259,11 @@ struct iguana_info *LP_coinfind(char *symbol)
     else if ( strcmp(symbol,"KMD") == 0 )
         name = "komodo";
     else return(0);
-    LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0);
-    if ( (coin= LP_coinadd(&cdata)) != 0 && strcmp(symbol,"KMD") == 0 )
-        coin->inactive = 0;
+    if ( LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0) > 0 )
+    {
+        if ( (coin= LP_coinadd(&cdata)) != 0 && strcmp(symbol,"KMD") == 0 )
+            coin->inactive = 0;
+    }
     return(coin);
 }
 
@@ -288,8 +290,8 @@ struct iguana_info *LP_coincreate(cJSON *item)
             name = assetname;
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
-        LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr"));
-        coin = LP_coinadd(&cdata);
+        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr")) > 0 )
+            coin = LP_coinadd(&cdata);
     }
     if ( coin != 0 && item != 0 )
     {
