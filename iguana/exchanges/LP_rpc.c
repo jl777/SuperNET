@@ -185,7 +185,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
     char *retstr; cJSON *retjson = 0;
     if ( coin != 0 )
     {
-        //printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
+        printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
         retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
         if ( retstr != 0 && retstr[0] != 0 )
         {
