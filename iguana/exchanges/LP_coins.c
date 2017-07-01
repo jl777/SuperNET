@@ -319,7 +319,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
         } else coin->inactive = 0;
     }
     if ( coin != 0 && coin->inactive != 0 )
-        printf("LPnode.%d %s disabled %p vs %p\n",IAMLP,coin->symbol,assetname,name);
+        printf("LPnode.%d %s inactive.%u %p vs %p\n",IAMLP,coin->symbol,coin->inactive,assetname,name);
     return(0);
 }
 

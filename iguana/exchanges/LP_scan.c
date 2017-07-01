@@ -18,7 +18,7 @@
 //  marketmaker
 //
 
-uint64_t oldLP_txvalue(char *symbol,bits256 txid,int32_t vout)
+/*uint64_t oldLP_txvalue(char *symbol,bits256 txid,int32_t vout)
 {
     uint64_t value = 0; double interest; cJSON *txobj,*vouts,*utxoobj; int32_t numvouts;
     if ( (txobj= LP_gettx(symbol,txid)) != 0 )
@@ -47,11 +47,13 @@ uint64_t oldLP_txvalue(char *symbol,bits256 txid,int32_t vout)
         free_json(txobj);
     }
     return(value);
-}
+}*/
 
 uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 {
-    uint64_t value = 0; double interest; cJSON *txobj,*sobj,*array; int32_t n;
+    uint64_t value = 0; double interest; cJSON *txobj,*sobj,*array; int32_t n; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
+        return(0);
     coinaddr[0] = 0;
     if ( (txobj= LP_gettxout(symbol,txid,vout)) != 0 )
     {
@@ -77,7 +79,11 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 
 int32_t LP_vinscan(bits256 *spendtxidp,int32_t *spendvinip,char *symbol,bits256 txid,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
 {
-    cJSON *txobj,*vins,*vin; bits256 spenttxid; int32_t j,numvins,spentvout,retval = -1;
+    cJSON *txobj,*vins,*vin; bits256 spenttxid; struct iguana_info *coin; int32_t j,numvins,spentvout,retval = -1;
+    memset(spendtxidp,0,sizeof(*spendtxidp));
+    *spendvinip = -1;
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
+        return(retval);
     if ( (txobj= LP_gettx(symbol,txid)) != 0 )
     {
         if ( bits256_cmp(txid,jbits256(txobj,"txid")) != 0 )
@@ -114,8 +120,10 @@ int32_t LP_vinscan(bits256 *spendtxidp,int32_t *spendvinip,char *symbol,bits256 
 
 int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 searchtxid,int32_t searchvout)
 {
-    char destaddr[64]; cJSON *blockjson,*txids,*txobj; bits256 hash,txid; int32_t h,i,j,numtxids,loadheight,errs = 0;
+    char destaddr[64]; struct iguana_info *coin; cJSON *blockjson,*txids,*txobj; bits256 hash,txid; int32_t h,i,j,numtxids,loadheight,errs = 0;
     *indp = -1;
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
+        return(0);
     memset(spendtxidp,0,sizeof(*spendtxidp));
     if ( LP_txvalue(destaddr,symbol,searchtxid,searchvout) > 0 )
         return(0);
@@ -157,7 +165,9 @@ int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 se
 
 int32_t LP_mempoolscan(char *symbol,bits256 txid)
 {
-    int32_t i,n; cJSON *array;
+    int32_t i,n; cJSON *array; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
+        return(-1);
     if ( (array= LP_getmempool(symbol)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
@@ -176,9 +186,11 @@ int32_t LP_mempoolscan(char *symbol,bits256 txid)
 
 int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
 {
-    int32_t numconfirms = 100;
+    struct iguana_info *coin; int32_t numconfirms = 100;
 //#ifndef BASILISK_DISABLEWAITTX
     cJSON *txobj;
+    if ( (coin= LP_coinfind(rawtx->coin->symbol)) == 0 || coin->inactive != 0 )
+        return(-1);
     numconfirms = -1;
     if ( (txobj= LP_gettx(rawtx->coin->symbol,rawtx->I.signedtxid)) != 0 )
     {
@@ -205,8 +217,10 @@ int32_t LP_waitmempool(char *symbol,bits256 txid,int32_t duration)
 
 int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
 {
-    int32_t i,n; cJSON *array; bits256 mempooltxid;
+    int32_t i,n; cJSON *array; bits256 mempooltxid; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 || bits256_nonz(searchtxid) == 0 || bits256_nonz(searchtxid2) == 0 )
+        return(-1);
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
         return(-1);
     if ( (array= LP_getmempool(symbol)) != 0 )
     {
