@@ -297,6 +297,8 @@ struct iguana_info *LP_coincreate(cJSON *item)
         {
             if ( IAMLP == 0 || assetname != name )
                 coin->inactive = !jint(item,"active");
+            if ( IAMLP != 0 && coin->inactive != 0 )
+                printf("LPnode %s disabled\n",coin->symbol);
         }
     }
     return(0);
