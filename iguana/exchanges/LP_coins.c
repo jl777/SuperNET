@@ -312,7 +312,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
                 coin->inactive = !jint(item,"active");
             else
             {
-                if ( IAMLP == 0 || assetname != name || (strcmp("ZEC",coin->symbol) != 0 && strcmp("HUSH",coin->symbol) != 0) )
+                if ( IAMLP == 0 || assetname != name )
                     coin->inactive = (uint32_t)time(NULL);
                 else coin->inactive = 0;
             }
