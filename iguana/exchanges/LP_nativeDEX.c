@@ -69,6 +69,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_coins.c"
 #include "LP_rpc.c"
 #include "LP_prices.c"
+#include "LP_scan.c"
 #include "LP_transaction.c"
 #include "LP_remember.c"
 #include "LP_swap.c"

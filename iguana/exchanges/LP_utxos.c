@@ -758,8 +758,6 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         LP_privkeyadd(privkey,rmd160);
         if ( coin->pubtype != 60 || strcmp(coin->symbol,"KMD") == 0 )
             printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
-        if ( coin->inactive == 0 )
-            printf("importprivkey: %s\n",jprint(LP_importprivkey(coin->symbol,tmpstr,"",-1),1));
         if ( counter++ == 0 )
         {
             bitcoin_priv2wif(USERPASS_WIFSTR,privkey,188);
