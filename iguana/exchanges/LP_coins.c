@@ -295,12 +295,12 @@ struct iguana_info *LP_coincreate(cJSON *item)
     {
         if ( strcmp("KMD",coin->symbol) != 0 )
         {
-            if ( IAMLP == 0 || assetname != name )
+            if ( IAMLP == 0 || assetname != name || (strcmp("ZEC",coin->symbol) != 0 && strcmp("HUSH",coin->symbol) != 0) )
                 coin->inactive = !jint(item,"active");
             else coin->inactive = 0;
             if ( IAMLP != 0 && coin->inactive != 0 )
                 printf("LPnode %s disabled %p vs %p\n",coin->symbol,assetname,name);
-        }
+        } else coin->inactive = 0;
     }
     return(0);
 }
