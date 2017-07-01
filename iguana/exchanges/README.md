@@ -10,6 +10,8 @@ From ~/SuperNET/iguana/exchanges:
 
 ./install
 
+From ~/SuperNET/iguana/dexscripts:
+
 Now in the ~/SuperNET/iguana/dexscripts directory you will have example scripts that you can change without new git updates overwriting them. Of course, if a new update to a script is made and you dont run install again then you wont have the latest versions. All these scripts are expecting a userpass file, which contains the definition of the $userpass variable to authenticate API access. This avoids evil webpages that try to issue port 7779 calls to steal your money. The userpass variable is linked to each passphrase and that is defined in the randval file. Put your passphrase in that file. You can find templates for these two files in the iguana/exchanges dir.
 
 Next step is to actually start the marketmaker from ~/SuperNET/iguana/dexscripts. Use ./run for LP node and ./client for client mode
