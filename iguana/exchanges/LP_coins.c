@@ -182,7 +182,7 @@ cJSON *LP_coinsjson()
     return(array);
 }
 
-void LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t taddr)
+int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t taddr)
 {
     char *name2;
     memset(coin,0,sizeof(*coin));
@@ -200,7 +200,7 @@ void LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetnam
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;
     else name2 = name;
-    LP_userpass(coin->userpass,symbol,assetname,name,name2);
+    return(LP_userpass(coin->userpass,symbol,assetname,name,name2));
 }
 
 struct iguana_info *LP_coinadd(struct iguana_info *cdata)
@@ -259,9 +259,19 @@ struct iguana_info *LP_coinfind(char *symbol)
     else if ( strcmp(symbol,"KMD") == 0 )
         name = "komodo";
     else return(0);
-    LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0);
-    if ( (coin= LP_coinadd(&cdata)) != 0 && strcmp(symbol,"KMD") == 0 )
-        coin->inactive = 0;
+    if ( LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0) > 0 )
+    {
+        if ( (coin= LP_coinadd(&cdata)) != 0 )
+        {
+            if ( strcmp(symbol,"KMD") == 0 )
+                coin->inactive = 0;
+            else if ( strcmp(symbol,"BTC") == 0 )
+            {
+                coin->inactive = !IAMLP * (uint32_t)time(NULL);
+                printf("BTC inactive.%u\n",coin->inactive);
+            }
+        }
+    }
     return(coin);
 }
 
@@ -270,7 +280,7 @@ struct iguana_info *LP_coinfind(char *symbol)
 
 struct iguana_info *LP_coincreate(cJSON *item)
 {
-    struct iguana_info cdata,*coin=0; int32_t isPoS,longestchain = 1000000; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*symbol,*assetname;
+    struct iguana_info cdata,*coin=0; int32_t isPoS,longestchain = 1000000; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name=0,*symbol,*assetname=0;
     if ( (symbol= jstr(item,"coin")) != 0 && symbol[0] != 0 && strlen(symbol) < 16 && LP_coinfind(symbol) == 0 && (port= juint(item,"rpcport")) != 0 )
     {
         isPoS = jint(item,"isPoS");
@@ -288,11 +298,28 @@ struct iguana_info *LP_coincreate(cJSON *item)
             name = assetname;
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
-        LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr"));
-        coin = LP_coinadd(&cdata);
+        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr")) < 0 )
+        {
+            coin = LP_coinadd(&cdata);
+            coin->inactive = (uint32_t)time(NULL);
+        } else coin = LP_coinadd(&cdata);
     }
     if ( coin != 0 && item != 0 )
-        coin->inactive = (strcmp("KMD",coin->symbol) == 0) ? 0 : !jint(item,"active");
+    {
+        if ( strcmp("KMD",coin->symbol) != 0 )
+        {
+            if ( jobj(item,"active") != 0 )
+                coin->inactive = !jint(item,"active");
+            else
+            {
+                if ( IAMLP == 0 || assetname != name || (strcmp("ZEC",coin->symbol) != 0 && strcmp("HUSH",coin->symbol) != 0) )
+                    coin->inactive = (uint32_t)time(NULL);
+                else coin->inactive = 0;
+            }
+        } else coin->inactive = 0;
+    }
+    if ( coin != 0 && coin->inactive != 0 )
+        printf("LPnode.%d %s inactive.%u %p vs %p\n",IAMLP,coin->symbol,coin->inactive,assetname,name);
     return(0);
 }
 

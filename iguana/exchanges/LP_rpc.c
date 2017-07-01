@@ -186,15 +186,18 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
     if ( coin != 0 )
     {
         //printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
-        retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
-        if ( retstr != 0 && retstr[0] != 0 )
+        if ( coin->inactive == 0 || strcmp(method,"importprivkey") == 0 )
         {
-            //printf("%s: %s.%s -> (%s)\n",coin->symbol,method,params,retstr);
-            retjson = cJSON_Parse(retstr);
-            free(retstr);
-        }
-        //usleep(1000);
-        //printf("dpow_gettxout.(%s)\n",retstr);
+            retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
+            if ( retstr != 0 && retstr[0] != 0 )
+            {
+                //printf("%s: %s.%s -> (%s)\n",coin->symbol,method,params,retstr);
+                retjson = cJSON_Parse(retstr);
+                free(retstr);
+            }
+            //usleep(1000);
+            //printf("dpow_gettxout.(%s)\n",retstr);
+        } else retjson = cJSON_Parse("{\"error\":\"disabled\"}");
     } else printf("bitcoin_json cant talk to NULL coin\n");
     return(retjson);
 }

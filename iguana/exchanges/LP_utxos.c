@@ -410,12 +410,14 @@ char *LP_spentcheck(cJSON *argjson)
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin,char *gui)
 {
-    uint64_t val,val2=0,tmpsatoshis,bigtxfee = 100000; int32_t spendvini,selector; bits256 spendtxid; char *msg; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    uint64_t val,val2=0,tmpsatoshis,bigtxfee = 100000; int32_t spendvini,selector; bits256 spendtxid; char *msg; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
+        return(0);
     if ( iambob != 0 && value2 < 9 * (value >> 3) + bigtxfee ) // big txfee padding
     {
         if ( value2 > bigtxfee+20000 )
@@ -430,7 +432,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     }
     if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2,pubkey) <= 0 )
     {
-        printf("iambob.%d utxoadd got ineligible txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",iambob,dstr(value),dstr(value2),dstr(tmpsatoshis));
+        printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(value2),dstr(tmpsatoshis));
         return(0);
     }
     if ( dispflag != 0 )
@@ -758,8 +760,6 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         LP_privkeyadd(privkey,rmd160);
         if ( coin->pubtype != 60 || strcmp(coin->symbol,"KMD") == 0 )
             printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
-        if ( coin->inactive == 0 )
-            printf("importprivkey: %s\n",jprint(LP_importprivkey(coin->symbol,tmpstr,"",-1),1));
         if ( counter++ == 0 )
         {
             bitcoin_priv2wif(USERPASS_WIFSTR,privkey,188);
@@ -767,8 +767,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             userpub = curve25519(userpass,curve25519_basepoint9());
             printf("userpass.(%s)\n",bits256_str(USERPASS,userpub));
         }
-        if ( coin->inactive == 0 && (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
-            printf("importprivkey -> (%s)\n",jprint(retjson,1));
+        if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 ) //coin->inactive == 0 && 
+            printf("importprivkey.%s -> (%s)\n",coin->symbol,jprint(retjson,1));
     }
     LP_mypubkey = *pubkeyp = curve25519(privkey,curve25519_basepoint9());
     //printf("privkey.(%s) -> LP_mypubkey.(%s)\n",bits256_str(str,privkey),bits256_str(str2,LP_mypubkey));
