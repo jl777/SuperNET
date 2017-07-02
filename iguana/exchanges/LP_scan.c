@@ -42,6 +42,7 @@ struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,i
         tx->numvouts = numvouts;
         tx->numvins = numvins;
         tx->timestamp = timestamp;
+        tx->txid = txid;
         portable_mutex_lock(&coin->txmutex);
         HASH_ADD_KEYPTR(hh,coin->transactions,tx->txid.bytes,sizeof(tx->txid),tx);
         portable_mutex_unlock(&coin->txmutex);
