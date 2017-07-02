@@ -18,7 +18,7 @@
 
 cJSON *helpjson(cJSON *json,cJSON *array,cJSON *agents,char *agentstr,char *method,cJSON *methodargs)
 {
-    cJSON *methodobj,*item; int32_t i,n; char url[2048],curl[2048];
+    cJSON *methodobj,*item; int32_t i,n; char url[2048],curl[2048]; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     /*if ( *agentstrp == 0 || strcmp(*agentstrp,agentstr) != 0 )
     {
         if ( array != 0 )
@@ -43,8 +43,8 @@ cJSON *helpjson(cJSON *json,cJSON *array,cJSON *agents,char *agentstr,char *meth
     methodobj = cJSON_CreateObject();
     jaddstr(methodobj,"agent",agentstr);
     jaddstr(methodobj,"method",method);
-    sprintf(url,"http://127.0.0.1:7778/api/%s/%s",agentstr,method);
-    sprintf(curl,"curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"%s\\\",\\\"method\\\":\\\"%s\\\"",agentstr,method);
+    sprintf(url,"http://127.0.0.1:%u/api/%s/%s",myinfo->rpcport,agentstr,method);
+    sprintf(curl,"curl --url \"http://127.0.0.1:%u\" --data \"{\\\"agent\\\":\\\"%s\\\",\\\"method\\\":\\\"%s\\\"",myinfo->rpcport,agentstr,method);
     if ( methodargs != 0 && (n= cJSON_GetArraySize(methodargs)) > 0 )
     {
         //printf("method.%s n.%d %s\n",method,n,jprint(methodargs,0));
@@ -86,7 +86,6 @@ cJSON *SuperNET_helpjson()
     cJSON *array=0,*json,*agents;
     json = cJSON_CreateObject();
     agents = cJSON_CreateArray();
-#ifndef WIN32
 #define IGUANA_ARGS json,array,agents
 #define IGUANA_HELP0(agent,name) array = helpjson(IGUANA_ARGS,#agent,#name,0)
 #define IGUANA_HELP_S(agent,name,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#str,"string")))
@@ -195,7 +194,6 @@ cJSON *SuperNET_helpjson()
 #undef IGUANA_ARGS
 #undef _IGUANA_APIDEC_H_
 #include "../includes/iguana_apiundefs.h"
-#endif
     
     if ( array != 0 )
         jadd(json,"API",array);
@@ -205,7 +203,7 @@ cJSON *SuperNET_helpjson()
 
 int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
 {
-    cJSON *item,*fieldsarray; int32_t j,m,width=1,size = 0;
+    cJSON *item,*fieldsarray; int32_t j,m,width=1,size = 0; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     char *methodstr,*typestr,outstr[2048],outstr2[2048],fields[8192],str[2],agent_method[256],*fieldname;
     form[0] = 0;
     if ( (methodstr= jstr(methoditem,"method")) == 0 )
@@ -254,7 +252,7 @@ int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
             //printf("fields[%d] (%s)\n",j,fields);
         }
     } else sprintf(fields+strlen(fields),"<b>%s</b> <textarea rows=\"0\" cols=\"0\"></textarea>",agent_method);
-    sprintf(&form[size],"<form action=\"http://127.0.0.1:7778/api/%s/%s\" oninput=\"%s\">%s<output for=\"%s\"></output><input type=\"submit\" value=\"%s\"></form>",agent,methodstr,outstr,fields,outstr2,methodstr);
+    sprintf(&form[size],"<form action=\"http://127.0.0.1:%u/api/%s/%s\" oninput=\"%s\">%s<output for=\"%s\"></output><input type=\"submit\" value=\"%s\"></form>",myinfo->rpcport,agent,methodstr,outstr,fields,outstr2,methodstr);
     if ( fp != 0 )
         fprintf(fp,"%s\n",&form[size]);
     //printf("%s\n",&form[size]);
@@ -498,6 +496,14 @@ char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
     return(OS_filestr(&filesize,"index7778.html"));
 }
 
+#ifdef WIN32
+/**
+* workaround for MSVS compiler bug -
+* instead of going on if-else-if block split the if-else-if into two function
+*/
+char *SuperNET_parser2(struct supernet_info *myinfo, char *agentstr, char *method, cJSON *json, char *remoteaddr);
+#endif
+
 char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,cJSON *json,char *remoteaddr)
 {
     char *coinstr; struct iguana_info *coin = 0;
@@ -614,13 +620,31 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define STRING_ARRAY_OBJ_STRING IGUANA_DISPATCH_SAOS
 
 #include "../includes/iguana_apideclares.h"
-    
+#ifdef WIN32
+return SuperNET_parser2(myinfo, agentstr, method, json, remoteaddr);
+#else
 #undef IGUANA_ARGS
 #undef _IGUANA_APIDEC_H_
 #include "../includes/iguana_apiundefs.h"
     char errstr[512];
     sprintf(errstr,"{\"error\":\"unsupported call\",\"agent\":\"%s\",\"method\":\"%s\"}",agentstr,method);
     return(clonestr(errstr));
+#endif
 }
 
 
+#ifdef WIN32
+char *SuperNET_parser2(struct supernet_info *myinfo, char *agentstr, char *method, cJSON *json, char *remoteaddr) {
+	char *coinstr; struct iguana_info *coin = 0;
+	if (remoteaddr != 0 && (remoteaddr[0] == 0 || strcmp(remoteaddr, "127.0.0.1") == 0))
+		remoteaddr = 0;
+#include "../includes/iguana_apideclares2.h"
+#undef IGUANA_ARGS
+#undef _IGUANA_APIDEC_H_
+#include "../includes/iguana_apiundefs.h"
+	char errstr[512];
+	sprintf(errstr, "{\"error\":\"unsupported call\",\"agent\":\"%s\",\"method\":\"%s\"}", agentstr, method);
+	return(clonestr(errstr));
+}
+
+#endif

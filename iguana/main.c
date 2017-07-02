@@ -290,7 +290,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
         }*/
         jsonstr = jprint(json,0);
         //printf("RPC? (%s)\n",jsonstr);
-        if ( (immedmillis= juint(json,"immediate")) != 0 || ((remoteaddr == 0 || remoteaddr[0] == 0) && port == IGUANA_RPCPORT) )
+        if ( (immedmillis= juint(json,"immediate")) != 0 || ((remoteaddr == 0 || remoteaddr[0] == 0) && port == myinfo->rpcport) )
         {
             if ( coin != 0 )
             {
@@ -749,22 +749,26 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
 
 void jumblr_loop(void *ptr)
 {
-    struct iguana_info *coin; char BTCaddr[64],KMDaddr[64]; bits256 privkey; uint32_t t; struct supernet_info *myinfo = ptr; int32_t mult = 10;
+    struct iguana_info *coin; uint32_t t,n=0; struct supernet_info *myinfo = ptr; int32_t mult = 10;
     printf("JUMBLR loop\n");
-    while ( 1 )
+    while ( myinfo->IAMNOTARY == 0 )
     {
-        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 )
+        if ( (coin= iguana_coinfind("KMD")) != 0 )
         {
-            privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
-            // if BTC has arrived in deposit address, invoke DEX -> KMD
-            // if BTC has arrived in destination address, invoke DEX -> BTC
-            jumblr_DEXcheck(myinfo,coin,BTCaddr,KMDaddr,privkey);
-            t = (uint32_t)time(NULL);
-            if ( myinfo->jumblr_passphrase[0] != 0 && (t % (120 * mult)) < 60 )
+            n++;
+            if ( (n % 3) == 0 )
+                smartaddress_update(myinfo,(n/3) & 1);
+            if ( myinfo->jumblr_passphrase[0] != 0 && coin->FULLNODE < 0 )
             {
-                jumblr_iteration(myinfo,coin,(t % (360 * mult)) / (120 * mult),t % (120 * mult));
+                // if BTC has arrived in destination address, invoke DEX -> BTC
+                t = (uint32_t)time(NULL);
+                if ( (t % (120 * mult)) < 60 )
+                {
+                    // if BTC has arrived in deposit address, invoke DEX -> KMD
+                    jumblr_iteration(myinfo,coin,(t % (360 * mult)) / (120 * mult),t % (120 * mult));
+                }
+                //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
             }
-            //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
         }
         sleep(55);
     }
@@ -1026,6 +1030,7 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
 
 STRING_ARG(iguana,initfastfind,activecoin)
 {
@@ -1811,14 +1816,14 @@ STRING_ARG(SuperNET,wif2priv,wif)
     return(jprint(retjson,1));
 }
 
-STRING_ARG(SuperNET,priv2wif,priv)
+STRING_AND_INT(SuperNET,priv2wif,priv,wiftype)
 {
-    bits256 privkey; char wifstr[65]; uint8_t wiftype; cJSON *retjson = cJSON_CreateObject();
+    bits256 privkey; char wifstr[65]; cJSON *retjson = cJSON_CreateObject();
     if ( is_hexstr(priv,0) == sizeof(bits256)*2 )
     {
-        wiftype = coin != 0 ? coin->chain->wiftype : 0x80;
+        //wiftype = coin != 0 ? coin->chain->wiftype : 0x80;
         decode_hex(privkey.bytes,sizeof(privkey),priv);
-        if ( bitcoin_priv2wif(wifstr,privkey,wiftype) > 0 )
+        if ( bitcoin_priv2wif(wifstr,privkey,wiftype&0xff) > 0 )
         {
             jaddstr(retjson,"result","success");
             jaddstr(retjson,"privkey",priv);
@@ -1908,10 +1913,10 @@ ZERO_ARGS(SuperNET,activehandle)
     } else jaddstr(retjson,"status","locked");
     if ( myinfo->jumblr_passphrase[0] != 0 )
     {
-        jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+        jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,JUMBLR_DEPOSITPREFIX);
         jaddstr(retjson,"BTCdeposit","notyet");
         jaddstr(retjson,"KMDdeposit",KMDaddr);
-        jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
+        jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,"");
         jaddstr(retjson,"BTCjumblr","notyet");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
     }
@@ -2050,7 +2055,9 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 
 void komodo_ICO_batch(cJSON *array,int32_t batchid)
 {
-    int32_t i,n,iter; cJSON *item; uint64_t kmdamount,revsamount; char *coinaddr,cmd[512]; double totalKMD,totalREVS;
+    int32_t i,n,iter; cJSON *item; uint64_t kmdamount,revsamount; char *coinaddr,cmd[512]; double totalKMD,totalREVS; struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    if ( myinfo->rpcport == 0 )
+        myinfo->rpcport = 7778;
     if ( (n= cJSON_GetArraySize(array)) > 0 )
     {
         totalKMD = totalREVS = 0;
@@ -2069,7 +2076,7 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
                     {
                         if ( dstr(revsamount) >= 1. && (iter & 1) == 0 )
                         {
-                            printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"REVS\\\"}\" # %.8f\n",coinaddr,dstr(revsamount));
+                            printf("curl --url \"http://127.0.0.1:%u\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"REVS\\\"}\" # %.8f\n",myinfo->rpcport,coinaddr,dstr(revsamount));
                             printf("sleep 3\n");
                         } else printf("sleep 1\n");
                         if ( (iter & 1) != 0 )
@@ -2092,9 +2099,9 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
                     {
                         if ( (0) )
                         {
-                            printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
+                            printf("curl --url \"http://127.0.0.1:%u\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",myinfo->rpcport,coinaddr,dstr(kmdamount));
                             printf("sleep 3\n");
-                        } else printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"listunspent\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\"\n",coinaddr);
+                        } else printf("curl --url \"http://127.0.0.1:%u\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"listunspent\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\"\n",myinfo->rpcport,coinaddr);
                     }
                     else
                     {
@@ -2113,7 +2120,7 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
 
 void komodo_REVS_merge(char *str,char *str2)
 {
-    char line[1024],line2[1024],*coinaddr; int32_t i,n=0,m=0,k=0;
+    char line[1024],line2[1024],*coinaddr; int32_t i,n=0,m=0,k=0; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     while ( 1 )
     {
         if ( str[n] == 0 || str2[m] == 0 )
@@ -2135,7 +2142,7 @@ void komodo_REVS_merge(char *str,char *str2)
             coinaddr[i] = 0;
             if ( atof(&coinaddr[i+1]) > 1 )
             {
-                printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"REVS\\\"}\" # %.8f\n",coinaddr,atof(coinaddr+i+1));
+                printf("curl --url \"http://127.0.0.1:%u\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"REVS\\\"}\" # %.8f\n",myinfo->rpcport,coinaddr,atof(coinaddr+i+1));
                 printf("sleep 3\n");
             }
             k++;
@@ -2154,7 +2161,7 @@ void iguana_main(void *arg)
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
 #ifdef __APPLE__
-    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 14;
+    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 18;
     sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
     if ( (0) && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
     {
@@ -2171,13 +2178,13 @@ void iguana_main(void *arg)
         free(batchstr);
     }
 #endif
+    myinfo = SuperNET_MYINFO(0);
+    myinfo->rpcport = IGUANA_RPCPORT;
     decode_hex(CRYPTO777_RMD160,20,CRYPTO777_RMD160STR);
     decode_hex(CRYPTO777_PUBSECP33,33,CRYPTO777_PUBSECPSTR);
     iguana_ensuredirs();
     iguana_Qinit();
-    myinfo = SuperNET_MYINFO(0);
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
-    myinfo->rpcport = IGUANA_RPCPORT;
     myinfo->dpowsock = myinfo->dexsock = myinfo->pubsock = myinfo->subsock = myinfo->reqsock = myinfo->repsock = -1;
     dex_init(myinfo);
     myinfo->psockport = 30000;
@@ -2190,6 +2197,11 @@ void iguana_main(void *arg)
             myinfo->rpcport = IGUANA_NOTARYPORT;
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 1;
+        }
+        else if ( strncmp((char *)arg,"-port=",6) == 0 )
+        {
+            myinfo->rpcport = atoi(&((char *)arg)[6]);
+            printf("OVERRIDE IGUANA port <- %u\n",myinfo->rpcport);
         }
     }
 #ifdef IGUANA_OSTESTS

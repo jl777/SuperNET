@@ -19,7 +19,7 @@ cJSON *instantdex_statemachinejson(struct bitcoin_swapinfo *swap);
 
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params)
 {
-    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params));
+    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,0));
 }
 
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
@@ -107,17 +107,29 @@ int32_t base58encode_checkbuf(uint8_t addrtype,uint8_t *data,int32_t data_len)
 
 int32_t bitcoin_wif2priv(uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
 {
-    int32_t len = -1; bits256 hash; uint8_t buf[64];
+    int32_t len = -1; bits256 hash; uint8_t buf[256];
+    memset(buf,0,sizeof(buf));
     if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
     {
         // validate with trailing hash, then remove hash
+        if ( len < 38 )
+            len = 38;
         hash = bits256_doublesha256(0,buf,len - 4);
         *addrtypep = *buf;
         memcpy(privkeyp,buf+1,32);
-        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
+        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] && (buf[len - 1]&0xff) == hash.bytes[28] )
         {
-            //printf("coinaddr.(%s) valid checksum\n",coinaddr);
+            //int32_t i; for (i=0; i<len; i++)
+            //    printf("%02x ",buf[i]);
+            //printf(" buf, hash.%02x %02x %02x %02x ",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
+            //printf("wifstr.(%s) valid len.%d\n",wifstr,len);
             return(32);
+        }
+        else
+        {
+            int32_t i; for (i=0; i<len; i++)
+                printf("%02x ",buf[i]);
+            printf(" buf, hash.%02x %02x %02x %02x\n",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
         }
     }
     return(-1);
@@ -125,11 +137,29 @@ int32_t bitcoin_wif2priv(uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
 
 int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype)
 {
-    uint8_t data[128]; int32_t len;
+    uint8_t data[128]; int32_t len = 32;
     memcpy(data+1,privkey.bytes,sizeof(privkey));
-    data[33] = 1;
-    len = base58encode_checkbuf(addrtype,data,33);
-    
+    data[1 + len++] = 1;
+    len = base58encode_checkbuf(addrtype,data,len);
+    if ( bitcoin_base58encode(wifstr,data,len) == 0 )
+        return(-1);
+    if ( 1 )
+    {
+        uint8_t checktype; bits256 checkpriv; char str[65],str2[65];
+        if ( bitcoin_wif2priv(&checktype,&checkpriv,wifstr) == sizeof(bits256) )
+        {
+            if ( checktype != addrtype || bits256_cmp(checkpriv,privkey) != 0 )
+                printf("(%s) -> wif.(%s) addrtype.%02x -> %02x (%s)\n",bits256_str(str,privkey),wifstr,addrtype,checktype,bits256_str(str2,checkpriv));
+        }
+    }
+    return((int32_t)strlen(wifstr));
+}
+
+int32_t bitcoin_priv2wiflong(char *wifstr,bits256 privkey,uint8_t addrtype)
+{
+    uint8_t data[128]; int32_t len = 32;
+    memcpy(data+1,privkey.bytes,sizeof(privkey));
+    len = base58encode_checkbuf(addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
         return(-1);
     if ( 1 )

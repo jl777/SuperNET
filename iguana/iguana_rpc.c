@@ -759,7 +759,7 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
                     //printf("add params[%d] of %d <- (%s) %p.(%p %p)\n",i,n,jprint(params[i],0),params[i],params[i]->next,params[i]->prev);
                 }
             }
-            retstr = iguana_bitcoinrpc(myinfo,IGUANA_RPCPORT,coin,method,params,n,json,remoteaddr,array);
+            retstr = iguana_bitcoinrpc(myinfo,myinfo->rpcport,coin,method,params,n,json,remoteaddr,array);
             if ( n > 0 )
                 for (i=0; i<n; i++)
                     if ( params[i] != 0 )
@@ -873,6 +873,8 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                 {
                     originstr = &urlstr[i + strlen(fieldstr)];
                     if ( strncmp(originstr,"http://127.0.0.",strlen("http://127.0.0.")) == 0 )
+                        originstr = "http://127.0.0.1:";
+                    else if ( strncmp(originstr,"agama://",strlen("agama://")) == 0 )
                         originstr = "http://127.0.0.1:";
                     else if ( strncmp(originstr,"file://127.0.0.",strlen("file://127.0.0.")) == 0 )
                         originstr = "http://127.0.0.1:";

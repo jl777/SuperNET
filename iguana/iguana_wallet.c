@@ -910,6 +910,9 @@ void iguana_walletlock(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(&myinfo->persistent_priv,0,sizeof(myinfo->persistent_priv));
     memset(&myinfo->persistent_pubkey33,0,sizeof(myinfo->persistent_pubkey33));
     memset(myinfo->secret,0,sizeof(myinfo->secret));
+    memset(myinfo->jumblr_passphrase,0,sizeof(myinfo->jumblr_passphrase));
+    memset(&myinfo->jumblr_depositkey,0,sizeof(myinfo->jumblr_depositkey));
+    memset(&myinfo->jumblr_pubkey,0,sizeof(myinfo->jumblr_pubkey));
     memset(myinfo->permanentfile,0,sizeof(myinfo->permanentfile));
     if ( myinfo->decryptstr != 0 )
         scrubfree(myinfo->decryptstr), myinfo->decryptstr = 0;
@@ -995,6 +998,7 @@ cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
 
 int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,cJSON *txids,cJSON *vouts,cJSON *unspents,cJSON *spends,char *coinaddr,int32_t minconf,int32_t firstheight)
 {
@@ -1354,6 +1358,8 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
     strcpy(myinfo->password,password);
     if ( permanentfile != 0 )
         strcpy(myinfo->permanentfile,permanentfile);
+    if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
+        free(retstr);
     retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
     iguana_walletinitcheck(myinfo,coin);
@@ -1368,9 +1374,16 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
         }
     }
     if ( bits256_nonz(myinfo->persistent_priv) != 0 )
-        smartaddress_add(myinfo,myinfo->persistent_priv,"","");
-
-    //basilisk_unspents_update(myinfo,coin);
+    {
+        char *jumblrstr,jumblr_passphrase[1024],coinaddr[64],KMDaddr[64]; bits256 privkey;
+        sprintf(jumblr_passphrase,"jumblr %s",password);
+        if ( (jumblrstr= jumblr_setpassphrase(myinfo,0,0,0,jumblr_passphrase)) != 0 )
+            free(jumblrstr);
+        privkey = jumblr_privkey(myinfo,coinaddr,0,KMDaddr,"kmd ");
+        smartaddress_add(myinfo,privkey,"kmd","BTC",0.,0.);
+        privkey = jumblr_privkey(myinfo,coinaddr,0,KMDaddr,"btc ");
+        smartaddress_add(myinfo,privkey,"btc","KMD",0.,0.);
+    }
     return(retstr);
 }
 
@@ -1417,6 +1430,13 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
         {
             bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
             jaddstr(retjson,"KMDwif",wifstr);
+        }
+        if ( (coin= iguana_coinfind("LTC")) != 0 )
+        {
+            bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
+            jaddstr(retjson,"LTCwif",wifstr);
+            bitcoin_priv2wiflong(wifstr,waddr.privkey,coin->chain->wiftype);
+            jaddstr(retjson,"LTCwiflong",wifstr);
         }
         if ( need_BTC != 0 )
         {

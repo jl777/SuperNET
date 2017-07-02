@@ -1,0 +1,8 @@
+source randval
+source coins
+pkill -15 marketmaker; 
+git pull;
+cd ..; 
+./m_mm;
+./marketmaker "{\"gui\":\"nogui\",\"client\":1, \"userhome\":\"/${HOME#"/"}/Library/Application\ Support\", \"passphrase\":\"$randval\", \"coins\":$coins}" &
+

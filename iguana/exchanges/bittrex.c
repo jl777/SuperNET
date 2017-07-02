@@ -169,7 +169,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
     if ( //CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume,argjson) == 0 &&
         (json= SIGNPOST(&exchange->cHandle,dotrade,retstrp,exchange,payload,payload)) != 0 )
     {
-        if ( *retstrp != 0 )
+        if ( 0 && *retstrp != 0 )
             printf("SIGNPOST returned.(%s) %s\n",*retstrp,jprint(json,0));
         if ( is_cJSON_True(cJSON_GetObjectItem(json,"success")) != 0 && (resultobj= cJSON_GetObjectItem(json,"result")) != 0 )
         {
@@ -179,13 +179,13 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
                     uuidstr.buf[j++] = uuidstr.buf[i];
             uuidstr.buf[j] = 0;
             n = (int32_t)strlen(uuidstr.buf);
-            printf("-> uuidstr.(%s).%d\n",uuidstr.buf,n);
+            //printf("-> uuidstr.(%s).%d\n",uuidstr.buf,n);
             decode_hex(databuf,n/2,uuidstr.buf);
             if ( n >= 16 )
                 for (i=0; i<8; i++)
                     databuf[i] ^= databuf[8 + i];
             memcpy(&txid,databuf,8);
-            printf("-> %llx\n",(long long)txid);
+            //printf("-> %llx\n",(long long)txid);
         }
         free_json(json);
     }
