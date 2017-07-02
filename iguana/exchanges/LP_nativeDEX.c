@@ -344,9 +344,9 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             if ( (obj= LP_getinfo(coin->symbol)) != 0 )
             {
-                if ( (height= jint(obj,"blocks")) >= coin->longestchain )
+                if ( (height= jint(obj,"blocks")) > coin->longestchain )
                 {
-                    coin->longestchain = height - 1;
+                    coin->longestchain = height;
                     printf(">>>>>>>>>> set %s longestchain %d (ref.%d [%d, %d])\n",coin->symbol,height,coin->firstrefht,coin->firstscanht,coin->lastscanht);
                 } else LP_mempoolscan(coin->symbol,zero);
                 free_json(obj);
