@@ -159,7 +159,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
                         tx->outpoints[spentvout].spendtxid = txid;
                         tx->outpoints[spentvout].spendvini = i;
                         tx->outpoints[spentvout].spendheight = height;
-                        printf("spend %s/v%d at ht.%d\n",bits256_str(str,tx->txid),spentvout,height);
+                        //printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
                     } else printf("LP_transactioninint: %s spentvout.%d < numvouts.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts);
                 }
             }
