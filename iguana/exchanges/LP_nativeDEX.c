@@ -348,7 +348,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 {
                     coin->longestchain = height - 1;
                     printf(">>>>>>>>>> set %s longestchain %d (ref.%d [%d, %d])\n",coin->symbol,height,coin->firstrefht,coin->firstscanht,coin->lastscanht);
-                }
+                } else LP_mempoolscan(coin->symbol,zero);
                 free_json(obj);
             } else printf("error getting info.%s\n",coin->symbol);
             coin->lastgetinfo = (uint32_t)time(NULL);
