@@ -32,9 +32,9 @@ struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,i
     struct LP_transaction *tx; int32_t i;
     if ( (tx= LP_transactionfind(coin,txid)) == 0 )
     {
-        char str[65]; printf("%s ht.%d u.%u NEW TXID.(%s) vouts.[%d]\n",coin->symbol,height,timestamp,bits256_str(str,txid),numvouts);
-        if ( bits256_nonz(txid) == 0 && tx->height == 0 )
-            getchar();
+        //char str[65]; printf("%s ht.%d u.%u NEW TXID.(%s) vouts.[%d]\n",coin->symbol,height,timestamp,bits256_str(str,txid),numvouts);
+        //if ( bits256_nonz(txid) == 0 && tx->height == 0 )
+        //    getchar();
         tx = calloc(1,sizeof(*tx) + (sizeof(*tx->outpoints) * numvouts));
         for (i=0; i<numvouts; i++)
             tx->outpoints[i].spendvini = -1;
@@ -239,7 +239,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
     if ( coinaddr == 0 )
         coinaddr = _coinaddr;
     value = LP_txinterestvalue(&interest,coinaddr,coin,txid,vout);
-    printf("coinaddr.(%s) value %.8f interest %.8f\n",coinaddr,dstr(value),dstr(interest));
+    //printf("coinaddr.(%s) value %.8f interest %.8f\n",coinaddr,dstr(value),dstr(interest));
     return(value + interest);
 }
 
