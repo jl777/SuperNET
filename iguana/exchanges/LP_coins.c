@@ -173,13 +173,35 @@ cJSON *LP_coinjson(struct iguana_info *coin)
     return(item);
 }
 
-static struct iguana_info *LP_coins; static int32_t LP_numcoins;
 cJSON *LP_coinsjson()
 {
-    int32_t i; cJSON *array = cJSON_CreateArray();
-    for (i=0; i<LP_numcoins; i++)
-        jaddi(array,LP_coinjson(&LP_coins[i]));
+    struct iguana_info *coin,*tmp; cJSON *array = cJSON_CreateArray();
+    HASH_ITER(hh,LP_coins,coin,tmp)
+    {
+        jaddi(array,LP_coinjson(coin));
+    }
     return(array);
+}
+
+struct iguana_info *LP_coinsearch(char *symbol)
+{
+    struct iguana_info *coin;
+    portable_mutex_lock(&LP_coinmutex);
+    HASH_FIND(hh,LP_coins,symbol,strlen(symbol),coin);
+    portable_mutex_unlock(&LP_coinmutex);
+    return(coin);
+}
+
+struct iguana_info *LP_coinadd(struct iguana_info *cdata)
+{
+    struct iguana_info *coin = calloc(1,sizeof(*coin));
+    //printf("%s: (%s) (%s)\n",symbol,cdata.serverport,cdata.userpass);
+    *coin = *cdata;
+    portable_mutex_init(&coin->txmutex);
+    portable_mutex_lock(&LP_coinmutex);
+    HASH_ADD_KEYPTR(hh,LP_coins,coin->symbol,strlen(coin->symbol),coin);
+    portable_mutex_unlock(&LP_coinmutex);
+    return(coin);
 }
 
 int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t taddr)
@@ -201,26 +223,6 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
         name2 = 0;
     else name2 = name;
     return(LP_userpass(coin->userpass,symbol,assetname,name,name2));
-}
-
-struct iguana_info *LP_coinadd(struct iguana_info *cdata)
-{
-    struct iguana_info *coin;
-    //printf("%s: (%s) (%s)\n",symbol,cdata.serverport,cdata.userpass);
-    LP_coins = realloc(LP_coins,sizeof(*LP_coins) * (LP_numcoins+1));
-    coin = &LP_coins[LP_numcoins];
-    *coin = *cdata;
-    LP_numcoins++;
-    return(coin);
-}
-
-struct iguana_info *LP_coinsearch(char *symbol)
-{
-    int32_t i;
-    for (i=0; i<LP_numcoins; i++)
-        if ( strcmp(LP_coins[i].symbol,symbol) == 0 )
-            return(&LP_coins[i]);
-    return(0);
 }
 
 int32_t LP_isdisabled(char *base,char *rel)

@@ -379,7 +379,7 @@ void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
 
 char *LP_spentcheck(cJSON *argjson)
 {
-    char destaddr[64]; bits256 txid,checktxid; int32_t vout,checkvout; struct LP_utxoinfo *utxo; int32_t iambob,retval = 0;
+    bits256 txid,checktxid; int32_t vout,checkvout; struct LP_utxoinfo *utxo; int32_t iambob,retval = 0;
     txid = jbits256(argjson,"txid");
     vout = jint(argjson,"vout");
     for (iambob=0; iambob<=1; iambob++)
@@ -393,7 +393,7 @@ char *LP_spentcheck(cJSON *argjson)
                 checktxid = jbits256(argjson,"checktxid");
                 checkvout = jint(argjson,"checkvout");
             }
-            if ( LP_txvalue(destaddr,utxo->coin,checktxid,checkvout) == 0 )
+            if ( LP_txvalue(0,utxo->coin,checktxid,checkvout) == 0 )
             {
                 if ( LP_mypeer != 0 && LP_mypeer->numutxos > 0 )
                     LP_mypeer->numutxos--;
@@ -438,7 +438,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( dispflag != 0 )
         printf("%.8f %.8f %s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",dstr(val),dstr(val2),coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
     dispflag = 1;
-    if ( 0 && (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,txid,vout,txid2,vout2)) >= 0 )
+    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,txid,vout,txid2,vout2)) >= 0 )
     {
         printf("utxoadd selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
         return(0);
@@ -457,7 +457,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
             char str[65],str2[65],str3[65],str4[65],str5[65],str6[65];
             if ( dispflag != 0 )
                 printf("error on subsequent utxo iambob.%d %.8f %.8f add.(%s %s) when.(%s %s) %d %d %d %d %d %d %d %d %d %d %d pubkeys.(%s vs %s)\n",iambob,dstr(val),dstr(val2),bits256_str(str,txid),bits256_str(str2,txid2),bits256_str(str3,utxo->payment.txid),bits256_str(str4,utxo->deposit.txid),bits256_cmp(txid,utxo->payment.txid) != 0,bits256_cmp(txid2,u.txid) != 0,vout != utxo->payment.vout,tmpsatoshis != utxo->S.satoshis,vout2 != u.vout,value2 != u.value,strcmp(symbol,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,bits256_cmp(pubkey,utxo->pubkey) != 0,value != utxo->payment.value,bits256_str(str5,pubkey),bits256_str(str6,utxo->pubkey));
-            if ( utxo->T.spentflag != 0 || LP_txvalue(utxo->coinaddr,utxo->coin,utxo->payment.txid,utxo->payment.vout) < utxo->payment.value || LP_txvalue(utxo->coinaddr,utxo->coin,u.txid,u.vout) < u.value )
+            if ( utxo->T.spentflag != 0 || LP_txvalue(0,utxo->coin,utxo->payment.txid,utxo->payment.vout) < utxo->payment.value || LP_txvalue(0,utxo->coin,u.txid,u.vout) < u.value )
             {
                 if ( utxo->T.spentflag == 0 )
                     utxo->T.spentflag = (uint32_t)time(NULL);
@@ -777,19 +777,16 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 
 void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase,int32_t initonly)
 {
-    int32_t i; struct iguana_info *coin; bits256 pubkey,privkey; uint8_t pubkey33[33];
+    struct iguana_info *coin,*tmp; bits256 pubkey,privkey; uint8_t pubkey33[33];
     memset(privkey.bytes,0,sizeof(privkey));
     pubkey = privkey;
-    for (i=0; i<LP_numcoins; i++)
+    HASH_ITER(hh,LP_coins,coin,tmp)
     {
         //printf("i.%d of %d\n",i,LP_numcoins);
-        if ( (coin= LP_coinfind(LP_coins[i].symbol)) != 0 )
-        {
-            if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
-                privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
-            if ( coin->inactive == 0 && initonly == 0 )
-                LP_privkey_init(pubsock,coin,privkey,pubkey,pubkey33);
-        }
+        if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
+            privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
+        if ( coin->inactive == 0 && initonly == 0 )
+            LP_privkey_init(pubsock,coin,privkey,pubkey,pubkey33);
     }
 }
 

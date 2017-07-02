@@ -13,11 +13,11 @@
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
  ******************************************************************************/
+
 //
 //  LP_transaction.c
 //  marketmaker
 //
-
 
 bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxid)
 {
@@ -814,24 +814,6 @@ int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,b
         free_json(retjson);
     }
     return(scriptlen);
-}
-
-int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
-{
-    cJSON *txobj,*vouts,*item; int32_t n; int64_t value = 0;
-    //char str[65]; printf("%s txvalue.(%s)\n",symbol,bits256_str(str,txid));
-    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
-    {
-        //printf("txobj.(%s)\n",jprint(txobj,0));
-        if ( (vouts= jarray(&n,txobj,"vout")) != 0 )
-        {
-            item = jitem(vouts,vout);
-            if ( (value= jdouble(item,"amount") * SATOSHIDEN) == 0 )
-                value = jdouble(item,"value") * SATOSHIDEN;
-        }
-        free_json(txobj);
-    }
-    return(value);
 }
 
 bits256 _LP_swap_spendtxid(char *symbol,char *destaddr,char *coinaddr,bits256 utxotxid,int32_t vout)
