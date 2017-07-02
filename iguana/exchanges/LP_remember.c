@@ -538,7 +538,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         {
                             struct iguana_info *coin; int32_t ht = -1; uint32_t locktime,blocktime;
                             checktxid = jbits256(sentobj,"txid");
-                            if ( (coin= LP_coinfind(symbol)) != 0 && (ht= LP_txheight(&locktime,&blocktime,coin,sentobj)) > 0 && ht > 0 )
+                            if ( (coin= LP_coinfind(symbol)) != 0 && (ht= LP_txheight(&locktime,&blocktime,coin,txid)) > 0 && ht > 0 )
                             {
                                 if ( coin->firstrefht == 0 || ht < coin->firstrefht )
                                     coin->firstrefht = ht;

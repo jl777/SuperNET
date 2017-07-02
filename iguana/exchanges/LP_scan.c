@@ -50,24 +50,28 @@ struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,i
     return(tx);
 }
 
-int32_t LP_txheight(uint32_t *timestampp,uint32_t *blocktimep,struct iguana_info *coin,cJSON *txobj)
+int32_t LP_txheight(uint32_t *timestampp,uint32_t *blocktimep,struct iguana_info *coin,bits256 txid)
 {
-    bits256 blockhash; cJSON *blockobj; int32_t height = 0;
-    *timestampp = juint(txobj,"locktime");
-    *blocktimep = juint(txobj,"blocktime");
-    blockhash = jbits256(txobj,"blockhash");
-    if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
+    bits256 blockhash; cJSON *blockobj,*txobj; int32_t height = 0;
+    if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
     {
-        height = jint(blockobj,"height");
-        //printf("%s LP_txheight.%d\n",coin->symbol,height);
-        free_json(blockobj);
-    } else printf("%sLP_txheight error (%s)\n",coin->symbol,jprint(txobj,0));
+        *timestampp = juint(txobj,"locktime");
+        *blocktimep = juint(txobj,"blocktime");
+        blockhash = jbits256(txobj,"blockhash");
+        if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
+        {
+            height = jint(blockobj,"height");
+            //printf("%s LP_txheight.%d\n",coin->symbol,height);
+            free_json(blockobj);
+        } else printf("%sLP_txheight error (%s)\n",coin->symbol,jprint(txobj,0));
+        free_json(txobj);
+    }
     return(height);
 }
 
 int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
 {
-    int32_t i,ht,num = 0; uint32_t timestamp,blocktime; struct LP_transaction *tx,*tmp; cJSON *txobj;
+    int32_t i,ht,num = 0; uint32_t timestamp,blocktime; struct LP_transaction *tx,*tmp;
     HASH_ITER(hh,coin->transactions,tx,tmp)
     {
         for (i=0; i<tx->numvouts; i++)
@@ -76,11 +80,7 @@ int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
                 continue;
             if ( (ht= tx->outpoints[i].spendheight) == 0 )
             {
-                if ( (txobj= LP_gettx(coin->symbol,tx->outpoints[i].spendtxid)) != 0 )
-                {
-                    tx->outpoints[i].spendheight = LP_txheight(&timestamp,&blocktime,coin,txobj);
-                    free_json(txobj);
-                }
+                tx->outpoints[i].spendheight = LP_txheight(&timestamp,&blocktime,coin,tx->outpoints[i].spendtxid);
             }
             if ( (ht= tx->outpoints[i].spendheight) != 0 && ht > lastheight )
             {
@@ -130,7 +130,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
     struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; uint32_t timestamp,blocktime; cJSON *txobj,*vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
     if ( (txobj=LP_gettx(coin->symbol,txid)) != 0 )
     {
-        height = LP_txheight(&timestamp,&blocktime,coin,txobj);
+        height = LP_txheight(&timestamp,&blocktime,coin,txid);
         if ( timestamp == 0 && height > 0 )
             timestamp = blocktime;
         vins = jarray(&numvins,txobj,"vin");
