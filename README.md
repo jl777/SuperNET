@@ -12,6 +12,26 @@ docs.supernet.org | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/
 
 ---
 
+
+## Crosscompile iguana/marketmaker (barterDEX):
+System requirements: Crossbuilding was tested on debian 7 and 8. 
+
+Install mingw-w64:
+
+`sudo apt-get install mingw-w64`
+
+Clone the windows-crossbuild branch:
+`git clone https://github.com/ca333/supernet && cd supernet && git checkout windows-cross`
+
+Now build iguana (LP) and marketmaker:
+`cd iguana`
+`./m_LP_win_cross`
+`./m_mm_win_cross`
+
+`iguana.exe` is built into `supernet/agents/` and `marketmaker.exe` into `supernet/iguana/`
+
+---
+
 Codebase is going under radical changes now and versions from mid-May should be used unless you are doing advanced testing. There will be four layers:
 
 gecko: abstracted bitcoin compatible blockchains that run via basilisk lite mode or as iguana core full network peers. I will try to get a geckochain to simultaneously have both virtual basilisk nodes and private iguana nodes, but at first will probably need to choose which mode a new chain will be and transition between the two via special suspend and resume functions that allow migration from virtual to physical. Each specific geckochain will be able to be enhanced into a datachain.
@@ -35,7 +55,7 @@ komodo: this is the top secret project I cant talk about publicly yet
 *** all external dependencies have been removed, except for -lpthread and -lm
 
 
-##For native (win32, win64)##
+## For native (win32, win64)
 TOOL_DIR := /usr/local/gcc-4.8.0-qt-4.8.4-for-mingw32/win32-gcc/bin
 MINGW := i586-mingw32
 The above two definitions need to be changed to match the mingw install on your system. m_win32 and m_win64 just invokes the makefile in mingw32 and mingw64
