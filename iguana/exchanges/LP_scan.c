@@ -58,7 +58,7 @@ int32_t LP_txheight(uint32_t *timestampp,uint32_t *blocktimep,struct iguana_info
     if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
     {
         height = jint(blockobj,"height");
-        printf("LP_txheight.%d\n",height);
+        printf("%s LP_txheight.%d\n",coin->symbol,height);
         free_json(blockobj);
     } else printf("LP_txheight error (%s)\n",jprint(txobj,0));
     return(height);
