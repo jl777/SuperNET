@@ -33,7 +33,7 @@ struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,i
     if ( (tx= LP_transactionfind(coin,txid)) == 0 )
     {
         char str[65]; printf("%s ht.%d u.%u NEW TXID.(%s) vouts.[%d]\n",coin->symbol,height,timestamp,bits256_str(str,txid),numvouts);
-        if ( tx->height == 0 )
+        if ( bits256_nonz(txid) == 0 && tx->height == 0 )
             getchar();
         tx = calloc(1,sizeof(*tx) + (sizeof(*tx->outpoints) * numvouts));
         for (i=0; i<numvouts; i++)
