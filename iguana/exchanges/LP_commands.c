@@ -184,9 +184,9 @@ forwardhex(pubkey,hex)\n\
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
     }
     if ( LP_isdisabled(base,rel) != 0 )
-        retstr = clonestr("{\"error\":\"at least one of coins disabled\"}");
+        retstr = clonestr("{\"result\":\"at least one of coins disabled\"}");
     else if ( LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
-        retstr = clonestr("{\"error\":\"coin is disabled\"}");
+        retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"reserved") == 0 )
         retstr = LP_quotereceived(argjson);
     else if ( strcmp(method,"connected") == 0 )
@@ -213,8 +213,8 @@ forwardhex(pubkey,hex)\n\
             //printf("FORWARDED.(%s)\n",jprint(argjson,0));
             if ( LP_forward(ctx,myipaddr,pubsock,profitmargin,jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
                 retstr = clonestr("{\"result\":\"success\"}");
-            else retstr = clonestr("{\"error\":\"error forwarding\"}");
-        } else retstr = clonestr("{\"error\":\"cant recurse forwards\"}");
+            else retstr = clonestr("{\"result\":\"error forwarding\"}");
+        } else retstr = clonestr("{\"result\":\"cant recurse forwards\"}");
 
     }
     else if ( strcmp(method,"keepalive") == 0 )
@@ -231,7 +231,7 @@ forwardhex(pubkey,hex)\n\
     {
         if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
             return(clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}"));
-        else return(clonestr("{\"error\":\"couldnt add utxo\"}"));
+        else return(clonestr("{\"result\":\"couldnt add utxo\"}"));
     }
     else if ( IAMLP != 0 )
     {
