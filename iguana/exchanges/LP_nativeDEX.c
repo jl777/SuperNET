@@ -341,8 +341,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             if ( (obj= LP_getinfo(coin->symbol)) != 0 )
             {
-                if ( (height= jint(obj,"blocks")) > 0 )
+                if ( (height= jint(obj,"blocks")) > coin->longestchain )
+                {
                     coin->longestchain = height;
+                    printf(">>>>>>>>>> set %s longestchain %d (ref.%d [%d, %d])\n",coin->symbol,height,coin->firstrefht,coin->firstscanht,coin->lastscanht);
+                }
                 free_json(obj);
             }
             coin->lastgetinfo = (uint32_t)time(NULL);
@@ -370,7 +373,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
         if ( LP_blockinit(coin,coin->lastscanht) < 0 )
+        {
+            printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
             continue;
+        }
         coin->lastscanht++;
         break;
     }
