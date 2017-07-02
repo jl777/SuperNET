@@ -32,6 +32,9 @@ struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,i
     struct LP_transaction *tx; int32_t i;
     if ( (tx= LP_transactionfind(coin,txid)) == 0 )
     {
+        char str[65]; printf("%s ht.%d u.%u NEW TXID.(%s) vouts.[%d]\n",coin->symbol,height,timestamp,bits256_str(str,txid),numvouts);
+        if ( tx->height == 0 )
+            getchar();
         tx = calloc(1,sizeof(*tx) + (sizeof(*tx->outpoints) * numvouts));
         for (i=0; i<numvouts; i++)
             tx->outpoints[i].spendvini = -1;
@@ -40,7 +43,6 @@ struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,i
         tx->numvins = numvins;
         tx->timestamp = timestamp;
         portable_mutex_lock(&coin->txmutex);
-        char str[65]; printf("%s ht.%d u.%u NEW TXID.(%s) vouts.[%d]\n",coin->symbol,tx->height,tx->timestamp,bits256_str(str,tx->txid),numvouts);
         HASH_ADD_KEYPTR(hh,coin->transactions,tx->txid.bytes,sizeof(tx->txid),tx);
         portable_mutex_unlock(&coin->txmutex);
     } // else printf("warning adding already existing txid %s\n",bits256_str(str,tx->txid));
