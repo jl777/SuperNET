@@ -1,0 +1,3 @@
+cd secp256k1; ./m_win_cross; cd ..
+i686-w64-mingw32-gcc -w -DWIN32 -static-libgcc -g -o marketmaker.exe -I../crypto777 exchanges/mm.c mini-gmp.c secp256k1.a ../agents/libcrypto777.a -static-libgcc -DPTW32_STATIC_LIB -lm -DCURL_STATICLIB -lpthread -L../win_lib/lib -I../win_lib/include -lcurl -I../nanomsg/include -L../nanomsg/lib -lnanomsg -I../iguana -I../includes -I../crypto777 -lws2_32 -lsetupapi
+

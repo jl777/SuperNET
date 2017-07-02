@@ -1,0 +1,4 @@
+git pull
+rm *.o
+i686-w64-mingw32-gcc -DWIN32 -static-libgcc -c -DLIQUIDITY_PROVIDER=1 -O2 *.c jpeg/*.c jpeg/unix/*.c -DPTW32_STATIC_LIB -lm -DCURL_STATICLIB -L../win_lib/lib/ -I../win_lib/include/ -L../win_lib/ -lcurl
+rm -f ../agents/libcrypto777.a; ar rc ../agents/libcrypto777.a *.o 
