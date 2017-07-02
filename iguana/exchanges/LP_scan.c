@@ -211,7 +211,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         return(0);
     if ( coinaddr != 0 )
         coinaddr[0] = 0;
-    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+    if ( (tx= LP_transactionfind(coin,txid)) == 0 )
     {
         if ( vout < tx->numvouts )
         {
@@ -228,7 +228,10 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         }
     }
     if ( coinaddr != 0 )
+    {
+        LP_transactioninit(coin,txid);
         value = LP_txinterestvalue(&interest,coinaddr,coin,txid,vout);
+    }
     return(value + interest);
 }
 
