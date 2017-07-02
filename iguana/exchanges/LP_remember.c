@@ -542,7 +542,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             {
                                 if ( coin->firstrefht == 0 || ht < coin->firstrefht )
                                     coin->firstrefht = ht;
-                            } else printf("coin.%p ht.%d\n",coin,ht);
+                            }
                             if ( bits256_nonz(checktxid) == 0 )
                                 checktxid = jbits256(sentobj,"hash");
                             if ( bits256_cmp(checktxid,txid) == 0 )

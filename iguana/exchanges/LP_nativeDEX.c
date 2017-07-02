@@ -336,7 +336,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         cJSON *obj; int32_t height; bits256 zero;
-        printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
+        //printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
         memset(zero.bytes,0,sizeof(zero));
         if ( time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {
