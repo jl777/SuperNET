@@ -1,0 +1,13 @@
+prefix=/home/ca/Schreibtisch/supernet/iguana/nanomsg
+exec_prefix=${prefix}
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: nanomsg
+Description: High-Performance Scalability Protocols
+URL: http://nanomsg.org/
+Version: 1.0.0
+Requires:
+Libs: -L${libdir} -lnanomsg
+Libs.private: -lws2_32 -lmswsock -ladvapi32
+Cflags: -I${includedir}
