@@ -238,7 +238,7 @@ forwardhex(pubkey,hex)\n\
         if ( strcmp(method,"register") == 0 )
         {
             retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"),juint(argjson,"pushport"));
-            printf("got (%s) from register\n",retstr!=0?retstr:"");
+            //printf("got (%s) from register\n",retstr!=0?retstr:"");
             return(retstr);
         }
         else if ( strcmp(method,"lookup") == 0 )
