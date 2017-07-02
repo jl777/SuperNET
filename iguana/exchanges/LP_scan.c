@@ -157,6 +157,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
                         tx->outpoints[spentvout].spendtxid = txid;
                         tx->outpoints[spentvout].spendvini = i;
                         tx->outpoints[spentvout].spendheight = height;
+                        printf("spend %s/v%d at ht.%d\n",bits256_str(str,tx->txid),spentvout,height);
                     } else printf("LP_transactioninint: %s spentvout.%d < numvouts.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts);
                 }
             }
@@ -208,7 +209,7 @@ int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
     
 uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 {
-    struct LP_transaction *tx; uint64_t interest = 0,value = 0; struct iguana_info *coin;
+    struct LP_transaction *tx; char _coinaddr[64]; uint64_t interest = 0,value = 0; struct iguana_info *coin;
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
         return(0);
     if ( coinaddr != 0 )
@@ -218,22 +219,27 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         if ( vout < tx->numvouts )
         {
             if ( bits256_nonz(tx->outpoints[vout].spendtxid) != 0 )
+            {
+                char str[65]; printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 return(0);
+            }
             else
             {
                 if ( coinaddr != 0 && strcmp(symbol,"KMD") == 0 )
                 {
                     value = LP_txinterestvalue(&tx->outpoints[vout].interest,coinaddr,coin,txid,vout);
                 }
+                printf("return value %.8f + interest %.8f\n",dstr(tx->outpoints[vout].value),dstr(tx->outpoints[vout].interest));
                 return(tx->outpoints[vout].value + tx->outpoints[vout].interest);
             }
-        }
+        } else printf("vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
     }
-    if ( coinaddr != 0 )
-    {
+    if ( tx == 0 )
         LP_transactioninit(coin,txid);
-        value = LP_txinterestvalue(&interest,coinaddr,coin,txid,vout);
-    }
+    if ( coinaddr == 0 )
+        coinaddr = _coinaddr;
+    value = LP_txinterestvalue(&interest,coinaddr,coin,txid,vout);
+    printf("coinaddr.(%s) value %.8f interest %.8f\n",coinaddr,dstr(value),dstr(interest));
     return(value + interest);
 }
 
