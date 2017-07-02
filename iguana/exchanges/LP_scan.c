@@ -59,7 +59,7 @@ int32_t LP_txheight(uint32_t *timestampp,uint32_t *blocktimep,struct iguana_info
     {
         height = jint(blockobj,"height");
         free_json(blockobj);
-    }
+    } else printf("LP_txheight error (%s)\n",jprint(txobj,0));
     return(height);
 }
 
