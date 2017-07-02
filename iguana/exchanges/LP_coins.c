@@ -282,7 +282,7 @@ struct iguana_info *LP_coinfind(char *symbol)
 
 struct iguana_info *LP_coincreate(cJSON *item)
 {
-    struct iguana_info cdata,*coin=0; int32_t isPoS,longestchain = 1000000; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name=0,*symbol,*assetname=0;
+    struct iguana_info cdata,*coin=0; int32_t isPoS,longestchain = 1; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name=0,*symbol,*assetname=0;
     if ( (symbol= jstr(item,"coin")) != 0 && symbol[0] != 0 && strlen(symbol) < 16 && LP_coinfind(symbol) == 0 && (port= juint(item,"rpcport")) != 0 )
     {
         isPoS = jint(item,"isPoS");
