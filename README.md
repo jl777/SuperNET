@@ -23,10 +23,12 @@ Install mingw-w64:
 Clone the windows-crossbuild branch:
 `git clone https://github.com/ca333/supernet && cd supernet && git checkout windows-cross`
 
-Now build iguana (LP) and marketmaker:
-`cd iguana`
-`./m_LP_win_cross`
-`./m_mm_win_cross`
+Build iguana (LP) and marketmaker:
+```
+cd iguana
+./m_LP_win_cross
+./m_mm_win_cross
+```
 
 `iguana.exe` is built into `supernet/agents/` and `marketmaker.exe` into `supernet/iguana/`
 
