@@ -1,3 +1,5 @@
+Latest Readme is at http://pad.supernet.org/barterdex-readme
+
 DEPENDENCIES
 First of all you are going to need to have the komodod daemon and the assetchains running.
 Install dependency packages:
