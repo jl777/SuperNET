@@ -454,6 +454,11 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
     char *myipaddr=0,*retstr; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128]; void *ctx = bitcoin_ctx();
+    if ( passphrase == 0 || passphrase[0] == 0 )
+    {
+        printf("jeezy says we cant use the nullstring as passphrase and I agree\n");
+        exit(-1);
+    }
     IAMLP = !amclient;
 #ifndef __linux__
     if ( IAMLP != 0 )
