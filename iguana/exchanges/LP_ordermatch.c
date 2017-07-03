@@ -269,12 +269,12 @@ double LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxop
         return(-11);
     }
     qprice = ((double)qp->destsatoshis / qp->satoshis);
-    if ( qp->satoshis < (srcvalue >> LP_MINVOL) )
+    if ( qp->satoshis < (srcvalue / LP_MINVOL) )
     {
         printf("utxo payment %.8f is less than half covered by Q %.8f\n",dstr(srcvalue),dstr(qp->satoshis));
         return(-12);
     }
-    if ( qp->destsatoshis < (destvalue >> LP_MINCLIENTVOL) )
+    if ( qp->destsatoshis < (destvalue / LP_MINCLIENTVOL) )
     {
         printf("destsatoshis %.8f is less than half of value %.8f\n",dstr(qp->destsatoshis),dstr(destvalue));
         return(-13);
@@ -604,7 +604,7 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargi
                                 if ( destsatoshis > autxo->payment.value-desttxfee-1 )
                                     destsatoshis = autxo->payment.value-desttxfee-1;
                                 satoshis = (destsatoshis / price + 0.0000000049) - txfee;
-                                if ( metric < 1.2 && destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value >> LP_MINCLIENTVOL) && satoshis-txfee > (butxo->S.satoshis >> LP_MINVOL) && satoshis <= butxo->payment.value-txfee )
+                                if ( metric < 1.2 && destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value / LP_MINCLIENTVOL) && satoshis-txfee > (butxo->S.satoshis / LP_MINVOL) && satoshis <= butxo->payment.value-txfee )
                                 {
                                     printf("value %.8f price %.8f/%.8f best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",dstr(autxo->payment.value),price,bestprice,bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
                                     metric = dstr(destsatoshis) * metric * metric * metric;
@@ -616,13 +616,14 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargi
                                         bestmetric = metric;
                                         printf("set best!\n");
                                     }
-                                } else printf("skip.(%d %d %d %d %d) metric %f destsatoshis %.8f value %.8f destvalue %.8f txfees %.8f %.8f sats %.8f\n",metric < 1.2,destsatoshis > desttxfee,destsatoshis-desttxfee > (autxo->payment.value >> LP_MINCLIENTVOL),satoshis-txfee > (butxo->S.satoshis >> LP_MINVOL),satoshis < butxo->payment.value-txfee,metric,dstr(destsatoshis),dstr(butxo->S.satoshis),dstr(autxo->payment.value),dstr(txfee),dstr(desttxfee),dstr(satoshis));
+                                } else printf("skip.(%d %d %d %d %d) metric %f destsatoshis %.8f value %.8f destvalue %.8f txfees %.8f %.8f sats %.8f\n",metric < 1.2,destsatoshis > desttxfee,destsatoshis-desttxfee > (autxo->payment.value / LP_MINCLIENTVOL),satoshis-txfee > (butxo->S.satoshis / LP_MINVOL),satoshis < butxo->payment.value-txfee,metric,dstr(destsatoshis),dstr(butxo->S.satoshis),dstr(autxo->payment.value),dstr(txfee),dstr(desttxfee),dstr(satoshis));
                             }
                             else
                             {
                                 if ( butxo != 0 )
                                     printf("%llu %llu %d %d %d: ",(long long)(vol*SATOSHIDEN),(long long)butxo->S.satoshis,vol*SATOSHIDEN == butxo->S.satoshis,LP_isavailable(butxo) > 0,LP_ismine(butxo) == 0);
-                                printf("cant find butxo.%p or value mismatch %.8f != %.8f\n",butxo,vol,butxo!=0?dstr(butxo->S.satoshis):0);
+                                printf("cant find butxo.%p or value mismatch %.8f != %.8f or bestflag.%d\n",butxo,vol,butxo!=0?dstr(butxo->S.satoshis):0,butxo->T.bestflag);
+                                //if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && (long long)(vol*SATOSHIDEN) == butxo->S.satoshis && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 && butxo->T.bestflag == 0 )
                             }
                         }
                     } else break;
