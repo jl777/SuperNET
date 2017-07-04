@@ -482,7 +482,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
 #else
         LP_canbind = IAMLP;
 #endif
-    } else LP_canbind = jint(argjson,"canbind");
+    }
+    else
+    {
+        LP_canbind = jint(argjson,"canbind");
+        printf(">>>>>>>>>>> set LP_canbind.%d\n",LP_canbind);
+    }
     if ( LP_canbind > 1000 && LP_canbind < 65536 )
         LP_fixed_pairport = LP_canbind;
     if ( LP_canbind != 0 )
