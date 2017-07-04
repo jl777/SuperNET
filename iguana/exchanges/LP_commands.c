@@ -66,8 +66,9 @@ myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
 inventory(coin)\n\
-autotrade(base, rel, price, relvolume, timeout=10, duration=3600)\n\
 bestfit(rel, relvolume)\n\
+ordermatch(base, txfee=0, rel, desttxfee=0, price, txid, vout, feetxid, feevout, duration=3600)\n\
+autotrade(base, rel, price, relvolume, timeout=10, duration=3600)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
@@ -102,7 +103,7 @@ forwardhex(pubkey,hex)\n\
             return(clonestr("{\"error\":\"authentication error\"}"));
         if ( base != 0 && rel != 0 )
         {
-            double price;
+            double price,bid,ask;
             if ( LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             price = jdouble(argjson,"price");
@@ -117,7 +118,6 @@ forwardhex(pubkey,hex)\n\
             }
             else if ( strcmp(method,"myprice") == 0 )
             {
-                double bid,ask;
                 if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )
                 {
                     retjson = cJSON_CreateObject();
@@ -127,6 +127,12 @@ forwardhex(pubkey,hex)\n\
                     jaddnum(retjson,"ask",ask);
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
+            }
+            else if ( strcmp(method,"ordermatch") == 0 )
+            {
+                if ( price > SMALLVAL )
+                    return(LP_ordermatch(base,j64bits(argjson,"txfee"),price,rel,jbits256(argjson,"txid"),jint(argjson,"vout"),jbits256(argjson,"feetxid"),jint(argjson,"feevout"),j64bits(argjson,"desttxfee"),jint(argjson,"duration")));
+                else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"autotrade") == 0 )
             {
