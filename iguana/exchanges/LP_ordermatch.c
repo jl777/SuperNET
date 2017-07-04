@@ -563,14 +563,11 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
 char *LP_bestfit(char *rel,double relvolume)
 {
     struct LP_utxoinfo *autxo; cJSON *retjson;
-    printf("LP_bestfit\n");
     if ( relvolume <= 0. || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
-    printf("call LP_utxo_bestfit\n");
     if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * relvolume)) == 0 )
         return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
     retjson = LP_utxojson(autxo);
-    printf("autxo.%p %p\n",autxo,retjson);
     return(jprint(retjson,1));
 }
 
