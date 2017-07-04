@@ -257,30 +257,41 @@ forwardhex(pubkey,hex)\n\
             return(clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}"));
         else return(clonestr("{\"result\":\"couldnt add utxo\"}"));
     }
-    else if ( IAMLP != 0 )
+    else
     {
-        if ( strcmp(method,"register") == 0 )
+        if ( IAMLP != 0 )
         {
-            retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"),juint(argjson,"pushport"));
-            printf("got (%s) from register\n",retstr!=0?retstr:"");
-            return(retstr);
-        }
-        else if ( strcmp(method,"lookup") == 0 )
-            return(LP_lookup(jbits256(argjson,"client")));
-        else if ( strcmp(method,"forwardhex") == 0 )
-            retstr = LP_forwardhex(ctx,pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
-        else if ( strcmp(method,"psock") == 0 )
-        {
-            if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
+            if ( strcmp(method,"register") == 0 )
             {
-                if ( LP_mypeer != 0 )
-                    myipaddr = LP_mypeer->ipaddr;
-                else printf("LP_psock dont have actual ipaddr?\n");
+                retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"),juint(argjson,"pushport"));
+                printf("got (%s) from register\n",retstr!=0?retstr:"");
+                return(retstr);
             }
-            return(LP_psock(myipaddr,jint(argjson,"ispaired")));
+            else if ( strcmp(method,"lookup") == 0 )
+                return(LP_lookup(jbits256(argjson,"client")));
+            else if ( strcmp(method,"forwardhex") == 0 )
+                retstr = LP_forwardhex(ctx,pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
+            else if ( strcmp(method,"psock") == 0 )
+            {
+                if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
+                {
+                    if ( LP_mypeer != 0 )
+                        myipaddr = LP_mypeer->ipaddr;
+                    else printf("LP_psock dont have actual ipaddr?\n");
+                }
+                return(LP_psock(myipaddr,jint(argjson,"ispaired")));
+            }
+            else if ( strcmp(method,"notify") == 0 )
+                retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
         }
-        else if ( strcmp(method,"notify") == 0 )
-            retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
+        else
+        {
+            if ( strcmp(method,"register") == 0 )
+            {
+                printf("nonLP got (%s)\n",jprint(argjson,0));
+                retstr = clonestr("{\"result\":\"success\",\"register\":\"received\"}");
+            }
+        }
     }
     if ( retstr != 0 )
     {

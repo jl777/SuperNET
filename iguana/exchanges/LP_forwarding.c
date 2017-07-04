@@ -110,7 +110,7 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
     if ( ipaddr == 0 || ipaddr[0] == 0 || is_ipaddr(ipaddr) == 0 || bits256_nonz(pubkey) == 0 )
         return(clonestr("{\"result\":\"illegal ipaddr or null pubkey\"}"));
     nanomsg_transportname(0,pushaddr,ipaddr,port);
-    char str[65]; printf("register.(%s) %s\n",pushaddr,bits256_str(str,pubkey));
+    //char str[65]; printf("register.(%s) %s\n",pushaddr,bits256_str(str,pubkey));
     if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
         ptr->lasttime = (uint32_t)time(NULL);
@@ -126,13 +126,13 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
                 char str[65]; printf("%u recreate pushsock for %s <- %s\n",(uint32_t)time(NULL),pushaddr,bits256_str(str,pubkey));
                 strcpy(ptr->pushaddr,pushaddr);
                 if ( (ptr->pushsock= LP_pushsock_create(ptr,pushaddr)) < 0 )
-                    return(clonestr("{\"result\":\"couldnt recreate pushsock\",\"registered\":0}"));
+                    return(clonestr("{\"result\":\"success\",\"status\":\"couldnt recreate pushsock\",\"registered\":0}"));
             } //else printf("no need to create identical endpoint\n");
         }
-        return(clonestr("{\"result\":\"already registered\",\"registered\":1}"));
+        return(clonestr("{\"result\":\"success\",\"status\":\"already registered\",\"registered\":1}"));
     }
     else if ( (pushsock= LP_pushsock_create(0,pushaddr)) < 0 )
-        return(clonestr("{\"result\":\"couldnt create pushsock\"}"));
+        return(clonestr("{\"result\":\"success\",\"status\":\"couldnt create pushsock\"}"));
     else
     {
         ptr = calloc(1,sizeof(*ptr));
@@ -143,7 +143,7 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
         portable_mutex_lock(&LP_forwardmutex);
         HASH_ADD_KEYPTR(hh,LP_forwardinfos,&ptr->pubkey,sizeof(ptr->pubkey),ptr);
         portable_mutex_unlock(&LP_forwardmutex);
-        char str[65]; printf("registered (%s) -> (%s) pushsock.%d\n",bits256_str(str,pubkey),pushaddr,ptr->pushsock);
+        //char str[65]; printf("registered (%s) -> (%s) pushsock.%d\n",bits256_str(str,pubkey),pushaddr,ptr->pushsock);
         LP_hello(ptr);
         return(LP_lookup(pubkey));
     }
