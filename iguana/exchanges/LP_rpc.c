@@ -121,7 +121,7 @@ char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *ipad
     sprintf(url,"http://%s:%u/api/stats/register?client=%s&pushaddr=%s&pushport=%u",destip,destport,bits256_str(str,pubkey),ipaddr,pushport);
     //return(LP_issue_curl("register",destip,destport,url));
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
-    //printf("register.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
+    printf("register.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
     return(retstr);
 }
 
