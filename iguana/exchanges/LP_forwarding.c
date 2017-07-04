@@ -151,7 +151,7 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
 
 int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicport,int32_t max)
 {
-    char *retstr,ipaddr[64]; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t j,n=0,retval = -1;
+    char *argstr,ipaddr[64]; cJSON *argjson; struct LP_peerinfo *peer,*tmp; int32_t j,n=0,arglen;
     if ( publicaddr == 0 || publicaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
     {
         char str[65]; printf("LP_forwarding_register illegal publicaddr.(%s):%u or null pubkey (%s)\n",publicaddr,publicport,bits256_str(str,pubkey));
@@ -161,10 +161,23 @@ int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicpo
         if ( publicaddr[j] >= '0' && publicaddr[j] <= '9' )
             break;
     parse_ipaddr(ipaddr,publicaddr+j);
+    argjson = cJSON_CreateObject();
+    jaddstr(argjson,"agent","stats");
+    jaddstr(argjson,"method","register");
+    jaddbits256(argjson,"client",pubkey);
+    jaddstr(argjson,"pushaddr",ipaddr);
+    jaddnum(argjson,"pushport",publicport);
+    argstr = jprint(argjson,1);
+    arglen = (int32_t)strlen(argstr) + 1;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        if ( peer->pushsock >= 0 )
+        {
+            LP_send(peer->pushsock,argstr,arglen,0);
+            n++;
+        }
         //printf("register.(%s) %s %u with (%s)\n",publicaddr,ipaddr,publicport,peer->ipaddr);
-        if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,ipaddr,publicport)) != 0 )
+        /*if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,ipaddr,publicport)) != 0 )
         {
             //printf("[%s] LP_register.(%s) returned.(%s)\n",publicaddr,peer->ipaddr,retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -176,8 +189,9 @@ int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicpo
             free(retstr);
         } else printf("timeout registering with %s errs.%d good.%d\n",peer->ipaddr,peer->errors,peer->good);
         if ( retval == 0 )
-            break;
+            break;*/
     }
+    free(argstr);
     return(n);
 }
 
