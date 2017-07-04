@@ -67,6 +67,7 @@ enable(coin)\n\
 disable(coin)\n\
 inventory(coin)\n\
 autotrade(base, rel, price, relvolume, timeout=10, duration=3600)\n\
+bestfit(rel, relvolume)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
@@ -127,13 +128,15 @@ forwardhex(pubkey,hex)\n\
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
-            else if ( strcmp(method,"autotrade") == 0 )
+            else if ( strcmp(method,"autotrade") == 0 || strcmp(method,"bestfit") == 0 )
             {
                 if ( price > SMALLVAL )
                 {
                     printf("price set (%s/%s) <- %.8f\n",rel,base,1./price);
                     LP_mypriceset(rel,base,1./price);
-                    return(LP_autotrade(ctx,myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
+                    if ( strcmp(method,"autotrade") == 0 )
+                        return(LP_autotrade(ctx,myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
+                    else return(LP_bestfit(rel,jdouble(argjson,"relvolume")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
@@ -202,7 +205,7 @@ forwardhex(pubkey,hex)\n\
     else if ( strcmp(method,"getprices") == 0 )
         return(LP_prices());
     else if ( strcmp(method,"orderbook") == 0 )
-       return(LP_orderbook(base,rel,jint(argjson,"duration")));
+        return(LP_orderbook(base,rel,jint(argjson,"duration")));
     else if ( strcmp(method,"registerall") == 0 )
         return(LP_registerall(jint(argjson,"numnodes")));
     else if ( strcmp(method,"forward") == 0 )

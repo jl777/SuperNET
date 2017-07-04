@@ -560,11 +560,23 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     return(retval);
 }
 
+char *LP_bestfit(char *rel,double relvolume)
+{
+    struct LP_utxoinfo *autxo;
+    if ( relvolume <= 0. || LP_priceinfofind(rel) == 0 )
+        return(clonestr("{\"error\":\"invalid parameter\"}"));
+    if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * relvolume)) == 0 )
+        return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
+    return(jprint(LP_utxojson(autxo),1));
+}
+
 char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargin,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration)
 {
     int64_t satoshis,destsatoshis,desttxfee,txfee,bestdestsatoshis=0; bits256 txid,pubkey; char *obookstr,*retstr; cJSON *orderbook,*asks,*item,*bestitem=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; int32_t i,vout,numasks,DEXselector=0; uint32_t expiration; double ordermatchprice,bestmetric,metric,bestprice=0.,vol,price; struct LP_quoteinfo Q; struct LP_pubkeyinfo *pubp;
     if ( duration <= 0 )
         duration = LP_ORDERBOOK_DURATION;
+    if ( timeout <= 0 )
+        timeout = LP_AUTOTRADE_TIMEOUT;
     if ( maxprice <= 0. || relvolume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
     if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * relvolume)) == 0 )
@@ -574,8 +586,6 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargi
         desttxfee = LP_MIN_TXFEE;
     if ( (txfee= LP_getestimatedrate(base) * LP_AVETXSIZE) < LP_MIN_TXFEE )
         txfee = LP_MIN_TXFEE;
-    if ( timeout <= 0 )
-        timeout = LP_AUTOTRADE_TIMEOUT;
     if ( (obookstr= LP_orderbook(base,rel,duration)) != 0 )
     {
         if ( (orderbook= cJSON_Parse(obookstr)) != 0 )
