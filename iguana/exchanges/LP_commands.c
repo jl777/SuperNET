@@ -208,7 +208,7 @@ forwardhex(pubkey,hex)\n\
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
     }
     if ( LP_isdisabled(base,rel) != 0 )
-        retstr = clonestr("{\"result\":\"at least one of coins disabled\"}");
+        return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
     else if ( LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
         retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"reserved") == 0 )
