@@ -289,7 +289,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             if ( (retstr= LP_registerall(0)) != 0 )
                 free(retstr);
-            //LP_forwarding_register(LP_mypubkey,pushaddr,pushport,10);
+            LP_forwarding_register(LP_mypubkey,pushaddr,pushport,10);
             lastforward = now;
         }
     }
