@@ -68,6 +68,7 @@ disable(coin)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
 ordermatch(base, txfee=0, rel, desttxfee=0, price, txid, vout, feetxid, feevout, duration=3600)\n\
+trade(price, timeout=10, duration=3600, <quotejson returned from ordermatch>)\n\
 autotrade(base, rel, price, relvolume, timeout=10, duration=3600)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
@@ -131,8 +132,17 @@ forwardhex(pubkey,hex)\n\
             else if ( strcmp(method,"ordermatch") == 0 )
             {
                 if ( price > SMALLVAL )
-                    return(LP_ordermatch(base,j64bits(argjson,"txfee"),price,rel,jbits256(argjson,"txid"),jint(argjson,"vout"),jbits256(argjson,"feetxid"),jint(argjson,"feevout"),j64bits(argjson,"desttxfee"),jint(argjson,"duration")));
+                return(LP_ordermatch(base,j64bits(argjson,"txfee"),price,rel,jbits256(argjson,"txid"),jint(argjson,"vout"),jbits256(argjson,"feetxid"),jint(argjson,"feevout"),j64bits(argjson,"desttxfee"),jint(argjson,"duration")));
                 else return(clonestr("{\"error\":\"no price set\"}"));
+            }
+            else if ( strcmp(method,"trade") == 0 )
+            {
+                struct LP_quoteinfo Q;
+                if ( price > SMALLVAL || jobj(argjson,"quote") != 0 )
+                {
+                    LP_quoteparse(&Q,jobj(argjson,"quote"));
+                    return(LP_trade(ctx,myipaddr,pubsock,profitmargin,&Q,price,jint(argjson,"timeout"),jint(argjson,"duration")));
+                } else return(clonestr("{\"error\":\"no price set or no quote object\"}"));
             }
             else if ( strcmp(method,"autotrade") == 0 )
             {
