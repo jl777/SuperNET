@@ -128,16 +128,21 @@ forwardhex(pubkey,hex)\n\
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
-            else if ( strcmp(method,"autotrade") == 0 || strcmp(method,"bestfit") == 0 )
+            else if ( strcmp(method,"autotrade") == 0 )
             {
                 if ( price > SMALLVAL )
                 {
                     printf("price set (%s/%s) <- %.8f\n",rel,base,1./price);
                     LP_mypriceset(rel,base,1./price);
-                    if ( strcmp(method,"autotrade") == 0 )
-                        return(LP_autotrade(ctx,myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
-                    else return(LP_bestfit(rel,jdouble(argjson,"relvolume")));
+                    return(LP_autotrade(ctx,myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
+            }
+            else if ( strcmp(method,"bestfit") == 0 )
+            {
+                double relvolume;
+                if ( (relvolume= jdouble(argjson,"relvolume")) > SMALLVAL )
+                    return(LP_bestfit(rel,relvolume));
+                else return(clonestr("{\"error\":\"no relvolume set\"}"));
             }
         }
         else if ( (coin= jstr(argjson,"coin")) != 0 )
