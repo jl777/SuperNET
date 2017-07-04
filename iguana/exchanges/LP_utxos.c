@@ -74,12 +74,13 @@ struct LP_utxoinfo *LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
 
 struct LP_utxoinfo *LP_utxopairfind(int32_t iambob,bits256 txid,int32_t vout,bits256 txid2,int32_t vout2)
 {
-    struct LP_utxoinfo *utxo=0;
-    if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 && vout2 == utxo->deposit.vout && bits256_cmp(utxo->deposit.txid,txid2) == 0 )
-        return(utxo);
-    char str[65]; printf("utxo.%p\n",utxo);
-    if ( utxo != 0 )
-        printf("iambob.%d %s/v%d\n",iambob,bits256_str(str,utxo->deposit.txid),utxo->deposit.vout);
+    struct LP_utxoinfo *utxo=0; struct _LP_utxoinfo u;
+    if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 )
+    {
+        u = (iambob != 0) ? utxo->deposit : utxo->fee;
+        if (vout2 == u.vout && bits256_cmp(u.txid,txid2) == 0 )
+            return(utxo);
+    }
     return(0);
 }
 
