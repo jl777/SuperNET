@@ -79,7 +79,7 @@ struct LP_utxoinfo *LP_utxopairfind(int32_t iambob,bits256 txid,int32_t vout,bit
         return(utxo);
     char str[65]; printf("utxo.%p\n",utxo);
     if ( utxo != 0 )
-        printf("iambob.%d %s/v%d\n",iambob,bits256_str(str,txid2),vout2);
+        printf("iambob.%d %s/v%d\n",iambob,bits256_str(str,utxo->deposit.txid),utxo->deposit.vout);
     return(0);
 }
 
