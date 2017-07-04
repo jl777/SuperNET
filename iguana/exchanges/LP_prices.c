@@ -537,12 +537,13 @@ int32_t LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
     return(n);
 }
 
-int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum)
+int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum,int32_t duration)
 {
-    struct LP_utxoinfo *utxo,*tmp; struct LP_pubkeyinfo *pubp=0; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; double price; int32_t baseid,relid; uint64_t basesatoshis;
+    struct LP_utxoinfo *utxo,*tmp; struct LP_pubkeyinfo *pubp=0; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; uint32_t oldest; double price; int32_t baseid,relid; uint64_t basesatoshis;
     if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
         baseid = basepp->ind;
     else return(num);
+    oldest = (uint32_t)time(NULL) - duration;
     HASH_ITER(hh,LP_utxoinfos[1],utxo,tmp)
     {
         if ( pubp == 0 || bits256_cmp(pubp->pubkey,utxo->pubkey) != 0 )
@@ -550,7 +551,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
         if ( pubp != 0 && pubp->numerrors >= LP_MAXPUBKEY_ERRORS )
             continue;
         //char str[65],str2[65]; printf("check utxo.%s/v%d from %s\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,utxo->pubkey));
-        if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && pubp != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL )
+        if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && pubp != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL && pubp->timestamp > oldest )
         {
             if ( LP_orderbookfind(*arrayp,cachednum,utxo->payment.txid,utxo->payment.vout) < 0 )
             {
@@ -571,36 +572,20 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
     return(num);
 }
 
-char *LP_orderbook(char *base,char *rel)
+char *LP_orderbook(char *base,char *rel,int32_t duration)
 {
     uint32_t now,i; struct LP_priceinfo *basepp=0,*relpp=0; struct LP_orderbookentry **bids = 0,**asks = 0; cJSON *retjson,*array; int32_t numbids=0,numasks=0,cachenumbids,cachenumasks,baseid,relid;
     if ( (basepp= LP_priceinfofind(base)) == 0 || (relpp= LP_priceinfofind(rel)) == 0 )
         return(clonestr("{\"error\":\"base or rel not added\"}"));
+    if ( duration <= 0 )
+        duration = LP_ORDERBOOK_DURATION;
     baseid = basepp->ind;
     relid = relpp->ind;
     now = (uint32_t)time(NULL);
-    /*struct LP_cacheinfo *ptr,*tmp; 
-     HASH_ITER(hh,LP_cacheinfos,ptr,tmp)
-    {
-        if ( ptr->timestamp < now-3600*2 || ptr->price == 0. )
-            continue;
-        if ( strcmp(ptr->Q.srccoin,base) == 0 && strcmp(ptr->Q.destcoin,rel) == 0 )
-        {
-            asks = realloc(asks,sizeof(*asks) * (numasks+1));
-            if ( (op= LP_orderbookentry(base,rel,ptr->Q.txid,ptr->Q.vout,ptr->Q.txid2,ptr->Q.vout2,ptr->price,ptr->Q.satoshis,ptr->Q.srchash)) != 0 )
-                asks[numasks++] = op;
-        }
-        else if ( strcmp(ptr->Q.srccoin,rel) == 0 && strcmp(ptr->Q.destcoin,base) == 0 )
-        {
-            bids = realloc(bids,sizeof(*bids) * (numbids+1));
-            if ( (op= LP_orderbookentry(base,rel,ptr->Q.txid,ptr->Q.vout,ptr->Q.txid2,ptr->Q.vout2,1./ptr->price,ptr->Q.satoshis,ptr->Q.srchash)) != 0 )
-                bids[numbids++] = op;
-        }
-    }*/
     cachenumbids = numbids, cachenumasks = numasks;
     //printf("start cache.(%d %d) numbids.%d numasks.%d\n",cachenumbids,cachenumasks,numbids,numasks);
-    numasks = LP_orderbook_utxoentries(now,1,base,rel,&asks,numasks,cachenumasks);
-    numbids = LP_orderbook_utxoentries(now,-1,rel,base,&bids,numbids,cachenumbids);
+    numasks = LP_orderbook_utxoentries(now,1,base,rel,&asks,numasks,cachenumasks,duration);
+    numbids = LP_orderbook_utxoentries(now,-1,rel,base,&bids,numbids,cachenumbids,duration);
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     if ( numbids > 1 )

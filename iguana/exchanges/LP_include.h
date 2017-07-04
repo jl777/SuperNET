@@ -31,6 +31,7 @@
 #define MIN_PSOCK_PORT 10000
 #define LP_MEMPOOL_TIMEINCR 10
 #define LP_GETINFO_INCR 30
+#define LP_ORDERBOOK_DURATION 600
 
 #define LP_HTTP_TIMEOUT 2 // 1 is too small due to edge cases of time(NULL)
 #define LP_MAXPEER_ERRORS 3
@@ -38,7 +39,7 @@
 #define LP_PEERGOOD_ERRORDECAY 0.9
 
 #define LP_SWAPSTEP_TIMEOUT 3
-#define LP_AUTOTRADE_TIMEOUT 3
+#define LP_AUTOTRADE_TIMEOUT 10
 #define LP_MIN_TXFEE 10000
 #define LP_MINVOL 10
 #define LP_MINCLIENTVOL 20

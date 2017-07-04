@@ -17,6 +17,24 @@
 //  LP_statemachine.c
 //  marketmaker
 //
+/*struct LP_cacheinfo *ptr,*tmp;
+ HASH_ITER(hh,LP_cacheinfos,ptr,tmp)
+ {
+ if ( ptr->timestamp < now-3600*2 || ptr->price == 0. )
+ continue;
+ if ( strcmp(ptr->Q.srccoin,base) == 0 && strcmp(ptr->Q.destcoin,rel) == 0 )
+ {
+ asks = realloc(asks,sizeof(*asks) * (numasks+1));
+ if ( (op= LP_orderbookentry(base,rel,ptr->Q.txid,ptr->Q.vout,ptr->Q.txid2,ptr->Q.vout2,ptr->price,ptr->Q.satoshis,ptr->Q.srchash)) != 0 )
+ asks[numasks++] = op;
+ }
+ else if ( strcmp(ptr->Q.srccoin,rel) == 0 && strcmp(ptr->Q.destcoin,base) == 0 )
+ {
+ bids = realloc(bids,sizeof(*bids) * (numbids+1));
+ if ( (op= LP_orderbookentry(base,rel,ptr->Q.txid,ptr->Q.vout,ptr->Q.txid2,ptr->Q.vout2,1./ptr->price,ptr->Q.satoshis,ptr->Q.srchash)) != 0 )
+ bids[numbids++] = op;
+ }
+ }*/
 
 /*void basilisk_swaps_init(struct supernet_info *myinfo)
  {

@@ -17,6 +17,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// activate orderbook timeouts
+// verify bid volumes
+// stats
+// auto-utxo creation
 
 #include <stdio.h>
 #include "LP_include.h"
