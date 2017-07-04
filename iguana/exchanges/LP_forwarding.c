@@ -171,6 +171,8 @@ int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicpo
     arglen = (int32_t)strlen(argstr) + 1;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        if ( strcmp(LP_myipaddr,peer->ipaddr) == 0 )
+            continue;
         if ( peer->pushsock >= 0 )
         {
             if ( LP_send(peer->pushsock,argstr,arglen,0) != arglen )
