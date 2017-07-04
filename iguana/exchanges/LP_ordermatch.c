@@ -669,7 +669,10 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargin,st
 {
     struct LP_utxoinfo *bobutxo,*aliceutxo; char *retstr; cJSON *bestitem=0; int32_t DEXselector=0; uint32_t expiration; double price; struct LP_pubkeyinfo *pubp;
     if ( (aliceutxo= LP_utxopairfind(0,qp->desttxid,qp->destvout,qp->feetxid,qp->feevout)) == 0 )
+    {
+        char str[65],str2[65]; printf("dest.(%s)/v%d fee.(%s)/v%d\n",bits256_str(str,qp->desttxid),qp->destvout,bits256_str(str2,qp->feetxid),qp->feevout);
         return(clonestr("{\"error\":\"cant find alice utxopair\"}"));
+    }
     if ( (bobutxo= LP_utxopairfind(1,qp->txid,qp->vout,qp->txid2,qp->vout2)) == 0 )
         return(clonestr("{\"error\":\"cant find bob utxopair\"}"));
     bobutxo->T.bestflag = (uint32_t)time(NULL);
@@ -740,6 +743,7 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargi
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypubkey,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
+    printf("do quote.(%s)\n",jprint(LP_quotejson(&Q),1));
     return(LP_trade(ctx,myipaddr,mypubsock,profitmargin,&Q,maxprice,timeout,duration));
 }
 
