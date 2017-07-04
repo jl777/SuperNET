@@ -66,7 +66,7 @@ myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
 inventory(coin)\n\
-autotrade(base, rel, price, relvolume, timeout=10, duration=600)\n\
+autotrade(base, rel, price, relvolume, timeout=10, duration=3600)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
@@ -74,7 +74,7 @@ getcoins()\n\
 getpeers()\n\
 getutxos()\n\
 getutxos(coin, lastn)\n\
-orderbook(base, rel, duration=600)\n\
+orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
 trust(pubkey, trust)\n\
 register(pubkey,pushaddr)\n\

@@ -18,7 +18,7 @@
 //  marketmaker
 //
 
-struct LP_orderbookentry { bits256 txid,txid2,pubkey; double price; uint64_t basesatoshis; int32_t vout,vout2; };
+struct LP_orderbookentry { bits256 txid,txid2,pubkey; double price; uint64_t basesatoshis; int32_t vout,vout2,age; };
 
 #define LP_MAXPRICEINFOS 256
 struct LP_priceinfo
@@ -482,11 +482,12 @@ cJSON *LP_orderbookjson(struct LP_orderbookentry *op)
         jaddbits256(item,"txid",op->txid);
         jaddnum(item,"vout",op->vout);
         jaddbits256(item,"pubkey",op->pubkey);
+        jaddnum(item,"age",op->age);
     }
     return(item);
 }
 
-struct LP_orderbookentry *LP_orderbookentry(char *base,char *rel,bits256 txid,int32_t vout,bits256 txid2,int32_t vout2,double price,uint64_t basesatoshis,bits256 pubkey)
+struct LP_orderbookentry *LP_orderbookentry(char *base,char *rel,bits256 txid,int32_t vout,bits256 txid2,int32_t vout2,double price,uint64_t basesatoshis,bits256 pubkey,int32_t age)
 {
     struct LP_orderbookentry *op;
     if ( (op= calloc(1,sizeof(*op))) != 0 )
@@ -498,6 +499,7 @@ struct LP_orderbookentry *LP_orderbookentry(char *base,char *rel,bits256 txid,in
         op->price = price;
         op->basesatoshis = basesatoshis;
         op->pubkey = pubkey;
+        op->age = age;
     }
     return(op);
 }
@@ -543,7 +545,8 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
     if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
         baseid = basepp->ind;
     else return(num);
-    oldest = (uint32_t)time(NULL) - duration;
+    now = (uint32_t)time(NULL);
+    oldest = now - duration;
     HASH_ITER(hh,LP_utxoinfos[1],utxo,tmp)
     {
         if ( pubp == 0 || bits256_cmp(pubp->pubkey,utxo->pubkey) != 0 )
@@ -551,7 +554,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
         if ( pubp != 0 && pubp->numerrors >= LP_MAXPUBKEY_ERRORS )
             continue;
         //char str[65],str2[65]; printf("check utxo.%s/v%d from %s\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,utxo->pubkey));
-        if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && pubp != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL && pubp->timestamp > oldest )
+        if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && pubp != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL && pubp->timestamp > oldest && pubp->timestamp <= now )
         {
             if ( LP_orderbookfind(*arrayp,cachednum,utxo->payment.txid,utxo->payment.vout) < 0 )
             {
@@ -559,7 +562,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
                     basesatoshis = utxo->S.satoshis;
                 else basesatoshis = utxo->S.satoshis * price;
                 //char str[65]; printf("found utxo not in orderbook %s/v%d %.8f %.8f\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,dstr(basesatoshis),polarity > 0 ? price : 1./price);
-                if ( (op= LP_orderbookentry(base,rel,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout,polarity > 0 ? price : 1./price,basesatoshis,utxo->pubkey)) != 0 )
+                if ( (op= LP_orderbookentry(base,rel,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout,polarity > 0 ? price : 1./price,basesatoshis,utxo->pubkey,now - pubp->timestamp)) != 0 )
                 {
                     *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                     (*arrayp)[num++] = op;
