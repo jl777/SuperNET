@@ -548,7 +548,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
     strcpy(LP_publicaddr,pushaddr);
     LP_publicport = mypullport;
     LP_deadman_switch = (uint32_t)time(NULL);
-    printf("my command address is (%s) pullsock.%d pullport.%u\n",pushaddr,pullsock,mypullport);
+    printf("canbind.%d my command address is (%s) pullsock.%d pullport.%u\n",LP_canbind,pushaddr,pullsock,mypullport);
     LP_initcoins(ctx,pubsock,jobj(argjson,"coins"),passphrase);
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)&myipaddr) != 0 )
     {
