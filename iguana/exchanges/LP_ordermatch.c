@@ -738,7 +738,10 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargi
     if ( (txfee= LP_getestimatedrate(base) * LP_AVETXSIZE) < LP_MIN_TXFEE )
         txfee = LP_MIN_TXFEE;
     if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
+    {
+        printf("bestutxo.%p ordermatchprice %.8f bestdestsatoshis %.8f\n",bestutxo,ordermatchprice,dstr(bestdestsatoshis));
         return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
+    }
     if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestdestsatoshis) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypubkey,autxo->coinaddr) < 0 )
