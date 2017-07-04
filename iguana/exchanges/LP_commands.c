@@ -137,13 +137,13 @@ forwardhex(pubkey,hex)\n\
                     return(LP_autotrade(ctx,myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
-            else if ( strcmp(method,"bestfit") == 0 )
-            {
-                double relvolume;
-                if ( (relvolume= jdouble(argjson,"relvolume")) > SMALLVAL )
-                    return(LP_bestfit(rel,relvolume));
-                else return(clonestr("{\"error\":\"no relvolume set\"}"));
-            }
+        }
+        else if ( rel != 0 && strcmp(method,"bestfit") == 0 )
+        {
+            double relvolume;
+            if ( (relvolume= jdouble(argjson,"relvolume")) > SMALLVAL )
+                return(LP_bestfit(rel,relvolume));
+            else return(clonestr("{\"error\":\"no relvolume set\"}"));
         }
         else if ( (coin= jstr(argjson,"coin")) != 0 )
         {
