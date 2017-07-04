@@ -123,7 +123,7 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
                 {
                     //printf("cant mark (%s)\n",ptr->pushaddr);
                 }
-                char str[65]; printf("%u recreate pushsock for %s <- %s\n",(uint32_t)time(NULL),pushaddr,bits256_str(str,pubkey));
+                char str[65]; printf("%u recreate pushsock for %s <- %s %s\n",(uint32_t)time(NULL),ptr->pushaddr,pushaddr,bits256_str(str,pubkey));
                 strcpy(ptr->pushaddr,pushaddr);
                 if ( (ptr->pushsock= LP_pushsock_create(ptr,pushaddr)) < 0 )
                     return(clonestr("{\"result\":\"success\",\"status\":\"couldnt recreate pushsock\",\"registered\":0}"));
