@@ -556,7 +556,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
                 {
                     decode_hex(rawtx->spendscript,hexlen,hexstr);
                     rawtx->I.spendlen = hexlen;
-                    bitcoin_address(rawtx->p2shaddr,rawtx->coin->taddr,rawtx->coin->p2shtype,rawtx->spendscript,hexlen);
+                    bitcoin_address(rawtx->p2shaddr,rawtx->coin->taddr,rawtx == &swap->otherfee ? rawtx->coin->pubtype : rawtx->coin->p2shtype,rawtx->spendscript,hexlen);
                     //if ( swap != 0 )
                     //    basilisk_txlog(swap->myinfoptr,swap,rawtx,-1); // bobdeposit, bobpayment or alicepayment
                     retval = 0;

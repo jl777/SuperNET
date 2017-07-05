@@ -1331,10 +1331,12 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
 {
     if ( LP_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->otherfee,0,data,datalen,0) == 0 )
     {
-        printf("amount %.8f -> %s\n",dstr(swap->otherfee.I.amount),swap->otherfee.p2shaddr);
-        //memcpy(swap->otherfee.txbytes,data,datalen);
-        //swap->otherfee.I.datalen = datalen;
-        //swap->otherfee.I.actualtxid = swap->otherfee.I.signedtxid = bits256_doublesha256(0,data,datalen);
+        printf("otherfee amount %.8f -> %s vs %s\n",dstr(swap->otherfee.I.amount),swap->otherfee.p2shaddr,swap->otherfee.I.destaddr);
+        if ( strcmp(swap->otherfee.I.destaddr,swap->otherfee.p2shaddr) == 0 )
+        {
+            printf("dexfee verified\n");
+            return(0);
+        }
     }
     return(0);
 }
