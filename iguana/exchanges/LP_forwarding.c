@@ -349,7 +349,7 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
                 {
                     if ( jint(retjson,"forwarding") != 0 && peer->pushsock >= 0 )
                     {
-                        printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
+                        printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,msg);
                         if ( LP_send(peer->pushsock,msg,mlen,0) == mlen )
                             n++;
                     }
@@ -358,7 +358,7 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
                 free(retstr);
             }
         }
-        if ( n >= sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
+        if ( n >= 0 )//sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
             break;
     }
     if ( msg != 0 )
