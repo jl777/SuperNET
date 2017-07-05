@@ -278,9 +278,9 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
     return(item);
 }
 
-int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2,bits256 pubkey)
+int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
-    uint64_t val,val2=0,threshold; char destaddr[64],destaddr2[64];
+    uint64_t val,val2=0,threshold; int32_t iter; char destaddr[64],destaddr2[64]; struct LP_utxoinfo *utxo;
     destaddr[0] = destaddr2[0] = 0;
     if ( (val= LP_txvalue(destaddr,symbol,txid,vout)) >= satoshis )
     {
@@ -298,7 +298,34 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                 return(1);
             }
         } else printf("no val2\n");
-    } else printf("mismatched %s txid value %.8f < %.8f\n",symbol,dstr(val),dstr(satoshis));
+    }
+    else
+    {
+        printf("mismatched %s txid value %.8f < %.8f\n",symbol,dstr(val),dstr(satoshis));
+        for (iter=0; iter<2; iter++)
+        {
+            if ( (utxo= LP_utxofind(iter,txid,vout)) != 0 )
+            {
+                if ( utxo->T.spentflag == 0 )
+                    utxo->T.spentflag = (uint32_t)time(NULL);
+            }
+            if ( (utxo= LP_utxo2find(iter,txid,vout)) != 0 )
+            {
+                if ( utxo->T.spentflag == 0 )
+                    utxo->T.spentflag = (uint32_t)time(NULL);
+            }
+            if ( (utxo= LP_utxofind(iter,txid2,vout2)) != 0 )
+            {
+                if ( utxo->T.spentflag == 0 )
+                    utxo->T.spentflag = (uint32_t)time(NULL);
+            }
+            if ( (utxo= LP_utxo2find(iter,txid2,vout2)) != 0 )
+            {
+                if ( utxo->T.spentflag == 0 )
+                    utxo->T.spentflag = (uint32_t)time(NULL);
+            }
+        }
+    }
     *valp = val;
     *val2p = val2;
     return(0);
@@ -323,7 +350,7 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
         if ( (symbol == 0 || symbol[0] == 0 || strcmp(symbol,utxo->coin) == 0) && utxo->T.spentflag == 0 )
         {
             u = (iambob != 0) ? utxo->deposit : utxo->fee;
-            if ( LP_iseligible(&val,&val2,iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout,utxo->pubkey) == 0 )
+            if ( LP_iseligible(&val,&val2,iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) == 0 )
             {
                 char str[65]; printf("iambob.%d not eligible (%.8f %.8f) %s %s/v%d\n",iambob,dstr(val),dstr(val2),utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout);
                 continue;
@@ -349,13 +376,17 @@ int32_t LP_inventory_prevent(int32_t iambob,bits256 txid,int32_t vout)
 
 struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
 {
-    struct LP_utxoinfo *utxo,*tmp,*bestutxo = 0;
+    uint64_t srcvalue,srcvalue2; struct LP_utxoinfo *utxo,*tmp,*bestutxo = 0;
     if ( symbol == 0 || destsatoshis == 0 )
         return(0);
     HASH_ITER(hh,LP_utxoinfos[0],utxo,tmp)
     {
+        if ( strcmp(symbol,utxo->coin) != 0 )
+            continue;
         //char str[65]; printf("[%.8f vs %.8f] check %s.%s avail.%d ismine.%d >= %d\n",dstr(destsatoshis),dstr(utxo->S.satoshis),utxo->coin,bits256_str(str,utxo->payment.txid),LP_isavailable(utxo) > 0,LP_ismine(utxo) > 0,utxo->S.satoshis >= destsatoshis);
-        if ( strcmp(symbol,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && LP_ismine(utxo) > 0 )
+        if ( LP_iseligible(&srcvalue,&srcvalue2,1,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout) == 0 )
+            continue;
+        if ( LP_isavailable(utxo) > 0 && LP_ismine(utxo) > 0 )
         {
             if ( utxo->S.satoshis >= destsatoshis && (bestutxo == 0 || utxo->S.satoshis < bestutxo->S.satoshis) )
                 bestutxo = utxo;
@@ -442,7 +473,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("trying to add Alice utxo when not mine? %s/v%d\n",bits256_str(str,txid),vout);
         return(0);
     }
-    if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2,pubkey) <= 0 )
+    if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
     {
         // iambob.0 utxoadd COQUI inactive.0 got ineligible txid value 1.20000000, value2 0.01000000, tmpsatoshis 1.20000000
         printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(value2),dstr(tmpsatoshis));

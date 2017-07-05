@@ -236,12 +236,12 @@ double LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxop
 {
     double qprice; uint64_t srcvalue,srcvalue2,destvalue,destvalue2;
     *autxop = *butxop = 0;
-    if ( LP_iseligible(&srcvalue,&srcvalue2,1,qp->srccoin,qp->txid,qp->vout,qp->satoshis,qp->txid2,qp->vout2,qp->srchash) == 0 )
+    if ( LP_iseligible(&srcvalue,&srcvalue2,1,qp->srccoin,qp->txid,qp->vout,qp->satoshis,qp->txid2,qp->vout2) == 0 )
     {
         printf("bob not eligible\n");
         return(-2);
     }
-    if ( LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout,qp->desthash) == 0 )
+    if ( LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) == 0 )
     {
         char str[65]; printf("alice not eligible (%.8f %.8f) %s/v%d\n",dstr(destvalue),dstr(destvalue2),bits256_str(str,qp->feetxid),qp->feevout);
         return(-3);
@@ -673,10 +673,8 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,double profitmargin,st
         char str[65],str2[65]; printf("dest.(%s)/v%d fee.(%s)/v%d\n",bits256_str(str,qp->desttxid),qp->destvout,bits256_str(str2,qp->feetxid),qp->feevout);
         return(clonestr("{\"error\":\"cant find alice utxopair\"}"));
     }
-    printf("aliceutxo.%p\n",aliceutxo);
     if ( (bobutxo= LP_utxopairfind(1,qp->txid,qp->vout,qp->txid2,qp->vout2)) == 0 )
         return(clonestr("{\"error\":\"cant find bob utxopair\"}"));
-    printf("bobutxo.%p\n",bobutxo);
     bobutxo->T.bestflag = (uint32_t)time(NULL);
     if ( (retstr= LP_registerall(0)) != 0 )
         free(retstr);
