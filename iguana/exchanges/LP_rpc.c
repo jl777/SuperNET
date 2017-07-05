@@ -73,6 +73,14 @@ char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t 
     //return(retstr);
 }
 
+conv_date date conversion error (0-06-17) -> ()
+conv_date date conversion error (0-06-20) -> ()
+conv_date date conversion error (0-06-18) -> ()
+conv_date date conversion error (0-06-21) -> ()
+conv_date date conversion error (0-06-19) -> ()
+conv_date date conversion error (0-06-22) -> ()
+
+change to nanomsg write only, enforce fee, comms api
 char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
     char url[512],*retstr;
