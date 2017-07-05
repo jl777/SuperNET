@@ -1779,7 +1779,14 @@ double PAX_val(uint32_t pval,int32_t baseid)
 
 void PAX_genecbsplines(struct PAX_data *dp)
 {
+    static portable_mutex_t mutex; static int32_t initflag;
     int32_t i,j,datenum,seconds,numsamples; double prices[128][MAX_SPLINES],splineval,diff; uint32_t pvals[MAX_CURRENCIES],utc32[MAX_SPLINES],timestamp; struct tai t;
+    if ( initflag == 0 )
+    {
+        portable_mutex_init(&mutex);
+        initflag = 1;
+    }
+    portable_mutex_lock(&mutex);
     for (i=numsamples=0; i<28; i++)
     {
         datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL)-(28-i+1)*24*3600);
@@ -1812,6 +1819,7 @@ void PAX_genecbsplines(struct PAX_data *dp)
         //printf("%s splineval %f vs %f %f %f\n",CURRENCIES[j],prices[j][numsamples-1],prices[j][numsamples],prices[j][numsamples+1],prices[j][numsamples+2]);
         PAX_genspline(&dp->splines[j],j,CURRENCIES[j],utc32,prices[j],numsamples+3,prices[j]);
     }
+    portable_mutex_unlock(&mutex);
 }
 
 int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t idlegap)
