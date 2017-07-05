@@ -1271,29 +1271,37 @@ int32_t PAX_ecbparse(char *date,double *prices,char *url,int32_t basenum)
     char *jsonstr,*relstr,*basestr,name[16]; int32_t count=0,i,relnum; cJSON *json,*ratesobj,*item; struct destbuf tmp;
     if ( (jsonstr= issue_curl(url)) != 0 )
     {
-       // if ( Debuglevel > 2 )
+        if ( Debuglevel > 2 )
             printf("(%s)\n",jsonstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
-            copy_cJSON(&tmp,jobj(json,"date")), safecopy(date,tmp.buf,64);
-            if ( (basestr= jstr(json,"base")) != 0 && strcmp(basestr,CURRENCIES[basenum]) == 0 && (ratesobj= jobj(json,"rates")) != 0 && (item= ratesobj->child) != 0 )
+            if ( jobj(json,"error") != 0 || jobj(json,"date") == 0 )
             {
-                while ( item != 0 )
+                printf("Got error from fixer.io (%s)\n",jsonstr);
+                sleep(1);
+            }
+            else
+            {
+                copy_cJSON(&tmp,jobj(json,"date")), safecopy(date,tmp.buf,64);
+                if ( (basestr= jstr(json,"base")) != 0 && strcmp(basestr,CURRENCIES[basenum]) == 0 && (ratesobj= jobj(json,"rates")) != 0 && (item= ratesobj->child) != 0 )
                 {
-                    if ( (relstr= get_cJSON_fieldname(item)) != 0 && (relnum= PAX_basenum(relstr)) >= 0 )
+                    while ( item != 0 )
                     {
-                        i = basenum*MAX_CURRENCIES + relnum;
-                        prices[i] = item->valuedouble;
-                        //if ( basenum == JPYNUM )
-                        //    prices[i] *= 100.;
-                        // else if ( relnum == JPYNUM )
-                        //     prices[i] /= 100.;
-                        count++;
-                        if ( Debuglevel > 2 )
-                            printf("(%02d:%02d %f) ",basenum,relnum,prices[i]);
-                        sprintf(name,"%s%s",CURRENCIES[basenum],CURRENCIES[relnum]);
-                    } else printf("cant find.(%s)\n",relstr);//, getchar();
-                    item = item->next;
+                        if ( (relstr= get_cJSON_fieldname(item)) != 0 && (relnum= PAX_basenum(relstr)) >= 0 )
+                        {
+                            i = basenum*MAX_CURRENCIES + relnum;
+                            prices[i] = item->valuedouble;
+                            //if ( basenum == JPYNUM )
+                            //    prices[i] *= 100.;
+                            // else if ( relnum == JPYNUM )
+                            //     prices[i] /= 100.;
+                            count++;
+                            if ( Debuglevel > 2 )
+                                printf("(%02d:%02d %f) ",basenum,relnum,prices[i]);
+                            sprintf(name,"%s%s",CURRENCIES[basenum],CURRENCIES[relnum]);
+                        } else printf("cant find.(%s)\n",relstr);//, getchar();
+                        item = item->next;
+                    }
                 }
             }
             free_json(json);
@@ -1369,7 +1377,6 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
     } else printf("ecb_matrix.(%s) load error fp.%p\n",fname,fp);
     datenum = conv_date(&seconds,date);
     year = datenum / 10000, month = (datenum / 100) % 100, day = (datenum % 100);
-    printf("%d %d %d %d\n",datenum,year,month,day);
     if ( loaded == 0 )
     {
         if ( (n= PAX_ecbprices(date,&matrix[0][0],year,month,day)) > 0 )
@@ -1382,7 +1389,6 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
                 fclose(fp);
             }
         } //else printf("peggy_matrix error loading %d.%d.%d\n",year,month,day);
-        printf("after loaded.(%s)\n",date);
     }
     else
     {
@@ -1412,7 +1418,6 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
         return(-1);
     }
     //"2000-01-03"
-    printf("call conv_date(%s)\n",date);
     if ( (datenum= conv_date(&seconds,date)) < 0 )
         return(-1);
     //printf("loaded.(%s) nonz.%d (%d %d %d) datenum.%d\n",date,n,year,month,day,datenum);
