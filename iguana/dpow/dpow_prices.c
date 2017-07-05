@@ -1369,6 +1369,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
     } else printf("ecb_matrix.(%s) load error fp.%p\n",fname,fp);
     datenum = conv_date(&seconds,date);
     year = datenum / 10000, month = (datenum / 100) % 100, day = (datenum % 100);
+    printf("%d %d %d %d\n",datenum,year,month,day);
     if ( loaded == 0 )
     {
         if ( (n= PAX_ecbprices(date,&matrix[0][0],year,month,day)) > 0 )
@@ -1381,6 +1382,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
                 fclose(fp);
             }
         } //else printf("peggy_matrix error loading %d.%d.%d\n",year,month,day);
+        printf("after loaded.(%s)\n",date);
     }
     else
     {
@@ -1410,6 +1412,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
         return(-1);
     }
     //"2000-01-03"
+    printf("call conv_date(%s)\n",date);
     if ( (datenum= conv_date(&seconds,date)) < 0 )
         return(-1);
     //printf("loaded.(%s) nonz.%d (%d %d %d) datenum.%d\n",date,n,year,month,day,datenum);
