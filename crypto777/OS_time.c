@@ -596,7 +596,7 @@ int32_t conv_date(int32_t *secondsp,char *date)
     sprintf(origdate,"%d-%02d-%02d",year,month,day); //2015-07-25T22:34:31Z
     if ( strcmp(tmpdate,origdate) != 0 )
     {
-        printf("conv_date date conversion error (%s) -> (%s) %d\n",origdate,date,year/min);
+        printf("conv_date date conversion error (%s) -> (%s)\n",origdate,date);
         return(-1);
     }
     return((year * 10000) + (month * 100) + day);

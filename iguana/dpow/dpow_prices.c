@@ -1271,7 +1271,7 @@ int32_t PAX_ecbparse(char *date,double *prices,char *url,int32_t basenum)
     char *jsonstr,*relstr,*basestr,name[16]; int32_t count=0,i,relnum; cJSON *json,*ratesobj,*item; struct destbuf tmp;
     if ( (jsonstr= issue_curl(url)) != 0 )
     {
-        if ( Debuglevel > 2 )
+       // if ( Debuglevel > 2 )
             printf("(%s)\n",jsonstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
@@ -1322,7 +1322,7 @@ int32_t PAX_ecbprices(char *date,double *prices,int32_t year,int32_t month,int32
     {
         for (basenum=0; basenum<sizeof(CURRENCIES)/sizeof(*CURRENCIES); basenum++)
         {
-            if ( strcmp(CURRENCIES[basenum],"XAU") == 0 )
+            if ( strcmp(CURRENCIES[basenum],"XAU") == 0 || i >= MAX_CURRENCIES )
                 break;
             if ( iter == 0 )
             {
@@ -1330,7 +1330,7 @@ int32_t PAX_ecbprices(char *date,double *prices,int32_t year,int32_t month,int32
                 count += PAX_ecbparse(basenum == 0 ? date : tmpdate,prices,url,basenum);
                 if ( (basenum != 0 && strcmp(tmpdate,date) != 0) || (checkdate[0] != 0 && strcmp(checkdate,date) != 0) )
                 {
-                    //printf("date mismatch (%s) != (%s) or checkdate.(%s)\n",tmpdate,date,checkdate);
+                    printf("date mismatch (%s) != (%s) or checkdate.(%s)\n",tmpdate,date,checkdate);
                     return(-1);
                 }
             }
@@ -1338,7 +1338,7 @@ int32_t PAX_ecbprices(char *date,double *prices,int32_t year,int32_t month,int32
             {
                 for (nonz=i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
                 {
-                    if ( strcmp(CURRENCIES[i],"XAU") == 0 )
+                    if ( strcmp(CURRENCIES[i],"XAU") == 0 || i >= MAX_CURRENCIES )
                         break;
                     if ( prices[MAX_CURRENCIES*basenum + i] != 0. )
                         nonz++;
