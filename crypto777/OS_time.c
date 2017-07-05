@@ -591,8 +591,8 @@ int32_t conv_date(int32_t *secondsp,char *date)
         if ( hour >= 0 && hour < 24 && min >= 0 && min < 60 && sec >= 0 && sec < 60 )
             *secondsp = (3600*hour + 60*min + sec);
         else printf("ERROR: seconds.%d %d %d %d, len.%d\n",*secondsp,hour,min,sec,len);
-        printf("(%s) -> Y.%d M.%d D.%d %d:%d:%d\n",date,year,month,day,hour,min,sec);
-    } else printf("short len.(%s) from (%s)\n",date,origdate);
+        //printf("(%s) -> Y.%d M.%d D.%d %d:%d:%d\n",date,year,month,day,hour,min,sec);
+    } //else printf("short len.(%s) from (%s)\n",date,origdate);
     sprintf(origdate,"%d-%02d-%02d",year,month,day); //2015-07-25T22:34:31Z
     if ( strcmp(tmpdate,origdate) != 0 )
     {
