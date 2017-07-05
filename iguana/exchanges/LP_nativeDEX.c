@@ -367,7 +367,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             printf("detected %s firstrefht.%d < firstscanht.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht);
             coin->lastscanht = coin->firstscanht = coin->firstrefht;
         }
-        if ( coin->lastscanht == coin->longestchain )
+        if ( coin->lastscanht == coin->longestchain+1 )
             continue;
         else if ( coin->lastscanht > coin->longestchain+1 )
         {
