@@ -1329,10 +1329,13 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
 
 int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    // add verification and broadcast
-    memcpy(swap->otherfee.txbytes,data,datalen);
-    swap->otherfee.I.datalen = datalen;
-    swap->otherfee.I.actualtxid = swap->otherfee.I.signedtxid = bits256_doublesha256(0,data,datalen);
+    if ( LP_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->otherfee,0,data,datalen,0) == 0 )
+    {
+        printf("amount %.8f -> %s\n",dstr(swap->otherfee.I.amount),swap->otherfee.p2shaddr);
+        //memcpy(swap->otherfee.txbytes,data,datalen);
+        //swap->otherfee.I.datalen = datalen;
+        //swap->otherfee.I.actualtxid = swap->otherfee.I.signedtxid = bits256_doublesha256(0,data,datalen);
+    }
     return(0);
 }
 
