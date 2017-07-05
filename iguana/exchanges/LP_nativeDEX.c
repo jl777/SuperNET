@@ -282,14 +282,14 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         nonz += LP_subsock_check(ctx,origipaddr,pubsock,peer->subsock,profitmargin);
     }
     //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d forwarding\n",counter,LP_canbind);
-    if ( (counter % 600) == 20 )
+    if ( (counter % 600) == 10 )
     {
         LP_myutxo_updates(ctx,pubsock,passphrase,profitmargin);
         if ( lastforward < now-3600 )
         {
             if ( (retstr= LP_registerall(0)) != 0 )
                 free(retstr);
-            LP_forwarding_register(LP_mypubkey,pushaddr,pushport,10);
+            //LP_forwarding_register(LP_mypubkey,pushaddr,pushport,10);
             lastforward = now;
         }
     }
