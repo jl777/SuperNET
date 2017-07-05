@@ -1358,6 +1358,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
     FILE *fp=0; double price,bid,ask; int32_t n=0,datenum,relid,baseid,year=0,seconds,month=0,day=0,loaded = 0; char name[16],fname[64],_date[64];
     if ( date == 0 )
         date = _date, memset(_date,0,sizeof(_date));
+    printf("ecb_matrix(%s)\n",date);
     sprintf(fname,"%s/ECB/%s",GLOBAL_DBDIR,date), OS_compatible_path(fname);
     if ( date[0] != 0 && (fp= fopen(fname,"rb")) != 0 )
     {
@@ -1365,7 +1366,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
             loaded = 1;
         else printf("fread error\n");
         fclose(fp);
-    } //else printf("ecb_matrix.(%s) load error fp.%p\n",fname,fp);
+    } else printf("ecb_matrix.(%s) load error fp.%p\n",fname,fp);
     datenum = conv_date(&seconds,date);
     year = datenum / 10000, month = (datenum / 100) % 100, day = (datenum % 100);
     if ( loaded == 0 )
