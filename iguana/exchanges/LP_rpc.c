@@ -105,6 +105,8 @@ char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utx
     else
     {
         printf("issue_LP_notifyutxo: ineligible utxo iambob.%d %.8f %.8f\n",utxo->iambob,dstr(val),dstr(val2));
+        if ( utxo->T.spentflag == 0 )
+            utxo->T.spentflag = (uint32_t)time(NULL);
         return(0);
     }
 }
