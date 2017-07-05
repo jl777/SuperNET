@@ -1278,7 +1278,7 @@ int32_t PAX_ecbparse(char *date,double *prices,char *url,int32_t basenum)
             if ( jobj(json,"error") != 0 || jobj(json,"date") == 0 )
             {
                 printf("Got error from fixer.io (%s)\n",jsonstr);
-                sleep(1);
+                sleep(10);
             }
             else
             {
@@ -1336,9 +1336,10 @@ int32_t PAX_ecbprices(char *date,double *prices,int32_t year,int32_t month,int32
             {
                 sprintf(url,"%s%s",baseurl,CURRENCIES[basenum]);
                 count += PAX_ecbparse(basenum == 0 ? date : tmpdate,prices,url,basenum);
+                usleep(100000);
                 if ( (basenum != 0 && strcmp(tmpdate,date) != 0) || (checkdate[0] != 0 && strcmp(checkdate,date) != 0) )
                 {
-                    printf("date mismatch (%s) != (%s) or checkdate.(%s)\n",tmpdate,date,checkdate);
+                    //printf("date mismatch (%s) != (%s) or checkdate.(%s)\n",tmpdate,date,checkdate);
                     return(-1);
                 }
             }
