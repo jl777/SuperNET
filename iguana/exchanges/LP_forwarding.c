@@ -358,7 +358,7 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
                 free(retstr);
             }
         }
-        if ( n >= 2 )//sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
+        if ( n >= 8 )//sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
             break;
     }
     if ( msg != 0 )
