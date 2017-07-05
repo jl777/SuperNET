@@ -73,6 +73,7 @@ char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t 
     //return(retstr);
 }
 
+change to nanomsg write only, enforce fee, comms api
 char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
     char url[512],*retstr;
@@ -115,24 +116,23 @@ char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utx
     }
 }
 
-char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *ipaddr,uint16_t pushport)
+/*char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *ipaddr,uint16_t pushport)
 {
-    char url[512],str[65];//*retstr;
+    char url[512],str[65],*retstr;
     sprintf(url,"http://%s:%u/api/stats/register?client=%s&pushaddr=%s&pushport=%u",destip,destport,bits256_str(str,pubkey),ipaddr,pushport);
-    return(LP_issue_curl("register",destip,destport,url));
-    //retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
-    //printf("getutxo.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
-    //return(retstr);
-}
+    //return(LP_issue_curl("register",destip,destport,url));
+    retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
+    //printf("register.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
+    return(retstr);
+}*/
 
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
 {
-    char url[512];
+    char url[512],*retstr;
     sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport,ispaired);
-    return(LP_issue_curl("psock",destip,destport,url));
-    //retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
-    //printf("getutxo.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
-    //return(retstr);
+    //return(LP_issue_curl("psock",destip,destport,url));
+    retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
+    return(retstr);
 }
 
 uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
@@ -197,7 +197,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             }
             //usleep(1000);
             //printf("dpow_gettxout.(%s)\n",retstr);
-        } else retjson = cJSON_Parse("{\"error\":\"disabled\"}");
+        } else retjson = cJSON_Parse("{\"result\":\"disabled\"}");
     } else printf("bitcoin_json cant talk to NULL coin\n");
     return(retjson);
 }

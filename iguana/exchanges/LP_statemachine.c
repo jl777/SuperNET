@@ -17,6 +17,24 @@
 //  LP_statemachine.c
 //  marketmaker
 //
+/*struct LP_cacheinfo *ptr,*tmp;
+ HASH_ITER(hh,LP_cacheinfos,ptr,tmp)
+ {
+ if ( ptr->timestamp < now-3600*2 || ptr->price == 0. )
+ continue;
+ if ( strcmp(ptr->Q.srccoin,base) == 0 && strcmp(ptr->Q.destcoin,rel) == 0 )
+ {
+ asks = realloc(asks,sizeof(*asks) * (numasks+1));
+ if ( (op= LP_orderbookentry(base,rel,ptr->Q.txid,ptr->Q.vout,ptr->Q.txid2,ptr->Q.vout2,ptr->price,ptr->Q.satoshis,ptr->Q.srchash)) != 0 )
+ asks[numasks++] = op;
+ }
+ else if ( strcmp(ptr->Q.srccoin,rel) == 0 && strcmp(ptr->Q.destcoin,base) == 0 )
+ {
+ bids = realloc(bids,sizeof(*bids) * (numbids+1));
+ if ( (op= LP_orderbookentry(base,rel,ptr->Q.txid,ptr->Q.vout,ptr->Q.txid2,ptr->Q.vout2,1./ptr->price,ptr->Q.satoshis,ptr->Q.srchash)) != 0 )
+ bids[numbids++] = op;
+ }
+ }*/
 
 /*void basilisk_swaps_init(struct supernet_info *myinfo)
  {
@@ -1432,4 +1450,51 @@ if ( (array= LP_tradecandidates(base)) != 0 )
  LP_priceping(pubsock,utxo,"BTC",profitmargin);
  else LP_priceping(pubsock,utxo,"KMD",profitmargin);
  }*/
+/*if ( LP_txvalue(destaddr,symbol,searchtxid,searchvout) > 0 )
+ return(0);
+ if ( (txobj= LP_gettx(symbol,searchtxid)) == 0 )
+ return(0);
+ hash = jbits256(txobj,"blockhash");
+ free_json(txobj);
+ if ( bits256_nonz(hash) == 0 )
+ return(0);
+ if ( (blockjson= LP_getblock(symbol,hash)) == 0 )
+ return(0);
+ loadheight = jint(blockjson,"height");
+ free_json(blockjson);
+ if ( loadheight <= 0 )
+ return(0);
+ while ( errs == 0 && *indp < 0 )
+ {
+ //printf("search %s ht.%d\n",symbol,loadheight);
+ if ( (blockjson= LP_blockjson(&h,symbol,0,loadheight)) != 0 && h == loadheight )
+ {
+ if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
+ {
+ for (i=0; i<numtxids; i++)
+ {
+ txid = jbits256(jitem(txids,i),0);
+ if ( (j= LP_vinscan(spendtxidp,indp,symbol,txid,searchtxid,searchvout,searchtxid,searchvout)) >= 0 )
+ break;
+ }
+ }
+ free_json(blockjson);
+ } else errs++;
+ loadheight++;
+ }
+ char str[65]; printf("reached %s ht.%d %s/v%d\n",symbol,loadheight,bits256_str(str,*spendtxidp),*indp);
+ if ( bits256_nonz(*spendtxidp) != 0 && *indp >= 0 )
+ return(loadheight);
+ else return(0);*/
+
+/*if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ mempooltxid = jbits256i(array,i);
+ if ( (selector= LP_vinscan(spendtxidp,spendvinp,symbol,mempooltxid,searchtxid,searchvout,searchtxid2,searchvout2)) >= 0 )
+ return(selector);
+ }
+ }*/
+
 

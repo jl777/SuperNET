@@ -29,6 +29,9 @@
 #define MAINLOOP_PERSEC 10
 #define MAX_PSOCK_PORT 60000
 #define MIN_PSOCK_PORT 10000
+#define LP_MEMPOOL_TIMEINCR 10
+#define LP_GETINFO_INCR 30
+#define LP_ORDERBOOK_DURATION 3600
 
 #define LP_HTTP_TIMEOUT 2 // 1 is too small due to edge cases of time(NULL)
 #define LP_MAXPEER_ERRORS 3
@@ -36,10 +39,10 @@
 #define LP_PEERGOOD_ERRORDECAY 0.9
 
 #define LP_SWAPSTEP_TIMEOUT 3
-#define LP_AUTOTRADE_TIMEOUT 3
+#define LP_AUTOTRADE_TIMEOUT 10
 #define LP_MIN_TXFEE 10000
-#define LP_MINVOL 3
-#define LP_MINCLIENTVOL 6
+#define LP_MINVOL 10
+#define LP_MINCLIENTVOL 20
 
 #define LP_DEXFEE(destsatoshis) ((destsatoshis) / INSTANTDEX_INSURANCEDIV)
 #define LP_DEPOSITSATOSHIS(satoshis) ((satoshis) + (satoshis >> 3))
@@ -157,10 +160,21 @@ struct basilisk_swapinfo
     uint8_t userdata_bobrefund[256],userdata_bobrefundlen;
 };
 
+struct LP_outpoint { bits256 spendtxid; uint64_t value,interest; int32_t spendvini,spendheight; };
+
+struct LP_transaction
+{
+    UT_hash_handle hh;
+    bits256 txid; int32_t height,numvouts,numvins; uint32_t timestamp;
+    struct LP_outpoint outpoints[];
+};
+
 struct iguana_info
 {
+    UT_hash_handle hh;
+    portable_mutex_t txmutex; struct LP_transaction *transactions;
     uint64_t txfee; double estimatedrate,profitmargin;
-    int32_t longestchain; uint32_t counter,inactive;
+    int32_t longestchain,firstrefht,firstscanht,lastscanht; uint32_t counter,inactive,lastmempool,lastgetinfo;
     uint8_t pubtype,p2shtype,isPoS,wiftype,taddr;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
 };
