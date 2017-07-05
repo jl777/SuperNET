@@ -304,25 +304,25 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
     {
         if ( (utxo= LP_utxofind(iter,txid,vout)) != 0 )
         {
-            printf("iambob.%d case 00\n",iter);
+            //printf("iambob.%d case 00\n",iter);
             if ( utxo->T.spentflag == 0 )
                 utxo->T.spentflag = (uint32_t)time(NULL);
         }
         if ( (utxo= LP_utxo2find(iter,txid,vout)) != 0 )
         {
-            printf("iambob.%d case 01\n",iter);
+            //printf("iambob.%d case 01\n",iter);
             if ( utxo->T.spentflag == 0 )
                 utxo->T.spentflag = (uint32_t)time(NULL);
         }
         if ( (utxo= LP_utxofind(iter,txid2,vout2)) != 0 )
         {
-            printf("iambob.%d case 10\n",iter);
+            //printf("iambob.%d case 10\n",iter);
             if ( utxo->T.spentflag == 0 )
                 utxo->T.spentflag = (uint32_t)time(NULL);
         }
         if ( (utxo= LP_utxo2find(iter,txid2,vout2)) != 0 )
         {
-            printf("iambob.%d case 11\n",iter);
+            //printf("iambob.%d case 11\n",iter);
             if ( utxo->T.spentflag == 0 )
                 utxo->T.spentflag = (uint32_t)time(NULL);
         }
