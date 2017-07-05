@@ -280,7 +280,7 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
-    uint64_t val,val2=0,threshold; int32_t iter; char destaddr[64],destaddr2[64]; struct LP_utxoinfo *utxo;
+    uint64_t val,val2=0,threshold=0; int32_t iter; char destaddr[64],destaddr2[64]; struct LP_utxoinfo *utxo;
     destaddr[0] = destaddr2[0] = 0;
     if ( (val= LP_txvalue(destaddr,symbol,txid,vout)) >= satoshis )
     {
@@ -299,7 +299,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
             }
         } // else printf("no val2\n");
     }
-    char str[65],str2[65]; printf("spent %s txid or mismatched value %.8f < %.8f, %s/v%d %s/v%d\n",symbol,dstr(val),dstr(satoshis),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2);
+    char str[65],str2[65]; printf("spent.%d %s txid or value %.8f < %.8f or val2 %.8f < %.8f, %s/v%d %s/v%d\n",iambob,symbol,dstr(val),dstr(satoshis),dstr(val2),dstr(threshold),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2);
     for (iter=0; iter<2; iter++)
     {
         if ( (utxo= LP_utxofind(iter,txid,vout)) != 0 )
