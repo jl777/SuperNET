@@ -1785,7 +1785,7 @@ void PAX_genecbsplines(struct PAX_data *dp)
         datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL)-(28-i+1)*24*3600);
         expand_datenum(dp->edate,datenum);
         timestamp = OS_conv_datenum(datenum,12,0,0);
-        //printf("i.%d datenum.%d %s t%u\n",i,datenum,dp->edate,timestamp);
+        printf("i.%d datenum.%d %s t%u\n",i,datenum,dp->edate,timestamp);
         if ( (datenum= ecb_matrix(dp->basevals,dp->ecbmatrix,dp->edate)) > 0 )
         {
             utc32[numsamples] = timestamp;
