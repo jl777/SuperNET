@@ -310,23 +310,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             //    printf("lasttime set %s\n",bits256_str(str,utxo->payment.txid));
         }
     }
-    //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d swapentry\n",counter,LP_canbind);
-    if ( (counter % 6000) == 5999 )
-    {
-        if ( (retstr= basilisk_swapentry(0,0)) != 0 )
-        {
-            //printf("SWAPS.(%s)\n",retstr);
-            free(retstr);
-        }
-    }
-    //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d pullsock check\n",counter,LP_canbind);
     nonz += LP_pullsock_check(ctx,&retstr,myipaddr,pubsock,pullsock,profitmargin);
     if ( retstr != 0 )
         free(retstr);
-    //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d hellos\n",counter,LP_canbind);
     if ( IAMLP != 0 && (counter % 600) == 42 )
         LP_hellos();
-    //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d\n",counter,LP_canbind);
     if ( LP_canbind == 0 && (counter % (PSOCK_KEEPALIVE*MAINLOOP_PERSEC/2)) == 13 )
     {
         char keepalive[128];
@@ -387,6 +375,14 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         coin->lastscanht++;
         break;
+    }
+    if ( (counter % 6000) == 60 )
+    {
+        if ( (retstr= basilisk_swapentry(0,0)) != 0 )
+        {
+            //printf("SWAPS.(%s)\n",retstr);
+            free(retstr);
+        }
     }
     counter++;
     return(nonz);
