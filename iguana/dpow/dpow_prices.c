@@ -1330,7 +1330,7 @@ int32_t PAX_ecbprices(char *date,double *prices,int32_t year,int32_t month,int32
     {
         for (basenum=0; basenum<sizeof(CURRENCIES)/sizeof(*CURRENCIES); basenum++)
         {
-            if ( strcmp(CURRENCIES[basenum],"XAU") == 0 || i >= MAX_CURRENCIES )
+            if ( strcmp(CURRENCIES[basenum],"XAU") == 0 || basenum >= MAX_CURRENCIES )
                 break;
             if ( iter == 0 )
             {
@@ -1366,7 +1366,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
     FILE *fp=0; double price,bid,ask; int32_t n=0,datenum,relid,baseid,year=0,seconds,month=0,day=0,loaded = 0; char name[16],fname[64],_date[64];
     if ( date == 0 )
         date = _date, memset(_date,0,sizeof(_date));
-    printf("ecb_matrix(%s)\n",date);
+    //printf("ecb_matrix(%s)\n",date);
     sprintf(fname,"%s/ECB/%s",GLOBAL_DBDIR,date), OS_compatible_path(fname);
     if ( date[0] != 0 && (fp= fopen(fname,"rb")) != 0 )
     {
