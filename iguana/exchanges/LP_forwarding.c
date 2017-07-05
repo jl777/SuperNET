@@ -177,7 +177,7 @@ int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicpo
         {
             if ( LP_send(peer->pushsock,argstr,arglen,0) != arglen )
                 printf("error sending command to %s:%u\n",peer->ipaddr,peer->port);
-            else printf("sent register to %s:%u\n",peer->ipaddr,peer->port);
+            //else printf("sent register to %s:%u\n",peer->ipaddr,peer->port);
             n++;
         }
         //printf("register.(%s) %s %u with (%s)\n",publicaddr,ipaddr,publicport,peer->ipaddr);
@@ -296,9 +296,10 @@ char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
 
 int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,bits256 pubkey,char *jsonstr,int32_t freeflag)
 {
-    struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *msg,*hexstr,*retstr; int32_t len,retval = -1; cJSON *retjson,*reqjson,*argjson;
+    struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *msg,*hexstr,*retstr; int32_t len,n=0,mlen; cJSON *retjson,*reqjson,*argjson;
     if ( jsonstr == 0 || jsonstr[0] == 0 )
         return(-1);
+    len = (int32_t)strlen(jsonstr) + 1;
     if ( bits256_nonz(pubkey) != 0 )
     {
         if ( bits256_cmp(pubkey,LP_mypubkey) == 0 )
@@ -310,18 +311,36 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
                     free(retstr);
                 free_json(argjson);
             }
+            if ( freeflag != 0 )
+                free(jsonstr);
             return(1);
         }
-        else if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 && ptr->lasttime > time(NULL)-LP_KEEPALIVE )
+        else if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 )//&& ptr->lasttime > time(NULL)-LP_KEEPALIVE )
         {
             printf("GOT FORWARDED.(%s) -> pushsock.%d\n",jsonstr,ptr->pushsock);
-            len = (int32_t)strlen(jsonstr);
-            if ( LP_send(ptr->pushsock,jsonstr,(int32_t)strlen(jsonstr)+1,0) == len+1 )
+            if ( LP_send(ptr->pushsock,jsonstr,len,0) == len )
+            {
+                if ( freeflag != 0 )
+                    free(jsonstr);
                 return(1);
+            }
         }
     }
+    hexstr = malloc(len*2 + 1);
+    init_hexbytes_noT(hexstr,(uint8_t *)jsonstr,len);
+    if ( freeflag != 0 )
+        free(jsonstr);
+    reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","forwardhex");
+    jaddstr(reqjson,"hex",hexstr);
+    jaddbits256(reqjson,"pubkey",pubkey);
+    free(hexstr);
+    msg = jprint(reqjson,1);
+    mlen = (int32_t)strlen(msg) + 1;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        if ( bits256_cmp(pubkey,LP_mypubkey) == 0 )
+            continue;
         if ( bits256_nonz(pubkey) != 0 )
         {
             if ( (retstr= issue_LP_lookup(peer->ipaddr,peer->port,pubkey)) != 0 )
@@ -329,32 +348,24 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     if ( jint(retjson,"forwarding") != 0 && peer->pushsock >= 0 )
-                        retval = 0;
+                    {
+                        printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
+                        if ( LP_send(peer->pushsock,msg,mlen,0) == mlen )
+                            n++;
+                    }
                     free_json(retjson);
                 }
                 free(retstr);
             }
-        } else retval = 0;
-        if ( retval >= 0 && peer->pushsock >= 0 )
-        {
-            printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
-            len = (int32_t)strlen(jsonstr) + 1;
-            hexstr = malloc(len*2 + 1);
-            init_hexbytes_noT(hexstr,(uint8_t *)jsonstr,len);
-            if ( freeflag != 0 )
-                free(jsonstr);
-            reqjson = cJSON_CreateObject();
-            jaddstr(reqjson,"method","forwardhex");
-            jaddstr(reqjson,"hex",hexstr);
-            jaddbits256(reqjson,"pubkey",pubkey);
-            free(hexstr);
-            msg = jprint(reqjson,1);
-            return(LP_send(peer->pushsock,msg,(int32_t)strlen(msg)+1,1));
-        } else retval = -1;
+        }
+        if ( n >= sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
+            break;
     }
-    if ( freeflag != 0 )
-        free(jsonstr);
-    return(-1);
+    if ( msg != 0 )
+        free(msg);
+    if ( n == 0 )
+        return(-1);
+    else return(n-1);
 }
 
 
