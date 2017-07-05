@@ -578,8 +578,8 @@ int32_t OS_conv_unixtime(struct tai *tp,int32_t *secondsp,time_t timestamp) // g
 
 int32_t conv_date(int32_t *secondsp,char *date)
 {
-    char origdate[64],tmpdate[64]; int32_t year,month,day,hour,min,sec,len;
-    strcpy(origdate,date), strcpy(tmpdate,date), tmpdate[8 + 2] = 0;
+    char origdate[512],tmpdate[512]; int32_t year,month,day,hour,min,sec,len;
+    safecopy(origdate,date,sizeof(origdate)), safecopy(tmpdate,date,sizeof(tmpdate)), tmpdate[8 + 2] = 0;
     year = atoi(tmpdate), month = atoi(tmpdate+5), day = atoi(tmpdate+8);
     *secondsp = 0;
     if ( (len= (int32_t)strlen(date)) <= 10 )
@@ -596,7 +596,7 @@ int32_t conv_date(int32_t *secondsp,char *date)
     sprintf(origdate,"%d-%02d-%02d",year,month,day); //2015-07-25T22:34:31Z
     if ( strcmp(tmpdate,origdate) != 0 )
     {
-        printf("conv_date date conversion error (%s) -> (%s)\n",origdate,date);
+        printf("conv_date date conversion error (%s) -> (%s) %d\n",origdate,date,year/min);
         return(-1);
     }
     return((year * 10000) + (month * 100) + day);
