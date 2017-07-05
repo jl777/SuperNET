@@ -545,7 +545,6 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     if ( (txobj= bitcoin_data2json(rawtx->coin->taddr,rawtx->coin->pubtype,rawtx->coin->p2shtype,rawtx->coin->isPoS,height,&rawtx->I.signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
     {
         rawtx->I.actualtxid = rawtx->I.signedtxid;
-        //char str[65]; printf("got %s txid.%s (%s)\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0));
         rawtx->I.locktime = rawtx->msgtx.lock_time;
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
         {
@@ -556,10 +555,16 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
                 {
                     decode_hex(rawtx->spendscript,hexlen,hexstr);
                     rawtx->I.spendlen = hexlen;
-                    bitcoin_address(rawtx->p2shaddr,rawtx->coin->taddr,rawtx == &swap->otherfee ? rawtx->coin->pubtype : rawtx->coin->p2shtype,rawtx->spendscript,hexlen);
                     //if ( swap != 0 )
                     //    basilisk_txlog(swap->myinfoptr,swap,rawtx,-1); // bobdeposit, bobpayment or alicepayment
                     retval = 0;
+                    if ( rawtx == &swap->otherfee )
+                    {
+                        char str[65];
+                        LP_swap_coinaddr(swap,rawtx->coin,rawtx->p2shaddr,data,datalen);
+                        
+                        printf("got %s txid.%s (%s) -> %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0),rawtx->p2shaddr);
+                    } else bitcoin_address(rawtx->p2shaddr,rawtx->coin->taddr,rawtx->coin->p2shtype,rawtx->spendscript,hexlen);
                 }
             } else printf("%s ERROR.(%s)\n",rawtx->name,jprint(txobj,0));
         }
