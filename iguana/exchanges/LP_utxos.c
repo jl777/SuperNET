@@ -297,7 +297,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                 *val2p = val2;
                 return(1);
             }
-        } else printf("no val2\n");
+        } // else printf("no val2\n");
     }
     else
     {
@@ -658,7 +658,7 @@ int32_t LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
 
 cJSON *LP_inventory(char *symbol,int32_t iambob)
 {
-    struct LP_utxoinfo *utxo,*tmp; char *myipaddr; cJSON *array;
+    struct LP_utxoinfo *utxo,*tmp; struct _LP_utxoinfo u; char *myipaddr; cJSON *array; uint64_t val,val2;
     array = cJSON_CreateArray();
     if ( LP_mypeer != 0 )
         myipaddr = LP_mypeer->ipaddr;
@@ -667,7 +667,15 @@ cJSON *LP_inventory(char *symbol,int32_t iambob)
     {
         //char str[65]; printf("iambob.%d iterate %s\n",iambob,bits256_str(str,LP_mypubkey));
         if ( LP_isunspent(utxo) != 0 && strcmp(symbol,utxo->coin) == 0 && utxo->iambob == iambob && LP_ismine(utxo) > 0 )
+        {
+            u = (iambob != 0) ? utxo->deposit : utxo->fee;
+            if ( LP_iseligible(&val,&val2,iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) == 0 )
+            {
+                if ( utxo->T.spentflag == 0 )
+                    utxo->T.spentflag = (uint32_t)time(NULL);
+            }
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
+        }
         //else printf("skip %s %d %d %d %d\n",bits256_str(str,utxo->pubkey),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
     }
     return(array);
