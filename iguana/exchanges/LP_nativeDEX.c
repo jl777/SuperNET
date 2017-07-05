@@ -369,7 +369,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( coin->lastscanht == coin->longestchain )
             continue;
-        else if ( coin->lastscanht > coin->longestchain )
+        else if ( coin->lastscanht > coin->longestchain+1 )
         {
             printf("detected chain rewind lastscanht.%d vs longestchain.%d, first.%d ref.%d\n",coin->lastscanht,coin->longestchain,coin->firstscanht,coin->firstrefht);
             LP_undospends(coin,coin->longestchain-1);

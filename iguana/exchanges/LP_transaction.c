@@ -1338,7 +1338,7 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
             return(0);
         }
     }
-    return(0);
+    return(-1);
 }
 
 /*    Bob deposit:
