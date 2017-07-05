@@ -299,7 +299,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
             }
         } // else printf("no val2\n");
     }
-    printf("mismatched %s txid value %.8f < %.8f\n",symbol,dstr(val),dstr(satoshis));
+    char str[65],str2[65]; printf("spent %s txid or mismatched value %.8f < %.8f, %s/v%d %s/v%d\n",symbol,dstr(val),dstr(satoshis),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2);
     for (iter=0; iter<2; iter++)
     {
         if ( (utxo= LP_utxofind(iter,txid,vout)) != 0 )
