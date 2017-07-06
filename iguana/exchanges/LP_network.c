@@ -94,7 +94,7 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
     return(nextbits);
 }
 
-void LP_psockloop(void *_ptr)
+void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to work
 {
     static struct nn_pollfd *pfds;
     int32_t i,n,nonz,iter,retval,size=0,sentbytes,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];//,*myipaddr = _ptr;
