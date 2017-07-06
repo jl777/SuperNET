@@ -114,6 +114,8 @@ int32_t LP_utxoaddptrs(struct LP_utxoinfo *ptrs[],int32_t n,struct LP_utxoinfo *
 int32_t LP_utxocollisions(struct LP_utxoinfo *ptrs[],struct LP_utxoinfo *refutxo)
 {
     int32_t iambob,n = 0; struct LP_utxoinfo *utxo; struct _LP_utxoinfo u;
+    if ( refutxo == 0 )
+        return(0);
     portable_mutex_lock(&LP_utxomutex);
     for (iambob=0; iambob<=1; iambob++)
     {
@@ -175,17 +177,20 @@ void LP_unavailableset(struct LP_utxoinfo *utxo,bits256 otherpubkey)
 void LP_availableset(struct LP_utxoinfo *utxo)
 {
     struct LP_utxoinfo *ptrs[8]; int32_t i,n,count = 0; struct _LP_utxoinfo u;
-    memset(ptrs,0,sizeof(ptrs));
-    if ( (n= LP_utxocollisions(ptrs,utxo)) > 0 )
+    if ( utxo != 0 )
     {
-        for (i=0; i<n; i++)
-            count += _LP_availableset(ptrs[i]);
-    }
-    count += _LP_availableset(utxo);
-    if ( count > 0 )
-    {
-        u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
-        char str[65],str2[65]; printf("UTXO.[%d] AVAIL %s/v%d %s/v%d collisions.%d\n",utxo->iambob,bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,u.txid),u.vout,n);
+        memset(ptrs,0,sizeof(ptrs));
+        if ( (n= LP_utxocollisions(ptrs,utxo)) > 0 )
+        {
+            for (i=0; i<n; i++)
+                count += _LP_availableset(ptrs[i]);
+        }
+        count += _LP_availableset(utxo);
+        if ( count > 0 )
+        {
+            u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+            char str[65],str2[65]; printf("UTXO.[%d] AVAIL %s/v%d %s/v%d collisions.%d\n",utxo->iambob,bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,u.txid),u.vout,n);
+        }
     }
 }
 
@@ -229,6 +234,8 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
 {
     struct _LP_utxoinfo u;
     jaddstr(item,"method","notified");
+    if ( utxo == 0 )
+        return(item);
     if ( utxo->gui[0] != 0 )
         jaddstr(item,"gui",utxo->gui);
     jaddstr(item,"coin",utxo->coin);
