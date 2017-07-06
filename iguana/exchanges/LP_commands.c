@@ -58,7 +58,19 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJ
     }
     else if ( strcmp(method,"message") == 0 )
     {
-        printf("got message.(%s) from %s:%u\n",jprint(argjson,0),ipaddr!=0?ipaddr:"",argport);
+        static char *laststr;
+        char *newstr; bits256 pubkey = jbits256(argjson,"pubkey");
+        if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,LP_mypubkey) == 0 )
+        {
+            newstr = jprint(argjson,0);
+            if ( laststr == 0 || strcmp(laststr,newstr) != 0 )
+            {
+                printf("got message.(%s) from %s:%u\n",newstr,ipaddr!=0?ipaddr:"",argport);
+                if ( laststr != 0 )
+                    free(laststr);
+                laststr = newstr;
+            }
+        }
         return(0);
     }
     else if ( strcmp(method,"nn_tests") == 0 )
