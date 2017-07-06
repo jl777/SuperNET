@@ -807,11 +807,14 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else
     {
-        char str[65],str2[65];
-        checkkey = iguana_wif2privkey(wifstr);
         bitcoin_wif2priv(&tmptype,&privkey,wifstr);
-        if ( bits256_cmp(checkkey,privkey) != 0 )
-            printf("WIF.(%s) -> %s or %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkkey));
+        if ( 0 )
+        {
+            char str[65],str2[65];
+            checkkey = iguana_wif2privkey(wifstr);
+            if ( bits256_cmp(checkkey,privkey) != 0 )
+                printf("WIF.(%s) -> %s or %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkkey));
+        }
     }
     bitcoin_priv2pub(ctx,pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     if ( coin->counter == 0 )
