@@ -41,8 +41,8 @@
 #define LP_SWAPSTEP_TIMEOUT 3
 #define LP_AUTOTRADE_TIMEOUT 60
 #define LP_MIN_TXFEE 10000
-#define LP_MINVOL 10
-#define LP_MINCLIENTVOL 20
+#define LP_MINVOL 20
+#define LP_MINCLIENTVOL 100
 
 #define LP_DEXFEE(destsatoshis) ((destsatoshis) / INSTANTDEX_INSURANCEDIV)
 #define LP_DEPOSITSATOSHIS(satoshis) ((satoshis) + (satoshis >> 3))
