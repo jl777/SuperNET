@@ -802,13 +802,16 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     static uint32_t counter;
-    bits256 privkey,userpub,userpass; char tmpstr[128]; cJSON *retjson; uint8_t tmptype,rmd160[20];
+    bits256 privkey,userpub,userpass,checkkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype,rmd160[20];
     if ( passphrase != 0 && passphrase[0] != 0 )
         conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else
     {
+        char str[65],str2[65];
+        checkkey = iguana_wif2privkey(wifstr);
         bitcoin_wif2priv(&tmptype,&privkey,wifstr);
-        //printf("WIF.(%s) -> %s\n",wifstr,bits256_str(str,privkey));
+        if ( bits256_cmp(checkkey,privkey) != 0 )
+            printf("WIF.(%s) -> %s or %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkkey));
     }
     bitcoin_priv2pub(ctx,pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     if ( coin->counter == 0 )
