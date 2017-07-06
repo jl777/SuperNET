@@ -15,18 +15,23 @@
 
 /*
  adding assetchain coin: copy genCOIN to SuperNET/iguana/coins, make a _7776 variant with RELAY=-1 and VALIDATE=0
+ copy that into basilisk as coin, changing RELAY -> 0
  */
 
 #ifndef iguana777_net_h
 #define iguana777_net_h
 
 #if defined(_WIN32) || defined(_WIN64)
+#ifndef WIN32
 #define WIN32
+#endif
 #endif
 
 #if (defined(_WIN32) || defined(__WIN32__)) && \
 !defined(WIN32) && !defined(__SYMBIAN32__)
+#ifndef WIN32
 #define WIN32
+#endif
 #endif
 
 #ifdef WIN32
@@ -59,12 +64,14 @@
 #include "../crypto777/nanosrc/nn.h"
 #include "../crypto777/nanosrc/bus.h"
 #include "../crypto777/nanosrc/pubsub.h"
+#include "../crypto777/nanosrc/pipeline.h"
 #include "../crypto777/nanosrc/reqrep.h"
 #include "../crypto777/nanosrc/tcp.h"
 #else
 #include "/usr/local/include/nanomsg/nn.h"
 #include "/usr/local/include/nanomsg/bus.h"
 #include "/usr/local/include/nanomsg/pubsub.h"
+#include "/usr/local/include/nanomsg/pipeline.h"
 #include "/usr/local/include/nanomsg/reqrep.h"
 #include "/usr/local/include/nanomsg/tcp.h"
 #endif
@@ -88,7 +95,21 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
+struct smartaddress_symbol { double maxbid,minask,srcavail,destamount; char symbol[16]; };
+
+struct smartaddress
+{
+    bits256 privkey,pubkey;
+    int32_t numsymbols;
+    uint8_t pubkey33[33],rmd160[20];
+    char typestr[16];
+    struct smartaddress_symbol *symbols;
+};
+
 struct pending_trade { UT_hash_handle hh; double basevolume,relvolume,dir; char base[32],rel[32]; };
+
+#define PSOCK_IDLETIMEOUT 600
+struct psock { uint32_t lasttime; int32_t pullsock,pubsock; uint16_t pushport,subport; };
 
 #define JUMBLR_DEPOSITPREFIX "deposit "
 struct jumblr_item
@@ -111,7 +132,7 @@ struct message_info { int32_t msgcount; bits256 refhash,msghashes[64]; uint32_t 
 struct supernet_info
 {
     struct supernet_address myaddr;
-    bits256 persistent_priv,privkey;
+    bits256 persistent_priv,privkey,jumblr_pubkey,jumblr_depositkey;
     uint8_t persistent_pubkey33[33];
     char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024],jumblr_passphrase[1024];
     char *decryptstr;
@@ -125,7 +146,7 @@ struct supernet_info
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
     struct iguana_waccount *wallet;
     struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;
-    portable_mutex_t bu_mutex,allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex;
+    portable_mutex_t bu_mutex,allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex,smart_mutex;
     struct queueitem *DEX_quotes; cJSON *Cunspents,*Cspends;
     struct basilisk_swap *swaps[256]; int32_t numswaps;
     struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ,p2pQ;
@@ -143,13 +164,46 @@ struct supernet_info
     struct liquidity_info linfos[512]; cJSON *liquidity_currencies; struct pending_trade *trades; portable_mutex_t pending_mutex;
     struct komodo_notaries NOTARY;
     char seedipaddr[64]; uint32_t dpowipbits[128]; int32_t numdpowipbits; portable_mutex_t notarymutex,dpowmutex;
-    char dexseed_ipaddrs[2][64]; uint32_t dexipbits[128]; int32_t numdexipbits; portable_mutex_t dexmutex;
+#ifdef NOTARY_TESTMODE
+    char dexseed_ipaddrs[1][64];
+#else
+    char dexseed_ipaddrs[4][64];
+#endif
+    uint32_t dexipbits[128]; int32_t numdexipbits; portable_mutex_t dexmutex;
     // compatibility
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];
     struct message_info msgids[8192];
     double *svmfeatures;
+    uint16_t psockport,numpsocks; struct psock *PSOCKS; portable_mutex_t psockmutex;
     uint8_t notaries[64][33]; int32_t numnotaries,DEXEXPLORER;
+    FILE *swapsfp;
+    double DEXratio;
+    struct smartaddress smartaddrs[64]; int32_t numsmartaddrs,cancelrefresh,runsilent,DEXtrades;
+};
+
+struct basilisk_swapmessage
+{
+    bits256 srchash,desthash;
+    uint32_t crc32,msgbits,quoteid,datalen;
+    uint8_t *data;
+};
+
+struct basilisk_swap
+{
+    struct supernet_info *myinfoptr; struct iguana_info *bobcoin,*alicecoin;
+    void (*balancingtrade)(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob);
+    int32_t subsock,pushsock,connected,aliceunconf,depositunconf,paymentunconf; uint32_t lasttime,aborted;
+    FILE *fp;
+    bits256 persistent_privkey,persistent_pubkey;
+    struct basilisk_swapinfo I;
+    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
+    bits256 privkeys[INSTANTDEX_DECKSIZE];
+    struct basilisk_swapmessage *messages; int32_t nummessages;
+    char Bdeposit[64],Bpayment[64];
+    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    uint8_t persistent_pubkey33[33],pad[15],verifybuf[65536];
+
 };
 
 #include "../includes/iguana_funcs.h"

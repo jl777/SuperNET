@@ -1792,7 +1792,7 @@ void acct777_rwsig(int32_t rwflag,uint8_t *serialized,struct acct777_sig *sig)
 int32_t acct777_sigcheck(struct acct777_sig *sig)
 {
 #define IGUANA_GENESIS 1453075200
-#define IGUANA_MAXPACKETSIZE (1024 * 1024 * 2)
+#define IGUANA_MAXPACKETSIZE (1024 * 1024 * 4)
 #define TEN_YEARS (10 * 365 * 24 * 3600)
    if ( sig->allocsize < sizeof(*sig) || sig->allocsize > IGUANA_MAXPACKETSIZE )
     {

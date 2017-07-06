@@ -23,7 +23,7 @@
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
 #define DPOW_VERSION 0x0781
-#define DPOW_UTXOSIZE 10000
+#define DPOW_UTXOSIZE 50000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 600
 #define DPOW_RATIFYDURATION (3600 * 24)
@@ -167,6 +167,9 @@ char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin);
 cJSON *dpow_kvupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *key,char *value,int32_t flags);
 cJSON *dpow_kvsearch(struct supernet_info *myinfo,struct iguana_info *coin,char *key);
 void init_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin);
+cJSON *dpow_getmessage(struct supernet_info *myinfo,char *jsonstr);
+cJSON *dpow_addmessage(struct supernet_info *myinfo,char *jsonstr);
+cJSON *dpow_psock(struct supernet_info *myinfo,char *jsonstr);
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol);
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
@@ -178,6 +181,7 @@ char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32
 char *_dex_gettxin(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout);
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address);
+char *_dex_getmessage(struct supernet_info *myinfo,char *jsonstr);
 char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_listunspent2(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_listspent(struct supernet_info *myinfo,char *symbol,char *address);
@@ -189,6 +193,7 @@ int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol);
 char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol);
 char *_dex_kvupdate(struct supernet_info *myinfo,char *symbol,char *key,char *value,int32_t flags);
 char *_dex_kvsearch(struct supernet_info *myinfo,char *symbol,char *key);
+char *_dex_psock(struct supernet_info *myinfo,char *jsonstr);
 
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
 cJSON *dpow_checkaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);

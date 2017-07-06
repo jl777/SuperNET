@@ -422,6 +422,7 @@ void *iguana_meminit(struct OS_memspace *mem,char *name,void *ptr,int64_t totals
         mem->totalsize = totalsize;
     }
     mem->threadsafe = threadsafe;
+    mem->alignflag = 4;
     iguana_memreset(mem);
     if ( mem->totalsize == 0 )
         printf("meminit.%s ILLEGAL STATE null size\n",mem->name), getchar();
