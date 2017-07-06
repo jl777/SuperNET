@@ -704,13 +704,13 @@ int32_t LP_maxvalue(uint64_t *values,int32_t n)
     return(maxi);
 }
 
-int32_t LP_nearestvalue(uint64_t *values,int32_t n,uint64_t targetval)
+int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targetval)
 {
     int32_t i,mini = -1; int64_t dist; uint64_t mindist = (1 << 31);
     for (i=0; i<n; i++)
     {
         dist = (values[i] - targetval);
-        if ( dist < 0 && -dist < values[i]/10 )
+        if ( iambob != 0 && dist < 0 && -dist < values[i]/10 )
             dist = -dist;
         if ( dist >= 0 && dist < mindist )
         {
@@ -767,9 +767,9 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                             targetval = (depositval / 776) + 100000;
                         else targetval = (depositval / 9) * 8 + 100000;
                         //printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
-                        if ( (i= LP_nearestvalue(values,n,targetval)) < 0 && iambob != 0 )
+                        if ( (i= LP_nearestvalue(iambob,values,n,targetval)) < 0 && iambob != 0 )
                             targetval /= 4;
-                        if ( (i= LP_nearestvalue(values,n,targetval)) >= 0 )
+                        if ( (i= LP_nearestvalue(iambob,values,n,targetval)) >= 0 )
                         {
                             item = jitem(array,i);
                             txid = jbits256(item,"txid");
