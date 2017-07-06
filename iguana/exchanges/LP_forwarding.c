@@ -348,7 +348,7 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
                     printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,msg);
                     if ( LP_send(peer->pushsock,msg,mlen,0) == mlen )
                         n++;
-                }
+                } else printf("%s:%u doesnt forward pubkey (%s)\n",peer->ipaddr,peer->port,retstr);
                 free_json(retjson);
             }
             free(retstr);
