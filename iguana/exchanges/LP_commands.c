@@ -295,7 +295,7 @@ forwardhex(pubkey,hex)\n\
         {
             if ( strcmp(method,"register") == 0 )
             {
-                printf("nonLP got (%s)\n",jprint(argjson,0));
+                //printf("nonLP got (%s)\n",jprint(argjson,0));
                 retstr = clonestr("{\"result\":\"success\",\"register\":\"received\"}");
             }
         }

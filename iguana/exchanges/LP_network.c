@@ -63,7 +63,7 @@ int32_t LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
         //portable_mutex_unlock(&LP_networkmutex);
         usleep(1000);
     }
-    printf("you can ignore: error LP_send sock.%d, i.%d timeout.(%s) %s\n",sock,i,(char *)msg,nn_strerror(nn_errno()));
+    //printf("you can ignore: error LP_send sock.%d, i.%d timeout.(%s) %s\n",sock,i,(char *)msg,nn_strerror(nn_errno()));
     if ( freeflag != 0 )
         free(msg);
     return(-1);

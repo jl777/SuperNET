@@ -176,8 +176,10 @@ int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicpo
         if ( peer->pushsock >= 0 )
         {
             if ( LP_send(peer->pushsock,argstr,arglen,0) != arglen )
-                printf("you can ignore error sending command to %s:%u\n",peer->ipaddr,peer->port);
-            //else printf("sent register to %s:%u\n",peer->ipaddr,peer->port);
+            {
+                if ( strncmp(peer->ipaddr,"5.9.253",strlen("5.9.253")) == 0 )
+                    printf("error registering with %s:%u\n",peer->ipaddr,peer->port);
+            }
             n++;
         }
         //printf("register.(%s) %s %u with (%s)\n",publicaddr,ipaddr,publicport,peer->ipaddr);
