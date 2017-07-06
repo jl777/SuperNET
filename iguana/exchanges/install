@@ -1,4 +1,4 @@
-cp trade ordermatch bestfit orderbook autotrade client run_osx client_osx run coins disable enable forward myprice myprices getcoins getpeers getpeersIP getprices getutxos help inv lookup pub setprice status utxos ../dexscripts
+cp register registerall trade ordermatch bestfit orderbook autotrade client run_osx client_osx run coins disable enable forward myprice myprices getcoins getpeers getpeersIP getprices getutxos help inv lookup pub setprice status utxos ../dexscripts
 cd ../dexscripts
 echo now in dexscripts directory where you can make customized scripts that wont conflict with git pull
 #cp ../exchanges/passphrase ../exchanges/userpass .
