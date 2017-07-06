@@ -21,6 +21,7 @@
 // stronger anti rejected utxo pair into swap statemachine
 // as much as possible on a unidirectional basis
 // verify bid volumes
+// debounce comms
 // stats
 // auto-utxo creation
 
