@@ -335,26 +335,18 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
     reqjson = cJSON_CreateObject();
     jaddstr(reqjson,"method","forwardhex");
     jaddstr(reqjson,"hex",hexstr);
-    jaddbits256(reqjson,"pubkey",pubkey);
     free(hexstr);
     msg = jprint(reqjson,1);
     mlen = (int32_t)strlen(msg) + 1;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        if ( (retstr= issue_LP_lookup(peer->ipaddr,peer->port,pubkey)) != 0 )
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( jint(retjson,"forwarding") != 0 && peer->pushsock >= 0 )
-                {
-                    printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,msg);
-                    if ( LP_send(peer->pushsock,msg,mlen,0) == mlen )
-                        n++;
-                } else printf("%s:%u doesnt forward pubkey (%s)\n",peer->ipaddr,peer->port,retstr);
-                free_json(retjson);
-            }
-            free(retstr);
-        } else printf("%s:%u doesnt have pubkey\n",peer->ipaddr,peer->port);
+            //printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,msg);
+            if ( LP_send(peer->pushsock,msg,mlen,0) == mlen )
+                n++;
+            free_json(retjson);
+        }
         if ( n >= 8 )//sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
             break;
     }
