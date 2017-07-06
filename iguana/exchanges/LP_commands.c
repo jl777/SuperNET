@@ -245,7 +245,7 @@ forwardhex(pubkey,hex)\n\
                 retstr = clonestr("{\"result\":\"success\"}");
             else retstr = clonestr("{\"result\":\"error forwarding\"}");
         } else retstr = clonestr("{\"result\":\"cant recurse forwards\"}");
-
+        return(retstr);
     }
     else if ( strcmp(method,"keepalive") == 0 )
     {
