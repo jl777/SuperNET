@@ -339,24 +339,19 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
     mlen = (int32_t)strlen(msg) + 1;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        if ( bits256_cmp(pubkey,LP_mypubkey) == 0 )
-            continue;
-        if ( bits256_nonz(pubkey) != 0 )
+        if ( (retstr= issue_LP_lookup(peer->ipaddr,peer->port,pubkey)) != 0 )
         {
-            if ( (retstr= issue_LP_lookup(peer->ipaddr,peer->port,pubkey)) != 0 )
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                if ( jint(retjson,"forwarding") != 0 && peer->pushsock >= 0 )
                 {
-                    if ( jint(retjson,"forwarding") != 0 && peer->pushsock >= 0 )
-                    {
-                        printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,msg);
-                        if ( LP_send(peer->pushsock,msg,mlen,0) == mlen )
-                            n++;
-                    }
-                    free_json(retjson);
+                    printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,msg);
+                    if ( LP_send(peer->pushsock,msg,mlen,0) == mlen )
+                        n++;
                 }
-                free(retstr);
+                free_json(retjson);
             }
+            free(retstr);
         }
         if ( n >= 8 )//sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
             break;
