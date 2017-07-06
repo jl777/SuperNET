@@ -232,11 +232,20 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                         else if ( now > ptr->lastping+PSOCK_KEEPALIVE/2 && ptr->errors < 3 )
                         {
                             ptr->lastping = now;
-                            sendsock = ptr->sendsock;
-                            sprintf(keepalive,"{\"method\":\"keepalive\",\"endpoint\":\"%s\"}",ptr->sendaddr);
-                            size = (int32_t)strlen(keepalive) + 1;
-                            buf = keepalive;
-                            printf("send keepalive.(%s)\n",keepalive);
+                            if ( 0 )
+                            {
+                                sendsock = ptr->sendsock;
+                                sprintf(keepalive,"{\"method\":\"keepalive\",\"endpoint\":\"%s\"}",ptr->sendaddr);
+                                size = (int32_t)strlen(keepalive) + 1;
+                                buf = keepalive;
+                                printf("send keepalive.(%s)\n",keepalive);
+                            }
+                            else
+                            {
+                                nn_freemsg(buf);
+                                buf = 0;
+                                size = 0;
+                            }
                             break;
                         }
                     }
