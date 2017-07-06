@@ -512,6 +512,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         profitmargin = 0.01 + (double)(rand() % 100)/100000;
         printf("default profit margin %f\n",profitmargin);
     }
+    printf("getting myipaddr\n");
     if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
     {
         if ( (myipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && myipaddr[0] != 0 )
@@ -544,12 +545,15 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         printf(">>>>>>>>> myipaddr.%s (%s) pullsock.%d\n",myipaddr,subaddr,pubsock);
         LP_mypubsock = pubsock;
     }
+    printf("got %s, initpeers\n",myipaddr);
     LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),profitmargin);
+    printf("get public socket\n");
     pullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     strcpy(LP_publicaddr,pushaddr);
     LP_publicport = mypullport;
     LP_deadman_switch = (uint32_t)time(NULL);
     printf("canbind.%d my command address is (%s) pullsock.%d pullport.%u\n",LP_canbind,pushaddr,pullsock,mypullport);
+    printf("initcoins\n");
     LP_initcoins(ctx,pubsock,jobj(argjson,"coins"),passphrase);
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)&myipaddr) != 0 )
     {
@@ -561,8 +565,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profit
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
-    if ( (retstr= basilisk_swapentry(0,0)) != 0 )
-        free(retstr);
+    //if ( (retstr= basilisk_swapentry(0,0)) != 0 )
+    //    free(retstr);
     while ( 1 )
     {
         //fprintf(stderr,".");
