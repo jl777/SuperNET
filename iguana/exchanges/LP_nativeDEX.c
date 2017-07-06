@@ -17,7 +17,9 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// activate orderbook timeouts
+// swap cancel should cleanly cancel
+// stronger anti rejected utxo pair into swap statemachine
+// as much as possible on a unidirectional basis
 // verify bid volumes
 // stats
 // auto-utxo creation
@@ -315,7 +317,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         free(retstr);
     if ( IAMLP != 0 && (counter % 600) == 42 )
         LP_hellos();
-    if ( LP_canbind == 0 && (counter % (PSOCK_KEEPALIVE*MAINLOOP_PERSEC/2)) == 13 )
+    if ( 0 && LP_canbind == 0 && (counter % (PSOCK_KEEPALIVE*MAINLOOP_PERSEC/2)) == 13 )
     {
         char keepalive[128];
         sprintf(keepalive,"{\"method\":\"keepalive\"}");
@@ -453,7 +455,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0,*retstr; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128]; void *ctx = bitcoin_ctx();
+    char *myipaddr=0; long filesize,n; int32_t timeout,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128]; void *ctx = bitcoin_ctx();
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
         printf("jeezy says we cant use the nullstring as passphrase and I agree\n");
