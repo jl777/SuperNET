@@ -30,7 +30,7 @@ uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT;
 
 char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port);
+    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port); // ws is worse
     return(str);
 }
 
@@ -63,7 +63,7 @@ int32_t LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
         //portable_mutex_unlock(&LP_networkmutex);
         usleep(1000);
     }
-    //printf("you can ignore: error LP_send sock.%d, i.%d timeout.(%s) %s\n",sock,i,(char *)msg,nn_strerror(nn_errno()));
+    printf("you can ignore: error LP_send sock.%d, i.%d timeout.(%s) %s\n",sock,i,(char *)msg,nn_strerror(nn_errno()));
     if ( freeflag != 0 )
         free(msg);
     return(-1);
