@@ -807,10 +807,10 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else
     {
-        privkey = iguana_wif2privkey(wifstr);
+        bitcoin_wif2priv(&tmptype,&privkey,wifstr);
         //printf("WIF.(%s) -> %s\n",wifstr,bits256_str(str,privkey));
     }
-    iguana_priv2pub(ctx,pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
+    bitcoin_priv2pub(ctx,pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     if ( coin->counter == 0 )
     {
         coin->counter++;

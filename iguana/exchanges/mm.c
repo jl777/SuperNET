@@ -198,7 +198,7 @@ char *DEX_listunspent(char *coin,char *coinaddr)
     return(bitcoind_RPC(0,"dex",url,0,"listunspent",postdata,0));
 }
 
-bits256 iguana_wif2privkey(char *wifstr)
+/*bits256 iguana_wif2privkey(char *wifstr)
 {
     char url[512],postdata[1024],*retstr,*privstr; bits256 privkey; cJSON *retjson;
     memset(privkey.bytes,0,sizeof(privkey));
@@ -218,7 +218,7 @@ bits256 iguana_wif2privkey(char *wifstr)
         free(retstr);
     }
     return(privkey);
-}
+}*/
 
 double bittrex_balance(char *base,char *coinaddr)
 {

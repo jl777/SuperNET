@@ -2083,7 +2083,7 @@ char *bitcoin_address(char *coinaddr,uint8_t taddr,uint8_t addrtype,uint8_t *pub
     return(coinaddr);
 }
 
-void iguana_priv2pub(void *ctx,uint8_t *pubkey33,char *coinaddr,bits256 privkey,uint8_t taddr,uint8_t addrtype)
+void bitcoin_priv2pub(void *ctx,uint8_t *pubkey33,char *coinaddr,bits256 privkey,uint8_t taddr,uint8_t addrtype)
 {
     bits256 pub; //char privstr[65],url[512],postdata[1024],*retstr,*pubstr,*addr; cJSON *retjson;
     memset(pubkey33,0,33);
