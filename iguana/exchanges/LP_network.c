@@ -107,7 +107,7 @@ void LP_psockloop(void *_ptr)
             {
                 if ( (sentbytes= LP_send(sendsock,buf,size,0)) > 0 )
                 {
-                    //printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->publicsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
+                    printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->publicsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
                 }
                 else
                 {
@@ -201,7 +201,7 @@ void LP_psockloop(void *_ptr)
                         if ( retval != 0 )
                             printf("nn_poll retval.%d\n",retval);
                         break;
-                    } //else printf("num pfds.%d retval.%d\n",n,retval);
+                    } else printf("num pfds.%d retval.%d\n",n,retval);
                 }
             }
             //free(pfds);
