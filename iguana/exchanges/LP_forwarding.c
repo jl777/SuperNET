@@ -353,7 +353,7 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
             }
             free(retstr);
         } else printf("%s:%u doesnt have pubkey\n",peer->ipaddr,peer->port);
-        if ( n >= 3 )//sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
+        if ( n >= 8 )//sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
             break;
     }
     if ( msg != 0 )
