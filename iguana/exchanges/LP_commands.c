@@ -108,6 +108,7 @@ forwardhex(pubkey,hex)\n\
         }
         if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
             return(clonestr("{\"error\":\"authentication error\"}"));
+        jdelete(argjson,"userpass");
         if ( base != 0 && rel != 0 )
         {
             double price,bid,ask;
