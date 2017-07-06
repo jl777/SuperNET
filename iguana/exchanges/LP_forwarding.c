@@ -298,7 +298,7 @@ char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
 
 int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,bits256 pubkey,char *jsonstr,int32_t freeflag)
 {
-    struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *msg,*hexstr,*retstr; int32_t len,n=0,mlen; cJSON *retjson,*reqjson,*argjson;
+    struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *msg,*hexstr,*retstr; int32_t len,n=0,mlen; cJSON *reqjson,*argjson;
     if ( jsonstr == 0 || jsonstr[0] == 0 )
         return(-1);
     len = (int32_t)strlen(jsonstr) + 1;
@@ -340,13 +340,9 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
     mlen = (int32_t)strlen(msg) + 1;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        if ( (retjson= cJSON_Parse(retstr)) != 0 )
-        {
-            //printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,msg);
-            if ( LP_send(peer->pushsock,msg,mlen,0) == mlen )
-                n++;
-            free_json(retjson);
-        }
+        //printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,msg);
+        if ( LP_send(peer->pushsock,msg,mlen,0) == mlen )
+            n++;
         if ( n >= 8 )//sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
             break;
     }
