@@ -56,6 +56,11 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJ
         //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
         return(0);
     }
+    else if ( strcmp(method,"message") == 0 )
+    {
+        printf("got message.(%s) from %s:%u\n",jprint(argjson,0),ipaddr!=0?ipaddr:"",argport);
+        return(0);
+    }
     else if ( strcmp(method,"nn_tests") == 0 )
         return(clonestr("{\"result\":\"success\"}"));
     else if ( strcmp(method,"help") == 0 )
@@ -83,6 +88,7 @@ trust(pubkey, trust)\n\
 register(pubkey,pushaddr)\n\
 registerall(numnodes)\n\
 lookup(pubkey)\n\
+message(pubkey,<argjson>)\n\
 forward(pubkey,method2,<argjson>)\n\
 forward(pubkey,method2=publish,<argjson>)\n\
 forwardhex(pubkey,hex)\n\
