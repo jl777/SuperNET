@@ -73,7 +73,7 @@ int32_t LP_peerindsock(int32_t *peerindp)
             if ( peerind < *peerindp )
                 continue;
             *peerindp = peerind;
-            printf("peerind.%d -> sock %d\n",peerind,peer->pushsock);
+            //printf("peerind.%d -> sock %d\n",peerind,peer->pushsock);
             return(peer->pushsock);
         }
     }
@@ -609,7 +609,10 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
     {
         *mypullportp = 0;
         if ( ispaired == 0 )
+        {
+            strcpy(publicaddr,"127.0.0.1");
             return(-1);
+        }
         while ( *mypullportp == 0 )
         {
             if ( (*mypullportp= LP_psock_get(connectaddr,publicaddr,ispaired)) != 0 )

@@ -302,10 +302,12 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
             pfd.events = NN_POLLIN;
-            //if ( nn_poll(&pfd,1,1) != 1 )
-            //    break;
+            if ( nn_poll(&pfd,1,1) != 1 )
+                break;
+            printf("checking sock.%d\n",sock);
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
+                printf("got recvlen.%d\n",recvlen);
                 nonz++;
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,profitmargin,ptr,recvlen,sock)) != 0 )
                     free(retstr);
@@ -332,10 +334,13 @@ void command_rpcloop(void *myipaddr)
                     peer->errors--;
                 else continue;
             }
+            printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
             nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,LP_profitratio - 1.);
         }
         HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
         {
+            if ( coin->inactive != 0 )
+                continue;
             if ( coin->bussock >= 0 )
                 nonz += LP_sock_check(coin->symbol,ctx,origipaddr,-1,coin->bussock,LP_profitratio - 1.);
         }
