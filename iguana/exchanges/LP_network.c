@@ -100,6 +100,7 @@ void _LP_sendqueueadd(int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
     memcpy(ptr->msg,msg,msglen);
     DL_APPEND(LP_Q,ptr);
     LP_Qenqueued++;
+    printf("Q.%p\n",ptr);
 }
 
 void queue_loop(void *ignore)
@@ -108,11 +109,11 @@ void queue_loop(void *ignore)
     while ( 1 )
     {
         nonz = 0;
+        portable_mutex_lock(&LP_networkmutex);
         DL_FOREACH(LP_Q,ptr)
         {
-            portable_mutex_lock(&LP_networkmutex);
             DL_DELETE(LP_Q,ptr);
-            portable_mutex_unlock(&LP_networkmutex);
+            printf("deQ.%p\n",ptr);
             LP_Qdequeued++;
             if ( ptr->sock >= 0 )
             {
@@ -153,13 +154,12 @@ void queue_loop(void *ignore)
             }
             if ( ptr != 0 )
             {
-                printf("reQ: qsent %u msglen.%d (+%d, -%d) -> %d\n",ptr->crc32,ptr->msglen,LP_Qenqueued,LP_Qdequeued,LP_Qenqueued-LP_Qdequeued);
-                portable_mutex_lock(&LP_networkmutex);
+                printf("reQ.%p: %u msglen.%d (+%d, -%d) -> %d\n",ptr,ptr->crc32,ptr->msglen,LP_Qenqueued,LP_Qdequeued,LP_Qenqueued-LP_Qdequeued);
                 DL_APPEND(LP_Q,ptr);
-                portable_mutex_unlock(&LP_networkmutex);
                 LP_Qenqueued++;
             }
         }
+        portable_mutex_unlock(&LP_networkmutex);
         if ( nonz == 0 )
             usleep(10000);
     }
