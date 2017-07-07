@@ -128,7 +128,7 @@ void queue_loop(void *ignore)
                     else flag = 1;
                 }
             }
-            else if ( time(NULL) > ptr->starttime+LP_HTTP_TIMEOUT )
+            else if ( time(NULL) > ptr->starttime+2*LP_HTTP_TIMEOUT+1 )
             {
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )

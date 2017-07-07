@@ -122,7 +122,7 @@ int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
                     crcs[i] = crcs[i >> 1];
                     crcs[i >> 1] = crc32;
                     dup++;
-                    printf("duplicate %u in slot %d -> slot %d (%lu / %lu)\n",crc32,i,i>>1,dup,total);
+                    //printf("duplicate %u in slot %d -> slot %d (%lu / %lu)\n",crc32,i,i>>1,dup,total);
                 }
                 *duplicatep = 1;
                 break;
