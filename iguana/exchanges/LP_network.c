@@ -121,12 +121,11 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                    else printf("%d %p qsent %u msglen.%d\n",n,ptr,ptr->crc32,ptr->msglen);
-                    flag = 1;
+                    else printf("%d %p qsent %u msglen.%d peerind.%d\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind);
                     ptr->sock = -1;
-                    /*if ( ptr->peerind > 0 )
+                    if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
-                    else flag = 1;*/
+                    else flag = 1;
                 }
             }
             else if ( time(NULL) > ptr->starttime+LP_HTTP_TIMEOUT )
