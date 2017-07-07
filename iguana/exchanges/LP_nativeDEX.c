@@ -345,8 +345,8 @@ void command_rpcloop(void *myipaddr)
         }*/
         if ( LP_mypullsock >= 0 )
             nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock);
-        if ( LP_mybussock >= 0 )
-            nonz += LP_sock_check("BUS",ctx,origipaddr,-1,LP_mybussock);
+        //if ( LP_mybussock >= 0 )
+        //    nonz += LP_sock_check("BUS",ctx,origipaddr,-1,LP_mybussock);
         if ( nonz == 0 )
             usleep(10000);
     }
@@ -365,11 +365,12 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     numpeers = LP_numpeers();
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        if ( IAMLP == 0 && peer->errors >= LP_MAXPEER_ERRORS )
+        if ( peer->errors >= LP_MAXPEER_ERRORS )
         {
-            if ( (rand() % 5000) == 0 )
+            if ( (rand() % 10000) == 0 )
                 peer->errors--;
-            else continue;
+            if ( IAMLP == 0 )
+                continue;
         }
         if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
         {
@@ -526,8 +527,8 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         {
             for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
             {
-                if ( (rand() % 100) > 25 )
-                    continue;
+                //if ( (rand() % 100) > 25 )
+                //    continue;
                 LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,mypeer->ipaddr,myport);
             }
         } else LP_peersquery(mypeer,pubsock,seednode,myport,mypeer->ipaddr,myport);
