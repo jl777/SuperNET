@@ -190,6 +190,17 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             free_json(argjson);
         }
     } //else printf("DUPLICATE.(%s)\n",(char *)ptr);
+    else if ( encrypted == 0 )
+    {
+        if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
+        {
+            len = (int32_t)strlen((char *)ptr) + 1;
+            if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
+            {
+            }
+            free_json(argjson);
+        }
+    }
     portable_mutex_unlock(&LP_commandmutex);
     if ( jsonstr != 0 && (void *)jsonstr != (void *)ptr && (void *)jsonstr != (void *)decoded )
         free(jsonstr);
