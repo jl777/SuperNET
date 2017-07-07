@@ -148,9 +148,9 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
     crc32 = calc_crc32(0,&ptr[2],recvlen-2);
     if ( (crc32 & 0xff) == ptr[0] && ((crc32>>8) & 0xff) == ptr[1] )
         encrypted = 1;
-    printf("%s %s encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,(char *)ptr,encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
     portable_mutex_lock(&LP_commandmutex);
     i = LP_crc32find(&duplicate,-1,crc32);
+    printf("%s %s dup.%d encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,(char *)ptr,duplicate,encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
     if ( duplicate == 0 )
     {
         LP_crc32find(&duplicate,i,crc32);
@@ -260,16 +260,16 @@ int32_t LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pu
 
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock)
 {
-    int32_t recvlen=1,nonz = 0; void *ptr; char *retstr; struct nn_pollfd pfd;
+    int32_t recvlen=1,nonz = 0; void *ptr; char *retstr; //struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
         while ( nonz < 1000 && recvlen > 0 )
         {
-            memset(&pfd,0,sizeof(pfd));
+            /*memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
             pfd.events = NN_POLLIN;
             if ( nn_poll(&pfd,1,1) != 1 )
-                break;
+                break;*/
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 nonz++;
