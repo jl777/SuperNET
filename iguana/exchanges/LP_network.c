@@ -136,12 +136,12 @@ void queue_loop(void *ignore)
             else if ( time(NULL) > ptr->starttime+LP_HTTP_TIMEOUT )
             {
                 nonz++;
-                duplicate = 1;
-                //LP_crc32find(&duplicate,-1,ptr->crc32);
+                //duplicate = 1;
+                LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
                 {
                     printf("found crc32.%u\n",ptr->crc32);
-                    //free(ptr);
+                    free(ptr);
                     ptr = 0;
                 }
                 else
@@ -150,7 +150,7 @@ void queue_loop(void *ignore)
                     if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
                         printf("no more peers to try at peerind.%d %p Q_LP.%p\n",ptr->peerind,ptr,LP_Q);
-                        //free(ptr);
+                        free(ptr);
                         ptr = 0;
                     }
                 }
