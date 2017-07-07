@@ -21,7 +21,7 @@
 
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson; struct iguana_info *ptr;
+    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
     //printf("stats_JSON(%s)\n",jprint(argjson,0));
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
     {
@@ -127,7 +127,6 @@ trust(pubkey, trust)\n\
         jdelete(argjson,"userpass");
         if ( strcmp(method,"sendmessage") == 0 )
         {
-            cJSON *reqjson;
             if ( (reqjson= LP_dereference(argjson,"sendmessage")) != 0 )
             {
                 LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(reqjson,1));
@@ -239,6 +238,20 @@ trust(pubkey, trust)\n\
         else if ( strcmp(method,"trust") == 0 )
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
     }
+    if ( IAMLP == 0 )
+    {
+        if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
+        {
+            argjson = reqjson;
+            if ( jobj(argjson,"method2") != 0 )
+            {
+                jdelete(argjson,"method");
+                method = jstr(argjson,"method2");
+                jaddstr(argjson,"method",method);
+                jdelete(argjson,"method2");
+            }
+        }
+    }
     if ( LP_isdisabled(base,rel) != 0 )
         return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
     else if ( LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
@@ -312,7 +325,7 @@ trust(pubkey, trust)\n\
             }
             if ( strcmp(method,"broadcast") == 0 )
             {
-                cJSON *reqjson; bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
+                bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
                 if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
                 {
                     if ( (cipherstr= jstr(reqjson,"cipherstr")) != 0 )
@@ -327,7 +340,7 @@ trust(pubkey, trust)\n\
                     else
                     {
                         memset(zero.bytes,0,sizeof(zero));
-                        LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,1));
+                        LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
                     }
                     retstr = clonestr("{\"result\":\"success\"}");
                 } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
@@ -357,6 +370,8 @@ trust(pubkey, trust)\n\
             }*/
         }
     }
+    if ( reqjson != 0 )
+        free_json(reqjson);
     if ( retstr != 0 )
     {
         free(retstr);
