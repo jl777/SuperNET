@@ -141,7 +141,7 @@ void queue_loop(void *ignore)
                 if ( duplicate > 0 )
                 {
                     printf("found crc32.%u\n",ptr->crc32);
-                    free(ptr);
+                    //free(ptr);
                     ptr = 0;
                 }
                 else
@@ -150,16 +150,16 @@ void queue_loop(void *ignore)
                     if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
                         printf("no more peers to try at peerind.%d %p Q_LP.%p\n",ptr->peerind,ptr,LP_Q);
-                        free(ptr);
+                        //free(ptr);
                         ptr = 0;
                     }
                 }
             }
             if ( ptr != 0 )
             {
+                printf("reQ.%p: %u msglen.%d (+%d, -%d) -> %d\n",ptr,ptr->crc32,ptr->msglen,LP_Qenqueued,LP_Qdequeued,LP_Qenqueued-LP_Qdequeued);
                 DL_APPEND(LP_Q,ptr);
                 LP_Qenqueued++;
-                printf("reQ.%p: %u msglen.%d (+%d, -%d) -> %d\n",ptr,ptr->crc32,ptr->msglen,LP_Qenqueued,LP_Qdequeued,LP_Qenqueued-LP_Qdequeued);
             }
         }
         portable_mutex_unlock(&LP_networkmutex);
