@@ -148,6 +148,7 @@ void queue_loop(void *ignore)
                         printf("%d no more peers to try at peerind.%d %p Q_LP.%p\n",n,ptr->peerind,ptr,LP_Q);
                         flag = 1;
                      }
+                    flag = 1;
                 }
             }
             if ( flag != 0 )
@@ -255,7 +256,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                 msg = (void *)jprint(argjson,0);
                 msglen = (int32_t)strlen((char *)msg) + 1;
                 crc32 = calc_crc32(0,&msg[2],msglen - 2);
-                //printf("CRC32.%u (%s)\n",crc32,(char *)msg);
+                printf("CRC32.%u (%s)\n",crc32,(char *)msg);
                 //jdelete(argjson,"method");
                 //jaddstr(argjson,"method","broadcast");
                 //msg = (void *)jprint(argjson,0);

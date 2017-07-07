@@ -33,7 +33,7 @@ cJSON *LP_peerjson(struct LP_peerinfo *peer)
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"ipaddr",peer->ipaddr);
     jaddnum(item,"port",peer->port);
-    jaddnum(item,"profit",peer->profitmargin);
+    //jaddnum(item,"profit",peer->profitmargin);
     return(item);
 }
 
@@ -48,7 +48,7 @@ char *LP_peers()
     return(jprint(peersjson,1));
 }
 
-struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,double profitmargin,int32_t numpeers,int32_t numutxos)
+struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t numpeers,int32_t numutxos)
 {
     uint32_t ipbits; int32_t pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
     ipbits = (uint32_t)calc_ipbits(ipaddr);
@@ -57,8 +57,8 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     {
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
-            if ( profitmargin != 0. )
-                peer->profitmargin = profitmargin;
+            //if ( profitmargin != 0. )
+            //    peer->profitmargin = profitmargin;
             if ( numpeers > peer->numpeers )
                 peer->numpeers = numpeers;
             if ( numutxos > peer->numutxos )
@@ -101,7 +101,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     printf("error connecting to push.(%s)\n",pushaddr);
                 }
             } else printf("%s pushport.%u subport.%u pushsock.%d\n",ipaddr,pushport,subport,pushsock);
-            peer->profitmargin = profitmargin;
+            //peer->profitmargin = profitmargin;
             peer->ipbits = ipbits;
             peer->port = port;
             peer->ip_port = ((uint64_t)port << 32) | ipbits;
@@ -186,7 +186,7 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
                     {
-                        peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
+                        peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jint(item,"numpeers"),jint(item,"numutxos"));
                     }
                     if ( peer != 0 )
                     {
@@ -202,11 +202,11 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
     return(n);
 }
 
-void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport,double myprofit)
+void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport)
 {
     char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now,flag = 0;
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
-    if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,mypeer!=0?mypeer->numpeers:0,mypeer!=0?mypeer->numutxos:0)) != 0 )
+    if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,mypeer!=0?mypeer->numpeers:0,mypeer!=0?mypeer->numutxos:0)) != 0 )
     {
         //printf("got.(%s)\n",retstr);
         now = (uint32_t)time(NULL);
@@ -218,9 +218,9 @@ void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
             {
                 if ( peer->lasttime != now )
                 {
-                    printf("{%s:%u %.6f}.%d ",peer->ipaddr,peer->port,peer->profitmargin,peer->lasttime - now);
+                    printf("{%s:%u}.%d ",peer->ipaddr,peer->port,peer->lasttime - now);
                     flag++;
-                    if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->profitmargin,peer->numpeers,0)) != 0 )
+                    if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->numpeers,0)) != 0 )
                         free(retstr);
                 }
             }

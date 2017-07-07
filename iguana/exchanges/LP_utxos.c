@@ -279,7 +279,7 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
     cJSON *item = cJSON_CreateObject();
     item = LP_inventoryjson(item,utxo);
     jaddbits256(item,"pubkey",utxo->pubkey);
-    jaddnum(item,"profit",utxo->S.profitmargin);
+    //jaddnum(item,"profit",utxo->S.profitmargin);
     jaddstr(item,"base",utxo->coin);
     jaddstr(item,"script",utxo->spendscript);
     return(item);
@@ -495,7 +495,7 @@ void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
     return(n);*/
 }
 
-struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin,char *gui)
+struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,char *gui)
 {
     uint64_t val,val2=0,tmpsatoshis,bigtxfee = 100000; int32_t spendvini,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
@@ -552,13 +552,13 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
                 utxo = 0;
             }
         }
-        else if ( profitmargin > SMALLVAL )
-            utxo->S.profitmargin = profitmargin;
+        //else if ( profitmargin > SMALLVAL )
+        //    utxo->S.profitmargin = profitmargin;
         if ( utxo != 0 )
             return(utxo);
     }
     utxo = calloc(1,sizeof(*utxo));
-    utxo->S.profitmargin = profitmargin;
+    //utxo->S.profitmargin = profitmargin;
     utxo->pubkey = pubkey;
     safecopy(utxo->gui,gui,sizeof(utxo->gui));
     safecopy(utxo->coin,symbol,sizeof(utxo->coin));
@@ -610,7 +610,7 @@ struct LP_utxoinfo *LP_utxoaddjson(int32_t iambob,int32_t pubsock,cJSON *argjson
         return(0);
     }
     portable_mutex_lock(&LP_UTXOmutex);
-    utxo = LP_utxoadd(iambob,pubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jbits256(argjson,"pubkey"),jdouble(argjson,"profit"),jstr(argjson,"gui"));
+    utxo = LP_utxoadd(iambob,pubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jbits256(argjson,"pubkey"),jstr(argjson,"gui"));
     portable_mutex_unlock(&LP_UTXOmutex);
     return(utxo);
 }
@@ -634,7 +634,7 @@ int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
                         subport = argport + 2;
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
-                        peer = LP_addpeer(0,-1,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
+                        peer = LP_addpeer(0,-1,argipaddr,argport,pushport,subport,jint(item,"numpeers"),jint(item,"numutxos"));
                 }
                 if ( jobj(item,"txid") != 0 )
                 {
@@ -654,7 +654,7 @@ int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
     return(n);
 }
 
-int32_t LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport,double myprofit)
+int32_t LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport)
 {
     char *retstr; struct LP_peerinfo *peer; uint32_t now; int32_t retval = -1;
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
@@ -662,7 +662,7 @@ int32_t LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
         coin = "";
     //printf("utxo query.(%s)\n",destipaddr);
     if ( IAMLP != 0 )
-        retstr = issue_LP_getutxos(destipaddr,destport,coin,lastn,myipaddr,myport,myprofit,mypeer != 0 ? mypeer->numpeers : 0,mypeer != 0 ? mypeer->numutxos : 0);
+        retstr = issue_LP_getutxos(destipaddr,destport,coin,lastn,myipaddr,myport,mypeer != 0 ? mypeer->numpeers : 0,mypeer != 0 ? mypeer->numutxos : 0);
     else retstr = issue_LP_clientgetutxos(destipaddr,destport,coin,100);
     if ( retstr != 0 )
     {
@@ -809,13 +809,13 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 portable_mutex_lock(&LP_UTXOmutex);
                                 if ( iambob != 0 )
                                 {
-                                    if ( (utxo= LP_utxoadd(1,mypubsock,coin->symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coin->smartaddr,mypub,LP_mypeer != 0 ? LP_mypeer->profitmargin : 0.01,LP_gui)) != 0 )
+                                    if ( (utxo= LP_utxoadd(1,mypubsock,coin->symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coin->smartaddr,mypub,LP_gui)) != 0 )
                                     {
                                     }
                                 }
                                 else
                                 {
-                                    if ( (utxo= LP_utxoadd(0,mypubsock,coin->symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coin->smartaddr,mypub,0.,LP_gui)) != 0 )
+                                    if ( (utxo= LP_utxoadd(0,mypubsock,coin->symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coin->smartaddr,mypub,LP_gui)) != 0 )
                                     {
                                     }
                                 }

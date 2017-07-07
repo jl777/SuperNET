@@ -19,7 +19,7 @@
 //
 
 
-char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
+char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
     //printf("stats_JSON(%s)\n",jprint(argjson,0));
@@ -42,7 +42,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJ
                     peer->numutxos = othernumutxos;
                 }
                 //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
-            } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
+            } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jint(argjson,"numpeers"),jint(argjson,"numutxos"));
         }
     }
     if ( (method= jstr(argjson,"method")) == 0 )
@@ -145,7 +145,7 @@ trust(pubkey, trust)\n\
                 {
                     if ( LP_mypriceset(base,rel,price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
-                    else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,profitmargin,base,rel,price * LP_profitratio));
+                    else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 } else return(clonestr("{\"error\":\"no price\"}"));
             }
             else if ( strcmp(method,"myprice") == 0 )
@@ -172,7 +172,7 @@ trust(pubkey, trust)\n\
                 if ( price > SMALLVAL || jobj(argjson,"quote") != 0 )
                 {
                     LP_quoteparse(&Q,jobj(argjson,"quote"));
-                    return(LP_trade(ctx,myipaddr,pubsock,profitmargin,&Q,price,jint(argjson,"timeout"),jint(argjson,"duration")));
+                    return(LP_trade(ctx,myipaddr,pubsock,&Q,price,jint(argjson,"timeout"),jint(argjson,"duration")));
                 } else return(clonestr("{\"error\":\"no price set or no quote object\"}"));
             }
             else if ( strcmp(method,"autotrade") == 0 )
@@ -181,7 +181,7 @@ trust(pubkey, trust)\n\
                 {
                     printf("price set (%s/%s) <- %.8f\n",rel,base,1./price);
                     LP_mypriceset(rel,base,1./price);
-                    return(LP_autotrade(ctx,myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
+                    return(LP_autotrade(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
@@ -284,7 +284,7 @@ trust(pubkey, trust)\n\
         if ( (reqjson= LP_dereference(argjson,"forward")) != 0 )
         {
             //printf("FORWARDED.(%s)\n",jprint(argjson,0));
-            if ( LP_forward(ctx,myipaddr,pubsock,profitmargin,jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
+            if ( LP_forward(ctx,myipaddr,pubsock,jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
                 retstr = clonestr("{\"result\":\"success\"}");
             else retstr = clonestr("{\"result\":\"error forwarding\"}");
         } else retstr = clonestr("{\"result\":\"cant recurse forwards\"}");

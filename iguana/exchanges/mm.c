@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include "OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
-char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port);
+char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 
@@ -179,10 +179,10 @@ char *iguana_walletpassphrase(char *passphrase,int32_t timeout)
     return(bitcoind_RPC(0,"",url,0,"listunspent",postdata));
 }*/
 
-/*char *issue_LP_intro(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers)
+/*char *issue_LP_intro(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers)
 {
     char url[512];
-    sprintf(url,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d",destip,destport,ipaddr,port,profitmargin,numpeers);
+    sprintf(url,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u&numpeers=%d",destip,destport,ipaddr,port,numpeers);
     printf("(%s)\n",url);
     return(issue_curl(url));
 }*/
@@ -790,7 +790,8 @@ void LP_main(void *ptr)
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
-        LPinit(7779,7780,7781,7782,profitmargin,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+        LP_profitratio += profitmargin;
+        LPinit(7779,7780,7781,7782,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 

@@ -48,17 +48,17 @@ char *LP_isitme(char *destip,uint16_t destport)
     } else return(0);
 }
 
-char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
+char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
 {
     char url[512];
-    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
+    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,numpeers,numutxos);
     return(LP_issue_curl("getpeers",destip,port,url));
 }
 
-char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
+char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
 {
     char url[512];
-    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,profitmargin,numpeers,numutxos);
+    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,numpeers,numutxos);
     return(LP_issue_curl("getutxos",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
@@ -73,12 +73,12 @@ char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t 
     //return(retstr);
 }
 
-char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
+char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
 {
     char url[512],*retstr;
     if ( (retstr= LP_isitme(destip,destport)) != 0 )
         return(retstr);
-    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
+    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,numpeers,numutxos);
     return(LP_issue_curl("notify",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
@@ -96,7 +96,7 @@ char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,
     u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
     if ( LP_iseligible(&val,&val2,utxo->iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) > 0 )
     {
-        sprintf(url,"http://%s:%u/api/stats/notified?iambob=%d&pubkey=%s&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%llu&txid2=%s&vout2=%d&value2=%llu&script=%s&address=%s&timestamp=%u&gui=%s",destip,destport,utxo->iambob,bits256_str(str3,utxo->pubkey),utxo->S.profitmargin,utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout,(long long)utxo->payment.value,bits256_str(str2,utxo->deposit.txid),utxo->deposit.vout,(long long)utxo->deposit.value,utxo->spendscript,utxo->coinaddr,(uint32_t)time(NULL),utxo->gui);
+        sprintf(url,"http://%s:%u/api/stats/notified?iambob=%d&pubkey=%s&coin=%s&txid=%s&vout=%d&value=%llu&txid2=%s&vout2=%d&value2=%llu&script=%s&address=%s&timestamp=%u&gui=%s",destip,destport,utxo->iambob,bits256_str(str3,utxo->pubkey),utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout,(long long)utxo->payment.value,bits256_str(str2,utxo->deposit.txid),utxo->deposit.vout,(long long)utxo->deposit.value,utxo->spendscript,utxo->coinaddr,(uint32_t)time(NULL),utxo->gui);
         if ( strlen(url) > 1024 )
             printf("WARNING long url.(%s)\n",url);
         return(LP_issue_curl("notifyutxo",destip,destport,url));

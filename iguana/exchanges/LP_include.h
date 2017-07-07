@@ -175,7 +175,7 @@ struct iguana_info
 {
     UT_hash_handle hh;
     portable_mutex_t txmutex; struct LP_transaction *transactions;
-    uint64_t txfee; double estimatedrate,profitmargin;
+    uint64_t txfee; double estimatedrate;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock; uint16_t busport;
     uint32_t counter,inactive,lastmempool,lastgetinfo;
     uint8_t pubtype,p2shtype,isPoS,wiftype,taddr;
@@ -190,7 +190,7 @@ struct LP_utxobob { struct _LP_utxoinfo utxo,deposit; };
 
 struct LP_utxoalice { struct _LP_utxoinfo utxo,fee; };
 
-struct LP_utxoswap { bits256 otherpubkey; void *swap; uint64_t satoshis; double profitmargin;  };
+struct LP_utxoswap { bits256 otherpubkey; void *swap; uint64_t satoshis; };
 
 struct LP_utxoinfo
 {
@@ -210,7 +210,6 @@ struct LP_peerinfo
 {
     UT_hash_handle hh;
     uint64_t ip_port;
-    double profitmargin;
     uint32_t ipbits,errortime,errors,numpeers,numutxos,lasttime,connected,lastutxos,lastpeers,diduquery,good;
     int32_t pushsock,subsock;
     uint16_t port;
@@ -255,14 +254,14 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
 //double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits256 mypub);
 int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys);
 void LP_quotesinit(char *base,char *rel);
-int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,bits256 pubkey,char *jsonstr,int32_t freeflag);
+int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,bits256 pubkey,char *jsonstr,int32_t freeflag);
 int32_t LP_ismine(struct LP_utxoinfo *utxo);
 int32_t LP_isavailable(struct LP_utxoinfo *utxo);
 struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port);
-char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin);
+char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
 void LP_availableset(struct LP_utxoinfo *utxo);
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2);
-int32_t LP_pullsock_check(void *ctx,char **retstrp,char *myipaddr,int32_t pubsock,int32_t pullsock,double profitmargin);
+int32_t LP_pullsock_check(void *ctx,char **retstrp,char *myipaddr,int32_t pubsock,int32_t pullsock);
 uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
 void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 int32_t LP_coinbus(uint16_t coin_busport);

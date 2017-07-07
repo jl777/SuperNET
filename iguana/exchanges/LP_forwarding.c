@@ -288,7 +288,7 @@ char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
     return(retstr);
 }
 
-int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,bits256 pubkey,char *jsonstr,int32_t freeflag)
+int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,bits256 pubkey,char *jsonstr,int32_t freeflag)
 {
     struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *msg,*hexstr,*retstr; int32_t len,n=0,mlen; cJSON *reqjson,*argjson;
     if ( jsonstr == 0 || jsonstr[0] == 0 )
@@ -301,7 +301,7 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
             printf("GOT FORWARDED.(%s)\n",myipaddr);
             if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
             {
-                if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,0,0,profitmargin)) != 0 )
+                if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,0,0)) != 0 )
                     free(retstr);
                 free_json(argjson);
             }

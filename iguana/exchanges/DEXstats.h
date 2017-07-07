@@ -927,7 +927,7 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
 }
 
 #ifndef FROM_MARKETMAKER
-char *stats_JSON(char *myipaddr,int32_t mypubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port)
+char *stats_JSON(char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port)
 {
     char *method,*agent,*retstr,*source,*dest; struct tai T; uint32_t endtimestamp; struct DEXstats_disp prices[365]; int32_t leftdatenum,seconds,numdates;
     if ( (method= jstr(argjson,"method")) == 0 )
