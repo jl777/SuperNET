@@ -92,7 +92,7 @@ int32_t LP_Qenqueued,LP_Qdequeued;
 void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 {
     struct LP_queue *ptr;
-    if ( LP_Qenqueued == 0 )
+    if ( LP_Qenqueued == 0 || IAMLP != 0 )
     {
         ptr = calloc(1,sizeof(*ptr) + msglen);
         ptr->crc32 = crc32;
