@@ -560,7 +560,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("jeezy says we cant use the nullstring as passphrase and I agree\n");
         exit(-1);
     }
-    LP_sessionid = (uint32_t)time(NULL);
     IAMLP = !amclient;
 #ifndef __linux__
     if ( IAMLP != 0 )
@@ -608,7 +607,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_psockmutex);
     portable_mutex_init(&LP_coinmutex);
     portable_mutex_init(&LP_pubkeymutex);
-    printf("getting myipaddr\n");
+    LP_sessionid = (uint32_t)time(NULL);
+    printf("getting myipaddr sessionid.%u\n",LP_sessionid);
     if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
     {
         if ( (myipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && myipaddr[0] != 0 )

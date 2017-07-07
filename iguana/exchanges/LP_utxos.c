@@ -271,11 +271,7 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
         jaddstr(item,"swap","in progress");
     if ( utxo->T.spentflag != 0 )
         jaddnum(item,"spent",utxo->T.spentflag);
-    if ( LP_ismine(utxo) > 0 )
-    {
-        jaddnum(item,"session",LP_sessionid);
-        //printf("sessionid.%u %s\n",LP_sessionid,jprint(item,0));
-    } else jaddnum(item,"session",utxo->T.sessionid);
+    jaddnum(item,"session",utxo->T.sessionid);
     return(item);
 }
 
@@ -589,6 +585,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     LP_utxosetkey(utxo->key2,txid2,vout2);
     if ( LP_ismine(utxo) > 0 )
         utxo->T.sessionid = LP_sessionid;
+    else utxo->T.sessionid = sessionid;
     portable_mutex_lock(&LP_utxomutex);
     HASH_ADD_KEYPTR(hh,LP_utxoinfos[iambob],utxo->key,sizeof(utxo->key),utxo);
     if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
