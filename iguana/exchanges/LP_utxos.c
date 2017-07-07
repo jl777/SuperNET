@@ -618,6 +618,8 @@ struct LP_utxoinfo *LP_utxoaddjson(int32_t iambob,int32_t pubsock,cJSON *argjson
     }
     portable_mutex_lock(&LP_UTXOmutex);
     utxo = LP_utxoadd(iambob,pubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jbits256(argjson,"pubkey"),jstr(argjson,"gui"),juint(argjson,"session"));
+    if ( LP_ismine(utxo) > 0 && utxo->T.lasttime == 0 )
+        utxo->T.lasttime = (uint32_t)time(NULL);
     portable_mutex_unlock(&LP_UTXOmutex);
     return(utxo);
 }
