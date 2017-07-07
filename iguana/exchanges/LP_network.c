@@ -173,7 +173,11 @@ void _LP_queuesend(int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32
         {
             if ( (sentbytes= nn_send(sock0,msg,msglen,0)) != msglen )
                 printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
-            else sock0 = -1;
+            else
+            {
+                printf("_LP_queuesend %d\n",msglen);
+                sock0 = -1;
+            }
         }
         if ( sock1 >= 0 && LP_sockcheck(sock1) > 0 )
         {
@@ -199,17 +203,17 @@ void _LP_queuesend(int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32
 
 void LP_queuesend(int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
 {
-    struct iguana_info *coin; int32_t flag=0,socks[2];
+    //struct iguana_info *coin; int32_t flag=0,socks[2];
     if ( pubsock >= 0 )
     {
-        socks[0] = socks[1] = -1;
-        if ( rel != 0 && rel[0] != 0 && (coin= LP_coinfind(rel)) != 0 && coin->bussock >= 0 )
-            socks[flag++] = coin->bussock;
-        if ( base != 0 && base[0] != 0 && (coin= LP_coinfind(base)) != 0 && coin->bussock >= 0 )
-            socks[flag++] = coin->bussock;
-        if ( flag == 0 && pubsock >= 0 )
+        //socks[0] = socks[1] = -1;
+        //if ( rel != 0 && rel[0] != 0 && (coin= LP_coinfind(rel)) != 0 && coin->bussock >= 0 )
+        //    socks[flag++] = coin->bussock;
+        //if ( base != 0 && base[0] != 0 && (coin= LP_coinfind(base)) != 0 && coin->bussock >= 0 )
+        //    socks[flag++] = coin->bussock;
+        //if ( flag == 0 && pubsock >= 0 )
             _LP_queuesend(pubsock,-1,msg,msglen,0);
-        else _LP_queuesend(socks[0],socks[1],msg,msglen,0);
+        //else _LP_queuesend(socks[0],socks[1],msg,msglen,0);
     } else _LP_queuesend(-1,-1,msg,msglen,1);
 }
 
