@@ -297,7 +297,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
     int32_t recvlen=1,nonz = 0; void *ptr; char *retstr; struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
-        while ( nonz < 10 && recvlen > 0 )
+        while ( nonz < 1000 && recvlen > 0 )
         {
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
@@ -335,13 +335,13 @@ void command_rpcloop(void *myipaddr)
             //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
             nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,LP_profitratio - 1.);
         }
-        HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
+        /*HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
         {
             if ( coin->inactive != 0 )
                 continue;
             if ( coin->bussock >= 0 )
                 nonz += LP_sock_check(coin->symbol,ctx,origipaddr,-1,coin->bussock,LP_profitratio - 1.);
-        }
+        }*/
         if ( LP_mypullsock >= 0 )
             nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,LP_profitratio - 1.);
         if ( LP_mybussock >= 0 )
