@@ -149,7 +149,6 @@ void queue_loop(void *ignore)
             if ( flag != 0 )
             {
                 nonz++;
-                //printf("free %p nonz.%d\n",ptr,nonz);
                 portable_mutex_lock(&LP_networkmutex);
                 DL_DELETE(LP_Q,ptr);
                 portable_mutex_unlock(&LP_networkmutex);
@@ -239,6 +238,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
     }
     if ( IAMLP != 0 )
     {
+        printf("queuesend %d -> %d\n",msglen,pubsock);
         LP_queuesend(pubsock,base,rel,msg,msglen);
     }
     else
