@@ -105,13 +105,13 @@ void _LP_sendqueueadd(int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 
 void queue_loop(void *ignore)
 {
-    struct LP_queue *ptr; int32_t sentbytes,nonz,duplicate;
+    struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,duplicate;
     while ( 1 )
     {
         nonz = 0;
         portable_mutex_lock(&LP_networkmutex);
         printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
-        DL_FOREACH(LP_Q,ptr)
+        DL_FOREACH_SAFE(LP_Q,ptr,tmp)
         {
             DL_DELETE(LP_Q,ptr);
             LP_Qdequeued++;
