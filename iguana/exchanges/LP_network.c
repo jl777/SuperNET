@@ -87,6 +87,7 @@ struct LP_queue
     uint32_t starttime,crc32;
     uint8_t msg[];
 } *LP_Q;
+int32_t LP_Qenqueued,LP_Qdequeued;
 
 void _LP_sendqueueadd(int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 {
@@ -98,6 +99,7 @@ void _LP_sendqueueadd(int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
     ptr->msglen = msglen;
     memcpy(ptr->msg,msg,msglen);
     DL_APPEND(LP_Q,ptr);
+    LP_Qenqueued++;
 }
 
 void queue_loop(void *ignore)
@@ -111,13 +113,14 @@ void queue_loop(void *ignore)
             portable_mutex_lock(&LP_networkmutex);
             DL_DELETE(LP_Q,ptr);
             portable_mutex_unlock(&LP_networkmutex);
+            LP_Qdequeued++;
             if ( ptr->sock >= 0 )
             {
                 if ( LP_sockcheck(ptr->sock) > 0 )
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("LP_send sent %d instead of %d\n",sentbytes,ptr->msglen);
-                    else printf("qsent %u msglen.%d\n",ptr->crc32,ptr->msglen);
+                    //else printf("qsent %u msglen.%d\n",ptr->crc32,ptr->msglen);
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
@@ -150,10 +153,11 @@ void queue_loop(void *ignore)
             }
             if ( ptr != 0 )
             {
-                printf("reQ: qsent %u msglen.%d\n",ptr->crc32,ptr->msglen);
+                printf("reQ: qsent %u msglen.%d (+%d, -%d) -> %d\n",ptr->crc32,ptr->msglen,LP_Qenqueued,LP_Qdequeued,LP_Qenqueued-LP_Qdequeued);
                 portable_mutex_lock(&LP_networkmutex);
                 DL_APPEND(LP_Q,ptr);
                 portable_mutex_unlock(&LP_networkmutex);
+                LP_Qenqueued++;
             }
         }
         if ( nonz == 0 )
