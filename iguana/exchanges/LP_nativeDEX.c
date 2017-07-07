@@ -18,12 +18,13 @@
 //  marketmaker
 //
 // swap cancel should cleanly cancel
-// stronger anti rejected utxo pair into swap statemachine
 // as much as possible on a unidirectional basis
-// verify bid volumes
+// queuing
 // debounce comms
 // stats
 // auto-utxo creation
+// multiple smartaddresses? enable/disable causes? 250 KMD bounty
+// verify bid volumes
 
 #include <stdio.h>
 #include "LP_include.h"
