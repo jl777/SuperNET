@@ -370,6 +370,7 @@ trust(pubkey, trust)\n\
             }*/
         }
     }
+    printf("ERROR.(%s)\n",jprint(argjson,0));
     if ( reqjson != 0 )
         free_json(reqjson);
     if ( retstr != 0 )
@@ -377,6 +378,5 @@ trust(pubkey, trust)\n\
         free(retstr);
         return(0);
     }
-    printf("ERROR.(%s)\n",jprint(argjson,0));
     return(0);
 }
