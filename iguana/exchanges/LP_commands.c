@@ -259,11 +259,15 @@ trust(pubkey, trust)\n\
         return(LP_prices());
     else if ( strcmp(method,"orderbook") == 0 )
         return(LP_orderbook(base,rel,jint(argjson,"duration")));
-    //else if ( strcmp(method,"registerall") == 0 )
-    //    return(LP_registerall(jint(argjson,"numnodes")));
-    /*else if ( strcmp(method,"forward") == 0 )
+    else if ( strcmp(method,"registerall") == 0 )
     {
-        cJSON *reqjson;
+        return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
+        //return(LP_registerall(jint(argjson,"numnodes")));
+    }
+    else if ( strcmp(method,"forward") == 0 )
+    {
+        return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
+        /*cJSON *reqjson;
         if ( (reqjson= LP_dereference(argjson,"forward")) != 0 )
         {
             //printf("FORWARDED.(%s)\n",jprint(argjson,0));
@@ -271,14 +275,15 @@ trust(pubkey, trust)\n\
                 retstr = clonestr("{\"result\":\"success\"}");
             else retstr = clonestr("{\"result\":\"error forwarding\"}");
         } else retstr = clonestr("{\"result\":\"cant recurse forwards\"}");
-        return(retstr);
+        return(retstr);*/
     }
     else if ( strcmp(method,"keepalive") == 0 )
     {
-        printf("got keepalive lag.%d switch.%u\n",(int32_t)time(NULL) - LP_deadman_switch,LP_deadman_switch);
+        return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
+        /*printf("got keepalive lag.%d switch.%u\n",(int32_t)time(NULL) - LP_deadman_switch,LP_deadman_switch);
         LP_deadman_switch = (uint32_t)time(NULL);
-        return(clonestr("{\"result\":\"success\"}"));
-    }*/
+        return(clonestr("{\"result\":\"success\"}"));*/
+    }
     else if ( strcmp(method,"getpeers") == 0 )
         return(LP_peers());
     else if ( strcmp(method,"getutxos") == 0 )
@@ -293,14 +298,18 @@ trust(pubkey, trust)\n\
     {
         if ( IAMLP != 0 )
         {
-            /*if ( strcmp(method,"register") == 0 )
+            if ( strcmp(method,"register") == 0 )
             {
-                retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"),juint(argjson,"pushport"));
+                return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
+                /*retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"),juint(argjson,"pushport"));
                 //printf("got (%s) from register\n",retstr!=0?retstr:"");
-                return(retstr);
+                return(retstr);*/
             }
             else if ( strcmp(method,"lookup") == 0 )
-                return(LP_lookup(jbits256(argjson,"client")));*/
+            {
+                return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
+                //return(LP_lookup(jbits256(argjson,"client")));
+            }
             if ( strcmp(method,"broadcast") == 0 )
             {
                 cJSON *reqjson; bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
@@ -332,7 +341,9 @@ trust(pubkey, trust)\n\
                         myipaddr = LP_mypeer->ipaddr;
                     else printf("LP_psock dont have actual ipaddr?\n");
                 }
-                return(LP_psock(myipaddr,jint(argjson,"ispaired")));
+                if ( jint(argjson,"ispaired") != 0 )
+                    return(LP_psock(myipaddr,jint(argjson,"ispaired")));
+                else return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
             }
             else if ( strcmp(method,"notify") == 0 )
                 retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
