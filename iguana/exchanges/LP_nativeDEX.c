@@ -148,7 +148,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
     crc32 = calc_crc32(0,&ptr[2],recvlen-2);
     if ( (crc32 & 0xff) == ptr[0] && ((crc32>>8) & 0xff) == ptr[1] )
         encrypted = 1;
-    printf("%s encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
+    printf("%s %s encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,(char *)ptr,encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
     portable_mutex_lock(&LP_commandmutex);
     i = LP_crc32find(&duplicate,-1,crc32);
     if ( duplicate == 0 )
