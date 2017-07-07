@@ -376,7 +376,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             LP_utxo_spentcheck(pubsock,utxo);
             if ( utxo->T.spentflag == 0 && utxo->T.lasttime == 0 )
+            {
+                char str[65]; printf("publish mybob %s\n",bits256_str(str,utxo->payment.txid));
                 LP_utxo_clientpublish(utxo);
+            }
         }
     }
     //if ( IAMLP != 0 && (counter % 600) == 42 )
