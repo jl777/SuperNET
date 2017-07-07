@@ -644,8 +644,9 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
         }
         //if ( LP_canbind != 0 || ispaired != 0 || nn_tests(ctx,pullsock,publicaddr,NN_PUSH) >= 0 )
         //    break;
-        printf("nn_tests failed, try again\n");
-        sleep(3);
+        //printf("nn_tests failed, try again\n");
+        //sleep(3);
+        break;
         if ( pullsock >= 0 )
             nn_close(pullsock);
     }
