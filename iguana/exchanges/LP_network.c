@@ -121,12 +121,14 @@ void queue_loop(void *ignore)
                 if ( LP_sockcheck(ptr->sock) > 0 )
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
+                    {
                         printf("LP_send sent %d instead of %d\n",sentbytes,ptr->msglen);
-                    else printf("%p qsent %u msglen.%d\n",ptr,ptr->crc32,ptr->msglen);
+                        flag = 1;
+                    } else printf("%p qsent %u msglen.%d\n",ptr,ptr->crc32,ptr->msglen);
                     ptr->sock = -1;
-                    if ( ptr->peerind > 0 )
+                    /*if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
-                    else flag = 1;
+                    else flag = 1;*/
                 }
             }
             else if ( time(NULL) > ptr->starttime+LP_HTTP_TIMEOUT )
@@ -165,7 +167,7 @@ void queue_loop(void *ignore)
         portable_mutex_unlock(&LP_networkmutex);
         printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
-            usleep(10000);
+            usleep(500000);
     }
 }
 
