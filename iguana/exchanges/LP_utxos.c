@@ -239,7 +239,7 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
     if ( utxo->gui[0] != 0 )
         jaddstr(item,"gui",utxo->gui);
     jaddstr(item,"coin",utxo->coin);
-    jaddnum(item,"now",time(NULL));
+    //jaddnum(item,"now",time(NULL));
     jaddnum(item,"iambob",utxo->iambob);
     jaddstr(item,"address",utxo->coinaddr);
     jaddbits256(item,"txid",utxo->payment.txid);
