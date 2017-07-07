@@ -41,6 +41,8 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
                     printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
                     peer->numutxos = othernumutxos;
                 }
+                if ( peer->sessionid == 0 )
+                    peer->sessionid = juint(argjson,"session");
                 //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
             } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jint(argjson,"numpeers"),jint(argjson,"numutxos"),juint(argjson,"session"));
         }
