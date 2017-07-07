@@ -121,7 +121,7 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                    //else printf("%d %p qsent %u msglen.%d peerind.%d\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind);
+                    else printf("%d %p qsent %u msglen.%d peerind.%d\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind);
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
@@ -176,7 +176,11 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
         {
             if ( (sentbytes= nn_send(sock0,msg,msglen,0)) != msglen )
                 printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
-            else sock0 = -1;
+            else
+            {
+                printf("Q sent %u\n",crc32);
+                sock0 = -1;
+            }
         }
         if ( sock1 >= 0 && LP_sockcheck(sock1) > 0 )
         {
