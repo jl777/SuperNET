@@ -334,7 +334,7 @@ void command_rpcloop(void *myipaddr)
                     peer->errors--;
                 else continue;
             }
-            printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
+            //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
             nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,LP_profitratio - 1.);
         }
         HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
