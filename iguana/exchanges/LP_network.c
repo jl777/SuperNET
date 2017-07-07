@@ -133,8 +133,8 @@ void queue_loop(void *ignore)
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
                 {
-                    //printf("%d found crc32.%u\n",n,ptr->crc32);
                     LP_Qfound++;
+                    printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     flag = 1;
                 }
                 else
