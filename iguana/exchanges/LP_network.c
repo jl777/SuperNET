@@ -143,11 +143,11 @@ void queue_loop(void *ignore)
                 {
                     printf("couldnt find.%u (%s)\n",ptr->crc32,(char *)ptr->msg);
                     ptr->peerind++;
-                    /*if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
+                    if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
                         printf("%d no more peers to try at peerind.%d %p Q_LP.%p\n",n,ptr->peerind,ptr,LP_Q);
                         flag = 1;
-                     }*/ flag = 1;
+                     }
                 }
             }
             if ( flag != 0 )
