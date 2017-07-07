@@ -249,7 +249,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                     jdelete(argjson,"method");
                     jaddstr(argjson,"method2",method);
                     jaddstr(argjson,"method","broadcast");
-                    msg = (void *)jprint(argjson,1);
+                    msg = (void *)jprint(argjson,0);
                     msglen = (int32_t)strlen((char *)msg) + 1;
                     LP_queuesend(-1,base,rel,msg,msglen);
                     free(msg);
