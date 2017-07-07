@@ -138,6 +138,7 @@ void queue_loop(void *ignore)
                 }
                 else
                 {
+                    printf("couldnt find.%u\n",ptr->crc32);
                     ptr->peerind++;
                     if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
@@ -242,7 +243,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
     }
     if ( IAMLP != 0 )
     {
-        printf("queuesend %d -> %d\n",msglen,pubsock);
+        //printf("queuesend %d -> %d\n",msglen,pubsock);
         LP_queuesend(pubsock,base,rel,msg,msglen);
     }
     else
