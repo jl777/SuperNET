@@ -332,7 +332,7 @@ int32_t LP_mypriceset(char *base,char *rel,double price)
     {
         basepp->myprices[relpp->ind] = price;          // ask
         //relpp->myprices[basepp->ind] = (1. / price);   // bid
-        if ( (pubp= LP_pubkeyadd(LP_mypubkey)) != 0 )
+        if ( (pubp= LP_pubkeyadd(LP_mypub25519)) != 0 )
         {
             pubp->matrix[basepp->ind][relpp->ind] = price;
             //pubp->matrix[relpp->ind][basepp->ind] = (1. / price);
@@ -513,32 +513,6 @@ int32_t LP_orderbookfind(struct LP_orderbookentry **array,int32_t num,bits256 tx
     return(-1);
 }
 
-int32_t LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
-{
-    struct LP_peerinfo *peer,*tmp; cJSON *retjson; char *retstr; int32_t n = 0;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        if ( (retstr= issue_LP_notifyutxo(peer->ipaddr,peer->port,utxo)) != 0 )
-        {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( jobj(retjson,"error") == 0 )
-                {
-                    //if ( strcmp("HUSH",utxo->coin) == 0 )
-                    //    printf("clientpublish %s (%s)\n",peer->ipaddr,retstr);
-                    utxo->T.lasttime = (uint32_t)time(NULL);
-                    n++;
-                }
-                free_json(retjson);
-            }
-            free(retstr);
-        }
-        //if ( utxo->T.lasttime != 0 )
-        //    return(0);
-    }
-    return(n);
-}
-
 int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum,int32_t duration)
 {
     struct LP_utxoinfo *utxo,*tmp; struct LP_pubkeyinfo *pubp=0; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; uint32_t oldest; double price; int32_t baseid,relid; uint64_t basesatoshis,val,val2;
@@ -568,7 +542,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
                 {
                     *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                     (*arrayp)[num++] = op;
-                    if ( bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 && utxo->T.lasttime == 0 )
+                    if ( bits256_cmp(utxo->pubkey,LP_mypub25519) == 0 && utxo->T.lasttime == 0 )
                         LP_utxo_clientpublish(utxo);
                 }
             }
@@ -646,7 +620,7 @@ char *LP_pricestr(char *base,char *rel,double origprice)
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"method","postprice");
-        jaddbits256(retjson,"pubkey",LP_mypubkey);
+        jaddbits256(retjson,"pubkey",LP_mypub25519);
         jaddstr(retjson,"base",base);
         jaddstr(retjson,"rel",rel);
         jaddnum(retjson,"price",price);

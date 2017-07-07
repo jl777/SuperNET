@@ -51,16 +51,16 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJ
             printf("stats_JSON no method: (%s) (%s:%u)\n",jprint(argjson,0),ipaddr,argport);
         return(0);
     }
-    if ( strcmp(method,"hello") == 0 )
+    /*if ( strcmp(method,"hello") == 0 )
     {
         //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
         return(0);
     }
-    else if ( strcmp(method,"message") == 0 )
+    else*/ if ( strcmp(method,"message") == 0 )
     {
         static char *laststr;
         char *newstr; bits256 pubkey = jbits256(argjson,"pubkey");
-        if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,LP_mypubkey) == 0 )
+        if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,LP_mypub25519) == 0 )
         {
             newstr = jprint(argjson,0);
             if ( laststr == 0 || strcmp(laststr,newstr) != 0 )
@@ -73,8 +73,8 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,cJ
         }
         return(0);
     }
-    else if ( strcmp(method,"nn_tests") == 0 )
-        return(clonestr("{\"result\":\"success\"}"));
+    //else if ( strcmp(method,"nn_tests") == 0 )
+    //    return(clonestr("{\"result\":\"success\"}"));
     else if ( strcmp(method,"help") == 0 )
         return(clonestr("{\"result\":\" \
 available localhost RPC commands:\n \
@@ -96,15 +96,19 @@ getutxos()\n\
 getutxos(coin, lastn)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
+sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 trust(pubkey, trust)\n\
-register(pubkey,pushaddr)\n\
-registerall(numnodes)\n\
-lookup(pubkey)\n\
-message(pubkey,<argjson>)\n\
-forward(pubkey,method2,<argjson>)\n\
-forward(pubkey,method2=publish,<argjson>)\n\
-forwardhex(pubkey,hex)\n\
 \"}"));
+    
+    /*
+    register(pubkey,pushaddr)\n\
+    registerall(numnodes)\n\
+    lookup(pubkey)\n\
+    forward(pubkey,method2,<argjson>)\n\
+    forward(pubkey,method2=publish,<argjson>)\n\
+    forwardhex(pubkey,hex)\n\
+     */
+
     base = jstr(argjson,"base");
     rel = jstr(argjson,"rel");
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
@@ -114,13 +118,22 @@ forwardhex(pubkey,hex)\n\
             USERPASS_COUNTER = 1;
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"userpass",USERPASS);
-            jaddbits256(retjson,"mypubkey",LP_mypubkey);
+            jaddbits256(retjson,"mypubkey",LP_mypub25519);
             jadd(retjson,"coins",LP_coinsjson());
             return(jprint(retjson,1));
         }
         if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
             return(clonestr("{\"error\":\"authentication error\"}"));
         jdelete(argjson,"userpass");
+        if ( strcmp(method,"sendmessage") == 0 )
+        {
+            cJSON *reqjson;
+            if ( (reqjson= LP_dereference(argjson,"sendmessage")) != 0 )
+            {
+                LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(reqjson,1));
+                return(clonestr("{\"result\":\"success\"}"));
+            } else return(clonestr("{\"error\":\"couldnt dereference sendmessage\"}"));
+        }
         if ( base != 0 && rel != 0 )
         {
             double price,bid,ask;
@@ -240,15 +253,15 @@ forwardhex(pubkey,hex)\n\
         return(jprint(LP_coinsjson(),1));
     else if ( strcmp(method,"postprice") == 0 )
         retstr = LP_postedprice(argjson);
-    else if ( strcmp(method,"broadcast") == 0 )
-        retstr = LP_broadcasted(argjson);
+    //else if ( strcmp(method,"broadcast") == 0 )
+    //    retstr = LP_broadcasted(argjson);
     else if ( strcmp(method,"getprices") == 0 )
         return(LP_prices());
     else if ( strcmp(method,"orderbook") == 0 )
         return(LP_orderbook(base,rel,jint(argjson,"duration")));
-    else if ( strcmp(method,"registerall") == 0 )
-        return(LP_registerall(jint(argjson,"numnodes")));
-    else if ( strcmp(method,"forward") == 0 )
+    //else if ( strcmp(method,"registerall") == 0 )
+    //    return(LP_registerall(jint(argjson,"numnodes")));
+    /*else if ( strcmp(method,"forward") == 0 )
     {
         cJSON *reqjson;
         if ( (reqjson= LP_dereference(argjson,"forward")) != 0 )
@@ -265,7 +278,7 @@ forwardhex(pubkey,hex)\n\
         printf("got keepalive lag.%d switch.%u\n",(int32_t)time(NULL) - LP_deadman_switch,LP_deadman_switch);
         LP_deadman_switch = (uint32_t)time(NULL);
         return(clonestr("{\"result\":\"success\"}"));
-    }
+    }*/
     else if ( strcmp(method,"getpeers") == 0 )
         return(LP_peers());
     else if ( strcmp(method,"getutxos") == 0 )
@@ -280,16 +293,37 @@ forwardhex(pubkey,hex)\n\
     {
         if ( IAMLP != 0 )
         {
-            if ( strcmp(method,"register") == 0 )
+            /*if ( strcmp(method,"register") == 0 )
             {
                 retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"),juint(argjson,"pushport"));
                 //printf("got (%s) from register\n",retstr!=0?retstr:"");
                 return(retstr);
             }
             else if ( strcmp(method,"lookup") == 0 )
-                return(LP_lookup(jbits256(argjson,"client")));
-            else if ( strcmp(method,"forwardhex") == 0 )
-                retstr = LP_forwardhex(ctx,pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
+                return(LP_lookup(jbits256(argjson,"client")));*/
+            if ( strcmp(method,"broadcast") == 0 )
+            {
+                cJSON *reqjson; bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
+                if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
+                {
+                    if ( (cipherstr= jstr(reqjson,"cipherstr")) != 0 )
+                    {
+                        cipherlen = (int32_t)strlen(cipherstr) >> 1;
+                        if ( cipherlen <= sizeof(cipher) )
+                        {
+                            decode_hex(cipher,cipherlen,cipherstr);
+                            LP_queuesend(LP_mypubsock,base,rel,cipher,cipherlen);
+                        } else retstr = clonestr("{\"error\":\"cipherstr too big\"}");
+                    }
+                    else
+                    {
+                        memset(zero.bytes,0,sizeof(zero));
+                        LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,1));
+                    }
+                    retstr = clonestr("{\"result\":\"success\"}");
+                } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
+                //retstr = LP_forwardhex(ctx,pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
+            }
             else if ( strcmp(method,"psock") == 0 )
             {
                 if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
@@ -305,11 +339,11 @@ forwardhex(pubkey,hex)\n\
         }
         else
         {
-            if ( strcmp(method,"register") == 0 )
+            /*if ( strcmp(method,"register") == 0 )
             {
                 //printf("nonLP got (%s)\n",jprint(argjson,0));
                 retstr = clonestr("{\"result\":\"success\",\"register\":\"received\"}");
-            }
+            }*/
         }
     }
     if ( retstr != 0 )

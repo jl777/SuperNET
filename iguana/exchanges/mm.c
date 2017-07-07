@@ -790,7 +790,7 @@ void LP_main(void *ptr)
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
-        LPinit(7779,7780,7781,profitmargin,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+        LPinit(7779,7780,7781,7782,profitmargin,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 
@@ -799,6 +799,7 @@ int main(int argc, const char * argv[])
     char *base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
     cJSON *retjson,*loginjson; int32_t i;
+    OS_init();
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )

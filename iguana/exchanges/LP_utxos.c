@@ -20,7 +20,7 @@
 
 int32_t LP_ismine(struct LP_utxoinfo *utxo)
 {
-    if ( utxo != 0 && bits256_cmp(utxo->pubkey,LP_mypubkey) == 0 )
+    if ( utxo != 0 && bits256_cmp(utxo->pubkey,LP_mypub25519) == 0 )
         return(1);
     else return(0);
 }
@@ -197,7 +197,7 @@ void LP_availableset(struct LP_utxoinfo *utxo)
 int32_t LP_utxopurge(int32_t allutxos)
 {
     char str[65]; struct LP_utxoinfo *utxo,*tmp; int32_t iambob,n = 0;
-    printf("LP_utxopurge mypub.(%s)\n",bits256_str(str,LP_mypubkey));
+    printf("LP_utxopurge mypub.(%s)\n",bits256_str(str,LP_mypub25519));
     portable_mutex_lock(&LP_utxomutex);
     for (iambob=0; iambob<=1; iambob++)
     {
@@ -257,13 +257,13 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
         jaddnum(item,"pending",utxo->T.swappending);
     if ( utxo->iambob != 0 )
     {
-        jaddbits256(item,"srchash",LP_mypubkey);
+        jaddbits256(item,"srchash",LP_mypub25519);
         if ( bits256_nonz(utxo->S.otherpubkey) != 0 )
             jaddbits256(item,"desthash",utxo->S.otherpubkey);
     }
     else
     {
-        jaddbits256(item,"desthash",LP_mypubkey);
+        jaddbits256(item,"desthash",LP_mypub25519);
         if ( bits256_nonz(utxo->S.otherpubkey) != 0 )
             jaddbits256(item,"srchash",utxo->S.otherpubkey);
     }
@@ -411,13 +411,13 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
 
 void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
 {
-    cJSON *argjson; struct _LP_utxoinfo u; char *msg;
+    //cJSON *argjson; struct _LP_utxoinfo u; char *msg;
     if ( utxo == 0 )
         return;
     utxo->T.spentflag = (uint32_t)time(NULL);
     if ( LP_mypeer != 0 && LP_mypeer->numutxos > 0 )
         LP_mypeer->numutxos--;
-    if ( LP_mypubsock >= 0 )
+    /*if ( LP_mypubsock >= 0 )
     {
         argjson = cJSON_CreateObject();
         jaddstr(argjson,"method","checktxid");
@@ -432,8 +432,8 @@ void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
             jaddnum(argjson,"checkvout",u.vout);
         }
         msg = jprint(argjson,1);
-        LP_send(LP_mypubsock,msg,(int32_t)strlen(msg)+1,1);
-    }
+        /LP_send(LP_mypubsock,msg,(int32_t)strlen(msg)+1,1);
+    }*/
 }
 
 char *LP_spentcheck(cJSON *argjson)
@@ -467,9 +467,37 @@ char *LP_spentcheck(cJSON *argjson)
     return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
 }
 
+void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
+{
+    bits256 zero; char *msg;
+    memset(zero.bytes,0,sizeof(zero));
+    msg = jprint(LP_utxojson(utxo),1);
+    LP_broadcast_message(LP_mypubsock,utxo->coin,"",zero,msg);
+    /*struct LP_peerinfo *peer,*tmp; cJSON *retjson; char *retstr; int32_t n = 0;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        if ( (retstr= issue_LP_notifyutxo(peer->ipaddr,peer->port,utxo)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( jobj(retjson,"error") == 0 )
+                {
+                    utxo->T.lasttime = (uint32_t)time(NULL);
+                    n++;
+                }
+                free_json(retjson);
+            }
+            free(retstr);
+        }
+        //if ( utxo->T.lasttime != 0 )
+        //    return(0);
+    }
+    return(n);*/
+}
+
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,double profitmargin,char *gui)
 {
-    uint64_t val,val2=0,tmpsatoshis,bigtxfee = 100000; int32_t spendvini,selector; bits256 spendtxid; char *msg; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    uint64_t val,val2=0,tmpsatoshis,bigtxfee = 100000; int32_t spendvini,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
@@ -484,7 +512,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         else return(0);
     } else tmpsatoshis = value;
     char str[65],str2[65],dispflag = (iambob == 0);
-    if ( iambob == 0 && bits256_cmp(pubkey,LP_mypubkey) != 0 )
+    if ( iambob == 0 && bits256_cmp(pubkey,LP_mypub25519) != 0 )
     {
         printf("trying to add Alice utxo when not mine? %s/v%d\n",bits256_str(str,txid),vout);
         return(0);
@@ -561,11 +589,12 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     portable_mutex_unlock(&LP_utxomutex);
     if ( iambob != 0 )
     {
-        if ( mypubsock >= 0 )
+        /*if ( mypubsock >= 0 )
         {
             msg = jprint(LP_utxojson(utxo),1);
-            LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
-        } else LP_utxo_clientpublish(utxo);
+            /LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
+        } else LP_utxo_clientpublish(utxo);*/
+        LP_utxo_clientpublish(utxo);
         if ( LP_mypeer != 0 && LP_ismine(utxo) > 0 )
             LP_mypeer->numutxos++;
     }
@@ -676,7 +705,7 @@ cJSON *LP_inventory(char *symbol,int32_t iambob)
     else myipaddr = "127.0.0.1";
     HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
     {
-        //char str[65]; printf("iambob.%d iterate %s\n",iambob,bits256_str(str,LP_mypubkey));
+        //char str[65]; printf("iambob.%d iterate %s\n",iambob,bits256_str(str,LP_mypub25519));
         if ( LP_isunspent(utxo) != 0 && strcmp(symbol,utxo->coin) == 0 && utxo->iambob == iambob && LP_ismine(utxo) > 0 )
         {
             u = (iambob != 0) ? utxo->deposit : utxo->fee;
@@ -684,7 +713,10 @@ cJSON *LP_inventory(char *symbol,int32_t iambob)
             {
                 if ( utxo->T.spentflag == 0 )
                     utxo->T.spentflag = (uint32_t)time(NULL);
+                continue;
             }
+            if ( iambob != 0 )
+                LP_utxo_clientpublish(utxo);
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
         }
         //else printf("skip %s %d %d %d %d\n",bits256_str(str,utxo->pubkey),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
@@ -836,6 +868,13 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         if ( counter++ == 0 )
         {
             bitcoin_priv2wif(USERPASS_WIFSTR,privkey,188);
+            bitcoin_wif2priv(&tmptype,&checkkey,USERPASS_WIFSTR);
+            if ( bits256_cmp(checkkey,privkey) != 0 )
+            {
+                char str[65],str2[65];
+                printf("FATAL ERROR converting USERPASS_WIFSTR %s -> %s != %s\n",USERPASS_WIFSTR,bits256_str(str,checkkey),bits256_str(str2,privkey));
+                exit(-1);
+            }
             conv_NXTpassword(userpass.bytes,pubkeyp->bytes,(uint8_t *)USERPASS_WIFSTR,(int32_t)strlen(USERPASS_WIFSTR));
             userpub = curve25519(userpass,curve25519_basepoint9());
             printf("userpass.(%s)\n",bits256_str(USERPASS,userpub));
@@ -849,8 +888,9 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             }
         }
     }
-    LP_mypubkey = *pubkeyp = curve25519(privkey,curve25519_basepoint9());
-    //printf("privkey.(%s) -> LP_mypubkey.(%s)\n",bits256_str(str,privkey),bits256_str(str2,LP_mypubkey));
+    LP_mypub25519 = *pubkeyp = curve25519(privkey,curve25519_basepoint9());
+    LP_mypriv25519 = privkey;
+    //printf("privkey.(%s) -> LP_mypub25519.(%s)\n",bits256_str(str,privkey),bits256_str(str2,LP_mypub25519));
     return(privkey);
 }
 

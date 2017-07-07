@@ -83,7 +83,7 @@ char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
-char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
+/*char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
 {
     char url[4096],str[65],str2[65],str3[65],*retstr; struct _LP_utxoinfo u; uint64_t val,val2;
     if ( (retstr= LP_isitme(destip,destport)) != 0 )
@@ -109,16 +109,16 @@ char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utx
             utxo->T.spentflag = (uint32_t)time(NULL);
         return(0);
     }
-}
+}*/
 
-char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
+/*char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
 {
     char url[512],str[65];
     sprintf(url,"http://%s:%u/api/stats/lookup?client=%s",destip,destport,bits256_str(str,pubkey));
     //printf("getutxo.(%s)\n",url);
     return(LP_issue_curl("lookup",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
-}
+}*/
 
 char *issue_LP_getprices(char *destip,uint16_t destport)
 {

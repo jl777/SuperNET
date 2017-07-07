@@ -417,6 +417,21 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
     return(retval);
 }
 
+int32_t swap_nn_send(int32_t sock,uint8_t *data,int32_t datalen,uint32_t flags)
+{
+    struct nn_pollfd pfd; int32_t i;
+    for (i=0; i<3000; i++)
+    {
+        memset(&pfd,0,sizeof(pfd));
+        pfd.fd = sock;
+        pfd.events = NN_POLLIN;
+        if ( nn_poll(&pfd,1,1) > 0 )
+            return(nn_send(sock,data,datalen,flags));
+        usleep(1000);
+    }
+    return(-1);
+}
+
 int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen),int32_t (*datagen)(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen))
 {
     int32_t datalen,sendlen,retval = -1;
@@ -426,7 +441,7 @@ int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basi
         printf("waited for %s\n",statename);
         if ( (datalen= (*datagen)(swap,data,maxlen)) > 0 )
         {
-            if ( (sendlen= nn_send(pairsock,data,datalen,0)) == datalen )
+            if ( (sendlen= swap_nn_send(pairsock,data,datalen,0)) == datalen )
             {
                 printf("sent.%d after waitfor.%s\n",sendlen,statename);
                 retval = 0;
@@ -443,7 +458,7 @@ int32_t LP_sendwait(char *statename,int32_t timeout,int32_t pairsock,struct basi
     if ( (datalen= (*datagen)(swap,data,maxlen)) > 0 )
     {
         //printf("generated %d for %s\n",datalen,statename);
-        if ( (sendlen= nn_send(pairsock,data,datalen,0)) == datalen )
+        if ( (sendlen= swap_nn_send(pairsock,data,datalen,0)) == datalen )
         {
             //printf("sendwait.%s sent %d\n",statename,sendlen);
             if ( LP_waitfor(pairsock,swap,timeout,verify) == 0 )

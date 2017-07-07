@@ -18,7 +18,7 @@
 //  marketmaker
 //
 
-char *portstrs[][2] = { { "BTC", "8332" }, { "KMD", "7771" } };
+char *portstrs[][3] = { { "BTC", "8332" }, { "KMD", "7771", "7772" } };
 
 uint16_t LP_rpcport(char *symbol)
 {
@@ -27,6 +27,15 @@ uint16_t LP_rpcport(char *symbol)
         if ( strcmp(portstrs[i][0],symbol) == 0 )
             return(atoi(portstrs[i][1]));
     return(0);
+}
+
+uint16_t LP_busport(uint16_t rpcport)
+{
+    if ( rpcport == 8332 )
+        return(8334); // BTC
+    else if ( rpcport < (1 << 15) )
+        return(65535 - rpcport);
+    else return(rpcport+1);
 }
 
 char *parse_conf_line(char *line,char *field)
@@ -204,7 +213,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     return(coin);
 }
 
-int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t taddr)
+int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t taddr,uint16_t busport)
 {
     char *name2;
     memset(coin,0,sizeof(*coin));
@@ -219,6 +228,7 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
     coin->p2shtype = p2shtype;
     coin->wiftype = wiftype;
     coin->inactive = (uint32_t)time(NULL);
+    coin->bussock = LP_coinbus(busport);
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;
     else name2 = name;
@@ -237,10 +247,12 @@ int32_t LP_isdisabled(char *base,char *rel)
 
 struct iguana_info *LP_coinfind(char *symbol)
 {
-    struct iguana_info *coin,cdata; int32_t isPoS,longestchain = 1; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*assetname;
+    struct iguana_info *coin,cdata; int32_t isPoS,longestchain = 1; uint16_t port,busport; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*assetname;
     if ( (coin= LP_coinsearch(symbol)) != 0 )
         return(coin);
     if ( (port= LP_rpcport(symbol)) == 0 )
+        return(0);
+    if ( (busport= LP_busport(port)) == 0 )
         return(0);
     isPoS = 0;
     txfee = 10000;
@@ -261,7 +273,7 @@ struct iguana_info *LP_coinfind(char *symbol)
     else if ( strcmp(symbol,"KMD") == 0 )
         name = "komodo";
     else return(0);
-    if ( LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0) > 0 )
+    if ( LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,busport) > 0 )
     {
         if ( (coin= LP_coinadd(&cdata)) != 0 )
         {
@@ -300,7 +312,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
             name = assetname;
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
-        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr")) < 0 )
+        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr"),LP_busport(port)) < 0 )
         {
             coin = LP_coinadd(&cdata);
             coin->inactive = (uint32_t)time(NULL);
