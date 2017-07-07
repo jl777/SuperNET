@@ -135,11 +135,10 @@ void queue_loop(void *ignore)
             }
             else if ( time(NULL) > ptr->starttime+LP_HTTP_TIMEOUT )
             {
-                nonz++;
-                //duplicate = 1;
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
                 {
+                    nonz++;
                     printf("found crc32.%u\n",ptr->crc32);
                     free(ptr);
                     ptr = 0;
