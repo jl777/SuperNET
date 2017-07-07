@@ -288,11 +288,11 @@ trust(pubkey, trust)\n\
         return(LP_peers());
     else if ( strcmp(method,"getutxos") == 0 )
         return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
-    else if ( strcmp(method,"notified") == 0 )
+    else if ( strcmp(method,"utxo") == 0 )
     {
         if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
-            return(clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}"));
-        else return(clonestr("{\"result\":\"couldnt add utxo\"}"));
+            retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
+        else retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
     }
     else
     {

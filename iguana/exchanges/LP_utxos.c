@@ -233,7 +233,7 @@ int32_t LP_utxopurge(int32_t allutxos)
 cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
 {
     struct _LP_utxoinfo u;
-    jaddstr(item,"method","notified");
+    jaddstr(item,"method","utxo");
     if ( utxo == 0 )
         return(item);
     if ( utxo->gui[0] != 0 )

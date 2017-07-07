@@ -241,51 +241,47 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
         encrypted = 1;
         free(msgstr), msgstr = 0;
     }
-    if ( IAMLP != 0 )
+    if ( encrypted == 0 )
     {
-        //printf("queuesend %d -> %d\n",msglen,pubsock);
-        LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
+        if ( (argjson= cJSON_Parse(msgstr)) != 0 )
+        {
+            if ( (methodstr= jstr(argjson,"method")) != 0 && strlen(methodstr) <= sizeof(method) )
+            {
+                strcpy(method,methodstr);
+                jdelete(argjson,"method");
+                jaddstr(argjson,"method2",method);
+                jaddstr(argjson,"method",method);
+                msg = (void *)jprint(argjson,0);
+                crc32 = calc_crc32(0,&msg[2],(int32_t)strlen((char *)msg)+1-2);
+                jdelete(argjson,"method");
+                jaddstr(argjson,"method","broadcast");
+                msg = (void *)jprint(argjson,0);
+                msglen = (int32_t)strlen((char *)msg) + 1;
+                if ( IAMLP != 0 )
+                    LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
+                else LP_queuesend(crc32,-1,base,rel,msg,msglen);
+                free(msg);
+            } else printf("no valid method in (%s)\n",msgstr);
+            free_json(argjson);
+        } else printf("couldnt parse (%s)\n",msgstr);
     }
     else
     {
-        if ( encrypted == 0 )
-        {
-            if ( (argjson= cJSON_Parse(msgstr)) != 0 )
-            {
-                if ( (methodstr= jstr(argjson,"method")) != 0 && strlen(methodstr) <= sizeof(method) )
-                {
-                    strcpy(method,methodstr);
-                    jdelete(argjson,"method");
-                    jaddstr(argjson,"method2",method);
-                    jaddstr(argjson,"method",method);
-                    msg = (void *)jprint(argjson,0);
-                    crc32 = calc_crc32(0,&msg[2],(int32_t)strlen((char *)msg)+1-2);
-                    jdelete(argjson,"method");
-                    jaddstr(argjson,"method","broadcast");
-                    msg = (void *)jprint(argjson,0);
-                    msglen = (int32_t)strlen((char *)msg) + 1;
-                    LP_queuesend(crc32,-1,base,rel,msg,msglen);
-                    free(msg);
-                } else printf("no valid method in (%s)\n",msgstr);
-                free_json(argjson);
-            } else printf("couldnt parse (%s)\n",msgstr);
-        }
-        else
-        {
-            argjson = cJSON_CreateObject();
-            init_hexbytes_noT(cipherstr,msg,msglen);
-            jaddstr(argjson,"cipher",cipherstr);
-            jaddstr(argjson,"method2","encrypted");
-            jaddstr(argjson,"method","encrypted");
-            msg = (void *)jprint(argjson,0);
-            crc32 = calc_crc32(0,&msg[2],(int32_t)strlen((char *)msg)+1-2);
-            jdelete(argjson,"method");
-            jaddstr(argjson,"method","broadcast");
-            msg = (void *)jprint(argjson,0);
-            msglen = (int32_t)strlen((char *)msg) + 1;
-            LP_queuesend(crc32,-1,base,rel,msg,msglen);
-            free(msg);
-       }
+        argjson = cJSON_CreateObject();
+        init_hexbytes_noT(cipherstr,msg,msglen);
+        jaddstr(argjson,"cipher",cipherstr);
+        jaddstr(argjson,"method2","encrypted");
+        jaddstr(argjson,"method","encrypted");
+        msg = (void *)jprint(argjson,0);
+        crc32 = calc_crc32(0,&msg[2],(int32_t)strlen((char *)msg)+1-2);
+        jdelete(argjson,"method");
+        jaddstr(argjson,"method","broadcast");
+        msg = (void *)jprint(argjson,0);
+        msglen = (int32_t)strlen((char *)msg) + 1;
+        if ( IAMLP != 0 )
+            LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
+        else LP_queuesend(crc32,-1,base,rel,msg,msglen);
+        free(msg);
     }
     if ( msgstr != 0 )
         free(msgstr);
