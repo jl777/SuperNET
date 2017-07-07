@@ -53,7 +53,7 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
     char url[512],*retstr;
     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,numpeers,numutxos);
     retstr = LP_issue_curl("getpeers",destip,port,url);
-    printf("getpeers.(%s)\n",retstr);
+    printf("%s -> getpeers.(%s)\n",destip,retstr);
     return(retstr);
 }
 
