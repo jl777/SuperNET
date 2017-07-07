@@ -92,15 +92,18 @@ int32_t LP_Qenqueued,LP_Qdequeued;
 void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 {
     struct LP_queue *ptr;
-    ptr = calloc(1,sizeof(*ptr) + msglen);
-    ptr->crc32 = crc32;
-    ptr->sock = sock;
-    ptr->peerind = peerind;
-    ptr->msglen = msglen;
-    memcpy(ptr->msg,msg,msglen);
-    DL_APPEND(LP_Q,ptr);
-    LP_Qenqueued++;
-    printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
+    if ( LP_Qenqueued == 0 )
+    {
+        ptr = calloc(1,sizeof(*ptr) + msglen);
+        ptr->crc32 = crc32;
+        ptr->sock = sock;
+        ptr->peerind = peerind;
+        ptr->msglen = msglen;
+        memcpy(ptr->msg,msg,msglen);
+        DL_APPEND(LP_Q,ptr);
+        LP_Qenqueued++;
+        //printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
+    }
 }
 
 void queue_loop(void *ignore)

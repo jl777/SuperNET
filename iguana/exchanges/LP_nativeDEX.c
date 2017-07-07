@@ -122,7 +122,7 @@ int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
                     crcs[i] = crcs[i >> 1];
                     crcs[i >> 1] = crc32;
                     dup++;
-                    printf("duplicate %08x in slot %d -> slot %d (%lu / %lu)\n",crc32,i,i>>1,dup,total);
+                    printf("duplicate %u in slot %d -> slot %d (%lu / %lu)\n",crc32,i,i>>1,dup,total);
                 }
                 *duplicatep = 1;
                 break;
@@ -317,7 +317,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
 
 void command_rpcloop(void *myipaddr)
 {
-    int32_t nonz = 0; char *origipaddr; struct iguana_info *coin,*ctmp; struct LP_peerinfo *peer,*tmp; void *ctx;
+    int32_t nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp; void *ctx; //struct iguana_info *coin,*ctmp;
     ctx = bitcoin_ctx();
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";

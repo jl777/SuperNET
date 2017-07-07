@@ -291,8 +291,8 @@ trust(pubkey, trust)\n\
     else if ( strcmp(method,"utxo") == 0 )
     {
         if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
-            retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
-        else retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
+            return(clonestr("{\"result\":\"success\",\"utxo\":\"received\"}"));
+        else return(clonestr("{\"result\":\"couldnt add utxo\"}"));
     }
     else
     {
