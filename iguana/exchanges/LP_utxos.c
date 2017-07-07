@@ -274,9 +274,8 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
     if ( LP_ismine(utxo) > 0 )
     {
         jaddnum(item,"session",LP_sessionid);
-        printf("sessionid.%u %s\n",LP_sessionid,jprint(item,0));
-    }
-    else jaddnum(item,"session",utxo->T.sessionid);
+        //printf("sessionid.%u %s\n",LP_sessionid,jprint(item,0));
+    } else jaddnum(item,"session",utxo->T.sessionid);
     return(item);
 }
 
