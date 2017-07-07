@@ -304,10 +304,8 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             pfd.events = NN_POLLIN;
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
-            //printf("checking sock.%d\n",sock);
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-                //printf("got recvlen.%d\n",recvlen);
                 nonz++;
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,profitmargin,ptr,recvlen,sock)) != 0 )
                     free(retstr);
