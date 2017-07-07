@@ -220,7 +220,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
              }*/
             free_json(argjson);
         } else printf("error parsing(%s)\n",jsonstr);
-    }
+    } else printf("DUPLICATE.(%s)\n",(char *)ptr);
     portable_mutex_unlock(&LP_commandmutex);
     if ( jsonstr != 0 && (void *)jsonstr != (void *)ptr && (void *)jsonstr != (void *)decoded )
         free(jsonstr);
