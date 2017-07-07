@@ -73,12 +73,12 @@ char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t 
     //return(retstr);
 }
 
-char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
+char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos,uint32_t sessionid)
 {
     char url[512],*retstr;
     if ( (retstr= LP_isitme(destip,destport)) != 0 )
         return(retstr);
-    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,numpeers,numutxos);
+    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d&session=%u",destip,destport,ipaddr,port,numpeers,numutxos,sessionid);
     return(LP_issue_curl("notify",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }

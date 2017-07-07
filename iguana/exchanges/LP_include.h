@@ -210,7 +210,7 @@ struct LP_peerinfo
 {
     UT_hash_handle hh;
     uint64_t ip_port;
-    uint32_t ipbits,errortime,errors,numpeers,numutxos,lasttime,connected,lastutxos,lastpeers,diduquery,good;
+    uint32_t ipbits,errortime,errors,numpeers,numutxos,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
     int32_t pushsock,subsock;
     uint16_t port;
     char ipaddr[64];
