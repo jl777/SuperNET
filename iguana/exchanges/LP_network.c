@@ -145,10 +145,10 @@ void queue_loop(void *ignore)
                 else
                 {
                     ptr->peerind++;
-                    if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
+                    //if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
                         printf("no more peers to try at peerind.%d %p Q_LP.%p\n",ptr->peerind,ptr,LP_Q);
-                        //free(ptr);
+                        free(ptr);
                         ptr = 0;
                     }
                 }
