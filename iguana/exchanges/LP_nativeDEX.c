@@ -302,8 +302,8 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
             pfd.events = NN_POLLIN;
-            if ( nn_poll(&pfd,1,1) != 1 )
-                break;
+            //if ( nn_poll(&pfd,1,1) != 1 )
+            //    break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 nonz++;
