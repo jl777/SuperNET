@@ -120,12 +120,15 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                 memset(zero.bytes,0,sizeof(zero));
                 //LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
                 LP_broadcast_message(mypubsock,"","",zero,msg);
-                HASH_ITER(hh,LP_coins,coin,ctmp)
+                if ( 0 )
                 {
-                    if ( coin->bussock >= 0 )
+                    HASH_ITER(hh,LP_coins,coin,ctmp)
                     {
-                        nanomsg_transportname(0,busaddr,peer->ipaddr,coin->busport);
-                        nn_connect(coin->bussock,busaddr);
+                        if ( coin->bussock >= 0 )
+                        {
+                            nanomsg_transportname(0,busaddr,peer->ipaddr,coin->busport);
+                            nn_connect(coin->bussock,busaddr);
+                        }
                     }
                 }
             }
@@ -137,6 +140,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
 int32_t LP_coinbus(uint16_t coin_busport)
 {
     struct LP_peerinfo *peer,*tmp; char busaddr[64]; int32_t timeout,bussock = -1;
+    return(-1);
     if ( IAMLP != 0 && LP_mypeer != 0 && (bussock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
         timeout = 1;
