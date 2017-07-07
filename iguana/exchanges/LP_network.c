@@ -109,7 +109,6 @@ void queue_loop(void *ignore)
     while ( 1 )
     {
         nonz = 0;
-        portable_mutex_lock(&LP_networkmutex);
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = 0;
         DL_FOREACH_SAFE(LP_Q,ptr,tmp)
@@ -122,9 +121,9 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                     {
-                        printf("LP_send sent %d instead of %d\n",sentbytes,ptr->msglen);
+                        printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
                         flag = 1;
-                    } else printf("%p qsent %u msglen.%d\n",ptr,ptr->crc32,ptr->msglen);
+                    } else printf("%d %p qsent %u msglen.%d\n",n,ptr,ptr->crc32,ptr->msglen);
                     ptr->sock = -1;
                     /*if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
@@ -136,7 +135,7 @@ void queue_loop(void *ignore)
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
                 {
-                    printf("found crc32.%u\n",ptr->crc32);
+                    printf("%d found crc32.%u\n",n,ptr->crc32);
                     flag = 1;
                 }
                 else
@@ -144,7 +143,7 @@ void queue_loop(void *ignore)
                     ptr->peerind++;
                     if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
-                        printf("no more peers to try at peerind.%d %p Q_LP.%p\n",ptr->peerind,ptr,LP_Q);
+                        printf("%d no more peers to try at peerind.%d %p Q_LP.%p\n",n,ptr->peerind,ptr,LP_Q);
                         flag = 1;
                     }
                 }
@@ -152,19 +151,15 @@ void queue_loop(void *ignore)
             if ( flag != 0 )
             {
                 nonz++;
+                printf("free %p nonz.%d\n",ptr,nonz);
+                portable_mutex_lock(&LP_networkmutex);
                 DL_DELETE(LP_Q,ptr);
+                portable_mutex_unlock(&LP_networkmutex);
                 LP_Qdequeued++;
                 free(ptr);
                 ptr = 0;
             }
-            /*if ( ptr != 0 )
-            {
-                printf("reQ.%p: %u msglen.%d (+%d, -%d) -> %d\n",ptr,ptr->crc32,ptr->msglen,LP_Qenqueued,LP_Qdequeued,LP_Qenqueued-LP_Qdequeued);
-                DL_APPEND(LP_Q,ptr);
-                LP_Qenqueued++;
-            }*/
         }
-        portable_mutex_unlock(&LP_networkmutex);
         printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
             usleep(500000);
