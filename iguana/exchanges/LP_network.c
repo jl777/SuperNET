@@ -240,12 +240,6 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                                 buf = keepalive;
                                 printf("send keepalive.(%s)\n",keepalive);
                             }
-                            else
-                            {
-                                nn_freemsg(buf);
-                                buf = 0;
-                                size = 0;
-                            }
                             break;
                         }
                     }
