@@ -242,14 +242,15 @@ trust(pubkey, trust)\n\
     {
         if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
         {
-            argjson = reqjson;
-            if ( jobj(argjson,"method2") != 0 )
+            if ( jobj(reqjson,"method2") != 0 )
             {
-                jdelete(argjson,"method");
-                method = jstr(argjson,"method2");
-                jaddstr(argjson,"method",method);
-                jdelete(argjson,"method2");
+                jdelete(reqjson,"method");
+                method = jstr(reqjson,"method2");
+                jaddstr(reqjson,"method",method);
+                jdelete(reqjson,"method2");
+                printf("BROADCASTED.(%s)\n",jprint(reqjson,0));
             }
+            argjson = reqjson;
         }
     }
     if ( LP_isdisabled(base,rel) != 0 )

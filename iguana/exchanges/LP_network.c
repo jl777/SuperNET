@@ -92,18 +92,15 @@ int32_t LP_Qenqueued,LP_Qdequeued;
 void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 {
     struct LP_queue *ptr;
-    if ( LP_Qenqueued == 0 || IAMLP != 0 )
-    {
-        ptr = calloc(1,sizeof(*ptr) + msglen);
-        ptr->crc32 = crc32;
-        ptr->sock = sock;
-        ptr->peerind = peerind;
-        ptr->msglen = msglen;
-        memcpy(ptr->msg,msg,msglen);
-        DL_APPEND(LP_Q,ptr);
-        LP_Qenqueued++;
-        //printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
-    }
+    ptr = calloc(1,sizeof(*ptr) + msglen);
+    ptr->crc32 = crc32;
+    ptr->sock = sock;
+    ptr->peerind = peerind;
+    ptr->msglen = msglen;
+    memcpy(ptr->msg,msg,msglen);
+    DL_APPEND(LP_Q,ptr);
+    LP_Qenqueued++;
+    //printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
 }
 
 void queue_loop(void *ignore)
@@ -256,7 +253,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                 msg = (void *)jprint(argjson,0);
                 msglen = (int32_t)strlen((char *)msg) + 1;
                 crc32 = calc_crc32(0,&msg[2],msglen - 2);
-                printf("CRC32.%u (%s)\n",crc32,(char *)msg);
+                //printf("CRC32.%u (%s)\n",crc32,(char *)msg);
                 //jdelete(argjson,"method");
                 //jaddstr(argjson,"method","broadcast");
                 //msg = (void *)jprint(argjson,0);
