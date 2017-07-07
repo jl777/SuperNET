@@ -248,14 +248,14 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                 if ( jobj(argjson,"method2") != 0 )
                     jdelete(argjson,"method2");
                 jaddstr(argjson,"method2",method);
-                jaddstr(argjson,"method",method);
-                msg = (void *)jprint(argjson,0);
-                crc32 = calc_crc32(0,&msg[2],(int32_t)strlen((char *)msg)+1-2);
-                printf("CRC32.%u (%s)\n",crc32,(char *)msg);
-                jdelete(argjson,"method");
                 jaddstr(argjson,"method","broadcast");
                 msg = (void *)jprint(argjson,0);
                 msglen = (int32_t)strlen((char *)msg) + 1;
+                crc32 = calc_crc32(0,&msg[2],msglen - 2);
+                printf("CRC32.%u (%s)\n",crc32,(char *)msg);
+                //jdelete(argjson,"method");
+                //jaddstr(argjson,"method","broadcast");
+                //msg = (void *)jprint(argjson,0);
                 if ( IAMLP != 0 )
                     LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
                 else LP_queuesend(crc32,-1,base,rel,msg,msglen);
