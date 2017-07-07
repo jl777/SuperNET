@@ -257,13 +257,13 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
         jaddnum(item,"pending",utxo->T.swappending);
     if ( utxo->iambob != 0 )
     {
-        jaddbits256(item,"srchash",LP_mypub25519);
+        jaddbits256(item,"srchash",utxo->pubkey);//LP_mypub25519);
         if ( bits256_nonz(utxo->S.otherpubkey) != 0 )
             jaddbits256(item,"desthash",utxo->S.otherpubkey);
     }
     else
     {
-        jaddbits256(item,"desthash",LP_mypub25519);
+        jaddbits256(item,"desthash",utxo->pubkey);//LP_mypub25519);
         if ( bits256_nonz(utxo->S.otherpubkey) != 0 )
             jaddbits256(item,"srchash",utxo->S.otherpubkey);
     }
