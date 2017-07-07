@@ -48,6 +48,7 @@ int32_t LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
 int32_t USERPASS_COUNTER,IAMLP = 0;
+uint32_t LP_sessionid;
 double LP_profitratio = 1.;
 bits256 LP_mypub25519,LP_mypriv25519;
 
@@ -558,6 +559,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("jeezy says we cant use the nullstring as passphrase and I agree\n");
         exit(-1);
     }
+    LP_sessionid = (uint32_t)time(NULL);
     IAMLP = !amclient;
 #ifndef __linux__
     if ( IAMLP != 0 )

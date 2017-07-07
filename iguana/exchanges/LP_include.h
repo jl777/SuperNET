@@ -184,7 +184,7 @@ struct iguana_info
 
 struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout; };
 
-struct LP_utxostats { uint32_t lasttime,errors,swappending,spentflag,lastspentcheck,bestflag; };
+struct LP_utxostats { uint32_t sessionid,lasttime,errors,swappending,spentflag,lastspentcheck,bestflag; };
 
 struct LP_utxobob { struct _LP_utxoinfo utxo,deposit; };
 
