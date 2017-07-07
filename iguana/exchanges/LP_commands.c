@@ -247,7 +247,7 @@ trust(pubkey, trust)\n\
                 jdelete(reqjson,"method");
                 method = jstr(reqjson,"method2");
                 jaddstr(reqjson,"method",method);
-                jdelete(reqjson,"method2");
+                //jdelete(reqjson,"method2");
                 //printf("BROADCASTED.(%s)\n",jprint(reqjson,0));
                 printf("BROADCASTED METHOD.%s\n",method);
             }
