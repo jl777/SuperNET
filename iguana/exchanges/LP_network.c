@@ -128,7 +128,7 @@ void queue_loop(void *ignore)
                     else flag = 1;
                 }
             }
-            else if ( time(NULL) > ptr->starttime+30 )
+            else if ( time(NULL) > ptr->starttime+3 )
             {
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
