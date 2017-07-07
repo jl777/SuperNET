@@ -87,7 +87,7 @@ struct LP_queue
     uint32_t starttime,crc32;
     uint8_t msg[];
 } *LP_Q;
-int32_t LP_Qenqueued,LP_Qdequeued;
+int32_t LP_Qenqueued,LP_Qerrors,LP_Qfound;
 
 void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 {
@@ -133,19 +133,20 @@ void queue_loop(void *ignore)
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
                 {
-                    printf("%d found crc32.%u\n",n,ptr->crc32);
+                    //printf("%d found crc32.%u\n",n,ptr->crc32);
+                    LP_Qfound++;
                     flag = 1;
                 }
                 else
                 {
-                    printf("couldnt find.%u (%s)\n",ptr->crc32,(char *)ptr->msg);
+                    printf("couldnt find.%u (%s) Q.%d err.%d match.%d\n",ptr->crc32,(char *)ptr->msg,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     ptr->peerind++;
                     if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
                         printf("%d no more peers to try at peerind.%d %p Q_LP.%p\n",n,ptr->peerind,ptr,LP_Q);
                         flag = 1;
+                        LP_Qerrors++;
                      }
-                    flag = 1;
                 }
             }
             if ( flag != 0 )
@@ -154,7 +155,6 @@ void queue_loop(void *ignore)
                 portable_mutex_lock(&LP_networkmutex);
                 DL_DELETE(LP_Q,ptr);
                 portable_mutex_unlock(&LP_networkmutex);
-                LP_Qdequeued++;
                 free(ptr);
                 ptr = 0;
             }
@@ -261,7 +261,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                     LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
                 else LP_queuesend(crc32,-1,base,rel,msg,msglen);
                 free(msg);
-            } else printf("no valid method in (%s)\n",msgstr);
+            } // else printf("no valid method in (%s)\n",msgstr);
             free_json(argjson);
         } else printf("couldnt parse (%s)\n",msgstr);
     }
