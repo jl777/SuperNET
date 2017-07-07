@@ -129,12 +129,9 @@ trust(pubkey, trust)\n\
         jdelete(argjson,"userpass");
         if ( strcmp(method,"sendmessage") == 0 )
         {
-            if ( (reqjson= LP_dereference(argjson,"sendmessage")) != 0 )
-            {
-                printf("broadcast message\n");
-                LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(reqjson,1));
-                return(clonestr("{\"result\":\"success\"}"));
-            } else return(clonestr("{\"error\":\"couldnt dereference sendmessage\"}"));
+            printf("broadcast message\n");
+            LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
+            return(clonestr("{\"result\":\"success\"}"));
         }
         if ( base != 0 && rel != 0 )
         {
