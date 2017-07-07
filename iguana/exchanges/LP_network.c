@@ -110,7 +110,7 @@ void queue_loop(void *ignore)
     {
         nonz = 0;
         portable_mutex_lock(&LP_networkmutex);
-        printf("LP_Q next.%p prev.%p\n",LP_Q->next,LP_Q->prev);
+        printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         DL_FOREACH(LP_Q,ptr)
         {
             DL_DELETE(LP_Q,ptr);
