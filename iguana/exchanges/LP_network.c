@@ -174,11 +174,7 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
         {
             if ( (sentbytes= nn_send(sock0,msg,msglen,0)) != msglen )
                 printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
-            else
-            {
-                printf("_LP_queuesend %d\n",msglen);
-                sock0 = -1;
-            }
+            else sock0 = -1;
         }
         if ( sock1 >= 0 && LP_sockcheck(sock1) > 0 )
         {
