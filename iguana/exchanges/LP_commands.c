@@ -249,7 +249,7 @@ trust(pubkey, trust)\n\
                 jaddstr(reqjson,"method",method);
                 //jdelete(reqjson,"method2");
                 //printf("BROADCASTED.(%s)\n",jprint(reqjson,0));
-                printf("BROADCASTED METHOD.%s\n",method);
+                //printf("BROADCASTED METHOD.%s\n",method);
             }
             argjson = reqjson;
         }
@@ -305,7 +305,7 @@ trust(pubkey, trust)\n\
         return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
     else if ( strcmp(method,"utxo") == 0 )
     {
-        printf("UTXO.%s\n",method);
+        //printf("UTXO.%s\n",method);
         if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
             retstr = clonestr("{\"result\":\"success\",\"utxo\":\"received\"}");
         else retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
@@ -373,7 +373,8 @@ trust(pubkey, trust)\n\
             }*/
         }
     }
-    printf("ERROR.(%s)\n",jprint(argjson,0));
+    if ( retstr == 0 )
+        printf("ERROR.(%s)\n",jprint(argjson,0));
     if ( reqjson != 0 )
         free_json(reqjson);
     if ( retstr != 0 )
