@@ -114,12 +114,12 @@ void queue_loop(void *ignore)
         DL_FOREACH(LP_Q,ptr)
         {
             DL_DELETE(LP_Q,ptr);
-            printf("deQ.%p\n",ptr);
             LP_Qdequeued++;
             if ( ptr->sock >= 0 )
             {
                 if ( LP_sockcheck(ptr->sock) > 0 )
                 {
+                    nonz++;
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("LP_send sent %d instead of %d\n",sentbytes,ptr->msglen);
                     //else printf("qsent %u msglen.%d\n",ptr->crc32,ptr->msglen);
@@ -135,6 +135,7 @@ void queue_loop(void *ignore)
             }
             else if ( time(NULL) > ptr->starttime+LP_HTTP_TIMEOUT )
             {
+                nonz++;
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
                 {
@@ -145,7 +146,7 @@ void queue_loop(void *ignore)
                 else
                 {
                     ptr->peerind++;
-                    //if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
+                    if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
                         printf("no more peers to try at peerind.%d %p Q_LP.%p\n",ptr->peerind,ptr,LP_Q);
                         free(ptr);
