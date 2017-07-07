@@ -100,7 +100,7 @@ void _LP_sendqueueadd(int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
     memcpy(ptr->msg,msg,msglen);
     DL_APPEND(LP_Q,ptr);
     LP_Qenqueued++;
-    printf("Q.%p\n",ptr);
+    printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
 }
 
 void queue_loop(void *ignore)
@@ -110,6 +110,7 @@ void queue_loop(void *ignore)
     {
         nonz = 0;
         portable_mutex_lock(&LP_networkmutex);
+        printf("LP_Q next.%p prev.%p\n",LP_Q->next,LP_Q->prev);
         DL_FOREACH(LP_Q,ptr)
         {
             DL_DELETE(LP_Q,ptr);
@@ -146,7 +147,7 @@ void queue_loop(void *ignore)
                     ptr->peerind++;
                     if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
-                        printf("no more peers to try at peerind.%d\n",ptr->peerind);
+                        printf("no more peers to try at peerind.%d %p\n",ptr->peerind,ptr);
                         free(ptr);
                         ptr = 0;
                     }
@@ -154,9 +155,9 @@ void queue_loop(void *ignore)
             }
             if ( ptr != 0 )
             {
-                printf("reQ.%p: %u msglen.%d (+%d, -%d) -> %d\n",ptr,ptr->crc32,ptr->msglen,LP_Qenqueued,LP_Qdequeued,LP_Qenqueued-LP_Qdequeued);
                 DL_APPEND(LP_Q,ptr);
                 LP_Qenqueued++;
+                printf("reQ.%p: %u msglen.%d (+%d, -%d) -> %d\n",ptr,ptr->crc32,ptr->msglen,LP_Qenqueued,LP_Qdequeued,LP_Qenqueued-LP_Qdequeued);
             }
         }
         portable_mutex_unlock(&LP_networkmutex);
