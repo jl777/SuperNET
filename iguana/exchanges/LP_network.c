@@ -89,11 +89,11 @@ struct LP_queue
 } *LP_Q;
 int32_t LP_Qenqueued,LP_Qdequeued;
 
-void _LP_sendqueueadd(int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
+void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 {
     struct LP_queue *ptr;
     ptr = calloc(1,sizeof(*ptr) + msglen);
-    ptr->crc32 = calc_crc32(0,&msg[2],msglen-2);
+    ptr->crc32 = crc32;
     ptr->sock = sock;
     ptr->peerind = peerind;
     ptr->msglen = msglen;
@@ -165,7 +165,7 @@ void queue_loop(void *ignore)
     }
 }
 
-void _LP_queuesend(int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
+void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
     int32_t sentbytes,peerind = 0;
     if ( sock0 >= 0 || sock1 >= 0 )
@@ -196,13 +196,13 @@ void _LP_queuesend(int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32
     }
     portable_mutex_lock(&LP_networkmutex);
     if ( sock0 >= 0 )
-        _LP_sendqueueadd(sock0,msg,msglen,needack * peerind);
+        _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
     if ( sock1 >= 0 )
-        _LP_sendqueueadd(sock1,msg,msglen,needack);
+        _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
     portable_mutex_unlock(&LP_networkmutex);
 }
 
-void LP_queuesend(int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
+void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
 {
     //struct iguana_info *coin; int32_t flag=0,socks[2];
     if ( pubsock >= 0 )
@@ -213,9 +213,9 @@ void LP_queuesend(int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msgl
         //if ( base != 0 && base[0] != 0 && (coin= LP_coinfind(base)) != 0 && coin->bussock >= 0 )
         //    socks[flag++] = coin->bussock;
         //if ( flag == 0 && pubsock >= 0 )
-            _LP_queuesend(pubsock,-1,msg,msglen,0);
+            _LP_queuesend(crc32,pubsock,-1,msg,msglen,0);
         //else _LP_queuesend(socks[0],socks[1],msg,msglen,0);
-    } else _LP_queuesend(-1,-1,msg,msglen,1);
+    } else _LP_queuesend(crc32,-1,-1,msg,msglen,1);
 }
 
 // first 2 bytes == (crc32 & 0xffff) if encrypted, then nonce is next crypto_box_NONCEBYTES
@@ -223,7 +223,7 @@ void LP_queuesend(int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msgl
 
 void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25519,char *msgstr)
 {
-    uint8_t encoded[LP_ENCRYPTED_MAXSIZE],space[sizeof(encoded)],*msg,*nonce,*cipher; int32_t encrypted=0,msglen; uint32_t crc32; cJSON *argjson; char *methodstr,method[64],cipherstr[LP_ENCRYPTED_MAXSIZE*2+1];
+    uint8_t encoded[LP_ENCRYPTED_MAXSIZE],space[sizeof(encoded)],*msg,*nonce,*cipher; int32_t encrypted=0,msglen; uint32_t crc32=0; cJSON *argjson; char *methodstr,method[64],cipherstr[LP_ENCRYPTED_MAXSIZE*2+1];
     msglen = (int32_t)strlen(msgstr) + 1;
     msg = (void *)msgstr;
     if ( bits256_nonz(destpub25519) != 0 )
@@ -244,7 +244,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
     if ( IAMLP != 0 )
     {
         //printf("queuesend %d -> %d\n",msglen,pubsock);
-        LP_queuesend(pubsock,base,rel,msg,msglen);
+        LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
     }
     else
     {
@@ -257,10 +257,14 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                     strcpy(method,methodstr);
                     jdelete(argjson,"method");
                     jaddstr(argjson,"method2",method);
+                    jaddstr(argjson,"method",method);
+                    msg = (void *)jprint(argjson,0);
+                    crc32 = calc_crc32(0,&msg[2],(int32_t)strlen((char *)msg)+1-2);
+                    jdelete(argjson,"method");
                     jaddstr(argjson,"method","broadcast");
                     msg = (void *)jprint(argjson,0);
                     msglen = (int32_t)strlen((char *)msg) + 1;
-                    LP_queuesend(-1,base,rel,msg,msglen);
+                    LP_queuesend(crc32,-1,base,rel,msg,msglen);
                     free(msg);
                 } else printf("no valid method in (%s)\n",msgstr);
                 free_json(argjson);
@@ -269,13 +273,17 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
         else
         {
             argjson = cJSON_CreateObject();
-            jaddstr(argjson,"method","broadcast");
-            jaddstr(argjson,"method2","encrypted");
             init_hexbytes_noT(cipherstr,msg,msglen);
             jaddstr(argjson,"cipher",cipherstr);
-            msg = (void *)jprint(argjson,1);
+            jaddstr(argjson,"method2","encrypted");
+            jaddstr(argjson,"method","encrypted");
+            msg = (void *)jprint(argjson,0);
+            crc32 = calc_crc32(0,&msg[2],(int32_t)strlen((char *)msg)+1-2);
+            jdelete(argjson,"method");
+            jaddstr(argjson,"method","broadcast");
+            msg = (void *)jprint(argjson,0);
             msglen = (int32_t)strlen((char *)msg) + 1;
-            LP_queuesend(-1,base,rel,msg,msglen);
+            LP_queuesend(crc32,-1,base,rel,msg,msglen);
             free(msg);
        }
     }

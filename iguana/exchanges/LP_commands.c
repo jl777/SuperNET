@@ -321,7 +321,7 @@ trust(pubkey, trust)\n\
                         if ( cipherlen <= sizeof(cipher) )
                         {
                             decode_hex(cipher,cipherlen,cipherstr);
-                            LP_queuesend(LP_mypubsock,base,rel,cipher,cipherlen);
+                            LP_queuesend(calc_crc32(0,&cipher[2],cipherlen-2),LP_mypubsock,base,rel,cipher,cipherlen);
                         } else retstr = clonestr("{\"error\":\"cipherstr too big\"}");
                     }
                     else
