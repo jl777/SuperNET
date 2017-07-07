@@ -331,14 +331,14 @@ trust(pubkey, trust)\n\
                 bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
                 if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
                 {
-                    if ( (cipherstr= jstr(reqjson,"cipherstr")) != 0 )
+                    if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
                     {
                         cipherlen = (int32_t)strlen(cipherstr) >> 1;
                         if ( cipherlen <= sizeof(cipher) )
                         {
                             decode_hex(cipher,cipherlen,cipherstr);
                             LP_queuesend(calc_crc32(0,&cipher[2],cipherlen-2),LP_mypubsock,base,rel,cipher,cipherlen);
-                        } else retstr = clonestr("{\"error\":\"cipherstr too big\"}");
+                        } else retstr = clonestr("{\"error\":\"cipher too big\"}");
                     }
                     else
                     {

@@ -148,8 +148,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
     crc32 = calc_crc32(0,&ptr[2],recvlen-2);
     if ( (crc32 & 0xff) == ptr[0] && ((crc32>>8) & 0xff) == ptr[1] )
         encrypted = 1;
-    //printf("%s encrypted.%d recv.%u (%s)\n",typestr,encrypted,crc32,(char *)ptr);
-    portable_mutex_lock(&LP_commandmutex);
+    printf("%s encrypted.%d recv.%u %02x %02x vs %02x %02x\n",typestr,encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
     i = LP_crc32find(&duplicate,-1,crc32);
     if ( duplicate == 0 )
     {
@@ -184,48 +183,14 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
         if ( jsonstr != 0 && (argjson= cJSON_Parse(jsonstr)) != 0 )
         {
             len = (int32_t)strlen(jsonstr) + 1;
-            /*if ( jstr(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"forwardhex") == 0 )
-             {
-             //printf("got forwardhex\n");
-             if ( (retstr= LP_forwardhex(ctx,pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"))) != 0 )
-             {
-             }
-             }
-             else if ( jstr(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"publish") == 0 )
-             {
-             printf("got publish\n");
-             if ( jobj(argjson,"method2") != 0 )
-             jdelete(argjson,"method2");
-             jaddstr(argjson,"method2","broadcast");
-             if ( pubsock >= 0 && (reqjson= LP_dereference(argjson,"publish")) != 0 )
-             {
-             msg = jprint(reqjson,1);
-             /LP_send(pubsock,msg,(int32_t)strlen(msg)+1,1);
-             }
-             }
-             else*/ if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
-             {
-             }
-            /*if ( LP_COMMAND_RECVSOCK == NN_REP )
-             {
-             if ( retstr != 0 )
-             {
-             if ( strcmp("PULL",typestr) == 0 )
-             {
-             printf("%d got REQ.(%s) -> (%s)\n",recvsock,jprint(argjson,0),retstr);
-             /LP_send(recvsock,retstr,(int32_t)strlen(retstr)+1,0);
-             }
-             }
-             else if ( strcmp("PULL",typestr) == 0 )
-             {
-             printf("%d got REQ.(%s) -> null\n",recvsock,jprint(argjson,0));
-             /LP_send(recvsock,"{\"result\":null}",(int32_t)strlen("{\"result\":null}")+1,0);
-             }
-             }*/
+            portable_mutex_lock(&LP_commandmutex);
+            if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
+            {
+            }
+            portable_mutex_unlock(&LP_commandmutex);
             free_json(argjson);
         } else printf("error parsing(%s)\n",jsonstr);
     } //else printf("DUPLICATE.(%s)\n",(char *)ptr);
-    portable_mutex_unlock(&LP_commandmutex);
     if ( jsonstr != 0 && (void *)jsonstr != (void *)ptr && (void *)jsonstr != (void *)decoded )
         free(jsonstr);
     if ( ptr != 0 )
