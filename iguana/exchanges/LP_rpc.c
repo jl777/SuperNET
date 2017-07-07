@@ -50,9 +50,11 @@ char *LP_isitme(char *destip,uint16_t destport)
 
 char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
 {
-    char url[512];
+    char url[512],*retstr;
     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,numpeers,numutxos);
-    return(LP_issue_curl("getpeers",destip,port,url));
+    retstr = LP_issue_curl("getpeers",destip,port,url);
+    printf("getpeers.(%s)\n",retstr);
+    return(retstr);
 }
 
 char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)

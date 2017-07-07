@@ -71,7 +71,9 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
         {
             printf("LPaddpeer %s\n",ipaddr);
             peer = calloc(1,sizeof(*peer));
-            peer->sessionid = sessionid;
+            if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+                peer->sessionid = LP_sessionid;
+            else peer->sessionid = sessionid;
             peer->pushsock = peer->subsock = pushsock = subsock = -1;
             strcpy(peer->ipaddr,ipaddr);
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
