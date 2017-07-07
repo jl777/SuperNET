@@ -366,11 +366,11 @@ trust(pubkey, trust)\n\
         }
         else
         {
-            /*if ( strcmp(method,"register") == 0 )
+            if ( strcmp(method,"psock") == 0 )
             {
                 //printf("nonLP got (%s)\n",jprint(argjson,0));
-                retstr = clonestr("{\"result\":\"success\",\"register\":\"received\"}");
-            }*/
+                retstr = clonestr("{\"result\":\"success\"}");
+            }
         }
     }
     if ( retstr == 0 )

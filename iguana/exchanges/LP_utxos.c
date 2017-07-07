@@ -234,11 +234,14 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
 {
     struct _LP_utxoinfo u;
     jaddstr(item,"method","utxo");
-    if ( LP_ismine(utxo) > 0 )
-        jaddnum(item,"session",LP_sessionid);
-    else jaddnum(item,"session",utxo->T.sessionid);
     if ( utxo == 0 )
         return(item);
+    if ( LP_ismine(utxo) > 0 )
+    {
+        jaddnum(item,"session",LP_sessionid);
+        printf("sessionid.%u\n",LP_sessionid);
+    }
+    else jaddnum(item,"session",utxo->T.sessionid);
     if ( utxo->gui[0] != 0 )
         jaddstr(item,"gui",utxo->gui);
     jaddstr(item,"coin",utxo->coin);
