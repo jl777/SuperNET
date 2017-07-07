@@ -105,33 +105,28 @@ void _LP_sendqueueadd(int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 
 void queue_loop(void *ignore)
 {
-    struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,duplicate;
+    struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
     while ( 1 )
     {
         nonz = 0;
         portable_mutex_lock(&LP_networkmutex);
-        printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
+        //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
+        n = 0;
         DL_FOREACH_SAFE(LP_Q,ptr,tmp)
         {
+            n++;
+            flag = 0;
             if ( ptr->sock >= 0 )
             {
                 if ( LP_sockcheck(ptr->sock) > 0 )
                 {
-                    nonz++;
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("LP_send sent %d instead of %d\n",sentbytes,ptr->msglen);
-                    //else printf("qsent %u msglen.%d\n",ptr->crc32,ptr->msglen);
+                    else printf("%p qsent %u msglen.%d\n",ptr,ptr->crc32,ptr->msglen);
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
-                    else
-                    {
-                        nonz++;
-                        DL_DELETE(LP_Q,ptr);
-                        LP_Qdequeued++;
-                        free(ptr);
-                        ptr = 0;
-                    }
+                    else flag = 1;
                 }
             }
             else if ( time(NULL) > ptr->starttime+LP_HTTP_TIMEOUT )
@@ -139,26 +134,26 @@ void queue_loop(void *ignore)
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
                 {
-                    nonz++;
                     printf("found crc32.%u\n",ptr->crc32);
-                    LP_Qdequeued++;
-                    DL_DELETE(LP_Q,ptr);
-                    free(ptr);
-                    ptr = 0;
+                    flag = 1;
                 }
                 else
                 {
                     ptr->peerind++;
                     if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
-                        nonz++;
                         printf("no more peers to try at peerind.%d %p Q_LP.%p\n",ptr->peerind,ptr,LP_Q);
-                        LP_Qdequeued++;
-                        DL_DELETE(LP_Q,ptr);
-                        free(ptr);
-                        ptr = 0;
+                        flag = 1;
                     }
                 }
+            }
+            if ( flag != 0 )
+            {
+                nonz++;
+                DL_DELETE(LP_Q,ptr);
+                LP_Qdequeued++;
+                free(ptr);
+                ptr = 0;
             }
             /*if ( ptr != 0 )
             {
@@ -168,6 +163,7 @@ void queue_loop(void *ignore)
             }*/
         }
         portable_mutex_unlock(&LP_networkmutex);
+        printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
             usleep(10000);
     }
