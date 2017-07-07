@@ -107,11 +107,12 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
 
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
 {
-    static uint32_t crcs[8192];
+    static uint32_t crcs[8192]; static unsigned long dup,total;
     int32_t i;
     *duplicatep = 0;
     if ( ind < 0 )
     {
+        total++;
         for (i=0; i<sizeof(crcs)/sizeof(*crcs); i++)
         {
             if ( crc32 == crcs[i] )
@@ -120,7 +121,8 @@ int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
                 {
                     crcs[i] = crcs[i >> 1];
                     crcs[i >> 1] = crc32;
-                    printf("duplicate %08x in slot %d -> slot %d\n",crc32,i,i>>1);
+                    dup++;
+                    printf("duplicate %08x in slot %d -> slot %d (%lu / %lu)\n",crc32,i,i>>1,dup,total);
                 }
                 *duplicatep = 1;
                 break;
