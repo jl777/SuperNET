@@ -138,7 +138,7 @@ void queue_loop(void *ignore)
                 }
                 else
                 {
-                    printf("couldnt find.%u\n",ptr->crc32);
+                    printf("couldnt find.%u (%s)\n",ptr->crc32,(char *)ptr->msg);
                     ptr->peerind++;
                     if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
