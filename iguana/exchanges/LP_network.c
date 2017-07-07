@@ -128,13 +128,14 @@ void queue_loop(void *ignore)
                     else flag = 1;
                 }
             }
-            else if ( time(NULL) > ptr->starttime+LP_HTTP_TIMEOUT )
+            else if ( time(NULL) > ptr->starttime+LP_HTTP_TIMEOUT*2+1 )
             {
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
                 {
                     LP_Qfound++;
-                    printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
+                    if ( (LP_Qenqueued % 10) == 0 )
+                        printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     flag = 1;
                 }
                 else
