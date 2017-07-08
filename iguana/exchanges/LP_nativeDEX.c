@@ -321,7 +321,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     mostpeer = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        printf("%d ",peer->numutxos);
         if ( peer->errors >= LP_MAXPEER_ERRORS )
         {
             if ( (rand() % 10000) == 0 )
@@ -329,6 +328,9 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
+        if ( IAMLP != 0 && strcmp(peer->ipaddr,myipaddr) != 0 )
+            LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+        printf("%d ",peer->numutxos);
         if ( peer->numutxos > mostutxos )
         {
             mostutxos = peer->numutxos;
