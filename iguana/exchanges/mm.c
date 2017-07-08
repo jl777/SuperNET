@@ -791,7 +791,7 @@ void LP_main(void *ptr)
     {
         profitmargin = jdouble(argjson,"profitmargin");
         LP_profitratio += profitmargin;
-        LPinit(8779,8780,8781,8782,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+        LPinit(7779,7780,7781,7782,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 
