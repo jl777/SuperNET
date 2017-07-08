@@ -251,11 +251,14 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
             if ( (methodstr= jstr(argjson,"method")) != 0 && strlen(methodstr) <= sizeof(method) )
             {
                 strcpy(method,methodstr);
-                jdelete(argjson,"method");
-                if ( jobj(argjson,"method2") != 0 )
-                    jdelete(argjson,"method2");
-                jaddstr(argjson,"method2",method);
-                jaddstr(argjson,"method","broadcast");
+                if ( IAMLP == 0 )
+                {
+                    jdelete(argjson,"method");
+                    if ( jobj(argjson,"method2") != 0 )
+                        jdelete(argjson,"method2");
+                    jaddstr(argjson,"method2",method);
+                    jaddstr(argjson,"method","broadcast");
+                }
                 msg = (void *)jprint(argjson,0);
                 msglen = (int32_t)strlen((char *)msg) + 1;
                 crc32 = calc_crc32(0,&msg[2],msglen - 2);
