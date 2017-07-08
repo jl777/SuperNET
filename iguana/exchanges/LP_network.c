@@ -256,7 +256,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                 msg = (void *)jprint(argjson,0);
                 msglen = (int32_t)strlen((char *)msg) + 1;
                 crc32 = calc_crc32(0,&msg[2],msglen - 2);
-                //printf("CRC32.%u (%s)\n",crc32,(char *)msg);
+                printf("CRC32.%u (%s)\n",crc32,(char *)msg);
                 if ( IAMLP == 0 )
                 {
                     free(msg);
@@ -267,13 +267,8 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                     jaddstr(argjson,"method","broadcast");
                     msg = (void *)jprint(argjson,0);
                     msglen = (int32_t)strlen((char *)msg) + 1;
-                }
-                //jdelete(argjson,"method");
-                //jaddstr(argjson,"method","broadcast");
-                //msg = (void *)jprint(argjson,0);
-                if ( IAMLP != 0 )
-                    LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
-                else LP_queuesend(crc32,-1,base,rel,msg,msglen);
+                    LP_queuesend(crc32,-1,base,rel,msg,msglen);
+                } else LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
                 free(msg);
             } // else printf("no valid method in (%s)\n",msgstr);
             free_json(argjson);
