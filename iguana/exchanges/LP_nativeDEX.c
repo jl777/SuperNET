@@ -193,6 +193,8 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
         if ( jsonstr != 0 && (argjson= cJSON_Parse(jsonstr)) != 0 )
         {
             uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES];
+            printf("[%s]\n",jsonstr);
+            cipherlen = 0;
             if ( (cipherstr= jstr(argjson,"cipher")) != 0 && (cipherlen= is_hexstr(cipherstr,0)) > 32 && cipherlen <= sizeof(decoded)*2 )
             {
                 if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"encrypted") == 0 )
@@ -207,7 +209,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                         printf("%02x %02x %08x decrypted.(%s)\n",decoded[0],decoded[1],crc32,jsonstr);
                     }
                 }
-            }
+            } else printf("cipherlen.%d\n",cipherlen);
             len = (int32_t)strlen(jsonstr) + 1;
             if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
             {
