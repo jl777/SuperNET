@@ -20,8 +20,10 @@
 // swap cancel should cleanly cancel
 // stats
 // auto-utxo creation
+// null plocktime, robustify remember
 // multiple smartaddresses? enable/disable causes? 250 KMD bounty
 // verify bid volumes
+// verify BTC trading
 
 #include <stdio.h>
 #include "LP_include.h"
