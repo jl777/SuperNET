@@ -602,6 +602,8 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     portable_mutex_unlock(&LP_utxomutex);
     if ( iambob != 0 )
     {
+        if ( LP_mypeer != 0 )
+            LP_mypeer->numutxos++;
         /*if ( mypubsock >= 0 )
         {
             msg = jprint(LP_utxojson(utxo),1);
@@ -611,10 +613,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         {
             LP_utxo_clientpublish(utxo);
             if ( LP_mypeer != 0 )
-            {
-                LP_mypeer->numutxos++;
                 utxo->T.lasttime = (uint32_t)time(NULL);
-            }
         }
     }
     return(utxo);
