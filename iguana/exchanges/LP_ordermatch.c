@@ -365,9 +365,9 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
                 nanomsg_transportname(1,bindaddr,LP_myipaddr,r);
                 if ( nn_bind(pairsock,bindaddr) >= 0 )
                 {
-                    timeout = 1;
-                    nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                    nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+                    //timeout = 1;
+                    //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                    //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     printf("nanobind %s to %d\n",pairstr,pairsock);
                     return(pairsock);
                 } else printf("error binding to %s for %s\n",bindaddr,pairstr);
@@ -474,9 +474,9 @@ char *LP_connectedalice(cJSON *argjson) // alice
             jaddstr(retjson,"error","couldnt create pairsock");
         else if ( nn_connect(pairsock,pairstr) >= 0 )
         {
-            timeout = 100;
-            nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+            //timeout = 1;
+            //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+            //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
             swap = LP_swapinit(0,0,Q.privkey,&Q.R,&Q);
             swap->N.pair = pairsock;
