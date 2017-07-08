@@ -167,7 +167,7 @@ char *LP_decrypt(uint8_t *ptr,int32_t *recvlenp)
 char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,uint8_t *ptr,int32_t recvlen,int32_t recvsock)
 {
     static uint32_t dup,uniq;
-    int32_t i,len,cipherlen,datalen=0,duplicate=0,encrypted=0; char *method,*cipherstr,*retstr=0,*jsonstr=0; cJSON *argjson; uint32_t crc32;
+    int32_t i,len,cipherlen,datalen=0,duplicate=0,encrypted=0; char *method,*method2,*tmp,*cipherstr,*retstr=0,*jsonstr=0; cJSON *argjson; uint32_t crc32;
     crc32 = calc_crc32(0,&ptr[2],recvlen-2);
     if ( (crc32 & 0xff) == ptr[0] && ((crc32>>8) & 0xff) == ptr[1] )
         encrypted = 1;
@@ -197,15 +197,16 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             cipherlen = 0;
             if ( (cipherstr= jstr(argjson,"cipher")) != 0 && (cipherlen= is_hexstr(cipherstr,0)) > 32 && cipherlen <= sizeof(decoded)*2 )
             {
-                if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"encrypted") == 0 )
+                method2 = jstr(argjson,"method2");
+                if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"encrypted") == 0 ||(method2 != 0 && strcmp(method2,"encrypted") == 0)) )
                 {
-                    free_json(argjson);
-                    argjson = 0;
                     cipherlen >>= 1;
                     decode_hex(decoded,cipherlen,cipherstr);
                     crc32 = calc_crc32(0,&decoded[2],cipherlen-2);
-                    if ( (jsonstr= LP_decrypt(decoded,&cipherlen)) != 0 )
+                    if ( (tmp= LP_decrypt(decoded,&cipherlen)) != 0 )
                     {
+                        jsonstr = tmp;
+                        free_json(argjson);
                         argjson = cJSON_Parse(jsonstr);
                         recvlen = cipherlen;
                         encrypted = 1;
@@ -222,7 +223,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                         printf("packet not for this node\n");
                     }
                 } else printf("error (%s) method is %s\n",jsonstr,method);
-            } //else printf("error cipherlen.%d\n",cipherlen);
+            }
             if ( jsonstr != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
