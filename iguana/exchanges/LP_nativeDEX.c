@@ -340,11 +340,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
         {
-            if ( IAMLP != 0 )
-                printf("numpeers.%d updatepeer.%s lag.%d\n",numpeers,peer->ipaddr,now-peer->lastpeers);
+            //if ( IAMLP != 0 )
+            //    printf("numpeers.%d updatepeer.%s lag.%d\n",numpeers,peer->ipaddr,now-peer->lastpeers);
             peer->lastpeers = now;
-            if ( IAMLP != 0 && peer->numpeers != numpeers )
-                printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,numpeers);
+            //if ( IAMLP != 0 && peer->numpeers != numpeers )
+            //    printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,numpeers);
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
         }
