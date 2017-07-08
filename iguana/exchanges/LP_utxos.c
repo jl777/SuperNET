@@ -553,12 +553,15 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
                 utxo = 0;
             }
         }
-        if ( utxo->T.sessionid == 0 )
-            utxo->T.sessionid = sessionid;
-        //else if ( profitmargin > SMALLVAL )
-        //    utxo->S.profitmargin = profitmargin;
         if ( utxo != 0 )
+        {
+            if ( utxo->T.sessionid == 0 )
+                utxo->T.sessionid = sessionid;
+            //else if ( profitmargin > SMALLVAL )
+            //    utxo->S.profitmargin = profitmargin;
+            utxo->T.lasttime = (uint32_t)time(NULL);
             return(utxo);
+        }
     }
     utxo = calloc(1,sizeof(*utxo));
     //utxo->S.profitmargin = profitmargin;
