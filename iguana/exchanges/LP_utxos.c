@@ -606,7 +606,10 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         } else LP_utxo_clientpublish(utxo);*/
         LP_utxo_clientpublish(utxo);
         if ( LP_mypeer != 0 && LP_ismine(utxo) > 0 )
+        {
             LP_mypeer->numutxos++;
+            utxo->T.lasttime = (uint32_t)time(NULL);
+        }
     }
     return(utxo);
 }
