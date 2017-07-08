@@ -21,9 +21,10 @@
 // stats
 // auto-utxo creation
 // null plocktime, robustify remember
+// verify BTC trading: 0 txfee on remember trades. even with invalid tx, thinks swap is completed RETSTR.({"result":null,"error":{"code":-26,"message":"66: insufficient priority"},"id":"jl777"}
+//) BTC.0000000000000000000000000000000000000000000000000000000000000000
 // multiple smartaddresses? enable/disable causes? 250 KMD bounty
 // verify bid volumes
-// verify BTC trading
 
 #include <stdio.h>
 #include "LP_include.h"

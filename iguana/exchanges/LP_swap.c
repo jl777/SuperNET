@@ -801,7 +801,11 @@ void LP_aliceloop(void *_swap)
         free(swap);
     }
     free(data);
-    nn_close(swap->N.pair);
+    if ( swap->N.pair >= 0 )
+    {
+        nn_close(swap->N.pair);
+        swap->N.pair = -1;
+    }
 }
 
 bits256 instantdex_derivekeypair(void *ctx,bits256 *newprivp,uint8_t pubkey[33],bits256 privkey,bits256 orderhash)
