@@ -144,13 +144,17 @@ int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
 
 char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,uint8_t *ptr,int32_t recvlen,int32_t recvsock)
 {
+    static uint32_t dup,uniq;
     int32_t i,len,datalen=0,duplicate=0,encrypted=0; char *retstr=0,*jsonstr=0; cJSON *argjson; uint32_t crc32; uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES];
     crc32 = calc_crc32(0,&ptr[2],recvlen-2);
     if ( (crc32 & 0xff) == ptr[0] && ((crc32>>8) & 0xff) == ptr[1] )
         encrypted = 1;
     portable_mutex_lock(&LP_commandmutex);
     i = LP_crc32find(&duplicate,-1,crc32);
-    printf("%s dup.%d encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,duplicate,encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
+    if ( duplicate != 0 )
+        dup++;
+    else uniq++;
+    printf("%s dup.%d (%u / %u) %.1f%% encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,duplicate,dup,dup+uniq,(double)100*dup/(dup+uniq),encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
     if ( duplicate == 0 )
     {
         LP_crc32find(&duplicate,i,crc32);
