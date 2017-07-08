@@ -417,10 +417,10 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
     return(retval);
 }
 
-int32_t swap_nn_send(int32_t sock,uint8_t *data,int32_t datalen,uint32_t flags)
+int32_t swap_nn_send(int32_t sock,uint8_t *data,int32_t datalen,uint32_t flags,int32_t timeout)
 {
     struct nn_pollfd pfd; int32_t i;
-    for (i=0; i<3000; i++)
+    for (i=0; i<timeout*1000; i++)
     {
         memset(&pfd,0,sizeof(pfd));
         pfd.fd = sock;
@@ -441,7 +441,7 @@ int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basi
         printf("waited for %s\n",statename);
         if ( (datalen= (*datagen)(swap,data,maxlen)) > 0 )
         {
-            if ( (sendlen= swap_nn_send(pairsock,data,datalen,0)) == datalen )
+            if ( (sendlen= swap_nn_send(pairsock,data,datalen,0,timeout)) == datalen )
             {
                 printf("sent.%d after waitfor.%s\n",sendlen,statename);
                 retval = 0;
@@ -454,19 +454,19 @@ int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basi
 int32_t LP_sendwait(char *statename,int32_t timeout,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen),int32_t (*datagen)(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen))
 {
     int32_t datalen,sendlen,retval = -1;
-    //printf("sendwait.%s\n",statename);
+    printf("sendwait.%s\n",statename);
     if ( (datalen= (*datagen)(swap,data,maxlen)) > 0 )
     {
-        //printf("generated %d for %s\n",datalen,statename);
-        if ( (sendlen= swap_nn_send(pairsock,data,datalen,0)) == datalen )
+        printf("generated %d for %s\n",datalen,statename);
+        if ( (sendlen= swap_nn_send(pairsock,data,datalen,0,timeout)) == datalen )
         {
-            //printf("sendwait.%s sent %d\n",statename,sendlen);
+            printf("sendwait.%s sent %d\n",statename,sendlen);
             if ( LP_waitfor(pairsock,swap,timeout,verify) == 0 )
             {
                 //printf("waited! sendwait.%s sent %d\n",statename,sendlen);
                 retval = 0;
             } else printf("didnt get %s\n",statename);
-        } else printf("send pubkeys error\n");
+        } else printf("send %s error\n",statename);
     } else printf("no datagen for %s\n",statename);
     return(retval);
 }
