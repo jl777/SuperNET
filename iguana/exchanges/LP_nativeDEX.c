@@ -221,7 +221,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                     {
                         printf("packet not for this node\n");
                     }
-                } else printf("error method is %s\n",method);
+                } else printf("error (%s) method is %s\n",jsonstr,method);
             } //else printf("error cipherlen.%d\n",cipherlen);
             if ( jsonstr != 0 )
             {
