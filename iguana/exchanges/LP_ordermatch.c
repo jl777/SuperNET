@@ -365,7 +365,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
                 nanomsg_transportname(1,bindaddr,LP_myipaddr,r);
                 if ( nn_bind(pairsock,bindaddr) >= 0 )
                 {
-                    timeout = 100;
+                    timeout = 1;
                     nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     printf("nanobind %s to %d\n",pairstr,pairsock);

@@ -84,9 +84,9 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
                 if ( laststr != 0 )
                     free(laststr);
                 laststr = newstr;
+                retstr = laststr;
             }
         }
-        return(0);
     }
     //else if ( strcmp(method,"nn_tests") == 0 )
     //    return(clonestr("{\"result\":\"success\"}"));

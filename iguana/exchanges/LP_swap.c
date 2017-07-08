@@ -435,7 +435,7 @@ int32_t swap_nn_send(int32_t sock,uint8_t *data,int32_t datalen,uint32_t flags,i
 int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen),int32_t (*datagen)(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen))
 {
     int32_t datalen,sendlen,retval = -1;
-    printf("waitsend.%s\n",statename);
+    printf("waitsend.%s timeout.%d\n",statename,timeout);
     if ( LP_waitfor(pairsock,swap,timeout,verify) == 0 )
     {
         printf("waited for %s\n",statename);
@@ -457,7 +457,7 @@ int32_t LP_sendwait(char *statename,int32_t timeout,int32_t pairsock,struct basi
     printf("sendwait.%s\n",statename);
     if ( (datalen= (*datagen)(swap,data,maxlen)) > 0 )
     {
-        printf("generated %d for %s\n",datalen,statename);
+        printf("generated %d for %s, timeout.%d\n",datalen,statename,timeout);
         if ( (sendlen= swap_nn_send(pairsock,data,datalen,0,timeout)) == datalen )
         {
             printf("sendwait.%s sent %d\n",statename,sendlen);
