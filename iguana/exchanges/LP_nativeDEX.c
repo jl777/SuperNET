@@ -141,10 +141,33 @@ int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
     }
 }
 
+char *LP_decrypt(uint8_t *ptr,int32_t *recvlenp)
+{
+    uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],*nonce,*cipher; int32_t recvlen,cipherlen; char *jsonstr = 0;
+    recvlen = *recvlenp;
+    nonce = &ptr[2];
+    cipher = &ptr[2 + crypto_box_NONCEBYTES];
+    cipherlen = recvlen - (2 + crypto_box_NONCEBYTES);
+    if ( cipherlen > 0 && cipherlen < sizeof(decoded) )
+    {
+        if ( (jsonstr= (char *)_SuperNET_decipher(nonce,cipher,decoded,cipherlen,GENESIS_PUBKEY,LP_mypriv25519)) != 0 )
+        {
+            recvlen = (cipherlen - crypto_box_ZEROBYTES);
+            if ( strlen(jsonstr)+1 != recvlen )
+            {
+                printf("unexpected len %d vs recvlen.%d\n",(int32_t)strlen(jsonstr)+1,recvlen);
+                jsonstr = 0;
+            } else printf("decrypted (%s)\n",jsonstr);
+        }
+    } else printf("cipher.%d too big for %d\n",cipherlen,(int32_t)sizeof(decoded));
+    *recvlenp = recvlen;
+    return(jsonstr);
+}
+
 char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,uint8_t *ptr,int32_t recvlen,int32_t recvsock)
 {
     static uint32_t dup,uniq;
-    int32_t i,len,datalen=0,duplicate=0,encrypted=0; char *retstr=0,*jsonstr=0; cJSON *argjson; uint32_t crc32; uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES];
+    int32_t i,len,cipherlen,datalen=0,duplicate=0,encrypted=0; char *method,*cipherstr,*retstr=0,*jsonstr=0; cJSON *argjson; uint32_t crc32;
     crc32 = calc_crc32(0,&ptr[2],recvlen-2);
     if ( (crc32 & 0xff) == ptr[0] && ((crc32>>8) & 0xff) == ptr[1] )
         encrypted = 1;
@@ -158,24 +181,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
     {
         LP_crc32find(&duplicate,i,crc32);
         if ( encrypted != 0 )
-        {
-            uint8_t *nonce,*cipher; int32_t cipherlen;
-            nonce = &ptr[2];
-            cipher = &ptr[2 + crypto_box_NONCEBYTES];
-            cipherlen = recvlen - (2 + crypto_box_NONCEBYTES);
-            if ( cipherlen > 0 && cipherlen < sizeof(decoded) )
-            {
-                if ( (jsonstr= (char *)_SuperNET_decipher(nonce,cipher,decoded,cipherlen,GENESIS_PUBKEY,LP_mypriv25519)) != 0 )
-                {
-                    recvlen = (cipherlen - crypto_box_ZEROBYTES);
-                    if ( strlen(jsonstr)+1 != recvlen )
-                    {
-                        printf("unexpected len %d vs recvlen.%d\n",(int32_t)strlen(jsonstr)+1,recvlen);
-                        jsonstr = 0;
-                    } else printf("decrypted (%s)\n",jsonstr);
-                }
-            } else printf("cipher.%d too big for %d\n",cipherlen,(int32_t)sizeof(decoded));
-        }
+            jsonstr = LP_decrypt(ptr,&recvlen);
         else if ( (datalen= is_hexstr((char *)ptr,0)) > 0 )
         {
             datalen >>= 1;
@@ -186,6 +192,22 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
         // "encrypted" "cipherstr" case!
         if ( jsonstr != 0 && (argjson= cJSON_Parse(jsonstr)) != 0 )
         {
+            uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES];
+            if ( (cipherstr= jstr(argjson,"cipher")) != 0 && (cipherlen= is_hexstr(cipherstr,0)) > 32 && cipherlen <= sizeof(decoded)*2 )
+            {
+                if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"encrypted") == 0 )
+                {
+                    cipherlen >>= 1;
+                    decode_hex(decoded,cipherlen,cipherstr);
+                    crc32 = calc_crc32(0,&decoded[2],cipherlen-2);
+                    if ( (jsonstr= LP_decrypt(ptr,&recvlen)) != 0 )
+                    {
+                        free_json(argjson);
+                        argjson = cJSON_Parse(jsonstr);
+                        printf("%02x %02x %08x decrypted.(%s)\n",decoded[0],decoded[1],crc32,jsonstr);
+                    }
+                }
+            }
             len = (int32_t)strlen(jsonstr) + 1;
             if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
             {
