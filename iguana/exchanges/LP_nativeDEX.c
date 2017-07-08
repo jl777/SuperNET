@@ -332,7 +332,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             if ( (retstr= issue_LP_numutxos(peer->ipaddr,peer->port,LP_mypeer->ipaddr,LP_mypeer->port,LP_mypeer->numpeers,LP_mypeer->numutxos)) != 0 )
             {
-                //printf("%s\n",retstr);
+                printf("%d <- (%s)\n",peer->numutxos,retstr);
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     if ( (num= jint(retjson,"numutxos")) > peer->numutxos )
@@ -347,7 +347,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 retstr = 0;
             }
         }
-        printf("%d ",peer->numutxos);
         if ( peer->numutxos > mostutxos )
         {
             mostutxos = peer->numutxos;
