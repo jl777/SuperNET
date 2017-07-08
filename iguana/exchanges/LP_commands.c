@@ -22,7 +22,7 @@
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
-    //printf("stats_JSON(%s)\n",jprint(argjson,0));
+    printf("stats_JSON(%s)\n",jprint(argjson,0));
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
     {
         if ( strcmp(ipaddr,"127.0.0.1") != 0 && argport >= 1000 )
@@ -305,7 +305,7 @@ trust(pubkey, trust)\n\
         return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
     else if ( strcmp(method,"utxo") == 0 )
     {
-        //printf("UTXO.%s\n",method);
+        printf("UTXO.%s\n",method);
         if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
             retstr = clonestr("{\"result\":\"success\",\"utxo\":\"received\"}");
         else retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
