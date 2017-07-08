@@ -252,6 +252,9 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
             {
                 strcpy(method,methodstr);
                 jdelete(argjson,"method");
+                if ( jobj(argjson,"method2") != 0 )
+                    jdelete(argjson,"method2");
+                jaddstr(argjson,"method2",method);
                 jaddstr(argjson,"method",method);
                 msg = (void *)jprint(argjson,0);
                 msglen = (int32_t)strlen((char *)msg) + 1;
@@ -261,9 +264,6 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                 {
                     free(msg);
                     jdelete(argjson,"method");
-                    if ( jobj(argjson,"method2") != 0 )
-                        jdelete(argjson,"method2");
-                    jaddstr(argjson,"method2",method);
                     jaddstr(argjson,"method","broadcast");
                     msg = (void *)jprint(argjson,0);
                     msglen = (int32_t)strlen((char *)msg) + 1;
