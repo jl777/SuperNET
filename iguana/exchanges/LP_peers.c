@@ -34,8 +34,11 @@ cJSON *LP_peerjson(struct LP_peerinfo *peer)
     jaddstr(item,"ipaddr",peer->ipaddr);
     jaddnum(item,"port",peer->port);
     if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+    {
         jaddnum(item,"session",LP_sessionid);
-    else jaddnum(item,"session",peer->sessionid);
+        if ( LP_mypeer != 0 )
+            jaddnum(item,"numutxos",LP_mypeer->numutxos);
+    } else jaddnum(item,"session",peer->sessionid);
     //jaddnum(item,"profit",peer->profitmargin);
     return(item);
 }
@@ -68,6 +71,8 @@ if ( strncmp("5.9.253",ipaddr,strlen("5.9.253")) != 0 )
                 peer->numpeers = numpeers;
             if ( numutxos > peer->numutxos )
                 peer->numutxos = numutxos;
+            if ( peer->sessionid == 0 )
+                peer->sessionid = sessionid;
         }
         else
         {
