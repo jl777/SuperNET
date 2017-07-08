@@ -321,6 +321,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     mostpeer = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        printf("%d ",peer->numutxos);
         if ( peer->errors >= LP_MAXPEER_ERRORS )
         {
             if ( (rand() % 10000) == 0 )
@@ -354,6 +355,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             peer->diduquery = now;
         }
     }
+    printf("numutxos vs mine.%d\n",LP_mypeer != 0 ? LP_mypeer->numutxos : -1);
     if ( LP_mypeer != 0 && LP_mypeer->numutxos < mostutxos && mostpeer != 0 )
     {
         printf("myutxos.%d most.%d %s\n",LP_mypeer->numutxos,mostutxos,mostpeer->ipaddr);
