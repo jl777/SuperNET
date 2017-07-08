@@ -179,7 +179,8 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
     printf("%s dup.%d (%u / %u) %.1f%% encrypted.%d recv.%u [%02x %02x] vs %02x %02x U.%d\n",typestr,duplicate,dup,dup+uniq,(double)100*dup/(dup+uniq),encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff,LP_mypeer != 0 ? LP_mypeer->numutxos : -1);
     if ( duplicate == 0 )
     {
-        LP_crc32find(&duplicate,i,crc32);
+        if ( i >= 0 )
+            LP_crc32find(&duplicate,i,crc32);
         if ( encrypted != 0 )
             jsonstr = LP_decrypt(ptr,&recvlen);
         else if ( (datalen= is_hexstr((char *)ptr,0)) > 0 )
@@ -207,7 +208,14 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                         free_json(argjson);
                         argjson = cJSON_Parse(jsonstr);
                         recvlen = cipherlen;
-                        printf("%02x %02x %08x decrypted.(%s)\n",decoded[0],decoded[1],crc32,jsonstr);
+                        encrypted = 1;
+                        if ( (crc32 & 0xff) == decoded[0] && ((crc32>>8) & 0xff) == decoded[1] )
+                        {
+                            i = LP_crc32find(&duplicate,-1,crc32);
+                            if ( duplicate == 0 && i >= 0 )
+                                LP_crc32find(&duplicate,i,crc32);
+                        }
+                        printf("%02x %02x %08x duplicate.%d decrypted.(%s)\n",decoded[0],decoded[1],crc32,duplicate,jsonstr);
                     } else printf("error null jsonstr\n");
                 } else printf("error method is %s\n",method);
             } else printf("error cipherlen.%d\n",cipherlen);
