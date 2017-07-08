@@ -202,21 +202,6 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
     return(retstr);
 }
 
-/*int32_t LP_pullsock_check(void *ctx,char **retstrp,char *myipaddr,int32_t pubsock,int32_t pullsock)
-{
-    void *ptr; int32_t recvlen=-1,nonz = 0;
-    *retstrp = 0;
-    if ( pullsock >= 0 )
-    {
-        while ( (recvlen= nn_recv(pullsock,&ptr,NN_MSG,0)) > 0 )
-        {
-            nonz++;
-            *retstrp = LP_process_message(ctx,"PULL",myipaddr,pubsock,ptr,recvlen,pullsock);
-        }
-    }
-    return(nonz);
-}*/
-
 void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo)
 {
     struct _LP_utxoinfo u; char str[65]; uint32_t now = (uint32_t)time(NULL);
@@ -324,7 +309,7 @@ void command_rpcloop(void *myipaddr)
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport,char *passphrase)
 {
     static uint32_t counter,numpeers; //lastforward
-    struct LP_utxoinfo *utxo,*utmp; struct iguana_info *coin,*ctmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t nonz = 0,n=0,lastn=-1;
+    struct LP_utxoinfo *utxo,*utmp; struct iguana_info *coin,*ctmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp,*mostpeer; uint32_t now; int32_t mostutxos,nonz = 0,n=0,lastn=-1;
     now = (uint32_t)time(NULL);
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
@@ -332,6 +317,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         myipaddr = "127.0.0.1";
     //if ( LP_canbind == 0 ) printf("counter.%d canbind.%d peers\n",counter,LP_canbind);
     numpeers = LP_numpeers();
+    mostutxos = 0;
+    mostpeer = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( peer->errors >= LP_MAXPEER_ERRORS )
@@ -340,6 +327,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 peer->errors--;
             if ( IAMLP == 0 )
                 continue;
+        }
+        if ( peer->numutxos > mostutxos )
+        {
+            mostutxos = peer->numutxos;
+            mostpeer = peer;
         }
         if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
         {
@@ -361,6 +353,12 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             LP_peer_pricesquery(peer->ipaddr,peer->port);
             peer->diduquery = now;
         }
+    }
+    if ( LP_mypeer != 0 && LP_mypeer->numutxos < mostutxos && mostpeer != 0 )
+    {
+        LP_peer_utxosquery(LP_mypeer,myport,pubsock,mostpeer,now,60);
+        LP_peer_pricesquery(mostpeer->ipaddr,mostpeer->port);
+
     }
     if ( (counter % 600) == 10 )
     {
