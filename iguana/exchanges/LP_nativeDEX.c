@@ -190,11 +190,10 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             decode_hex((void *)jsonstr,datalen,(char *)ptr);
             jsonstr[datalen] = 0;
         } else jsonstr = (char *)ptr;
-        // "encrypted" "cipherstr" case!
         if ( jsonstr != 0 && (argjson= cJSON_Parse(jsonstr)) != 0 )
         {
             uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES];
-            printf("[%s]\n",jsonstr);
+            //printf("[%s]\n",jsonstr);
             cipherlen = 0;
             if ( (cipherstr= jstr(argjson,"cipher")) != 0 && (cipherlen= is_hexstr(cipherstr,0)) > 32 && cipherlen <= sizeof(decoded)*2 )
             {
