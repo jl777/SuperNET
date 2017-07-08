@@ -23,10 +23,12 @@ char *LP_numutxos()
     cJSON *retjson = cJSON_CreateObject();
     if ( LP_mypeer != 0 )
     {
+        jaddstr(retjson,"ipaddr",LP_mypeer->ipaddr);
+        jaddnum(retjson,"port",LP_mypeer->port);
         jaddnum(retjson,"numutxos",LP_mypeer->numutxos);
         jaddnum(retjson,"numpeers",LP_mypeer->numpeers);
         jaddnum(retjson,"session",LP_sessionid);
-    } jaddstr(retjson,"error","client node");
+    } else jaddstr(retjson,"error","client node");
     return(jprint(retjson,1));
 }
 
