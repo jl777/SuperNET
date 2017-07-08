@@ -18,7 +18,6 @@
 //  marketmaker
 //
 // swap cancel should cleanly cancel
-// as much as possible on a unidirectional basis
 // stats
 // auto-utxo creation
 // multiple smartaddresses? enable/disable causes? 250 KMD bounty
@@ -195,7 +194,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
         }
     } //else printf("DUPLICATE.(%s)\n",(char *)ptr);
     portable_mutex_unlock(&LP_commandmutex);
-    if ( jsonstr != 0 && (void *)jsonstr != (void *)ptr && (void *)jsonstr != (void *)decoded )
+    if ( jsonstr != 0 && (void *)jsonstr != (void *)ptr && encrypted == 0 )
         free(jsonstr);
     if ( ptr != 0 )
         nn_freemsg(ptr), ptr = 0;
