@@ -148,7 +148,7 @@ char *LP_decrypt(uint8_t *ptr,int32_t *recvlenp)
     nonce = &ptr[2];
     cipher = &ptr[2 + crypto_box_NONCEBYTES];
     cipherlen = recvlen - (2 + crypto_box_NONCEBYTES);
-    if ( cipherlen > 0 && cipherlen < sizeof(decoded) )
+    if ( cipherlen > 0 && cipherlen <= sizeof(decoded) )
     {
         if ( (jsonstr= (char *)_SuperNET_decipher(nonce,cipher,decoded,cipherlen,GENESIS_PUBKEY,LP_mypriv25519)) != 0 )
         {
@@ -202,10 +202,11 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                     cipherlen >>= 1;
                     decode_hex(decoded,cipherlen,cipherstr);
                     crc32 = calc_crc32(0,&decoded[2],cipherlen-2);
-                    if ( (jsonstr= LP_decrypt(ptr,&recvlen)) != 0 )
+                    if ( (jsonstr= LP_decrypt(decoded,&cipherlen)) != 0 )
                     {
                         free_json(argjson);
                         argjson = cJSON_Parse(jsonstr);
+                        recvlen = cipherlen;
                         printf("%02x %02x %08x decrypted.(%s)\n",decoded[0],decoded[1],crc32,jsonstr);
                     } else printf("error null jsonstr\n");
                 } else printf("error method is %s\n",method);

@@ -259,7 +259,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
         msg = encoded;
         msglen += 2;
         encrypted = 1;
-        printf("msgstr.(%s)\n",msgstr);
+        //printf("msgstr.(%s)\n",msgstr);
         free(msgstr), msgstr = 0;
     }
     if ( encrypted == 0 )
