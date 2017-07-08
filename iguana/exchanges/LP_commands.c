@@ -283,6 +283,8 @@ trust(pubkey, trust)\n\
         return(LP_numutxos());
     else if ( strcmp(method,"postprice") == 0 )
         retstr = LP_postedprice(argjson);
+    else if ( strcmp(method,"encrypted") == 0 )
+        retstr = clonestr("{\"result\":\"success\"}");
     //else if ( strcmp(method,"broadcast") == 0 )
     //    retstr = LP_broadcasted(argjson);
     else if ( strcmp(method,"getprices") == 0 )

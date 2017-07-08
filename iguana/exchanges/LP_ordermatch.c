@@ -406,7 +406,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
                 jaddstr(retjson,"pair",pairstr);
                 jaddnum(retjson,"requestid",qp->R.requestid);
                 jaddnum(retjson,"quoteid",qp->R.quoteid);
-                char str[65]; printf("BOB pubsock.%d sends to (%s)\n",pubsock,bits256_str(str,utxo->S.otherpubkey));
+                char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,utxo->S.otherpubkey));
                 /*if ( pubsock >= 0 )
                 {
                     msg = jprint(retjson,0);
