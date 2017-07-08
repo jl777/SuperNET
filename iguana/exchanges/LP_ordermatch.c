@@ -562,7 +562,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     return(retval);
 }
 
-struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,int64_t txfee,int64_t desttxfee)
+struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,int64_t txfee,int64_t desttxfee,uint64_t maxdestsatoshis)
 {
     int64_t satoshis,destsatoshis; uint64_t val,val2; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item; struct LP_utxoinfo *butxo,*bestutxo = 0; int32_t i,vout,numasks; double bestmetric=0.,metric,vol,price,bestprice = 0.; struct LP_pubkeyinfo *pubp;
     *ordermatchpricep = 0.;
@@ -606,6 +606,8 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatosh
                                     destsatoshis = ((butxo->S.satoshis - txfee) * price);
                                     if ( destsatoshis > autxo->payment.value-desttxfee-1 )
                                         destsatoshis = autxo->payment.value-desttxfee-1;
+                                    if ( maxdestsatoshis != 0 && destsatoshis > maxdestsatoshis-desttxfee-1 )
+                                        destsatoshis = maxdestsatoshis-desttxfee-1;
                                     satoshis = (destsatoshis / price + 0.0000000049) - txfee;
                                     if ( metric < 1.2 && destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value / LP_MINCLIENTVOL) && satoshis-txfee > (butxo->S.satoshis / LP_MINVOL) && satoshis <= butxo->payment.value-txfee )
                                     {
@@ -657,7 +659,7 @@ char *LP_bestfit(char *rel,double relvolume)
     return(jprint(LP_utxojson(autxo),1));
 }
 
-char *LP_ordermatch(char *base,int64_t txfee,double maxprice,char *rel,bits256 txid,int32_t vout,bits256 feetxid,int32_t feevout,int64_t desttxfee,int32_t duration)
+char *LP_ordermatch(char *base,int64_t txfee,double maxprice,double maxvolume,char *rel,bits256 txid,int32_t vout,bits256 feetxid,int32_t feevout,int64_t desttxfee,int32_t duration)
 {
     struct LP_quoteinfo Q; int64_t bestdestsatoshis = 0; double ordermatchprice = 0.; struct LP_utxoinfo *autxo,*bestutxo;
     if ( desttxfee == 0 && (desttxfee= LP_getestimatedrate(rel) * LP_AVETXSIZE) < LP_MIN_TXFEE )
@@ -666,7 +668,7 @@ char *LP_ordermatch(char *base,int64_t txfee,double maxprice,char *rel,bits256 t
         txfee = LP_MIN_TXFEE;
     if ( (autxo= LP_utxopairfind(0,txid,vout,feetxid,feevout)) == 0 )
         return(clonestr("{\"error\":\"cant find alice utxopair\"}"));
-    if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
+    if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,SATOSHIDEN*maxvolume)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
         return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
     if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestdestsatoshis) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
@@ -747,7 +749,7 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *r
         desttxfee = LP_MIN_TXFEE;
     if ( (txfee= LP_getestimatedrate(base) * LP_AVETXSIZE) < LP_MIN_TXFEE )
         txfee = LP_MIN_TXFEE;
-    if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
+    if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,SATOSHIDEN*relvolume)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
     {
         printf("bestutxo.%p ordermatchprice %.8f bestdestsatoshis %.8f\n",bestutxo,ordermatchprice,dstr(bestdestsatoshis));
         return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
