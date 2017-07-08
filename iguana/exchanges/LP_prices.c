@@ -542,7 +542,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
                 {
                     *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                     (*arrayp)[num++] = op;
-                    if ( bits256_cmp(utxo->pubkey,LP_mypub25519) == 0 && utxo->T.lasttime == 0 )
+                    if ( LP_ismine(utxo) > 0 && utxo->T.lasttime == 0 )
                         LP_utxo_clientpublish(utxo);
                 }
             }

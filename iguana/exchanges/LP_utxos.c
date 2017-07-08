@@ -471,9 +471,12 @@ char *LP_spentcheck(cJSON *argjson)
 void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
 {
     bits256 zero; char *msg;
-    memset(zero.bytes,0,sizeof(zero));
-    msg = jprint(LP_utxojson(utxo),1);
-    LP_broadcast_message(LP_mypubsock,utxo->coin,"",zero,msg);
+    if ( LP_isunspent(utxo) > 0 )
+    {
+        memset(zero.bytes,0,sizeof(zero));
+        msg = jprint(LP_utxojson(utxo),1);
+        LP_broadcast_message(LP_mypubsock,utxo->coin,"",zero,msg);
+    }
     /*struct LP_peerinfo *peer,*tmp; cJSON *retjson; char *retstr; int32_t n = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
@@ -604,11 +607,14 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
             msg = jprint(LP_utxojson(utxo),1);
             /LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
         } else LP_utxo_clientpublish(utxo);*/
-        LP_utxo_clientpublish(utxo);
-        if ( LP_mypeer != 0 && LP_ismine(utxo) > 0 )
+        if ( LP_ismine(utxo) > 0 )
         {
-            LP_mypeer->numutxos++;
-            utxo->T.lasttime = (uint32_t)time(NULL);
+            LP_utxo_clientpublish(utxo);
+            if ( LP_mypeer != 0 )
+            {
+                LP_mypeer->numutxos++;
+                utxo->T.lasttime = (uint32_t)time(NULL);
+            }
         }
     }
     return(utxo);

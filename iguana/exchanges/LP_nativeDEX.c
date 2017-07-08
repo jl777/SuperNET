@@ -379,7 +379,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         HASH_ITER(hh,LP_utxoinfos[1],utxo,utmp)
         {
             LP_utxo_spentcheck(pubsock,utxo);
-            if ( utxo->T.spentflag == 0 && utxo->T.lasttime == 0 && LP_ismine(utxo) > 0 )
+            if ( LP_isunspent(utxo) > 0 && utxo->T.lasttime == 0 && LP_ismine(utxo) > 0 )
             {
                 char str[65]; printf("publish mybob %s\n",bits256_str(str,utxo->payment.txid));
                 LP_utxo_clientpublish(utxo);
