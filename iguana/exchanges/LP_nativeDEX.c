@@ -328,30 +328,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( IAMLP != 0 && LP_mypeer != 0 && strcmp(peer->ipaddr,myipaddr) != 0 )
-        {
-            if ( (retstr= issue_LP_numutxos(peer->ipaddr,peer->port,LP_mypeer->ipaddr,LP_mypeer->port,LP_mypeer->numpeers,LP_mypeer->numutxos)) != 0 )
-            {
-                printf("%d <- (%s)\n",peer->numutxos,retstr);
-                if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-                    if ( (num= jint(retjson,"numutxos")) > peer->numutxos )
-                        peer->numutxos = num;
-                    if ( (num= jint(retjson,"numpeers")) > peer->numpeers )
-                        peer->numpeers = num;
-                    if ( (id= juint(retjson,"session")) != 0 )
-                        peer->sessionid = id;
-                    free_json(retjson);
-                }
-                free(retstr);
-                retstr = 0;
-            }
-        }
-        if ( peer->numutxos > mostutxos )
-        {
-            mostutxos = peer->numutxos;
-            mostpeer = peer;
-        }
         if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
         {
             //if ( IAMLP != 0 )
@@ -361,6 +337,25 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             //    printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,numpeers);
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+            if ( IAMLP != 0 && LP_mypeer != 0 && strcmp(peer->ipaddr,myipaddr) != 0 )
+            {
+                if ( (retstr= issue_LP_numutxos(peer->ipaddr,peer->port,LP_mypeer->ipaddr,LP_mypeer->port,LP_mypeer->numpeers,LP_mypeer->numutxos)) != 0 )
+                {
+                    //printf("%d <- (%s)\n",peer->numutxos,retstr);
+                    if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                    {
+                        if ( (num= jint(retjson,"numutxos")) > peer->numutxos )
+                            peer->numutxos = num;
+                        if ( (num= jint(retjson,"numpeers")) > peer->numpeers )
+                            peer->numpeers = num;
+                        if ( (id= juint(retjson,"session")) != 0 )
+                            peer->sessionid = id;
+                        free_json(retjson);
+                    }
+                    free(retstr);
+                    retstr = 0;
+                }
+            }
         }
         if ( peer->diduquery == 0 )
         {
@@ -372,8 +367,13 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             LP_peer_pricesquery(peer->ipaddr,peer->port);
             peer->diduquery = now;
         }
+        if ( peer->numutxos > mostutxos )
+        {
+            mostutxos = peer->numutxos;
+            mostpeer = peer;
+        }
     }
-    printf("numutxos vs mine.%d\n",LP_mypeer != 0 ? LP_mypeer->numutxos : -1);
+    //printf("numutxos vs mine.%d\n",LP_mypeer != 0 ? LP_mypeer->numutxos : -1);
     if ( LP_mypeer != 0 && LP_mypeer->numutxos < mostutxos && mostpeer != 0 )
     {
         printf("myutxos.%d most.%d %s\n",LP_mypeer->numutxos,mostutxos,mostpeer->ipaddr);
