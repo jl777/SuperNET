@@ -417,9 +417,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     if ( LP_mypeer != 0 && LP_mypeer->numutxos < mostutxos && mostpeer != 0 )
     {
         //printf("myutxos.%d most.%d %s\n",LP_mypeer->numutxos,mostutxos,mostpeer->ipaddr);
-        LP_peer_utxosquery(LP_mypeer,myport,pubsock,mostpeer,now,60);
-        LP_peer_pricesquery(mostpeer->ipaddr,mostpeer->port);
-        
+        LP_peer_utxosquery(LP_mypeer,myport,pubsock,mostpeer,now,30);
+        //LP_peer_pricesquery(mostpeer->ipaddr,mostpeer->port);
     }
     if ( (counter % 600) == 10 )
     {
