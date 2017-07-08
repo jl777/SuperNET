@@ -400,18 +400,24 @@ int32_t LP_mostprivs_verify(struct basilisk_swap *swap,uint8_t *data,int32_t dat
 
 int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen))
 {
-    void *data; int32_t datalen,retval = -1; uint32_t expiration = (uint32_t)time(NULL) + timeout;
+    struct nn_pollfd pfd; void *data; int32_t datalen,retval = -1; uint32_t expiration = (uint32_t)time(NULL) + timeout;
     while ( time(NULL) < expiration )
     {
-        //printf("start wait\n");
-        if ( (datalen= nn_recv(pairsock,&data,NN_MSG,0)) >= 0 )
+        memset(&pfd,0,sizeof(pfd));
+        pfd.fd = pairsock;
+        pfd.events = NN_POLLIN;
+        if ( nn_poll(&pfd,1,1) > 0 )
         {
-            //printf("wait for got.%d\n",datalen);
-            retval = (*verify)(swap,data,datalen);
-            nn_freemsg(data);
-            //printf("retval.%d\n",retval);
-            return(retval);
-        } // else printf("error nn_recv\n");
+            //printf("start wait\n");
+            if ( (datalen= nn_recv(pairsock,&data,NN_MSG,0)) >= 0 )
+            {
+                //printf("wait for got.%d\n",datalen);
+                retval = (*verify)(swap,data,datalen);
+                nn_freemsg(data);
+                //printf("retval.%d\n",retval);
+                return(retval);
+            } // else printf("error nn_recv\n");
+        }
     }
     printf("waitfor timedout\n");
     return(retval);
@@ -419,13 +425,13 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
 
 int32_t swap_nn_send(int32_t sock,uint8_t *data,int32_t datalen,uint32_t flags,int32_t timeout)
 {
-    struct nn_pollfd pfd; //int32_t i;
-    //for (i=0; i<timeout*1000; i++)
+    struct nn_pollfd pfd; int32_t i;
+    for (i=0; i<timeout*1000; i++)
     {
         memset(&pfd,0,sizeof(pfd));
         pfd.fd = sock;
-        pfd.events = NN_POLLIN;
-        //if ( nn_poll(&pfd,1,1) > 0 )
+        pfd.events = NN_POLLOUT;
+        if ( nn_poll(&pfd,1,1) > 0 )
             return(nn_send(sock,data,datalen,flags));
         usleep(1000);
     }

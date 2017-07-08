@@ -349,7 +349,7 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
 
 int32_t LP_nanobind(void *ctx,char *pairstr)
 {
-    int32_t i,timeout,r,pairsock = -1; uint16_t mypullport; char bindaddr[128];
+    int32_t i,r,pairsock = -1; uint16_t mypullport; char bindaddr[128];
     if ( LP_canbind != 0 )
     {
         if ( (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
@@ -428,7 +428,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
 
 char *LP_connectedalice(cJSON *argjson) // alice
 {
-    cJSON *retjson; double bid,ask,price,qprice; int32_t timeout,pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin;
+    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin;
     if ( LP_quoteparse(&Q,argjson) < 0 )
         clonestr("{\"error\":\"cant parse quote\"}");
     if ( bits256_cmp(Q.desthash,LP_mypub25519) != 0 )
