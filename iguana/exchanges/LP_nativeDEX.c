@@ -207,9 +207,9 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                         free_json(argjson);
                         argjson = cJSON_Parse(jsonstr);
                         printf("%02x %02x %08x decrypted.(%s)\n",decoded[0],decoded[1],crc32,jsonstr);
-                    }
-                }
-            } else printf("cipherlen.%d\n",cipherlen);
+                    } else printf("error null jsonstr\n");
+                } else printf("error method is %s\n",method);
+            } else printf("error cipherlen.%d\n",cipherlen);
             len = (int32_t)strlen(jsonstr) + 1;
             if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
             {
