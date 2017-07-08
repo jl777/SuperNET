@@ -419,13 +419,13 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
 
 int32_t swap_nn_send(int32_t sock,uint8_t *data,int32_t datalen,uint32_t flags,int32_t timeout)
 {
-    struct nn_pollfd pfd; int32_t i;
-    for (i=0; i<timeout*1000; i++)
+    struct nn_pollfd pfd; //int32_t i;
+    //for (i=0; i<timeout*1000; i++)
     {
         memset(&pfd,0,sizeof(pfd));
         pfd.fd = sock;
         pfd.events = NN_POLLIN;
-        if ( nn_poll(&pfd,1,1) > 0 )
+        //if ( nn_poll(&pfd,1,1) > 0 )
             return(nn_send(sock,data,datalen,flags));
         usleep(1000);
     }

@@ -260,9 +260,6 @@ trust(pubkey, trust)\n\
                 jdelete(reqjson,"method");
                 method = jstr(reqjson,"method2");
                 jaddstr(reqjson,"method",method);
-                //jdelete(reqjson,"method2");
-                //printf("BROADCASTED.(%s)\n",jprint(reqjson,0));
-                //printf("BROADCASTED METHOD.%s\n",method);
             }
             argjson = reqjson;
         }
@@ -285,44 +282,22 @@ trust(pubkey, trust)\n\
         retstr = LP_postedprice(argjson);
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
-    //else if ( strcmp(method,"broadcast") == 0 )
-    //    retstr = LP_broadcasted(argjson);
     else if ( strcmp(method,"getprices") == 0 )
         return(LP_prices());
     else if ( strcmp(method,"orderbook") == 0 )
         return(LP_orderbook(base,rel,jint(argjson,"duration")));
     else if ( strcmp(method,"registerall") == 0 )
-    {
         return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-        //return(LP_registerall(jint(argjson,"numnodes")));
-    }
     else if ( strcmp(method,"forward") == 0 )
-    {
         return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-        /*cJSON *reqjson;
-        if ( (reqjson= LP_dereference(argjson,"forward")) != 0 )
-        {
-            //printf("FORWARDED.(%s)\n",jprint(argjson,0));
-            if ( LP_forward(ctx,myipaddr,pubsock,jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
-                retstr = clonestr("{\"result\":\"success\"}");
-            else retstr = clonestr("{\"result\":\"error forwarding\"}");
-        } else retstr = clonestr("{\"result\":\"cant recurse forwards\"}");
-        return(retstr);*/
-    }
     else if ( strcmp(method,"keepalive") == 0 )
-    {
         return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-        /*printf("got keepalive lag.%d switch.%u\n",(int32_t)time(NULL) - LP_deadman_switch,LP_deadman_switch);
-        LP_deadman_switch = (uint32_t)time(NULL);
-        return(clonestr("{\"result\":\"success\"}"));*/
-    }
     else if ( strcmp(method,"getpeers") == 0 )
         return(LP_peers());
     else if ( strcmp(method,"getutxos") == 0 )
         return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
     else if ( strcmp(method,"utxo") == 0 )
     {
-        //printf("UTXO.%s\n",method);
         if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
             retstr = clonestr("{\"result\":\"success\",\"utxo\":\"received\"}");
         else retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
@@ -332,17 +307,9 @@ trust(pubkey, trust)\n\
         if ( IAMLP != 0 )
         {
             if ( strcmp(method,"register") == 0 )
-            {
                 return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-                /*retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"),juint(argjson,"pushport"));
-                //printf("got (%s) from register\n",retstr!=0?retstr:"");
-                return(retstr);*/
-            }
             else if ( strcmp(method,"lookup") == 0 )
-            {
                 return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-                //return(LP_lookup(jbits256(argjson,"client")));
-            }
             if ( strcmp(method,"broadcast") == 0 )
             {
                 bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
@@ -364,7 +331,6 @@ trust(pubkey, trust)\n\
                     }
                     retstr = clonestr("{\"result\":\"success\"}");
                 } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
-                //retstr = LP_forwardhex(ctx,pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
             }
             else if ( strcmp(method,"psock") == 0 )
             {

@@ -407,15 +407,6 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
                 jaddnum(retjson,"requestid",qp->R.requestid);
                 jaddnum(retjson,"quoteid",qp->R.quoteid);
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,utxo->S.otherpubkey));
-                /*if ( pubsock >= 0 )
-                {
-                    msg = jprint(retjson,0);
-                    LP_send(pubsock,msg,(int32_t)strlen(msg)+1,1);
-                }
-                jdelete(retjson,"method");
-                jaddstr(retjson,"method2","connected");
-                jaddstr(retjson,"method","forward");
-                LP_forward(ctx,myipaddr,pubsock,utxo->S.otherpubkey,jprint(retjson,1),1);*/
                 msg = jprint(retjson,1);
                 LP_broadcast_message(pubsock,base,rel,utxo->S.otherpubkey,msg);
                 retval = 0;
