@@ -314,7 +314,6 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
     reqjson = LP_quotejson(qp);
     if ( bits256_nonz(qp->desthash) != 0 )
         flag = 1;
-    //printf("QUERY.(%s)\n",jprint(reqjson,0));
     /*if ( IAMLP != 0 )
     {
         jaddstr(reqjson,"method",method);
@@ -328,8 +327,10 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
         jaddbits256(reqjson,"pubkey",qp->srchash);
         /LP_forward(ctx,myipaddr,mypubsock,qp->srchash,jprint(reqjson,1),1);
     }*/
+    jaddbits256(reqjson,"pubkey",qp->srchash);
     jaddstr(reqjson,"method",method);
     msg = jprint(reqjson,1);
+    printf("QUERY.(%s)\n",msg);
     LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
     for (i=0; i<30; i++)
     {
@@ -337,7 +338,7 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
         {
             if ( flag == 0 || bits256_nonz(qp->desthash) != 0 )
             {
-                //printf("break out of loop.%d price %.8f\n",i,price);
+                printf("break out of loop.%d price %.8f %s/%s\n",i,price,qp->srccoin,qp->destcoin);
                 break;
             }
         }
@@ -508,7 +509,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     char *method,*msg; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo *autxo,*butxo; int32_t retval = -1; struct LP_quoteinfo Q;
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
-        //printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
+        printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
         retval = 1;
         if ( LP_quoteparse(&Q,argjson) == 0 && bits256_cmp(LP_mypub25519,Q.srchash) == 0 )
         {
@@ -553,9 +554,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     jaddstr(retjson,"method","forward");
                     /LP_forward(ctx,myipaddr,pubsock,butxo->S.otherpubkey,jprint(retjson,1),1);*/
                     msg = jprint(retjson,1);
+                    printf("set swappending.%u accept qprice %.8f, min %.8f\n(%s)",butxo->T.swappending,qprice,price,msg);
                     LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
                     butxo->T.lasttime = (uint32_t)time(NULL);
-                    printf("set swappending.%u accept qprice %.8f, min %.8f\n",butxo->T.swappending,qprice,price);
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
             }
             else if ( strcmp(method,"connect") == 0 ) // bob

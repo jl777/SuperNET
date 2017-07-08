@@ -199,12 +199,13 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             {
                 if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"encrypted") == 0 )
                 {
+                    free_json(argjson);
+                    argjson = 0;
                     cipherlen >>= 1;
                     decode_hex(decoded,cipherlen,cipherstr);
                     crc32 = calc_crc32(0,&decoded[2],cipherlen-2);
                     if ( (jsonstr= LP_decrypt(decoded,&cipherlen)) != 0 )
                     {
-                        free_json(argjson);
                         argjson = cJSON_Parse(jsonstr);
                         recvlen = cipherlen;
                         encrypted = 1;
@@ -215,14 +216,21 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                                 LP_crc32find(&duplicate,i,crc32);
                         }
                         printf("%02x %02x %08x duplicate.%d decrypted.(%s)\n",decoded[0],decoded[1],crc32,duplicate,jsonstr);
-                    } else printf("error null jsonstr\n");
+                    }
+                    else
+                    {
+                        printf("packet not for this node\n");
+                    }
                 } else printf("error method is %s\n",method);
             } //else printf("error cipherlen.%d\n",cipherlen);
-            len = (int32_t)strlen(jsonstr) + 1;
-            if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
+            if ( jsonstr != 0 )
             {
+                len = (int32_t)strlen(jsonstr) + 1;
+                if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
+                {
+                }
+                free_json(argjson);
             }
-            free_json(argjson);
         }
     } //else printf("DUPLICATE.(%s)\n",(char *)ptr);
     portable_mutex_unlock(&LP_commandmutex);
