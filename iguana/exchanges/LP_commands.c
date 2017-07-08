@@ -18,6 +18,17 @@
 //  marketmaker
 //
 
+char *LP_numutxos()
+{
+    cJSON *retjson = cJSON_CreateObject();
+    if ( LP_mypeer != 0 )
+    {
+        jaddnum(retjson,"numutxos",LP_mypeer->numutxos);
+        jaddnum(retjson,"numpeers",LP_mypeer->numpeers);
+        jaddnum(retjson,"session",LP_sessionid);
+    } jaddstr(retjson,"error","client node");
+    return(jprint(retjson,1));
+}
 
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
@@ -266,6 +277,8 @@ trust(pubkey, trust)\n\
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"getcoins") == 0 )
         return(jprint(LP_coinsjson(),1));
+    else if ( strcmp(method,"numutxos") == 0 )
+        return(LP_numutxos());
     else if ( strcmp(method,"postprice") == 0 )
         retstr = LP_postedprice(argjson);
     //else if ( strcmp(method,"broadcast") == 0 )

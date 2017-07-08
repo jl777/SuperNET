@@ -65,18 +65,15 @@ if ( strncmp("5.9.253",ipaddr,strlen("5.9.253")) != 0 )
     {
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
-            //if ( profitmargin != 0. )
-            //    peer->profitmargin = profitmargin;
-            if ( numpeers > peer->numpeers )
+            /*if ( numpeers > peer->numpeers )
                 peer->numpeers = numpeers;
             if ( numutxos > peer->numutxos )
                 peer->numutxos = numutxos;
             if ( peer->sessionid == 0 )
-                peer->sessionid = sessionid;
+                peer->sessionid = sessionid;*/
         }
         else
         {
-            printf("LPaddpeer %s\n",ipaddr);
             peer = calloc(1,sizeof(*peer));
             if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
                 peer->sessionid = LP_sessionid;
@@ -221,7 +218,7 @@ void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
     if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,mypeer!=0?mypeer->numpeers:0,mypeer!=0?mypeer->numutxos:0)) != 0 )
     {
-        printf("got.(%s)\n",retstr);
+        //printf("got.(%s)\n",retstr);
         now = (uint32_t)time(NULL);
         LP_peersparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
         free(retstr);

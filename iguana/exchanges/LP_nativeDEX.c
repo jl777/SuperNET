@@ -309,7 +309,7 @@ void command_rpcloop(void *myipaddr)
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport,char *passphrase)
 {
     static uint32_t counter,numpeers; //lastforward
-    struct LP_utxoinfo *utxo,*utmp; struct iguana_info *coin,*ctmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp,*mostpeer; uint32_t now; int32_t mostutxos,nonz = 0,n=0,lastn=-1;
+    struct LP_utxoinfo *utxo,*utmp; cJSON *retjson; struct iguana_info *coin,*ctmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp,*mostpeer; uint32_t id,now; int32_t mostutxos,nonz = 0,n=0,num,lastn=-1;
     now = (uint32_t)time(NULL);
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
@@ -328,8 +328,25 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( IAMLP != 0 && strcmp(peer->ipaddr,myipaddr) != 0 )
-            LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+        if ( IAMLP != 0 && LP_mypeer != 0 && strcmp(peer->ipaddr,myipaddr) != 0 )
+        {
+            if ( (retstr= issue_LP_numutxos(peer->ipaddr,peer->port,LP_mypeer->ipaddr,LP_mypeer->port,LP_mypeer->numpeers,LP_mypeer->numutxos)) != 0 )
+            {
+                printf("%s\n",retstr);
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (num= jint(retjson,"numutxos")) > peer->numutxos )
+                        peer->numutxos = num;
+                    if ( (num= jint(retjson,"numpeers")) > peer->numpeers )
+                        peer->numpeers = num;
+                    if ( (id= juint(retjson,"session")) != 0 )
+                        peer->sessionid = id;
+                    free_json(retjson);
+                }
+                free(retstr);
+                retstr = 0;
+            }
+        }
         printf("%d ",peer->numutxos);
         if ( peer->numutxos > mostutxos )
         {
