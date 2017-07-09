@@ -384,7 +384,7 @@ uint32_t LP_extract(uint32_t requestid,uint32_t quoteid,char *rootfname,char *fi
                 t = (t << 8) | redeem[4];
                 t = (t << 8) | redeem[3];
                 t = (t << 8) | redeem[2];
-                printf("extracted timestamp.%u\n",t);
+                //printf("extracted timestamp.%u\n",t);
             }
         }
         free(filestr);
