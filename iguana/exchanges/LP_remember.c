@@ -365,6 +365,33 @@ int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflag
     return(0);
 }
 
+uint32_t LP_extract(uint32_t requestid,uint32_t quoteid,char *rootfname,char *field)
+{
+    char fname[1024],*filestr,*redeemstr; long fsize; int32_t len; uint32_t t=0; cJSON *json; uint8_t redeem[1024];
+    if ( strcmp(field,"dlocktime") == 0 )
+        sprintf(fname,"%s.bobdeposit",rootfname);
+    else if ( strcmp(field,"plocktime") == 0 )
+        sprintf(fname,"%s.bobpayment",rootfname);
+    if ( (filestr= OS_filestr(&fsize,fname)) != 0 )
+    {
+        if ( (json= cJSON_Parse(filestr)) != 0 )
+        {
+            if ( (redeemstr= jstr(json,"redeem")) != 0 && (len= (int32_t)strlen(redeemstr)) <= sizeof(redeem)*2 )
+            {
+                len >>= 1;
+                decode_hex(redeem,len,redeemstr);
+                t = redeem[5];
+                t = (t << 8) | redeem[4];
+                t = (t << 8) | redeem[3];
+                t = (t << 8) | redeem[2];
+                printf("extracted timestamp.%u\n",t);
+            }
+        }
+        free(filestr);
+    }
+    return(t);
+}
+
 cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requestid,uint32_t quoteid)
 {
     static void *ctx;
@@ -410,8 +437,10 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 //    printf("%02x",pubkey33[i]);
                 //printf(" <- %s dest33\n",dest33);
             }
-            plocktime = juint(item,"plocktime");
-            dlocktime = juint(item,"dlocktime");
+            if ( (plocktime= juint(item,"plocktime")) == 0 )
+                plocktime = LP_extract(requestid,quoteid,fname,"plocktime");
+            if ( (dlocktime= juint(item,"dlocktime")) == 0 )
+                dlocktime = LP_extract(requestid,quoteid,fname,"dlocktime");
             r = juint(item,"requestid");
             q = juint(item,"quoteid");
             pubA0 = jbits256(item,"pubA0");
@@ -570,7 +599,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         Atxfee = LP_MIN_TXFEE;
     if ( (Btxfee= LP_getestimatedrate(bobcoin) * LP_AVETXSIZE) < LP_MIN_TXFEE )
         Btxfee = LP_MIN_TXFEE;
-    printf("%s %.8f txfee, %s %.8f txfee\n",alicecoin,dstr(Atxfee),bobcoin,dstr(Btxfee));
+    //printf("%s %.8f txfee, %s %.8f txfee\n",alicecoin,dstr(Atxfee),bobcoin,dstr(Btxfee));
     //printf("privAm.(%s) %p/%p\n",bits256_str(str,privAm),Adest,AAdest);
     //printf("privBn.(%s) %p/%p\n",bits256_str(str,privBn),Bdest,ABdest);
     if ( finishedflag == 0 && bobcoin[0] != 0 && alicecoin[0] != 0 )
