@@ -680,7 +680,7 @@ int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
     return(n);
 }
 
-int32_t LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport)
+int32_t LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport,int32_t maxentries)
 {
     char *retstr; struct LP_peerinfo *peer; uint32_t now; int32_t retval = -1;
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
@@ -688,8 +688,8 @@ int32_t LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
         coin = "";
     //printf("utxo query.(%s)\n",destipaddr);
     if ( IAMLP != 0 )
-        retstr = issue_LP_getutxos(destipaddr,destport,coin,lastn,myipaddr,myport,mypeer != 0 ? mypeer->numpeers : 0,mypeer != 0 ? mypeer->numutxos : 0);
-    else retstr = issue_LP_clientgetutxos(destipaddr,destport,coin,100);
+        retstr = issue_LP_getutxos(destipaddr,destport,coin,lastn,myipaddr,myport,mypeer != 0 ? mypeer->numpeers : 0,maxentries);
+    else retstr = issue_LP_clientgetutxos(destipaddr,destport,coin,maxentries);
     if ( retstr != 0 )
     {
         now = (uint32_t)time(NULL);

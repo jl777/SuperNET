@@ -279,7 +279,7 @@ void LP_myutxo_updates(void *ctx,int32_t pubsock,char *passphrase)
     LP_privkey_updates(ctx,pubsock,passphrase,0);
 }
 
-int32_t LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pubsock,struct LP_peerinfo *peer,uint32_t now,int32_t interval)
+int32_t LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pubsock,struct LP_peerinfo *peer,uint32_t now,int32_t interval,int32_t maxentries)
 {
     int32_t lastn,n = -1;
     if ( peer->lastutxos < now-interval )
@@ -291,7 +291,7 @@ int32_t LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pu
         {
             peer->lastutxos = now;
             //printf("query utxos from %s\n",peer->ipaddr);
-            n = LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport);
+            n = LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer != 0 ? mypeer->ipaddr : "127.0.0.1",myport,maxentries);
         }
     } //else printf("LP_peer_utxosquery skip.(%s) %u\n",peer->ipaddr,peer->lastutxos);
     return(n);
@@ -412,7 +412,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( lastn != n || n < 20 )
             {
                 lastn = n;
-                n = LP_peer_utxosquery(mypeer,myport,pubsock,peer,now,60);
+                n = LP_peer_utxosquery(mypeer,myport,pubsock,peer,now,60,100);
             }
             LP_peer_pricesquery(peer->ipaddr,peer->port);
             peer->diduquery = now;
@@ -427,7 +427,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     if ( LP_mypeer != 0 && LP_mypeer->numutxos < mostutxos && mostpeer != 0 )
     {
         printf("myutxos.%d most.%d %s\n",LP_mypeer->numutxos,mostutxos,mostpeer->ipaddr);
-        LP_peer_utxosquery(LP_mypeer,myport,pubsock,mostpeer,now,30);
+        LP_peer_utxosquery(LP_mypeer,myport,pubsock,mostpeer,now,60,(mostutxos-LP_mypeer->numutxos) * 2);
         //LP_peer_pricesquery(mostpeer->ipaddr,mostpeer->port);
     }
     if ( (counter % 6000) == 10 )
