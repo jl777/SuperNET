@@ -548,10 +548,10 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     {
         if ( value < satoshis+txfee )
         {
-            if ( value == satoshis )
+            if ( satoshis > value-txfee/2 )
             {
-                printf("reduce satoshis by txfee %.8f\n",dstr(txfee));
-                satoshis -= txfee;
+                satoshis = value - txfee;
+                printf("reduce satoshis by txfee %.8f to %.8f\n",dstr(txfee),dstr(satoshis));
             }
             else
             {
