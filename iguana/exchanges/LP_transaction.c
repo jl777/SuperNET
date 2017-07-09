@@ -555,7 +555,9 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     if ( value < satoshis+txfee )
     {
         printf("utxo %.8f too small for %.8f + %.8f\n",dstr(value),dstr(satoshis),dstr(txfee));
-        return(0);
+        if ( value == satoshis )
+            satoshis -= txfee;
+        else return(0);
     }
     if ( destamountp != 0 )
         *destamountp = satoshis;
