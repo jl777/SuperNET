@@ -149,7 +149,7 @@ trust(pubkey, trust)\n\
         if ( base != 0 && rel != 0 )
         {
             double price,bid,ask;
-            if ( LP_isdisabled(base,rel) != 0 )
+            if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             price = jdouble(argjson,"price");
             if ( strcmp(method,"setprice") == 0 )
@@ -264,7 +264,7 @@ trust(pubkey, trust)\n\
             argjson = reqjson;
         }
     }
-    if ( LP_isdisabled(base,rel) != 0 )
+    if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
         return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
     else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
         retstr = clonestr("{\"result\":\"coin is disabled\"}");
