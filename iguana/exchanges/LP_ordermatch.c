@@ -394,7 +394,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
     {
         if ( (pair= LP_nanobind(ctx,pairstr)) >= 0 )
         {
-            LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis,rel,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
+            LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis-qp->txfee,rel,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
             swap = LP_swapinit(1,0,privkey,&qp->R,qp);
             swap->N.pair = pair;
             utxo->S.swap = swap;
@@ -468,7 +468,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
             //timeout = 1;
             //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis,Q.destcoin,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
+            LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
             swap = LP_swapinit(0,0,Q.privkey,&Q.R,&Q);
             swap->N.pair = pairsock;
             autxo->S.swap = swap;
@@ -697,7 +697,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
         if ( price <= maxprice )
         {
             price = LP_query(ctx,myipaddr,mypubsock,"connect",qp);
-            LP_requestinit(&qp->R,qp->srchash,qp->desthash,bobutxo->coin,qp->satoshis,qp->destcoin,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
+            LP_requestinit(&qp->R,qp->srchash,qp->desthash,bobutxo->coin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
             expiration = (uint32_t)time(NULL) + timeout;
             while ( time(NULL) < expiration )
             {
