@@ -288,16 +288,24 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
-    uint64_t val,val2=0,threshold=0; int32_t iter; char destaddr[64],destaddr2[64]; struct LP_utxoinfo *utxo;
+    uint64_t val,val2=0,threshold=0; int32_t iter,bypass = 0; char destaddr[64],destaddr2[64]; struct LP_utxoinfo *utxo; struct iguana_info *coin = LP_coinfind(symbol);
     destaddr[0] = destaddr2[0] = 0;
-    if ( (val= LP_txvalue(destaddr,symbol,txid,vout)) >= satoshis )
+    if ( coin != 0 && IAMLP != 0 && coin->inactive != 0 )
+        bypass = 1;
+    if ( bypass != 0 )
+        val = satoshis;
+    else val = LP_txvalue(destaddr,symbol,txid,vout);
+    if ( val >= satoshis )
     {
         threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
-        if ( (val2= LP_txvalue(destaddr2,symbol,txid2,vout2)) >= threshold )
+        if ( bypass != 0 )
+            val2 = threshold;
+        else val2 = LP_txvalue(destaddr2,symbol,txid2,vout2);
+        if ( val2 >= threshold )
         {
-            if ( strcmp(destaddr,destaddr2) != 0 )
+            if ( bypass == 0 && strcmp(destaddr,destaddr2) != 0 )
                 printf("mismatched %s destaddr (%s) vs (%s)\n",symbol,destaddr,destaddr2);
-            else if ( (iambob == 0 && val2 > val) || (iambob != 0 && val2 <= satoshis) )
+            else if ( bypass == 0 && ((iambob == 0 && val2 > val) || (iambob != 0 && val2 <= satoshis)) )
                 printf("iambob.%d ineligible due to offsides: val %.8f and val2 %.8f vs %.8f diff %lld\n",iambob,dstr(val),dstr(val2),dstr(satoshis),(long long)(val2 - val));
             else
             {
