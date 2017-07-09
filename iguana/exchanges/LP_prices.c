@@ -638,6 +638,7 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
 {
     struct LP_priceinfo *basepp,*relpp;  struct LP_pubkeyinfo *pubp; char str[65];
+    printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
     if ( price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         printf("PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
