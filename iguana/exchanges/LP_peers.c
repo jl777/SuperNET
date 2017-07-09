@@ -57,8 +57,10 @@ char *LP_peers()
 struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t numpeers,int32_t numutxos,uint32_t sessionid)
 {
     uint32_t ipbits; int32_t pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
-if ( strncmp("5.9.253",ipaddr,strlen("5.9.253")) != 0 )
-    return(0);
+#ifdef LP_STRICTPEERS
+    if ( strncmp("5.9.253",ipaddr,strlen("5.9.253")) != 0 )
+        return(0);
+#endif
     ipbits = (uint32_t)calc_ipbits(ipaddr);
     expand_ipbits(checkip,ipbits);
     if ( strcmp(checkip,ipaddr) == 0 )
