@@ -359,7 +359,7 @@ void command_rpcloop(void *myipaddr)
 
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport,char *passphrase)
 {
-    static uint32_t counter,numpeers; //lastforward
+    static uint32_t counter,numpeers,lastresync; //lastforward
     struct LP_utxoinfo *utxo,*utmp; cJSON *retjson; struct iguana_info *coin,*ctmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp,*mostpeer; uint32_t id,now; int32_t mostutxos,nonz = 0,n=0,num,lastn=-1;
     now = (uint32_t)time(NULL);
     if ( (origipaddr= myipaddr) == 0 )
@@ -425,10 +425,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
     }
     //printf("numutxos vs mine.%d\n",LP_mypeer != 0 ? LP_mypeer->numutxos : -1);
-    if ( LP_mypeer != 0 && LP_mypeer->numutxos < mostutxos && mostpeer != 0 )
+    if ( LP_mypeer != 0 && LP_mypeer->numutxos < mostutxos && mostpeer != 0 && time(NULL) > lastresync+60 )
     {
         printf("myutxos.%d most.%d %s\n",LP_mypeer->numutxos,mostutxos,mostpeer->ipaddr);
         LP_peer_utxosquery(LP_mypeer,myport,pubsock,mostpeer,now,60,(mostutxos-LP_mypeer->numutxos) * 2);
+        lastresync = (uint32_t)time(NULL);
         //LP_peer_pricesquery(mostpeer->ipaddr,mostpeer->port);
     }
     if ( (counter % 6000) == 10 )

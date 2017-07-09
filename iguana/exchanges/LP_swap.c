@@ -510,7 +510,7 @@ struct basilisk_rawtx *LP_swapdata_rawtx(struct basilisk_swap *swap,uint8_t *dat
 
 int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys)
 {
-    bits256 otherhash,myhash,txid; int32_t i,offset=0,datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr,redeemaddr[64],checkaddr[64]; uint32_t quoteid,msgbits;
+    bits256 otherhash,myhash,txid; int64_t txfee; int32_t i,offset=0,datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr,redeemaddr[64],checkaddr[64]; uint32_t quoteid,msgbits;
     for (i=0; i<32; i++)
         otherhash.bytes[i] = recvbuf[offset++];
     for (i=0; i<32; i++)
@@ -570,7 +570,12 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
         {
             vout = jitem(vouts,v);
-            if ( j64bits(vout,"satoshis") == rawtx->I.amount && (skey= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(skey,"hex")) != 0 )
+            if ( strcmp(rawtx->coin->symbol,swap->bobcoin.symbol) == 0 )
+                txfee = swap->I.Btxfee;
+            else if ( strcmp(rawtx->coin->symbol,swap->alicecoin.symbol) == 0 )
+                txfee = swap->I.Atxfee;
+            else txfee = 10000;
+            if ( j64bits(vout,"satoshis") >= rawtx->I.amount-txfee && (skey= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(skey,"hex")) != 0 )
             {
                 if ( (hexlen= (int32_t)strlen(hexstr) >> 1) < sizeof(rawtx->spendscript) )
                 {
@@ -923,6 +928,8 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
 {
     //FILE *fp; char fname[512];
     uint8_t *alicepub33=0,*bobpub33=0; int32_t bobistrusted,aliceistrusted,jumblrflag=-2,x = -1; struct iguana_info *coin;
+    swap->I.Atxfee = qp->desttxfee;
+    swap->I.Btxfee = qp->txfee;
     swap->I.putduration = swap->I.callduration = INSTANTDEX_LOCKTIME;
     if ( optionduration < 0 )
         swap->I.putduration -= optionduration;
