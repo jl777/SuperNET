@@ -254,7 +254,9 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 
 void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo)
 {
-    struct _LP_utxoinfo u; char str[65]; uint32_t now = (uint32_t)time(NULL);
+    struct _LP_utxoinfo u; struct iguana_info *coin; char str[65]; uint32_t now = (uint32_t)time(NULL);
+    if ( IAMLP != 0 && (coin= LP_coinfind(utxo->coin)) != 0 && coin->inactive != 0 )
+        return;
     //printf("%s lag.%d\n",bits256_str(str,utxo->txid),now-utxo->lastspentcheck);
     if ( utxo->T.spentflag == 0 && now > utxo->T.lastspentcheck+60 )
     {
