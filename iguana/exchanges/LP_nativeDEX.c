@@ -25,6 +25,7 @@
 //) BTC.0000000000000000000000000000000000000000000000000000000000000000
 // multiple smartaddresses? enable/disable causes? 250 KMD bounty
 // verify bid volumes
+// getmessage api
 
 #include <stdio.h>
 #include "LP_include.h"

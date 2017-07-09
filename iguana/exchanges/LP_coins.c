@@ -317,7 +317,8 @@ struct iguana_info *LP_coincreate(cJSON *item)
             coin = LP_coinadd(&cdata);
             coin->inactive = (uint32_t)time(NULL);
         } else coin = LP_coinadd(&cdata);
-    }
+    } else if ( symbol != 0 && jobj(item,"rpcport") == 0 )
+        printf("SKIP %s, missing rpcport field in coins array\n",symbol);
     if ( coin != 0 && item != 0 )
     {
         if ( strcmp("KMD",coin->symbol) != 0 )
