@@ -507,7 +507,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("session.%u malformed addutxo %d %d %d %d %d %d %d %d %d\n",sessionid,symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
-    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
+    if ( (coin= LP_coinfind(symbol)) == 0 || (IAMLP == 0 && coin->inactive != 0) )
         return(0);
     if ( iambob != 0 && value2 < 9 * (value >> 3) + bigtxfee ) // big txfee padding
     {
@@ -604,11 +604,6 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     {
         if ( LP_mypeer != 0 )
             LP_mypeer->numutxos++;
-        /*if ( mypubsock >= 0 )
-        {
-            msg = jprint(LP_utxojson(utxo),1);
-            /LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
-        } else LP_utxo_clientpublish(utxo);*/
         if ( LP_ismine(utxo) > 0 )
         {
             LP_utxo_clientpublish(utxo);

@@ -21,6 +21,7 @@
 // stats
 // auto-utxo creation
 // getmessage api
+// support coins LP node doesnt have
 
 // robustify remember
 // false detection of bobreclaim
