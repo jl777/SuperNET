@@ -143,6 +143,7 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,c
     FILE *fp; char fname[512],username[512],password[512],confname[512];
     userpass[0] = 0;
     sprintf(confname,"%s.conf",confroot);
+    printf("%s (%s) %s confname.(%s) confroot.(%s)\n",symbol,assetname,name,confname,confroot);
 #ifdef __APPLE__
     int32_t len;
     confname[0] = toupper(confname[0]);
