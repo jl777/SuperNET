@@ -526,7 +526,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f, value2 %.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(value2),dstr(tmpsatoshis));
         return(0);
     }
-    //if ( dispflag != 0 )
+    if ( dispflag != 0 )
         printf("%.8f %.8f %s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",dstr(val),dstr(val2),coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
     dispflag = 1;
     if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,txid,vout,txid2,vout2)) >= 0 )
