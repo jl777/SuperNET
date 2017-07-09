@@ -20,15 +20,17 @@
 // swap cancel should cleanly cancel
 // stats
 // auto-utxo creation
+// getmessage api
 
-// null plocktime, robustify remember
+// robustify remember
 // false detection of bobreclaim
-// verify BTC trading: 0 txfee on remember trades. even with invalid tx, thinks swap is completed RETSTR.({"result":null,"error":{"code":-26,"message":"66: insufficient priority"},"id":"jl777"}
+// put Atxfee and Btxfee into rememberfiles
+// coded fix: even with invalid tx, thinks swap is completed RETSTR.({"result":null,"error":{"code":-26,"message":"66: insufficient priority"},"id":"jl777"}
 //) BTC.0000000000000000000000000000000000000000000000000000000000000000
 
+// unduplicated bugs:
 // multiple smartaddresses? enable/disable causes? 250 KMD bounty
 // verify bid volumes
-// getmessage api
 
 #include <stdio.h>
 #include "LP_include.h"
@@ -423,11 +425,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     //printf("numutxos vs mine.%d\n",LP_mypeer != 0 ? LP_mypeer->numutxos : -1);
     if ( LP_mypeer != 0 && LP_mypeer->numutxos < mostutxos && mostpeer != 0 )
     {
-        //printf("myutxos.%d most.%d %s\n",LP_mypeer->numutxos,mostutxos,mostpeer->ipaddr);
+        printf("myutxos.%d most.%d %s\n",LP_mypeer->numutxos,mostutxos,mostpeer->ipaddr);
         LP_peer_utxosquery(LP_mypeer,myport,pubsock,mostpeer,now,30);
         //LP_peer_pricesquery(mostpeer->ipaddr,mostpeer->port);
     }
-    if ( (counter % 600) == 10 )
+    if ( (counter % 6000) == 10 )
     {
         LP_myutxo_updates(ctx,pubsock,passphrase);
         /*if ( lastforward < now-3600 )

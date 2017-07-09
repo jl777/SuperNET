@@ -30,7 +30,8 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
             if ( is_hexstr(retstr,0) == 64 )
             {
                 decode_hex(txid.bytes,32,retstr);
-                sentflag = 1;
+                if ( bits256_cmp(txid,expectedtxid) == 0 || (bits256_nonz(expectedtxid) == 0 && bits256_nonz(txid) != 0) )
+                    sentflag = 1;
             }
             else if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
@@ -44,7 +45,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
                 }
                 free_json(retjson);
             }
-            char str[65]; printf("[%s] %s RETSTR.(%s) %s.%s\n",txname,txbytes,retstr,symbol,bits256_str(str,txid));
+            char str[65]; printf("sentflag.%d [%s] %s RETSTR.(%s) %s.%s\n",sentflag,txname,txbytes,retstr,symbol,bits256_str(str,txid));
             free(retstr);
         }
         if ( sentflag != 0 )
