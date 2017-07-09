@@ -266,7 +266,7 @@ trust(pubkey, trust)\n\
     }
     if ( LP_isdisabled(base,rel) != 0 )
         return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
-    else if ( LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
+    else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
         retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"reserved") == 0 )
         retstr = LP_quotereceived(argjson);
