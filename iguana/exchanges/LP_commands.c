@@ -84,7 +84,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
                 if ( laststr != 0 )
                     free(laststr);
                 laststr = newstr;
-                retstr = laststr;
+                retstr = clonestr(laststr);
             }
         }
     }

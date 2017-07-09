@@ -31,6 +31,7 @@
 // unduplicated bugs:
 // multiple smartaddresses? enable/disable causes? 250 KMD bounty
 // verify bid volumes
+// free_json crash on encrypted message
 
 #include <stdio.h>
 #include "LP_include.h"
@@ -233,7 +234,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                     }
                 } else printf("error (%s) method is %s\n",jsonstr,method);
             }
-            if ( jsonstr != 0 )
+            if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
                 if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
