@@ -546,19 +546,25 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
 #endif
     if ( satoshis != 0 )
     {
+        if ( value < satoshis+txfee )
+        {
+            if ( value == satoshis )
+            {
+                printf("reduce satoshis by txfee %.8f\n",dstr(txfee));
+                satoshis -= txfee;
+            }
+            else
+            {
+                printf("utxo %.8f too small for %.8f + %.8f\n",dstr(value),dstr(satoshis),dstr(txfee));
+                return(0);
+            }
+        }
         if ( value > satoshis+txfee )
             change = value - (satoshis + txfee);
         printf("utxo %.8f, destamount %.8f change %.8f txfee %.8f\n",dstr(value),dstr(satoshis),dstr(change),dstr(txfee));
     } else if ( value > txfee )
         satoshis = value - txfee;
     else printf("unexpected small value %.8f vs txfee %.8f\n",dstr(value),dstr(txfee));
-    if ( value < satoshis+txfee )
-    {
-        printf("utxo %.8f too small for %.8f + %.8f\n",dstr(value),dstr(satoshis),dstr(txfee));
-        if ( value == satoshis )
-            satoshis -= txfee;
-        else return(0);
-    }
     if ( destamountp != 0 )
         *destamountp = satoshis;
     timestamp = (uint32_t)time(NULL);
