@@ -251,7 +251,7 @@ trust(pubkey, trust)\n\
         else if ( strcmp(method,"trust") == 0 )
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
     }
-    if ( IAMLP == 0 )
+    //if ( IAMLP == 0 )
     {
         if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
         {
