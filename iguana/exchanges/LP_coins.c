@@ -140,7 +140,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
 
 int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,char *name)
 {
-    FILE *fp; char fname[512],username[512],password[512],confname[16];
+    FILE *fp; char fname[512],username[512],password[512],confname[512];
     userpass[0] = 0;
     sprintf(confname,"%s.conf",confroot);
 #ifdef __APPLE__
