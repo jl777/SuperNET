@@ -602,7 +602,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( LP_ismine(utxo) > 0 )
         utxo->T.sessionid = LP_sessionid;
     else utxo->T.sessionid = sessionid;
-    printf("U.%d addutxo.%d pubkey.%s session.%u\n",LP_mypeer!=0?LP_mypeer->numutxos:-1,LP_ismine(utxo) > 0,bits256_str(str,utxo->pubkey),utxo->T.sessionid);
+    printf("U.%d %s %.8f %.8f addutxo.%d pubkey.%s session.%u\n",LP_mypeer!=0?LP_mypeer->numutxos:-1,symbol,dstr(value),dstr(value2),LP_ismine(utxo) > 0,bits256_str(str,utxo->pubkey),utxo->T.sessionid);
     portable_mutex_lock(&LP_utxomutex);
     HASH_ADD_KEYPTR(hh,LP_utxoinfos[iambob],utxo->key,sizeof(utxo->key),utxo);
     if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
