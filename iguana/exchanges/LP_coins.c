@@ -143,7 +143,8 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,c
     FILE *fp; char fname[512],username[512],password[512],confname[512];
     userpass[0] = 0;
     sprintf(confname,"%s.conf",confroot);
-    printf("%s (%s) %s confname.(%s) confroot.(%s)\n",symbol,assetname,name,confname,confroot);
+    if ( 0 )
+        printf("%s (%s) %s confname.(%s) confroot.(%s)\n",symbol,assetname,name,confname,confroot);
 #ifdef __APPLE__
     int32_t len;
     confname[0] = toupper(confname[0]);
@@ -157,7 +158,7 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,c
         LP_userpassfp(symbol,username,password,fp);
         sprintf(userpass,"%s:%s",username,password);
         fclose(fp);
-        if ( 0 && strcmp(symbol,"HUSH") == 0 )
+        if ( 0 )
             printf("LP_statefname.(%s) <- %s %s %s (%s)\n",fname,name,symbol,assetname,userpass);
         return((int32_t)strlen(userpass));
     } else printf("cant open.(%s)\n",fname);

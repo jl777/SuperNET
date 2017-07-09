@@ -551,6 +551,11 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     } else if ( value > txfee )
         satoshis = value - txfee;
     else printf("unexpected small value %.8f vs txfee %.8f\n",dstr(value),dstr(txfee));
+    if ( value < satoshis+txfee )
+    {
+        printf("utxo %.8f too small for %.8f + %.8f\n",dstr(value),dstr(satoshis),dstr(txfee));
+        return(0);
+    }
     if ( destamountp != 0 )
         *destamountp = satoshis;
     timestamp = (uint32_t)time(NULL);
@@ -740,7 +745,7 @@ int32_t basilisk_alicescript(uint8_t *redeemscript,int32_t *redeemlenp,uint8_t *
     return(n);
 }
 
-char *basilisk_swap_Aspend(char *name,char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,void *ctx,bits256 privAm,bits256 privBn,bits256 utxotxid,int32_t vout,uint8_t pubkey33[33],uint32_t expiration,int64_t *destamountp,char *vinaddr)
+char *basilisk_swap_Aspend(char *name,char *symbol,uint64_t Atxfee,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,void *ctx,bits256 privAm,bits256 privBn,bits256 utxotxid,int32_t vout,uint8_t pubkey33[33],uint32_t expiration,int64_t *destamountp,char *vinaddr)
 {
     char msigaddr[64],*signedtx = 0; int32_t spendlen,redeemlen; uint8_t tmp33[33],redeemscript[512],spendscript[128]; bits256 pubAm,pubBn,signedtxid; uint64_t txfee;
     if ( bits256_nonz(privAm) != 0 && bits256_nonz(privBn) != 0 )
@@ -758,7 +763,12 @@ char *basilisk_swap_Aspend(char *name,char *symbol,uint8_t taddr,uint8_t pubtype
          rev = privBn;
          for (i=0; i<32; i++)
          privBn.bytes[i] = rev.bytes[31 - i];*/
-        txfee = LP_txfee(symbol);
+        if ( (txfee= Atxfee) == 0 )
+        {
+            if ( (txfee= LP_getestimatedrate(symbol) * LP_AVETXSIZE) < LP_MIN_TXFEE )
+                txfee = LP_MIN_TXFEE;
+        }
+        //txfee = LP_txfee(symbol);
         signedtx = basilisk_swap_bobtxspend(&signedtxid,txfee,name,symbol,taddr,pubtype,p2shtype,isPoS,wiftype,ctx,privAm,&privBn,redeemscript,redeemlen,0,0,utxotxid,vout,0,pubkey33,1,expiration,destamountp,0,0,vinaddr,1);
     }
     return(signedtx);
