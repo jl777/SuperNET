@@ -304,14 +304,16 @@ struct iguana_info *LP_coincreate(cJSON *item)
             txfee = 10000;
         if ( (estimatedrate= jdouble(item,"estimatedrate")) == 0. )
             estimatedrate = 20;
-        if ( (pubtype= juint(item,"pubtype")) == 0 )
-            pubtype = 60;
+        pubtype = juint(item,"pubtype");
         if ( (p2shtype= juint(item,"p2shtype")) == 0 )
             p2shtype = 85;
         if ( (wiftype= juint(item,"wiftype")) == 0 )
             wiftype = 188;
         if ( (assetname= jstr(item,"asset")) != 0 )
+        {
             name = assetname;
+            pubtype = 60;
+        }
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
         if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr"),LP_busport(port)) < 0 )
