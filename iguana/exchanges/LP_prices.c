@@ -705,7 +705,7 @@ void prices_loop(void *ignore)
                         if ( strncmp("BTC-",name,4) == 0 )
                         {
                             name += 4;
-                            printf("%s\n",jprint(item,0));
+                            //printf("%s\n",jprint(item,0));
                             if ( (coinpp= LP_priceinfofind(name)) != 0 )
                             {
                                 coinpp->high = jdouble(item,"High");
