@@ -26,6 +26,9 @@ void LP_gotmessage(cJSON *argjson)
     struct LP_messageinfo *msg = calloc(1,sizeof(*msg));
     msg->msgjson = jduplicate(argjson);
     msg->ind = Num_messages++;
+    portable_mutex_lock(&LP_messagemutex);
+    DL_APPEND(LP_MSGS,msg);
+    portable_mutex_unlock(&LP_messagemutex);
 }
 
 void LP_deletemessages(int32_t firsti,int32_t num)
@@ -85,6 +88,8 @@ cJSON *LP_getmessages(int32_t firsti,int32_t num)
         }
     }
     jadd(retjson,"messages",array);
+    jaddnum(retjson,"firsti",firsti);
+    jaddnum(retjson,"lasti",lasti);
     jaddnum(retjson,"minind",mini);
     jaddnum(retjson,"maxind",maxi);
     jaddnum(retjson,"num",n);
