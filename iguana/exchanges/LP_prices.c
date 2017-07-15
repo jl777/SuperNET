@@ -685,11 +685,13 @@ void prices_loop(void *ignore)
         }
         if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
         {
+            printf("error getting marketsummaries\n");
             sleep(60);
             continue;
         }
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
+            printf("got.(%s)\n",retstr);
             if ( (array= jarray(&n,retjson,"result")) != 0 )
             {
                 for (i=0; i<n; i++)
