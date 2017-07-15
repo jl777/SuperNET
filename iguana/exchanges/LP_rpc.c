@@ -281,7 +281,7 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
         if ( jobj(retjson,"ismine") != 0 && is_cJSON_True(jobj(retjson,"ismine")) != 0 )
         {
             doneflag = 1;
-            printf("%s already ismine\n",address);
+            //printf("%s already ismine\n",address);
         }
         free_json(retjson);
     }
