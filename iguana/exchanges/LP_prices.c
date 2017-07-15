@@ -657,7 +657,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
 
 int32_t LP_autoprices;
 
-int32_t LP_autoprice(char *base,char *rel,double minprice,double margin)
+int32_t LP_autoprice(char *base,char *rel,double minprice,double margin,char *type)
 {
     struct LP_priceinfo *basepp,*relpp;
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )

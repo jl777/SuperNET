@@ -201,7 +201,6 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
     msg = jprint(reqjson,1);
     LP_broadcast_message(pubsock,base,rel,zero,msg);
     printf("broadcast.(%s)\n",msg);
-    free(msg);
     return(clonestr("{\"result\":\"success\"}"));
 }
 

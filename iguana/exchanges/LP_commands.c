@@ -95,7 +95,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
         return(clonestr("{\"result\":\" \
 available localhost RPC commands:\n \
 setprice(base, rel, price)\n\
-autoprice(base, rel, price, margin)\n\
+autoprice(base, rel, price, margin, type)\n\
 myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
@@ -172,7 +172,7 @@ trust(pubkey, trust)\n\
             }
             else if ( strcmp(method,"autoprice") == 0 )
             {
-                if ( LP_autoprice(base,rel,price,jdouble(argjson,"margin")) < 0 )
+                if ( LP_autoprice(base,rel,price,jdouble(argjson,"margin"),jstr(argjson,"type")) < 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
