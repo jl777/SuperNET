@@ -691,7 +691,7 @@ void prices_loop(void *ignore)
         }
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
-            printf("got.(%s)\n",retstr);
+            //printf("got.(%s)\n",retstr);
             if ( (array= jarray(&n,retjson,"result")) != 0 )
             {
                 for (i=0; i<n; i++)
@@ -702,6 +702,7 @@ void prices_loop(void *ignore)
                         if ( strncmp("BTC-",name,4) == 0 )
                         {
                             name += 4;
+                            printf("%s\n",jprint(item,0));
                             if ( (coinpp= LP_priceinfofind(name)) != 0 )
                             {
                                 coinpp->high = jdouble(item,"High");
