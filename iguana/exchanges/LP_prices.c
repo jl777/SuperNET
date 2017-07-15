@@ -721,7 +721,7 @@ void prices_loop(void *ignore)
                                     price = 0.5 * (coinpp->bid + coinpp->ask);
                                     if ( (margin= coinpp->margins[btcpp->ind]) != 0. )
                                     {
-                                        price *= (1. - margin);
+                                        price *= (1. + margin);
                                         if ( (minprice= coinpp->minprices[btcpp->ind]) == 0. || price >= minprice )
                                         {
                                             LP_mypriceset(&changed,"BTC",name,price);
@@ -731,7 +731,7 @@ void prices_loop(void *ignore)
                                     }
                                     if ( (margin= btcpp->margins[coinpp->ind]) != 0. )
                                     {
-                                        price *= (1. + margin);
+                                        price *= (1. - margin);
                                         if ( (minprice= btcpp->minprices[coinpp->ind]) == 0. || price >= minprice )
                                         {
                                             LP_mypriceset(&changed,name,"BTC",price);
