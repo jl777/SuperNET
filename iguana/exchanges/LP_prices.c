@@ -643,7 +643,7 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
 {
     struct LP_priceinfo *basepp,*relpp;  struct LP_pubkeyinfo *pubp; char str[65];
-    printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
+    //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
     if ( price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         printf("PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
@@ -673,7 +673,7 @@ int32_t LP_autoprice(char *base,char *rel,double minprice,double margin)
 void prices_loop(void *ignore)
 {
     //{"success":true,"message":"","result":[{"MarketName":"BTC-KMD","High":0.00040840,"Low":0.00034900,"Volume":328042.46061669,"Last":0.00037236,"BaseVolume":123.36439511,"TimeStamp":"2017-07-15T13:50:21.87","Bid":0.00035721,"Ask":0.00037069,"OpenBuyOrders":343,"OpenSellOrders":1690,"PrevDay":0.00040875,"Created":"2017-02-11T23:04:01.853"},
-    int32_t i,n,changed; double margin,price; struct LP_priceinfo *coinpp,*btcpp; char *retstr,*name; cJSON *retjson,*array,*item; void *ctx = bitcoin_ctx();
+    int32_t i,n,changed; double margin,price,minprice; struct LP_priceinfo *coinpp,*btcpp; char *retstr,*name; cJSON *retjson,*array,*item; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( LP_autoprices == 0 )
@@ -716,17 +716,29 @@ void prices_loop(void *ignore)
                                 coinpp->bid = jdouble(item,"Bid");
                                 coinpp->ask = jdouble(item,"Ask");
                                 coinpp->prevday = jdouble(item,"PrevDay");
-                                if ( (margin= coinpp->margins[btcpp->ind]) > SMALLVAL )
+                                if ( coinpp->bid > SMALLVAL && coinpp->ask > SMALLVAL )
                                 {
-                                    price = 1. / coinpp->bid * (1. - margin);
-                                    LP_mypriceset(&changed,"BTC",name,price);
-                                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,"BTC",name,price);
-                                }
-                                if ( (margin= btcpp->margins[coinpp->ind]) > SMALLVAL )
-                                {
-                                    price = coinpp->ask * (1. + margin);
-                                    LP_mypriceset(&changed,name,"BTC",price);
-                                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,name,"BTC",price);
+                                    price = 0.5 * (coinpp->bid + coinpp->ask);
+                                    if ( (margin= coinpp->margins[btcpp->ind]) != 0. )
+                                    {
+                                        price = 1. / price * (1. - margin);
+                                        if ( (minprice= coinpp->minprices[btcpp->ind]) == 0. || price >= minprice )
+                                        {
+                                            LP_mypriceset(&changed,"BTC",name,price);
+                                            if ( changed != 0 )
+                                                LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,"BTC",name,price);
+                                        }
+                                    }
+                                    if ( (margin= btcpp->margins[coinpp->ind]) != 0. )
+                                    {
+                                        price *= (1. + margin);
+                                        if ( (minprice= btcpp->minprices[coinpp->ind]) == 0. || price >= minprice )
+                                        {
+                                            LP_mypriceset(&changed,name,"BTC",price);
+                                            if ( changed != 0 )
+                                                LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,name,"BTC",price);
+                                        }
+                                    }
                                 }
                             }
                         }
