@@ -34,7 +34,7 @@ char *LP_numutxos()
 
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
+    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t changed,otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
 //printf("stats_JSON(%s)\n",jprint(argjson,0));
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
     {
@@ -165,9 +165,10 @@ trust(pubkey, trust)\n\
             {
                 if ( price > SMALLVAL )
                 {
-                    if ( LP_mypriceset(base,rel,price) < 0 )
+                    if ( LP_mypriceset(&changed,base,rel,price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
-                    else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
+                    else if ( changed != 0 )
+                        return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 } else return(clonestr("{\"error\":\"no price\"}"));
             }
             else if ( strcmp(method,"autoprice") == 0 )
@@ -208,7 +209,7 @@ trust(pubkey, trust)\n\
                 if ( price > SMALLVAL )
                 {
                     printf("price set (%s/%s) <- %.8f\n",rel,base,1./price);
-                    LP_mypriceset(rel,base,1./price);
+                    LP_mypriceset(&changed,rel,base,1./price);
                     return(LP_autotrade(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
