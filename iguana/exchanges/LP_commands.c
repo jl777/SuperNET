@@ -84,6 +84,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
                 if ( laststr != 0 )
                     free(laststr);
                 laststr = newstr;
+                LP_gotmessage(argjson);
                 retstr = clonestr(laststr);
             }
         }
@@ -112,18 +113,11 @@ getutxos(coin, lastn)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
 sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
+getmessages(firsti=0, num=100)\n\
+clearmessages(firsti=0, num=100)\n\
 trust(pubkey, trust)\n\
 \"}"));
     
-    /*
-    register(pubkey,pushaddr)\n\
-    registerall(numnodes)\n\
-    lookup(pubkey)\n\
-    forward(pubkey,method2,<argjson>)\n\
-    forward(pubkey,method2=publish,<argjson>)\n\
-    forwardhex(pubkey,hex)\n\
-     */
-
     base = jstr(argjson,"base");
     rel = jstr(argjson,"rel");
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
@@ -142,8 +136,22 @@ trust(pubkey, trust)\n\
         jdelete(argjson,"userpass");
         if ( strcmp(method,"sendmessage") == 0 )
         {
-            printf("broadcast message\n");
-            LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
+            if ( jobj(argjson,"method2") == 0 )
+            {
+                printf("broadcast message\n");
+                LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
+            }
+            return(clonestr("{\"result\":\"success\"}"));
+        }
+        else if ( strcmp(method,"getmessages") == 0 )
+        {
+            if ( (retjson= LP_getmessages(jint(argjson,"firsti"),jint(argjson,"num"))) != 0 )
+                return(jprint(retjson,1));
+            else return(clonestr("{\"error\":\"null messages\"}"));
+        }
+        else if ( strcmp(method,"deletemessages") == 0 )
+        {
+            LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
         }
         if ( base != 0 && rel != 0 )
