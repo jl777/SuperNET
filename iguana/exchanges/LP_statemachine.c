@@ -113,6 +113,56 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
                  }*/
     return(fp);
 }
+/*if ( lastforward < now-3600 )
+ {
+ if ( (retstr= LP_registerall(0)) != 0 )
+ free(retstr);
+ //LP_forwarding_register(LP_mypubkey,pushaddr,pushport,10);
+ lastforward = now;
+ }*/
+//if ( IAMLP != 0 && (counter % 600) == 42 )
+//    LP_hellos();
+/*if ( 0 && LP_canbind == 0 && (counter % (PSOCK_KEEPALIVE*MAINLOOP_PERSEC/2)) == 13 )
+ {
+ char keepalive[128];
+ sprintf(keepalive,"{\"method\":\"keepalive\"}");
+ //printf("send keepalive to %s pullsock.%d\n",pushaddr,pullsock);
+ if ( /LP_send(pullsock,keepalive,(int32_t)strlen(keepalive)+1,0) < 0 )
+ {
+ //LP_deadman_switch = 0;
+ }
+ }*/
+
+/*int32_t nn_tests(void *ctx,int32_t pullsock,char *pushaddr,int32_t nnother)
+ {
+ int32_t sock,n,m,timeout,retval = -1; char msg[512],*retstr;
+ printf("nn_tests.(%s)\n",pushaddr);
+ if ( (sock= nn_socket(AF_SP,nnother)) >= 0 )
+ {
+ if ( nn_connect(sock,pushaddr) < 0 )
+ printf("connect error %s\n",nn_strerror(nn_errno()));
+ else
+ {
+ sleep(3);
+ timeout = 1;
+ nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+ sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
+ n = /LP_send(sock,msg,(int32_t)strlen(msg)+1,0);
+ sleep(3);
+ LP_pullsock_check(ctx,&retstr,"127.0.0.1",-1,pullsock,0.);
+ sprintf(msg,"{\"method\":\"nn_tests2\",\"ipaddr\":\"%s\"}",pushaddr);
+ m = /LP_send(pullsock,msg,(int32_t)strlen(msg)+1,0);
+ printf(">>>>>>>>>>>>>>>>>>>>>> sent %d+%d bytes -> pullsock.%d retstr.(%s)\n",n,m,pullsock,retstr!=0?retstr:"");
+ if ( retstr != 0 )
+ {
+ free(retstr);
+ retval = 0;
+ }
+ }
+ nn_close(sock);
+ }
+ return(retval);
+ }*/
 
 int32_t basilisk_swap_load(uint32_t requestid,uint32_t quoteid,bits256 *privkeyp,struct basilisk_request *rp,uint32_t *statebitsp,int32_t *optiondurationp)
 {

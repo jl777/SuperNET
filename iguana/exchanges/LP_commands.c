@@ -169,6 +169,12 @@ trust(pubkey, trust)\n\
                     else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 } else return(clonestr("{\"error\":\"no price\"}"));
             }
+            else if ( strcmp(method,"autoprice") == 0 )
+            {
+                if ( LP_autoprice(base,rel,price,jdouble(argjson,"margin")) < 0 )
+                    return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
+                else return(clonestr("{\"error\":\"autoprice error\"}"));
+            }
             else if ( strcmp(method,"myprice") == 0 )
             {
                 if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )

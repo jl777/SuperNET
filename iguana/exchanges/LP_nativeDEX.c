@@ -19,13 +19,17 @@
 //
 // new features:
 // stats
-// auto-utxo creation
+// autoprice
+// autofill
+// autoutxo 
 
 // fixes:
 // -wiftaddr and no flag for importprivkey (VERGE)
 // -avoid redundant importprivkey
 // -KMD: z_sendmany to set nLockTime
 // -put Atxfee and Btxfee into rememberfiles
+
+// bugs"
 // false detection of bobreclaim
 
 // unduplicated bugs:
@@ -437,13 +441,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     if ( (counter % 6000) == 10 )
     {
         LP_myutxo_updates(ctx,pubsock,passphrase);
-        /*if ( lastforward < now-3600 )
-        {
-            if ( (retstr= LP_registerall(0)) != 0 )
-                free(retstr);
-            //LP_forwarding_register(LP_mypubkey,pushaddr,pushport,10);
-            lastforward = now;
-        }*/
         HASH_ITER(hh,LP_utxoinfos[0],utxo,utmp)
         {
             LP_utxo_spentcheck(pubsock,utxo);
@@ -458,18 +455,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             }
         }
     }
-    //if ( IAMLP != 0 && (counter % 600) == 42 )
-    //    LP_hellos();
-    /*if ( 0 && LP_canbind == 0 && (counter % (PSOCK_KEEPALIVE*MAINLOOP_PERSEC/2)) == 13 )
-    {
-        char keepalive[128];
-        sprintf(keepalive,"{\"method\":\"keepalive\"}");
-        //printf("send keepalive to %s pullsock.%d\n",pushaddr,pullsock);
-        if ( /LP_send(pullsock,keepalive,(int32_t)strlen(keepalive)+1,0) < 0 )
-        {
-            //LP_deadman_switch = 0;
-        }
-    }*/
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         cJSON *obj; int32_t height; bits256 zero;
@@ -713,6 +698,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)queue_loop,(void *)&myipaddr) != 0 )
+    {
+        printf("error launching stats rpcloop for port.%u\n",myport);
+        exit(-1);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,(void *)&myipaddr) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);

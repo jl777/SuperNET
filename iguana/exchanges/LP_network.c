@@ -576,37 +576,6 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
 
 */
 
-/*int32_t nn_tests(void *ctx,int32_t pullsock,char *pushaddr,int32_t nnother)
-{
-    int32_t sock,n,m,timeout,retval = -1; char msg[512],*retstr;
-    printf("nn_tests.(%s)\n",pushaddr);
-    if ( (sock= nn_socket(AF_SP,nnother)) >= 0 )
-    {
-        if ( nn_connect(sock,pushaddr) < 0 )
-            printf("connect error %s\n",nn_strerror(nn_errno()));
-        else
-        {
-            sleep(3);
-            timeout = 1;
-            nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
-            n = /LP_send(sock,msg,(int32_t)strlen(msg)+1,0);
-            sleep(3);
-            LP_pullsock_check(ctx,&retstr,"127.0.0.1",-1,pullsock,0.);
-            sprintf(msg,"{\"method\":\"nn_tests2\",\"ipaddr\":\"%s\"}",pushaddr);
-            m = /LP_send(pullsock,msg,(int32_t)strlen(msg)+1,0);
-            printf(">>>>>>>>>>>>>>>>>>>>>> sent %d+%d bytes -> pullsock.%d retstr.(%s)\n",n,m,pullsock,retstr!=0?retstr:"");
-            if ( retstr != 0 )
-            {
-                free(retstr);
-                retval = 0;
-            }
-        }
-        nn_close(sock);
-    }
-    return(retval);
-}*/
-
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
 {
     int32_t nntype,pullsock,timeout; char bindaddr[128],connectaddr[128];
