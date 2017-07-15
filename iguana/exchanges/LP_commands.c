@@ -172,7 +172,7 @@ trust(pubkey, trust)\n\
             }
             else if ( strcmp(method,"autoprice") == 0 )
             {
-                if ( LP_autoprice(base,rel,price,jdouble(argjson,"margin")) < 0 )
+                if ( LP_autoprice(base,rel,price,jdouble(argjson,"margin")) >= 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"error\":\"autoprice error\"}"));
             }
