@@ -95,6 +95,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
         return(clonestr("{\"result\":\" \
 available localhost RPC commands:\n \
 setprice(base, rel, price)\n\
+autoprice(base, rel, price, margin)\n\
 myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
