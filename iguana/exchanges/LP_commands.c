@@ -71,12 +71,13 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
         //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
         return(0);
     }
-    else*/ if ( strcmp(method,"sendmessage") == 0 )
+    else*/ if ( strcmp(method,"sendmessage") == 0 && jobj(argjson,"method2") != 0 )
     {
         static char *laststr;
         char *newstr; bits256 pubkey = jbits256(argjson,"pubkey");
         if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,LP_mypub25519) == 0 )
         {
+            jdelete(argjson,"userpass");
             newstr = jprint(argjson,0);
             if ( laststr == 0 || strcmp(laststr,newstr) != 0 )
             {

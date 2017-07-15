@@ -20,7 +20,6 @@
 // new features:
 // stats
 // auto-utxo creation
-// getmessage api
 
 // fixes:
 // -wiftaddr and no flag for importprivkey (VERGE)
