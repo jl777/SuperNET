@@ -215,7 +215,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     return(coin);
 }
 
-int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t taddr,uint16_t busport)
+int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport)
 {
     char *name2;
     memset(coin,0,sizeof(*coin));
@@ -223,6 +223,7 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
     sprintf(coin->serverport,"127.0.0.1:%u",port);
     coin->isPoS = isPoS;
     coin->taddr = taddr;
+    coin->wiftaddr = wiftaddr;
     coin->longestchain = longestchain;
     coin->txfee = txfee;
     coin->estimatedrate = estimatedrate;
@@ -234,6 +235,8 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;
     else name2 = name;
+    if ( strcmp(symbol,"VERGE") == 0 )
+        coin->noimportprivkey_flag = 1;
     return(LP_userpass(coin->userpass,symbol,assetname,name,name2));
 }
 
@@ -275,7 +278,7 @@ struct iguana_info *LP_coinfind(char *symbol)
     else if ( strcmp(symbol,"KMD") == 0 )
         name = "komodo";
     else return(0);
-    if ( LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,busport) > 0 )
+    if ( LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,0,busport) > 0 )
     {
         if ( (coin= LP_coinadd(&cdata)) != 0 )
         {
@@ -316,7 +319,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
         }
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
-        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,jint(item,"taddr"),LP_busport(port)) < 0 )
+        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port)) < 0 )
         {
             coin = LP_coinadd(&cdata);
             coin->inactive = (uint32_t)time(NULL);

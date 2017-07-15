@@ -869,7 +869,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else
     {
-        bitcoin_wif2priv(&tmptype,&privkey,wifstr);
+        bitcoin_wif2priv(coin->wiftaddr,&tmptype,&privkey,wifstr);
         if ( 0 )
         {
             char str[65],str2[65];
@@ -882,15 +882,15 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     if ( coin->counter == 0 )
     {
         coin->counter++;
-        bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
+        bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,coin->wiftype);
         bitcoin_addr2rmd160(coin->taddr,&tmptype,rmd160,coin->smartaddr);
         LP_privkeyadd(privkey,rmd160);
         if ( 0 && (coin->pubtype != 60 || strcmp(coin->symbol,"KMD") == 0) )
             printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
         if ( counter++ == 0 )
         {
-            bitcoin_priv2wif(USERPASS_WIFSTR,privkey,188);
-            bitcoin_wif2priv(&tmptype,&checkkey,USERPASS_WIFSTR);
+            bitcoin_priv2wif(coin->wiftaddr,USERPASS_WIFSTR,privkey,188);
+            bitcoin_wif2priv(coin->wiftaddr,&tmptype,&checkkey,USERPASS_WIFSTR);
             if ( bits256_cmp(checkkey,privkey) != 0 )
             {
                 char str[65],str2[65];

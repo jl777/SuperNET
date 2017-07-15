@@ -270,9 +270,28 @@ cJSON *LP_validateaddress(char *symbol,char *address)
 
 cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 {
-    char buf[512]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"[\"%s\", \"%s\", %s]",wifstr,label,flag < 0 ? "false" : "true");
-    return(bitcoin_json(coin,"importprivkey",buf));
+    static void *ctx;
+    char buf[512],address[64]; cJSON *retjson; struct iguana_info *coin; int32_t doneflag = 0;
+    coin = LP_coinfind(symbol);
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    bitcoin_wif2addr(ctx,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
+    if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
+    {
+        if ( jobj(retjson,"ismine") != 0 && is_cJSON_True(jobj(retjson,"ismine")) != 0 )
+        {
+            doneflag = 1;
+            printf("%s already ismine\n",address);
+        }
+        free_json(retjson);
+    }
+    if ( doneflag == 0 )
+    {
+        if ( coin->noimportprivkey_flag != 0 )
+            sprintf(buf,"[\"%s\", \"%s\"]",wifstr,label);
+        else sprintf(buf,"[\"%s\", \"%s\", %s]",wifstr,label,flag < 0 ? "false" : "true");
+        return(bitcoin_json(coin,"importprivkey",buf));
+    } else return(cJSON_Parse("{\"result\":\"success\"}"));
 }
 
 int32_t LP_importaddress(char *symbol,char *address)

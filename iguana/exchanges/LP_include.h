@@ -180,7 +180,7 @@ struct iguana_info
     uint64_t txfee; double estimatedrate;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock; uint16_t busport;
     uint32_t counter,inactive,lastmempool,lastgetinfo;
-    uint8_t pubtype,p2shtype,isPoS,wiftype,taddr;
+    uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
 };
 

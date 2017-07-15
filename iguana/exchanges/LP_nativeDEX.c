@@ -17,21 +17,22 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// swap cancel should cleanly cancel
+// new features:
 // stats
 // auto-utxo creation
 // getmessage api
 
-// robustify remember
+// fixes:
+// -wiftaddr and no flag for importprivkey (VERGE)
+// -avoid redundant importprivkey
+// -KMD: z_sendmany to set nLockTime
+// -put Atxfee and Btxfee into rememberfiles
 // false detection of bobreclaim
-// put Atxfee and Btxfee into rememberfiles
-// coded fix: even with invalid tx, thinks swap is completed RETSTR.({"result":null,"error":{"code":-26,"message":"66: insufficient priority"},"id":"jl777"}
-//) BTC.0000000000000000000000000000000000000000000000000000000000000000
 
 // unduplicated bugs:
+// swap cancel should cleanly cancel
 // multiple smartaddresses? enable/disable causes? 250 KMD bounty
 // verify bid volumes
-// free_json crash on encrypted message
 
 #include <stdio.h>
 #include "LP_include.h"
