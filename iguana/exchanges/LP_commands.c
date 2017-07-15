@@ -87,7 +87,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
                 LP_gotmessage(argjson);
                 retstr = clonestr(laststr);
             }
-        }
+        } else retstr = clonestr("{\"error\":\"duplicate message\"}");
     }
     //else if ( strcmp(method,"nn_tests") == 0 )
     //    return(clonestr("{\"result\":\"success\"}"));
