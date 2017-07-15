@@ -165,6 +165,7 @@ trust(pubkey, trust)\n\
             {
                 if ( price > SMALLVAL )
                 {
+                    printf("setprice %.8f\n",price);
                     if ( LP_mypriceset(&changed,base,rel,price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
                     else if ( changed != 0 )
