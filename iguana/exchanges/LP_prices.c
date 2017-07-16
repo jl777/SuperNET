@@ -777,7 +777,7 @@ void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo 
 
 void prices_loop(void *ignore)
 {
-    char *retstr; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
+    char *retstr; cJSON *retjson; int32_t i; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( LP_autoprices == 0 )
@@ -806,6 +806,14 @@ void prices_loop(void *ignore)
         }
         LP_pricesparse(ctx,0,retstr,btcpp);
         free(retstr);
+        for (i=0; i<32; i++)
+        {
+            if ( (retjson= LP_paxprice(CURRENCIES[i])) != 0 )
+            {
+                printf("(%s %.8f %.8f) ",CURRENCIES[i],jdouble(retjson,"price"),jdouble(retjson,"invprice"));
+                free_json(retjson);
+            }
+        }
         sleep(60);
     }
 }

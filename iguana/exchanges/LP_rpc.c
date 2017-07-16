@@ -217,10 +217,19 @@ cJSON *LP_getmempool(char *symbol)
     return(bitcoin_json(coin,"getrawmempool","[]"));
 }
 
+cJSON *LP_paxprice(char *fiat)
+{
+    char buf[128],lfiat[65]; struct iguana_info *coin = LP_coinfind("KMD");
+    strcpy(lfiat,fiat);
+    tolowercase(lfiat);
+    sprintf(buf,"[\"%s\", \"kmd\"]",lfiat);
+    return(bitcoin_json(coin,"paxprice",buf));
+}
+
 cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 {
     char buf[128],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"\"%s\", %d, true",bits256_str(str,txid),vout);
+    sprintf(buf,"[\"%s\", %d, true]",bits256_str(str,txid),vout);
     return(bitcoin_json(coin,"gettxout",buf));
 }
 
@@ -248,7 +257,7 @@ cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
     char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"0, 99999999, [\"%s\"]",coinaddr);
+    sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
     return(bitcoin_json(coin,"listunspent",buf));
 }
 
@@ -264,7 +273,7 @@ cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t ski
 cJSON *LP_validateaddress(char *symbol,char *address)
 {
     char buf[512]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"\"%s\"",address);
+    sprintf(buf,"[\"%s\"]",address);
     return(bitcoin_json(coin,"validateaddress",buf));
 }
 
