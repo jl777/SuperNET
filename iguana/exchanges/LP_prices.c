@@ -722,8 +722,9 @@ void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo 
                                 if ( (symbol[j]= name[j]) == '/' )
                                     break;
                             symbol[j] = 0;
+                            if ( strcmp(name+j+1,"BTC") != 0 )
+                                continue;
                         }
-                        printf("trexflag.%d %s\n",trexflag,symbol);
                         if ( symbol[0] != 0 )
                         {
                             //printf("%s\n",jprint(item,0));
@@ -751,6 +752,7 @@ void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo 
                                     {
                                         if ( strcmp(name,"KMD") == 0 )
                                             continue;
+                                        printf("trexflag.%d %s %.8f %.8f\n",trexflag,symbol,price,price/kmdbtc);
                                         price /= kmdbtc;
                                     }
                                     LP_autopriceset(ctx,1,refpp,coinpp,price);
