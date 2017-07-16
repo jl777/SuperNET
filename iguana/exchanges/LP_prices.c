@@ -863,7 +863,7 @@ void prices_loop(void *ignore)
                         }
                         LP_autopriceset(ctx,1,kmdpp,nxtpp,price);
                         LP_autopriceset(ctx,-1,nxtpp,kmdpp,price);
-                        //printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,dstr(bidsatoshis + asksatoshis),price);
+                        printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,0.5*dstr(bidsatoshis + asksatoshis),price);
                         free_json(retjson);
                     }
                 }
