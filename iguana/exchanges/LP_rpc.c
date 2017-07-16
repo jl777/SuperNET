@@ -228,7 +228,7 @@ cJSON *LP_assethbla(char *assetid)
     {
         if ( (array= jarray(&n,bid,"bidOrders")) != 0 )
             jadd(retjson,"bid",jduplicate(jitem(array,0)));
-        if ( (array= jarray(&n,bid,"askOrders")) != 0 )
+        if ( (array= jarray(&n,ask,"askOrders")) != 0 )
             jadd(retjson,"ask",jduplicate(jitem(array,0)));
     }
     if ( bid != 0 )

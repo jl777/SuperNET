@@ -782,9 +782,23 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
     return(nxtkmd);
 }
 
+static char *assetids[][2] =
+{
+    { "12071612744977229797", "UNITY" },
+    { "15344649963748848799", "DEX" },
+    { "6883271355794806507", "PANGEA" },
+    { "17911762572811467637", "JUMBLR" },
+    { "17083334802666450484", "BET" },
+    { "13476425053110940554", "CRYPTO" },
+    { "6932037131189568014", "HODL" },
+    { "3006420581923704757", "SHARK" },
+    { "17571711292785902558", "BOTS" },
+    { "10524562908394749924", "MGW" },
+};
+
 void prices_loop(void *ignore)
 {
-    char *retstr,*assetid; cJSON *retjson; int32_t i; double nxtkmd,price; struct LP_priceinfo *btcpp,*kmdpp,*fiatpp; void *ctx = bitcoin_ctx();
+    char *retstr; cJSON *retjson; int32_t i; double nxtkmd,price; struct LP_priceinfo *btcpp,*kmdpp,*fiatpp; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( LP_autoprices == 0 )
@@ -832,11 +846,13 @@ void prices_loop(void *ignore)
         }
         if ( nxtkmd > SMALLVAL )
         {
-            assetid = "12071612744977229797";
-            if ( (retjson= LP_assethbla(assetid)) != 0 )
+            for (i=0; i<sizeof(assetids)/sizeof(*assetids); i++)
             {
-                printf("%s -> (%s) nxtkmd %.8f\n",assetid,jprint(retjson,0),nxtkmd);
-                free_json(retjson);
+                if ( (retjson= LP_assethbla(assetids[i][0])) != 0 )
+                {
+                    printf("%s %s -> (%s) nxtkmd %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd);
+                    free_json(retjson);
+                }
             }
         }
         sleep(60);
