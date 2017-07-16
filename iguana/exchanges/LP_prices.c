@@ -691,7 +691,7 @@ void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo 
 {
     //{"success":true,"message":"","result":[{"MarketName":"BTC-KMD","High":0.00040840,"Low":0.00034900,"Volume":328042.46061669,"Last":0.00037236,"BaseVolume":123.36439511,"TimeStamp":"2017-07-15T13:50:21.87","Bid":0.00035721,"Ask":0.00037069,"OpenBuyOrders":343,"OpenSellOrders":1690,"PrevDay":0.00040875,"Created":"2017-02-11T23:04:01.853"},
     //{"TradePairId":4762,"Label":"WAVES/BTC","AskPrice":0.00099989,"BidPrice":0.00097350,"Low":0.00095000,"High":0.00108838,"Volume":6501.24403100,"LastPrice":0.00098028,"BuyVolume":1058994.86554882,"SellVolume":2067.87377158,"Change":-7.46,"Open":0.00105926,"Close":0.00098028,"BaseVolume":6.52057452,"BuyBaseVolume":2.33098660,"SellBaseVolume":1167.77655709},
-    int32_t i,n,iter; double price,kmdbtc; struct LP_priceinfo *coinpp,*refpp; char symbol[16],*name,*refcoin; cJSON *retjson,*array,*item;
+    int32_t i,j,n,iter; double price,kmdbtc; struct LP_priceinfo *coinpp,*refpp; char symbol[16],*name,*refcoin; cJSON *retjson,*array,*item;
     if ( (retjson= cJSON_Parse(retstr)) != 0 )
     {
         //printf("got.(%s)\n",retstr);
@@ -718,10 +718,10 @@ void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo 
                         }
                         else
                         {
-                            for (i=0; i<sizeof(symbol)-1; i++)
-                                if ( (symbol[i]= name[i]) == '/' )
+                            for (j=0; j<sizeof(symbol)-1; j++)
+                                if ( (symbol[j]= name[j]) == '/' )
                                     break;
-                            symbol[i] = 0;
+                            symbol[j] = 0;
                         }
                         printf("trexflag.%d %s\n",trexflag,symbol);
                         if ( symbol[0] != 0 )
