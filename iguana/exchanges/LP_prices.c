@@ -751,7 +751,7 @@ void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo 
                                     {
                                         if ( strcmp(symbol,"KMD") == 0 )
                                             continue;
-                                        printf("(%s/%s) iter.%d trexflag.%d %s %.8f %.8f\n",refpp->symbol,coinpp->symbol,iter,trexflag,symbol,price,price/kmdbtc);
+                                        //printf("(%s/%s) iter.%d trexflag.%d %s %.8f %.8f\n",refpp->symbol,coinpp->symbol,iter,trexflag,symbol,price,price/kmdbtc);
                                         price /= kmdbtc;
                                     }
                                     if ( trexflag == 0 && coinpp->bid[1] > SMALLVAL && coinpp->ask[1] > SMALLVAL )
