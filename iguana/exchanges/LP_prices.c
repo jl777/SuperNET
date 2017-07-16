@@ -738,6 +738,7 @@ void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo 
                                 coinpp->bid[trexflag] = jdouble(item,trexflag != 0 ? "Bid" : "BidPrice");
                                 coinpp->ask[trexflag] = jdouble(item,trexflag != 0 ? "Ask" : "AskPrice");
                                 //coinpp->prevday = jdouble(item,"PrevDay");
+                                printf("trexflag.%d %s high %.8f, low %.8f, last %.8f hbla.(%.8f %.8f)\n",trexflag,symbol,coinpp->high[trexflag],coinpp->low[trexflag],coinpp->last[trexflag],coinpp->bid[trexflag],coinpp->ask[trexflag]);
                                 if ( coinpp->bid[trexflag] > SMALLVAL && coinpp->ask[trexflag] > SMALLVAL )
                                 {
                                     if ( trexflag == 0 && coinpp->bid[1] > SMALLVAL && coinpp->ask[1] > SMALLVAL )
