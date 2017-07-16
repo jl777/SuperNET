@@ -678,9 +678,11 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *relpp,struct LP_
         if ( dir > 0 )
             price = 1. / (price * (1. - margin));
         else price = (price * (1. + margin));
+        printf("%s/%s %.8f dir.%d margin %.8f\n",relpp->symbol,basepp->symbol,price,dir,margin);
         if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
         {
             LP_mypriceset(&changed,relpp->symbol,basepp->symbol,price);
+            printf("changed.%d\n",changed);
             if ( changed != 0 )
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
         }
