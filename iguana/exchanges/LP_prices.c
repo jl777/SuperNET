@@ -782,23 +782,23 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
     return(nxtkmd);
 }
 
-static char *assetids[][2] =
+static char *assetids[][3] =
 {
-    { "12071612744977229797", "UNITY" },
-    { "15344649963748848799", "DEX" },
-    { "6883271355794806507", "PANGEA" },
-    { "17911762572811467637", "JUMBLR" },
-    { "17083334802666450484", "BET" },
-    { "13476425053110940554", "CRYPTO" },
-    { "6932037131189568014", "HODL" },
-    { "3006420581923704757", "SHARK" },
-    { "17571711292785902558", "BOTS" },
-    { "10524562908394749924", "MGW" },
+    { "12071612744977229797", "UNITY", "10000" },
+    { "15344649963748848799", "DEX", "1" },
+    { "6883271355794806507", "PANGEA", "10000" },
+    { "17911762572811467637", "JUMBLR", "10000" },
+    { "17083334802666450484", "BET", "1" },
+    { "13476425053110940554", "CRYPTO", "1000" },
+    { "6932037131189568014", "HODL", "1" },
+    { "3006420581923704757", "SHARK", "10000" },
+    { "17571711292785902558", "BOTS", "1" },
+    { "10524562908394749924", "MGW", "1" },
 };
 
 void prices_loop(void *ignore)
 {
-    char *retstr; cJSON *retjson; int32_t i; double nxtkmd,price; struct LP_priceinfo *btcpp,*kmdpp,*fiatpp; void *ctx = bitcoin_ctx();
+    char *retstr; cJSON *retjson,*bid,*ask; uint64_t bidsatoshis,asksatoshis; int32_t i; double nxtkmd,price; struct LP_priceinfo *btcpp,*kmdpp,*fiatpp,*nxtpp; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( LP_autoprices == 0 )
@@ -848,10 +848,24 @@ void prices_loop(void *ignore)
         {
             for (i=0; i<sizeof(assetids)/sizeof(*assetids); i++)
             {
-                if ( (retjson= LP_assethbla(assetids[i][0])) != 0 )
+                if ( (nxtpp= LP_priceinfofind(assetids[i][1])) != 0 )
                 {
-                    printf("%s %s -> (%s) nxtkmd %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd);
-                    free_json(retjson);
+                    price = 0.;
+                    bidsatoshis = asksatoshis = 0;
+                    if ( (retjson= LP_assethbla(assetids[i][0])) != 0 )
+                    {
+                        if ( (bid= jobj(retjson,"bid")) != 0 && (ask= jobj(retjson,"ask")) != 0 )
+                        {
+                            bidsatoshis = j64bits(bid,"priceNQT") * atoi(assetids[i][2]);
+                            asksatoshis = j64bits(ask,"priceNQT") * atoi(assetids[i][2]);
+                            if ( bidsatoshis != 0 && asksatoshis != 0 )
+                                price = dstr(bidsatoshis + asksatoshis) * nxtkmd;
+                        }
+                        LP_autopriceset(ctx,1,kmdpp,nxtpp,price);
+                        LP_autopriceset(ctx,-1,nxtpp,kmdpp,price);
+                        printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,dstr(bidsatoshis + asksatoshis),price);
+                        free_json(retjson);
+                    }
                 }
             }
         }
