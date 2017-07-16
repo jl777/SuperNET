@@ -210,7 +210,7 @@ char *NXTnodes[] = { "62.75.159.113", "91.44.203.238", "82.114.88.225", "78.63.2
 
 cJSON *LP_assethbla(char *assetid)
 {
-    char url[1024],*retstr; cJSON *bid=0,*ask=0,*retjson;
+    char url[1024],*retstr; int32_t n; cJSON *array,*bid=0,*ask=0,*retjson;
     sprintf(url,"http://%s:7876/nxt?=%%2Fnxt&requestType=getBidOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
@@ -226,16 +226,15 @@ cJSON *LP_assethbla(char *assetid)
     retjson = cJSON_CreateObject();
     if ( bid != 0 && ask != 0 )
     {
-        jadd(retjson,"bid",bid);
-        jadd(retjson,"ask",ask);
+        if ( (array= jarray(&n,bid,"bidOrders")) != 0 )
+            jadd(retjson,"bid",jduplicate(jitem(array,0)));
+        if ( (array= jarray(&n,bid,"askOrders")) != 0 )
+            jadd(retjson,"ask",jduplicate(jitem(array,0)));
     }
-    else
-    {
-        if ( bid != 0 )
-            free_json(bid);
-        if ( ask != 0 )
-            free_json(ask);
-    }
+    if ( bid != 0 )
+        free_json(bid);
+    if ( ask != 0 )
+        free_json(ask);
     return(retjson);
 }
 
