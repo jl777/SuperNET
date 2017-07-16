@@ -21,11 +21,13 @@
 // stats
 // autofill
 // autoutxo 
+// autoprice for fiat and crypto -> KMD
+
+
 
 // fixes:
 // -wiftaddr and no flag for importprivkey (VERGE)
 // -avoid redundant importprivkey
-// -KMD: z_sendmany to set nLockTime
 // -put Atxfee and Btxfee into rememberfiles
 
 // bugs"

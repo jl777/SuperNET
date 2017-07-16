@@ -324,7 +324,7 @@ int32_t LP_importaddress(char *symbol,char *address)
 double LP_getestimatedrate(char *symbol)
 {
     char buf[512],*retstr; double rate = 20; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin != 0 )
+    if ( coin != 0 && (strcmp(coin->symbol,"BTC") == 0 || coin->txfee == 0) )
     {
         sprintf(buf,"[%d]",3);
         if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"estimatefee",buf)) != 0 )
@@ -336,7 +336,7 @@ double LP_getestimatedrate(char *symbol)
             }
             free(retstr);
         }
-    }
+    } else rate = coin->txfee / LP_AVETXSIZE;
     return(rate);
 }
 
