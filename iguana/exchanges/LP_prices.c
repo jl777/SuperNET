@@ -738,11 +738,14 @@ void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo 
                                 coinpp->bid[trexflag] = jdouble(item,trexflag != 0 ? "Bid" : "BidPrice");
                                 coinpp->ask[trexflag] = jdouble(item,trexflag != 0 ? "Ask" : "AskPrice");
                                 //coinpp->prevday = jdouble(item,"PrevDay");
-                                printf("trexflag.%d %s high %.8f, low %.8f, last %.8f hbla.(%.8f %.8f)\n",trexflag,symbol,coinpp->high[trexflag],coinpp->low[trexflag],coinpp->last[trexflag],coinpp->bid[trexflag],coinpp->ask[trexflag]);
+                                printf("iter.%d trexflag.%d %s high %.8f, low %.8f, last %.8f hbla.(%.8f %.8f)\n",iter,trexflag,symbol,coinpp->high[trexflag],coinpp->low[trexflag],coinpp->last[trexflag],coinpp->bid[trexflag],coinpp->ask[trexflag]);
                                 if ( coinpp->bid[trexflag] > SMALLVAL && coinpp->ask[trexflag] > SMALLVAL )
                                 {
                                     if ( trexflag == 0 && coinpp->bid[1] > SMALLVAL && coinpp->ask[1] > SMALLVAL )
+                                    {
+                                        printf("have trex: iter.%d trexflag.%d %s %.8f %.8f\n",iter,trexflag,symbol,coinpp->bid[1],coinpp->ask[1]);
                                         continue;
+                                    }
                                     else price = 0.5 * (coinpp->bid[trexflag] + coinpp->ask[trexflag]);
                                     if ( iter == 0 )
                                     {
@@ -753,7 +756,7 @@ void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo 
                                     {
                                         if ( strcmp(name,"KMD") == 0 )
                                             continue;
-                                        printf("trexflag.%d %s %.8f %.8f\n",trexflag,symbol,price,price/kmdbtc);
+                                        printf("iter.%d trexflag.%d %s %.8f %.8f\n",iter,trexflag,symbol,price,price/kmdbtc);
                                         price /= kmdbtc;
                                     }
                                     LP_autopriceset(ctx,1,refpp,coinpp,price);
