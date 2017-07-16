@@ -693,7 +693,7 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
 {
     //{"success":true,"message":"","result":[{"MarketName":"BTC-KMD","High":0.00040840,"Low":0.00034900,"Volume":328042.46061669,"Last":0.00037236,"BaseVolume":123.36439511,"TimeStamp":"2017-07-15T13:50:21.87","Bid":0.00035721,"Ask":0.00037069,"OpenBuyOrders":343,"OpenSellOrders":1690,"PrevDay":0.00040875,"Created":"2017-02-11T23:04:01.853"},
     //{"TradePairId":4762,"Label":"WAVES/BTC","AskPrice":0.00099989,"BidPrice":0.00097350,"Low":0.00095000,"High":0.00108838,"Volume":6501.24403100,"LastPrice":0.00098028,"BuyVolume":1058994.86554882,"SellVolume":2067.87377158,"Change":-7.46,"Open":0.00105926,"Close":0.00098028,"BaseVolume":6.52057452,"BuyBaseVolume":2.33098660,"SellBaseVolume":1167.77655709},
-    int32_t i,j,n,iter; double price,kmdbtc,nxtkmd; struct LP_priceinfo *coinpp,*refpp; char symbol[16],*name,*refcoin; cJSON *retjson,*array,*item;
+    int32_t i,j,n,iter; double price,kmdbtc,nxtkmd=0.; struct LP_priceinfo *coinpp,*refpp; char symbol[16],*name,*refcoin; cJSON *retjson,*array,*item;
     if ( (retjson= cJSON_Parse(retstr)) != 0 )
     {
         //printf("got.(%s)\n",retstr);
@@ -730,6 +730,8 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
                         if ( symbol[0] != 0 )
                         {
                             //printf("%s\n",jprint(item,0));
+                            if ( iter == 1 && kmdbtc > SMALLVAL && strcmp(symbol,"NXT") == 0 )
+                                nxtkmd = 0.5 * (jdouble(item,trexflag != 0 ? "Bid" : "BidPrice") + jdouble(item,trexflag != 0 ? "Ask" : "AskPrice")) / kmdbtc;
                             if ( (coinpp= LP_priceinfofind(symbol)) != 0 )
                             {
                                 coinpp->high[trexflag] = jdouble(item,"High");
@@ -755,8 +757,6 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
                                             continue;
                                         //printf("(%s/%s) iter.%d trexflag.%d %s %.8f %.8f\n",refpp->symbol,coinpp->symbol,iter,trexflag,symbol,price,price/kmdbtc);
                                         price /= kmdbtc;
-                                        if ( strcmp(symbol,"NXT") == 0 )
-                                            nxtkmd = price;
                                     }
                                     if ( trexflag == 0 && coinpp->bid[1] > SMALLVAL && coinpp->ask[1] > SMALLVAL )
                                     {
