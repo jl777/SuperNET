@@ -26,7 +26,7 @@ struct LP_priceinfo
     char symbol[16];
     uint64_t coinbits;
     int32_t ind,pad;
-    double diagval,high,low,volume,btcvolume,last,bid,ask,prevday; // mostly bittrex info
+    double diagval,high[2],low[2],last[2],bid[2],ask[2]; //volume,btcvolume,prevday; // mostly bittrex info
     double relvals[LP_MAXPRICEINFOS];
     double myprices[LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS];
@@ -687,10 +687,90 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *relpp,struct LP_
     }
 }
 
-void prices_loop(void *ignore)
+void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo *btcpp)
 {
     //{"success":true,"message":"","result":[{"MarketName":"BTC-KMD","High":0.00040840,"Low":0.00034900,"Volume":328042.46061669,"Last":0.00037236,"BaseVolume":123.36439511,"TimeStamp":"2017-07-15T13:50:21.87","Bid":0.00035721,"Ask":0.00037069,"OpenBuyOrders":343,"OpenSellOrders":1690,"PrevDay":0.00040875,"Created":"2017-02-11T23:04:01.853"},
-    int32_t i,n,iter; double price,kmdbtc; struct LP_priceinfo *coinpp,*refpp,*btcpp; char *retstr,*name,*refcoin; cJSON *retjson,*array,*item; void *ctx = bitcoin_ctx();
+    //{"TradePairId":4762,"Label":"WAVES/BTC","AskPrice":0.00099989,"BidPrice":0.00097350,"Low":0.00095000,"High":0.00108838,"Volume":6501.24403100,"LastPrice":0.00098028,"BuyVolume":1058994.86554882,"SellVolume":2067.87377158,"Change":-7.46,"Open":0.00105926,"Close":0.00098028,"BaseVolume":6.52057452,"BuyBaseVolume":2.33098660,"SellBaseVolume":1167.77655709},
+    int32_t i,n,iter; double price,kmdbtc; struct LP_priceinfo *coinpp,*refpp; char symbol[16],*name,*refcoin; cJSON *retjson,*array,*item;
+    if ( (retjson= cJSON_Parse(retstr)) != 0 )
+    {
+        //printf("got.(%s)\n",retstr);
+        kmdbtc = 0.;
+        refcoin = "BTC";
+        refpp = btcpp;
+        if ( (array= jarray(&n,retjson,trexflag != 0 ? "result" : "Data")) != 0 )
+        {
+            for (iter=0; iter<2; iter++)
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( (name= jstr(item,trexflag != 0 ? "MarketName" : "Label")) != 0 )
+                    {
+                        symbol[0] = 0;
+                        if ( trexflag != 0 )
+                        {
+                            if ( strncmp("BTC-",name,4) == 0 )
+                            {
+                                name += 4;
+                                strcpy(symbol,name);
+                            }
+                        }
+                        else
+                        {
+                            for (i=0; i<sizeof(symbol)-1; i++)
+                                if ( (symbol[i]= name[i]) == '/' )
+                                    break;
+                            symbol[i] = 0;
+                        }
+                        if ( symbol[0] != 0 )
+                        {
+                            //printf("%s\n",jprint(item,0));
+                            if ( (coinpp= LP_priceinfofind(symbol)) != 0 )
+                            {
+                                coinpp->high[trexflag] = jdouble(item,"High");
+                                coinpp->low[trexflag] = jdouble(item,"Low");
+                                //coinpp->volume = jdouble(item,"Volume");
+                                //coinpp->btcvolume = jdouble(item,"BaseVolume");
+                                coinpp->last[trexflag] = jdouble(item,trexflag != 0 ? "Last" : "LastPrice");
+                                coinpp->bid[trexflag] = jdouble(item,trexflag != 0 ? "Bid" : "BidPrice");
+                                coinpp->ask[trexflag] = jdouble(item,trexflag != 0 ? "Ask" : "AskPrice");
+                                //coinpp->prevday = jdouble(item,"PrevDay");
+                                if ( coinpp->bid[trexflag] > SMALLVAL && coinpp->ask[trexflag] > SMALLVAL )
+                                {
+                                    if ( trexflag == 0 && coinpp->bid[1] > SMALLVAL && coinpp->ask[1] > SMALLVAL )
+                                        continue;
+                                    else price = 0.5 * (coinpp->bid[trexflag] + coinpp->ask[trexflag]);
+                                    if ( iter == 0 )
+                                    {
+                                        if ( strcmp(name,"KMD") == 0 )
+                                            kmdbtc = price;
+                                    }
+                                    else
+                                    {
+                                        if ( strcmp(name,"KMD") == 0 )
+                                            continue;
+                                        price /= kmdbtc;
+                                    }
+                                    LP_autopriceset(ctx,1,refpp,coinpp,price);
+                                    LP_autopriceset(ctx,-1,coinpp,refpp,price);
+                                }
+                            }
+                        }
+                    }
+                }
+                refcoin = "KMD";
+                if ( kmdbtc == 0. || (refpp= LP_priceinfofind("KMD")) == 0 )
+                    break;
+            }
+        }
+        free_json(retjson);
+    }
+}
+
+void prices_loop(void *ignore)
+{
+    char *retstr; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( LP_autoprices == 0 )
@@ -709,63 +789,15 @@ void prices_loop(void *ignore)
             sleep(60);
             continue;
         }
-        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        LP_pricesparse(ctx,1,retstr,btcpp);
+        free(retstr);
+        if ( (retstr= issue_curlt("https://www.cryptopia.co.nz/api/GetMarkets",LP_HTTP_TIMEOUT*10)) == 0 )
         {
-            //printf("got.(%s)\n",retstr);
-            kmdbtc = 0.;
-            refcoin = "BTC";
-            refpp = btcpp;
-            if ( (array= jarray(&n,retjson,"result")) != 0 )
-            {
-                for (iter=0; iter<2; iter++)
-                {
-                    for (i=0; i<n; i++)
-                    {
-                        item = jitem(array,i);
-                        if ( (name= jstr(item,"MarketName")) != 0 )
-                        {
-                            if ( strncmp("BTC-",name,4) == 0 )
-                            {
-                                name += 4;
-                                //printf("%s\n",jprint(item,0));
-                                if ( (coinpp= LP_priceinfofind(name)) != 0 )
-                                {
-                                    coinpp->high = jdouble(item,"High");
-                                    coinpp->low = jdouble(item,"Low");
-                                    coinpp->volume = jdouble(item,"Volume");
-                                    coinpp->btcvolume = jdouble(item,"BaseVolume");
-                                    coinpp->last = jdouble(item,"Last");
-                                    coinpp->bid = jdouble(item,"Bid");
-                                    coinpp->ask = jdouble(item,"Ask");
-                                    coinpp->prevday = jdouble(item,"PrevDay");
-                                    if ( coinpp->bid > SMALLVAL && coinpp->ask > SMALLVAL )
-                                    {
-                                        price = 0.5 * (coinpp->bid + coinpp->ask);
-                                        if ( iter == 0 )
-                                        {
-                                            if ( strcmp(name,"KMD") == 0 )
-                                                kmdbtc = price;
-                                        }
-                                        else
-                                        {
-                                            if ( strcmp(name,"KMD") == 0 )
-                                                continue;
-                                            price /= kmdbtc;
-                                        }
-                                        LP_autopriceset(ctx,1,refpp,coinpp,price);
-                                        LP_autopriceset(ctx,-1,coinpp,refpp,price);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    refcoin = "KMD";
-                    if ( kmdbtc == 0. || (refpp= LP_priceinfofind("KMD")) == 0 )
-                        break;
-                }
-            }
-            free_json(retjson);
+            printf("error getting marketsummaries\n");
+            sleep(60);
+            continue;
         }
+        LP_pricesparse(ctx,0,retstr,btcpp);
         free(retstr);
         sleep(60);
     }
