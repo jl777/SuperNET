@@ -723,6 +723,7 @@ void LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo 
                                     break;
                             symbol[i] = 0;
                         }
+                        printf("trexflag.%d %s\n",trexflag,symbol);
                         if ( symbol[0] != 0 )
                         {
                             //printf("%s\n",jprint(item,0));
