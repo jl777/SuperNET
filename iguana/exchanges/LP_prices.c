@@ -670,12 +670,14 @@ int32_t LP_autoprice(char *base,char *rel,double minprice,double margin,char *ty
     return(-1);
 }
 
-void LP_autopriceset(void *ctx,struct LP_priceinfo *relpp,struct LP_priceinfo *basepp,double price)
+void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *relpp,struct LP_priceinfo *basepp,double price)
 {
     double margin,minprice; int32_t changed;
     if ( (margin= basepp->margins[relpp->ind]) != 0. )
     {
-        price = 1. / (price * (1. - margin));
+        if ( dir > 0 )
+            price = 1. / (price * (1. - margin));
+        else price = (price * (1. + margin));
         if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
         {
             LP_mypriceset(&changed,relpp->symbol,basepp->symbol,price);
@@ -688,7 +690,7 @@ void LP_autopriceset(void *ctx,struct LP_priceinfo *relpp,struct LP_priceinfo *b
 void prices_loop(void *ignore)
 {
     //{"success":true,"message":"","result":[{"MarketName":"BTC-KMD","High":0.00040840,"Low":0.00034900,"Volume":328042.46061669,"Last":0.00037236,"BaseVolume":123.36439511,"TimeStamp":"2017-07-15T13:50:21.87","Bid":0.00035721,"Ask":0.00037069,"OpenBuyOrders":343,"OpenSellOrders":1690,"PrevDay":0.00040875,"Created":"2017-02-11T23:04:01.853"},
-    int32_t i,n,changed,iter; double margin,price,minprice,kmdbtc; struct LP_priceinfo *coinpp,*refpp,*btcpp; char *retstr,*name,*refcoin; cJSON *retjson,*array,*item; void *ctx = bitcoin_ctx();
+    int32_t i,n,iter; double price,kmdbtc; struct LP_priceinfo *coinpp,*refpp,*btcpp; char *retstr,*name,*refcoin; cJSON *retjson,*array,*item; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( LP_autoprices == 0 )
@@ -749,8 +751,8 @@ void prices_loop(void *ignore)
                                             //if ( strcmp(name,"KMD") == 0 )
                                                 continue;
                                         }
-                                        LP_autopriceset(ctx,refpp,coinpp,price);
-                                        LP_autopriceset(ctx,coinpp,refpp,price);
+                                        LP_autopriceset(ctx,1,refpp,coinpp,price);
+                                        LP_autopriceset(ctx,-1,coinpp,refpp,price);
                                     }
                                 }
                             }
