@@ -835,7 +835,7 @@ void prices_loop(void *ignore)
                 {
                     if ( (retjson= LP_paxprice(CURRENCIES[i])) != 0 )
                     {
-                        printf("(%s %.8f %.8f) ",CURRENCIES[i],jdouble(retjson,"price"),jdouble(retjson,"invprice"));
+                        //printf("(%s %.8f %.8f) ",CURRENCIES[i],jdouble(retjson,"price"),jdouble(retjson,"invprice"));
                         price = jdouble(retjson,"price");
                         LP_autopriceset(ctx,1,kmdpp,fiatpp,price);
                         LP_autopriceset(ctx,-1,fiatpp,kmdpp,price);
@@ -863,7 +863,7 @@ void prices_loop(void *ignore)
                         }
                         LP_autopriceset(ctx,1,kmdpp,nxtpp,price);
                         LP_autopriceset(ctx,-1,nxtpp,kmdpp,price);
-                        printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,0.5*dstr(bidsatoshis + asksatoshis),price);
+                        //printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,0.5*dstr(bidsatoshis + asksatoshis),price);
                         free_json(retjson);
                     }
                 }
