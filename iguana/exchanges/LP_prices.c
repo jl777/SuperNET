@@ -678,11 +678,11 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *relpp,struct LP_
         if ( dir > 0 )
             price = 1. / (price * (1. - margin));
         else price = (price * (1. + margin));
-        //printf("%s/%s %.8f dir.%d margin %.8f\n",relpp->symbol,basepp->symbol,price,dir,margin);
+        printf("%s/%s %.8f dir.%d margin %.8f\n",relpp->symbol,basepp->symbol,price,dir,margin);
         if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
         {
             LP_mypriceset(&changed,relpp->symbol,basepp->symbol,price);
-            //printf("changed.%d\n",changed);
+            printf("changed.%d\n",changed);
             if ( changed != 0 )
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
         }
@@ -788,7 +788,7 @@ static char *assetids[][3] =
     { "15344649963748848799", "DEX", "1" },
     { "6883271355794806507", "PANGEA", "10000" },
     { "17911762572811467637", "JUMBLR", "10000" },
-    { "17083334802666450484", "BET", "1" },
+    { "17083334802666450484", "BET", "10000" },
     { "13476425053110940554", "CRYPTO", "1000" },
     { "6932037131189568014", "HODL", "1" },
     { "3006420581923704757", "SHARK", "10000" },
@@ -859,11 +859,11 @@ void prices_loop(void *ignore)
                             bidsatoshis = j64bits(bid,"priceNQT") * atoi(assetids[i][2]);
                             asksatoshis = j64bits(ask,"priceNQT") * atoi(assetids[i][2]);
                             if ( bidsatoshis != 0 && asksatoshis != 0 )
-                                price = dstr(bidsatoshis + asksatoshis) * nxtkmd;
+                                price = 0.5 * dstr(bidsatoshis + asksatoshis) * nxtkmd;
                         }
                         LP_autopriceset(ctx,1,kmdpp,nxtpp,price);
                         LP_autopriceset(ctx,-1,nxtpp,kmdpp,price);
-                        printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,dstr(bidsatoshis + asksatoshis),price);
+                        //printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,dstr(bidsatoshis + asksatoshis),price);
                         free_json(retjson);
                     }
                 }
