@@ -748,8 +748,9 @@ void prices_loop(void *ignore)
                                         }
                                         else
                                         {
-                                            //if ( strcmp(name,"KMD") == 0 )
+                                            if ( strcmp(name,"KMD") == 0 )
                                                 continue;
+                                            price /= kmdbtc;
                                         }
                                         LP_autopriceset(ctx,1,refpp,coinpp,price);
                                         LP_autopriceset(ctx,-1,coinpp,refpp,price);
