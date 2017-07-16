@@ -20,10 +20,7 @@
 // new features:
 // stats
 // autofill
-// autoutxo 
-// autoprice for fiat and crypto -> KMD
-
-
+// autoutxo
 
 // fixes:
 // -wiftaddr and no flag for importprivkey (VERGE)
