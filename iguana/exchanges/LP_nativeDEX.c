@@ -26,7 +26,6 @@
 
 // unduplicated bugs:
 // swap cancel should cleanly cancel
-// multiple smartaddresses? enable/disable causes?
 
 #include <stdio.h>
 #include "LP_include.h"

@@ -775,7 +775,7 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
     return(mini);
 }
 
-uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub,uint8_t *pubkey33)
+uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
     char *script; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,iambob,vout,depositvout; uint64_t *values=0,satoshis,depositval,targetval,value,total = 0;
     if ( coin == 0 )
@@ -878,7 +878,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
                 printf("WIF.(%s) -> %s or %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkkey));
         }
     }
-    bitcoin_priv2pub(ctx,pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
+    bitcoin_priv2pub(ctx,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     if ( coin->counter == 0 )
     {
         coin->counter++;
@@ -927,7 +927,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase,int32_t inito
         if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
             privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
         if ( coin->inactive == 0 && initonly == 0 )
-            LP_privkey_init(pubsock,coin,privkey,pubkey,pubkey33);
+            LP_privkey_init(pubsock,coin,privkey,pubkey);
     }
 }
 

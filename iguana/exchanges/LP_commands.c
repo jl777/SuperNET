@@ -251,12 +251,13 @@ trust(pubkey, trust)\n\
                 return(clonestr("{\"error\":\"coin is disabled\"}"));
             if ( strcmp(method,"inventory") == 0 )
             {
-                struct iguana_info *ptr; bits256 privkey,pubkey; uint8_t pubkey33[33];
+                struct iguana_info *ptr;
                 if ( (ptr= LP_coinfind(coin)) != 0 )
                 {
-                    privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
+                    //privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
                     //LP_utxopurge(0);
-                    LP_privkey_init(-1,ptr,privkey,pubkey,pubkey33);
+                    if ( bits256_nonz(LP_mypriv25519) != 0 )
+                        LP_privkey_init(-1,ptr,LP_mypriv25519,LP_mypub25519);
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
                     jaddstr(retjson,"coin",coin);

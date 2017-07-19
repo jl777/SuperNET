@@ -185,6 +185,7 @@ struct iguana_info
     // portfolio
     double price_kmd,force,perc,goal,goalperc;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
+    uint8_t pubkey33[33];
 };
 
 struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout; };
