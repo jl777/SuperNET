@@ -31,10 +31,12 @@ cJSON *LP_portfolio_entry(struct iguana_info *coin)
     jaddnum(item,"force",coin->force);
     jaddnum(item,"balanceA",dstr(coin->balanceA));
     jaddnum(item,"valuesumA",dstr(coin->valuesumA));
-    jaddnum(item,"aliceutil",100. * (double)coin->balanceA/coin->valuesumA);
+    if ( coin->valuesumA != 0 )
+        jaddnum(item,"aliceutil",100. * (double)coin->balanceA/coin->valuesumA);
     jaddnum(item,"balanceB",dstr(coin->balanceB));
     jaddnum(item,"valuesumB",dstr(coin->valuesumB));
-    jaddnum(item,"bobutil",100. * (double)coin->balanceB/coin->valuesumB);
+    if ( coin->valuesumB != 0 )
+        jaddnum(item,"bobutil",100. * (double)coin->balanceB/coin->valuesumB);
     return(item);
 }
 
@@ -84,14 +86,14 @@ char *LP_portfolio()
                 kmdsum += coin->kmd_equiv;
                 goalsum += coin->goal;
             }
-            else 
+            else
             {
                 if ( kmdsum > SMALLVAL )
                     coin->perc = 100. * coin->kmd_equiv / kmdsum;
                 if ( goalsum > SMALLVAL && coin->goal > SMALLVAL )
                 {
                     coin->goalperc = 100. * coin->goal / goalsum;
-                    if ( (coin->force= (coin->perc - coin->goalperc)) < 0. )
+                    if ( (coin->force= (coin->goalperc - coin->perc)) < 0. )
                         coin->force *= -coin->force;
                     else coin->force *= coin->force;
                 } else coin->perc = coin->force = 0.;
