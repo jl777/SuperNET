@@ -803,6 +803,7 @@ int main(int argc, const char * argv[])
     OS_init();
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )

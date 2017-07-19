@@ -642,7 +642,21 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 
 void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
 {
-    struct LP_priceinfo *basepp,*relpp;  struct LP_pubkeyinfo *pubp; char str[65];
+    static FILE *fp;
+    struct LP_priceinfo *basepp,*relpp; uint32_t now; uint64_t price64; struct LP_pubkeyinfo *pubp; char str[65],fname[512];
+    if ( fp == 0 )
+    {
+        sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,base,rel), OS_ensure_directory(fname);
+        fp = OS_appendfile(fname);
+    }
+    if ( fp != 0 && price > SMALLVAL )
+    {
+        price64 = price * SATOSHIDEN;
+        now = (uint32_t)time(NULL);
+        fwrite(&now,1,sizeof(now),fp);
+        fwrite(&price64,1,sizeof(price64),fp);
+        fflush(fp);
+    }
     //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
     if ( price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
