@@ -89,23 +89,4 @@ char *LP_portfolio()
     return(jprint(retjson,1));
 }
 
-struct LP_portfolioinfo *LP_portfoliofind(char *symbol)
-{
-    struct LP_portfolioinfo *ptr;
-    portable_mutex_lock(&LP_portfoliomutex);
-    HASH_FIND(hh,LP_portfolios,symbol,strlen(symbol),ptr);
-    portable_mutex_unlock(&LP_portfoliomutex);
-    return(ptr);
-}
-
-struct LP_portfolioinfo *LP_portfolioadd(char *symbol,uint64_t goal)
-{
-    struct LP_portfolioinfo *ptr = calloc(1,sizeof(*ptr));
-    safecopy(ptr->symbol,symbol,sizeof(ptr->symbol));
-    ptr->goal = goal;
-    portable_mutex_lock(&LP_portfoliomutex);
-    HASH_ADD_KEYPTR(hh,LP_portfolios,ptr->symbol,strlen(ptr->symbol),ptr);
-    portable_mutex_unlock(&LP_portfoliomutex);
-    return(ptr);
-}
 
