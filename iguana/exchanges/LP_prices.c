@@ -650,6 +650,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {
             pubp->matrix[basepp->ind][relpp->ind] = price;
+            pubp->matrix[relpp->ind][basepp->ind] = 1. / price;
             pubp->timestamp = (uint32_t)time(NULL);
         } else printf("error creating pubkey entry\n");
     } else printf("error finding %s/%s %.8f\n",base,rel,price);

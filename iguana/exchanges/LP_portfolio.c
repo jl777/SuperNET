@@ -49,7 +49,7 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                valuesum += j64bits(item,"value");
+                valuesum += j64bits(item,"value") + j64bits(item,"value2");
                 satoshisum += j64bits(item,"satoshis");
             }
         }
