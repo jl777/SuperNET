@@ -26,9 +26,9 @@ cJSON *LP_portfolio_entry(struct iguana_info *coin,uint64_t kmdsum)
     jaddnum(item,"price",coin->price_kmd);
     jaddnum(item,"kmd_equiv",dstr(coin->kmd_equiv));
     jaddnum(item,"kmdsum",dstr(kmdsum));
-    jaddnum(item,"goal",dstr(coin->goal));
-    if ( kmdsum > 0 )
-        jaddnum(item,"perc",100. * (double)coin->kmd_equiv/ kmdsum);
+    jaddnum(item,"goal",coin->goal);
+    jaddnum(item,"perc",coin->perc);
+    jaddnum(item,"force",coin->force);
     jaddnum(item,"balanceA",dstr(coin->balanceA));
     jaddnum(item,"valuesumA",dstr(coin->valuesumA));
     jaddnum(item,"aliceutil",100. * (double)coin->balanceA/coin->valuesumA);
@@ -61,7 +61,7 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
 
 char *LP_portfolio()
 {
-    uint64_t kmdsum = 0; int32_t iter; cJSON *retjson,*array; struct iguana_info *coin,*tmp;
+    double goalsum = 0.; uint64_t kmdsum = 0; int32_t iter; cJSON *retjson,*array; struct iguana_info *coin,*tmp;
     array = cJSON_CreateArray();
     retjson = cJSON_CreateObject();
     for (iter=0; iter<2; iter++)
@@ -82,9 +82,17 @@ char *LP_portfolio()
                     coin->maxamount = coin->valuesumB;
                 coin->kmd_equiv = coin->maxamount * coin->price_kmd;
                 kmdsum += coin->kmd_equiv;
+                goalsum += coin->goal;
             }
             else if ( coin->maxamount > 0 )
+            {
+                if ( goalsum > SMALLVAL && coin->goal > SMALLVAL )
+                {
+                    coin->perc = 100. * coin->goal / goalsum;
+                    coin->force = (coin->perc - coin->goal);
+                } else coin->perc = coin->force = 0.;
                 jaddi(array,LP_portfolio_entry(coin,kmdsum));
+            }
         }
     }
     jaddstr(retjson,"result","success");
