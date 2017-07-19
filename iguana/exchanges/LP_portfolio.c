@@ -28,7 +28,7 @@ cJSON *LP_portfolio_entry(struct iguana_info *coin,uint64_t kmdsum)
     jaddnum(item,"kmdsum",dstr(kmdsum));
     jaddnum(item,"goal",dstr(coin->goal));
     if ( kmdsum > 0 )
-        jaddnum(item,"perc",(double)coin->kmd_equiv/ kmdsum);
+        jaddnum(item,"perc",100. * (double)coin->kmd_equiv/ kmdsum);
     jaddnum(item,"balanceA",dstr(coin->balanceA));
     jaddnum(item,"valuesumA",dstr(coin->valuesumA));
     jaddnum(item,"aliceutil",100. * (double)coin->balanceA/coin->valuesumA);
