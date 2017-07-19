@@ -155,6 +155,10 @@ trust(pubkey, trust)\n\
             LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
         }
+        else if ( strcmp(method,"portfolio") == 0 )
+        {
+            return(LP_portfolio());
+        }
         if ( base != 0 && rel != 0 )
         {
             double price,bid,ask;

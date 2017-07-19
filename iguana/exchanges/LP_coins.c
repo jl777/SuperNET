@@ -235,8 +235,11 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;
     else name2 = name;
-    if ( strcmp(symbol,"XVG") == 0 )
+    if ( strcmp(symbol,"XVG") == 0 || strcmp(symbol,"NLG") == 0 )
+    {
         coin->noimportprivkey_flag = 1;
+        printf("truncate importprivkey for %s\n",symbol);
+    }
     return(LP_userpass(coin->userpass,symbol,assetname,name,name2));
 }
 
