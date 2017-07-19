@@ -88,7 +88,7 @@ char *LP_portfolio()
         }
     }
     jaddstr(retjson,"result","success");
-    jaddnum(retjson,"kmd_equiv",kmdsum);
+    jaddnum(retjson,"kmd_equiv",dstr(kmdsum));
     jadd(retjson,"portfolio",array);
     return(jprint(retjson,1));
 }

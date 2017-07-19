@@ -646,11 +646,12 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
     //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
     if ( price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
-        printf("PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
+        printf("PRICEFEED UPDATE.(%s/%s) %.8f %s %.8f\n",base,rel,price,bits256_str(str,pubkey),1./price);
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {
             pubp->matrix[basepp->ind][relpp->ind] = price;
-            pubp->matrix[relpp->ind][basepp->ind] = 1. / price;
+            basepp->relvals[relpp->ind] = price;
+            relpp->relvals[basepp->ind] = 1. / price;
             pubp->timestamp = (uint32_t)time(NULL);
         } else printf("error creating pubkey entry\n");
     } else printf("error finding %s/%s %.8f\n",base,rel,price);

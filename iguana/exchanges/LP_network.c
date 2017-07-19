@@ -121,7 +121,7 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                    else printf("%d %p qsent %u msglen.%d peerind.%d\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind);
+                    // else printf("%d %p qsent %u msglen.%d peerind.%d\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind);
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
@@ -134,7 +134,7 @@ void queue_loop(void *ignore)
                 if ( duplicate > 0 )
                 {
                     LP_Qfound++;
-                    //if ( (LP_Qenqueued % 10) == 0 )
+                    if ( (LP_Qenqueued % 10) == 0 )
                         printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     flag = 1;
                 }
