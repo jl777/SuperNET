@@ -646,7 +646,8 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
     //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
     if ( price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
-        printf("PRICEFEED UPDATE.(%s/%s) %.8f %s %.8f\n",base,rel,price,bits256_str(str,pubkey),1./price);
+        if ( fabs(basepp->relvals[relpp->ind] - price) > SMALLVAL )
+            printf("PRICEFEED UPDATE.(%s/%s) %.8f %s %.8f\n",base,rel,price,bits256_str(str,pubkey),1./price);
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {
             pubp->matrix[basepp->ind][relpp->ind] = price;

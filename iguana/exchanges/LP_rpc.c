@@ -294,7 +294,7 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
     {
         if ( coin->noimportprivkey_flag != 0 )
             sprintf(buf,"[\"%s\"]",wifstr);
-        else sprintf(buf,"[\"%s\", \"%s\", %s]",wifstr,label,flag < 0 ? "false" : "true");
+        else sprintf(buf,"\"%s\", \"%s\", %s",wifstr,label,flag < 0 ? "false" : "true");
         return(bitcoin_json(coin,"importprivkey",buf));
     } else return(cJSON_Parse("{\"result\":\"success\"}"));
 }
