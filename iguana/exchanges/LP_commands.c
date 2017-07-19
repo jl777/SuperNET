@@ -257,6 +257,10 @@ trust(pubkey, trust)\n\
                     return(jprint(retjson,1));
                 }
             }
+            else if ( strcmp(method,"goal") == 0 )
+            {
+                return(LP_portfolio_goal(coin,jdouble(argjson,"goal")));
+            }
         }
         else if ( strcmp(method,"swapstatus") == 0 )
         {

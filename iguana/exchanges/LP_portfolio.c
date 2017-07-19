@@ -18,16 +18,16 @@
 //  marketmaker
 //
 
-cJSON *LP_portfolio_entry(struct iguana_info *coin,uint64_t kmdsum)
+cJSON *LP_portfolio_entry(struct iguana_info *coin)
 {
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
     jaddnum(item,"amount",dstr(coin->maxamount));
     jaddnum(item,"price",coin->price_kmd);
     jaddnum(item,"kmd_equiv",dstr(coin->kmd_equiv));
-    jaddnum(item,"kmdsum",dstr(kmdsum));
-    jaddnum(item,"goal",coin->goal);
     jaddnum(item,"perc",coin->perc);
+    jaddnum(item,"goal",coin->goal);
+    jaddnum(item,"goalperc",coin->goalperc);
     jaddnum(item,"force",coin->force);
     jaddnum(item,"balanceA",dstr(coin->balanceA));
     jaddnum(item,"valuesumA",dstr(coin->valuesumA));
@@ -86,14 +86,16 @@ char *LP_portfolio()
             }
             else if ( coin->maxamount > 0 )
             {
+                if ( kmdsum > SMALLVAL )
+                    coin->perc = 100. * coin->kmd_equiv / kmdsum;
                 if ( goalsum > SMALLVAL && coin->goal > SMALLVAL )
                 {
-                    coin->perc = 100. * coin->kmd_equiv / goalsum;
-                    if ( (coin->force= (coin->perc - coin->goal)) < 0. )
+                    coin->goalperc = 100. * coin->goal / goalsum;
+                    if ( (coin->force= (coin->perc - coin->goalperc)) < 0. )
                         coin->force *= -coin->force;
                     else coin->force *= coin->force;
                 } else coin->perc = coin->force = 0.;
-                jaddi(array,LP_portfolio_entry(coin,kmdsum));
+                jaddi(array,LP_portfolio_entry(coin));
             }
         }
     }
@@ -101,6 +103,16 @@ char *LP_portfolio()
     jaddnum(retjson,"kmd_equiv",dstr(kmdsum));
     jadd(retjson,"portfolio",array);
     return(jprint(retjson,1));
+}
+
+char *LP_portfolio_goal(char *symbol,double goal)
+{
+    struct iguana_info *coin;
+    if ( (coin= LP_coinfind(symbol)) != 0 && coin->inactive == 0 )
+    {
+        coin->goal = goal;
+        return(LP_portfolio());
+    } else return(clonestr("{\error\":\"cant set goal for inactive coin\"}"));
 }
 
 
