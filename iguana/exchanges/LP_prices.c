@@ -31,6 +31,7 @@ struct LP_priceinfo
     double myprices[LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS];
     double margins[LP_MAXPRICEINFOS];
+    FILE *fps[LP_MAXPRICEINFOS];
 } LP_priceinfos[LP_MAXPRICEINFOS];
 int32_t LP_numpriceinfos;
 
@@ -642,24 +643,36 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 
 void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
 {
-    static FILE *fp;
-    struct LP_priceinfo *basepp,*relpp; uint32_t now; uint64_t price64; struct LP_pubkeyinfo *pubp; char str[65],fname[512];
-    if ( fp == 0 )
-    {
-        sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,base,rel);
-        fp = OS_appendfile(fname);
-    }
-    if ( fp != 0 && price > SMALLVAL )
-    {
-        price64 = price * SATOSHIDEN;
-        now = (uint32_t)time(NULL);
-        fwrite(&now,1,sizeof(now),fp);
-        fwrite(&price64,1,sizeof(price64),fp);
-        fflush(fp);
-    }
+    struct LP_priceinfo *basepp,*relpp; uint32_t now; uint64_t price64; struct LP_pubkeyinfo *pubp; char str[65],fname[512]; FILE *fp;
     //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
     if ( price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
+        if ( (fp= basepp->fps[relpp->ind]) == 0 )
+        {
+            sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,base,rel);
+            fp = basepp->fps[relpp->ind] = OS_appendfile(fname);
+        }
+        if ( fp != 0 && price > SMALLVAL )
+        {
+            now = (uint32_t)time(NULL);
+            price64 = price * SATOSHIDEN;
+            fwrite(&now,1,sizeof(now),fp);
+            fwrite(&price64,1,sizeof(price64),fp);
+            fflush(fp);
+        }
+        if ( (fp= relpp->fps[basepp->ind]) == 0 )
+        {
+            sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,rel,base);
+            fp = relpp->fps[basepp->ind] = OS_appendfile(fname);
+        }
+        if ( fp != 0 && price > SMALLVAL )
+        {
+            now = (uint32_t)time(NULL);
+            price64 = (1. / price) * SATOSHIDEN;
+            fwrite(&now,1,sizeof(now),fp);
+            fwrite(&price64,1,sizeof(price64),fp);
+            fflush(fp);
+        }
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {
             if ( fabs(pubp->matrix[basepp->ind][relpp->ind] - price) > SMALLVAL )
