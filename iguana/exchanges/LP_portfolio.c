@@ -84,7 +84,7 @@ char *LP_portfolio()
                 kmdsum += coin->kmd_equiv;
                 goalsum += coin->goal;
             }
-            else if ( coin->maxamount > 0 )
+            else 
             {
                 if ( kmdsum > SMALLVAL )
                     coin->perc = 100. * coin->kmd_equiv / kmdsum;
