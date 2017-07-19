@@ -64,7 +64,7 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
 
 char *LP_portfolio()
 {
-    double goalsum = 0.; uint64_t kmdsum = 0; int32_t iter; cJSON *retjson,*array; struct iguana_info *coin,*tmp;
+    double strongest = 0.,goalsum = 0.; uint64_t kmdsum = 0; int32_t iter; cJSON *retjson,*array; struct iguana_info *coin,*tmp,*strongestcoin=0;
     array = cJSON_CreateArray();
     retjson = cJSON_CreateObject();
     for (iter=0; iter<2; iter++)
@@ -97,6 +97,11 @@ char *LP_portfolio()
                     if ( (coin->force= (coin->goalperc - coin->perc)) < 0. )
                         coin->force *= -coin->force;
                     else coin->force *= coin->force;
+                    if ( fabs(coin->force) > fabs(strongest) )
+                    {
+                        strongest = coin->force;
+                        strongestcoin = coin;
+                    }
                 } else coin->goalperc = coin->force = 0.;
                 jaddi(array,LP_portfolio_entry(coin));
             }
@@ -104,6 +109,11 @@ char *LP_portfolio()
     }
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"kmd_equiv",dstr(kmdsum));
+    if ( strongestcoin != 0 )
+    {
+        jaddstr(retjson,"strongest",strongestcoin->symbol);
+        jaddnum(retjson,"force",strongest);
+    }
     jadd(retjson,"portfolio",array);
     return(jprint(retjson,1));
 }
@@ -118,7 +128,7 @@ char *LP_portfolio_goal(char *symbol,double goal)
     } else return(clonestr("{\error\":\"cant set goal for inactive coin\"}"));
 }
 
-int32_t LP_autoprices;
+int32_t LP_autoprices,LP_autofills;
 
 int32_t LP_autofill(char *base,char *rel,double maxprice,double totalrelvolume)
 {
@@ -127,6 +137,7 @@ int32_t LP_autofill(char *base,char *rel,double maxprice,double totalrelvolume)
     {
         basepp->maxprices[relpp->ind] = maxprice;
         basepp->relvols[relpp->ind] = totalrelvolume;
+        LP_autofills++;
         return(0);
     }
     return(-1);
@@ -342,6 +353,22 @@ void prices_loop(void *ignore)
                         free_json(retjson);
                     }
                 }
+            }
+        }
+        if ( LP_autofills > 0 )
+        {
+            char *strongest; struct iguana_info *coin;
+            if ( (retstr= LP_portfolio()) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (strongest= jstr(retjson,"strongest")) != 0 && (coin= LP_coinfind(strongest)) != 0 )
+                    {
+                        printf("strongest.%s force %f\n",strongest,jdouble(retjson,"force"));
+                    }
+                    free_json(retjson);
+                }
+                free(retstr);
             }
         }
         sleep(60);

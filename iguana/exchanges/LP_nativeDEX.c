@@ -19,21 +19,14 @@
 //
 // new features:
 // stats
-// autofill
 // autoutxo
-
-// fixes:
-// -wiftaddr and no flag for importprivkey (XVG)
-// -avoid redundant importprivkey
-// -put Atxfee and Btxfee into rememberfiles
 
 // bugs:
 // false detection of bobreclaim
 
 // unduplicated bugs:
 // swap cancel should cleanly cancel
-// multiple smartaddresses? enable/disable causes? 250 KMD bounty
-// verify bid volumes
+// multiple smartaddresses? enable/disable causes?
 
 #include <stdio.h>
 #include "LP_include.h"
