@@ -68,6 +68,8 @@ char *LP_portfolio()
     {
         HASH_ITER(hh,LP_coins,coin,tmp)
         {
+            if ( coin->inactive != 0 )
+                continue;
             if ( iter == 0 )
             {
                 coin->balanceA = LP_balance(&coin->valuesumA,0,coin->symbol,coin->smartaddr);
@@ -80,7 +82,9 @@ char *LP_portfolio()
                     coin->maxamount = coin->valuesumB;
                 coin->kmd_equiv = coin->maxamount * coin->price_kmd;
                 kmdsum += coin->kmd_equiv;
-            } else jaddi(array,LP_portfolio_entry(coin,kmdsum));
+            }
+            else if ( coin->maxamount > 0 )
+                jaddi(array,LP_portfolio_entry(coin,kmdsum));
         }
     }
     jaddstr(retjson,"result","success");
