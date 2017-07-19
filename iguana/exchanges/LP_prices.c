@@ -646,7 +646,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
     struct LP_priceinfo *basepp,*relpp; uint32_t now; uint64_t price64; struct LP_pubkeyinfo *pubp; char str[65],fname[512];
     if ( fp == 0 )
     {
-        sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,base,rel), OS_ensure_directory(fname);
+        sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,base,rel);
         fp = OS_appendfile(fname);
     }
     if ( fp != 0 && price > SMALLVAL )
