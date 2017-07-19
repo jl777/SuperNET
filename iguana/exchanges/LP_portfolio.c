@@ -88,8 +88,10 @@ char *LP_portfolio()
             {
                 if ( goalsum > SMALLVAL && coin->goal > SMALLVAL )
                 {
-                    coin->perc = 100. * coin->goal / goalsum;
-                    coin->force = (coin->perc - coin->goal);
+                    coin->perc = 100. * coin->kmd_equiv / goalsum;
+                    if ( (coin->force= (coin->perc - coin->goal)) < 0. )
+                        coin->force *= -coin->force;
+                    else coin->force *= coin->force;
                 } else coin->perc = coin->force = 0.;
                 jaddi(array,LP_portfolio_entry(coin,kmdsum));
             }
