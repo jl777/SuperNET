@@ -113,6 +113,59 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
                  }*/
     return(fp);
 }
+/*char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
+ {
+ char url[4096],str[65],str2[65],str3[65],*retstr; struct _LP_utxoinfo u; uint64_t val,val2;
+ if ( (retstr= LP_isitme(destip,destport)) != 0 )
+ return(retstr);
+ if ( utxo->iambob == 0 )
+ {
+ printf("issue_LP_notifyutxo trying to send Alice %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
+ return(0);
+ }
+ u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+ if ( LP_iseligible(&val,&val2,utxo->iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) > 0 )
+ {
+ sprintf(url,"http://%s:%u/api/stats/notified?iambob=%d&pubkey=%s&coin=%s&txid=%s&vout=%d&value=%llu&txid2=%s&vout2=%d&value2=%llu&script=%s&address=%s&timestamp=%u&gui=%s",destip,destport,utxo->iambob,bits256_str(str3,utxo->pubkey),utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout,(long long)utxo->payment.value,bits256_str(str2,utxo->deposit.txid),utxo->deposit.vout,(long long)utxo->deposit.value,utxo->spendscript,utxo->coinaddr,(uint32_t)time(NULL),utxo->gui);
+ if ( strlen(url) > 1024 )
+ printf("WARNING long url.(%s)\n",url);
+ return(LP_issue_curl("notifyutxo",destip,destport,url));
+ //return(issue_curlt(url,LP_HTTP_TIMEOUT));
+ }
+ else
+ {
+ printf("issue_LP_notifyutxo: ineligible utxo iambob.%d %.8f %.8f\n",utxo->iambob,dstr(val),dstr(val2));
+ if ( utxo->T.spentflag == 0 )
+ utxo->T.spentflag = (uint32_t)time(NULL);
+ return(0);
+ }
+ }*/
+
+/*char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
+ {
+ char url[512],str[65];
+ sprintf(url,"http://%s:%u/api/stats/lookup?client=%s",destip,destport,bits256_str(str,pubkey));
+ //printf("getutxo.(%s)\n",url);
+ return(LP_issue_curl("lookup",destip,destport,url));
+ //return(issue_curlt(url,LP_HTTP_TIMEOUT));
+ }*/
+
+
+/*if ( LP_canbind == 0 )
+ {
+ //printf("check deadman %u vs %u\n",LP_deadman_switch,(uint32_t)time(NULL));
+ if ( LP_deadman_switch < time(NULL)-PSOCK_KEEPALIVE )
+ {
+ printf("DEAD man's switch %u activated at %u lag.%d, register forwarding again\n",LP_deadman_switch,(uint32_t)time(NULL),(uint32_t)(time(NULL) - LP_deadman_switch));
+ if ( pullsock >= 0 )
+ nn_close(pullsock);
+ pullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
+ LP_deadman_switch = (uint32_t)time(NULL);
+ strcpy(LP_publicaddr,pushaddr);
+ LP_publicport = mypullport;
+ LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,MAX_PSOCK_PORT);
+ }
+ }*/
 /*if ( lastforward < now-3600 )
  {
  if ( (retstr= LP_registerall(0)) != 0 )

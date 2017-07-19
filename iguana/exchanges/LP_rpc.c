@@ -94,43 +94,6 @@ char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
-/*char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
-{
-    char url[4096],str[65],str2[65],str3[65],*retstr; struct _LP_utxoinfo u; uint64_t val,val2;
-    if ( (retstr= LP_isitme(destip,destport)) != 0 )
-        return(retstr);
-    if ( utxo->iambob == 0 )
-    {
-        printf("issue_LP_notifyutxo trying to send Alice %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
-        return(0);
-    }
-    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
-    if ( LP_iseligible(&val,&val2,utxo->iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) > 0 )
-    {
-        sprintf(url,"http://%s:%u/api/stats/notified?iambob=%d&pubkey=%s&coin=%s&txid=%s&vout=%d&value=%llu&txid2=%s&vout2=%d&value2=%llu&script=%s&address=%s&timestamp=%u&gui=%s",destip,destport,utxo->iambob,bits256_str(str3,utxo->pubkey),utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout,(long long)utxo->payment.value,bits256_str(str2,utxo->deposit.txid),utxo->deposit.vout,(long long)utxo->deposit.value,utxo->spendscript,utxo->coinaddr,(uint32_t)time(NULL),utxo->gui);
-        if ( strlen(url) > 1024 )
-            printf("WARNING long url.(%s)\n",url);
-        return(LP_issue_curl("notifyutxo",destip,destport,url));
-        //return(issue_curlt(url,LP_HTTP_TIMEOUT));
-    }
-    else
-    {
-        printf("issue_LP_notifyutxo: ineligible utxo iambob.%d %.8f %.8f\n",utxo->iambob,dstr(val),dstr(val2));
-        if ( utxo->T.spentflag == 0 )
-            utxo->T.spentflag = (uint32_t)time(NULL);
-        return(0);
-    }
-}*/
-
-/*char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
-{
-    char url[512],str[65];
-    sprintf(url,"http://%s:%u/api/stats/lookup?client=%s",destip,destport,bits256_str(str,pubkey));
-    //printf("getutxo.(%s)\n",url);
-    return(LP_issue_curl("lookup",destip,destport,url));
-    //return(issue_curlt(url,LP_HTTP_TIMEOUT));
-}*/
-
 char *issue_LP_getprices(char *destip,uint16_t destport)
 {
     char url[512];
@@ -330,7 +293,7 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
     if ( doneflag == 0 )
     {
         if ( coin->noimportprivkey_flag != 0 )
-            sprintf(buf,"[\"%s\", \"%s\"]",wifstr,label);
+            sprintf(buf,"[\"%s\"]",wifstr);
         else sprintf(buf,"[\"%s\", \"%s\", %s]",wifstr,label,flag < 0 ? "false" : "true");
         return(bitcoin_json(coin,"importprivkey",buf));
     } else return(cJSON_Parse("{\"result\":\"success\"}"));

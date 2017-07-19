@@ -182,6 +182,9 @@ struct iguana_info
     uint32_t counter,inactive,lastmempool,lastgetinfo;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
+    // portfolio
+    double price_kmd;
+    uint64_t maxamount,kmd_equiv,goal,balanceA,balanceB,valuesumA,valuesumB;
 };
 
 struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout; };

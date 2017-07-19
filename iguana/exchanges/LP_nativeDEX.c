@@ -23,11 +23,11 @@
 // autoutxo
 
 // fixes:
-// -wiftaddr and no flag for importprivkey (VERGE)
+// -wiftaddr and no flag for importprivkey (XVG)
 // -avoid redundant importprivkey
 // -put Atxfee and Btxfee into rememberfiles
 
-// bugs"
+// bugs:
 // false detection of bobreclaim
 
 // unduplicated bugs:
@@ -37,7 +37,7 @@
 
 #include <stdio.h>
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex;
 int32_t LP_canbind;
 
 struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
@@ -98,6 +98,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_utxos.c"
 #include "LP_forwarding.c"
 #include "LP_ordermatch.c"
+#include "LP_portfolio.c"
 #include "LP_messages.c"
 #include "LP_commands.c"
 
@@ -636,6 +637,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_coinmutex);
     portable_mutex_init(&LP_pubkeymutex);
     portable_mutex_init(&LP_messagemutex);
+    portable_mutex_init(&LP_portfoliomutex);
     LP_sessionid = (uint32_t)time(NULL);
     printf("getting myipaddr sessionid.%u\n",LP_sessionid);
     if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
@@ -713,21 +715,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         //fprintf(stderr,".");
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport,passphrase) == 0 )
             usleep(1000000 / MAINLOOP_PERSEC);
-        /*if ( LP_canbind == 0 )
-        {
-            //printf("check deadman %u vs %u\n",LP_deadman_switch,(uint32_t)time(NULL));
-            if ( LP_deadman_switch < time(NULL)-PSOCK_KEEPALIVE )
-            {
-                printf("DEAD man's switch %u activated at %u lag.%d, register forwarding again\n",LP_deadman_switch,(uint32_t)time(NULL),(uint32_t)(time(NULL) - LP_deadman_switch));
-                if ( pullsock >= 0 )
-                    nn_close(pullsock);
-                pullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
-                LP_deadman_switch = (uint32_t)time(NULL);
-                strcpy(LP_publicaddr,pushaddr);
-                LP_publicport = mypullport;
-                LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,MAX_PSOCK_PORT);
-            }
-        }*/
     }
 }
 
