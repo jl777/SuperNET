@@ -202,7 +202,7 @@ char *LP_prices()
 
 void LP_prices_parse(cJSON *obj)
 {
-    struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; int32_t i,n,relid; char *base,*rel; double askprice;
+    struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; int32_t i,n,relid; char *base,*rel; double askprice;
     pubkey = jbits256(obj,"pubkey");
     if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
     {
@@ -219,6 +219,11 @@ void LP_prices_parse(cJSON *obj)
                 {
                     char str[65]; printf("%s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
                     pubp->matrix[basepp->ind][relid] = askprice;
+                    if ( (relpp= LP_priceinfofind(rel)) != 0 )
+                    {
+                        dxblend(&basepp->relvals[relpp->ind],askprice,0.9);
+                        dxblend(&relpp->relvals[basepp->ind],1. / askprice,0.9);
+                    }
                 }
             }
         }
