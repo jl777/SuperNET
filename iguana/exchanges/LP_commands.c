@@ -267,7 +267,7 @@ trust(pubkey, trust)\n\
                 }
             }
             else if ( strcmp(method,"goal") == 0 )
-                return(LP_portfolio_goal(coin,jdouble(argjson,"perc")));
+                return(LP_portfolio_goal(coin,jdouble(argjson,"val")));
         }
         else if ( strcmp(method,"goal") == 0 )
             return(LP_portfolio_goal("*",100.));
