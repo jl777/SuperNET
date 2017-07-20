@@ -446,6 +446,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
         LP_availableset(autxo);
         return(clonestr("{\"error\":\"no price set\"}"));
     }
+    printf("%s/%s bid %.8f ask %.8f\n",Q.srccoin,Q.destcoin,bid,ask);
     if ( (price= ask) == 0. )
         price = bid;
     if ( qprice > price+0.00000001 )
