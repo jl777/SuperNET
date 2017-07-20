@@ -173,8 +173,8 @@ trust(pubkey, trust)\n\
                 {
                     if ( LP_mypriceset(&changed,base,rel,price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
-                    else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
-                        return(clonestr("{\"error\":\"couldnt set price\"}"));
+                    //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
+                    //    return(clonestr("{\"error\":\"couldnt set price\"}"));
                     else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 } else return(clonestr("{\"error\":\"no price\"}"));
             }
