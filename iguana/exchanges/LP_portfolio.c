@@ -29,6 +29,7 @@ cJSON *LP_portfolio_entry(struct iguana_info *coin)
     jaddnum(item,"perc",coin->perc);
     jaddnum(item,"goal",coin->goal);
     jaddnum(item,"goalperc",coin->goalperc);
+    jaddnum(item,"relvolume",coin->relvolume);
     jaddnum(item,"force",coin->force);
     jaddnum(item,"balanceA",dstr(coin->balanceA));
     jaddnum(item,"valuesumA",dstr(coin->valuesumA));
@@ -90,14 +91,18 @@ char *LP_portfolio()
             }
             else
             {
+                coin->relvolume = 0.;
                 if ( kmdsum > SMALLVAL )
                     coin->perc = 100. * coin->kmd_equiv / kmdsum;
                 if ( goalsum > SMALLVAL && coin->goal > SMALLVAL )
                 {
                     coin->goalperc = 100. * coin->goal / goalsum;
                     if ( (coin->force= (coin->goalperc - coin->perc)) < 0. )
+                    {
                         coin->force *= -coin->force;
-                    else coin->force *= coin->force;
+                        if ( coin->price_kmd > SMALLVAL )
+                            coin->relvolume = (coin->kmd_equiv * (coin->goalperc - coin->perc) / 100.) / coin->price_kmd;
+                    } else coin->force *= coin->force;
                     if ( coin->force > maxval )
                     {
                         maxval = coin->force;
@@ -131,17 +136,45 @@ char *LP_portfolio()
 
 char *LP_portfolio_goal(char *symbol,double goal)
 {
-    struct iguana_info *coin;
-    if ( (coin= LP_coinfind(symbol)) != 0 && coin->inactive == 0 )
+    struct iguana_info *coin,*tmp; int32_t iter,n = 0; double kmdbtc = 50.;
+    if ( strcmp(symbol,"*") == 0 )
+    {
+        if ( (coin= LP_coinfind("KMD")) != 0 )
+            coin->goal = 25.;
+        if ( (coin= LP_coinfind("BTC")) != 0 )
+            coin->goal = 25.;
+        for (iter=0; iter<2; iter++)
+        {
+            HASH_ITER(hh,LP_coins,coin,tmp)
+            {
+                if ( iter == 0 )
+                    coin->goal = 0;
+                if ( coin->inactive == 0 && strcmp(coin->symbol,"KMD") != 0 && strcmp(coin->symbol,"BTC") != 0 )
+                {
+                    if ( iter == 0 )
+                        n++;
+                    else coin->goal = (100. - kmdbtc) / n;
+                }
+            }
+            if ( n == 0 )
+                break;
+        }
+        if ( (coin= LP_coinfind("KMD")) != 0 )
+            coin->goal = kmdbtc * 0.5;
+        if ( (coin= LP_coinfind("BTC")) != 0 )
+            coin->goal = kmdbtc * 0.5;
+        return(LP_portfolio());
+    }
+    else if ( (coin= LP_coinfind(symbol)) != 0 && coin->inactive == 0 )
     {
         coin->goal = goal;
         return(LP_portfolio());
     } else return(clonestr("{\error\":\"cant set goal for inactive coin\"}"));
 }
 
-int32_t LP_autoprices,LP_autofills;
+int32_t LP_autoprices;
 
-int32_t LP_autofill(char *base,char *rel,double maxprice,double totalrelvolume)
+/*int32_t LP_autofill(char *base,char *rel,double maxprice,double totalrelvolume)
 {
     struct LP_priceinfo *basepp,*relpp;
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
@@ -152,7 +185,7 @@ int32_t LP_autofill(char *base,char *rel,double maxprice,double totalrelvolume)
         return(0);
     }
     return(-1);
-}
+}*/
 
 int32_t LP_autoprice(char *base,char *rel,double minprice,double margin,char *type)
 {
@@ -361,7 +394,6 @@ void prices_loop(void *ignore)
     char *buycoin,*sellcoin,*retstr; struct iguana_info *buy,*sell; cJSON *retjson; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
-        printf("prices_loop\n");
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
         {
             sleep(60);
@@ -369,21 +401,20 @@ void prices_loop(void *ignore)
         }
         if ( LP_autoprices != 0 )
             LP_autoprice_iter(ctx,btcpp);
-        if ( LP_autofills > 0 )
+        if ( (retstr= LP_portfolio()) != 0 )
         {
-            if ( (retstr= LP_portfolio()) != 0 )
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 )
                 {
-                    if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 )
-                    {
-                        printf("buy.%s force %f, sell.%s force %f\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"));
-                    } else printf("buy or sell missing.(%s)\n",jprint(retjson,0));
-                    free_json(retjson);
-                }
-                free(retstr);
+                    printf("base buy.%s force %f, rel sell.%s force %f relvolume %f\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume);
+                    //if ( (autxo= LP_utxo_bestfit(sellcoin,SATOSHIDEN * relvolume)) == 0 )
+                    //    return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
+                } else printf("buy or sell missing.(%s)\n",jprint(retjson,0));
+                free_json(retjson);
             }
-        } else printf("LP_autofills.%d\n",LP_autofills);
+            free(retstr);
+        }
         sleep(60);
     }
 }

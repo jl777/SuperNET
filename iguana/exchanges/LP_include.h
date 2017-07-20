@@ -183,7 +183,7 @@ struct iguana_info
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
-    double price_kmd,force,perc,goal,goalperc;
+    double price_kmd,force,perc,goal,goalperc,relvolume;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33];
 };

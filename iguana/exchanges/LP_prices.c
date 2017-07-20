@@ -31,8 +31,8 @@ struct LP_priceinfo
     double myprices[LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS]; // autoprice
     double margins[LP_MAXPRICEINFOS];
-    double maxprices[LP_MAXPRICEINFOS]; // autofill of base/rel
-    double relvols[LP_MAXPRICEINFOS];
+    //double maxprices[LP_MAXPRICEINFOS]; // autofill of base/rel
+    //double relvols[LP_MAXPRICEINFOS];
     FILE *fps[LP_MAXPRICEINFOS];
 } LP_priceinfos[LP_MAXPRICEINFOS];
 int32_t LP_numpriceinfos;
