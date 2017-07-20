@@ -19,10 +19,12 @@
 //
 // new features:
 // stats
+// multidimensional portfolio
 // autoutxo
 
 // bugs:
 // false detection of bobreclaim
+// relax ordermatch constraints?
 
 // unduplicated bugs:
 // swap cancel should cleanly cancel

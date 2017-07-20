@@ -171,7 +171,9 @@ trust(pubkey, trust)\n\
             {
                 if ( price > SMALLVAL )
                 {
-                    if ( LP_mypriceset(&changed,base,rel,price) < 0 )
+                    //if ( LP_mypriceset(&changed,base,rel,price) < 0 )
+                    //    return(clonestr("{\"error\":\"couldnt set price\"}"));
+                    if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
                     else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 } else return(clonestr("{\"error\":\"no price\"}"));
