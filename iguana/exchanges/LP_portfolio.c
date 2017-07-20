@@ -75,7 +75,7 @@ char *LP_portfolio()
     {
         HASH_ITER(hh,LP_coins,coin,tmp)
         {
-            if ( coin->inactive != 0 && coin->goal == 0 )
+            if ( coin->inactive != 0 )
                 continue;
             if ( iter == 0 )
             {
@@ -148,10 +148,6 @@ char *LP_portfolio_goal(char *symbol,double goal)
     struct iguana_info *coin,*tmp; int32_t iter,n = 0; double kmdbtc = 50.;
     if ( strcmp(symbol,"*") == 0 )
     {
-        if ( (coin= LP_coinfind("KMD")) != 0 )
-            coin->goal = 25.;
-        if ( (coin= LP_coinfind("BTC")) != 0 )
-            coin->goal = 25.;
         for (iter=0; iter<2; iter++)
         {
             HASH_ITER(hh,LP_coins,coin,tmp)
@@ -170,9 +166,9 @@ char *LP_portfolio_goal(char *symbol,double goal)
             if ( n == 0 )
                 break;
         }
-        if ( (coin= LP_coinfind("KMD")) != 0 )
+        if ( (coin= LP_coinfind("KMD")) != 0 && coin->inactive == 0 )
             coin->goal = kmdbtc * 0.5;
-        if ( (coin= LP_coinfind("BTC")) != 0 )
+        if ( (coin= LP_coinfind("BTC")) != 0 && coin->inactive == 0 )
             coin->goal = kmdbtc * 0.5;
         return(LP_portfolio());
     }
@@ -420,7 +416,7 @@ void prices_loop(void *ignore)
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 )
+                if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 && buy->inactive == 0 && sell->inactive == 0 )
                 {
                     LP_myprice(&bid,&ask,buycoin,sellcoin);
                     maxprice = ask;
