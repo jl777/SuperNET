@@ -594,7 +594,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatosh
                         {
                             if ( bestprice == 0. ) // assumes price ordered asks
                                 bestprice = price;
-                            //printf("item.[%d] %s\n",i,jprint(item,0));
+                            printf("item.[%d] %s\n",i,jprint(item,0));
                             txid = jbits256(item,"txid");
                             vout = jint(item,"vout");
                             vol = jdouble(item,"volume");
@@ -634,10 +634,14 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatosh
                                 if ( butxo != 0 )
                                     printf("%llu %llu %d %d %d: ",(long long)(vol*SATOSHIDEN),(long long)butxo->S.satoshis,vol*SATOSHIDEN == butxo->S.satoshis,LP_isavailable(butxo) > 0,LP_ismine(butxo) == 0);
                                 printf("cant find butxo.%p or value mismatch %.8f != %.8f or bestflag.%d\n",butxo,vol,butxo!=0?dstr(butxo->S.satoshis):0,butxo->T.bestflag);
-                                //if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && (long long)(vol*SATOSHIDEN) == butxo->S.satoshis && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 && butxo->T.bestflag == 0 )
                             }
                         } else printf("self trading or blacklisted peer\n");
-                    } else break;
+                    }
+                    else
+                    {
+                        printf("maxprice %.8f vs %.8f\n",maxprice,price);
+                        break;
+                    }
                 }
             }
             free_json(orderbook);

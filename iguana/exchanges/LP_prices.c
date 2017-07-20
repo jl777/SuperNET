@@ -584,13 +584,13 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         qsort(bids,numbids,sizeof(*bids),_cmp_orderbook);
     if ( numasks > 1 )
     {
-        for (i=0; i<numasks; i++)
-            printf("%.8f ",asks[i]->price);
-        printf(" -> ");
+        //for (i=0; i<numasks; i++)
+        //    printf("%.8f ",asks[i]->price);
+        //printf(" -> ");
         qsort(asks,numasks,sizeof(*asks),_cmp_orderbook);
-        for (i=0; i<numasks; i++)
-            printf("%.8f ",asks[i]->price);
-        printf("sorted asks.%d\n",numasks);
+        //for (i=0; i<numasks; i++)
+        //    printf("%.8f ",asks[i]->price);
+        //printf("sorted asks.%d\n",numasks);
     }
     for (i=0; i<numbids; i++)
     {
