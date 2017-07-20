@@ -218,7 +218,7 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *relpp,struct LP_
     {
         if ( margin == 0. )
             margin = oppomargin;
-        printf("min %.8f %s/%s %.8f dir.%d margin %.8f (%.8f %.8f)\n",basepp->minprices[relpp->ind],relpp->symbol,basepp->symbol,price,dir,margin,1. / (price * (1. - margin)),(price * (1. + margin)));
+        //printf("min %.8f %s/%s %.8f dir.%d margin %.8f (%.8f %.8f)\n",basepp->minprices[relpp->ind],relpp->symbol,basepp->symbol,price,dir,margin,1. / (price * (1. - margin)),(price * (1. + margin)));
         if ( dir > 0 )
             price = 1. / (price * (1. - margin));
         else price = (price * (1. + margin));
