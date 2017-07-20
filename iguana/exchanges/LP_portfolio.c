@@ -75,7 +75,7 @@ char *LP_portfolio()
     {
         HASH_ITER(hh,LP_coins,coin,tmp)
         {
-            if ( coin->inactive != 0 )
+            if ( coin->inactive != 0 && coin->goal == 0 )
                 continue;
             if ( iter == 0 )
             {
@@ -156,6 +156,8 @@ char *LP_portfolio_goal(char *symbol,double goal)
         {
             HASH_ITER(hh,LP_coins,coin,tmp)
             {
+                if ( coin->inactive != 0 )
+                    continue;
                 if ( iter == 0 )
                     coin->goal = 0;
                 if ( coin->inactive == 0 && strcmp(coin->symbol,"KMD") != 0 && strcmp(coin->symbol,"BTC") != 0 )
