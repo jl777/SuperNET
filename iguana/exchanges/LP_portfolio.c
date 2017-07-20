@@ -420,7 +420,8 @@ void prices_loop(void *ignore)
             {
                 if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 )
                 {
-                    maxprice = LP_myprice(&bid,&ask,buycoin,sellcoin);
+                    LP_myprice(&bid,&ask,buycoin,sellcoin);
+                    maxprice = ask;
                     printf("base buy.%s force %f, rel sell.%s force %f relvolume %f maxprice %.8f (%.8f %.8f)\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume,maxprice,bid,ask);
                     if ( maxprice > SMALLVAL )
                     {
