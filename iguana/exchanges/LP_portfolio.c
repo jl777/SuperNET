@@ -101,7 +101,7 @@ char *LP_portfolio()
                     {
                         coin->force *= -coin->force;
                         if ( coin->price_kmd > SMALLVAL )
-                            coin->relvolume = (coin->maxamount * (coin->perc - coin->goalperc)) / 100.;
+                            coin->relvolume = (dstr(coin->maxamount) * (coin->perc - coin->goalperc)) / 100.;
                     } else coin->force *= coin->force;
                     if ( coin->force > maxval )
                     {
