@@ -64,7 +64,7 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
 
 char *LP_portfolio()
 {
-    double strongest = 0.,goalsum = 0.; uint64_t kmdsum = 0; int32_t iter; cJSON *retjson,*array; struct iguana_info *coin,*tmp,*strongestcoin=0;
+    double maxval = 0.,minval = 0.,goalsum = 0.; uint64_t kmdsum = 0; int32_t iter; cJSON *retjson,*array; struct iguana_info *coin,*tmp,*sellcoin = 0,*buycoin = 0;
     array = cJSON_CreateArray();
     retjson = cJSON_CreateObject();
     for (iter=0; iter<2; iter++)
@@ -98,10 +98,15 @@ char *LP_portfolio()
                     if ( (coin->force= (coin->goalperc - coin->perc)) < 0. )
                         coin->force *= -coin->force;
                     else coin->force *= coin->force;
-                    if ( fabs(coin->force) > fabs(strongest) )
+                    if ( coin->force > maxval )
                     {
-                        strongest = coin->force;
-                        strongestcoin = coin;
+                        maxval = coin->force;
+                        buycoin = coin;
+                    }
+                    if ( coin->force < minval )
+                    {
+                        minval = coin->force;
+                        sellcoin = coin;
                     }
                 } else coin->goalperc = coin->force = 0.;
                 jaddi(array,LP_portfolio_entry(coin));
@@ -110,10 +115,15 @@ char *LP_portfolio()
     }
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"kmd_equiv",dstr(kmdsum));
-    if ( strongestcoin != 0 )
+    if ( buycoin != 0 )
     {
-        jaddstr(retjson,"strongest",strongestcoin->symbol);
-        jaddnum(retjson,"force",strongest);
+        jaddstr(retjson,"buycoin",buycoin->symbol);
+        jaddnum(retjson,"buyforce",maxval);
+    }
+    if ( sellcoin != 0 )
+    {
+        jaddstr(retjson,"sellcoin",sellcoin->symbol);
+        jaddnum(retjson,"sellforce",minval);
     }
     jadd(retjson,"portfolio",array);
     return(jprint(retjson,1));
@@ -358,14 +368,14 @@ void prices_loop(void *ignore)
         }
         if ( LP_autofills > 0 )
         {
-            char *strongest; struct iguana_info *coin;
+            char *buycoin,*sellcoin; struct iguana_info *buy,*sell;
             if ( (retstr= LP_portfolio()) != 0 )
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    if ( (strongest= jstr(retjson,"strongest")) != 0 && (coin= LP_coinfind(strongest)) != 0 )
+                    if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 )
                     {
-                        printf("strongest.%s force %f\n",strongest,jdouble(retjson,"force"));
+                        printf("buy.%s force %f, sell.%s force %f\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"));
                     }
                     free_json(retjson);
                 }
