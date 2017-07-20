@@ -18,6 +18,9 @@
 //  marketmaker
 //
 
+char LP_portfolio_base[16],LP_portfolio_rel[16];
+double LP_portfolio_relvolume;
+
 cJSON *LP_portfolio_entry(struct iguana_info *coin)
 {
     cJSON *item = cJSON_CreateObject();
@@ -129,6 +132,12 @@ char *LP_portfolio()
     {
         jaddstr(retjson,"sellcoin",sellcoin->symbol);
         jaddnum(retjson,"sellforce",minval);
+    }
+    if ( LP_portfolio_relvolume > SMALLVAL )
+    {
+        jaddstr(retjson,"base",LP_portfolio_base);
+        jaddstr(retjson,"rel",LP_portfolio_rel);
+        jaddnum(retjson,"relvolume",LP_portfolio_relvolume);
     }
     jadd(retjson,"portfolio",array);
     return(jprint(retjson,1));
@@ -391,7 +400,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 
 void prices_loop(void *ignore)
 {
-    char *buycoin,*sellcoin,*retstr; double bid,ask,maxprice; struct iguana_info *buy,*sell; cJSON *retjson; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
+    char *buycoin,*sellcoin,*retstr,*retstr2; double bid,ask,maxprice; struct iguana_info *buy,*sell; cJSON *retjson; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
@@ -409,8 +418,20 @@ void prices_loop(void *ignore)
                 {
                     maxprice = LP_myprice(&bid,&ask,buycoin,sellcoin);
                     printf("base buy.%s force %f, rel sell.%s force %f relvolume %f maxprice %.8f (%.8f %.8f)\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume,maxprice,bid,ask);
-                    //if ( (autxo= LP_utxo_bestfit(sellcoin,SATOSHIDEN * relvolume)) == 0 )
-                    //    return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
+                    if ( maxprice > SMALLVAL )
+                    {
+                        if ( (retstr2= LP_autotrade(ctx,"127.0.0.1",-1,buycoin,sellcoin,maxprice,sell->relvolume,60,24*3600)) != 0 )
+                        {
+                            printf("LP_autotrade.(%s)\n",retstr2);
+                            free(retstr2);
+                        }
+                    }
+                    else
+                    {
+                        strcpy(LP_portfolio_base,buycoin);
+                        strcpy(LP_portfolio_rel,sellcoin);
+                        LP_portfolio_relvolume = sell->relvolume;
+                    }
                 } else printf("buy or sell missing.(%s)\n",jprint(retjson,0));
                 free_json(retjson);
             }
