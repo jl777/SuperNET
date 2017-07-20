@@ -440,14 +440,14 @@ char *LP_connectedalice(cJSON *argjson) // alice
         printf("quote validate error %.0f\n",qprice);
         return(clonestr("{\"error\":\"quote validation error\"}"));
     }
-    if ( LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin) <= SMALLVAL || (bid <= SMALLVAL && ask <= SMALLVAL) )
+    if ( LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin) <= SMALLVAL || bid <= SMALLVAL )
     {
         printf("this node has no price for %s/%s (%.8f %.8f)\n",Q.destcoin,Q.srccoin,bid,ask);
         LP_availableset(autxo);
         return(clonestr("{\"error\":\"no price set\"}"));
     }
     printf("%s/%s bid %.8f ask %.8f\n",Q.srccoin,Q.destcoin,bid,ask);
-    if ( (price= ask) == 0. )
+    //if ( (price= ask) == 0. )
         price = bid;
     if ( qprice > price+0.00000001 )
     {
