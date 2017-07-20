@@ -271,7 +271,7 @@ struct iguana_info *LP_coinfind(char *symbol)
     assetname = "";
     if ( strcmp(symbol,"BTC") == 0 )
     {
-        txfee = 50000;
+        txfee = 0;
         estimatedrate = 300;
         pubtype = 0;
         p2shtype = 5;

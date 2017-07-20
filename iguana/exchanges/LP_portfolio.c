@@ -404,7 +404,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 
 void prices_loop(void *ignore)
 {
-    char *buycoin,*sellcoin,*retstr,*retstr2; double bid,ask,maxprice,relvolume; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; cJSON *retjson,*retjson2; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
+    char *buycoin,*sellcoin,*retstr,*retstr2; double bid,ask,maxprice,relvolume; struct iguana_info *buy,*sell; uint32_t requestid,quoteid,iter; cJSON *retjson,*retjson2; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
@@ -423,10 +423,10 @@ void prices_loop(void *ignore)
                     LP_myprice(&bid,&ask,buycoin,sellcoin);
                     maxprice = ask;
                     printf("base buy.%s force %f, rel sell.%s force %f relvolume %f maxprice %.8f (%.8f %.8f)\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume,maxprice,bid,ask);
-                    if ( maxprice > SMALLVAL )
+                    if ( maxprice > SMALLVAL && LP_utxo_bestfit(sellcoin,sell->relvolume) != 0 )
                     {
                         relvolume = sell->relvolume;
-                        while ( relvolume > 0.0001 )
+                        for (iter=0; iter<3; iter++)
                         {
                             requestid = quoteid = 0;
                             if ( (retstr2= LP_autotrade(ctx,"127.0.0.1",-1,buycoin,sellcoin,maxprice,sell->relvolume,60,24*3600)) != 0 )
