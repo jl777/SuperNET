@@ -447,7 +447,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
         return(clonestr("{\"error\":\"no price set\"}"));
     }
     if ( (price= ask) == 0. )
-        price = 1. / bid;
+        price = bid;
     if ( qprice > price+0.00000001 )
     {
         printf("qprice %.8f too big vs %.8f\n",qprice,price);
