@@ -391,7 +391,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 
 void prices_loop(void *ignore)
 {
-    char *buycoin,*sellcoin,*retstr; struct iguana_info *buy,*sell; cJSON *retjson; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
+    char *buycoin,*sellcoin,*retstr; double bid,ask,maxprice; struct iguana_info *buy,*sell; cJSON *retjson; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
@@ -407,7 +407,8 @@ void prices_loop(void *ignore)
             {
                 if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 )
                 {
-                    printf("base buy.%s force %f, rel sell.%s force %f relvolume %f\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume);
+                    maxprice = LP_myprice(&bid,&ask,buycoin,sellcoin);
+                    printf("base buy.%s force %f, rel sell.%s force %f relvolume %f maxprice %.8f (%.8f %.8f)\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume,maxprice,bid,ask);
                     //if ( (autxo= LP_utxo_bestfit(sellcoin,SATOSHIDEN * relvolume)) == 0 )
                     //    return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
                 } else printf("buy or sell missing.(%s)\n",jprint(retjson,0));
