@@ -376,7 +376,7 @@ void prices_loop(void *ignore)
                     if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 )
                     {
                         printf("buy.%s force %f, sell.%s force %f\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"));
-                    }
+                    } else printf("buy or sell missing.(%s)\n",jprint(retjson,0));
                     free_json(retjson);
                 }
                 free(retstr);
