@@ -176,7 +176,7 @@ char *LP_portfolio_goal(char *symbol,double goal)
     {
         coin->goal = goal;
         return(LP_portfolio());
-    } else return(clonestr("{\error\":\"cant set goal for inactive coin\"}"));
+    } else return(clonestr("{\"error\":\"cant set goal for inactive coin\"}"));
 }
 
 int32_t LP_autoprices;
