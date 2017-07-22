@@ -81,9 +81,14 @@ void LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
         free(rpcpassword);
 }
 
-void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name,char *coindir)
+void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name,char *confpath)
 {
-    sprintf(fname,"%s",(coindir != 0 && coindir[0] != 0) ? coindir : LP_getdatadir());
+    if ( confpath != 0 && confpath[0] != 0 )
+    {
+        strcpy(fname,confpath);
+        return;
+    }
+    sprintf(fname,"%s",LP_getdatadir());
 #ifdef WIN32
     strcat(fname,"\\");
 #else
@@ -138,7 +143,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
     strcat(fname,str);
 }
 
-int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,char *name,char *coindir)
+int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,char *name,char *confpath)
 {
     FILE *fp; char fname[512],username[512],password[512],confname[512];
     userpass[0] = 0;
@@ -152,14 +157,14 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,c
     if ( strcmp(&confname[len-4],"coin") == 0 )
         confname[len - 4] = 'C';
 #endif
-    LP_statefname(fname,symbol,assetname,confname,name,coindir);
+    LP_statefname(fname,symbol,assetname,confname,name,confpath);
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
         LP_userpassfp(symbol,username,password,fp);
         sprintf(userpass,"%s:%s",username,password);
         fclose(fp);
         if ( 0 )
-            printf("LP_statefname.(%s) <- %s %s %s (%s) (%s)\n",fname,name,symbol,assetname,userpass,coindir);
+            printf("LP_statefname.(%s) <- %s %s %s (%s) (%s)\n",fname,name,symbol,assetname,userpass,confpath);
         return((int32_t)strlen(userpass));
     } else printf("cant open.(%s)\n",fname);
     return(-1);
@@ -194,6 +199,28 @@ cJSON *LP_coinsjson()
     return(array);
 }
 
+char *LP_getcoin(char *symbol)
+{
+    int32_t numenabled,numdisabled; struct iguana_info *coin,*tmp; cJSON *item=0,*retjson;
+    numenabled = numdisabled = 0;
+    retjson = cJSON_CreateObject();
+    HASH_ITER(hh,LP_coins,coin,tmp)
+    {
+        if ( strcmp(symbol,coin->symbol) == 0 )
+            item = LP_coinjson(coin);
+        if ( coin->inactive == 0 )
+            numenabled++;
+        else numdisabled++;
+    }
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"enabled",numenabled);
+    jaddnum(retjson,"disabled",numdisabled);
+    if ( item == 0 )
+        item = cJSON_CreateObject();
+    jadd(retjson,"coin",item);
+    return(jprint(retjson,1));
+}
+
 struct iguana_info *LP_coinsearch(char *symbol)
 {
     struct iguana_info *coin;
@@ -215,7 +242,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     return(coin);
 }
 
-int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *coindir)
+int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath)
 {
     char *name2;
     memset(coin,0,sizeof(*coin));
@@ -240,7 +267,7 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
         coin->noimportprivkey_flag = 1;
         printf("truncate importprivkey for %s\n",symbol);
     }
-    return(LP_userpass(coin->userpass,symbol,assetname,name,name2,coindir));
+    return(LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath));
 }
 
 int32_t LP_isdisabled(char *base,char *rel)
@@ -321,7 +348,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
         }
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
-        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"coindir")) < 0 )
+        if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath")) < 0 )
         {
             coin = LP_coinadd(&cdata);
             coin->inactive = (uint32_t)time(NULL);

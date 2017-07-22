@@ -451,7 +451,7 @@ void prices_loop(void *ignore)
                         strcpy(LP_portfolio_rel,sellcoin);
                         LP_portfolio_relvolume = sell->relvolume;
                     }
-                } else printf("buy or sell missing.(%s)\n",jprint(retjson,0));
+                } //else printf("buy or sell missing.(%s)\n",jprint(retjson,0));
                 free_json(retjson);
             }
             free(retstr);

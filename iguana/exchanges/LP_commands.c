@@ -109,6 +109,7 @@ swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
 getcoins()\n\
+getcoin(coin)\n\
 portfolio()\n\
 getpeers()\n\
 getutxos()\n\
@@ -270,6 +271,8 @@ trust(pubkey, trust)\n\
             }
             else if ( strcmp(method,"goal") == 0 )
                 return(LP_portfolio_goal(coin,jdouble(argjson,"val")));
+            else if ( strcmp(method,"getcoin") == 0 )
+                return(LP_getcoin(coin));
         }
         else if ( strcmp(method,"goal") == 0 )
             return(LP_portfolio_goal("*",100.));
