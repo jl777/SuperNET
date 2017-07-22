@@ -668,7 +668,7 @@ void LP_priceitemadd(cJSON *retarray,uint32_t timestamp,double avebid,double ave
 
 cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,int32_t timescale)
 {
-    cJSON *retarray; char askfname[1024],bidfname[1024]; uint64_t bidprice64,askprice64; uint32_t bidnow,asknow,bidi,aski,lastbidi,lastaski; int32_t numbids,numasks; double bidemit,askemit,bidsum,asksum,bid,ask,highbid,lowbid,highask,lowask; FILE *askfp=0,*bidfp=0;
+    cJSON *retarray; char askfname[1024],bidfname[1024]; uint64_t bidprice64,askprice64; uint32_t bidnow,asknow,bidi,aski,lastbidi,lastaski; int32_t numbids,numasks; double bidemit,askemit,bidsum,asksum,bid,ask,highbid,lowbid,highask,lowask,bidemit2,askemit2; FILE *askfp=0,*bidfp=0;
     if ( timescale <= 0 )
         timescale = 60;
     if ( lasttime == 0 )
@@ -684,7 +684,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
         while ( bidfp != 0 || askfp != 0 )
         {
             bidi = aski = 0;
-            bidemit = askemit = 0.;
+            bidemit = askemit = bidemit2 = askemit2 = 0.;
             if ( bidfp != 0 && fread(&bidnow,1,sizeof(bidnow),bidfp) == sizeof(bidnow) && fread(&bidprice64,1,sizeof(bidprice64),bidfp) == sizeof(bidprice64) )
             {
                 //printf("bidnow.%u %.8f\n",bidnow,dstr(bidprice64));
@@ -694,8 +694,11 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
                     if ( bidi != lastbidi )
                     {
                         if ( bidsum != 0. && numbids != 0 )
+                        {
                             bidemit = bidsum / numbids;
-                        bidsum = 0.;
+                            bidemit2 = highbid;
+                        }
+                        bidsum = highbid = lowbid = 0.;
                         numbids = 0;
                     }
                     if ( (bid= 1. / dstr(bidprice64)) != 0. )
@@ -719,8 +722,11 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
                     if ( aski != lastaski )
                     {
                         if ( asksum != 0. && numasks != 0 )
+                        {
                             askemit = asksum / numasks;
-                        asksum = 0.;
+                            askemit2 = lowask;
+                        }
+                        asksum = highask = lowask = 0.;
                         numasks = 0;
                     }
                     if ( (ask= dstr(askprice64)) != 0. )
@@ -739,7 +745,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
             {
                 if ( bidemit != 0. && askemit != 0. && lastbidi == lastaski )
                 {
-                    LP_priceitemadd(retarray,lastbidi * timescale,bidemit,askemit,highbid,lowask);
+                    LP_priceitemadd(retarray,lastbidi * timescale,bidemit,askemit,bidemit2,askemit2);
                     highbid = lowbid = highask = lowask = 0.;
                 }
                 else
@@ -747,13 +753,13 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
                     if ( bidemit != 0. )
                     {
                         printf("bidonly %.8f %.8f\n",bidemit,highbid);
-                        LP_priceitemadd(retarray,lastbidi * timescale,bidemit,0.,highbid,0.);
+                        LP_priceitemadd(retarray,lastbidi * timescale,bidemit,0.,bidemit2,0.);
                         highbid = lowbid = 0.;
                     }
                     if ( askemit != 0. )
                     {
                         printf("askonly %.8f %.8f\n",askemit,lowask);
-                        LP_priceitemadd(retarray,lastaski * timescale,0.,askemit,0.,lowask);
+                        LP_priceitemadd(retarray,lastaski * timescale,0.,askemit,0.,askemit2);
                         highask = lowask = 0.;
                     }
                 }
