@@ -94,6 +94,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
     else if ( strcmp(method,"help") == 0 )
         return(clonestr("{\"result\":\" \
 available localhost RPC commands:\n \
+pricearray(base, rel, timescale=60)\n\
 setprice(base, rel, price)\n\
 autoprice(base, rel, price, margin, type)\n\
 goal(coin=*, perc=<autocalc>)\n\
@@ -185,12 +186,10 @@ trust(pubkey, trust)\n\
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
-            /*else if ( strcmp(method,"autofill") == 0 )
+            else if ( strcmp(method,"pricearray") == 0 )
             {
-                if ( LP_autofill(base,rel,price,jdouble(argjson,"relvolume")) < 0 )
-                    return(clonestr("{\"error\":\"couldnt set autofill\"}"));
-                else return(clonestr("{\"result\":\"success\"}"));
-            }*/
+                return(jprint(LP_pricearray(base,rel,jint(argjson,"timescale")),1));
+            }
             else if ( strcmp(method,"myprice") == 0 )
             {
                 if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )

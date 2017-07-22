@@ -649,6 +649,99 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
     LP_priceinfoupdate(base,rel,price);
 }
 
+void LP_pricefname(char *fname,char *base,char *rel)
+{
+    sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,base,rel);
+    OS_compatible_path(fname);
+}
+
+void LP_priceitemadd(cJSON *retarray,uint32_t timestamp,double avebid,double aveask,double highbid,double lowask)
+{
+    cJSON *item = cJSON_CreateArray();
+    jaddinum(item,timestamp);
+    jaddinum(item,avebid);
+    jaddinum(item,aveask);
+    jaddinum(item,highbid);
+    jaddinum(item,lowask);
+    jaddi(retarray,item);
+}
+
+cJSON *LP_pricearray(char *base,char *rel,int32_t timescale)
+{
+    cJSON *retarray; char askfname[1024],bidfname[1024]; uint64_t bidprice64,askprice64; uint32_t bidnow,asknow,bidi,aski,firstbidi,firstaski,lastbidi,lastaski; int32_t numbids,numasks; double bidemit,askemit,bidsum,asksum,bid,ask,highbid,lowbid,highask,lowask; FILE *askfp=0,*bidfp=0;
+    if ( timescale <= 0 )
+        timescale = 60;
+    LP_pricefname(askfname,base,rel);
+    LP_pricefname(bidfname,rel,base);
+    retarray = cJSON_CreateArray();
+    firstbidi = firstaski = lastbidi = lastaski = 0;
+    numbids = numasks = 0;
+    bidsum = asksum = askemit = bidemit = highbid = lowbid = highask = lowask = 0.;
+    if ( (bidfp= fopen(bidfname,"rb")) != 0 && (askfp= fopen(askfname,"rb")) != 0 )
+    {
+        bidi = aski = 0;
+        bidemit = askemit = 0.;
+        if ( bidfp != 0 && fread(&bidnow,1,sizeof(bidnow),bidfp) == sizeof(bidnow) && fread(&bidprice64,1,sizeof(bidprice64),bidfp) == sizeof(bidprice64) && bidnow != 0 && bidprice64 != 0 )
+        {
+            bidi = bidnow / timescale;
+            if ( bidi != lastbidi )
+            {
+                if ( bidsum != 0 && numbids != 0 )
+                    bidemit = bidsum / numbids;
+                bidsum = 0.;
+                numbids = 0;
+            }
+            bid = dstr(bidprice64);
+            bidsum += bid;
+            numbids++;
+        } else fclose(bidfp), bidfp = 0;
+        if ( askfp != 0 && fread(&asknow,1,sizeof(asknow),askfp) == sizeof(asknow) && fread(&askprice64,1,sizeof(askprice64),askfp) == sizeof(askprice64) && asknow != 0 && askprice64 != 0 )
+        {
+            aski = asknow / timescale;
+            if ( aski != lastaski )
+            {
+                if ( asksum != 0 && numasks != 0 )
+                    askemit = asksum / numasks;
+                asksum = 0.;
+                numasks = 0;
+            }
+            ask = dstr(askprice64);
+            asksum += ask;
+            numasks++;
+        } else fclose(askfp), askfp = 0;
+        if ( bidemit != 0. || askemit != 0. )
+        {
+            if ( bidemit != 0. && askemit != 0. && lastbidi == lastaski )
+            {
+                LP_priceitemadd(retarray,lastbidi * timescale,bidemit,askemit,highbid,lowask);
+                highbid = lowbid = highask = lowask = 0.;
+            }
+            else
+            {
+                if ( bidemit != 0. )
+                {
+                    LP_priceitemadd(retarray,lastbidi * timescale,bidemit,0.,highbid,0.);
+                    highbid = lowbid = 0.;
+                }
+                if ( askemit != 0. )
+                {
+                    LP_priceitemadd(retarray,lastaski * timescale,0.,askemit,0.,lowask);
+                    highask = lowask = 0.;
+                }
+            }
+        }
+        if ( bidi != 0 )
+            lastbidi = bidi;
+        if ( aski != 0 )
+            lastaski = aski;
+    }
+    if ( bidfp != 0 )
+        fclose(bidfp);
+    if ( askfp != 0 )
+        fclose(askfp);
+    return(retarray);
+}
+
 void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
 {
     struct LP_priceinfo *basepp,*relpp; uint32_t now; uint64_t price64; struct LP_pubkeyinfo *pubp; char str[65],fname[512]; FILE *fp;
@@ -657,7 +750,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
     {
         if ( (fp= basepp->fps[relpp->ind]) == 0 )
         {
-            sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,base,rel);
+            LP_pricefname(fname,base,rel);
             fp = basepp->fps[relpp->ind] = OS_appendfile(fname);
         }
         if ( fp != 0 && price > SMALLVAL )
