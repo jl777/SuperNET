@@ -666,48 +666,68 @@ void LP_priceitemadd(cJSON *retarray,uint32_t timestamp,double avebid,double ave
     jaddi(retarray,item);
 }
 
-cJSON *LP_pricearray(char *base,char *rel,int32_t timescale)
+cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,int32_t timescale)
 {
-    cJSON *retarray; char askfname[1024],bidfname[1024]; uint64_t bidprice64,askprice64; uint32_t bidnow,asknow,bidi,aski,firstbidi,firstaski,lastbidi,lastaski; int32_t numbids,numasks; double bidemit,askemit,bidsum,asksum,bid,ask,highbid,lowbid,highask,lowask; FILE *askfp=0,*bidfp=0;
+    cJSON *retarray; char askfname[1024],bidfname[1024]; uint64_t bidprice64,askprice64; uint32_t bidnow,asknow,bidi,aski,lastbidi,lastaski; int32_t numbids,numasks; double bidemit,askemit,bidsum,asksum,bid,ask,highbid,lowbid,highask,lowask; FILE *askfp=0,*bidfp=0;
     if ( timescale <= 0 )
         timescale = 60;
+    if ( lasttime == 0 )
+        lasttime = (uint32_t)-1;
     LP_pricefname(askfname,base,rel);
     LP_pricefname(bidfname,rel,base);
     retarray = cJSON_CreateArray();
-    firstbidi = firstaski = lastbidi = lastaski = 0;
+    lastbidi = lastaski = 0;
     numbids = numasks = 0;
     bidsum = asksum = askemit = bidemit = highbid = lowbid = highask = lowask = 0.;
     if ( (bidfp= fopen(bidfname,"rb")) != 0 && (askfp= fopen(askfname,"rb")) != 0 )
     {
         bidi = aski = 0;
         bidemit = askemit = 0.;
-        if ( bidfp != 0 && fread(&bidnow,1,sizeof(bidnow),bidfp) == sizeof(bidnow) && fread(&bidprice64,1,sizeof(bidprice64),bidfp) == sizeof(bidprice64) && bidnow != 0 && bidprice64 != 0 )
+        if ( bidfp != 0 && fread(&bidnow,1,sizeof(bidnow),bidfp) == sizeof(bidnow) && fread(&bidprice64,1,sizeof(bidprice64),bidfp) == sizeof(bidprice64) )
         {
-            bidi = bidnow / timescale;
-            if ( bidi != lastbidi )
+            if ( bidnow != 0 && bidprice64 != 0 && bidnow >= firsttime && bidnow <= lasttime )
             {
-                if ( bidsum != 0 && numbids != 0 )
-                    bidemit = bidsum / numbids;
-                bidsum = 0.;
-                numbids = 0;
+                bidi = bidnow / timescale;
+                if ( bidi != lastbidi )
+                {
+                    if ( bidsum != 0. && numbids != 0 )
+                        bidemit = bidsum / numbids;
+                    bidsum = 0.;
+                    numbids = 0;
+                }
+                if ( (bid= dstr(bidprice64)) != 0. )
+                {
+                    if ( bid > highbid )
+                        highbid = bid;
+                    if ( lowbid == 0. || bid < lowbid )
+                        lowbid = bid;
+                    bidsum += bid;
+                    numbids++;
+                }
             }
-            bid = dstr(bidprice64);
-            bidsum += bid;
-            numbids++;
         } else fclose(bidfp), bidfp = 0;
-        if ( askfp != 0 && fread(&asknow,1,sizeof(asknow),askfp) == sizeof(asknow) && fread(&askprice64,1,sizeof(askprice64),askfp) == sizeof(askprice64) && asknow != 0 && askprice64 != 0 )
+        if ( askfp != 0 && fread(&asknow,1,sizeof(asknow),askfp) == sizeof(asknow) && fread(&askprice64,1,sizeof(askprice64),askfp) == sizeof(askprice64) )
         {
-            aski = asknow / timescale;
-            if ( aski != lastaski )
+            if ( asknow != 0 && askprice64 != 0 && asknow >= firsttime && asknow <= lasttime )
             {
-                if ( asksum != 0 && numasks != 0 )
-                    askemit = asksum / numasks;
-                asksum = 0.;
-                numasks = 0;
+                aski = asknow / timescale;
+                if ( aski != lastaski )
+                {
+                    if ( asksum != 0. && numasks != 0 )
+                        askemit = asksum / numasks;
+                    asksum = 0.;
+                    numasks = 0;
+                }
+                if ( (ask= dstr(askprice64)) != 0. )
+                {
+                    if ( ask > highask )
+                        highask = ask;
+                    if ( lowask == 0. || ask < lowask )
+                        lowask = ask;
+                    asksum += ask;
+                    numasks++;
+                }
             }
-            ask = dstr(askprice64);
-            asksum += ask;
-            numasks++;
         } else fclose(askfp), askfp = 0;
         if ( bidemit != 0. || askemit != 0. )
         {
