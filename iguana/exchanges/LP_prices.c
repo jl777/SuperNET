@@ -698,7 +698,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
                         bidsum = 0.;
                         numbids = 0;
                     }
-                    if ( (bid= dstr(bidprice64)) != 0. )
+                    if ( (bid= 1. / dstr(bidprice64)) != 0. )
                     {
                         if ( bid > highbid )
                             highbid = bid;
