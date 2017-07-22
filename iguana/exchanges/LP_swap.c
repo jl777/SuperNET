@@ -588,7 +588,6 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
                     {
                         char str[65];
                         LP_swap_coinaddr(swap,rawtx->coin,rawtx->p2shaddr,data,datalen);
-                        
                         printf("got %s txid.%s (%s) -> %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0),rawtx->p2shaddr);
                     } else bitcoin_address(rawtx->p2shaddr,rawtx->coin->taddr,rawtx->coin->p2shtype,rawtx->spendscript,hexlen);
                 }
