@@ -94,7 +94,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
     else if ( strcmp(method,"help") == 0 )
         return(clonestr("{\"result\":\" \
 available localhost RPC commands:\n \
-pricearray(base, rel, firsttime=0, lasttime=-1, timescale=60)\n\
+pricearray(base, rel, firsttime=0, lasttime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 setprice(base, rel, price)\n\
 autoprice(base, rel, price, margin, type)\n\
 goal(coin=*, perc=<autocalc>)\n\

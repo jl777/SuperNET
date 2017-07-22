@@ -754,7 +754,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
             lastbidi = bidi;
         if ( aski != 0 )
             lastaski = aski;
-    }
+    } else printf("couldnt open either %s %p or %s %p\n",bidfname,bidfp,askfname,askfp);
     if ( bidfp != 0 )
         fclose(bidfp);
     if ( askfp != 0 )
