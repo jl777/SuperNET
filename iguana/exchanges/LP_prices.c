@@ -681,81 +681,84 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
     bidsum = asksum = askemit = bidemit = highbid = lowbid = highask = lowask = 0.;
     if ( (bidfp= fopen(bidfname,"rb")) != 0 && (askfp= fopen(askfname,"rb")) != 0 )
     {
-        bidi = aski = 0;
-        bidemit = askemit = 0.;
-        if ( bidfp != 0 && fread(&bidnow,1,sizeof(bidnow),bidfp) == sizeof(bidnow) && fread(&bidprice64,1,sizeof(bidprice64),bidfp) == sizeof(bidprice64) )
+        while ( bidfp != 0 || askfp != 0 )
         {
-            printf("bidnow.%u %.8f\n",bidnow,dstr(bidprice64));
-            if ( bidnow != 0 && bidprice64 != 0 && bidnow >= firsttime && bidnow <= lasttime )
+            bidi = aski = 0;
+            bidemit = askemit = 0.;
+            if ( bidfp != 0 && fread(&bidnow,1,sizeof(bidnow),bidfp) == sizeof(bidnow) && fread(&bidprice64,1,sizeof(bidprice64),bidfp) == sizeof(bidprice64) )
             {
-                bidi = bidnow / timescale;
-                if ( bidi != lastbidi )
+                printf("bidnow.%u %.8f\n",bidnow,dstr(bidprice64));
+                if ( bidnow != 0 && bidprice64 != 0 && bidnow >= firsttime && bidnow <= lasttime )
                 {
-                    if ( bidsum != 0. && numbids != 0 )
-                        bidemit = bidsum / numbids;
-                    bidsum = 0.;
-                    numbids = 0;
+                    bidi = bidnow / timescale;
+                    if ( bidi != lastbidi )
+                    {
+                        if ( bidsum != 0. && numbids != 0 )
+                            bidemit = bidsum / numbids;
+                        bidsum = 0.;
+                        numbids = 0;
+                    }
+                    if ( (bid= dstr(bidprice64)) != 0. )
+                    {
+                        if ( bid > highbid )
+                            highbid = bid;
+                        if ( lowbid == 0. || bid < lowbid )
+                            lowbid = bid;
+                        bidsum += bid;
+                        numbids++;
+                    }
                 }
-                if ( (bid= dstr(bidprice64)) != 0. )
+            } else fclose(bidfp), bidfp = 0;
+            if ( askfp != 0 && fread(&asknow,1,sizeof(asknow),askfp) == sizeof(asknow) && fread(&askprice64,1,sizeof(askprice64),askfp) == sizeof(askprice64) )
+            {
+                printf("asknow.%u %.8f\n",asknow,dstr(askprice64));
+                if ( asknow != 0 && askprice64 != 0 && asknow >= firsttime && asknow <= lasttime )
                 {
-                    if ( bid > highbid )
-                        highbid = bid;
-                    if ( lowbid == 0. || bid < lowbid )
-                        lowbid = bid;
-                    bidsum += bid;
-                    numbids++;
+                    aski = asknow / timescale;
+                    if ( aski != lastaski )
+                    {
+                        if ( asksum != 0. && numasks != 0 )
+                            askemit = asksum / numasks;
+                        asksum = 0.;
+                        numasks = 0;
+                    }
+                    if ( (ask= dstr(askprice64)) != 0. )
+                    {
+                        if ( ask > highask )
+                            highask = ask;
+                        if ( lowask == 0. || ask < lowask )
+                            lowask = ask;
+                        asksum += ask;
+                        numasks++;
+                    }
+                }
+            } else fclose(askfp), askfp = 0;
+            if ( bidemit != 0. || askemit != 0. )
+            {
+                if ( bidemit != 0. && askemit != 0. && lastbidi == lastaski )
+                {
+                    LP_priceitemadd(retarray,lastbidi * timescale,bidemit,askemit,highbid,lowask);
+                    highbid = lowbid = highask = lowask = 0.;
+                }
+                else
+                {
+                    if ( bidemit != 0. )
+                    {
+                        LP_priceitemadd(retarray,lastbidi * timescale,bidemit,0.,highbid,0.);
+                        highbid = lowbid = 0.;
+                    }
+                    if ( askemit != 0. )
+                    {
+                        LP_priceitemadd(retarray,lastaski * timescale,0.,askemit,0.,lowask);
+                        highask = lowask = 0.;
+                    }
                 }
             }
-        } else fclose(bidfp), bidfp = 0;
-        if ( askfp != 0 && fread(&asknow,1,sizeof(asknow),askfp) == sizeof(asknow) && fread(&askprice64,1,sizeof(askprice64),askfp) == sizeof(askprice64) )
-        {
-            printf("asknow.%u %.8f\n",asknow,dstr(askprice64));
-            if ( asknow != 0 && askprice64 != 0 && asknow >= firsttime && asknow <= lasttime )
-            {
-                aski = asknow / timescale;
-                if ( aski != lastaski )
-                {
-                    if ( asksum != 0. && numasks != 0 )
-                        askemit = asksum / numasks;
-                    asksum = 0.;
-                    numasks = 0;
-                }
-                if ( (ask= dstr(askprice64)) != 0. )
-                {
-                    if ( ask > highask )
-                        highask = ask;
-                    if ( lowask == 0. || ask < lowask )
-                        lowask = ask;
-                    asksum += ask;
-                    numasks++;
-                }
-            }
-        } else fclose(askfp), askfp = 0;
-        if ( bidemit != 0. || askemit != 0. )
-        {
-            if ( bidemit != 0. && askemit != 0. && lastbidi == lastaski )
-            {
-                LP_priceitemadd(retarray,lastbidi * timescale,bidemit,askemit,highbid,lowask);
-                highbid = lowbid = highask = lowask = 0.;
-            }
-            else
-            {
-                if ( bidemit != 0. )
-                {
-                    LP_priceitemadd(retarray,lastbidi * timescale,bidemit,0.,highbid,0.);
-                    highbid = lowbid = 0.;
-                }
-                if ( askemit != 0. )
-                {
-                    LP_priceitemadd(retarray,lastaski * timescale,0.,askemit,0.,lowask);
-                    highask = lowask = 0.;
-                }
-            }
+            if ( bidi != 0 )
+                lastbidi = bidi;
+            if ( aski != 0 )
+                lastaski = aski;
         }
-        if ( bidi != 0 )
-            lastbidi = bidi;
-        if ( aski != 0 )
-            lastaski = aski;
     } else printf("couldnt open either %s %p or %s %p\n",bidfname,bidfp,askfname,askfp);
     if ( bidfp != 0 )
         fclose(bidfp);
