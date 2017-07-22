@@ -685,6 +685,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
         bidemit = askemit = 0.;
         if ( bidfp != 0 && fread(&bidnow,1,sizeof(bidnow),bidfp) == sizeof(bidnow) && fread(&bidprice64,1,sizeof(bidprice64),bidfp) == sizeof(bidprice64) )
         {
+            printf("bidnow.%u %.8f\n",bidnow,dstr(bidprice64));
             if ( bidnow != 0 && bidprice64 != 0 && bidnow >= firsttime && bidnow <= lasttime )
             {
                 bidi = bidnow / timescale;
@@ -708,6 +709,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
         } else fclose(bidfp), bidfp = 0;
         if ( askfp != 0 && fread(&asknow,1,sizeof(asknow),askfp) == sizeof(asknow) && fread(&askprice64,1,sizeof(askprice64),askfp) == sizeof(askprice64) )
         {
+            printf("asknow.%u %.8f\n",asknow,dstr(askprice64));
             if ( asknow != 0 && askprice64 != 0 && asknow >= firsttime && asknow <= lasttime )
             {
                 aski = asknow / timescale;
