@@ -709,7 +709,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
                             lowbid = bid;
                         bidsum += bid;
                         numbids++;
-                        printf("bidi.%u num.%d %.8f [%.8f %.8f]\n",bidi,numbids,bid,lowbid,highbid);
+                        //printf("bidi.%u num.%d %.8f [%.8f %.8f]\n",bidi,numbids,bid,lowbid,highbid);
                     }
                 }
             } else fclose(bidfp), bidfp = 0;
@@ -737,7 +737,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
                             lowask = ask;
                         asksum += ask;
                         numasks++;
-                        printf("aski.%u num.%d %.8f [%.8f %.8f]\n",aski,numasks,ask,lowask,highask);
+                        //printf("aski.%u num.%d %.8f [%.8f %.8f]\n",aski,numasks,ask,lowask,highask);
                     }
                 }
             } else fclose(askfp), askfp = 0;
