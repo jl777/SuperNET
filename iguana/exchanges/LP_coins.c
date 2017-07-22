@@ -255,7 +255,7 @@ int32_t LP_isdisabled(char *base,char *rel)
 
 struct iguana_info *LP_coinfind(char *symbol)
 {
-    struct iguana_info *coin,cdata; int32_t isPoS,longestchain = 1; uint16_t port,busport; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*assetname;
+    struct iguana_info *coin,cdata; int32_t isinactive,isPoS,longestchain = 1; uint16_t port,busport; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*assetname;
     if ( (coin= LP_coinsearch(symbol)) != 0 )
         return(coin);
     if ( (port= LP_rpcport(symbol)) == 0 )
@@ -281,17 +281,16 @@ struct iguana_info *LP_coinfind(char *symbol)
     else if ( strcmp(symbol,"KMD") == 0 )
         name = "komodo";
     else return(0);
-    if ( LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,0,busport,0) > 0 )
+    isinactive = LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,0,busport,0) < 0;
+    if ( (coin= LP_coinadd(&cdata)) != 0 )
     {
-        if ( (coin= LP_coinadd(&cdata)) != 0 )
+        coin->inactive = isinactive * (uint32_t)time(NULL);
+        if ( strcmp(symbol,"KMD") == 0 )
+            coin->inactive = 0;
+        else if ( strcmp(symbol,"BTC") == 0 )
         {
-            if ( strcmp(symbol,"KMD") == 0 )
-                coin->inactive = 0;
-            else if ( strcmp(symbol,"BTC") == 0 )
-            {
-                coin->inactive = (uint32_t)time(NULL) * !IAMLP;
-                printf("BTC inactive.%u\n",coin->inactive);
-            }
+            coin->inactive = (uint32_t)time(NULL) * !IAMLP;
+            printf("BTC inactive.%u\n",coin->inactive);
         }
     }
     return(coin);
