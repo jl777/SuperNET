@@ -341,8 +341,8 @@ double LP_getestimatedrate(char *symbol)
             }
             free(retstr);
         }
-    } else rate = coin->txfee / LP_AVETXSIZE;
-    return(rate);
+    } else rate = (double)coin->txfee / LP_AVETXSIZE;
+    return(SATOSHIDEN * rate);
 }
 
 uint64_t LP_txfee(char *symbol)
