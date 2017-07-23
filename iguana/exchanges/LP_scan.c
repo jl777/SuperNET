@@ -121,7 +121,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
         } else printf("LP_txinterestvalue no addresses found?\n");
         //char str[65]; printf("%.8f <- %s.(%s) txobj.(%s)\n",dstr(value),symbol,bits256_str(str,txid),jprint(txobj,0));
         free_json(txobj);
-    }
+    } else { char str[65]; printf("null gettxout return %s/v%d\n",bits256_str(str,txid),vout); }
     return(value);
 }
 
