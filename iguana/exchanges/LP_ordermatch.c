@@ -574,9 +574,15 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatosh
     if ( maxprice <= 0. || LP_priceinfofind(base) == 0 )
         return(0);
     if ( (desttxfee= LP_getestimatedrate(autxo->coin) * LP_AVETXSIZE) < LP_MIN_TXFEE )
+    {
+        printf("dest.%s txfee %.8f\n",autxo->coin,dstr(desttxfee));
         desttxfee = LP_MIN_TXFEE;
+    }
     if ( (txfee= LP_getestimatedrate(base) * LP_AVETXSIZE) < LP_MIN_TXFEE )
+    {
+        printf("src.%s txfee %.8f\n",base,dstr(txfee));
         txfee = LP_MIN_TXFEE;
+    }
     if ( (obookstr= LP_orderbook(base,autxo->coin,duration)) != 0 )
     {
         if ( (orderbook= cJSON_Parse(obookstr)) != 0 )
