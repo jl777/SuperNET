@@ -627,6 +627,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatosh
                                 }
                                 else
                                 {
+                                    printf("ineligible.(%.8f %.8f)\n",price,dstr(butxo->S.satoshis));
                                     if ( butxo->T.spentflag == 0 )
                                         butxo->T.spentflag = (uint32_t)time(NULL);
                                 }
