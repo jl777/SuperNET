@@ -597,10 +597,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     Adest = Bdest = AAdest = ABdest = 0;
     if ( bobcoin[0] == 0 || alicecoin[0] == 0 )
         return(0);
-    if ( Atxfee == 0 && (Atxfee= LP_getestimatedrate(alicecoin) * LP_AVETXSIZE) < LP_MIN_TXFEE )
-        Atxfee = LP_MIN_TXFEE;
-    if ( Btxfee == 0 && (Btxfee= LP_getestimatedrate(bobcoin) * LP_AVETXSIZE) < LP_MIN_TXFEE )
-        Btxfee = LP_MIN_TXFEE;
+    Atxfee = LP_txfeecalc(alicecoin,Atxfee);
+    Btxfee = LP_txfeecalc(bobcoin,Btxfee);
     //printf("%s %.8f txfee, %s %.8f txfee\n",alicecoin,dstr(Atxfee),bobcoin,dstr(Btxfee));
     //printf("privAm.(%s) %p/%p\n",bits256_str(str,privAm),Adest,AAdest);
     //printf("privBn.(%s) %p/%p\n",bits256_str(str,privBn),Bdest,ABdest);

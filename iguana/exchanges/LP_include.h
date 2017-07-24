@@ -177,7 +177,7 @@ struct iguana_info
 {
     UT_hash_handle hh;
     portable_mutex_t txmutex; struct LP_transaction *transactions;
-    uint64_t txfee; double estimatedrate;
+    uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock; uint16_t busport;
     uint32_t counter,inactive,lastmempool,lastgetinfo;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag;
@@ -274,6 +274,7 @@ int32_t LP_coinbus(uint16_t coin_busport);
 struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
+uint64_t LP_txfeecalc(char *symbol,uint64_t txfee);
 
 
 #endif

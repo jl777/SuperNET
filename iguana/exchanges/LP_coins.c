@@ -184,7 +184,6 @@ cJSON *LP_coinjson(struct iguana_info *coin)
     jaddnum(item,"pubtype",coin->pubtype);
     jaddnum(item,"p2shtype",coin->p2shtype);
     jaddnum(item,"wiftype",coin->wiftype);
-    jaddnum(item,"estimatedrate",coin->estimatedrate);
     jaddnum(item,"txfee",coin->txfee);
     return(item);
 }
@@ -253,7 +252,6 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
     coin->wiftaddr = wiftaddr;
     coin->longestchain = longestchain;
     coin->txfee = txfee;
-    coin->estimatedrate = estimatedrate;
     coin->pubtype = pubtype;
     coin->p2shtype = p2shtype;
     coin->wiftype = wiftype;

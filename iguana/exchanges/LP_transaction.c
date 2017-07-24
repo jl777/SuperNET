@@ -694,11 +694,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
             if ( strcmp(coin->symbol,"BTC") != 0 )
                 return(retval);
             len = rawtx->I.datalen;
-            if ( coin->estimatedrate == 0. )
-                coin->estimatedrate = LP_getestimatedrate(coin->symbol);
-            newtxfee = coin->estimatedrate * len;
-            if ( newtxfee < LP_MIN_TXFEE )
-                newtxfee = LP_MIN_TXFEE;
+            newtxfee = LP_txfeecalc(coin->symbol,0);
             printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
         } else break;
     }
