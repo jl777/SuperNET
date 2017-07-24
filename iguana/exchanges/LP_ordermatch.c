@@ -128,7 +128,9 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     safecopy(qp->destcoin,destcoin,sizeof(qp->destcoin));
     if ( (qp->txfee= LP_getestimatedrate(utxo->coin)*LP_AVETXSIZE) < LP_MIN_TXFEE )
         qp->txfee = LP_MIN_TXFEE;
-    qp->satoshis = destsatoshis / price + 0.49;
+    if ( (qp->desttxfee= LP_getestimatedrate(qp->destcoin) * LP_AVETXSIZE) < LP_MIN_TXFEE )
+        qp->desttxfee = LP_MIN_TXFEE;
+    qp->satoshis = (destsatoshis / price) + 0.49;
     if ( utxo->iambob == 0 || qp->txfee >= qp->satoshis || qp->txfee >= utxo->deposit.value || utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis) )
     {
         printf("quoteinit error.(%d %d %d %d) %.8f vs %.8f\n",utxo->iambob == 0,qp->txfee >= qp->satoshis,qp->txfee >= utxo->deposit.value,utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis),dstr(utxo->deposit.value),dstr(LP_DEPOSITSATOSHIS(qp->satoshis)));
@@ -139,8 +141,6 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     qp->txid2 = utxo->deposit.txid;
     qp->vout2 = utxo->deposit.vout;
     qp->destsatoshis = destsatoshis;
-    if ( (qp->desttxfee= LP_getestimatedrate(qp->destcoin) * LP_AVETXSIZE) < LP_MIN_TXFEE )
-        qp->desttxfee = LP_MIN_TXFEE;
     if ( qp->desttxfee >= qp->destsatoshis )
     {
         printf("quoteinit desttxfee %.8f < %.8f destsatoshis\n",dstr(qp->desttxfee),dstr(qp->destsatoshis));
@@ -274,12 +274,12 @@ double LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxop
     qprice = ((double)qp->destsatoshis / qp->satoshis);
     if ( qp->satoshis < (srcvalue / LP_MINVOL) )
     {
-        printf("utxo payment %.8f is less than half covered by Q %.8f\n",dstr(srcvalue),dstr(qp->satoshis));
+        printf("utxo payment %.8f is less than %f covered by Q %.8f\n",dstr(srcvalue),1./LP_MINVOL,dstr(qp->satoshis));
         return(-12);
     }
     if ( qp->destsatoshis < (destvalue / LP_MINCLIENTVOL) )
     {
-        printf("destsatoshis %.8f is less than half of value %.8f\n",dstr(qp->destsatoshis),dstr(destvalue));
+        printf("destsatoshis %.8f is less than %f of value %.8f\n",dstr(qp->destsatoshis),1./LP_MINCLIENTVOL,dstr(destvalue));
         return(-13);
     }
     printf("qprice %.8f <- %.8f/%.8f txfees.(%.8f %.8f)\n",qprice,dstr(qp->destsatoshis),dstr(qp->satoshis),dstr(qp->txfee),dstr(qp->desttxfee));
@@ -537,15 +537,6 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     jaddbits256(retjson,"desthash",butxo->S.otherpubkey);
                     jaddbits256(retjson,"pubkey",butxo->S.otherpubkey);
                     jaddstr(retjson,"method","reserved");
-                    /*if ( pubsock >= 0 )
-                    {
-                        msg = jprint(retjson,0);
-                        /LP_send(pubsock,msg,(int32_t)strlen(msg)+1,1);
-                    }
-                    jdelete(retjson,"method");
-                    jaddstr(retjson,"method2","reserved");
-                    jaddstr(retjson,"method","forward");
-                    /LP_forward(ctx,myipaddr,pubsock,butxo->S.otherpubkey,jprint(retjson,1),1);*/
                     msg = jprint(retjson,1);
                     printf("set swappending.%u accept qprice %.8f, min %.8f\n(%s)",butxo->T.swappending,qprice,price,msg);
                     LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
@@ -564,9 +555,26 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     return(retval);
 }
 
+double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
+{
+    uint64_t destsatoshis,satoshis;
+    a_value -= (desttxfee + 1);
+    destsatoshis = ((b_satoshis - txfee) * price);
+    if ( destsatoshis > a_value )
+        destsatoshis = a_value;
+    if ( maxdestsatoshis != 0 && destsatoshis > maxdestsatoshis-desttxfee-1 )
+        destsatoshis = maxdestsatoshis-desttxfee-1;
+    satoshis = (destsatoshis / price + 0.49) - txfee;
+    *destsatoshisp = destsatoshis;
+    *satoshisp = satoshis;
+    if ( satoshis > 0 )
+        return((double)destsatoshis / satoshis);
+    else return(0.);
+}
+
 struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,int64_t txfee,int64_t desttxfee,uint64_t maxdestsatoshis)
 {
-    int64_t satoshis,destsatoshis; uint64_t val,val2; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item; struct LP_utxoinfo *butxo,*bestutxo = 0; int32_t i,vout,numasks; double bestmetric=0.,metric,vol,price,bestprice = 0.; struct LP_pubkeyinfo *pubp;
+    int64_t satoshis,destsatoshis; uint64_t val,val2; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item; struct LP_utxoinfo *butxo,*bestutxo = 0; int32_t i,j,vout,numasks; double bestmetric=0.,metric,vol,price,qprice,bestprice = 0.; struct LP_pubkeyinfo *pubp;
     *ordermatchpricep = 0.;
     *bestdestsatoshisp = 0;
     if ( duration <= 0 )
@@ -612,11 +620,20 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatosh
                                 if ( LP_iseligible(&val,&val2,butxo->iambob,butxo->coin,butxo->payment.txid,butxo->payment.vout,butxo->S.satoshis,butxo->deposit.txid,butxo->deposit.vout) > 0 )
                                 {
                                     destsatoshis = ((butxo->S.satoshis - txfee) * price);
-                                    if ( destsatoshis > autxo->payment.value-desttxfee-1 )
+                                    /*if ( destsatoshis > autxo->payment.value-desttxfee-1 )
                                         destsatoshis = autxo->payment.value-desttxfee-1;
                                     if ( maxdestsatoshis != 0 && destsatoshis > maxdestsatoshis-desttxfee-1 )
-                                        destsatoshis = maxdestsatoshis-desttxfee-1;
-                                    satoshis = (destsatoshis / price + 0.0000000049) - txfee;
+                                        destsatoshis = maxdestsatoshis-desttxfee-1;*/
+                                    satoshis = (destsatoshis / price + 0.49) - txfee;
+                                    if ( satoshis <= 0 )
+                                        continue;
+                                    qprice = (double)destsatoshis / satoshis;
+                                    for (j=0; j<10; j++)
+                                    {
+                                        if ( (qprice= LP_qprice_calc(&destsatoshis,&satoshis,(price*(100.+j))/100.,butxo->S.satoshis,txfee,autxo->payment.value,maxdestsatoshis,desttxfee)) > price+SMALLVAL )
+                                            break;
+                                    }
+                                    printf("j.%d qprice %.8f vs price %.8f\n",j,qprice,price);
                                     if ( metric < 1.2 && destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value / LP_MINCLIENTVOL) && satoshis-txfee > (butxo->S.satoshis / LP_MINVOL) && satoshis <= butxo->payment.value-txfee )
                                     {
                                         printf("value %.8f price %.8f/%.8f best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",dstr(autxo->payment.value),price,bestprice,bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
