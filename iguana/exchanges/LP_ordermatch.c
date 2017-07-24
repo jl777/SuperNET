@@ -32,6 +32,23 @@ void LP_txfees(uint64_t *txfeep,uint64_t *desttxfeep,char *base,char *rel)
     *desttxfeep = LP_txfeecalc(rel,0);
 }
 
+double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
+{
+    uint64_t destsatoshis,satoshis;
+    a_value -= (desttxfee + 1);
+    destsatoshis = ((b_satoshis - txfee) * price);
+    if ( destsatoshis > a_value )
+        destsatoshis = a_value;
+    if ( maxdestsatoshis != 0 && destsatoshis > maxdestsatoshis-desttxfee-1 )
+        destsatoshis = maxdestsatoshis-desttxfee-1;
+    satoshis = (destsatoshis / price + 0.49) - txfee;
+    *destsatoshisp = destsatoshis;
+    *satoshisp = satoshis;
+    if ( satoshis > 0 )
+        return((double)destsatoshis / satoshis);
+    else return(0.);
+}
+
 struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srchash,bits256 desthash,char *src,uint64_t srcsatoshis,char *dest,uint64_t destsatoshis,uint32_t timestamp,uint32_t quotetime,int32_t DEXselector)
 {
     struct basilisk_request R;
@@ -132,14 +149,15 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     return(0);
 }
 
-int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *destcoin,double price,uint64_t destsatoshis)
+int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *destcoin,double price,uint64_t satoshis,uint64_t destsatoshis)
 {
     memset(qp,0,sizeof(*qp));
     if ( qp->timestamp == 0 )
         qp->timestamp = (uint32_t)time(NULL);
     safecopy(qp->destcoin,destcoin,sizeof(qp->destcoin));
     LP_txfees(&qp->txfee,&qp->desttxfee,utxo->coin,qp->destcoin);
-    qp->satoshis = (destsatoshis / price) + 0.49;
+    qp->satoshis = satoshis;//(destsatoshis / price) + 0.49;
+    qp->destsatoshis = destsatoshis;
     if ( utxo->iambob == 0 || qp->txfee >= qp->satoshis || qp->txfee >= utxo->deposit.value || utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis) )
     {
         printf("quoteinit error.(%d %d %d %d) %.8f vs %.8f\n",utxo->iambob == 0,qp->txfee >= qp->satoshis,qp->txfee >= utxo->deposit.value,utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis),dstr(utxo->deposit.value),dstr(LP_DEPOSITSATOSHIS(qp->satoshis)));
@@ -149,7 +167,6 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     qp->vout = utxo->payment.vout;
     qp->txid2 = utxo->deposit.txid;
     qp->vout2 = utxo->deposit.vout;
-    qp->destsatoshis = destsatoshis;
     if ( qp->desttxfee >= qp->destsatoshis )
     {
         printf("quoteinit desttxfee %.8f < %.8f destsatoshis\n",dstr(qp->desttxfee),dstr(qp->destsatoshis));
@@ -541,28 +558,11 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     return(retval);
 }
 
-double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
-{
-    uint64_t destsatoshis,satoshis;
-    a_value -= (desttxfee + 1);
-    destsatoshis = ((b_satoshis - txfee) * price);
-    if ( destsatoshis > a_value )
-        destsatoshis = a_value;
-    if ( maxdestsatoshis != 0 && destsatoshis > maxdestsatoshis-desttxfee-1 )
-        destsatoshis = maxdestsatoshis-desttxfee-1;
-    satoshis = (destsatoshis / price + 0.49) - txfee;
-    *destsatoshisp = destsatoshis;
-    *satoshisp = satoshis;
-    if ( satoshis > 0 )
-        return((double)destsatoshis / satoshis);
-    else return(0.);
-}
-
-struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,uint64_t maxdestsatoshis)
+struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,uint64_t maxdestsatoshis)
 {
     int64_t satoshis,destsatoshis; uint64_t val,val2; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item; struct LP_utxoinfo *butxo,*bestutxo = 0; int32_t i,n,j,vout,numasks; double bestmetric=0.,metric,vol,price,qprice,bestprice = 0.; struct LP_pubkeyinfo *pubp;
     *ordermatchpricep = 0.;
-    *bestdestsatoshisp = 0;
+    *bestsatoshisp = *bestdestsatoshisp = 0;
     if ( duration <= 0 )
         duration = LP_ORDERBOOK_DURATION;
     if ( maxprice <= 0. || LP_priceinfofind(base) == 0 )
@@ -610,7 +610,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatosh
                                         if ( (qprice= LP_qprice_calc(&destsatoshis,&satoshis,(price*(100.+j))/100.,butxo->S.satoshis,txfee,autxo->payment.value,maxdestsatoshis,desttxfee)) > price+SMALLVAL )
                                             break;
                                     }
-                                    printf("j.%d/%d qprice %.8f vs price %.8f\n",j,n,qprice,price);
+                                    printf("j.%d/%d qprice %.8f vs price %.8f best.(%.8f %.8f)\n",j,n,qprice,price,dstr(satoshis),dstr(destsatoshis));
                                     if ( metric < 1.2 && destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value / LP_MINCLIENTVOL) && satoshis-txfee > (butxo->S.satoshis / LP_MINVOL) && satoshis <= butxo->payment.value-txfee )
                                     {
                                         printf("value %.8f price %.8f/%.8f best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",dstr(autxo->payment.value),price,bestprice,bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
@@ -620,6 +620,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatosh
                                             bestutxo = butxo;
                                             *ordermatchpricep = price;
                                             *bestdestsatoshisp = destsatoshis;
+                                            *bestsatoshisp = satoshis;
                                             bestmetric = metric;
                                             printf("set best!\n");
                                         }
@@ -668,14 +669,14 @@ char *LP_bestfit(char *rel,double relvolume)
 
 char *LP_ordermatch(char *base,int64_t txfee,double maxprice,double maxvolume,char *rel,bits256 txid,int32_t vout,bits256 feetxid,int32_t feevout,int64_t desttxfee,int32_t duration)
 {
-    struct LP_quoteinfo Q; int64_t bestdestsatoshis = 0; double ordermatchprice = 0.; struct LP_utxoinfo *autxo,*bestutxo;
+    struct LP_quoteinfo Q; int64_t bestsatoshis=0,bestdestsatoshis = 0; double ordermatchprice = 0.; struct LP_utxoinfo *autxo,*bestutxo;
     txfee = LP_txfeecalc(base,txfee);
     desttxfee = LP_txfeecalc(rel,desttxfee);
     if ( (autxo= LP_utxopairfind(0,txid,vout,feetxid,feevout)) == 0 )
         return(clonestr("{\"error\":\"cant find alice utxopair\"}"));
-    if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,SATOSHIDEN*maxvolume)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
+    if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,SATOSHIDEN*maxvolume)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
         return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
-    if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestdestsatoshis) < 0 )
+    if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestsatoshis,bestdestsatoshis) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypub25519,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
@@ -741,7 +742,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
 
 char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration)
 {
-    uint64_t desttxfee,txfee; int64_t bestdestsatoshis=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q;
+    uint64_t desttxfee,txfee; int64_t bestsatoshis=0,bestdestsatoshis=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q;
     if ( duration <= 0 )
         duration = LP_ORDERBOOK_DURATION;
     if ( timeout <= 0 )
@@ -751,12 +752,12 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *r
     if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * relvolume)) == 0 )
         return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
     LP_txfees(&txfee,&desttxfee,base,rel);
-    if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,SATOSHIDEN*relvolume)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
+    if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,SATOSHIDEN*relvolume)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
     {
         printf("bestutxo.%p ordermatchprice %.8f bestdestsatoshis %.8f\n",bestutxo,ordermatchprice,dstr(bestdestsatoshis));
         return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
     }
-    if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestdestsatoshis) < 0 )
+    if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestsatoshis,bestdestsatoshis) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypub25519,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
