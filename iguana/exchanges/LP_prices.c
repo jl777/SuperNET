@@ -172,7 +172,7 @@ cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
         base = LP_priceinfos[baseid].symbol;
         for (relid=0; relid<LP_numpriceinfos; relid++)
         {
-            if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL )
+            if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN )
             {
                 item = cJSON_CreateArray();
                 jaddistr(item,base);
@@ -215,14 +215,17 @@ void LP_prices_parse(cJSON *obj)
                 base = jstri(item,0);
                 rel = jstri(item,1);
                 askprice = jdoublei(item,2);
-                if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
+                if ( askprice > SMALLVAL && isnan(askprice) == 0 && askprice < SATOSHIDEN )
                 {
-                    char str[65]; printf("%s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
-                    pubp->matrix[basepp->ind][relid] = askprice;
-                    if ( (relpp= LP_priceinfofind(rel)) != 0 )
+                    if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
                     {
-                        dxblend(&basepp->relvals[relpp->ind],askprice,0.9);
-                        dxblend(&relpp->relvals[basepp->ind],1. / askprice,0.9);
+                        char str[65]; printf("%s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
+                        pubp->matrix[basepp->ind][relid] = askprice;
+                        if ( (relpp= LP_priceinfofind(rel)) != 0 )
+                        {
+                            dxblend(&basepp->relvals[relpp->ind],askprice,0.9);
+                            dxblend(&relpp->relvals[basepp->ind],1. / askprice,0.9);
+                        }
                     }
                 }
             }
@@ -259,6 +262,8 @@ double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,i
         {
             printf("LP_pricecache: null ptr->price? ");
             ptr->price = (double)ptr->Q.destsatoshis / ptr->Q.satoshis;
+            if ( ptr->price < SMALLVAL || isnan(ptr->price) != 0 || ptr->price >= SATOSHIDEN )
+                ptr->price = 0.;
         }
         //printf("found %s/%s %.8f\n",base,rel,ptr->price);
         return(ptr->price);
@@ -270,12 +275,15 @@ double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,i
 void LP_priceinfoupdate(char *base,char *rel,double price)
 {
     struct LP_priceinfo *basepp,*relpp;
-    if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    if ( price > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN )
     {
-        //dxblend(&basepp->relvals[relpp->ind],price,0.9);
-        //dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
-        basepp->relvals[relpp->ind] = price;
-        relpp->relvals[basepp->ind] = 1. / price;
+        if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+        {
+            //dxblend(&basepp->relvals[relpp->ind],price,0.9);
+            //dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
+            basepp->relvals[relpp->ind] = price;
+            relpp->relvals[basepp->ind] = 1. / price;
+        }
     }
 }
 
@@ -285,9 +293,9 @@ double LP_myprice(double *bidp,double *askp,char *base,char *rel)
     *bidp = *askp = 0.;
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
-        if ( (*askp= basepp->myprices[relpp->ind]) > SMALLVAL )
+        if ( (*askp= basepp->myprices[relpp->ind]) > SMALLVAL && isnan(*askp) == 0 && *askp < SATOSHIDEN )
         {
-            if ( (val= relpp->myprices[basepp->ind]) > SMALLVAL )
+            if ( (val= relpp->myprices[basepp->ind]) > SMALLVAL && isnan(val) == 0 && val < SATOSHIDEN )
             {
                 *bidp = 1. / val;
                 return((*askp + *bidp) * 0.5);
@@ -300,7 +308,7 @@ double LP_myprice(double *bidp,double *askp,char *base,char *rel)
         }
         else
         {
-            if ( (val= relpp->myprices[basepp->ind]) > SMALLVAL )
+            if ( (val= relpp->myprices[basepp->ind]) > SMALLVAL && isnan(val) == 0 && val < SATOSHIDEN )
             {
                 *bidp = 1. / val;
                 *askp = 0.;
@@ -339,7 +347,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
 {
     struct LP_priceinfo *basepp,*relpp; struct LP_pubkeyinfo *pubp;
     *changedp = 0;
-    if ( base != 0 && rel != 0 && price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    if ( base != 0 && rel != 0 && price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 && isnan(price) == 0 && price < SATOSHIDEN )
     {
         if ( fabs(basepp->myprices[relpp->ind] - price) > SMALLVAL )
             *changedp = 1;
@@ -439,24 +447,27 @@ struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,
     char str[65]; struct LP_cacheinfo *ptr=0;
     if ( base == 0 || rel == 0 )
         return(0);
-    if ( (ptr= LP_cachefind(base,rel,txid,vout)) == 0 )
+    if ( price > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN )
     {
-        ptr = calloc(1,sizeof(*ptr));
-        if ( LP_cachekey(ptr->key,base,rel,txid,vout) == sizeof(ptr->key) )
+        if ( (ptr= LP_cachefind(base,rel,txid,vout)) == 0 )
         {
-            portable_mutex_lock(&LP_cachemutex);
-            HASH_ADD(hh,LP_cacheinfos,key,sizeof(ptr->key),ptr);
-            portable_mutex_unlock(&LP_cachemutex);
-        } else printf("LP_cacheadd keysize mismatch?\n");
+            ptr = calloc(1,sizeof(*ptr));
+            if ( LP_cachekey(ptr->key,base,rel,txid,vout) == sizeof(ptr->key) )
+            {
+                portable_mutex_lock(&LP_cachemutex);
+                HASH_ADD(hh,LP_cacheinfos,key,sizeof(ptr->key),ptr);
+                portable_mutex_unlock(&LP_cachemutex);
+            } else printf("LP_cacheadd keysize mismatch?\n");
+        }
+        ptr->Q = *qp;
+        ptr->timestamp = (uint32_t)time(NULL);
+        if ( price != ptr->price )
+        {
+            ptr->price = price;
+            LP_priceinfoupdate(base,rel,price);
+            printf("updated %s/v%d %s/%s %llu price %.8f\n",bits256_str(str,txid),vout,base,rel,(long long)qp->satoshis,price);
+        } else ptr->price = price;
     }
-    ptr->Q = *qp;
-    ptr->timestamp = (uint32_t)time(NULL);
-    if ( price != ptr->price )
-    {
-        ptr->price = price;
-        LP_priceinfoupdate(base,rel,price);
-        printf("updated %s/v%d %s/%s %llu price %.8f\n",bits256_str(str,txid),vout,base,rel,(long long)qp->satoshis,price);
-    } else ptr->price = price;
     return(ptr);
 }
 
@@ -489,7 +500,7 @@ static int _cmp_orderbook(const void *a,const void *b)
 cJSON *LP_orderbookjson(struct LP_orderbookentry *op)
 {
     cJSON *item = cJSON_CreateObject();
-    if ( op->price > SMALLVAL )
+    if ( op->price > SMALLVAL && isnan(op->price) == 0 && op->price < SATOSHIDEN  )
     {
         jaddnum(item,"price",op->price);
         jaddnum(item,"volume",dstr(op->basesatoshis));
@@ -629,7 +640,7 @@ char *LP_pricestr(char *base,char *rel,double origprice)
         if ( origprice > SMALLVAL && origprice < price )
             price = origprice;
     }
-    if ( price > SMALLVAL )
+    if ( price > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN )
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
@@ -788,7 +799,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             LP_pricefname(fname,base,rel);
             fp = basepp->fps[relpp->ind] = OS_appendfile(fname);
         }
-        if ( fp != 0 && price > SMALLVAL )
+        if ( fp != 0 && price > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN )
         {
             now = (uint32_t)time(NULL);
             price64 = price * SATOSHIDEN;
@@ -801,7 +812,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,rel,base);
             fp = relpp->fps[basepp->ind] = OS_appendfile(fname);
         }
-        if ( fp != 0 && price > SMALLVAL )
+        if ( fp != 0 && price > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN )
         {
             now = (uint32_t)time(NULL);
             price64 = (1. / price) * SATOSHIDEN;
