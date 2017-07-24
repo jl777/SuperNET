@@ -564,7 +564,14 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         printf("utxo %.8f, destamount %.8f change %.8f txfee %.8f\n",dstr(value),dstr(satoshis),dstr(change),dstr(txfee));
     } else if ( value > txfee )
         satoshis = value - txfee;
-    else printf("unexpected small value %.8f vs txfee %.8f\n",dstr(value),dstr(txfee));
+    else
+    {
+        printf("unexpected small value %.8f vs txfee %.8f\n",dstr(value),dstr(txfee));
+        change = 0;
+        satoshis = value >> 1;
+        txfee = (value - satoshis);
+        printf("unexpected small value %.8f vs txfee %.8f -> %.8f %.8f\n",dstr(value),dstr(txfee),dstr(satoshis),dstr(txfee));
+    }
     if ( change < 6000 )
     {
         satoshis += change;
