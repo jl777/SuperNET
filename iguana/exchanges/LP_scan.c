@@ -119,7 +119,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
             if ( n > 1 )
                 printf("LP_txinterestvalue warning: violation of 1 output assumption n.%d\n",n);
         } else printf("LP_txinterestvalue no addresses found?\n");
-        //char str[65]; printf("%.8f <- %s.(%s) txobj.(%s)\n",dstr(value),symbol,bits256_str(str,txid),jprint(txobj,0));
+        char str[65]; printf("%s %.8f <- %s.(%s) txobj.(%s)\n",destaddr,dstr(value),coin->symbol,bits256_str(str,txid),jprint(txobj,0));
         free_json(txobj);
     } else { char str[65]; printf("null gettxout return %s/v%d\n",bits256_str(str,txid),vout); }
     return(value);
@@ -231,7 +231,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
                 {
                     value = LP_txinterestvalue(&tx->outpoints[vout].interest,coinaddr,coin,txid,vout);
                 }
-                //printf("return value %.8f + interest %.8f\n",dstr(tx->outpoints[vout].value),dstr(tx->outpoints[vout].interest));
+                printf("return value %.8f + interest %.8f\n",dstr(tx->outpoints[vout].value),dstr(tx->outpoints[vout].interest));
                 return(tx->outpoints[vout].value + tx->outpoints[vout].interest);
             }
         } else printf("vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
@@ -241,7 +241,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
     if ( coinaddr == 0 )
         coinaddr = _coinaddr;
     value = LP_txinterestvalue(&interest,coinaddr,coin,txid,vout);
-    //printf("coinaddr.(%s) value %.8f interest %.8f\n",coinaddr,dstr(value),dstr(interest));
+    printf("coinaddr.(%s) value %.8f interest %.8f\n",coinaddr,dstr(value),dstr(interest));
     return(value + interest);
 }
 
