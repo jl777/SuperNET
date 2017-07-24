@@ -288,14 +288,15 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
-    uint64_t val,val2=0,threshold=0; int32_t iter,bypass = 0; char destaddr[64],destaddr2[64]; struct LP_utxoinfo *utxo; struct iguana_info *coin = LP_coinfind(symbol);
+    uint64_t val,val2=0,txfee,threshold=0; int32_t iter,bypass = 0; char destaddr[64],destaddr2[64]; struct LP_utxoinfo *utxo; struct iguana_info *coin = LP_coinfind(symbol);
     destaddr[0] = destaddr2[0] = 0;
     if ( coin != 0 && IAMLP != 0 && coin->inactive != 0 )
         bypass = 1;
     if ( bypass != 0 )
         val = satoshis;
     else val = LP_txvalue(destaddr,symbol,txid,vout);
-    if ( val >= satoshis )
+    txfee = LP_txfeecalc(symbol,0);
+    if ( val >= satoshis && val > 10*txfee )
     {
         threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
         if ( bypass != 0 )
@@ -315,7 +316,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
             }
         } // else printf("no val2\n");
     }
-    char str[65],str2[65]; printf("spent.%d %s txid or value %.8f < %.8f or val2 %.8f < %.8f, %s/v%d %s/v%d\n",iambob,symbol,dstr(val),dstr(satoshis),dstr(val2),dstr(threshold),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2);
+    char str[65],str2[65]; printf("spent.%d %s txid or value %.8f < %.8f or val2 %.8f < %.8f, %s/v%d %s/v%d or < 10x txfee %.8f\n",iambob,symbol,dstr(val),dstr(satoshis),dstr(val2),dstr(threshold),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2,dstr(txfee));
     for (iter=0; iter<2; iter++)
     {
         if ( (utxo= LP_utxofind(iter,txid,vout)) != 0 )
@@ -793,7 +794,7 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
 
 uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
-    char *script; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,iambob,vout,depositvout; uint64_t *values=0,satoshis,depositval,targetval,value,total = 0;
+    char *script; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,targetval,value,total = 0;
     if ( coin == 0 )
     {
         printf("coin not active\n");
@@ -802,6 +803,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
     //printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
+        txfee = LP_txfeecalc(coin->symbol,0);
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
             for (iambob=0; iambob<=1; iambob++)
@@ -835,10 +837,17 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         values[i] = 0, used++;
                         if ( iambob == 0 )
                             targetval = (depositval / 776) + 100000;
-                        else targetval = (depositval / 9) * 8 + 100000;
+                        else
+                        {
+                            if ( depositval < LP_MINSIZE_TXFEEMULT*txfee )
+                                continue;
+                            targetval = (depositval / 9) * 8 + 100000;
+                        }
                         //printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
                         if ( (i= LP_nearestvalue(iambob,values,n,targetval)) < 0 && iambob != 0 )
                             targetval /= 4;
+                        if ( iambob != 0 && targetval < txfee*LP_MINSIZE_TXFEEMULT )
+                            continue;
                         if ( (i= LP_nearestvalue(iambob,values,n,targetval)) >= 0 )
                         {
                             item = jitem(array,i);
