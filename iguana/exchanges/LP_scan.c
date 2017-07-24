@@ -119,7 +119,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
             if ( n > 1 )
                 printf("LP_txinterestvalue warning: violation of 1 output assumption n.%d\n",n);
         } else printf("LP_txinterestvalue no addresses found?\n");
-        char str[65]; printf("%s %.8f <- %s.(%s) txobj.(%s)\n",destaddr,dstr(value),coin->symbol,bits256_str(str,txid),jprint(txobj,0));
+        //char str[65]; printf("%s %.8f <- %s.(%s) txobj.(%s)\n",destaddr,dstr(value),coin->symbol,bits256_str(str,txid),jprint(txobj,0));
         free_json(txobj);
     } else { char str[65]; printf("null gettxout return %s/v%d\n",bits256_str(str,txid),vout); }
     return(value);
@@ -128,7 +128,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
 int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
 {
     struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; uint32_t timestamp,blocktime; cJSON *txobj,*vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
-    if ( (txobj=LP_gettx(coin->symbol,txid)) != 0 )
+    if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
     {
         height = LP_txheight(&timestamp,&blocktime,coin,txid);
         if ( timestamp == 0 && height > 0 )
@@ -288,7 +288,7 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
     return(-1);
 }
 
-int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
+int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t mempool)
 {
     struct iguana_info *coin; int32_t numconfirms = 100;
 //#ifndef BASILISK_DISABLEWAITTX
@@ -301,7 +301,7 @@ int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
         numconfirms = jint(txobj,"confirmations");
         free_json(txobj);
     }
-    else if ( LP_mempoolscan(rawtx->coin->symbol,rawtx->I.signedtxid) >= 0 )
+    else if ( mempool != 0 && LP_mempoolscan(rawtx->coin->symbol,rawtx->I.signedtxid) >= 0 )
         numconfirms = 0;
 //#endif
     return(numconfirms);

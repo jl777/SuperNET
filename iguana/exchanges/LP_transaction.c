@@ -1302,7 +1302,7 @@ void basilisk_alicepayment(struct basilisk_swap *swap,struct iguana_info *coin,s
     printf(" rmd160, ");*/
     bitcoin_address(coinaddr,coin->taddr,coin->pubtype,swap->changermd160,20);
     //printf("%s suppress.%d fee.%d\n",coinaddr,alicepayment->I.suppress_pubkeys,swap->myfee.I.suppress_pubkeys);
-    basilisk_rawtx_gen(swap->ctx,"alicepayment",swap->I.started,swap->persistent_pubkey33,0,1,alicepayment,alicepayment->I.locktime,alicepayment->spendscript,alicepayment->I.spendlen,strcmp(coin->symbol,"BTC") == 0 ? LP_MIN_TXFEE : coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
+    basilisk_rawtx_gen(swap->ctx,"alicepayment",swap->I.started,swap->persistent_pubkey33,0,1,alicepayment,alicepayment->I.locktime,alicepayment->spendscript,alicepayment->I.spendlen,swap->I.Atxfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
 }
 
 int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)

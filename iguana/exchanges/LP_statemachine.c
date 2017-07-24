@@ -788,7 +788,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
             }
             else if ( (swap->I.statebits & 0x2000) == 0 )
             {
-                if ( (swap->I.aliceconfirms == 0 && swap->aliceunconf != 0) || LP_numconfirms(swap,&swap->alicepayment) >= swap->I.aliceconfirms )
+                if ( (swap->I.aliceconfirms == 0 && swap->aliceunconf != 0) || LP_numconfirms(swap,&swap->alicepayment,1) >= swap->I.aliceconfirms )
                 {
                     swap->I.statebits |= 0x2000;
                     printf("alicepayment confirmed\n");
@@ -814,7 +814,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
                         tradebot_swap_balancingtrade(swap,1);
                         printf("Bob spends alicepayment aliceconfirms.%d\n",swap->I.aliceconfirms);
                         swap->I.statebits |= 0x40000;
-                        if ( LP_numconfirms(swap,&swap->bobspend) >= swap->I.aliceconfirms )
+                        if ( LP_numconfirms(swap,&swap->bobspend,1) >= swap->I.aliceconfirms )
                         {
                             printf("bobspend confirmed\n");
                             swap->I.statebits |= 0x80000;
@@ -837,7 +837,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
                     printf("Bob reclaimed own payment\n");
                     while ( 0 && (swap->I.statebits & 0x100000) == 0 ) // why wait for own tx?
                     {
-                        if ( LP_numconfirms(swap,&swap->bobreclaim) >= 1 )
+                        if ( LP_numconfirms(swap,&swap->bobreclaim,1) >= 1 )
                         {
                             printf("bobreclaim confirmed\n");
                             swap->I.statebits |= 0x100000;
@@ -865,7 +865,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
             }
             else if ( (swap->I.statebits & 0x400) == 0 )
             {
-                if ( basilisk_istrustedbob(swap) != 0 || (swap->I.bobconfirms == 0 && swap->depositunconf != 0) || LP_numconfirms(swap,&swap->bobdeposit) >= swap->I.bobconfirms )
+                if ( basilisk_istrustedbob(swap) != 0 || (swap->I.bobconfirms == 0 && swap->depositunconf != 0) || LP_numconfirms(swap,&swap->bobdeposit,1) >= swap->I.bobconfirms )
                 {
                     printf("bobdeposit confirmed\n");
                     swap->I.statebits |= 0x400;
@@ -889,7 +889,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
             }
             else if ( (swap->I.statebits & 0x10000) == 0 )
             {
-                if ( basilisk_istrustedbob(swap) != 0 || (swap->I.bobconfirms == 0 && swap->paymentunconf != 0) || LP_numconfirms(swap,&swap->bobpayment) >= swap->I.bobconfirms )
+                if ( basilisk_istrustedbob(swap) != 0 || (swap->I.bobconfirms == 0 && swap->paymentunconf != 0) || LP_numconfirms(swap,&swap->bobpayment,1) >= swap->I.bobconfirms )
                 {
                     printf("bobpayment confirmed\n");
                     swap->I.statebits |= 0x10000;
@@ -906,7 +906,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
             else if ( (swap->I.statebits & 0x40000) == 0 )
             {
                 int32_t numconfs;
-                if ( (numconfs= LP_numconfirms(swap,&swap->alicespend)) >= swap->I.bobconfirms )
+                if ( (numconfs= LP_numconfirms(swap,&swap->alicespend,1)) >= swap->I.bobconfirms )
                 {
                     for (j=datalen=0; j<32; j++)
                         data[datalen++] = swap->I.privAm.bytes[j];

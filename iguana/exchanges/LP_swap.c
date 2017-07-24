@@ -728,7 +728,7 @@ void LP_bobloop(void *_swap)
                     printf("error bobscripts payment\n");
                 else
                 {
-                    while ( (n= LP_numconfirms(swap,&swap->alicepayment)) < 1 ) // sync with alice
+                    while ( (n= LP_numconfirms(swap,&swap->alicepayment,1)) < 1 ) // sync with alice
                     {
                         char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                         sleep(3);
@@ -778,7 +778,7 @@ void LP_aliceloop(void *_swap)
                 printf("error sending alicepayment\n");
             else
             {
-                while ( (n= LP_numconfirms(swap,&swap->alicepayment)) < 1 )
+                while ( (n= LP_numconfirms(swap,&swap->alicepayment,1)) < 1 )
                 {
                     char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                     sleep(LP_SWAPSTEP_TIMEOUT);
@@ -788,14 +788,14 @@ void LP_aliceloop(void *_swap)
                     printf("error waiting for bobpayment\n");
                 else
                 {
-                    while ( (n= LP_numconfirms(swap,&swap->bobpayment)) < swap->I.bobconfirms )
+                    while ( (n= LP_numconfirms(swap,&swap->bobpayment,1)) < swap->I.bobconfirms )
                     {
                         char str[65];printf("%d waiting for bobpayment to be confirmed.%d %s %s\n",n,swap->I.bobconfirms,swap->bobcoin.symbol,bits256_str(str,swap->bobpayment.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
                     }
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x20000,data,maxlen,&swap->alicespend,0x40000,0) == 0 )
                         printf("error sending alicespend\n");
-                    while ( (n= LP_numconfirms(swap,&swap->alicespend)) < swap->I.aliceconfirms )
+                    while ( (n= LP_numconfirms(swap,&swap->alicespend,1)) < swap->I.aliceconfirms )
                     {
                         char str[65];printf("%d waiting for alicespend to be confirmed.%d %s %s\n",n,swap->I.aliceconfirms,swap->bobcoin.symbol,bits256_str(str,swap->alicespend.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
