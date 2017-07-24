@@ -21,7 +21,15 @@
 
 uint64_t LP_txfeecalc(char *symbol,uint64_t txfee)
 {
-    if ( txfee == 0 && (txfee= LP_getestimatedrate(symbol) * LP_AVETXSIZE) < LP_MIN_TXFEE )
+    struct iguana_info *coin;
+    if ( strcmp(symbol,"BTC") == 0 )
+    {
+        if ( txfee == 0 && (txfee= LP_getestimatedrate(symbol) * LP_AVETXSIZE) < LP_MIN_TXFEE )
+            txfee = LP_MIN_TXFEE;
+    }
+    else if ( (coin= LP_coinfind(symbol)) != 0 )
+        txfee = coin->txfee;
+    if ( txfee < LP_MIN_TXFEE )
         txfee = LP_MIN_TXFEE;
     return(txfee);
 }
