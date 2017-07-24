@@ -630,6 +630,16 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 ABdest = Adestaddr;
             }
         }
+        if ( bob == 0 || alice == 0 )
+        {
+            printf("Bob.%p is null or Alice.%p is null\n",bob,alice);
+            return(0);
+        }
+        if ( alice->inactive != 0 || bob->inactive != 0 )
+        {
+            printf("Alice.%s inactive.%u or Bob.%s inactive.%u\n",alicecoin,alice->inactive,bobcoin,bob->inactive);
+            return(0);
+        }
         if ( sentflags[BASILISK_ALICEPAYMENT] == 0 && bits256_nonz(txids[BASILISK_ALICEPAYMENT]) != 0 )
         {
             printf("txbytes.%p Apayment.%s\n",txbytes[BASILISK_ALICEPAYMENT],bits256_str(str,txids[BASILISK_ALICEPAYMENT]));
