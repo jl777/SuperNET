@@ -227,11 +227,9 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
             }
             else
             {
-                if ( coinaddr != 0 && strcmp(symbol,"KMD") == 0 )
-                {
+                if ( coinaddr != 0 )
                     value = LP_txinterestvalue(&tx->outpoints[vout].interest,coinaddr,coin,txid,vout);
-                }
-                printf("return value %.8f + interest %.8f\n",dstr(tx->outpoints[vout].value),dstr(tx->outpoints[vout].interest));
+                //printf("return value %.8f + interest %.8f\n",dstr(tx->outpoints[vout].value),dstr(tx->outpoints[vout].interest));
                 return(tx->outpoints[vout].value + tx->outpoints[vout].interest);
             }
         } else printf("vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
@@ -241,7 +239,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
     if ( coinaddr == 0 )
         coinaddr = _coinaddr;
     value = LP_txinterestvalue(&interest,coinaddr,coin,txid,vout);
-    printf("coinaddr.(%s) value %.8f interest %.8f\n",coinaddr,dstr(value),dstr(interest));
+    //printf("coinaddr.(%s) value %.8f interest %.8f\n",coinaddr,dstr(value),dstr(interest));
     return(value + interest);
 }
 
