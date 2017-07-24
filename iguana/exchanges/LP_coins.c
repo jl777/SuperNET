@@ -290,7 +290,7 @@ struct iguana_info *LP_coinfind(char *symbol)
     if ( (busport= LP_busport(port)) == 0 )
         return(0);
     isPoS = 0;
-    txfee = 10000;
+    txfee = LP_MIN_TXFEE;
     estimatedrate = 20;
     pubtype = 60;
     p2shtype = 85;
@@ -332,8 +332,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
     if ( (symbol= jstr(item,"coin")) != 0 && symbol[0] != 0 && strlen(symbol) < 16 && LP_coinfind(symbol) == 0 && (port= juint(item,"rpcport")) != 0 )
     {
         isPoS = jint(item,"isPoS");
-        if ( (txfee= j64bits(item,"txfee")) == 0 )
-            txfee = 10000;
+        txfee = j64bits(item,"txfee");
         if ( (estimatedrate= jdouble(item,"estimatedrate")) == 0. )
             estimatedrate = 20;
         pubtype = juint(item,"pubtype");

@@ -349,7 +349,7 @@ uint64_t LP_txfee(char *symbol)
 {
     uint64_t txfee = 0;
     if ( strcmp(symbol,"BTC") != 0 )
-        txfee = 10000;
+        txfee = LP_MIN_TXFEE;
     return(txfee);
 }
 

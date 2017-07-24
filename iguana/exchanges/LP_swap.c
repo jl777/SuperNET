@@ -570,11 +570,16 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
         {
             vout = jitem(vouts,v);
-            if ( strcmp(rawtx->coin->symbol,swap->bobcoin.symbol) == 0 )
-                txfee = swap->I.Btxfee;
-            else if ( strcmp(rawtx->coin->symbol,swap->alicecoin.symbol) == 0 )
-                txfee = swap->I.Atxfee;
-            else txfee = 10000;
+            if ( strcmp("BTC",rawtx->coin->symbol) == 0 && rawtx == &swap->otherfee )
+                txfee = LP_MIN_TXFEE;
+            else
+            {
+                if ( strcmp(rawtx->coin->symbol,swap->bobcoin.symbol) == 0 )
+                    txfee = swap->I.Btxfee;
+                else if ( strcmp(rawtx->coin->symbol,swap->alicecoin.symbol) == 0 )
+                    txfee = swap->I.Atxfee;
+                else txfee = LP_MIN_TXFEE;
+            }
             if ( j64bits(vout,"satoshis") >= rawtx->I.amount-txfee && (skey= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(skey,"hex")) != 0 )
             {
                 if ( (hexlen= (int32_t)strlen(hexstr) >> 1) < sizeof(rawtx->spendscript) )
@@ -899,8 +904,8 @@ void basilisk_rawtx_setparms(char *name,uint32_t quoteid,struct basilisk_rawtx *
     rawtx->coin = coin;
     strcpy(rawtx->I.coinstr,coin->symbol);
     rawtx->I.numconfirms = numconfirms;
-    if ( (rawtx->I.amount= satoshis) < 10000 )
-        rawtx->I.amount = 10000;
+    if ( (rawtx->I.amount= satoshis) < LP_MIN_TXFEE )
+        rawtx->I.amount = LP_MIN_TXFEE;
     rawtx->I.vintype = vintype; // 0 -> std, 2 -> 2of2, 3 -> spend bobpayment, 4 -> spend bobdeposit
     rawtx->I.vouttype = vouttype; // 0 -> fee, 1 -> std, 2 -> 2of2, 3 -> bobpayment, 4 -> bobdeposit
     if ( rawtx->I.vouttype == 0 )
@@ -936,10 +941,10 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.callduration += optionduration;
     swap->I.bobsatoshis = swap->I.req.srcamount;
     swap->I.alicesatoshis = swap->I.req.destamount;
-    if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
-        swap->I.bobinsurance = 10000;
-    if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
-        swap->I.aliceinsurance = 10000;
+    if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
+        swap->I.bobinsurance = LP_MIN_TXFEE;
+    if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
+        swap->I.aliceinsurance = LP_MIN_TXFEE;
     strcpy(swap->I.bobstr,swap->I.req.src);
     strcpy(swap->I.alicestr,swap->I.req.dest);
     swap->I.started = (uint32_t)time(NULL);
