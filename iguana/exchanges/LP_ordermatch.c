@@ -378,10 +378,10 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
     return(pairsock);
 }
 
-int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *myipaddr,char *base,char *rel,double price,struct LP_quoteinfo *qp)
+int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *base,char *rel,double price,struct LP_quoteinfo *qp)
 {
     char pairstr[512],*msg; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
-    printf("LP_connectstartbob.(%s) with.(%s) %s\n",myipaddr,jprint(argjson,0),LP_myipaddr);
+    printf("LP_connectstartbob.(%s) with.(%s) %s\n",LP_myipaddr,jprint(argjson,0),LP_myipaddr);
     qp->quotetime = (uint32_t)time(NULL);
     if ( (coin= LP_coinfind(utxo->coin)) == 0 )
     {
@@ -546,7 +546,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             {
                 retval = 4;
                 if ( butxo->T.swappending != 0 && butxo->S.swap == 0 )
-                    LP_connectstartbob(ctx,pubsock,butxo,argjson,myipaddr,Q.srccoin,Q.destcoin,qprice,&Q);
+                    LP_connectstartbob(ctx,pubsock,butxo,argjson,Q.srccoin,Q.destcoin,qprice,&Q);
                 else printf("pend.%u swap %p when connect came in (%s)\n",butxo->T.swappending,butxo->S.swap,jprint(argjson,0));
             }
         }
