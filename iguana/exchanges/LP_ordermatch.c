@@ -574,7 +574,7 @@ double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uin
 
 struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,int64_t txfee,int64_t desttxfee,uint64_t maxdestsatoshis)
 {
-    int64_t satoshis,destsatoshis; uint64_t val,val2; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item; struct LP_utxoinfo *butxo,*bestutxo = 0; int32_t i,j,vout,numasks; double bestmetric=0.,metric,vol,price,qprice,bestprice = 0.; struct LP_pubkeyinfo *pubp;
+    int64_t satoshis,destsatoshis; uint64_t val,val2; bits256 txid,pubkey; char *obookstr; cJSON *orderbook,*asks,*item; struct LP_utxoinfo *butxo,*bestutxo = 0; int32_t i,n,j,vout,numasks; double bestmetric=0.,metric,vol,price,qprice,bestprice = 0.; struct LP_pubkeyinfo *pubp;
     *ordermatchpricep = 0.;
     *bestdestsatoshisp = 0;
     if ( duration <= 0 )
@@ -628,12 +628,16 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestdestsatosh
                                     if ( satoshis <= 0 )
                                         continue;
                                     qprice = (double)destsatoshis / satoshis;
-                                    for (j=0; j<10; j++)
+                                    n = (int32_t)((double)destsatoshis / desttxfee);
+                                    if ( n < 10 )
+                                        n = 10;
+                                    else n = 3;
+                                    for (j=0; j<n; j++)
                                     {
                                         if ( (qprice= LP_qprice_calc(&destsatoshis,&satoshis,(price*(100.+j))/100.,butxo->S.satoshis,txfee,autxo->payment.value,maxdestsatoshis,desttxfee)) > price+SMALLVAL )
                                             break;
                                     }
-                                    printf("j.%d qprice %.8f vs price %.8f\n",j,qprice,price);
+                                    printf("j.%d/%d qprice %.8f vs price %.8f\n",j,n,qprice,price);
                                     if ( metric < 1.2 && destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value / LP_MINCLIENTVOL) && satoshis-txfee > (butxo->S.satoshis / LP_MINVOL) && satoshis <= butxo->payment.value-txfee )
                                     {
                                         printf("value %.8f price %.8f/%.8f best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",dstr(autxo->payment.value),price,bestprice,bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
