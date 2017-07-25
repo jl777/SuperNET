@@ -686,6 +686,8 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
         bitcoin_address(changeaddr,coin->taddr,coin->pubtype,changermd160,20);
         //printf("changeaddr.(%s) vs destaddr.(%s)\n",changeaddr,rawtx->I.destaddr);
     }
+    if ( strcmp(str,"myfee") == 0 && strcmp(coin->symbol,"BTC") == 0 )
+        txfee = LP_MIN_TXFEE;
     for (iter=0; iter<2; iter++)
     {
         if ( (signedtx= basilisk_swap_bobtxspend(&rawtx->I.signedtxid,iter == 0 ? txfee : newtxfee,str,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,privkey,0,0,0,0,0,rawtx->utxotxid,rawtx->utxovout,rawtx->I.destaddr,pubkey33,1,0,&destamount,rawtx->I.amount,changeaddr,vinaddr,rawtx->I.suppress_pubkeys)) != 0 )
