@@ -533,11 +533,11 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 printf("quote validate error %.0f\n",qprice);
                 return(-4);
             }
-            if ( qprice < (price - 0.00000001) * 0.9999 )
+            /*if ( qprice < (price - 0.00000001) * 0.9999 )
             {
                 printf("(%.8f %.8f) quote price %.8f too low vs %.8f for %s/%s\n",bid,ask,qprice,price,Q.srccoin,Q.destcoin);
                 return(-5);
-            }
+            }*/
             if ( butxo->S.swap == 0 && time(NULL) > butxo->T.swappending )
                 butxo->T.swappending = 0;
             if ( strcmp(method,"request") == 0 ) // bob needs apayment + fee tx's
