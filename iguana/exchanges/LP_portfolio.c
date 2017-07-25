@@ -427,7 +427,7 @@ void prices_loop(void *ignore)
                     if ( LP_pricevalid(maxprice) > 0 )
                     {
                         printf("pending.%d base buy.%s force %f, rel sell.%s force %f relvolume %f maxprice %.8f (%.8f %.8f)\n",LP_pendingswaps,buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume,maxprice,bid,ask);
-                        if ( LP_pendingswaps == 0 )
+                        //if ( LP_pendingswaps == 0 )
                         {
                             relvolume = sell->relvolume;
                             for (iter=0; iter<3; iter++)

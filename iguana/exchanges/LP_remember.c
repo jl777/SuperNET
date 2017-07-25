@@ -823,7 +823,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             depositspent = txids[BASILISK_BOBREFUND];
                         }
                     }
-                } else printf("time %u vs expiration %u\n",(uint32_t)time(NULL),expiration);
+                } else printf("bobrefund's time %u vs expiration %u\n",(uint32_t)time(NULL),expiration);
             }
         }
     }
