@@ -351,20 +351,13 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
 
 char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t lastn)
 {
-    int32_t i,firsti,n; uint64_t val,val2; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo,*tmp; cJSON *utxosjson = cJSON_CreateArray();
-    i = 0;
-    n = mypeer != 0 ? mypeer->numutxos : 0;
+    int32_t i,n,m; uint64_t val,val2; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo,*tmp; cJSON *utxosjson = cJSON_CreateArray();
+    //n = mypeer != 0 ? mypeer->numutxos : 0;
     if ( lastn <= 0 )
         lastn = LP_PROPAGATION_SLACK * 2;
-    if ( lastn >= n )
-        firsti = -1;
-    else firsti = (lastn - n);
-    printf("LP_utxos iambob.%d symbol.%s firsti.%d lastn.%d\n",iambob,symbol==0?"":symbol,firsti,lastn);
     HASH_ITER(hh,LP_utxoinfos[iambob],utxo,tmp)
     {
         //char str[65]; printf("check %s.%s\n",utxo->coin,bits256_str(str,utxo->payment.txid));
-        if ( i++ < firsti )
-            continue;
         if ( (symbol == 0 || symbol[0] == 0 || strcmp(symbol,utxo->coin) == 0) && utxo->T.spentflag == 0 )
         {
             u = (iambob != 0) ? utxo->deposit : utxo->fee;
@@ -373,9 +366,13 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
                 char str[65]; printf("iambob.%d not eligible (%.8f %.8f) %s %s/v%d\n",iambob,dstr(val),dstr(val2),utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout);
                 continue;
             } else jaddi(utxosjson,LP_utxojson(utxo));
-            if ( n++ > lastn )
-                break;
         }
+    }
+    if ( (n= cJSON_GetArraySize(utxosjson)) > lastn )
+    {
+        m = n - lastn;
+        for (i=0; i<m; i++)
+            cJSON_DeleteItemFromArray(utxosjson,0);
     }
     return(jprint(utxosjson,1));
 }
