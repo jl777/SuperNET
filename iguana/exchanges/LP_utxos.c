@@ -845,7 +845,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 continue;
                             targetval = (depositval / 9) * 8 + 100000;
                         }
-                        //printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
+                        printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
                         if ( (i= LP_nearestvalue(iambob,values,n,targetval)) < 0 && iambob != 0 )
                             targetval /= 4;
                         if ( iambob != 0 && targetval < txfee*LP_MINSIZE_TXFEEMULT )
