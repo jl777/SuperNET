@@ -175,6 +175,7 @@ char *LP_portfolio_goal(char *symbol,double goal)
     else if ( (coin= LP_coinfind(symbol)) != 0 && coin->inactive == 0 )
     {
         coin->goal = goal;
+        printf("set %s goal %f\n",coin->symbol,goal);
         return(LP_portfolio());
     } else return(clonestr("{\"error\":\"cant set goal for inactive coin\"}"));
 }
