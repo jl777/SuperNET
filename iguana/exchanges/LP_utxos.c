@@ -785,7 +785,7 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
         dist = (values[i] - targetval);
         if ( iambob != 0 && dist < 0 && -dist < values[i]/10 )
             dist = -dist;
-        //printf("(%.8f %.8f).%d",dstr(dist),dstr(mindist),mini);
+        printf("(%.8f %.8f).%d ",dstr(dist),dstr(mindist),mini);
         if ( dist >= 0 && dist < mindist )
         {
             mini = i;
@@ -879,7 +879,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 portable_mutex_unlock(&LP_UTXOmutex);
                                 total += value;
                             } else printf("scriptmismatch.(%s) vs %s\n",script,jprint(item,0));
-                        }
+                        } else printf("i.%d\n",i);
                     } else break;
                 }
                 if ( iambob == 1 )
