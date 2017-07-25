@@ -704,6 +704,8 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
             newtxfee = LP_txfeecalc(coin->symbol,0);
             printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
         } else break;
+        if ( strcmp(str,"myfee") == 0 )
+            break;
     }
     return(retval);
 }
