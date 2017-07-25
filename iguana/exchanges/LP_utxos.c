@@ -403,7 +403,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
         //char str[65]; printf("s%u %d [%.8f vs %.8f] check %s.%s avail.%d ismine.%d >= %d\n",utxo->T.spentflag,LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout),dstr(destsatoshis),dstr(utxo->S.satoshis),utxo->coin,bits256_str(str,utxo->payment.txid),LP_isavailable(utxo) > 0,LP_ismine(utxo) > 0,utxo->S.satoshis >= destsatoshis);
         if ( LP_isavailable(utxo) > 0 && LP_ismine(utxo) > 0 )
         {
-            if ( utxo->S.satoshis >= destsatoshis && (bestutxo == 0 || utxo->S.satoshis < bestutxo->S.satoshis) )
+            if ( utxo->S.satoshis >= destsatoshis/2 && (bestutxo == 0 || (bestutxo->S.satoshis < destsatoshis && utxo->S.satoshis >= destsatoshis) || (bestutxo->S.satoshis >= destsatoshis && utxo->S.satoshis < bestutxo->S.satoshis)) )
             {
                 if ( LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout) == 0 )
                 {
@@ -412,7 +412,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
                     continue;
                 }
                 bestutxo = utxo;
-            }
+            } else printf("skip alice utxo %.8f vs dest %.8f\n",dstr(utxo->S.satoshis),dstr(destsatoshis));
         }
     }
     return(bestutxo);
