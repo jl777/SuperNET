@@ -19,10 +19,11 @@
 //
 // new features:
 // stats
-// multidimensional portfolio
+// multidimensional portfolio, percentage among active vs all
 // autoutxo
 
 // bugs:
+// getutxos lastn field
 // false detection of bobreclaim
 
 // unduplicated bugs:

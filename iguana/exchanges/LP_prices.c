@@ -792,14 +792,14 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
 {
     struct LP_priceinfo *basepp,*relpp; uint32_t now; uint64_t price64; struct LP_pubkeyinfo *pubp; char str[65],fname[512]; FILE *fp;
     //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
-    if ( price > SMALLVAL && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    if ( price > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         if ( (fp= basepp->fps[relpp->ind]) == 0 )
         {
             LP_pricefname(fname,base,rel);
             fp = basepp->fps[relpp->ind] = OS_appendfile(fname);
         }
-        if ( fp != 0 && price > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN )
+        if ( fp != 0 )
         {
             now = (uint32_t)time(NULL);
             price64 = price * SATOSHIDEN;
@@ -812,7 +812,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,rel,base);
             fp = relpp->fps[basepp->ind] = OS_appendfile(fname);
         }
-        if ( fp != 0 && price > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN )
+        if ( fp != 0 )
         {
             now = (uint32_t)time(NULL);
             price64 = (1. / price) * SATOSHIDEN;
