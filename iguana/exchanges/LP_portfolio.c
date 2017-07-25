@@ -431,7 +431,7 @@ void prices_loop(void *ignore)
                         for (iter=0; iter<3; iter++)
                         {
                             requestid = quoteid = 0;
-                            if ( LP_utxo_bestfit(sellcoin,relvolume) != 0 )
+                            if ( LP_utxo_bestfit(sellcoin,SATOSHIDEN * relvolume) != 0 )
                             {
                                 if ( (retstr2= LP_autotrade(ctx,"127.0.0.1",-1,buycoin,sellcoin,maxprice,relvolume,60,24*3600)) != 0 )
                                 {
