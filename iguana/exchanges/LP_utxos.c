@@ -828,7 +828,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                 {
                     item = jitem(array,i);
                     satoshis = SATOSHIDEN * jdouble(item,"amount");
-                    if ( LP_inventory_prevent(iambob,jbits256(item,"txid"),juint(item,"vout")) == 0 )
+                    if ( LP_inventory_prevent(iambob,jbits256(item,"txid"),juint(item,"vout")) == 0 && jint(item,"confirmations") > 0 )
                         values[i] = satoshis;
                     else used++;
                     //printf("%.8f ",dstr(satoshis));
