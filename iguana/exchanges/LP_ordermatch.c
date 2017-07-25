@@ -462,7 +462,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     printf("%s/%s bid %.8f ask %.8f\n",Q.srccoin,Q.destcoin,bid,ask);
     //if ( (price= ask) == 0. )
         price = bid;
-    if ( SATOSHIDEN*qprice > SATOSHIDEN*price+10 )
+    if ( SATOSHIDEN*qprice > (SATOSHIDEN * price) * 1.001 + 10 )
     {
         printf("qprice %.8f too big vs %.8f\n",qprice,price);
         LP_availableset(autxo);
