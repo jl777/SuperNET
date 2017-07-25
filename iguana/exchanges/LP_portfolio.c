@@ -424,9 +424,9 @@ void prices_loop(void *ignore)
                     strcpy(LP_portfolio_base,"");
                     strcpy(LP_portfolio_rel,"");
                     LP_portfolio_relvolume = 0.;
-                    printf("base buy.%s force %f, rel sell.%s force %f relvolume %f maxprice %.8f (%.8f %.8f)\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume,maxprice,bid,ask);
                     if ( LP_pricevalid(maxprice) > 0 )
                     {
+                        printf("base buy.%s force %f, rel sell.%s force %f relvolume %f maxprice %.8f (%.8f %.8f)\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume,maxprice,bid,ask);
                         relvolume = sell->relvolume;
                         for (iter=0; iter<3; iter++)
                         {
