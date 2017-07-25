@@ -471,7 +471,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     }
     if ( (coin= LP_coinfind(Q.destcoin)) == 0 )
     {
-        LP_pendingswaps++;
+        LP_pendingswaps--;
         return(clonestr("{\"error\":\"cant get alicecoin\"}"));
     }
     Q.privkey = LP_privkey(Q.destaddr,coin->taddr);
@@ -502,13 +502,12 @@ char *LP_connectedalice(cJSON *argjson) // alice
         printf("connected result.(%s)\n",jprint(retjson,0));
         if ( jobj(retjson,"error") != 0 )
             LP_availableset(autxo);
-        else LP_pendingswaps--;
+        else LP_pendingswaps++;
         return(jprint(retjson,1));
     }
     else
     {
         LP_availableset(autxo);
-        LP_pendingswaps--;
         printf("no privkey found\n");
         return(clonestr("{\"error\",\"no privkey\"}"));
     }
@@ -753,7 +752,6 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     }
     if ( aliceutxo->S.swap == 0 )
         LP_availableset(aliceutxo);
-    else LP_pendingswaps++;
     return(jprint(bestitem,0));
 }
 

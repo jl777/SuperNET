@@ -184,7 +184,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
     if ( duplicate != 0 )
         dup++;
     else uniq++;
-    if ( (rand() % 100) == 0 )
+    if ( (rand() % 1000) == 0 )
         printf("%s dup.%d (%u / %u) %.1f%% encrypted.%d recv.%u [%02x %02x] vs %02x %02x U.%d\n",typestr,duplicate,dup,dup+uniq,(double)100*dup/(dup+uniq),encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff,LP_mypeer != 0 ? LP_mypeer->numutxos : -1);
     if ( duplicate == 0 )
     {

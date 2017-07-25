@@ -343,7 +343,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
     char *retstr; cJSON *retjson,*bid,*ask; uint64_t bidsatoshis,asksatoshis; int32_t i; double nxtkmd,price; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp;
     if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
     {
-        printf("error getting marketsummaries\n");
+        printf("trex error getting marketsummaries\n");
         sleep(60);
         return;
     }
@@ -351,7 +351,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
     free(retstr);
     if ( (retstr= issue_curlt("https://www.cryptopia.co.nz/api/GetMarkets",LP_HTTP_TIMEOUT*10)) == 0 )
     {
-        printf("error getting marketsummaries\n");
+        printf("cryptopia error getting marketsummaries\n");
         sleep(60);
         return;
     }
