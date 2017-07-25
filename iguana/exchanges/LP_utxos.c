@@ -373,6 +373,8 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
                 char str[65]; printf("iambob.%d not eligible (%.8f %.8f) %s %s/v%d\n",iambob,dstr(val),dstr(val2),utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout);
                 continue;
             } else jaddi(utxosjson,LP_utxojson(utxo));
+            if ( n++ > lastn )
+                break;
         }
     }
     return(jprint(utxosjson,1));
