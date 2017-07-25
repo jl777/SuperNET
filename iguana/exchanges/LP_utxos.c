@@ -852,7 +852,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 continue;
                             targetval = (depositval / 9) * 8 + 100000;
                         }
-                        printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
+                        //printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
                         if ( iambob != 0 )
                         {
                             if ( (i= LP_nearestvalue(iambob,values,n,targetval)) < 0 )
@@ -885,7 +885,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 portable_mutex_unlock(&LP_UTXOmutex);
                                 total += value;
                             } else printf("scriptmismatch.(%s) vs %s\n",script,jprint(item,0));
-                        } 
+                        }
                     } else break;
                 }
                 if ( iambob == 1 )
