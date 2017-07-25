@@ -201,7 +201,7 @@ char *LP_quotereceived(cJSON *argjson)
 {
     struct LP_cacheinfo *ptr; double price; struct LP_quoteinfo Q;
     LP_quoteparse(&Q,argjson);
-    price = (double)(Q.destsatoshis + Q.desttxfee) / (Q.satoshis + Q.txfee);
+    price = (double)Q.destsatoshis / Q.satoshis;
     if ( (ptr= LP_cacheadd(Q.srccoin,Q.destcoin,Q.txid,Q.vout,price,&Q)) != 0 )
     {
         ptr->Q = Q;
@@ -618,7 +618,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
                                         if ( (qprice= LP_qprice_calc(&destsatoshis,&satoshis,(price*(100.+j))/100.,butxo->S.satoshis,txfee,autxo->payment.value,maxdestsatoshis,desttxfee)) > price+SMALLVAL )
                                             break;
                                     }
-                                    printf("j.%d/%d qprice %.8f vs price %.8f best.(%.8f %.8f)\n",j,n,qprice,price,dstr(satoshis),dstr(destsatoshis));
+                                    //printf("j.%d/%d qprice %.8f vs price %.8f best.(%.8f %.8f)\n",j,n,qprice,price,dstr(satoshis),dstr(destsatoshis));
                                     if ( metric < 1.2 && destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value / LP_MINCLIENTVOL) && satoshis-txfee > (butxo->S.satoshis / LP_MINVOL) && satoshis <= butxo->payment.value-txfee )
                                     {
                                         printf("value %.8f price %.8f/%.8f best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",dstr(autxo->payment.value),price,bestprice,bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
@@ -706,7 +706,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     //    free(retstr);
     price = LP_query(ctx,myipaddr,mypubsock,"request",qp);
     bestitem = LP_quotejson(qp);
-    if ( price > SMALLVAL )
+    if ( LP_pricevalid(price) > 0 )
     {
         if ( price <= maxprice )
         {
