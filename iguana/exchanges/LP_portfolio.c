@@ -422,13 +422,13 @@ void prices_loop(void *ignore)
                     LP_myprice(&bid,&ask,buycoin,sellcoin);
                     maxprice = ask;
                     printf("base buy.%s force %f, rel sell.%s force %f relvolume %f maxprice %.8f (%.8f %.8f)\n",buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume,maxprice,bid,ask);
-                    if ( maxprice > SMALLVAL && LP_utxo_bestfit(sellcoin,sell->relvolume) != 0 )
+                    if ( LP_pricevalid(maxprice) > 0 && LP_utxo_bestfit(sellcoin,sell->relvolume) != 0 )
                     {
                         relvolume = sell->relvolume;
                         for (iter=0; iter<3; iter++)
                         {
                             requestid = quoteid = 0;
-                            if ( (retstr2= LP_autotrade(ctx,"127.0.0.1",-1,buycoin,sellcoin,maxprice,sell->relvolume,60,24*3600)) != 0 )
+                            if ( (retstr2= LP_autotrade(ctx,"127.0.0.1",-1,buycoin,sellcoin,maxprice,relvolume,60,24*3600)) != 0 )
                             {
                                 if ( (retjson2= cJSON_Parse(retstr2)) != 0 )
                                 {
@@ -438,7 +438,7 @@ void prices_loop(void *ignore)
                                     }
                                     free_json(retjson2);
                                 }
-                                printf("relvolume %.8f LP_autotrade.(%s)\n",relvolume,retstr2);
+                                printf("%s relvolume %.8f LP_autotrade.(%s)\n",sellcoin,relvolume,retstr2);
                                 free(retstr2);
                             }
                             if ( requestid != 0 && quoteid != 0 )
