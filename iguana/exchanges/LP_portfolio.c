@@ -431,23 +431,24 @@ void prices_loop(void *ignore)
                         for (iter=0; iter<3; iter++)
                         {
                             requestid = quoteid = 0;
-                            if ( LP_utxo_bestfit(sellcoin,relvolume) == 0 )
-                                continue;
-                            if ( (retstr2= LP_autotrade(ctx,"127.0.0.1",-1,buycoin,sellcoin,maxprice,relvolume,60,24*3600)) != 0 )
+                            if ( LP_utxo_bestfit(sellcoin,relvolume) != 0 )
                             {
-                                if ( (retjson2= cJSON_Parse(retstr2)) != 0 )
+                                if ( (retstr2= LP_autotrade(ctx,"127.0.0.1",-1,buycoin,sellcoin,maxprice,relvolume,60,24*3600)) != 0 )
                                 {
-                                    if ( (requestid= juint(retjson2,"requestid")) != 0 && (quoteid= juint(retjson2,"quoteid")) != 0 )
+                                    if ( (retjson2= cJSON_Parse(retstr2)) != 0 )
                                     {
-                                        
+                                        if ( (requestid= juint(retjson2,"requestid")) != 0 && (quoteid= juint(retjson2,"quoteid")) != 0 )
+                                        {
+                                            
+                                        }
+                                        free_json(retjson2);
                                     }
-                                    free_json(retjson2);
+                                    printf("%s relvolume %.8f LP_autotrade.(%s)\n",sellcoin,relvolume,retstr2);
+                                    free(retstr2);
                                 }
-                                printf("%s relvolume %.8f LP_autotrade.(%s)\n",sellcoin,relvolume,retstr2);
-                                free(retstr2);
-                            }
-                            if ( requestid != 0 && quoteid != 0 )
-                                break;
+                                if ( requestid != 0 && quoteid != 0 )
+                                    break;
+                            } else printf("cant find alice %.8f %s\n",relvolume,sellcoin);
                             relvolume *= 0.1;
                         }
                     }
