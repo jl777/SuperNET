@@ -52,7 +52,7 @@ uint16_t LP_fixed_pairport,LP_publicport;
 int32_t LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
-int32_t USERPASS_COUNTER,IAMLP = 0;
+int32_t LP_pendingswaps,USERPASS_COUNTER,IAMLP = 0;
 uint32_t LP_sessionid;
 double LP_profitratio = 1.;
 bits256 LP_mypub25519,LP_mypriv25519;

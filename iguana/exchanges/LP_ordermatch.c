@@ -448,6 +448,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     if ( (qprice= LP_quote_validate(&autxo,&butxo,&Q,0)) <= SMALLVAL )
     {
         LP_availableset(autxo);
+        LP_pendingswaps--;
         printf("quote validate error %.0f\n",qprice);
         return(clonestr("{\"error\":\"quote validation error\"}"));
     }
@@ -455,6 +456,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     {
         printf("this node has no price for %s/%s (%.8f %.8f)\n",Q.destcoin,Q.srccoin,bid,ask);
         LP_availableset(autxo);
+        LP_pendingswaps--;
         return(clonestr("{\"error\":\"no price set\"}"));
     }
     printf("%s/%s bid %.8f ask %.8f\n",Q.srccoin,Q.destcoin,bid,ask);
@@ -464,10 +466,12 @@ char *LP_connectedalice(cJSON *argjson) // alice
     {
         printf("qprice %.8f too big vs %.8f\n",qprice,price);
         LP_availableset(autxo);
+        LP_pendingswaps--;
         return(clonestr("{\"error\":\"quote price too expensive\"}"));
     }
     if ( (coin= LP_coinfind(Q.destcoin)) == 0 )
     {
+        LP_pendingswaps++;
         return(clonestr("{\"error\":\"cant get alicecoin\"}"));
     }
     Q.privkey = LP_privkey(Q.destaddr,coin->taddr);
@@ -498,11 +502,13 @@ char *LP_connectedalice(cJSON *argjson) // alice
         printf("connected result.(%s)\n",jprint(retjson,0));
         if ( jobj(retjson,"error") != 0 )
             LP_availableset(autxo);
+        else LP_pendingswaps--;
         return(jprint(retjson,1));
     }
     else
     {
         LP_availableset(autxo);
+        LP_pendingswaps--;
         printf("no privkey found\n");
         return(clonestr("{\"error\",\"no privkey\"}"));
     }
@@ -618,7 +624,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
                                         if ( (qprice= LP_qprice_calc(&destsatoshis,&satoshis,(price*(100.+j))/100.,butxo->S.satoshis,txfee,autxo->payment.value,maxdestsatoshis,desttxfee)) > price+SMALLVAL )
                                             break;
                                     }
-                                    printf("j.%d/%d qprice %.8f vs price %.8f best.(%.8f %.8f)\n",j,n,qprice,price,dstr(satoshis),dstr(destsatoshis));
+                                    //printf("j.%d/%d qprice %.8f vs price %.8f best.(%.8f %.8f)\n",j,n,qprice,price,dstr(satoshis),dstr(destsatoshis));
                                     if ( metric < 1.2 && destsatoshis > desttxfee && destsatoshis-desttxfee > (autxo->payment.value / LP_MINCLIENTVOL) && satoshis-txfee > (butxo->S.satoshis / LP_MINVOL) && satoshis <= butxo->payment.value-txfee )
                                     {
                                         printf("value %.8f price %.8f/%.8f best %.8f destsatoshis %.8f * metric %.8f -> (%f)\n",dstr(autxo->payment.value),price,bestprice,bestmetric,dstr(destsatoshis),metric,dstr(destsatoshis) * metric * metric * metric);
@@ -747,6 +753,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     }
     if ( aliceutxo->S.swap == 0 )
         LP_availableset(aliceutxo);
+    else LP_pendingswaps++;
     return(jprint(bestitem,0));
 }
 
