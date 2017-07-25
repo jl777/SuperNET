@@ -432,7 +432,7 @@ void prices_loop(void *ignore)
                             relvolume = sell->relvolume;
                             for (iter=0; iter<3; iter++)
                             {
-                                if ( relvolume < LP_MIN_TXFEE )
+                                if ( relvolume < dstr(LP_MIN_TXFEE) )
                                     break;
                                 requestid = quoteid = 0;
                                 if ( LP_utxo_bestfit(sellcoin,SATOSHIDEN * relvolume) != 0 )
