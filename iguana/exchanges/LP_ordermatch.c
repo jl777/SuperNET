@@ -591,7 +591,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
                 {
                     item = jitem(asks,i);
                     price = jdouble(item,"price");
-                    if ( LP_pricevalid(price) > 0 && price*1.0001 <= maxprice )
+                    if ( LP_pricevalid(price) > 0 && price <= maxprice )
                     {
                         price *= 1.0001;
                         if ( price > maxprice )
