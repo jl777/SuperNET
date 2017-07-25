@@ -544,7 +544,10 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         free_json(txobj);
     }
     if ( numconfirms <= 0 )
+    {
+        printf("numconfirms.%d\n",numconfirms);
         return(0);
+    }
     numconfirms = -1;
     if ( (txobj= LP_gettx(symbol,txid2)) != 0 )
     {
@@ -552,7 +555,10 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         free_json(txobj);
     }
     if ( numconfirms <= 0 )
+    {
+        printf("numconfirms.%d\n",numconfirms);
         return(0);
+    }
     if ( dispflag != 0 )
         printf("%.8f %.8f %s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",dstr(val),dstr(val2),coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
     dispflag = 1;
