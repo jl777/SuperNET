@@ -271,9 +271,9 @@ double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,i
             ptr->price = (double)ptr->Q.destsatoshis / ptr->Q.satoshis;
             if ( LP_pricevalid(ptr->price) <= 0 )
                 ptr->price = 0.;
-            printf("LP_pricecache: set %s/%s ptr->price %.8f\n",base,rel,ptr->price);
+            //printf("LP_pricecache: set %s/%s ptr->price %.8f\n",base,rel,ptr->price);
         }
-        printf("found %s/%s %.8f\n",base,rel,ptr->price);
+        //printf("found %s/%s %.8f\n",base,rel,ptr->price);
         return(ptr->price);
     }
     //char str[65]; printf("cachemiss %s/%s %s/v%d\n",base,rel,bits256_str(str,txid),vout);

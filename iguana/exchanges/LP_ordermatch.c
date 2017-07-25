@@ -662,6 +662,8 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
     }
     if ( bestutxo == 0 || *ordermatchpricep == 0. || *bestdestsatoshisp == 0 )
         return(0);
+    int32_t changed;
+    LP_mypriceset(&changed,autxo->coin,base,1. / *ordermatchpricep);
     return(bestutxo);
 }
 

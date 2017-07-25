@@ -221,8 +221,6 @@ trust(pubkey, trust)\n\
             {
                 if ( price > SMALLVAL )
                 {
-                    printf("price set (%s/%s) <- %.8f\n",rel,base,1./price);
-                    LP_mypriceset(&changed,rel,base,1./price);
                     return(LP_autotrade(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
