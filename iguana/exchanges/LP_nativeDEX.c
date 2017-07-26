@@ -13,6 +13,7 @@
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
  ******************************************************************************/
+
 //
 //  LP_nativeDEX.c
 //  marketmaker
@@ -21,9 +22,6 @@
 // stats
 // PoW, JS
 // autoutxo
-
-// bugs:
-// false detection of bobreclaim
 
 // unduplicated bugs:
 // swap cancel should cleanly cancel
