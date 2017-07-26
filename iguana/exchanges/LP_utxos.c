@@ -855,14 +855,11 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         depositval = values[i];
                         values[i] = 0, used++;
                         if ( iambob == 0 )
-                            targetval = (depositval / 776) + 100000;
-                        else
-                        {
-                            if ( depositval < LP_MINSIZE_TXFEEMULT*txfee )
-                                continue;
-                            targetval = (depositval / 9) * 8 + 100000;
-                        }
-                        printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
+                            targetval = (depositval / 776) + txfee;
+                        else targetval = (depositval / 9) * 8 + txfee;
+                        if ( depositval < LP_MINSIZE_TXFEEMULT*txfee && targetval < LP_MINSIZE_TXFEEMULT*txfee )
+                            continue;
+                        //printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
                         i = -1;
                         if ( iambob != 0 )
                         {
