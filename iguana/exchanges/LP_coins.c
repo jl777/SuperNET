@@ -170,10 +170,18 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,c
     return(-1);
 }
 
-cJSON *LP_coinjson(struct iguana_info *coin)
+cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 {
-    cJSON *item = cJSON_CreateObject();
+    char wifstr[128]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
+    if ( showwif != 0 )
+    {
+        bitcoin_priv2wif(coin->wiftaddr,wifstr,LP_mypriv25519,coin->wiftype);
+        bitcoin_wif2priv(coin->wiftaddr,&tmptype,&checkkey,wifstr);
+        if ( bits256_cmp(LP_mypriv25519,checkkey) == 0 )
+            jaddstr(item,"wif",wifstr);
+        else jaddstr(item,"wif","error creating wif");
+    }
     if ( coin->inactive != 0 )
         jaddstr(item,"status","inactive");
     else jaddstr(item,"status","active");
@@ -188,12 +196,12 @@ cJSON *LP_coinjson(struct iguana_info *coin)
     return(item);
 }
 
-cJSON *LP_coinsjson()
+cJSON *LP_coinsjson(int32_t showwif)
 {
     struct iguana_info *coin,*tmp; cJSON *array = cJSON_CreateArray();
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
-        jaddi(array,LP_coinjson(coin));
+        jaddi(array,LP_coinjson(coin,showwif));
     }
     return(array);
 }
@@ -206,7 +214,7 @@ char *LP_getcoin(char *symbol)
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
         if ( strcmp(symbol,coin->symbol) == 0 )
-            item = LP_coinjson(coin);
+            item = LP_coinjson(coin,0);
         if ( coin->inactive == 0 )
             numenabled++;
         else numdisabled++;

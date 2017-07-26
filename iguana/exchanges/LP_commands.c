@@ -133,7 +133,7 @@ trust(pubkey, trust)\n\
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"userpass",USERPASS);
             jaddbits256(retjson,"mypubkey",LP_mypub25519);
-            jadd(retjson,"coins",LP_coinsjson());
+            jadd(retjson,"coins",LP_coinsjson(1));
             return(jprint(retjson,1));
         }
         if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
@@ -238,13 +238,13 @@ trust(pubkey, trust)\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     ptr->inactive = 0;
-                return(jprint(LP_coinsjson(),1));
+                return(jprint(LP_coinsjson(0),1));
             }
             else if ( strcmp(method,"disable") == 0 )
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     ptr->inactive = (uint32_t)time(NULL);
-                return(jprint(LP_coinsjson(),1));
+                return(jprint(LP_coinsjson(0),1));
             }
             if ( LP_isdisabled(coin,0) != 0 )
                 return(clonestr("{\"error\":\"coin is disabled\"}"));
@@ -309,7 +309,7 @@ trust(pubkey, trust)\n\
     else if ( strcmp(method,"checktxid") == 0 )
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"getcoins") == 0 )
-        return(jprint(LP_coinsjson(),1));
+        return(jprint(LP_coinsjson(0),1));
     else if ( strcmp(method,"numutxos") == 0 )
         return(LP_numutxos());
     else if ( strcmp(method,"postprice") == 0 )
