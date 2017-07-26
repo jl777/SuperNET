@@ -563,7 +563,6 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
         return(0);
     }
-    dispflag = 1;
     if ( dispflag != 0 )
         printf("%.8f %.8f %s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",dstr(val),dstr(val2),coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
     dispflag = 1;
@@ -894,7 +893,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 portable_mutex_unlock(&LP_UTXOmutex);
                                 total += value;
                             } else printf("scriptmismatch.(%s) vs %s\n",script,jprint(item,0));
-                        } else printf("nothing near i.%d\n",i);
+                        } //else printf("nothing near i.%d\n",i);
                     } else break;
                 }
                 if ( iambob == 1 )
