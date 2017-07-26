@@ -372,7 +372,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         if ( peer->errors >= LP_MAXPEER_ERRORS )
         {
             if ( (rand() % 10000) == 0 )
+            {
                 peer->errors--;
+                peer->diduquery = 0;
+            }
             if ( IAMLP == 0 )
                 continue;
         }
