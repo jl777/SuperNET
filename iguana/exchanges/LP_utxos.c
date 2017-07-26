@@ -834,15 +834,18 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                     if ( satoshis == 0 )
                         satoshis = SATOSHIDEN * jdouble(item,"value");
                     if ( LP_inventory_prevent(iambob,jbits256(item,"txid"),juint(item,"vout")) == 0 && jint(item,"confirmations") > 0 )
+                    {
+                        printf("%s\n",jprint(item,0));
                         values[i] = satoshis;
-                    else used++;
+                    } else used++;
                     //printf("%.8f ",dstr(satoshis));
-                    printf("%s\n",jprint(item,0));
                 }
                 //printf("array.%d\n",n);
                 while ( used < n-1 )
                 {
-                    //printf("used.%d of n.%d\n",used,n);
+                    for (i=0; i<n; i++)
+                        printf("%.8f ",dstr(values[i]));
+                    printf("used.%d of n.%d\n",used,n);
                     if ( (i= LP_maxvalue(values,n)) >= 0 )
                     {
                         item = jitem(array,i);
