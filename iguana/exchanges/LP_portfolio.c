@@ -455,13 +455,16 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
                 if ( requestid != 0 && quoteid != 0 )
                     break;
             } else printf("cant find alice %.8f %s\n",relvolume,sell->symbol);
-            for (i=0; i<100; i++)
+            if ( iter == 0 )
             {
-                relvolume *= .99;
-                if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
+                for (i=0; i<100; i++)
                 {
-                    printf("i.%d relvolume %.8f from %.8f\n",i,relvolume,sell->relvolume);
-                    break;
+                    relvolume *= .99;
+                    if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
+                    {
+                        printf("i.%d relvolume %.8f from %.8f\n",i,relvolume,sell->relvolume);
+                        break;
+                    }
                 }
             }
         }
