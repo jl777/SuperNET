@@ -288,7 +288,7 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
-    uint64_t val,val2=0,txfee,threshold=0; int32_t iter,bypass = 0; char destaddr[64],destaddr2[64]; struct LP_utxoinfo *utxo; struct iguana_info *coin = LP_coinfind(symbol);
+    uint64_t val,val2=0,txfee,threshold=0; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct iguana_info *coin = LP_coinfind(symbol);
     destaddr[0] = destaddr2[0] = 0;
     if ( coin != 0 && IAMLP != 0 && coin->inactive != 0 )
         bypass = 1;
@@ -559,6 +559,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("numconfirms.%d\n",numconfirms);
         return(0);
     }
+    dispflag = 1;
     if ( dispflag != 0 )
         printf("%.8f %.8f %s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",dstr(val),dstr(val2),coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
     dispflag = 1;
