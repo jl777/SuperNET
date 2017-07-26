@@ -317,7 +317,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         } // else printf("no val2\n");
     }
     // char str[65],str2[65]; printf("spent.%d %s txid or value %.8f < %.8f or val2 %.8f < %.8f, %s/v%d %s/v%d or < 10x txfee %.8f\n",iambob,symbol,dstr(val),dstr(satoshis),dstr(val2),dstr(threshold),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2,dstr(txfee));
-    for (iter=0; iter<2; iter++)
+    /*for (iter=0; iter<2; iter++)
     {
         if ( (utxo= LP_utxofind(iter,txid,vout)) != 0 )
         {
@@ -343,7 +343,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
             if ( utxo->T.spentflag == 0 )
                 utxo->T.spentflag = (uint32_t)time(NULL);
         }
-    }
+    }*/
     *valp = val;
     *val2p = val2;
     return(0);
@@ -843,9 +843,9 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                 //printf("array.%d\n",n);
                 while ( used < n-1 )
                 {
-                    //for (i=0; i<n; i++)
-                    //    printf("%.8f ",dstr(values[i]));
-                    //printf("used.%d of n.%d\n",used,n);
+                    for (i=0; i<n; i++)
+                        printf("%.8f ",dstr(values[i]));
+                    printf("used.%d of n.%d\n",used,n);
                     if ( (i= LP_maxvalue(values,n)) >= 0 )
                     {
                         item = jitem(array,i);
@@ -859,7 +859,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         else targetval = (depositval / 9) * 8 + 2*txfee;
                         if ( depositval < (1+LP_MINSIZE_TXFEEMULT)*txfee && targetval < (1+LP_MINSIZE_TXFEEMULT)*txfee )
                             continue;
-                        //printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
+                        printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
                         i = -1;
                         if ( iambob != 0 )
                         {

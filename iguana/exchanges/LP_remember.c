@@ -600,7 +600,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             }
                             free_json(sentobj);
                         }
-                        if ( 0 && finishedflag == 0 )
+                        if ( finishedflag == 0 )
                             printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
                     }
                 }
