@@ -589,7 +589,7 @@ int32_t sortds(double *buf,uint32_t num,int32_t size)
     return(0);
 }
 
-int32_t refsortds(double *buf,uint32_t num,int32_t size)
+int32_t revsortds(double *buf,uint32_t num,int32_t size)
 {
     qsort(buf,num,size,_decreasing_double);
     return(0);
