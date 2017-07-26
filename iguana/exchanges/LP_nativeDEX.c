@@ -49,7 +49,7 @@ uint16_t LP_fixed_pairport,LP_publicport;
 int32_t LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
-int32_t LP_pendingswaps,USERPASS_COUNTER,IAMLP = 0;
+int32_t LP_pendingswaps,LP_showwif,USERPASS_COUNTER,IAMLP = 0;
 uint32_t LP_sessionid;
 double LP_profitratio = 1.;
 bits256 LP_mypub25519,LP_mypriv25519;
@@ -578,6 +578,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
     char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128]; void *ctx = bitcoin_ctx();
+    LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
         printf("jeezy says we cant use the nullstring as passphrase and I agree\n");

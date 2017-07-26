@@ -133,7 +133,7 @@ trust(pubkey, trust)\n\
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"userpass",USERPASS);
             jaddbits256(retjson,"mypubkey",LP_mypub25519);
-            jadd(retjson,"coins",LP_coinsjson(1));
+            jadd(retjson,"coins",LP_coinsjson(LP_showwif));
             return(jprint(retjson,1));
         }
         if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
