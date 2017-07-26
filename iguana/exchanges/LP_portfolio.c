@@ -47,8 +47,23 @@ cJSON *LP_portfolio_entry(struct iguana_info *coin)
 
 uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
 {
-    cJSON *array,*item; int32_t i,n; uint64_t valuesum,satoshisum;
+    cJSON *array,*item; int32_t i,n; uint64_t valuesum,satoshisum,value;
     valuesum = satoshisum = 0;
+    if ( (array= LP_listunspent(symbol,coinaddr)) != 0 )
+    {
+        if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                value = SATOSHIDEN * jdouble(item,"amount");
+                if ( value == 0 )
+                    value = SATOSHIDEN * jdouble(item,"value");
+                valuesum += value;
+            }
+        }
+        free_json(array);
+    }
     if ( (array= LP_inventory(symbol,iambob)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 && is_cJSON_Array(array) != 0 )
@@ -56,7 +71,7 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                valuesum += j64bits(item,"value") + j64bits(item,"value2");
+                //valuesum += j64bits(item,"value") + j64bits(item,"value2");
                 satoshisum += j64bits(item,"satoshis");
             }
         }
