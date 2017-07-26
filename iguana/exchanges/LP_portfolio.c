@@ -428,9 +428,9 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
         strcpy(LP_portfolio_rel,"");
         LP_portfolio_relvolume = 0.;
     }
+    printf("pending.%d base buy.%s, rel sell.%s relvolume %f maxprice %.8f (%.8f %.8f)\n",LP_pendingswaps,buy->symbol,sell->symbol,sell->relvolume,maxprice,bid,ask);
     if ( LP_pricevalid(maxprice) > 0 )
     {
-        printf("pending.%d base buy.%s, rel sell.%s relvolume %f maxprice %.8f (%.8f %.8f)\n",LP_pendingswaps,buy->symbol,sell->symbol,sell->relvolume,maxprice,bid,ask);
         relvolume = sell->relvolume;
         for (iter=0; iter<3; iter++)
         {
