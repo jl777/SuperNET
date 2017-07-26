@@ -419,7 +419,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 
 int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel)
 {
-    char *retstr2; double bid,ask,maxprice; uint32_t requestid,quoteid,iter; cJSON *retjson2;
+    char *retstr2; double bid,ask,maxprice; uint32_t requestid,quoteid,iter,i; cJSON *retjson2;
     requestid = quoteid = 0;
     LP_myprice(&bid,&ask,buy->symbol,sell->symbol);
     maxprice = ask;
@@ -455,7 +455,15 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
                 if ( requestid != 0 && quoteid != 0 )
                     break;
             } else printf("cant find alice %.8f %s\n",relvolume,sell->symbol);
-            relvolume /= 3.;
+            for (i=0; i<100; i++)
+            {
+                relvolume *= .99;
+                if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
+                {
+                    printf("i.%d relvolume %.8f from %.8f\n",i,relvolume,sell->relvolume);
+                    break;
+                }
+            }
         }
     }
     else if ( setbaserel != 0 )
