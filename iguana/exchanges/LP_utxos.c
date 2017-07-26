@@ -795,7 +795,7 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
         dist = (values[i] - targetval);
         if ( iambob != 0 && dist < 0 && -dist < values[i]/10 )
             dist = -dist;
-        printf("(%.8f %.8f %.8f).%d ",dstr(values[i]),dstr(dist),dstr(mindist),mini);
+        //printf("(%.8f %.8f %.8f).%d ",dstr(values[i]),dstr(dist),dstr(mindist),mini);
         if ( dist >= 0 && dist < mindist )
         {
             mini = i;
@@ -843,9 +843,9 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                 //printf("array.%d\n",n);
                 while ( used < n-1 )
                 {
-                    for (i=0; i<n; i++)
-                       printf("%.8f ",dstr(values[i]));
-                    printf("used.%d of n.%d\n",used,n);
+                    //for (i=0; i<n; i++)
+                    //   printf("%.8f ",dstr(values[i]));
+                    //printf("used.%d of n.%d\n",used,n);
                     if ( (i= LP_maxvalue(values,n)) >= 0 )
                     {
                         item = jitem(array,i);
@@ -859,7 +859,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         else targetval = (depositval / 9) * 8 + 2*txfee;
                         if ( depositval < (1+LP_MINSIZE_TXFEEMULT)*txfee )
                             continue;
-                        printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
+                        //printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
                         i = -1;
                         if ( iambob != 0 )
                         {
