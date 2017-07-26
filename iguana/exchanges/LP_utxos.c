@@ -853,7 +853,8 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 continue;
                             targetval = (depositval / 9) * 8 + 100000;
                         }
-                        //printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
+                        printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
+                        i = -1;
                         if ( iambob != 0 )
                         {
                             if ( (i= LP_nearestvalue(iambob,values,n,targetval)) < 0 )
@@ -861,7 +862,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                             if ( targetval < txfee*LP_MINSIZE_TXFEEMULT )
                                 continue;
                         }
-                        if ( (i= LP_nearestvalue(iambob,values,n,targetval)) >= 0 )
+                        if ( i >= 0 || (i= LP_nearestvalue(iambob,values,n,targetval)) >= 0 )
                         {
                             item = jitem(array,i);
                             txid = jbits256(item,"txid");
