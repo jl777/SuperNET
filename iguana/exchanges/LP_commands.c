@@ -97,7 +97,7 @@ available localhost RPC commands:\n \
 pricearray(base, rel, firsttime=0, lasttime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 setprice(base, rel, price)\n\
 autoprice(base, rel, price, margin, type)\n\
-goal(coin=*, perc=<autocalc>)\n\
+goal(coin=*, val=<autocalc>)\n\
 myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
