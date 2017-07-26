@@ -795,7 +795,7 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
         dist = (values[i] - targetval);
         if ( iambob != 0 && dist < 0 && -dist < values[i]/10 )
             dist = -dist;
-        //printf("(%.8f %.8f).%d ",dstr(dist),dstr(mindist),mini);
+        printf("(%.8f %.8f).%d ",dstr(dist),dstr(mindist),mini);
         if ( dist >= 0 && dist < mindist )
         {
             mini = i;
