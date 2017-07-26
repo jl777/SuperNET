@@ -837,6 +837,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         values[i] = satoshis;
                     else used++;
                     //printf("%.8f ",dstr(satoshis));
+                    printf("%s\n",jprint(item,0));
                 }
                 //printf("array.%d\n",n);
                 while ( used < n-1 )
