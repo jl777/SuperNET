@@ -684,7 +684,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             //revcalc_rmd160_sha256(secretAm,rev);//privAm);
                             //vcalc_sha256(0,secretAm256,rev.bytes,sizeof(rev));
                             if ( Predeemlen != 0 )
-                                redeemlen = Predeemlen, memcpy(redeemscript,Predeem,Predeemlen);
+                                redeemlen = Predeemlen, memcpy(redeemscript,Predeemscript,Predeemlen);
                             else redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,plocktime,pubA0,pubB0,pubB1,rev,privBn,secretAm,secretAm256,secretBn,secretBn256);
                             len = basilisk_swapuserdata(userdata,rev,0,myprivs[0],redeemscript,redeemlen);
                             {
@@ -717,7 +717,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     //if ( txbytes[BASILISK_ALICECLAIM] == 0 )
                     {
                         if ( Dredeemlen != 0 )
-                            redeemlen = Dredeemlen, memcpy(redeemscript,Dredeem,Dredeemlen);
+                            redeemlen = Dredeemlen, memcpy(redeemscript,Dredeemscript,Dredeemlen);
                         else redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,dlocktime,pubA0,pubB0,pubB1,privAm,zero,secretAm,secretAm256,secretBn,secretBn256);
                         if ( redeemlen > 0 )
                         {
