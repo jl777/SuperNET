@@ -536,7 +536,7 @@ void prices_loop(void *ignore)
             {
                 if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 && buy->inactive == 0 && sell->inactive == 0 )
                 {
-                    if ( LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,1) < 0 )
+                    //if ( LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,1) < 0 )
                     {
                         array = jarray(&m,retjson,"portfolio");
                         if ( array != 0 && (n= LP_portfolio_order(trades,(int32_t)(sizeof(trades)/sizeof(*trades)),array)) > 0 )
