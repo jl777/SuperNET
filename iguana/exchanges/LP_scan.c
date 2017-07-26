@@ -222,7 +222,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         {
             if ( bits256_nonz(tx->outpoints[vout].spendtxid) != 0 )
             {
-                char str[65]; printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
+                //char str[65]; printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
                 return(0);
             }
             else

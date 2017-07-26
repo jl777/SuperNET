@@ -395,10 +395,13 @@ uint32_t LP_extract(uint32_t requestid,uint32_t quoteid,char *rootfname,char *fi
 cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requestid,uint32_t quoteid)
 {
     static void *ctx;
-    FILE *fp; int32_t sentflags[sizeof(txnames)/sizeof(*txnames)],i,n,j,len,needflag,secretstart,redeemlen,addflag,origfinishedflag = 0,finishedflag = 0,iambob = -1; int64_t srcamount,destamount=0,value,values[sizeof(txnames)/sizeof(*txnames)]; uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],pubkey33[33],redeemscript[1024],userdata[1024]; uint32_t plocktime,dlocktime,expiration=0,r,q,state,otherstate; char *secretstr,*srcstr,*deststr,str[65],src[64],dest[64],fname[512],*fstr,*dest33,*symbol,*txname,*Adest,*Bdest,*AAdest,*ABdest,destaddr[64],Adestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[64],bobcoin[64],*txbytes[sizeof(txnames)/sizeof(*txnames)]; long fsize; cJSON *txobj,*item,*sentobj,*array; bits256 checktxid,txid,pubA0,pubB0,pubB1,privAm,privBn,paymentspent,Apaymentspent,depositspent,zero,privkey,rev,myprivs[2],txids[sizeof(txnames)/sizeof(*txnames)],signedtxid; struct iguana_info *bob=0,*alice=0; uint64_t Atxfee=0,Btxfee=0;
+    FILE *fp; int32_t sentflags[sizeof(txnames)/sizeof(*txnames)],i,n,j,Predeemlen,Dredeemlen,len,needflag,secretstart,redeemlen,addflag,origfinishedflag = 0,finishedflag = 0,iambob = -1; int64_t srcamount,destamount=0,value,values[sizeof(txnames)/sizeof(*txnames)]; uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],pubkey33[33],Predeemscript[1024],Dredeemscript[1024],redeemscript[1024],userdata[1024]; uint32_t plocktime,dlocktime,expiration=0,r,q,state,otherstate; char *secretstr,*srcstr,*deststr,str[65],src[64],dest[64],fname[512],*fstr,*dest33,*rstr,*symbol,*txname,*Adest,*Bdest,*AAdest,*ABdest,destaddr[64],Adestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[64],bobcoin[64],*txbytes[sizeof(txnames)/sizeof(*txnames)]; long fsize; cJSON *txobj,*item,*sentobj,*array; bits256 checktxid,txid,pubA0,pubB0,pubB1,privAm,privBn,paymentspent,Apaymentspent,depositspent,zero,privkey,rev,myprivs[2],txids[sizeof(txnames)/sizeof(*txnames)],signedtxid; struct iguana_info *bob=0,*alice=0; uint64_t Atxfee=0,Btxfee=0;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     bobpaymentaddr[0] = bobdepositaddr[0] = alicepaymentaddr[0] = 0;
+    memset(Predeemscript,0,sizeof(Predeemscript));
+    memset(Dredeemscript,0,sizeof(Dredeemscript));
+    Predeemlen = Dredeemlen = 0;
     memset(values,0,sizeof(values));
     memset(txids,0,sizeof(txids));
     memset(secretAm,0,sizeof(secretAm));
@@ -550,6 +553,16 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     txbytes[i] = clonestr(jstr(txobj,"tx"));
                     //printf("[%s] TX.(%s)\n",txnames[i],txbytes[i]);
                 }
+                if ( strcmp(txnames[i],"bobpayment") == 0 && (rstr= jstr(txobj,"redeem")) != 0 && (Predeemlen= is_hexstr(rstr,0)) > 0 )
+                {
+                    Predeemlen >>= 1;
+                    decode_hex(Predeemscript,Predeemlen,rstr);
+                }
+                else if ( strcmp(txnames[i],"bobdeposit") == 0 && (rstr= jstr(txobj,"redeem")) != 0 && (Dredeemlen= is_hexstr(rstr,0)) > 0 )
+                {
+                    Dredeemlen >>= 1;
+                    decode_hex(Dredeemscript,Dredeemlen,rstr);
+                }
                 if ( (value= jdouble(txobj,"amount") * SATOSHIDEN) == 0 )
                     value = jdouble(txobj,"value") * SATOSHIDEN;
                 values[i] = value;
@@ -670,7 +683,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                 rev.bytes[j] = privAm.bytes[31 - j];
                             //revcalc_rmd160_sha256(secretAm,rev);//privAm);
                             //vcalc_sha256(0,secretAm256,rev.bytes,sizeof(rev));
-                            redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,plocktime,pubA0,pubB0,pubB1,rev,privBn,secretAm,secretAm256,secretBn,secretBn256);
+                            if ( Predeemlen != 0 )
+                                redeemlen = Predeemlen, memcpy(redeemscript,Predeem,Predeemlen);
+                            else redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,plocktime,pubA0,pubB0,pubB1,rev,privBn,secretAm,secretAm256,secretBn,secretBn256);
                             len = basilisk_swapuserdata(userdata,rev,0,myprivs[0],redeemscript,redeemlen);
                             {
                                 char privaddr[64]; uint8_t privpub33[33];
@@ -701,7 +716,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 {
                     //if ( txbytes[BASILISK_ALICECLAIM] == 0 )
                     {
-                        redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,dlocktime,pubA0,pubB0,pubB1,privAm,zero,secretAm,secretAm256,secretBn,secretBn256);
+                        if ( Dredeemlen != 0 )
+                            redeemlen = Dredeemlen, memcpy(redeemscript,Dredeem,Dredeemlen);
+                        else redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,dlocktime,pubA0,pubB0,pubB1,privAm,zero,secretAm,secretAm256,secretBn,secretBn256);
                         if ( redeemlen > 0 )
                         {
                             len = basilisk_swapuserdata(userdata,zero,1,myprivs[0],redeemscript,redeemlen);
