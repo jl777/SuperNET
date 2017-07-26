@@ -21,7 +21,8 @@
 // new features:
 // stats
 // PoW, JS
-// autoutxo
+// verify actual pricing
+// autoutxo, if < 10*txfee and > 10 utxo: combine smallest utxo into dexfee; autosplit if imbalanced
 
 // unduplicated bugs:
 // swap cancel should cleanly cancel
