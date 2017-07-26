@@ -416,9 +416,111 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
     }
 }
 
+int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel)
+{
+    char *retstr2; double bid,ask,maxprice; uint32_t requestid,quoteid,iter; cJSON *retjson2;
+    requestid = quoteid = 0;
+    LP_myprice(&bid,&ask,buy->symbol,sell->symbol);
+    maxprice = ask;
+    if ( setbaserel != 0 )
+    {
+        strcpy(LP_portfolio_base,"");
+        strcpy(LP_portfolio_rel,"");
+        LP_portfolio_relvolume = 0.;
+    }
+    if ( LP_pricevalid(maxprice) > 0 )
+    {
+        printf("pending.%d base buy.%s, rel sell.%s relvolume %f maxprice %.8f (%.8f %.8f)\n",LP_pendingswaps,buy->symbol,sell->symbol,sell->relvolume,maxprice,bid,ask);
+        relvolume = sell->relvolume;
+        for (iter=0; iter<3; iter++)
+        {
+            if ( relvolume < dstr(LP_MIN_TXFEE) )
+                break;
+            if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
+            {
+                if ( (retstr2= LP_autotrade(ctx,"127.0.0.1",-1,buy->symbol,sell->symbol,maxprice,relvolume,60,24*3600)) != 0 )
+                {
+                    if ( (retjson2= cJSON_Parse(retstr2)) != 0 )
+                    {
+                        if ( (requestid= juint(retjson2,"requestid")) != 0 && (quoteid= juint(retjson2,"quoteid")) != 0 )
+                        {
+                            
+                        }
+                        free_json(retjson2);
+                    }
+                    printf("%s relvolume %.8f LP_autotrade.(%s)\n",sell->symbol,relvolume,retstr2);
+                    free(retstr2);
+                }
+                if ( requestid != 0 && quoteid != 0 )
+                    break;
+            } else printf("cant find alice %.8f %s\n",relvolume,sell->symbol);
+            relvolume /= 3.;
+        }
+    }
+    else if ( setbaserel != 0 )
+    {
+        strcpy(LP_portfolio_base,buy->symbol);
+        strcpy(LP_portfolio_rel,sell->symbol);
+        LP_portfolio_relvolume = sell->relvolume;
+    }
+    *requestidp = requestid;
+    *quoteidp = quoteid;
+    if ( requestid != 0 && quoteid != 0 )
+        return(0);
+    else return(-1);
+}
+
+struct LP_portfoliotrade { double metric; char buycoin[16],sellcoin[16]; };
+
+int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *array)
+{
+    int32_t i,j,m,n = 0; cJSON *item; struct LP_portfoliotrade coins[256];
+    memset(coins,0,sizeof(coins));
+    if ( (m= cJSON_GetArraySize(array)) > 0 )
+    {
+        for (i=j=0; i<m && i<sizeof(coins)/sizeof(*coins); i++)
+        {
+            item = jitem(array,i);
+            safecopy(coins[j].buycoin,jstr(item,"coin"),sizeof(coins[j].buycoin));
+            coins[j].metric = jdouble(item,"force");
+            if ( fabs(coins[j].metric) > SMALLVAL && coins[j].buycoin[0] != 0 )
+                j++;
+        }
+        if ( (m= j) > 1 )
+        {
+            for (i=n=0; i<m-1; i++)
+                for (j=i+1; j<m; j++)
+                    if ( coins[i].metric*coins[j].metric < 0. )
+                    {
+                        if ( coins[i].metric > 0. )
+                        {
+                            trades[n].metric = (coins[i].metric - coins[j].metric);
+                            strcpy(trades[n].buycoin,coins[i].buycoin);
+                            strcpy(trades[n].sellcoin,coins[j].buycoin);
+                            printf("buy %s %f, sell %s %f -> %f\n",trades[n].buycoin,coins[i].metric,trades[n].sellcoin,coins[j].metric,trades[n].metric);
+                        }
+                        else
+                        {
+                            trades[n].metric = (coins[j].metric - coins[i].metric);
+                            strcpy(trades[n].buycoin,coins[j].buycoin);
+                            strcpy(trades[n].sellcoin,coins[i].buycoin);
+                            printf("buy %s %f, sell %s %f -> %f\n",trades[n].buycoin,coins[j].metric,trades[n].sellcoin,coins[i].metric,trades[n].metric);
+                        }
+                        n++;
+                        if ( n >= max )
+                            break;
+                    }
+            revsortds((void *)trades,n,sizeof(*trades));
+            for (i=0; i<n; i++)
+                printf("%d: buy %s, sell %s -> %f\n",i,trades[i].buycoin,trades[i].sellcoin,trades[i].metric);
+        }
+    }
+    return(n);
+}
+
 void prices_loop(void *ignore)
 {
-    char *buycoin,*sellcoin,*retstr,*retstr2; double bid,ask,maxprice,relvolume; struct iguana_info *buy,*sell; uint32_t requestid,quoteid,iter; cJSON *retjson,*retjson2; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
+    char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256]; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
@@ -434,51 +536,24 @@ void prices_loop(void *ignore)
             {
                 if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 && buy->inactive == 0 && sell->inactive == 0 )
                 {
-                    LP_myprice(&bid,&ask,buycoin,sellcoin);
-                    maxprice = ask;
-                    strcpy(LP_portfolio_base,"");
-                    strcpy(LP_portfolio_rel,"");
-                    LP_portfolio_relvolume = 0.;
-                    if ( LP_pricevalid(maxprice) > 0 )
+                    if ( LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,1) < 0 )
                     {
-                        printf("pending.%d base buy.%s force %f, rel sell.%s force %f relvolume %f maxprice %.8f (%.8f %.8f)\n",LP_pendingswaps,buycoin,jdouble(retjson,"buyforce"),sellcoin,jdouble(retjson,"sellforce"),sell->relvolume,maxprice,bid,ask);
-                        //if ( LP_pendingswaps == 0 )
+                        array = jarray(&m,retjson,"portfolio");
+                        if ( array != 0 && (n= LP_portfolio_order(trades,(int32_t)(sizeof(trades)/sizeof(*trades)),array)) > 0 )
                         {
-                            relvolume = sell->relvolume;
-                            for (iter=0; iter<2; iter++)
+                            for (i=0; i<n; i++)
                             {
-                                if ( relvolume < dstr(LP_MIN_TXFEE) )
-                                    break;
-                                requestid = quoteid = 0;
-                                if ( LP_utxo_bestfit(sellcoin,SATOSHIDEN * relvolume) != 0 )
+                                if ( strcmp(trades[i].buycoin,buycoin) != 0 || strcmp(trades[i].sellcoin,sellcoin) != 0 )
                                 {
-                                    if ( (retstr2= LP_autotrade(ctx,"127.0.0.1",-1,buycoin,sellcoin,maxprice,relvolume,60,24*3600)) != 0 )
-                                    {
-                                        if ( (retjson2= cJSON_Parse(retstr2)) != 0 )
-                                        {
-                                            if ( (requestid= juint(retjson2,"requestid")) != 0 && (quoteid= juint(retjson2,"quoteid")) != 0 )
-                                            {
-                                                
-                                            }
-                                            free_json(retjson2);
-                                        }
-                                        printf("%s relvolume %.8f LP_autotrade.(%s)\n",sellcoin,relvolume,retstr2);
-                                        free(retstr2);
-                                    }
-                                    if ( requestid != 0 && quoteid != 0 )
+                                    buy = LP_coinfind(trades[i].buycoin);
+                                    sell = LP_coinfind(trades[i].sellcoin);
+                                    if ( buy != 0 && sell != 0 && LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,0) == 0 )
                                         break;
-                                } else printf("cant find alice %.8f %s\n",relvolume,sellcoin);
-                                relvolume *= 0.1;
+                                }
                             }
                         }
                     }
-                    else
-                    {
-                        strcpy(LP_portfolio_base,buycoin);
-                        strcpy(LP_portfolio_rel,sellcoin);
-                        LP_portfolio_relvolume = sell->relvolume;
-                    }
-                } //else printf("buy or sell missing.(%s)\n",jprint(retjson,0));
+                }
                 free_json(retjson);
             }
             free(retstr);

@@ -522,11 +522,24 @@ static int _increasing_double(const void *a,const void *b)
 {
 #define double_a (*(double *)a)
 #define double_b (*(double *)b)
-	if ( double_b > double_a )
-		return(-1);
-	else if ( double_b < double_a )
-		return(1);
-	return(0);
+    if ( double_b > double_a )
+        return(-1);
+    else if ( double_b < double_a )
+        return(1);
+    return(0);
+#undef double_a
+#undef double_b
+}
+
+static int _decreasing_double(const void *a,const void *b)
+{
+#define double_a (*(double *)a)
+#define double_b (*(double *)b)
+    if ( double_b > double_a )
+        return(1);
+    else if ( double_b < double_a )
+        return(-1);
+    return(0);
 #undef double_a
 #undef double_b
 }
@@ -572,8 +585,14 @@ static int _decreasing_uint32(const void *a,const void *b)
 
 int32_t sortds(double *buf,uint32_t num,int32_t size)
 {
-	qsort(buf,num,size,_increasing_double);
-	return(0);
+    qsort(buf,num,size,_increasing_double);
+    return(0);
+}
+
+int32_t refsortds(double *buf,uint32_t num,int32_t size)
+{
+    qsort(buf,num,size,_decreasing_double);
+    return(0);
 }
 
 int32_t sort64s(uint64_t *buf,uint32_t num,int32_t size)
