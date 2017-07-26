@@ -519,7 +519,10 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         return(0);
     }
     if ( (coin= LP_coinfind(symbol)) == 0 || (IAMLP == 0 && coin->inactive != 0) )
+    {
+        printf("LP_utxoadd reject inactive %s\n",symbol);
         return(0);
+    }
     if ( iambob != 0 && value2 < 9 * (value >> 3) + bigtxfee ) // big txfee padding
     {
         if ( value2 > bigtxfee+20000 )
@@ -545,7 +548,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     }
     if ( numconfirms <= 0 )
     {
-        printf("numconfirms.%d\n",numconfirms);
+        printf("LP_utxoadd reject numconfirms.%d\n",numconfirms);
         return(0);
     }
     numconfirms = -1;
@@ -556,7 +559,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     }
     if ( numconfirms <= 0 )
     {
-        printf("numconfirms.%d\n",numconfirms);
+        printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
         return(0);
     }
     dispflag = 1;
@@ -887,7 +890,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 portable_mutex_unlock(&LP_UTXOmutex);
                                 total += value;
                             } else printf("scriptmismatch.(%s) vs %s\n",script,jprint(item,0));
-                        }
+                        } else printf("nothing near i.%d\n",i);
                     } else break;
                 }
                 if ( iambob == 1 )
