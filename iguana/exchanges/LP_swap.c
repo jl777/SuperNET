@@ -1058,10 +1058,11 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
 {
     struct basilisk_swap *swap; bits256 pubkey25519; uint8_t pubkey33[33];
     swap = calloc(1,sizeof(*swap));
+    swap->I.req.quoteid = rp->quoteid;
     swap->ctx = bitcoin_ctx();
     vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
     swap->I.req = *rp;
-    printf("basilisk_thread_start request.%u iambob.%d (%s/%s)\n",rp->requestid,iambob,rp->src,rp->dest);
+    printf("basilisk_thread_start request.%u iambob.%d (%s/%s) quoteid.%u\n",rp->requestid,iambob,rp->src,rp->dest,rp->quoteid);
     bitcoin_pubkey33(swap->ctx,pubkey33,privkey);
     pubkey25519 = curve25519(privkey,curve25519_basepoint9());
     swap->persistent_pubkey = pubkey25519;
