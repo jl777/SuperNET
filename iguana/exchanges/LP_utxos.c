@@ -317,7 +317,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         } // else printf("no val2\n");
     }
     // char str[65],str2[65]; printf("spent.%d %s txid or value %.8f < %.8f or val2 %.8f < %.8f, %s/v%d %s/v%d or < 10x txfee %.8f\n",iambob,symbol,dstr(val),dstr(satoshis),dstr(val2),dstr(threshold),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2,dstr(txfee));
-    for (iter=0; iter<2; iter++)
+    /*for (iter=0; iter<2; iter++)
     {
         if ( (utxo= LP_utxofind(iter,txid,vout)) != 0 )
         {
@@ -343,7 +343,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
             if ( utxo->T.spentflag == 0 )
                 utxo->T.spentflag = (uint32_t)time(NULL);
         }
-    }
+    }*/
     *valp = val;
     *val2p = val2;
     return(0);
@@ -410,8 +410,8 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
             {
                 if ( LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout) == 0 )
                 {
-                    if ( utxo->T.spentflag == 0 )
-                        utxo->T.spentflag = (uint32_t)time(NULL);
+                    //if ( utxo->T.spentflag == 0 )
+                    //    utxo->T.spentflag = (uint32_t)time(NULL);
                     continue;
                 }
                 bestutxo = utxo;
