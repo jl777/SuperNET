@@ -296,9 +296,9 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         val = satoshis;
     else val = LP_txvalue(destaddr,symbol,txid,vout);
     txfee = LP_txfeecalc(symbol,0);
-    if ( val >= satoshis && val > LP_MINSIZE_TXFEEMULT*txfee )
+    if ( val >= satoshis && val > (1+LP_MINSIZE_TXFEEMULT)*txfee )
     {
-        threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
+        threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : (LP_DEXFEE(satoshis) + txfee);
         if ( bypass != 0 )
             val2 = threshold;
         else val2 = LP_txvalue(destaddr2,symbol,txid2,vout2);
@@ -524,12 +524,12 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         return(0);
     }
     txfee = LP_txfeecalc(coin->symbol,0);
-    if ( iambob != 0 && value2 < 9 * (value >> 3) + txfee ) // big txfee padding
+    if ( iambob != 0 && value2 < 9 * (value >> 3) + 2*txfee ) // big txfee padding
     {
-        if ( value2 > txfee )
-            tmpsatoshis = (((value2 - txfee) / 9) << 3);
+        if ( value2 > 2*txfee )
+            tmpsatoshis = (((value2 - 2*txfee) / 9) << 3);
         else return(0);
-    } else tmpsatoshis = value;
+    } else tmpsatoshis = (value - txfee);
     char str[65],str2[65],dispflag = (iambob == 0);
     if ( iambob == 0 && bits256_cmp(pubkey,LP_mypub25519) != 0 )
     {
@@ -855,9 +855,9 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         depositval = values[i];
                         values[i] = 0, used++;
                         if ( iambob == 0 )
-                            targetval = (depositval / 776) + txfee;
-                        else targetval = (depositval / 9) * 8 + txfee;
-                        if ( depositval < LP_MINSIZE_TXFEEMULT*txfee && targetval < LP_MINSIZE_TXFEEMULT*txfee )
+                            targetval = (depositval / 776) + 2*txfee;
+                        else targetval = (depositval / 9) * 8 + 2*txfee;
+                        if ( depositval < (1+LP_MINSIZE_TXFEEMULT)*txfee && targetval < (1+LP_MINSIZE_TXFEEMULT)*txfee )
                             continue;
                         //printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
                         i = -1;
@@ -865,7 +865,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         {
                             if ( (i= LP_nearestvalue(iambob,values,n,targetval)) < 0 )
                                 targetval /= 4;
-                            if ( targetval < txfee*LP_MINSIZE_TXFEEMULT )
+                            if ( targetval < txfee*(1+LP_MINSIZE_TXFEEMULT) )
                                 continue;
                         }
                         if ( i >= 0 || (i= LP_nearestvalue(iambob,values,n,targetval)) >= 0 )
