@@ -535,7 +535,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,requestid,quoteid,txnames[i]), OS_compatible_path(fname);
         if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
         {
-            if ( finishedflag == 0 )
+            if ( 0 && finishedflag == 0 )
                 printf("%s\n",fname);
             //printf("%s -> (%s)\n",fname,fstr);
             if ( (txobj= cJSON_Parse(fstr)) != 0 )
@@ -600,12 +600,13 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             }
                             free_json(sentobj);
                         }
-                        printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
+                        if ( 0 && finishedflag == 0 )
+                            printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
                     }
                 }
             } //else printf("no symbol\n");
             free(fstr);
-        } else if ( finishedflag == 0 )
+        } else if ( 0 && finishedflag == 0 )
             printf("%s not finished\n",fname);
     }
     //printf("alicepayment.%s bobpayment.%s bobdeposit.%s\n",alicepaymentaddr,bobpaymentaddr,bobdepositaddr);
