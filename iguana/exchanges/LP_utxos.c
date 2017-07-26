@@ -288,7 +288,7 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
-    uint64_t val,val2=0,txfee,threshold=0; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct iguana_info *coin = LP_coinfind(symbol);
+    struct LP_utxoinfo *utxo; uint64_t val,val2=0,txfee,threshold=0; int32_t iter,bypass = 0; char destaddr[64],destaddr2[64]; struct iguana_info *coin = LP_coinfind(symbol);
     destaddr[0] = destaddr2[0] = 0;
     if ( coin != 0 && IAMLP != 0 && coin->inactive != 0 )
         bypass = 1;
@@ -296,7 +296,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         val = satoshis;
     else val = LP_txvalue(destaddr,symbol,txid,vout);
     txfee = LP_txfeecalc(symbol,0);
-    if ( val >= satoshis && val > 10*txfee )
+    if ( val >= satoshis && val > LP_MINSIZE_TXFEEMULT*txfee )
     {
         threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : LP_DEXFEE(satoshis);
         if ( bypass != 0 )
@@ -317,7 +317,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         } // else printf("no val2\n");
     }
     // char str[65],str2[65]; printf("spent.%d %s txid or value %.8f < %.8f or val2 %.8f < %.8f, %s/v%d %s/v%d or < 10x txfee %.8f\n",iambob,symbol,dstr(val),dstr(satoshis),dstr(val2),dstr(threshold),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2,dstr(txfee));
-    /*for (iter=0; iter<2; iter++)
+    for (iter=0; iter<2; iter++)
     {
         if ( (utxo= LP_utxofind(iter,txid,vout)) != 0 )
         {
@@ -343,7 +343,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
             if ( utxo->T.spentflag == 0 )
                 utxo->T.spentflag = (uint32_t)time(NULL);
         }
-    }*/
+    }
     *valp = val;
     *val2p = val2;
     return(0);
