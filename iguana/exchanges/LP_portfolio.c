@@ -40,6 +40,7 @@ cJSON *LP_portfolio_entry(struct iguana_info *coin)
         jaddnum(item,"aliceutil",100. * (double)coin->balanceA/coin->valuesumA);
     jaddnum(item,"balanceB",dstr(coin->balanceB));
     jaddnum(item,"valuesumB",dstr(coin->valuesumB));
+    jaddnum(item,"balance",dstr(coin->maxamount));
     if ( coin->valuesumB != 0 )
         jaddnum(item,"bobutil",100. * (double)coin->balanceB/coin->valuesumB);
     return(item);
