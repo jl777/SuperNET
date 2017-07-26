@@ -694,7 +694,7 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
 
 void LP_bobloop(void *_swap)
 {
-    uint8_t *data; int32_t maxlen,n; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    uint8_t *data; int32_t maxlen,m,n; uint32_t expiration; struct basilisk_swap *swap = _swap;
     fprintf(stderr,"start swap iambob\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
@@ -728,7 +728,10 @@ void LP_bobloop(void *_swap)
                     printf("error bobscripts payment\n");
                 else
                 {
-                    while ( (n= LP_numconfirms(swap,&swap->alicepayment,1)) < 1 ) // sync with alice
+                    if ( strcmp(swap->alicecoin.symbol,"BTC") == 0 )
+                        m = 0;
+                    else m = 1;
+                    while ( (n= LP_numconfirms(swap,&swap->alicepayment,1)) < m ) // sync with alice
                     {
                         char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                         sleep(3);
@@ -752,7 +755,7 @@ void LP_bobloop(void *_swap)
 
 void LP_aliceloop(void *_swap)
 {
-    uint8_t *data; int32_t maxlen,n; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    uint8_t *data; int32_t maxlen,n,m; uint32_t expiration; struct basilisk_swap *swap = _swap;
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
@@ -778,7 +781,10 @@ void LP_aliceloop(void *_swap)
                 printf("error sending alicepayment\n");
             else
             {
-                while ( (n= LP_numconfirms(swap,&swap->alicepayment,1)) < 1 )
+                if ( strcmp(swap->alicecoin.symbol,"BTC") == 0 )
+                    m = 0;
+                else m = 1;
+                while ( (n= LP_numconfirms(swap,&swap->alicepayment,1)) < m )
                 {
                     char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                     sleep(LP_SWAPSTEP_TIMEOUT);
