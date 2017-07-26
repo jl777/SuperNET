@@ -430,7 +430,7 @@ void prices_loop(void *ignore)
                         //if ( LP_pendingswaps == 0 )
                         {
                             relvolume = sell->relvolume;
-                            for (iter=0; iter<3; iter++)
+                            for (iter=0; iter<2; iter++)
                             {
                                 if ( relvolume < dstr(LP_MIN_TXFEE) )
                                     break;
