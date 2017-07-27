@@ -19,6 +19,7 @@
 //  marketmaker
 //
 // new features:
+// bittrex balancing
 // stats
 // PoW, JS
 // verify actual pricing
