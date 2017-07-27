@@ -842,6 +842,8 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             }
             pubp->timestamp = (uint32_t)time(NULL);
         } else printf("error creating pubkey entry\n");
-    } else printf("error finding %s/%s %.8f\n",base,rel,price);
+    }
+    else if ( (rand() % 100) == 0 )
+        printf("error finding %s/%s %.8f\n",base,rel,price);
 }
 
