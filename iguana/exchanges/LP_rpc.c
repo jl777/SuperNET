@@ -103,44 +103,6 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
-char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
-{
-    char url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport,ispaired);
-    //return(LP_issue_curl("psock",destip,destport,url));
-    retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
-    printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
-    return(retstr);
-}
-
-uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
-{
-    uint16_t publicport = 0; char *retstr,*addr; cJSON *retjson; struct LP_peerinfo *peer,*tmp;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        connectaddr[0] = publicaddr[0] = 0;
-        if ( peer->errors < LP_MAXPEER_ERRORS && (retstr= issue_LP_psock(peer->ipaddr,peer->port,ispaired)) != 0 )
-        {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                printf("from %s:%u (%s)\n",peer->ipaddr,peer->port,retstr);
-                if ( (addr= jstr(retjson,"publicaddr")) != 0 )
-                    safecopy(publicaddr,addr,128);
-                if ( (addr= jstr(retjson,"connectaddr")) != 0 )
-                    safecopy(connectaddr,addr,128);
-                if ( publicaddr[0] != 0 && connectaddr[0] != 0 )
-                    publicport = juint(retjson,"publicport");
-                free_json(retjson);
-            }
-            printf("got.(%s) connect.%s public.%s\n",retstr,connectaddr,publicaddr);
-            free(retstr);
-        } else printf("error psock from %s:%u\n",peer->ipaddr,peer->port);
-        if ( publicport != 0 )
-            break;
-    }
-    return(publicport);
-}
-
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
 {
     char *retstr; cJSON *retjson = 0;

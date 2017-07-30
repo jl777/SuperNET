@@ -112,42 +112,6 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
     return(retstr);
 }
 
-int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
-{
-    static uint32_t crcs[8192]; static unsigned long dup,total;
-    int32_t i;
-    *duplicatep = 0;
-    if ( ind < 0 )
-    {
-        total++;
-        for (i=0; i<sizeof(crcs)/sizeof(*crcs); i++)
-        {
-            if ( crc32 == crcs[i] )
-            {
-                if ( i > 0 )
-                {
-                    crcs[i] = crcs[i >> 1];
-                    crcs[i >> 1] = crc32;
-                    dup++;
-                    //printf("duplicate %u in slot %d -> slot %d (%lu / %lu)\n",crc32,i,i>>1,dup,total);
-                }
-                *duplicatep = 1;
-                break;
-            }
-            else if ( crcs[i] == 0 )
-                break;
-        }
-        if ( i >= sizeof(crcs)/sizeof(*crcs) )
-            i = (rand() % (sizeof(crcs)/sizeof(*crcs)));
-        return(i);
-    }
-    else
-    {
-        crcs[ind] = crc32;
-        return(ind);
-    }
-}
-
 char *LP_decrypt(uint8_t *ptr,int32_t *recvlenp)
 {
     uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],*nonce,*cipher; int32_t recvlen,cipherlen; char *jsonstr = 0;

@@ -2028,6 +2028,11 @@ char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *meth
     return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,2));
 }
 
+char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *method,char *params,int32_t timeout)
+{
+    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,timeout));
+}
+
 int32_t bitcoin_addr2rmd160(uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
 {
     bits256 hash; uint8_t *buf,_buf[26]; int32_t len,offset;

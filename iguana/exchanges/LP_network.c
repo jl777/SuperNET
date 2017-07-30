@@ -62,24 +62,6 @@ int32_t LP_sockcheck(int32_t sock)
     else return(-1);
 }
 
-int32_t LP_peerindsock(int32_t *peerindp)
-{
-    struct LP_peerinfo *peer,*tmp; int32_t peerind = 0;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        peerind++;
-        if ( peer->errors < LP_MAXPEER_ERRORS && peer->pushsock >= 0 )
-        {
-            if ( peerind < *peerindp )
-                continue;
-            *peerindp = peerind;
-            //printf("peerind.%d -> sock %d\n",peerind,peer->pushsock);
-            return(peer->pushsock);
-        }
-    }
-    return(-1);
-}
-
 struct LP_queue
 {
     struct LP_queue *next,*prev;
@@ -101,6 +83,60 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
     DL_APPEND(LP_Q,ptr);
     LP_Qenqueued++;
     //printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
+}
+
+int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
+{
+    static uint32_t crcs[8192]; static unsigned long dup,total;
+    int32_t i;
+    *duplicatep = 0;
+    if ( ind < 0 )
+    {
+        total++;
+        for (i=0; i<sizeof(crcs)/sizeof(*crcs); i++)
+        {
+            if ( crc32 == crcs[i] )
+            {
+                if ( i > 0 )
+                {
+                    crcs[i] = crcs[i >> 1];
+                    crcs[i >> 1] = crc32;
+                    dup++;
+                    //printf("duplicate %u in slot %d -> slot %d (%lu / %lu)\n",crc32,i,i>>1,dup,total);
+                }
+                *duplicatep = 1;
+                break;
+            }
+            else if ( crcs[i] == 0 )
+                break;
+        }
+        if ( i >= sizeof(crcs)/sizeof(*crcs) )
+            i = (rand() % (sizeof(crcs)/sizeof(*crcs)));
+        return(i);
+    }
+    else
+    {
+        crcs[ind] = crc32;
+        return(ind);
+    }
+}
+
+int32_t LP_peerindsock(int32_t *peerindp)
+{
+    struct LP_peerinfo *peer,*tmp; int32_t peerind = 0;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        peerind++;
+        if ( peer->errors < LP_MAXPEER_ERRORS && peer->pushsock >= 0 )
+        {
+            if ( peerind < *peerindp )
+                continue;
+            *peerindp = peerind;
+            //printf("peerind.%d -> sock %d\n",peerind,peer->pushsock);
+            return(peer->pushsock);
+        }
+    }
+    return(-1);
 }
 
 void queue_loop(void *ignore)
@@ -575,6 +611,43 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
  both are combined in LP_psock_get
 
 */
+char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
+{
+    char url[512],*retstr;
+    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport,ispaired);
+    //return(LP_issue_curl("psock",destip,destport,url));
+    retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
+    printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
+    return(retstr);
+}
+
+uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
+{
+    uint16_t publicport = 0; char *retstr,*addr; cJSON *retjson; struct LP_peerinfo *peer,*tmp;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        connectaddr[0] = publicaddr[0] = 0;
+        if ( peer->errors < LP_MAXPEER_ERRORS && (retstr= issue_LP_psock(peer->ipaddr,peer->port,ispaired)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                printf("from %s:%u (%s)\n",peer->ipaddr,peer->port,retstr);
+                if ( (addr= jstr(retjson,"publicaddr")) != 0 )
+                    safecopy(publicaddr,addr,128);
+                if ( (addr= jstr(retjson,"connectaddr")) != 0 )
+                    safecopy(connectaddr,addr,128);
+                if ( publicaddr[0] != 0 && connectaddr[0] != 0 )
+                    publicport = juint(retjson,"publicport");
+                free_json(retjson);
+            }
+            printf("got.(%s) connect.%s public.%s\n",retstr,connectaddr,publicaddr);
+            free(retstr);
+        } else printf("error psock from %s:%u\n",peer->ipaddr,peer->port);
+        if ( publicport != 0 )
+            break;
+    }
+    return(publicport);
+}
 
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
 {

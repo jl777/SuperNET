@@ -1105,30 +1105,6 @@ void rmd160ofsha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
     calc_rmd160(hexstr,buf,sha256,sizeof(sha256));
 }
 
-void calc_md2str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
-{
-    bits128 x;
-    calc_md2(hexstr,buf,msg,len);
-    decode_hex(buf,sizeof(x),hexstr);
-    //memcpy(buf,x.bytes,sizeof(x));
-}
-
-void calc_md4str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
-{
-    bits128 x;
-    calc_md4(hexstr,buf,msg,len);
-    decode_hex(buf,sizeof(x),hexstr);
-    //memcpy(buf,x.bytes,sizeof(x));
-}
-
-void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
-{
-    bits128 x;
-    calc_md5(hexstr,msg,len);
-    decode_hex(buf,sizeof(x),hexstr);
-    //memcpy(buf,x.bytes,sizeof(x));
-}
-
 void calc_crc32str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
     uint32_t crc; uint8_t serialized[sizeof(crc)];
