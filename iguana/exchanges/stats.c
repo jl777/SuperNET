@@ -559,7 +559,7 @@ void stats_rpcloop(void *args)
     uint16_t port; char filetype[128],content_type[128];
     int32_t recvlen,flag,bindsock,postflag=0,contentlen,sock,remains,numsent,jsonflag=0,hdrsize,len;
     socklen_t clilen; char helpname[512],remoteaddr[64],*buf,*retstr,*space;
-    struct sockaddr_in cli_addr; uint32_t ipbits,i,size = 10*IGUANA_MAXPACKETSIZE + 512;
+    struct sockaddr_in cli_addr; uint32_t ipbits,i,size = 32*IGUANA_MAXPACKETSIZE + 512;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     if ( jsonbuf == 0 )
