@@ -38,6 +38,17 @@ deprecated/.DS_Store
 
 .DS_Store
 
+
+iguana/help/.tmpmarker
+
+iguana/genesis/.tmpmarker
+
+iguana/help.json
+
+iguana/autoAPI.md
+
+iguana/basilisk.o-2ad8cb38
+=======
 *.pbxproj
 
 iguana/tmp/.tmpmarker
