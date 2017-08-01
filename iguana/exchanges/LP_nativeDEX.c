@@ -20,6 +20,7 @@
 //
 // new features:
 // bittrex balancing
+// detect port conflicts on enable
 // stats
 // PoW, JS
 // verify actual pricing
