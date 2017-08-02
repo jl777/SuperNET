@@ -853,7 +853,7 @@ int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *ref
         }
     }
     if ( n > 0 )
-        qsort(sortbuf,n,sizeof(*sortbuf)*2,_cmp_hashes);
+        mergesort(sortbuf,n,sizeof(*sortbuf)*2,_cmp_hashes);
     vcalc_sha256cat(hash2p->bytes,refhash2.bytes,sizeof(refhash2),sortbuf[1].bytes,20);
     memcpy(refrmd160,sortbuf[1].bytes,20);
     {
@@ -1730,7 +1730,7 @@ uint64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *co
             {
                 if ( counts[ind] > 0 )
                 {
-                    qsort(&table[offsets[ind] * UTXOADDR_ITEMSIZE],counts[ind],UTXOADDR_ITEMSIZE,_utxoaddr_cmp);
+                    mergesort(&table[offsets[ind] * UTXOADDR_ITEMSIZE],counts[ind],UTXOADDR_ITEMSIZE,_utxoaddr_cmp);
                     continue;
                     /*for (j=0; j<counts[ind]; j++)
                     {
