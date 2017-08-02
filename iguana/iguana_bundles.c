@@ -1173,7 +1173,7 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
 
 static int32_t revsortds(double *buf,uint32_t num,int32_t size)
 {
-	mergesort(buf,num,size,_decreasing_double);
+	heapsort(buf,num,size,_decreasing_double);
 	return(0);
 }*/
 

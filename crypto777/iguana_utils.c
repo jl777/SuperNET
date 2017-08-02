@@ -585,31 +585,31 @@ static int _decreasing_uint32(const void *a,const void *b)
 
 int32_t sortds(double *buf,uint32_t num,int32_t size)
 {
-    mergesort(buf,num,size,_increasing_double);
+    heapsort(buf,num,size,_increasing_double);
     return(0);
 }
 
 int32_t revsortds(double *buf,uint32_t num,int32_t size)
 {
-    mergesort(buf,num,size,_decreasing_double);
+    heapsort(buf,num,size,_decreasing_double);
     return(0);
 }
 
 int32_t sort64s(uint64_t *buf,uint32_t num,int32_t size)
 {
-	mergesort(buf,num,size,_increasing_uint64);
+	heapsort(buf,num,size,_increasing_uint64);
 	return(0);
 }
 
 int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size)
 {
-	mergesort(buf,num,size,_decreasing_uint64);
+	heapsort(buf,num,size,_decreasing_uint64);
 	return(0);
 }
 
 int32_t revsort32(uint32_t *buf,uint32_t num,int32_t size)
 {
-	mergesort(buf,num,size,_decreasing_uint32);
+	heapsort(buf,num,size,_decreasing_uint32);
 	return(0);
 }
 
@@ -619,17 +619,17 @@ int32_t revsort32(uint32_t *buf,uint32_t num,int32_t size)
     if ( dir > 0 )
     {
         if ( size == 32 )
-            mergesort(buf,num,structsize,_increasing_bits256);
+            heapsort(buf,num,structsize,_increasing_bits256);
         else if ( size == 20 )
-            mergesort(buf,num,structsize,_increasing_rmd160);
+            heapsort(buf,num,structsize,_increasing_rmd160);
         else retval = -1;
     }
     else
     {
         if ( size == 32 )
-            mergesort(buf,num,structsize,_decreasing_bits256);
+            heapsort(buf,num,structsize,_decreasing_bits256);
         else if ( size == 20 )
-            mergesort(buf,num,structsize,_decreasing_rmd160);
+            heapsort(buf,num,structsize,_decreasing_rmd160);
         else retval = -1;
     }
     if ( retval < 0 )

@@ -563,7 +563,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                 {
                     OS_removefile(fname,0);
                     num = (int32_t)allocsize/sizeof(bits256);
-                    mergesort(sortbuf,num,sizeof(bits256),_bignum_cmp);
+                    heapsort(sortbuf,num,sizeof(bits256),_bignum_cmp);
                     strcat(fname,".all");
                     if ( (coin->fastfps[i]= fopen(fname,"wb")) != 0 )
                     {

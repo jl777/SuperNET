@@ -418,7 +418,7 @@ struct basilisk_request *_basilisk_requests_uniq(struct supernet_info *myinfo,in
             }
         }
     }
-    mergesort(requests,m,sizeof(*requests),_cmp_requests);
+    heapsort(requests,m,sizeof(*requests),_cmp_requests);
     *nump = m;
     return(requests);
 }
