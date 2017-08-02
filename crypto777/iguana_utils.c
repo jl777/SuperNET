@@ -609,7 +609,7 @@ int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size)
 
 int32_t revsort32(uint32_t *buf,uint32_t num,int32_t size)
 {
-	qsort(buf,num,size,_decreasing_uint32);
+	heapsort(buf,num,size,_decreasing_uint32);
 	return(0);
 }
 
