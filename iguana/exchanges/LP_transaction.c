@@ -847,6 +847,7 @@ int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,b
     return(scriptlen);
 }
 
+#ifdef notnow
 bits256 _LP_swap_spendtxid(char *symbol,char *destaddr,char *coinaddr,bits256 utxotxid,int32_t vout)
 {
     char *retstr,*addr; cJSON *array,*item,*array2; int32_t i,n,m; bits256 spendtxid,txid;
@@ -899,6 +900,7 @@ bits256 _LP_swap_spendtxid(char *symbol,char *destaddr,char *coinaddr,bits256 ut
     }
     return(spendtxid);
 }
+#endif
 
 bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t vout)
 {
@@ -911,12 +913,12 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t v
         printf("spend of %s/v%d detected\n",bits256_str(str,utxotxid),vout);
     return(spendtxid);
     //char str[65]; printf("swap %s spendtxid.(%s)\n",symbol,bits256_str(str,utxotxid));
-    if ( 0 && strcmp("BTC",symbol) == 0 )
+    if ( (0) && strcmp("BTC",symbol) == 0 )
     {
         //[{"type":"sent","confirmations":379,"height":275311,"timestamp":1492084664,"txid":"8703c5517bc57db38134058370a14e99b8e662b99ccefa2061dea311bbd02b8b","vout":0,"amount":117.50945263,"spendtxid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","vin":0,"paid":{"type":"paid","txid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","height":275663,"timestamp":1492106024,"vouts":[{"RUDpN6PEBsE7ZFbGjUxk1W3QVsxnjBLYw6":117.50935263}]}}]
-        LP_swap_getcoinaddr(symbol,coinaddr,utxotxid,vout);
+        /*LP_swap_getcoinaddr(symbol,coinaddr,utxotxid,vout);
         if ( coinaddr[0] != 0 )
-            spendtxid = _LP_swap_spendtxid(symbol,destaddr,coinaddr,utxotxid,vout);
+            spendtxid = _LP_swap_spendtxid(symbol,destaddr,coinaddr,utxotxid,vout);*/
     }
     else
     {
