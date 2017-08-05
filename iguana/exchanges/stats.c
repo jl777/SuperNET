@@ -21,11 +21,12 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "OS_portable.h"
+#include "../../crypto777/OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define STATS_DESTDIR "/var/www/html"
 #define STATS_DEST "/var/www/html/DEXstats.json"
 #include "DEXstats.h"
+char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 
 #ifndef WIN32
 #ifndef MSG_NOSIGNAL
@@ -307,7 +308,7 @@ extern void *bitcoin_ctx();
 char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
     static void *ctx;
-    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; double profitmargin = 0.; char *myipaddr="127.0.0.1",symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
+    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char *myipaddr="127.0.0.1",symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
     //printf("rpcparse.(%s)\n",urlstr);
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
@@ -493,7 +494,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
                     jaddstr(argjson,"userpass",userpass);
                 //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
-                if ( (retstr= stats_JSON(ctx,myipaddr,-1,profitmargin,argjson,remoteaddr,port)) != 0 )
+                if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
                 {
                     if ( (retitem= cJSON_Parse(retstr)) != 0 )
                         jaddi(retarray,retitem);
@@ -516,7 +517,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             //printf("ARGJSON.(%s)\n",jprint(arg,0));
             if ( userpass != 0 && jstr(arg,"userpass") == 0 )
                 jaddstr(arg,"userpass",userpass);
-            retstr = stats_JSON(ctx,myipaddr,-1,profitmargin,arg,remoteaddr,port);
+            retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
         }
         free_json(argjson);
         free_json(json);
@@ -558,7 +559,7 @@ void stats_rpcloop(void *args)
     uint16_t port; char filetype[128],content_type[128];
     int32_t recvlen,flag,bindsock,postflag=0,contentlen,sock,remains,numsent,jsonflag=0,hdrsize,len;
     socklen_t clilen; char helpname[512],remoteaddr[64],*buf,*retstr,*space;
-    struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_MAXPACKETSIZE + 512;
+    struct sockaddr_in cli_addr; uint32_t ipbits,i,size = 32*IGUANA_MAXPACKETSIZE + 512;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     if ( jsonbuf == 0 )
@@ -665,7 +666,7 @@ void stats_rpcloop(void *args)
         if ( retstr != 0 )
         {
             char *response,hdrs[1024];
-            //printf("RETURN.(%s)\n",retstr);
+            //printf("RETURN.(%s) jsonflag.%d postflag.%d\n",retstr,jsonflag,postflag);
             if ( jsonflag != 0 || postflag != 0 )
             {
                 response = malloc(strlen(retstr)+1024+1+1);
@@ -677,6 +678,7 @@ void stats_rpcloop(void *args)
                 if ( retstr != space )
                     free(retstr);
                 retstr = response;
+                //printf("RET.(%s)\n",retstr);
             }
             remains = (int32_t)strlen(retstr);
             i = 0;
@@ -726,8 +728,8 @@ void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timest
 
 void komodo_kvupdate(FILE *logfp,struct komodo_state *sp,int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
 {
-    static bits256 zeroes;
-    uint32_t flags; bits256 pubkey,refpubkey,sig; cJSON *kvjson; char decodestr[10000]; int32_t i,refvaluesize,hassig,coresize,haspubkey,height,kvheight; uint16_t keylen,valuesize,newflag = 0; uint8_t *key,*valueptr,keyvalue[10000];
+    //static bits256 zeroes;
+    uint32_t flags; bits256 pubkey,sig; cJSON *kvjson; char decodestr[10000]; int32_t i,hassig,coresize,haspubkey,height; uint16_t keylen,valuesize; uint8_t *key,*valueptr; // bits256 refpubkey; int32_t refvaluesize,kvheight; uint16_t newflag = 0; uint8_t keyvalue[10000];
     iguana_rwnum(0,&opretbuf[1],sizeof(keylen),&keylen);
     iguana_rwnum(0,&opretbuf[3],sizeof(valuesize),&valuesize);
     iguana_rwnum(0,&opretbuf[5],sizeof(height),&height);
@@ -830,7 +832,7 @@ void komodo_eventadd_kmdheight(struct komodo_state *sp,char *symbol,int32_t heig
 
 void stats_pricefeed(struct komodo_state *sp,char *symbol,int32_t ht,uint32_t *pvals,int32_t numpvals)
 {
-    struct tai T; int32_t seconds,datenum,n; cJSON *argjson;
+    struct tai T; int32_t seconds,datenum; cJSON *argjson;
     if ( ht > 300000 && pvals[32] != 0 )
     {
         datenum = OS_conv_unixtime(&T,&seconds,sp->SAVEDTIMESTAMP);
@@ -930,7 +932,7 @@ int32_t komodo_parsestatefile(FILE *logfp,struct komodo_state *sp,FILE *fp,char 
             {
                 if ( fread(opret,1,olen,fp) != olen )
                     errs++;
-                if ( 0 && matched != 0 )
+                if ( (0) && matched != 0 )
                 {
                     int32_t i;  for (i=0; i<olen; i++)
                         printf("%02x",opret[i]);
@@ -1003,6 +1005,7 @@ int32_t stats_stateupdate(FILE *logfp,char *destdir,char *statefname,int32_t max
         strcpy(base,"KMD");
         strcpy(symbol,"KMD");
     }
+    return(n);
 }
 
 char *stats_update(FILE *logfp,char *destdir,char *statefname,char *komodofname)

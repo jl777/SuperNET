@@ -198,6 +198,8 @@ int32_t OS_nonportable_init();
 
 void OS_portable_init();
 void OS_init();
+int32_t sortds(double *buf,uint32_t num,int32_t size);
+int32_t revsortds(double *buf,uint32_t num,int32_t size);
 
 double OS_portable_milliseconds();
 void OS_portable_randombytes(uint8_t *x,long xlen);

@@ -1,2 +1,0 @@
-source userpass
-curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"pubkey\":\"6578099f6474d9b8bd66a7a136b922029a989818ec0309aee962dd6ac1862b74\",\"method\":\"forward\",\"method2\":\"getprice\",\"base\":\"REVS\",\"rel\":\"KMD\"}"

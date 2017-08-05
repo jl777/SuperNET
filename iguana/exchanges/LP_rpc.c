@@ -48,17 +48,28 @@ char *LP_isitme(char *destip,uint16_t destport)
     } else return(0);
 }
 
-char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
+char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
 {
-    char url[512];
-    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
-    return(LP_issue_curl("getpeers",destip,port,url));
+    char url[512],*retstr;
+    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,numpeers,numutxos);
+    retstr = LP_issue_curl("getpeers",destip,port,url);
+    //printf("%s -> getpeers.(%s)\n",destip,retstr);
+    return(retstr);
 }
 
-char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
+char *issue_LP_numutxos(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
+{
+    char url[512],*retstr;
+    sprintf(url,"http://%s:%u/api/stats/numutxos?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,numpeers,numutxos);
+    retstr = LP_issue_curl("numutxos",destip,port,url);
+    //printf("%s -> getpeers.(%s)\n",destip,retstr);
+    return(retstr);
+}
+
+char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
 {
     char url[512];
-    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,profitmargin,numpeers,numutxos);
+    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,numpeers,numutxos);
     return(LP_issue_curl("getutxos",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
@@ -73,96 +84,13 @@ char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t 
     //return(retstr);
 }
 
-char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
+char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos,uint32_t sessionid)
 {
     char url[512],*retstr;
     if ( (retstr= LP_isitme(destip,destport)) != 0 )
         return(retstr);
-    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
+    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d&session=%u",destip,destport,ipaddr,port,numpeers,numutxos,sessionid);
     return(LP_issue_curl("notify",destip,destport,url));
-    //return(issue_curlt(url,LP_HTTP_TIMEOUT));
-}
-
-char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
-{
-    char url[4096],str[65],str2[65],str3[65],*retstr; struct _LP_utxoinfo u; uint64_t val,val2;
-    if ( (retstr= LP_isitme(destip,destport)) != 0 )
-        return(retstr);
-    if ( utxo->iambob == 0 )
-    {
-        printf("issue_LP_notifyutxo trying to send Alice %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
-        return(0);
-    }
-    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
-    if ( LP_iseligible(&val,&val2,utxo->iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) > 0 )
-    {
-        sprintf(url,"http://%s:%u/api/stats/notified?iambob=%d&pubkey=%s&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%llu&txid2=%s&vout2=%d&value2=%llu&script=%s&address=%s&timestamp=%u&gui=%s",destip,destport,utxo->iambob,bits256_str(str3,utxo->pubkey),utxo->S.profitmargin,utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout,(long long)utxo->payment.value,bits256_str(str2,utxo->deposit.txid),utxo->deposit.vout,(long long)utxo->deposit.value,utxo->spendscript,utxo->coinaddr,(uint32_t)time(NULL),utxo->gui);
-        if ( strlen(url) > 1024 )
-            printf("WARNING long url.(%s)\n",url);
-        return(LP_issue_curl("notifyutxo",destip,destport,url));
-        //return(issue_curlt(url,LP_HTTP_TIMEOUT));
-    }
-    else
-    {
-        printf("issue_LP_notifyutxo: ineligible utxo iambob.%d %.8f %.8f\n",utxo->iambob,dstr(val),dstr(val2));
-        if ( utxo->T.spentflag == 0 )
-            utxo->T.spentflag = (uint32_t)time(NULL);
-        return(0);
-    }
-}
-
-/*char *issue_LP_register(char *destip,uint16_t destport,bits256 pubkey,char *ipaddr,uint16_t pushport)
-{
-    char url[512],str[65],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/register?client=%s&pushaddr=%s&pushport=%u",destip,destport,bits256_str(str,pubkey),ipaddr,pushport);
-    //return(LP_issue_curl("register",destip,destport,url));
-    retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
-    //printf("register.(%s) -> (%s)\n",url,retstr!=0?retstr:"");
-    return(retstr);
-}*/
-
-char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
-{
-    char url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport,ispaired);
-    //return(LP_issue_curl("psock",destip,destport,url));
-    retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
-    return(retstr);
-}
-
-uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
-{
-    uint16_t publicport = 0; char *retstr,*addr; cJSON *retjson; struct LP_peerinfo *peer,*tmp;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        connectaddr[0] = publicaddr[0] = 0;
-        if ( peer->errors < LP_MAXPEER_ERRORS && (retstr= issue_LP_psock(peer->ipaddr,peer->port,ispaired)) != 0 )
-        {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( (addr= jstr(retjson,"publicaddr")) != 0 )
-                    safecopy(publicaddr,addr,128);
-                if ( (addr= jstr(retjson,"connectaddr")) != 0 )
-                    safecopy(connectaddr,addr,128);
-                if ( publicaddr[0] != 0 && connectaddr[0] != 0 )
-                    publicport = juint(retjson,"publicport");
-                free_json(retjson);
-            }
-            printf("got.(%s) connect.%s public.%s\n",retstr,connectaddr,publicaddr);
-            free(retstr);
-        }
-        if ( publicport != 0 )
-            break;
-    }
-    return(publicport);
-}
-
-char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
-{
-    char url[512],str[65];
-    sprintf(url,"http://%s:%u/api/stats/lookup?client=%s",destip,destport,bits256_str(str,pubkey));
-    //printf("getutxo.(%s)\n",url);
-    return(LP_issue_curl("lookup",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
@@ -181,7 +109,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
     if ( coin != 0 )
     {
         //printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
-        if ( coin->inactive == 0 || strcmp(method,"importprivkey") == 0 )
+        if ( coin->inactive == 0 || strcmp(method,"importprivkey") == 0  || strcmp(method,"validateaddress") == 0 )
         {
             retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
             if ( retstr != 0 && retstr[0] != 0 )
@@ -202,6 +130,39 @@ void LP_unspents_mark(char *symbol,cJSON *vins)
     printf("LOCK (%s)\n",jprint(vins,0));
 }
 
+char *NXTnodes[] = { "62.75.159.113", "91.44.203.238", "82.114.88.225", "78.63.207.76", "188.174.110.224", "91.235.72.49", "213.144.130.91", "209.222.98.250", "216.155.128.10", "178.33.203.157", "162.243.122.251", "69.163.47.173", "193.151.106.129", "78.94.2.74", "192.3.196.10", "173.33.112.87", "104.198.173.28", "35.184.154.126", "174.140.167.239", "23.88.113.131", "198.71.84.173", "178.150.207.53", "23.88.61.53", "192.157.233.106", "192.157.241.212", "23.89.192.88", "23.89.200.27", "192.157.241.139", "23.89.200.63", "23.89.192.98", "163.172.214.102", "176.9.85.5", "80.150.243.88", "80.150.243.92", "80.150.243.98", "109.70.186.198", "146.148.84.237", "104.155.56.82", "104.197.157.140", "37.48.73.249", "146.148.77.226", "84.57.170.200", "107.161.145.131", "80.150.243.97", "80.150.243.93", "80.150.243.100", "80.150.243.95", "80.150.243.91", "80.150.243.99", "80.150.243.96", "93.231.187.177", "212.237.23.85", "35.158.179.254", "46.36.66.41", "185.170.113.79", "163.172.68.112", "78.47.35.210", "77.90.90.75", "94.177.196.134", "212.237.22.215", "94.177.234.11", "167.160.180.199", "54.68.189.9", "94.159.62.14", "195.181.221.89", "185.33.145.94", "195.181.209.245", "195.181.221.38", "195.181.221.162", "185.33.145.12", "185.33.145.176", "178.79.128.235", "94.177.214.120", "94.177.199.41", "94.177.214.200", "94.177.213.201", "212.237.13.162", "195.181.221.236", "195.181.221.185", "185.28.103.187", "185.33.146.244", "217.61.123.71", "195.181.214.45", "195.181.212.99", "195.181.214.46", "195.181.214.215", "195.181.214.68", "217.61.123.118", "195.181.214.79", "217.61.123.14", "217.61.124.100", "195.181.214.111", "85.255.0.176", "81.2.254.116", "217.61.123.184", "195.181.212.231", "94.177.214.110", "195.181.209.164", "104.129.56.238", "85.255.13.64", "167.160.180.206", "217.61.123.226", "167.160.180.208", "93.186.253.127", "212.237.6.208", "94.177.207.190", "217.61.123.119", "85.255.1.245", "217.61.124.157", "37.59.57.141", "167.160.180.58", "104.223.53.14", "217.61.124.69", "195.181.212.103", "85.255.13.141", "104.207.133.204", "71.90.7.107", "107.150.18.108", "23.94.134.161", "80.150.243.13", "80.150.243.11", "185.81.165.52", "80.150.243.8" };
+
+
+cJSON *LP_assethbla(char *assetid)
+{
+    char url[1024],*retstr; int32_t n; cJSON *array,*bid=0,*ask=0,*retjson;
+    sprintf(url,"http://%s:7876/nxt?=%%2Fnxt&requestType=getBidOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
+    if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+    {
+        bid = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    sprintf(url,"http://%s:7876/nxt?=%%2Fnxt&requestType=getAskOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
+    if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+    {
+        ask = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    retjson = cJSON_CreateObject();
+    if ( bid != 0 && ask != 0 )
+    {
+        if ( (array= jarray(&n,bid,"bidOrders")) != 0 )
+            jadd(retjson,"bid",jduplicate(jitem(array,0)));
+        if ( (array= jarray(&n,ask,"askOrders")) != 0 )
+            jadd(retjson,"ask",jduplicate(jitem(array,0)));
+    }
+    if ( bid != 0 )
+        free_json(bid);
+    if ( ask != 0 )
+        free_json(ask);
+    return(retjson);
+}
+
 cJSON *LP_getinfo(char *symbol)
 {
     struct iguana_info *coin = LP_coinfind(symbol);
@@ -214,10 +175,19 @@ cJSON *LP_getmempool(char *symbol)
     return(bitcoin_json(coin,"getrawmempool","[]"));
 }
 
+cJSON *LP_paxprice(char *fiat)
+{
+    char buf[128],lfiat[65]; struct iguana_info *coin = LP_coinfind("KMD");
+    strcpy(lfiat,fiat);
+    tolowercase(lfiat);
+    sprintf(buf,"[\"%s\", \"kmd\"]",lfiat);
+    return(bitcoin_json(coin,"paxprice",buf));
+}
+
 cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 {
     char buf[128],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"\"%s\", %d, true",bits256_str(str,txid),vout);
+    sprintf(buf,"[\"%s\", %d, true]",bits256_str(str,txid),vout);
     return(bitcoin_json(coin,"gettxout",buf));
 }
 
@@ -245,7 +215,7 @@ cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
     char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"0, 99999999, [\"%s\"]",coinaddr);
+    sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
     return(bitcoin_json(coin,"listunspent",buf));
 }
 
@@ -261,15 +231,35 @@ cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t ski
 cJSON *LP_validateaddress(char *symbol,char *address)
 {
     char buf[512]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"\"%s\"",address);
+    sprintf(buf,"[\"%s\"]",address);
     return(bitcoin_json(coin,"validateaddress",buf));
 }
 
 cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 {
-    char buf[512]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"[\"%s\", \"%s\", %s]",wifstr,label,flag < 0 ? "false" : "true");
-    return(bitcoin_json(coin,"importprivkey",buf));
+    static void *ctx;
+    char buf[512],address[64]; cJSON *retjson; struct iguana_info *coin; int32_t doneflag = 0;
+    coin = LP_coinfind(symbol);
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    bitcoin_wif2addr(ctx,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
+    if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
+    {
+        if ( jobj(retjson,"ismine") != 0 && is_cJSON_True(jobj(retjson,"ismine")) != 0 )
+        {
+            doneflag = 1;
+            //printf("%s already ismine\n",address);
+        }
+        //printf("%s\n",jprint(retjson,0));
+        free_json(retjson);
+    }
+    if ( doneflag == 0 )
+    {
+        if ( coin->noimportprivkey_flag != 0 )
+            sprintf(buf,"[\"%s\"]",wifstr);
+        else sprintf(buf,"\"%s\", \"%s\", %s",wifstr,label,flag < 0 ? "false" : "true");
+        return(bitcoin_json(coin,"importprivkey",buf));
+    } else return(cJSON_Parse("{\"result\":\"success\"}"));
 }
 
 int32_t LP_importaddress(char *symbol,char *address)
@@ -302,27 +292,27 @@ int32_t LP_importaddress(char *symbol,char *address)
 double LP_getestimatedrate(char *symbol)
 {
     char buf[512],*retstr; double rate = 20; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin != 0 )
+    if ( coin != 0 && (strcmp(coin->symbol,"BTC") == 0 || coin->txfee == 0) )
     {
         sprintf(buf,"[%d]",3);
         if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"estimatefee",buf)) != 0 )
         {
             if ( retstr[0] != '-' )
             {
-                coin->estimatedrate = rate = atof(retstr) / 1024.;
-                printf("estimated rate.(%s) %s -> %.8f\n",symbol,retstr,rate);
+                rate = atof(retstr) / 1024.;
+                //printf("estimated rate.(%s) %s -> %.8f\n",symbol,retstr,rate);
             }
             free(retstr);
         }
-    }
-    return(rate);
+    } else return((double)coin->txfee / LP_AVETXSIZE);
+    return(SATOSHIDEN * rate);
 }
 
 uint64_t LP_txfee(char *symbol)
 {
     uint64_t txfee = 0;
     if ( strcmp(symbol,"BTC") != 0 )
-        txfee = 10000;
+        txfee = LP_MIN_TXFEE;
     return(txfee);
 }
 

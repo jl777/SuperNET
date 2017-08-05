@@ -30,13 +30,13 @@ uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT;
 
 char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port);
+    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port); // ws is worse
     return(str);
 }
 
-int32_t LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
+int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
 {
-    int32_t sentbytes,i; struct nn_pollfd pfd;
+    int32_t sentbytes;
     if ( sock < 0 )
     {
         printf("LP_send.(%s) to illegal socket\n",(char *)msg);
@@ -44,29 +44,291 @@ int32_t LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
             free(msg);
         return(-1);
     }
-    //len = (int32_t)strlen(msg) + 1;
-    for (i=0; i<1000; i++) // 1000 * (1 ms + 1000 us) = 2 seconds
-    {
-        pfd.fd = sock;
-        pfd.events = NN_POLLOUT;
-        //portable_mutex_lock(&LP_networkmutex);
-        if ( nn_poll(&pfd,1,1) > 0 )
-        {
-            if ( (sentbytes= nn_send(sock,msg,sendlen,0)) != sendlen )
-                printf("LP_send sent %d instead of %d\n",sentbytes,sendlen);
-            //else printf("SENT.(%s)\n",msg);
-            if ( freeflag != 0 )
-                free(msg);
-            //portable_mutex_unlock(&LP_networkmutex);
-            return(sentbytes);
-        }
-        //portable_mutex_unlock(&LP_networkmutex);
-        usleep(1000);
-    }
-    printf("you can ignore: error LP_send sock.%d, i.%d timeout.(%s) %s\n",sock,i,(char *)msg,nn_strerror(nn_errno()));
+    if ( (sentbytes= nn_send(sock,msg,sendlen,0)) != sendlen )
+        printf("LP_send sent %d instead of %d\n",sentbytes,sendlen);
+    //else printf("SENT.(%s)\n",msg);
     if ( freeflag != 0 )
         free(msg);
+    return(sentbytes);
+}
+
+int32_t LP_sockcheck(int32_t sock)
+{
+    struct nn_pollfd pfd;
+    pfd.fd = sock;
+    pfd.events = NN_POLLOUT;
+    if ( nn_poll(&pfd,1,1) > 0 )
+        return(1);
+    else return(-1);
+}
+
+struct LP_queue
+{
+    struct LP_queue *next,*prev;
+    int32_t sock,peerind,msglen;
+    uint32_t starttime,crc32;
+    uint8_t msg[];
+} *LP_Q;
+int32_t LP_Qenqueued,LP_Qerrors,LP_Qfound;
+
+void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
+{
+    struct LP_queue *ptr;
+    ptr = calloc(1,sizeof(*ptr) + msglen);
+    ptr->crc32 = crc32;
+    ptr->sock = sock;
+    ptr->peerind = peerind;
+    ptr->msglen = msglen;
+    memcpy(ptr->msg,msg,msglen);
+    DL_APPEND(LP_Q,ptr);
+    LP_Qenqueued++;
+    //printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
+}
+
+int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
+{
+    static uint32_t crcs[8192]; static unsigned long dup,total;
+    int32_t i;
+    *duplicatep = 0;
+    if ( ind < 0 )
+    {
+        total++;
+        for (i=0; i<sizeof(crcs)/sizeof(*crcs); i++)
+        {
+            if ( crc32 == crcs[i] )
+            {
+                if ( i > 0 )
+                {
+                    crcs[i] = crcs[i >> 1];
+                    crcs[i >> 1] = crc32;
+                    dup++;
+                    //printf("duplicate %u in slot %d -> slot %d (%lu / %lu)\n",crc32,i,i>>1,dup,total);
+                }
+                *duplicatep = 1;
+                break;
+            }
+            else if ( crcs[i] == 0 )
+                break;
+        }
+        if ( i >= sizeof(crcs)/sizeof(*crcs) )
+            i = (rand() % (sizeof(crcs)/sizeof(*crcs)));
+        return(i);
+    }
+    else
+    {
+        crcs[ind] = crc32;
+        return(ind);
+    }
+}
+
+int32_t LP_peerindsock(int32_t *peerindp)
+{
+    struct LP_peerinfo *peer,*tmp; int32_t peerind = 0;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        peerind++;
+        if ( peer->errors < LP_MAXPEER_ERRORS && peer->pushsock >= 0 )
+        {
+            if ( peerind < *peerindp )
+                continue;
+            *peerindp = peerind;
+            //printf("peerind.%d -> sock %d\n",peerind,peer->pushsock);
+            return(peer->pushsock);
+        }
+    }
     return(-1);
+}
+
+void queue_loop(void *ignore)
+{
+    struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
+    while ( 1 )
+    {
+        nonz = 0;
+        //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
+        n = 0;
+        DL_FOREACH_SAFE(LP_Q,ptr,tmp)
+        {
+            n++;
+            flag = 0;
+            if ( ptr->sock >= 0 )
+            {
+                if ( LP_sockcheck(ptr->sock) > 0 )
+                {
+                    if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
+                        printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
+                    // else printf("%d %p qsent %u msglen.%d peerind.%d\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind);
+                    ptr->sock = -1;
+                    if ( ptr->peerind > 0 )
+                        ptr->starttime = (uint32_t)time(NULL);
+                    else flag = 1;
+                }
+            }
+            else if ( time(NULL) > ptr->starttime+13 )
+            {
+                LP_crc32find(&duplicate,-1,ptr->crc32);
+                if ( duplicate > 0 )
+                {
+                    LP_Qfound++;
+                    if ( (LP_Qfound % 10) == 0 )
+                        printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
+                    flag = 1;
+                }
+                else
+                {
+                    printf("couldnt find.%u peerind.%d Q.%d err.%d match.%d\n",ptr->crc32,ptr->peerind,LP_Qenqueued,LP_Qerrors,LP_Qfound);
+                    ptr->peerind++;
+                    if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
+                    {
+                        printf("%d no more peers to try at peerind.%d %p Q_LP.%p\n",n,ptr->peerind,ptr,LP_Q);
+                        flag = 1;
+                        LP_Qerrors++;
+                     }
+                }
+            }
+            if ( flag != 0 )
+            {
+                nonz++;
+                portable_mutex_lock(&LP_networkmutex);
+                DL_DELETE(LP_Q,ptr);
+                portable_mutex_unlock(&LP_networkmutex);
+                free(ptr);
+                ptr = 0;
+            }
+        }
+        //if ( n != 0 )
+        //    printf("LP_Q.[%d]\n",n);
+        if ( nonz == 0 )
+            usleep(500000);
+    }
+}
+
+void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
+{
+    int32_t sentbytes,peerind = 0;
+    if ( sock0 >= 0 || sock1 >= 0 )
+    {
+        if ( sock0 >= 0 && LP_sockcheck(sock0) > 0 )
+        {
+            if ( (sentbytes= nn_send(sock0,msg,msglen,0)) != msglen )
+                printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
+            else
+            {
+                //printf("Q sent %u\n",crc32);
+                sock0 = -1;
+            }
+        }
+        if ( sock1 >= 0 && LP_sockcheck(sock1) > 0 )
+        {
+            if ( (sentbytes= nn_send(sock1,msg,msglen,0)) != msglen )
+                printf("_LP_queuesend1 sent %d instead of %d\n",sentbytes,msglen);
+            else sock1 = -1;
+        }
+        if ( sock0 < 0 && sock1 < 0 )
+            return;
+    }
+    else
+    {
+        peerind = 1;
+        sock0 = LP_peerindsock(&peerind);
+    }
+    portable_mutex_lock(&LP_networkmutex);
+    if ( sock0 >= 0 )
+        _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
+    if ( sock1 >= 0 )
+        _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
+    portable_mutex_unlock(&LP_networkmutex);
+}
+
+void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
+{
+    //struct iguana_info *coin; int32_t flag=0,socks[2];
+    if ( pubsock >= 0 )
+    {
+        //socks[0] = socks[1] = -1;
+        //if ( rel != 0 && rel[0] != 0 && (coin= LP_coinfind(rel)) != 0 && coin->bussock >= 0 )
+        //    socks[flag++] = coin->bussock;
+        //if ( base != 0 && base[0] != 0 && (coin= LP_coinfind(base)) != 0 && coin->bussock >= 0 )
+        //    socks[flag++] = coin->bussock;
+        //if ( flag == 0 && pubsock >= 0 )
+            _LP_queuesend(crc32,pubsock,-1,msg,msglen,0);
+        //else _LP_queuesend(socks[0],socks[1],msg,msglen,0);
+    } else _LP_queuesend(crc32,-1,-1,msg,msglen,1);
+}
+
+// first 2 bytes == (crc32 & 0xffff) if encrypted, then nonce is next crypto_box_NONCEBYTES
+// GENESIS_PRIVKEY is always the sender
+
+void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON *argjson,uint32_t crc32)
+{
+    int32_t msglen;
+    msg = (void *)jprint(argjson,0);
+    msglen = (int32_t)strlen((char *)msg) + 1;
+    if ( crc32 == 0 )
+        crc32 = calc_crc32(0,&msg[2],msglen - 2);
+    if ( IAMLP == 0 )
+    {
+        free(msg);
+        jdelete(argjson,"method");
+        jaddstr(argjson,"method","broadcast");
+        msg = (void *)jprint(argjson,0);
+        msglen = (int32_t)strlen((char *)msg) + 1;
+        LP_queuesend(crc32,-1,base,rel,msg,msglen);
+    } else LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
+    free(msg);
+}
+
+void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25519,char *msgstr)
+{
+    uint8_t encoded[LP_ENCRYPTED_MAXSIZE],space[sizeof(encoded)],*msg,*nonce,*cipher; int32_t encrypted=0,msglen; uint32_t crc32=0; cJSON *argjson; char *methodstr,method[64],cipherstr[LP_ENCRYPTED_MAXSIZE*2+1];
+    msglen = (int32_t)strlen(msgstr) + 1;
+    msg = (void *)msgstr;
+    if ( bits256_nonz(destpub25519) != 0 )
+    {
+        nonce = &encoded[2];
+        OS_randombytes(nonce,crypto_box_NONCEBYTES);
+        cipher = &encoded[2 + crypto_box_NONCEBYTES];
+        msglen = _SuperNET_cipher(nonce,&encoded[2 + crypto_box_NONCEBYTES],msg,msglen,destpub25519,GENESIS_PRIVKEY,space);
+        msglen += crypto_box_NONCEBYTES;
+        crc32 = calc_crc32(0,&encoded[2],msglen);
+        encoded[0] = crc32 & 0xff;
+        encoded[1] = (crc32 >> 8) & 0xff;
+        msg = encoded;
+        msglen += 2;
+        encrypted = 1;
+        //printf("msgstr.(%s)\n",msgstr);
+        free(msgstr), msgstr = 0;
+    }
+    if ( encrypted == 0 )
+    {
+        if ( (argjson= cJSON_Parse(msgstr)) != 0 )
+        {
+            if ( (methodstr= jstr(argjson,"method")) != 0 && strlen(methodstr) <= sizeof(method) )
+            {
+                strcpy(method,methodstr);
+                jdelete(argjson,"method");
+                if ( jobj(argjson,"method2") != 0 )
+                    jdelete(argjson,"method2");
+                jaddstr(argjson,"method2",method);
+                jaddstr(argjson,"method",method);
+                //printf("CRC32.%u (%s)\n",crc32,(char *)msg);
+                LP_broadcast_finish(pubsock,base,rel,msg,argjson,0);
+            } // else printf("no valid method in (%s)\n",msgstr);
+            free_json(argjson);
+        } else printf("couldnt parse (%s)\n",msgstr);
+    }
+    else
+    {
+        argjson = cJSON_CreateObject();
+        init_hexbytes_noT(cipherstr,msg,msglen);
+        jaddstr(argjson,"cipher",cipherstr);
+        jaddstr(argjson,"method2","encrypted");
+        jaddstr(argjson,"method","encrypted");
+        LP_broadcast_finish(pubsock,base,rel,msg,argjson,crc32);
+        free_json(argjson);
+    }
+    if ( msgstr != 0 )
+        free(msgstr);
 }
 
 uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])
@@ -97,7 +359,7 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
 void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to work
 {
     static struct nn_pollfd *pfds;
-    int32_t i,n,nonz,iter,retval,size=0,sentbytes,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];//,*myipaddr = _ptr;
+    int32_t i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];
     while ( 1 )
     {
         now = (uint32_t)time(NULL);
@@ -105,15 +367,8 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
         {
             if ( size > 0 )
             {
-                if ( (sentbytes= LP_send(sendsock,buf,size,0)) > 0 )
-                {
-                    printf("PSOCKS (%d %d %d) (%s) -> %d/%d bytes %s\n",ptr->publicsock,ptr->sendsock,sendsock,(char *)buf,size,sentbytes,ptr->sendaddr);
-                }
-                else
-                {
-                    ptr->errors++;
-                    printf("send error.%d to %s\n",ptr->errors,ptr->sendaddr);
-                }
+                if ( (sentbytes= nn_send(sendsock,buf,size,0)) != size ) // need tight loop
+                    printf("LP_psockloop sent %d instead of %d\n",sentbytes,size);
                 if ( buf != 0 )
                 {
                     if ( buf != keepalive )
@@ -176,7 +431,7 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                         {
                             if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
                             {
-                                printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
+                                //printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
                                 ptr->lasttime = now;
                                 if ( ptr->ispaired != 0 )
                                 {
@@ -232,11 +487,14 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                         else if ( now > ptr->lastping+PSOCK_KEEPALIVE/2 && ptr->errors < 3 )
                         {
                             ptr->lastping = now;
-                            sendsock = ptr->sendsock;
-                            sprintf(keepalive,"{\"method\":\"keepalive\",\"endpoint\":\"%s\"}",ptr->sendaddr);
-                            size = (int32_t)strlen(keepalive) + 1;
-                            buf = keepalive;
-                            printf("send keepalive.(%s)\n",keepalive);
+                            if ( 0 )
+                            {
+                                sendsock = ptr->sendsock;
+                                sprintf(keepalive,"{\"method\":\"keepalive\",\"endpoint\":\"%s\"}",ptr->sendaddr);
+                                size = (int32_t)strlen(keepalive) + 1;
+                                buf = keepalive;
+                                printf("send keepalive.(%s)\n",keepalive);
+                            }
                             break;
                         }
                     }
@@ -287,7 +545,7 @@ int32_t LP_psockmark(char *publicaddr)
 
 char *LP_psock(char *myipaddr,int32_t ispaired)
 {
-    char pushaddr[128],subaddr[128]; uint16_t i,publicport,subport,maxiters=100; int32_t timeout,maxsize,pullsock=-1,pubsock=-1; cJSON *retjson=0;
+    char pushaddr[128],subaddr[128]; uint16_t i,publicport,subport,maxiters=100; int32_t timeout,pullsock=-1,pubsock=-1; cJSON *retjson=0;
     retjson = cJSON_CreateObject();
     publicport = Psockport++;
     subport = Psockport++;
@@ -306,12 +564,11 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
             {
                 timeout = 1;
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                timeout = 1;
                 nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 if ( ispaired != 0 )
                 {
-                    maxsize = 1024 * 1024;
-                    nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
+                    //maxsize = 1024 * 1024;
+                    //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
                 }
                 //if ( ispaired != 0 )
                 {
@@ -354,36 +611,42 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
  both are combined in LP_psock_get
 
 */
-
-int32_t nn_tests(void *ctx,int32_t pullsock,char *pushaddr,int32_t nnother)
+char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
 {
-    int32_t sock,n,m,timeout,retval = -1; char msg[512],*retstr;
-    printf("nn_tests.(%s)\n",pushaddr);
-    if ( (sock= nn_socket(AF_SP,nnother)) >= 0 )
+    char url[512],*retstr;
+    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport,ispaired);
+    //return(LP_issue_curl("psock",destip,destport,url));
+    retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
+    printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
+    return(retstr);
+}
+
+uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
+{
+    uint16_t publicport = 0; char *retstr,*addr; cJSON *retjson; struct LP_peerinfo *peer,*tmp;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        if ( nn_connect(sock,pushaddr) < 0 )
-            printf("connect error %s\n",nn_strerror(nn_errno()));
-        else
+        connectaddr[0] = publicaddr[0] = 0;
+        if ( peer->errors < LP_MAXPEER_ERRORS && (retstr= issue_LP_psock(peer->ipaddr,peer->port,ispaired)) != 0 )
         {
-            sleep(3);
-            timeout = 1;
-            nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
-            n = LP_send(sock,msg,(int32_t)strlen(msg)+1,0);
-            sleep(3);
-            LP_pullsock_check(ctx,&retstr,"127.0.0.1",-1,pullsock,0.);
-            sprintf(msg,"{\"method\":\"nn_tests2\",\"ipaddr\":\"%s\"}",pushaddr);
-            m = LP_send(pullsock,msg,(int32_t)strlen(msg)+1,0);
-            printf(">>>>>>>>>>>>>>>>>>>>>> sent %d+%d bytes -> pullsock.%d retstr.(%s)\n",n,m,pullsock,retstr!=0?retstr:"");
-            if ( retstr != 0 )
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                free(retstr);
-                retval = 0;
+                printf("from %s:%u (%s)\n",peer->ipaddr,peer->port,retstr);
+                if ( (addr= jstr(retjson,"publicaddr")) != 0 )
+                    safecopy(publicaddr,addr,128);
+                if ( (addr= jstr(retjson,"connectaddr")) != 0 )
+                    safecopy(connectaddr,addr,128);
+                if ( publicaddr[0] != 0 && connectaddr[0] != 0 )
+                    publicport = juint(retjson,"publicport");
+                free_json(retjson);
             }
-        }
-        nn_close(sock);
+            printf("got.(%s) connect.%s public.%s\n",retstr,connectaddr,publicaddr);
+            free(retstr);
+        } else printf("error psock from %s:%u\n",peer->ipaddr,peer->port);
+        if ( publicport != 0 )
+            break;
     }
-    return(retval);
+    return(publicport);
 }
 
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
@@ -404,6 +667,11 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
     else
     {
         *mypullportp = 0;
+        if ( ispaired == 0 )
+        {
+            strcpy(publicaddr,"127.0.0.1");
+            return(-1);
+        }
         while ( *mypullportp == 0 )
         {
             if ( (*mypullportp= LP_psock_get(connectaddr,publicaddr,ispaired)) != 0 )
@@ -434,17 +702,17 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
             }
             timeout = 1;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            timeout = 1;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             //maxsize = 2 * 1024 * 1024;
             //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
             if ( nntype == NN_SUB )
                 nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
         }
-        if ( LP_canbind != 0 || ispaired != 0 || nn_tests(ctx,pullsock,publicaddr,NN_PUSH) >= 0 )
-            break;
-        printf("nn_tests failed, try again\n");
-        sleep(3);
+        //if ( LP_canbind != 0 || ispaired != 0 || nn_tests(ctx,pullsock,publicaddr,NN_PUSH) >= 0 )
+        //    break;
+        //printf("nn_tests failed, try again\n");
+        //sleep(3);
+        break;
         if ( pullsock >= 0 )
             nn_close(pullsock);
     }

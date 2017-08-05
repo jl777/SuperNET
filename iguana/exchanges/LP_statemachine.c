@@ -113,6 +113,109 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
                  }*/
     return(fp);
 }
+/*char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
+ {
+ char url[4096],str[65],str2[65],str3[65],*retstr; struct _LP_utxoinfo u; uint64_t val,val2;
+ if ( (retstr= LP_isitme(destip,destport)) != 0 )
+ return(retstr);
+ if ( utxo->iambob == 0 )
+ {
+ printf("issue_LP_notifyutxo trying to send Alice %s/v%d\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout);
+ return(0);
+ }
+ u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+ if ( LP_iseligible(&val,&val2,utxo->iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) > 0 )
+ {
+ sprintf(url,"http://%s:%u/api/stats/notified?iambob=%d&pubkey=%s&coin=%s&txid=%s&vout=%d&value=%llu&txid2=%s&vout2=%d&value2=%llu&script=%s&address=%s&timestamp=%u&gui=%s",destip,destport,utxo->iambob,bits256_str(str3,utxo->pubkey),utxo->coin,bits256_str(str,utxo->payment.txid),utxo->payment.vout,(long long)utxo->payment.value,bits256_str(str2,utxo->deposit.txid),utxo->deposit.vout,(long long)utxo->deposit.value,utxo->spendscript,utxo->coinaddr,(uint32_t)time(NULL),utxo->gui);
+ if ( strlen(url) > 1024 )
+ printf("WARNING long url.(%s)\n",url);
+ return(LP_issue_curl("notifyutxo",destip,destport,url));
+ //return(issue_curlt(url,LP_HTTP_TIMEOUT));
+ }
+ else
+ {
+ printf("issue_LP_notifyutxo: ineligible utxo iambob.%d %.8f %.8f\n",utxo->iambob,dstr(val),dstr(val2));
+ if ( utxo->T.spentflag == 0 )
+ utxo->T.spentflag = (uint32_t)time(NULL);
+ return(0);
+ }
+ }*/
+
+/*char *issue_LP_lookup(char *destip,uint16_t destport,bits256 pubkey)
+ {
+ char url[512],str[65];
+ sprintf(url,"http://%s:%u/api/stats/lookup?client=%s",destip,destport,bits256_str(str,pubkey));
+ //printf("getutxo.(%s)\n",url);
+ return(LP_issue_curl("lookup",destip,destport,url));
+ //return(issue_curlt(url,LP_HTTP_TIMEOUT));
+ }*/
+
+
+/*if ( LP_canbind == 0 )
+ {
+ //printf("check deadman %u vs %u\n",LP_deadman_switch,(uint32_t)time(NULL));
+ if ( LP_deadman_switch < time(NULL)-PSOCK_KEEPALIVE )
+ {
+ printf("DEAD man's switch %u activated at %u lag.%d, register forwarding again\n",LP_deadman_switch,(uint32_t)time(NULL),(uint32_t)(time(NULL) - LP_deadman_switch));
+ if ( pullsock >= 0 )
+ nn_close(pullsock);
+ pullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
+ LP_deadman_switch = (uint32_t)time(NULL);
+ strcpy(LP_publicaddr,pushaddr);
+ LP_publicport = mypullport;
+ LP_forwarding_register(LP_mypubkey,pushaddr,mypullport,MAX_PSOCK_PORT);
+ }
+ }*/
+/*if ( lastforward < now-3600 )
+ {
+ if ( (retstr= LP_registerall(0)) != 0 )
+ free(retstr);
+ //LP_forwarding_register(LP_mypubkey,pushaddr,pushport,10);
+ lastforward = now;
+ }*/
+//if ( IAMLP != 0 && (counter % 600) == 42 )
+//    LP_hellos();
+/*if ( 0 && LP_canbind == 0 && (counter % (PSOCK_KEEPALIVE*MAINLOOP_PERSEC/2)) == 13 )
+ {
+ char keepalive[128];
+ sprintf(keepalive,"{\"method\":\"keepalive\"}");
+ //printf("send keepalive to %s pullsock.%d\n",pushaddr,pullsock);
+ if ( /LP_send(pullsock,keepalive,(int32_t)strlen(keepalive)+1,0) < 0 )
+ {
+ //LP_deadman_switch = 0;
+ }
+ }*/
+
+/*int32_t nn_tests(void *ctx,int32_t pullsock,char *pushaddr,int32_t nnother)
+ {
+ int32_t sock,n,m,timeout,retval = -1; char msg[512],*retstr;
+ printf("nn_tests.(%s)\n",pushaddr);
+ if ( (sock= nn_socket(AF_SP,nnother)) >= 0 )
+ {
+ if ( nn_connect(sock,pushaddr) < 0 )
+ printf("connect error %s\n",nn_strerror(nn_errno()));
+ else
+ {
+ sleep(3);
+ timeout = 1;
+ nn_setsockopt(sock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+ sprintf(msg,"{\"method\":\"nn_tests\",\"ipaddr\":\"%s\"}",pushaddr);
+ n = /LP_send(sock,msg,(int32_t)strlen(msg)+1,0);
+ sleep(3);
+ LP_pullsock_check(ctx,&retstr,"127.0.0.1",-1,pullsock,0.);
+ sprintf(msg,"{\"method\":\"nn_tests2\",\"ipaddr\":\"%s\"}",pushaddr);
+ m = /LP_send(pullsock,msg,(int32_t)strlen(msg)+1,0);
+ printf(">>>>>>>>>>>>>>>>>>>>>> sent %d+%d bytes -> pullsock.%d retstr.(%s)\n",n,m,pullsock,retstr!=0?retstr:"");
+ if ( retstr != 0 )
+ {
+ free(retstr);
+ retval = 0;
+ }
+ }
+ nn_close(sock);
+ }
+ return(retval);
+ }*/
 
 int32_t basilisk_swap_load(uint32_t requestid,uint32_t quoteid,bits256 *privkeyp,struct basilisk_request *rp,uint32_t *statebitsp,int32_t *optiondurationp)
 {
@@ -685,7 +788,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
             }
             else if ( (swap->I.statebits & 0x2000) == 0 )
             {
-                if ( (swap->I.aliceconfirms == 0 && swap->aliceunconf != 0) || LP_numconfirms(swap,&swap->alicepayment) >= swap->I.aliceconfirms )
+                if ( (swap->I.aliceconfirms == 0 && swap->aliceunconf != 0) || LP_numconfirms(swap,&swap->alicepayment,1) >= swap->I.aliceconfirms )
                 {
                     swap->I.statebits |= 0x2000;
                     printf("alicepayment confirmed\n");
@@ -711,7 +814,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
                         tradebot_swap_balancingtrade(swap,1);
                         printf("Bob spends alicepayment aliceconfirms.%d\n",swap->I.aliceconfirms);
                         swap->I.statebits |= 0x40000;
-                        if ( LP_numconfirms(swap,&swap->bobspend) >= swap->I.aliceconfirms )
+                        if ( LP_numconfirms(swap,&swap->bobspend,1) >= swap->I.aliceconfirms )
                         {
                             printf("bobspend confirmed\n");
                             swap->I.statebits |= 0x80000;
@@ -734,7 +837,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
                     printf("Bob reclaimed own payment\n");
                     while ( 0 && (swap->I.statebits & 0x100000) == 0 ) // why wait for own tx?
                     {
-                        if ( LP_numconfirms(swap,&swap->bobreclaim) >= 1 )
+                        if ( LP_numconfirms(swap,&swap->bobreclaim,1) >= 1 )
                         {
                             printf("bobreclaim confirmed\n");
                             swap->I.statebits |= 0x100000;
@@ -762,7 +865,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
             }
             else if ( (swap->I.statebits & 0x400) == 0 )
             {
-                if ( basilisk_istrustedbob(swap) != 0 || (swap->I.bobconfirms == 0 && swap->depositunconf != 0) || LP_numconfirms(swap,&swap->bobdeposit) >= swap->I.bobconfirms )
+                if ( basilisk_istrustedbob(swap) != 0 || (swap->I.bobconfirms == 0 && swap->depositunconf != 0) || LP_numconfirms(swap,&swap->bobdeposit,1) >= swap->I.bobconfirms )
                 {
                     printf("bobdeposit confirmed\n");
                     swap->I.statebits |= 0x400;
@@ -786,7 +889,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
             }
             else if ( (swap->I.statebits & 0x10000) == 0 )
             {
-                if ( basilisk_istrustedbob(swap) != 0 || (swap->I.bobconfirms == 0 && swap->paymentunconf != 0) || LP_numconfirms(swap,&swap->bobpayment) >= swap->I.bobconfirms )
+                if ( basilisk_istrustedbob(swap) != 0 || (swap->I.bobconfirms == 0 && swap->paymentunconf != 0) || LP_numconfirms(swap,&swap->bobpayment,1) >= swap->I.bobconfirms )
                 {
                     printf("bobpayment confirmed\n");
                     swap->I.statebits |= 0x10000;
@@ -803,7 +906,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
             else if ( (swap->I.statebits & 0x40000) == 0 )
             {
                 int32_t numconfs;
-                if ( (numconfs= LP_numconfirms(swap,&swap->alicespend)) >= swap->I.bobconfirms )
+                if ( (numconfs= LP_numconfirms(swap,&swap->alicespend,1)) >= swap->I.bobconfirms )
                 {
                     for (j=datalen=0; j<32; j++)
                         data[datalen++] = swap->I.privAm.bytes[j];
