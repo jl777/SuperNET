@@ -66,7 +66,10 @@ myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
 inventory(coin)\n\
-autotrade(base, rel, price, volume, timeout)\n\
+bestfit(rel, relvolume)\n\
+ordermatch(base, txfee=0, rel, desttxfee=0, price, txid, vout, feetxid, feevout, duration=3600)\n\
+trade(price, timeout=10, duration=3600, <quotejson returned from ordermatch>)\n\
+autotrade(base, rel, price, relvolume, timeout=10, duration=3600)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
@@ -74,7 +77,7 @@ getcoins()\n\
 getpeers()\n\
 getutxos()\n\
 getutxos(coin, lastn)\n\
-orderbook(base, rel)\n\
+orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
 trust(pubkey, trust)\n\
 register(pubkey,pushaddr)\n\
@@ -101,7 +104,7 @@ forwardhex(pubkey,hex)\n\
             return(clonestr("{\"error\":\"authentication error\"}"));
         if ( base != 0 && rel != 0 )
         {
-            double price;
+            double price,bid,ask;
             if ( LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             price = jdouble(argjson,"price");
@@ -116,7 +119,6 @@ forwardhex(pubkey,hex)\n\
             }
             else if ( strcmp(method,"myprice") == 0 )
             {
-                double bid,ask;
                 if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )
                 {
                     retjson = cJSON_CreateObject();
@@ -127,15 +129,37 @@ forwardhex(pubkey,hex)\n\
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
+            else if ( strcmp(method,"ordermatch") == 0 )
+            {
+                if ( price > SMALLVAL )
+                return(LP_ordermatch(base,j64bits(argjson,"txfee"),price,rel,jbits256(argjson,"txid"),jint(argjson,"vout"),jbits256(argjson,"feetxid"),jint(argjson,"feevout"),j64bits(argjson,"desttxfee"),jint(argjson,"duration")));
+                else return(clonestr("{\"error\":\"no price set\"}"));
+            }
+            else if ( strcmp(method,"trade") == 0 )
+            {
+                struct LP_quoteinfo Q;
+                if ( price > SMALLVAL || jobj(argjson,"quote") != 0 )
+                {
+                    LP_quoteparse(&Q,jobj(argjson,"quote"));
+                    return(LP_trade(ctx,myipaddr,pubsock,profitmargin,&Q,price,jint(argjson,"timeout"),jint(argjson,"duration")));
+                } else return(clonestr("{\"error\":\"no price set or no quote object\"}"));
+            }
             else if ( strcmp(method,"autotrade") == 0 )
             {
                 if ( price > SMALLVAL )
                 {
                     printf("price set (%s/%s) <- %.8f\n",rel,base,1./price);
                     LP_mypriceset(rel,base,1./price);
-                    return(LP_autotrade(ctx,myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"volume"),jint(argjson,"timeout")));
+                    return(LP_autotrade(ctx,myipaddr,pubsock,profitmargin,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
+        }
+        else if ( rel != 0 && strcmp(method,"bestfit") == 0 )
+        {
+            double relvolume;
+            if ( (relvolume= jdouble(argjson,"relvolume")) > SMALLVAL )
+                return(LP_bestfit(rel,relvolume));
+            else return(clonestr("{\"error\":\"no relvolume set\"}"));
         }
         else if ( (coin= jstr(argjson,"coin")) != 0 )
         {
@@ -184,9 +208,9 @@ forwardhex(pubkey,hex)\n\
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
     }
     if ( LP_isdisabled(base,rel) != 0 )
-        retstr = clonestr("{\"error\":\"at least one of coins disabled\"}");
+        return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
     else if ( LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
-        retstr = clonestr("{\"error\":\"coin is disabled\"}");
+        retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"reserved") == 0 )
         retstr = LP_quotereceived(argjson);
     else if ( strcmp(method,"connected") == 0 )
@@ -202,7 +226,7 @@ forwardhex(pubkey,hex)\n\
     else if ( strcmp(method,"getprices") == 0 )
         return(LP_prices());
     else if ( strcmp(method,"orderbook") == 0 )
-       return(LP_orderbook(base,rel));
+        return(LP_orderbook(base,rel,jint(argjson,"duration")));
     else if ( strcmp(method,"registerall") == 0 )
         return(LP_registerall(jint(argjson,"numnodes")));
     else if ( strcmp(method,"forward") == 0 )
@@ -213,8 +237,8 @@ forwardhex(pubkey,hex)\n\
             //printf("FORWARDED.(%s)\n",jprint(argjson,0));
             if ( LP_forward(ctx,myipaddr,pubsock,profitmargin,jbits256(argjson,"pubkey"),jprint(reqjson,1),1) > 0 )
                 retstr = clonestr("{\"result\":\"success\"}");
-            else retstr = clonestr("{\"error\":\"error forwarding\"}");
-        } else retstr = clonestr("{\"error\":\"cant recurse forwards\"}");
+            else retstr = clonestr("{\"result\":\"error forwarding\"}");
+        } else retstr = clonestr("{\"result\":\"cant recurse forwards\"}");
 
     }
     else if ( strcmp(method,"keepalive") == 0 )
@@ -231,32 +255,43 @@ forwardhex(pubkey,hex)\n\
     {
         if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
             return(clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}"));
-        else return(clonestr("{\"error\":\"couldnt add utxo\"}"));
+        else return(clonestr("{\"result\":\"couldnt add utxo\"}"));
     }
-    else if ( IAMLP != 0 )
+    else
     {
-        if ( strcmp(method,"register") == 0 )
+        if ( IAMLP != 0 )
         {
-            retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"),juint(argjson,"pushport"));
-            //printf("got (%s) from register\n",retstr!=0?retstr:"");
-            return(retstr);
-        }
-        else if ( strcmp(method,"lookup") == 0 )
-            return(LP_lookup(jbits256(argjson,"client")));
-        else if ( strcmp(method,"forwardhex") == 0 )
-            retstr = LP_forwardhex(ctx,pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
-        else if ( strcmp(method,"psock") == 0 )
-        {
-            if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
+            if ( strcmp(method,"register") == 0 )
             {
-                if ( LP_mypeer != 0 )
-                    myipaddr = LP_mypeer->ipaddr;
-                else printf("LP_psock dont have actual ipaddr?\n");
+                retstr = LP_register(jbits256(argjson,"client"),jstr(argjson,"pushaddr"),juint(argjson,"pushport"));
+                //printf("got (%s) from register\n",retstr!=0?retstr:"");
+                return(retstr);
             }
-            return(LP_psock(myipaddr,jint(argjson,"ispaired")));
+            else if ( strcmp(method,"lookup") == 0 )
+                return(LP_lookup(jbits256(argjson,"client")));
+            else if ( strcmp(method,"forwardhex") == 0 )
+                retstr = LP_forwardhex(ctx,pubsock,jbits256(argjson,"pubkey"),jstr(argjson,"hex"));
+            else if ( strcmp(method,"psock") == 0 )
+            {
+                if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
+                {
+                    if ( LP_mypeer != 0 )
+                        myipaddr = LP_mypeer->ipaddr;
+                    else printf("LP_psock dont have actual ipaddr?\n");
+                }
+                return(LP_psock(myipaddr,jint(argjson,"ispaired")));
+            }
+            else if ( strcmp(method,"notify") == 0 )
+                retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
         }
-        else if ( strcmp(method,"notify") == 0 )
-            retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
+        else
+        {
+            if ( strcmp(method,"register") == 0 )
+            {
+                printf("nonLP got (%s)\n",jprint(argjson,0));
+                retstr = clonestr("{\"result\":\"success\",\"register\":\"received\"}");
+            }
+        }
     }
     if ( retstr != 0 )
     {

@@ -42,10 +42,10 @@ struct LP_forwardinfo *LP_forwardfind(bits256 pubkey)
 char *LP_lookup(bits256 pubkey)
 {
     if ( bits256_nonz(pubkey) == 0 )
-        return(clonestr("{\"error\":\"illegal pubkey\"}"));
+        return(clonestr("{\"result\":\"illegal pubkey\"}"));
     if ( LP_forwardfind(pubkey) != 0 )
         return(clonestr("{\"result\":\"success\",\"forwarding\":1}"));
-    else return(clonestr("{\"error\":\"notfound\"}"));
+    else return(clonestr("{\"result\":\"notfound\"}"));
 }
 
 int32_t LP_hello(struct LP_forwardinfo *ptr)
@@ -108,9 +108,9 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
 {
     struct LP_forwardinfo *ptr=0; int32_t pushsock; char pushaddr[64];
     if ( ipaddr == 0 || ipaddr[0] == 0 || is_ipaddr(ipaddr) == 0 || bits256_nonz(pubkey) == 0 )
-        return(clonestr("{\"error\":\"illegal ipaddr or null pubkey\"}"));
+        return(clonestr("{\"result\":\"illegal ipaddr or null pubkey\"}"));
     nanomsg_transportname(0,pushaddr,ipaddr,port);
-    char str[65]; printf("register.(%s) %s\n",pushaddr,bits256_str(str,pubkey));
+    //char str[65]; printf("register.(%s) %s\n",pushaddr,bits256_str(str,pubkey));
     if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
         ptr->lasttime = (uint32_t)time(NULL);
@@ -123,16 +123,16 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
                 {
                     //printf("cant mark (%s)\n",ptr->pushaddr);
                 }
-                char str[65]; printf("%u recreate pushsock for %s <- %s\n",(uint32_t)time(NULL),pushaddr,bits256_str(str,pubkey));
+                char str[65]; printf("%u recreate pushsock for %s <- %s %s\n",(uint32_t)time(NULL),ptr->pushaddr,pushaddr,bits256_str(str,pubkey));
                 strcpy(ptr->pushaddr,pushaddr);
                 if ( (ptr->pushsock= LP_pushsock_create(ptr,pushaddr)) < 0 )
-                    return(clonestr("{\"error\":\"couldnt recreate pushsock\",\"registered\":0}"));
+                    return(clonestr("{\"result\":\"success\",\"status\":\"couldnt recreate pushsock\",\"registered\":0}"));
             } //else printf("no need to create identical endpoint\n");
         }
-        return(clonestr("{\"error\":\"already registered\",\"registered\":1}"));
+        return(clonestr("{\"result\":\"success\",\"status\":\"already registered\",\"registered\":1}"));
     }
     else if ( (pushsock= LP_pushsock_create(0,pushaddr)) < 0 )
-        return(clonestr("{\"error\":\"couldnt create pushsock\"}"));
+        return(clonestr("{\"result\":\"success\",\"status\":\"couldnt create pushsock\"}"));
     else
     {
         ptr = calloc(1,sizeof(*ptr));
@@ -143,7 +143,7 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
         portable_mutex_lock(&LP_forwardmutex);
         HASH_ADD_KEYPTR(hh,LP_forwardinfos,&ptr->pubkey,sizeof(ptr->pubkey),ptr);
         portable_mutex_unlock(&LP_forwardmutex);
-        char str[65]; printf("registered (%s) -> (%s) pushsock.%d\n",bits256_str(str,pubkey),pushaddr,ptr->pushsock);
+        //char str[65]; printf("registered (%s) -> (%s) pushsock.%d\n",bits256_str(str,pubkey),pushaddr,ptr->pushsock);
         LP_hello(ptr);
         return(LP_lookup(pubkey));
     }
@@ -151,7 +151,7 @@ char *LP_register(bits256 pubkey,char *ipaddr,uint16_t port)
 
 int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicport,int32_t max)
 {
-    char *retstr,ipaddr[64]; cJSON *retjson; struct LP_peerinfo *peer,*tmp; int32_t j,n=0,retval = -1;
+    char *argstr,ipaddr[64]; cJSON *argjson; struct LP_peerinfo *peer,*tmp; int32_t j,n=0,arglen;
     if ( publicaddr == 0 || publicaddr[0] == 0 || bits256_nonz(pubkey) == 0 )
     {
         char str[65]; printf("LP_forwarding_register illegal publicaddr.(%s):%u or null pubkey (%s)\n",publicaddr,publicport,bits256_str(str,pubkey));
@@ -161,10 +161,27 @@ int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicpo
         if ( publicaddr[j] >= '0' && publicaddr[j] <= '9' )
             break;
     parse_ipaddr(ipaddr,publicaddr+j);
+    argjson = cJSON_CreateObject();
+    jaddstr(argjson,"agent","stats");
+    jaddstr(argjson,"method","register");
+    jaddbits256(argjson,"client",pubkey);
+    jaddstr(argjson,"pushaddr",ipaddr);
+    jaddnum(argjson,"pushport",publicport);
+    argstr = jprint(argjson,1);
+    arglen = (int32_t)strlen(argstr) + 1;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        if ( strcmp(LP_myipaddr,peer->ipaddr) == 0 )
+            continue;
+        if ( peer->pushsock >= 0 )
+        {
+            if ( LP_send(peer->pushsock,argstr,arglen,0) != arglen )
+                printf("error sending command to %s:%u\n",peer->ipaddr,peer->port);
+            else printf("sent register to %s:%u\n",peer->ipaddr,peer->port);
+            n++;
+        }
         //printf("register.(%s) %s %u with (%s)\n",publicaddr,ipaddr,publicport,peer->ipaddr);
-        if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,ipaddr,publicport)) != 0 )
+        /*if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,ipaddr,publicport)) != 0 )
         {
             //printf("[%s] LP_register.(%s) returned.(%s)\n",publicaddr,peer->ipaddr,retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -176,8 +193,9 @@ int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicpo
             free(retstr);
         } else printf("timeout registering with %s errs.%d good.%d\n",peer->ipaddr,peer->errors,peer->good);
         if ( retval == 0 )
-            break;
+            break;*/
     }
+    free(argstr);
     return(n);
 }
 
@@ -216,7 +234,7 @@ char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
 {
     struct LP_forwardinfo *ptr=0; uint8_t *data; int32_t datalen=0,sentbytes=0; char *msg,*retstr=0; cJSON *retjson=0,*argjson=0,*reqjson=0;
     if ( hexstr == 0 || hexstr[0] == 0 )
-        return(clonestr("{\"error\":\"nohex\"}"));
+        return(clonestr("{\"result\":\"nohex\"}"));
     datalen = (int32_t)strlen(hexstr) >> 1;
     data = malloc(datalen);
     decode_hex(data,datalen,hexstr);
@@ -266,7 +284,7 @@ char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
             msg = jprint(reqjson,0);
             LP_send(pubsock,msg,(int32_t)strlen(msg)+1,1);
         }
-        retstr = clonestr("{\"error\":\"notfound\"}");
+        retstr = clonestr("{\"result\":\"notfound\"}");
     }
     free(data);
     if ( reqjson != 0 )
