@@ -17,24 +17,6 @@
 
 //#ifdef LTC_SHA256
 
-const struct ltc_hash_descriptor sha256_desc =
-{
-    "sha256",
-    0,
-    32,
-    64,
-
-    /* OID */
-   { 2, 16, 840, 1, 101, 3, 4, 2, 1,  },
-   9,
-    
-    &sha256i_init,
-    &sha256i_process,
-    &sha256i_done,
-    &sha256_test,
-    NULL
-};
-
 #ifdef LTC_SMALL_CODE
 /* the K array */
 static const ulong32 K[64] = {
@@ -203,7 +185,7 @@ static int sha256_compress(hash_state * md, unsigned char *buf)
    @param md   The hash state you wish to initialize
    @return CRYPT_OK if successful
 */
-int sha256_init(hash_state * md)
+int sha256i_init(hash_state * md)
 {
     LTC_ARGCHK(md != NULL);
 
@@ -435,6 +417,24 @@ int  sha256_test(void)
 #undef Ch
 #undef Maj
 
+
+const struct ltc_hash_descriptor sha256_desc =
+{
+    "sha256",
+    0,
+    32,
+    64,
+    
+    /* OID */
+    { 2, 16, 840, 1, 101, 3, 4, 2, 1,  },
+    9,
+    
+    &sha256i_init,
+    &sha256i_process,
+    &sha256i_done,
+    &sha256_test,
+    NULL
+};
 
 
 /* $Source: /cvs/libtom/libtomcrypt/src/hashes/sha2/sha256.c,v $ */
