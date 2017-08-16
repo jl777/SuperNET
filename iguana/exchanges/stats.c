@@ -669,6 +669,8 @@ void stats_rpcloop(void *args)
             //printf("RETURN.(%s) jsonflag.%d postflag.%d\n",retstr,jsonflag,postflag);
             if ( jsonflag != 0 || postflag != 0 )
             {
+                if ( retstr == 0 )
+                    retstr = clonestr("{}");
                 response = malloc(strlen(retstr)+1024+1+1);
                 sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr));
                 response[0] = '\0';
