@@ -1,7 +1,0 @@
-#!/bin/bash
-#./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
-rm -f marketmaker
-git pull
-cd secp256k1; ./m_unix; cd ..
-cd ../crypto777; make -f m_LP_StaticNanoMsg all; make -f m_LP_StaticNanoMsg clean; cd ../iguana
-gcc -g -o marketmaker -I../crypto777 exchanges/mm.c mini-gmp.c secp256k1.o ../agents/libcrypto777.a ../OSlibs/linux/$(uname -m)/libnanomsg-static.a -lcurl -lpthread -lm
