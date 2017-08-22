@@ -18,6 +18,7 @@
 //  marketmaker
 //
 
+
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid)
 {
     struct LP_transaction *tx;
@@ -197,6 +198,37 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
     if ( checkht == height )
         return(0);
     else return(-1);
+}
+
+cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
+{
+    struct LP_transaction *tx,*tmp; int32_t i,ht; uint64_t balance=0; cJSON *retjson,*array;
+    for (ht=1; ht<height; ht++)
+        if ( LP_blockinit(coin,ht) < 0 )
+        {
+            printf("error loading block.%d of %d\n",ht,height);
+            return(0);
+        }
+    portable_mutex_lock(&coin->txmutex);
+    HASH_ITER(hh,coin->transactions,tx,tmp)
+    {
+        if ( tx->height < height )
+        {
+            for (i=0; i<tx->numvouts; i++)
+            {
+                if ( (ht=tx->outpoints[i].spendheight) > 0 && ht < height )
+                    continue;
+                balance += tx->outpoints[i].value;
+            }
+        }
+    }
+    portable_mutex_unlock(&coin->txmutex);
+    printf("%s balance %.8f at height.%d\n",coin->symbol,dstr(balance),height);
+    retjson = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    jadd(retjson,"balances",array);
+    jaddnum(retjson,"total",dstr(balance));
+    return(retjson);
 }
 
 int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)

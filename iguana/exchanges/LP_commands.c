@@ -120,7 +120,7 @@ getprices(base, rel)\n\
 sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 getmessages(firsti=0, num=100)\n\
 clearmessages(firsti=0, num=100)\n\
-trust(pubkey, trust)\n\
+snapshot(coin, height)\n\
 \"}"));
     
     base = jstr(argjson,"base");
@@ -245,6 +245,12 @@ trust(pubkey, trust)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     ptr->inactive = (uint32_t)time(NULL);
                 return(jprint(LP_coinsjson(0),1));
+            }
+            else if ( strcmp(method,"snapshot") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                    ptr->inactive = (uint32_t)time(NULL);
+                return(jprint(LP_snapshot(ptr,juint(argjson,"height")),1));
             }
             if ( LP_isdisabled(coin,0) != 0 )
                 return(clonestr("{\"error\":\"coin is disabled\"}"));
