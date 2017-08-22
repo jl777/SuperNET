@@ -1658,6 +1658,8 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
         printf("iguana_ramchain_iterate cant iterate without data\n");
         return(-1);
     }
+    if ( rdata->firsti != 1 )
+        printf("unexpected firsti.%d %s.%d\n",rdata->firsti,coin->symbol,bundlei);
     if ( dest != 0 )
     {
         // required to do one block at a time, all vins/vouts the same height are assumed to happen simultaneously with vouts before vins
