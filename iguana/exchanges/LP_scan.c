@@ -204,11 +204,15 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 {
     struct LP_transaction *tx,*tmp; int32_t i,ht; uint64_t balance=0; cJSON *retjson,*array;
     for (ht=1; ht<height; ht++)
+    {
         if ( LP_blockinit(coin,ht) < 0 )
         {
             printf("error loading block.%d of %d\n",ht,height);
             return(0);
         }
+        if ( (ht % 1000) == 0 )
+            fprintf(stderr,"%.1f%% ",100. * (double)ht/height);
+    }
     portable_mutex_lock(&coin->txmutex);
     HASH_ITER(hh,coin->transactions,tx,tmp)
     {
