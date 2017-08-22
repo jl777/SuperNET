@@ -397,7 +397,7 @@ cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t hei
                 *heightp = juint(json,"height");
                 if ( height >= 0 && *heightp != height )
                 {
-                    printf("unexpected height %d vs %d for %s\n",*heightp,height,blockhashstr);
+                    printf("unexpected height %d vs %d for %s (%s)\n",*heightp,height,blockhashstr,jprint(json,0));
                     *heightp = -1;
                     free_json(json);
                     json = 0;
