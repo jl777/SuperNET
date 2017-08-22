@@ -1903,10 +1903,11 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
         {
             tx = &txarray[i];
             iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,bundlei);
-            if ( tx->tx_out == 0 && tx->tx_in == 0 )
+            if ( tx->tx_out == 0 )
             {
-                printf("strange tx without any inputs or outputs? ht.%d\n",bp->bundleheight);
-                break;
+                if ( coin->chain->zcash == 0 )
+                    printf("strange tx without any inputs or outputs? ht.%d\n",bp->bundleheight);
+                continue;
             }
             for (j=0; j<tx->tx_out; j++)
             {
