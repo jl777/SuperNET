@@ -1095,7 +1095,7 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
             //exit(-1);
             return(-4);
         }
-        if ( t->firstvin != ramchain->H.spendind )
+        if ( coin->chain->zcash == 0 && t->firstvin != ramchain->H.spendind )
         {
             printf("t[%u] firstvin.%u vs spendind.%d\n",(uint32_t)t->txidind,(uint32_t)t->firstvin,ramchain->H.spendind);
             return(-5);
