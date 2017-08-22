@@ -307,7 +307,7 @@ int32_t iguana_blocksizecheck(char *debugstr,uint8_t zcash,struct iguana_block *
 
 int32_t iguana_blockROsize(uint8_t zcash)
 {
-    return((int32_t)(sizeof(struct iguana_zblockRO) + zcash*sizeof(struct iguana_msgzblockhdr)));
+    return((int32_t)(sizeof(struct iguana_blockRO) + zcash*sizeof(struct iguana_msgzblockhdr)));
 }
 
 void *iguana_blockzcopyRO(uint8_t zcash,struct iguana_blockRO *dest,int32_t desti,struct iguana_blockRO *src,int32_t srci)
