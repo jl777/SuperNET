@@ -248,10 +248,9 @@ snapshot(coin, height)\n\
             }
             else if ( strcmp(method,"snapshot") == 0 )
             {
-                printf("snapshot\n");
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
-                    ptr->inactive = (uint32_t)time(NULL);
-                return(jprint(LP_snapshot(ptr,juint(argjson,"height")),1));
+                    return(jprint(LP_snapshot(ptr,juint(argjson,"height")),1));
+                else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             if ( LP_isdisabled(coin,0) != 0 )
                 return(clonestr("{\"error\":\"coin is disabled\"}"));
