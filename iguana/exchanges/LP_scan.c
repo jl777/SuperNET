@@ -286,6 +286,10 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
             maxsnapht = endht;
     }
     portable_mutex_lock(&coin->txmutex);
+    HASH_ITER(hh,coin->addresses,ap,atmp)
+    {
+        ap->balance = 0;
+    }
     HASH_ITER(hh,coin->transactions,tx,tmp)
     {
         if ( tx->height < height )
