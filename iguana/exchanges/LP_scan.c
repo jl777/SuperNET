@@ -200,18 +200,50 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
     else return(-1);
 }
 
-cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
+int32_t LP_scanblockchain(struct iguana_info *coin,int32_t startheight,int32_t endheight)
 {
-    struct LP_transaction *tx,*tmp; int32_t i,ht; uint64_t balance=0; cJSON *retjson,*array;
-    for (ht=1; ht<height; ht++)
+    int32_t ht,n = 0;
+    for (ht=startheight; ht<=endheight; ht++)
     {
         if ( LP_blockinit(coin,ht) < 0 )
         {
-            printf("error loading block.%d of %d\n",ht,height);
-            return(0);
+            printf("error loading block.%d of (%d, %d)\n",ht,startheight,endheight);
+            return(-1);
         }
-        if ( (ht % 1000) == 0 )
-            fprintf(stderr,"%.1f%% ",100. * (double)ht/height);
+        n++;
+        if ( (n % 1000) == 0 )
+            fprintf(stderr,"%.1f%% ",100. * (double)n/(endheight-startheight+1));
+    }
+    return(0);
+}
+
+cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
+{
+    static char lastcoin[16]; static int32_t maxsnapht;
+    struct LP_transaction *tx,*tmp; int32_t i,skipflag=0,startht,endht,ht; uint64_t balance=0; cJSON *retjson,*array;
+    startht = 1;
+    endht = height-1;
+    if ( strcmp(coin->symbol,lastcoin) == 0 )
+    {
+        if ( maxsnapht > height )
+            skipflag = 1;
+        else startht = maxsnapht+1;
+    }
+    else
+    {
+        maxsnapht = 0;
+        strcpy(lastcoin,coin->symbol);
+    }
+    retjson = cJSON_CreateObject();
+    if ( skipflag == 0 && startht < endht )
+    {
+        if ( LP_scanblockchain(coin,startht,endht) < 0 )
+        {
+            jaddstr(retjson,"error","blockchain scan error");
+            return(retjson);
+        }
+        if ( endht > maxsnapht )
+            maxsnapht = endht;
     }
     portable_mutex_lock(&coin->txmutex);
     HASH_ITER(hh,coin->transactions,tx,tmp)
@@ -228,7 +260,6 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
     }
     portable_mutex_unlock(&coin->txmutex);
     printf("%s balance %.8f at height.%d\n",coin->symbol,dstr(balance),height);
-    retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     jadd(retjson,"balances",array);
     jaddnum(retjson,"total",dstr(balance));
