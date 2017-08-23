@@ -155,6 +155,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
     struct LP_transaction *tx; char *address; int32_t i,n,height,numvouts,numvins,spentvout; uint32_t timestamp,blocktime; cJSON *txobj,*vins,*vouts,*vout,*vin,*sobj,*addresses; bits256 spenttxid; char str[65];
     if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
     {
+        printf("TX.(%s)\n",jprint(txobj,0));
         height = LP_txheight(&timestamp,&blocktime,coin,txid);
         if ( timestamp == 0 && height > 0 )
             timestamp = blocktime;
@@ -175,10 +176,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
                         if ( n > 1 )
                             printf("LP_transactioninit: txid.(%s) multiple addresses.[%s]\n",bits256_str(str,txid),jprint(addresses,0));
                         if ( (address= jstri(addresses,0)) != 0 && strlen(address) < sizeof(tx->outpoints[i].coinaddr) )
-                        {
                             strcpy(tx->outpoints[i].coinaddr,address);
-                            printf("%s -> %s\n",jprint(sobj,0),address);
-                        }
                     }
                 }
             }
