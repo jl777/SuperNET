@@ -326,7 +326,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
     {
         if ( ap->balance != 0 )
         {
-            item = cJSON_CreateArray();
+            item = cJSON_CreateObject();
             jaddnum(item,ap->coinaddr,dstr(ap->balance));
             jaddi(array,item);
             n++;
