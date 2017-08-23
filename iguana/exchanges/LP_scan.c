@@ -197,8 +197,10 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
                         tx->outpoints[spentvout].spendvini = i;
                         tx->outpoints[spentvout].spendheight = height;
                         //printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
-                    } else printf("LP_transactioninint: %s spentvout.%d < numvouts.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts);
-                }
+                    } else printf("LP_transactioninit: %s spentvout.%d < numvouts.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts);
+                } else printf("LP_transactioninit: couldnt find (%s)\n",bits256_str(str,spenttxid));
+                if ( bits256_cmp(spenttxid,txid) == 0 )
+                    printf("spending same tx's %p vout ht.%d %s.[%d] s%d\n",tx,height,bits256_str(str,txid),tx!=0?tx->numvouts:0,spentvout);
             }
         }
         free_json(txobj);
@@ -257,6 +259,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 {
     static char lastcoin[16]; static int32_t maxsnapht;
     struct LP_transaction *tx,*tmp; struct LP_address *ap,*atmp; int32_t i,n,skipflag=0,startht,endht,ht; uint64_t balance=0,noaddr_balance=0; cJSON *retjson,*array,*item;
+    LP_blockinit(coin,421011);
     startht = 1;
     endht = height-1;
     if ( strcmp(coin->symbol,lastcoin) == 0 )
