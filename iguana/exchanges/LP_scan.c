@@ -189,6 +189,8 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
                 vin = jitem(vins,i);
                 spenttxid = jbits256(vin,"txid");
                 spentvout = jint(vin,"vout");
+                if ( i == 0 && bits256_nonz(spenttxid) == 0 )
+                    continue;
                 if ( (tx= LP_transactionfind(coin,spenttxid)) != 0 )
                 {
                     if ( spentvout < tx->numvouts )
