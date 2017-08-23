@@ -200,7 +200,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
                         tx->outpoints[spentvout].spendheight = height;
                         //printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
                     } else printf("LP_transactioninit: %s spentvout.%d < numvouts.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts);
-                } else printf("LP_transactioninit: couldnt find (%s) ht.%d %s\n",bits256_str(str,spenttxid),height,jprint(vin,0));
+                } //else printf("LP_transactioninit: couldnt find (%s) ht.%d %s\n",bits256_str(str,spenttxid),height,jprint(vin,0));
                 if ( bits256_cmp(spenttxid,txid) == 0 )
                     printf("spending same tx's %p vout ht.%d %s.[%d] s%d\n",tx,height,bits256_str(str,txid),tx!=0?tx->numvouts:0,spentvout);
             }
@@ -251,13 +251,13 @@ int32_t LP_scanblockchain(struct iguana_info *coin,int32_t startheight,int32_t e
         if ( LP_blockinit(coin,ht) < 0 )
         {
             printf("error loading block.%d of (%d, %d)\n",ht,startheight,endheight);
-            return(-1);
+            return(ht-1);
         }
         n++;
         if ( (n % 1000) == 0 )
             fprintf(stderr,"%.1f%% ",100. * (double)n/(endheight-startheight+1));
     }
-    return(0);
+    return(endheight);
 }
 
 cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
@@ -281,17 +281,20 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
     retjson = cJSON_CreateObject();
     if ( skipflag == 0 && startht < endht )
     {
-        if ( LP_scanblockchain(coin,startht,endht) < 0 )
+        if ( (ht= LP_scanblockchain(coin,startht,endht)) < endht )
         {
             sleep(10);
-            if ( LP_scanblockchain(coin,startht,endht) < 0 )
+            if ( (ht= LP_scanblockchain(coin,startht,endht)) < endht )
             {
                 jaddstr(retjson,"error","blockchain scan error");
                 return(retjson);
             }
         }
-        if ( endht > maxsnapht )
-            maxsnapht = endht;
+        if ( ht > maxsnapht )
+        {
+            maxsnapht = ht;
+            printf("maxsnapht.%d for %s\n",maxsnapht,coin->symbol);
+        }
     }
     portable_mutex_lock(&coin->txmutex);
     HASH_ITER(hh,coin->addresses,ap,atmp)
