@@ -413,7 +413,10 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
             {
                 txid = jbits256i(array,i);
                 if ( (tx= LP_transactionfind(coin,txid)) == 0 )
-                    LP_transactioninit(coin,txid);
+                {
+                    LP_transactioninit(coin,txid,0);
+                    LP_transactioninit(coin,txid,1);
+                }
                 if ( bits256_cmp(txid,searchtxid) == 0 )
                 {
                     char str[65]; printf("found %s tx.(%s) in mempool slot.%d\n",symbol,bits256_str(str,txid),i);
