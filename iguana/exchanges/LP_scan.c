@@ -264,7 +264,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 {
     static char lastcoin[16]; static int32_t maxsnapht;
     struct LP_transaction *tx,*tmp; struct LP_address *ap,*atmp; int32_t i,n,skipflag=0,startht,endht,ht; uint64_t balance=0,noaddr_balance=0; cJSON *retjson,*array,*item;
-    LP_blockinit(coin,421011);
+    //LP_blockinit(coin,421011);
     startht = 1;
     endht = height-1;
     if ( strcmp(coin->symbol,lastcoin) == 0 )
