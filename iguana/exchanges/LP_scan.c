@@ -150,7 +150,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
     return(value);
 }
 
-int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
+int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
 {
     struct LP_transaction *tx; char *address; int32_t i,n,height,numvouts,numvins,spentvout; uint32_t timestamp,blocktime; cJSON *txobj,*vins,*vouts,*vout,*vin,*sobj,*addresses; bits256 spenttxid; char str[65];
     if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
@@ -161,7 +161,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
             timestamp = blocktime;
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
-        if ( vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins,timestamp)) != 0 )
+        if ( iter == 0 && vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins,timestamp)) != 0 )
         {
             for (i=0; i<numvouts; i++)
             {
@@ -182,7 +182,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
                 }
             }
         }
-        if ( vins != 0 )
+        if ( iter == 1 && vins != 0 )
         {
             for (i=0; i<numvins; i++)
             {
@@ -213,11 +213,12 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
 
 int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
 {
-    int32_t i,numtx,checkht=-1; cJSON *blockobj,*txs; bits256 txid; struct LP_transaction *tx;
+    int32_t i,iter,numtx,checkht=-1; cJSON *blockobj,*txs; bits256 txid; struct LP_transaction *tx;
     if ( (blockobj= LP_blockjson(&checkht,coin->symbol,0,height)) != 0 )
     {
         if ( (txs= jarray(&numtx,blockobj,"tx")) != 0 )
         {
+            for (iter=0; iter<2; iter++)
             for (i=0; i<numtx; i++)
             {
                 txid = jbits256i(txs,i);
@@ -230,7 +231,9 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
                         printf("LP_blockinit: tx->height %d != %d\n",tx->height,height);
                         tx->height = height;
                     }
-                } else LP_transactioninit(coin,txid);
+                    if ( iter == 1 )
+                        LP_transactioninit(coin,txid,iter);
+                } else LP_transactioninit(coin,txid,iter);
             }
         }
         free_json(blockobj);
