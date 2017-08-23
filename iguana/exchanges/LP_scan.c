@@ -19,6 +19,30 @@
 //
 
 
+struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap;
+    HASH_FIND(hh,coin->addresses,coinaddr,strlen(coinaddr),ap);
+    return(ap);
+}
+
+struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap;
+    ap = calloc(1,sizeof(*ap));
+    safecopy(ap->coinaddr,coinaddr,sizeof(ap->coinaddr));
+    HASH_ADD_KEYPTR(hh,coin->addresses,ap->coinaddr,strlen(ap->coinaddr),ap);
+    return(ap);
+}
+
+struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap;
+    if ( (ap= _LP_addressfind(coin,coinaddr)) == 0 )
+        ap = _LP_addressadd(coin,coinaddr);
+    return(ap);
+}
+
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid)
 {
     struct LP_transaction *tx;
@@ -128,7 +152,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
 
 int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
 {
-    struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; uint32_t timestamp,blocktime; cJSON *txobj,*vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
+    struct LP_transaction *tx; char *address; int32_t i,n,height,numvouts,numvins,spentvout; uint32_t timestamp,blocktime; cJSON *txobj,*vins,*vouts,*vout,*vin,*sobj,*addresses; bits256 spenttxid; char str[65];
     if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
     {
         height = LP_txheight(&timestamp,&blocktime,coin,txid);
@@ -144,6 +168,16 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
                 if ( (tx->outpoints[i].value= SATOSHIDEN * jdouble(vout,"value")) == 0 )
                     tx->outpoints[i].value = SATOSHIDEN * jdouble(vout,"amount");
                 tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
+                if ( (sobj= jobj(vout,"scriptPubKey")) != 0 )
+                {
+                    if ( (addresses= jarray(&n,sobj,"addresses")) != 0 && n > 0 )
+                    {
+                        if ( n > 1 )
+                            printf("LP_transactioninit: txid.(%s) multiple addresses.[%s]\n",bits256_str(str,txid),jprint(addresses,0));
+                        if ( (address= jstri(addresses,0)) != 0 && strlen(address) < sizeof(tx->outpoints[i].coinaddr) )
+                            strcpy(tx->outpoints[i].coinaddr,address);
+                    }
+                }
             }
         }
         if ( vins != 0 )
@@ -220,7 +254,7 @@ int32_t LP_scanblockchain(struct iguana_info *coin,int32_t startheight,int32_t e
 cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 {
     static char lastcoin[16]; static int32_t maxsnapht;
-    struct LP_transaction *tx,*tmp; int32_t i,skipflag=0,startht,endht,ht; uint64_t balance=0; cJSON *retjson,*array;
+    struct LP_transaction *tx,*tmp; struct LP_address *ap,*atmp; int32_t i,n,skipflag=0,startht,endht,ht; uint64_t balance=0,noaddr_balance=0; cJSON *retjson,*array,*item;
     startht = 1;
     endht = height-1;
     if ( strcmp(coin->symbol,lastcoin) == 0 )
@@ -239,8 +273,12 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
     {
         if ( LP_scanblockchain(coin,startht,endht) < 0 )
         {
-            jaddstr(retjson,"error","blockchain scan error");
-            return(retjson);
+            sleep(10);
+            if ( LP_scanblockchain(coin,startht,endht) < 0 )
+            {
+                jaddstr(retjson,"error","blockchain scan error");
+                return(retjson);
+            }
         }
         if ( endht > maxsnapht )
             maxsnapht = endht;
@@ -254,15 +292,33 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
             {
                 if ( (ht=tx->outpoints[i].spendheight) > 0 && ht < height )
                     continue;
-                balance += tx->outpoints[i].value;
+                if ( (ap= _LP_address(coin,tx->outpoints[i].coinaddr)) != 0 )
+                {
+                    balance += tx->outpoints[i].value;
+                    ap->balance += tx->outpoints[i].value;
+                } else noaddr_balance += tx->outpoints[i].value;
             }
         }
     }
     portable_mutex_unlock(&coin->txmutex);
     printf("%s balance %.8f at height.%d\n",coin->symbol,dstr(balance),height);
     array = cJSON_CreateArray();
+    n = 0;
+    HASH_ITER(hh,coin->addresses,ap,atmp)
+    {
+        if ( ap->balance != 0 )
+        {
+            item = cJSON_CreateArray();
+            jaddistr(item,ap->coinaddr);
+            jaddinum(item,dstr(ap->balance));
+            jaddi(array,item);
+            n++;
+        }
+    }
     jadd(retjson,"balances",array);
+    jaddnum(retjson,"numaddresses",n);
     jaddnum(retjson,"total",dstr(balance));
+    jaddnum(retjson,"noaddr_total",dstr(noaddr_balance));
     return(retjson);
 }
 
