@@ -121,6 +121,7 @@ sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 getmessages(firsti=0, num=100)\n\
 clearmessages(firsti=0, num=100)\n\
 snapshot(coin, height)\n\
+dividends(coin, height, <args>)\n\
 \"}"));
     
     base = jstr(argjson,"base");
@@ -250,6 +251,12 @@ snapshot(coin, height)\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     return(jprint(LP_snapshot(ptr,juint(argjson,"height")),1));
+                else return(clonestr("{\"error\":\"cant find coind\"}"));
+            }
+            else if ( strcmp(method,"dividends") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                    return(LP_dividends(ptr,juint(argjson,"height"),argjson));
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             if ( LP_isdisabled(coin,0) != 0 )

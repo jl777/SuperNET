@@ -309,11 +309,11 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
             {
                 if ( (ht=tx->outpoints[i].spendheight) > 0 && ht < height )
                     continue;
-                if ( (ap= _LP_address(coin,tx->outpoints[i].coinaddr)) != 0 )
+                if ( tx->outpoints[i].coinaddr[0] != 0 && (ap= _LP_address(coin,tx->outpoints[i].coinaddr)) != 0 )
                 {
                     balance += tx->outpoints[i].value;
                     ap->balance += tx->outpoints[i].value;
-                    printf("%s/%s %.8f %.8f\n",tx->outpoints[i].coinaddr,ap->coinaddr,dstr(tx->outpoints[i].value),dstr(ap->balance));
+                    //printf("(%s/%s) %.8f %.8f\n",tx->outpoints[i].coinaddr,ap->coinaddr,dstr(tx->outpoints[i].value),dstr(ap->balance));
                 } else noaddr_balance += tx->outpoints[i].value;
             }
         }
@@ -327,8 +327,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
         if ( ap->balance != 0 )
         {
             item = cJSON_CreateArray();
-            jaddistr(item,ap->coinaddr);
-            jaddinum(item,dstr(ap->balance));
+            jaddnum(item,ap->coinaddr,dstr(ap->balance));
             jaddi(array,item);
             n++;
         }
@@ -338,6 +337,109 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
     jaddnum(retjson,"total",dstr(balance));
     jaddnum(retjson,"noaddr_total",dstr(noaddr_balance));
     return(retjson);
+}
+
+char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
+{
+    cJSON *array,*retjson,*item,*child,*exclude=0; int32_t i,j,n,execflag=0,flag,iter,numexcluded=0; char buf[1024],*field,*prefix="",*suffix=""; uint64_t dustsum=0,excluded=0,total=0,dividend=0,value,val,emit=0,dust=0; double ratio = 1.;
+    if ( (retjson= LP_snapshot(coin,height)) != 0 )
+    {
+        //printf("SNAPSHOT.(%s)\n",retstr);
+        if ( (array= jarray(&n,retjson,"balances")) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) != 0 )
+            {
+                if ( argjson != 0 )
+                {
+                    exclude = jarray(&numexcluded,argjson,"exclude");
+                    dust = (uint64_t)(jdouble(argjson,"dust") * SATOSHIDEN);
+                    dividend = (uint64_t)(jdouble(argjson,"dividend") * SATOSHIDEN);
+                    if ( jstr(argjson,"prefix") != 0 )
+                        prefix = jstr(argjson,"prefix");
+                    if ( jstr(argjson,"suffix") != 0 )
+                        suffix = jstr(argjson,"suffix");
+                    execflag = jint(argjson,"system");
+                }
+                for (iter=0; iter<2; iter++)
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        flag = 0;
+                        item = jitem(array,i);
+                        if ( (child= item->child) != 0 )
+                        {
+                            value = (uint64_t)(child->valuedouble * SATOSHIDEN);
+                            if ( (field= get_cJSON_fieldname(child)) != 0 )
+                            {
+                                for (j=0; j<numexcluded; j++)
+                                    if ( strcmp(field,jstri(exclude,j)) == 0 )
+                                    {
+                                        flag = 1;
+                                        break;
+                                    }
+                            }
+                            //printf("(%s %s %.8f) ",jprint(item,0),field,dstr(value));
+                            if ( iter == 0 )
+                            {
+                                if ( flag != 0 )
+                                    excluded += value;
+                                else total += value;
+                            }
+                            else
+                            {
+                                if ( flag == 0 )
+                                {
+                                    val = ratio * value;
+                                    if ( val > dust )
+                                    {
+                                        sprintf(buf,"%s %s %.8f %s",prefix,field,dstr(val),suffix);
+                                        if ( execflag != 0 )
+                                        {
+                                            if ( system(buf) != 0 )
+                                                printf("error system.(%s)\n",buf);
+                                        }
+                                        else printf("%s\n",buf);
+                                        emit += val;
+                                    } else dustsum += val;
+                                }
+                            }
+                        }
+                    }
+                    if ( iter == 0 )
+                    {
+                        if ( total > 0 )
+                        {
+                            if ( dividend == 0 )
+                                dividend = total;
+                            ratio = (double)dividend / total;
+                        } else break;
+                    }
+                }
+            }
+            free_json(array);
+        }
+        free_json(retjson);
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"coin",coin->symbol);
+        jaddnum(retjson,"height",height);
+        jaddnum(retjson,"total",dstr(total));
+        jaddnum(retjson,"excluded",dstr(excluded));
+        if ( dust != 0 )
+            jaddnum(retjson,"dust",dstr(dust));
+        if ( dustsum != 0 )
+            jaddnum(retjson,"dustsum",dstr(dustsum));
+        jaddnum(retjson,"dividend",dstr(dividend));
+        jaddnum(retjson,"dividends",dstr(emit));
+        jaddnum(retjson,"ratio",ratio);
+        if ( execflag != 0 )
+            jaddnum(retjson,"system",execflag);
+        if ( prefix[0] != 0 )
+            jaddstr(retjson,"prefix",prefix);
+        if ( suffix[0] != 0 )
+            jaddstr(retjson,"suffix",suffix);
+        return(jprint(retjson,1));
+    }
+    return(clonestr("{\"error\":\"symbol not found\"}"));
 }
 
 int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
