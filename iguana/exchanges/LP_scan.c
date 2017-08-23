@@ -177,7 +177,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid)
                         if ( (address= jstri(addresses,0)) != 0 && strlen(address) < sizeof(tx->outpoints[i].coinaddr) )
                         {
                             strcpy(tx->outpoints[i].coinaddr,address);
-                            printf("%s -> %s\n",jprint(item,0),address);
+                            printf("%s -> %s\n",jprint(sobj,0),address);
                         }
                     }
                 }
