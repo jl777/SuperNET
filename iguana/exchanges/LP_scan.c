@@ -373,7 +373,10 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         } else printf("vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
     }
     if ( tx == 0 )
-        LP_transactioninit(coin,txid);
+    {
+        LP_transactioninit(coin,txid,0);
+        LP_transactioninit(coin,txid,1);
+    }
     if ( coinaddr == 0 )
         coinaddr = _coinaddr;
     value = LP_txinterestvalue(&interest,coinaddr,coin,txid,vout);
