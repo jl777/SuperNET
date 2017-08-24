@@ -260,6 +260,19 @@ int32_t LP_scanblockchain(struct iguana_info *coin,int32_t startheight,int32_t e
     return(endheight);
 }
 
+int sort_balance(void *a,void *b)
+{
+    uint64_t aval,bval;
+    /* compare a to b (cast a and b appropriately)
+     * return (int) -1 if (a < b)
+     * return (int)  0 if (a == b)
+     * return (int)  1 if (a > b)
+     */
+    aval = ((struct LP_address *)a)->balance * SATOSHIDEN;
+    bval = ((struct LP_address *)b)->balance * SATOSHIDEN;
+    return((int32_t)(aval - bval));
+}
+
 cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 {
     static char lastcoin[16]; static int32_t maxsnapht;
@@ -328,6 +341,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
             }
         }
     }
+    HASH_SORT(coin->addresses,sort_balance);
     portable_mutex_unlock(&coin->txmutex);
     printf("%s balance %.8f at height.%d\n",coin->symbol,dstr(balance),height);
     array = cJSON_CreateArray();
