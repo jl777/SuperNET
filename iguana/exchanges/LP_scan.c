@@ -268,8 +268,8 @@ int sort_balance(void *a,void *b)
      * return (int)  0 if (a == b)
      * return (int)  1 if (a > b)
      */
-    aval = ((struct LP_address *)a)->balance * SATOSHIDEN;
-    bval = ((struct LP_address *)b)->balance * SATOSHIDEN;
+    aval = ((struct LP_address *)a)->balance;
+    bval = ((struct LP_address *)b)->balance;
     printf("%.8f vs %.8f -> %d\n",dstr(aval),dstr(bval),(int32_t)(bval - aval));
     return((int32_t)(bval - aval));
 }
