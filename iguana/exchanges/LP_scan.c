@@ -262,7 +262,7 @@ int32_t LP_scanblockchain(struct iguana_info *coin,int32_t startheight,int32_t e
 
 int sort_balance(void *a,void *b)
 {
-    uint64_t aval,bval;
+    int64_t aval,bval;
     /* compare a to b (cast a and b appropriately)
      * return (int) -1 if (a < b)
      * return (int)  0 if (a == b)
@@ -341,6 +341,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
             }
         }
     }
+    printf("sort\n");
     HASH_SORT(coin->addresses,sort_balance);
     portable_mutex_unlock(&coin->txmutex);
     printf("%s balance %.8f at height.%d\n",coin->symbol,dstr(balance),height);
