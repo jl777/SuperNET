@@ -271,7 +271,7 @@ int sort_balance(void *a,void *b)
     aval = ((struct LP_address *)a)->balance;
     bval = ((struct LP_address *)b)->balance;
     //printf("%.8f vs %.8f -> %d\n",dstr(aval),dstr(bval),(int32_t)(bval - aval));
-    return((aval == bval) ? 0 : ((aval < bval) ? -1 : 1));
+    return((aval == bval) ? 0 : ((aval < bval) ? 1 : -1));
 }
 
 cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
