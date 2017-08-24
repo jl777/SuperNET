@@ -443,10 +443,10 @@ char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
         jaddnum(retjson,"ratio",ratio);
         if ( execflag != 0 )
             jaddnum(retjson,"system",execflag);
-        if ( prefix[0] != 0 )
+        /*if ( prefix[0] != 0 )
             jaddstr(retjson,"prefix",prefix);
         if ( suffix[0] != 0 )
-            jaddstr(retjson,"suffix",suffix);
+            jaddstr(retjson,"suffix",suffix);*/
         return(jprint(retjson,1));
     }
     return(clonestr("{\"error\":\"symbol not found\"}"));
