@@ -270,7 +270,7 @@ int sort_balance(void *a,void *b)
      */
     aval = ((struct LP_address *)a)->balance * SATOSHIDEN;
     bval = ((struct LP_address *)b)->balance * SATOSHIDEN;
-    return((int32_t)(aval - bval));
+    return((int32_t)(bval - aval));
 }
 
 cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
