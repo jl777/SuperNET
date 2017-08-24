@@ -179,7 +179,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
                         if ( (address= jstri(addresses,0)) != 0 && strlen(address) < sizeof(tx->outpoints[i].coinaddr) )
                         {
                             strcpy(tx->outpoints[i].coinaddr,address);
-                            if ( strcmp(address,"RXzsovGBQ3W97xnVC6JnWxXsV4qb7p7iBi") == 0 )
+                            if ( 0 && strcmp(address,"RXzsovGBQ3W97xnVC6JnWxXsV4qb7p7iBi") == 0 )
                                 printf("%s %.8f at height.%d\n",address,dstr(tx->outpoints[i].value),height);
                         }
                     }
