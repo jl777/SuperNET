@@ -351,7 +351,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 
 char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
 {
-    cJSON *array,*retjson,*item,*child,*exclude=0; int32_t i,j,n,execflag=0,flag,iter,numexcluded=0; char buf[1024],*field,*prefix="",*suffix=""; uint64_t dustsum=0,excluded=0,total=0,dividend=0,value,val,emit=0,dust=0; double ratio = 1.;
+    cJSON *array,*retjson,*item,*child,*exclude=0; int32_t i,j,dusted=0,n,execflag=0,flag,iter,numexcluded=0; char buf[1024],*field,*prefix="",*suffix=""; uint64_t dustsum=0,excluded=0,total=0,dividend=0,value,val,emit=0,dust=0; double ratio = 1.;
     if ( (retjson= LP_snapshot(coin,height)) != 0 )
     {
         //printf("SNAPSHOT.(%s)\n",retstr);
@@ -400,7 +400,7 @@ char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
                                 if ( flag == 0 )
                                 {
                                     val = ratio * value;
-                                    if ( val > dust )
+                                    if ( val >= dust )
                                     {
                                         sprintf(buf,"%s %s %.8f %s",prefix,field,dstr(val),suffix);
                                         if ( execflag != 0 )
@@ -410,7 +410,7 @@ char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
                                         }
                                         else printf("%s\n",buf);
                                         emit += val;
-                                    } else dustsum += val;
+                                    } else dustsum += val, dusted++;
                                 }
                             }
                         }
@@ -434,7 +434,10 @@ char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
         jaddnum(retjson,"total",dstr(total));
         jaddnum(retjson,"excluded",dstr(excluded));
         if ( dust != 0 )
+        {
             jaddnum(retjson,"dust",dstr(dust));
+            jaddnum(retjson,"dusted",dusted);
+        }
         if ( dustsum != 0 )
             jaddnum(retjson,"dustsum",dstr(dustsum));
         jaddnum(retjson,"dividend",dstr(dividend));
