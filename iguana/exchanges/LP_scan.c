@@ -289,7 +289,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
                 printf("maxsnapht.%d for %s\n",maxsnapht,coin->symbol);
             }
             sleep(10);
-            if ( (ht= LP_scanblockchain(coin,startht,endht)) < endht )
+            if ( (ht= LP_scanblockchain(coin,maxsnapht+1,endht)) < endht )
             {
                 if ( ht > maxsnapht )
                 {
