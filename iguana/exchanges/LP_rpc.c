@@ -118,7 +118,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
                 retjson = cJSON_Parse(retstr);
                 free(retstr);
             }
-            //usleep(1000);
+            usleep(100);
             //printf("dpow_gettxout.(%s)\n",retstr);
         } else retjson = cJSON_Parse("{\"result\":\"disabled\"}");
     } else printf("bitcoin_json cant talk to NULL coin\n");
