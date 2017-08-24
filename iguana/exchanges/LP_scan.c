@@ -426,7 +426,6 @@ char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
                     }
                 }
             }
-            free_json(array);
         }
         free_json(retjson);
         retjson = cJSON_CreateObject();
