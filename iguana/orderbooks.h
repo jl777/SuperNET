@@ -3341,6 +3341,7 @@ int32_t prices_idle(int32_t peggyflag,int32_t idlegap)
         if ( milliseconds() > lastdayupdate + 60000*60 )
         {
             lastdayupdate = milliseconds();
+            printf("call ecb_matrix.(%s)\n",dp->edate);
             if ( (datenum= ecb_matrix(dp->ecbmatrix,dp->edate)) > 0 )
             {
                 dp->ecbdatenum = datenum;

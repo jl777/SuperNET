@@ -13,7 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
-#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
+#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0,0)
 
 cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 {
@@ -569,7 +569,7 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
-        //printf(">>>>>>>>>>> %s sendrawtransaction.(%s) -> %s\n",coin->symbol,paramstr,retstr);
+        printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
         free(paramstr);
         return(retstr);
     }
@@ -772,7 +772,7 @@ int32_t dpow_vini_ismine(struct supernet_info *myinfo,struct dpow_info *dp,cJSON
 
 int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr)
 {
-    int32_t i,j,n,vout,haveutxo = 0; uint32_t r; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str,*address; uint8_t script[35];
+    int32_t vout,haveutxo = 0; uint32_t i,j,n,r; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str,*address; uint8_t script[35];
     memset(txidp,0,sizeof(*txidp));
     *voutp = -1;
     if ( (unspents= dpow_listunspent(myinfo,coin,coinaddr)) != 0 )
@@ -788,13 +788,15 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
              "confirmations" : 4282,
              "spendable" : true
              },*/
-            r = 0;
-            memcpy(&r,coin->symbol,3);
-            r = calc_crc32(0,(void *)&r,sizeof(r));
+            //r = 0;
+            //memcpy(&r,coin->symbol,3);
+            //r = calc_crc32(0,(void *)&r,sizeof(r));
+            OS_randombytes((uint8_t *)&r,sizeof(r));
             for (j=0; j<n; j++)
             {
                 i = (r + j) % n;
-                item = jitem(unspents,i);
+                if ( (item= jitem(unspents,i)) == 0 )
+                    continue;
                 if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
                     continue;
                 if ( (satoshis= SATOSHIDEN * jdouble(item,"amount")) == 0 )
@@ -837,7 +839,7 @@ char *dpow_issuemethod(char *userpass,char *method,char *params,uint16_t port)
         sprintf(url,(char *)"http://127.0.0.1:%u",port);
         sprintf(postdata,"{\"method\":\"%s\",\"params\":%s}",method,params);
         //printf("postdata.(%s) USERPASS.(%s)\n",postdata,KMDUSERPASS);
-        retstr2 = bitcoind_RPC(&retstr,(char *)"debug",url,userpass,method,params);
+        retstr2 = bitcoind_RPC(&retstr,(char *)"debug",url,userpass,method,params,0);
     }
     return(retstr2);
 }

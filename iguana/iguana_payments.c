@@ -448,7 +448,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         coinaddr = jstri(addresses,i);
         if ( (array= basilisk_unspents(myinfo,coin,coinaddr)) != 0 )
         {
-            //printf("unspents.(%s) %s\n",coinaddr,jprint(array,0));
+            //printf("iguana_calcrawtx unspents.(%s) %s\n",coinaddr,jprint(array,0));
             if ( (m= cJSON_GetArraySize(array)) > 0 )
             {
                 for (j=0; j<m; j++)
@@ -458,7 +458,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                         continue;
                     if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
                     {
-                        printf("no spendscriptstr.(%s)\n",jprint(item,0));
+                        printf("no spendscriptstr %d.(%s)\n",i,jprint(array,0));
                         continue;
                     }
                     unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
@@ -530,6 +530,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                     bitcoin_txoutput(txobj,opreturn,oplen,burnamount);
                 }
             }
+            printf("total %.8f txfee %.8f change %.8f\n",dstr(total),dstr(txfee),dstr(change));
             if ( vins != 0 && V == 0 )
             {
                 V = calloc(cJSON_GetArraySize(vins),sizeof(*V)), allocflag = 1;
@@ -554,7 +555,10 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
     for (i=0; i<numoutputs; i++)
         satoshis += outputs[i];
     if ( (n= cJSON_GetArraySize(utxos)) == 0 )
+    {
+        fprintf(stderr,"iguana_calcutxorawtx: no utxos provided?\n");
         return(0);
+    }
     for (i=0; i<n; i++)
     {
         item = jitem(utxos,i);
@@ -568,8 +572,10 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
             continue;
         }
         unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
-        value = jdouble(item,"value") * SATOSHIDEN;
+        if ( (value= jdouble(item,"value") * SATOSHIDEN) == 0 )
+            value = jdouble(item,"amount") * SATOSHIDEN;
         interests += SATOSHIDEN * jdouble(item,"interest");
+        //printf("(%s) ",jprint(item,0));
         iguana_outptset(myinfo,coin,&unspents[max++],jbits256(item,"txid"),jint(item,"vout"),value,spendscriptstr);
         avail += value;
     }

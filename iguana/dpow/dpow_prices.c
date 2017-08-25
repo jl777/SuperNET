@@ -1275,25 +1275,33 @@ int32_t PAX_ecbparse(char *date,double *prices,char *url,int32_t basenum)
             printf("(%s)\n",jsonstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
-            copy_cJSON(&tmp,jobj(json,"date")), safecopy(date,tmp.buf,64);
-            if ( (basestr= jstr(json,"base")) != 0 && strcmp(basestr,CURRENCIES[basenum]) == 0 && (ratesobj= jobj(json,"rates")) != 0 && (item= ratesobj->child) != 0 )
+            if ( jobj(json,"error") != 0 || jobj(json,"date") == 0 )
             {
-                while ( item != 0 )
+                printf("Got error from fixer.io (%s)\n",jsonstr);
+                sleep(10);
+            }
+            else
+            {
+                copy_cJSON(&tmp,jobj(json,"date")), safecopy(date,tmp.buf,64);
+                if ( (basestr= jstr(json,"base")) != 0 && strcmp(basestr,CURRENCIES[basenum]) == 0 && (ratesobj= jobj(json,"rates")) != 0 && (item= ratesobj->child) != 0 )
                 {
-                    if ( (relstr= get_cJSON_fieldname(item)) != 0 && (relnum= PAX_basenum(relstr)) >= 0 )
+                    while ( item != 0 )
                     {
-                        i = basenum*MAX_CURRENCIES + relnum;
-                        prices[i] = item->valuedouble;
-                        //if ( basenum == JPYNUM )
-                        //    prices[i] *= 100.;
-                        // else if ( relnum == JPYNUM )
-                        //     prices[i] /= 100.;
-                        count++;
-                        if ( Debuglevel > 2 )
-                            printf("(%02d:%02d %f) ",basenum,relnum,prices[i]);
-                        sprintf(name,"%s%s",CURRENCIES[basenum],CURRENCIES[relnum]);
-                    } else printf("cant find.(%s)\n",relstr);//, getchar();
-                    item = item->next;
+                        if ( (relstr= get_cJSON_fieldname(item)) != 0 && (relnum= PAX_basenum(relstr)) >= 0 )
+                        {
+                            i = basenum*MAX_CURRENCIES + relnum;
+                            prices[i] = item->valuedouble;
+                            //if ( basenum == JPYNUM )
+                            //    prices[i] *= 100.;
+                            // else if ( relnum == JPYNUM )
+                            //     prices[i] /= 100.;
+                            count++;
+                            if ( Debuglevel > 2 )
+                                printf("(%02d:%02d %f) ",basenum,relnum,prices[i]);
+                            sprintf(name,"%s%s",CURRENCIES[basenum],CURRENCIES[relnum]);
+                        } else printf("cant find.(%s)\n",relstr);//, getchar();
+                        item = item->next;
+                    }
                 }
             }
             free_json(json);
@@ -1322,12 +1330,13 @@ int32_t PAX_ecbprices(char *date,double *prices,int32_t year,int32_t month,int32
     {
         for (basenum=0; basenum<sizeof(CURRENCIES)/sizeof(*CURRENCIES); basenum++)
         {
-            if ( strcmp(CURRENCIES[basenum],"XAU") == 0 )
+            if ( strcmp(CURRENCIES[basenum],"XAU") == 0 || basenum >= MAX_CURRENCIES )
                 break;
             if ( iter == 0 )
             {
                 sprintf(url,"%s%s",baseurl,CURRENCIES[basenum]);
                 count += PAX_ecbparse(basenum == 0 ? date : tmpdate,prices,url,basenum);
+                usleep(100000);
                 if ( (basenum != 0 && strcmp(tmpdate,date) != 0) || (checkdate[0] != 0 && strcmp(checkdate,date) != 0) )
                 {
                     //printf("date mismatch (%s) != (%s) or checkdate.(%s)\n",tmpdate,date,checkdate);
@@ -1338,7 +1347,7 @@ int32_t PAX_ecbprices(char *date,double *prices,int32_t year,int32_t month,int32
             {
                 for (nonz=i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
                 {
-                    if ( strcmp(CURRENCIES[i],"XAU") == 0 )
+                    if ( strcmp(CURRENCIES[i],"XAU") == 0 || i >= MAX_CURRENCIES )
                         break;
                     if ( prices[MAX_CURRENCIES*basenum + i] != 0. )
                         nonz++;
@@ -1358,6 +1367,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
     FILE *fp=0; double price,bid,ask; int32_t n=0,datenum,relid,baseid,year=0,seconds,month=0,day=0,loaded = 0; char name[16],fname[64],_date[64];
     if ( date == 0 )
         date = _date, memset(_date,0,sizeof(_date));
+    //printf("ecb_matrix(%s)\n",date);
     sprintf(fname,"%s/ECB/%s",GLOBAL_DBDIR,date), OS_compatible_path(fname);
     if ( date[0] != 0 && (fp= fopen(fname,"rb")) != 0 )
     {
@@ -1365,7 +1375,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
             loaded = 1;
         else printf("fread error\n");
         fclose(fp);
-    } //else printf("ecb_matrix.(%s) load error fp.%p\n",fname,fp);
+    } else printf("ecb_matrix.(%s) load error fp.%p\n",fname,fp);
     datenum = conv_date(&seconds,date);
     year = datenum / 10000, month = (datenum / 100) % 100, day = (datenum % 100);
     if ( loaded == 0 )
@@ -1779,13 +1789,20 @@ double PAX_val(uint32_t pval,int32_t baseid)
 
 void PAX_genecbsplines(struct PAX_data *dp)
 {
+    static portable_mutex_t mutex; static int32_t initflag;
     int32_t i,j,datenum,seconds,numsamples; double prices[128][MAX_SPLINES],splineval,diff; uint32_t pvals[MAX_CURRENCIES],utc32[MAX_SPLINES],timestamp; struct tai t;
+    if ( initflag == 0 )
+    {
+        portable_mutex_init(&mutex);
+        initflag = 1;
+    }
+    portable_mutex_lock(&mutex);
     for (i=numsamples=0; i<28; i++)
     {
         datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL)-(28-i+1)*24*3600);
         expand_datenum(dp->edate,datenum);
         timestamp = OS_conv_datenum(datenum,12,0,0);
-        //printf("i.%d datenum.%d %s t%u\n",i,datenum,dp->edate,timestamp);
+        printf("i.%d datenum.%d %s t%u\n",i,datenum,dp->edate,timestamp);
         if ( (datenum= ecb_matrix(dp->basevals,dp->ecbmatrix,dp->edate)) > 0 )
         {
             utc32[numsamples] = timestamp;
@@ -1812,6 +1829,7 @@ void PAX_genecbsplines(struct PAX_data *dp)
         //printf("%s splineval %f vs %f %f %f\n",CURRENCIES[j],prices[j][numsamples-1],prices[j][numsamples],prices[j][numsamples+1],prices[j][numsamples+2]);
         PAX_genspline(&dp->splines[j],j,CURRENCIES[j],utc32,prices[j],numsamples+3,prices[j]);
     }
+    portable_mutex_unlock(&mutex);
 }
 
 int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t idlegap)
