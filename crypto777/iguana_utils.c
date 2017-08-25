@@ -522,11 +522,24 @@ static int _increasing_double(const void *a,const void *b)
 {
 #define double_a (*(double *)a)
 #define double_b (*(double *)b)
-	if ( double_b > double_a )
-		return(-1);
-	else if ( double_b < double_a )
-		return(1);
-	return(0);
+    if ( double_b > double_a )
+        return(-1);
+    else if ( double_b < double_a )
+        return(1);
+    return(0);
+#undef double_a
+#undef double_b
+}
+
+static int _decreasing_double(const void *a,const void *b)
+{
+#define double_a (*(double *)a)
+#define double_b (*(double *)b)
+    if ( double_b > double_a )
+        return(1);
+    else if ( double_b < double_a )
+        return(-1);
+    return(0);
 #undef double_a
 #undef double_b
 }
@@ -572,8 +585,14 @@ static int _decreasing_uint32(const void *a,const void *b)
 
 int32_t sortds(double *buf,uint32_t num,int32_t size)
 {
-	qsort(buf,num,size,_increasing_double);
-	return(0);
+    qsort(buf,num,size,_increasing_double);
+    return(0);
+}
+
+int32_t revsortds(double *buf,uint32_t num,int32_t size)
+{
+    qsort(buf,num,size,_decreasing_double);
+    return(0);
 }
 
 int32_t sort64s(uint64_t *buf,uint32_t num,int32_t size)
@@ -1086,30 +1105,6 @@ void rmd160ofsha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
     calc_rmd160(hexstr,buf,sha256,sizeof(sha256));
 }
 
-void calc_md2str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
-{
-    bits128 x;
-    calc_md2(hexstr,buf,msg,len);
-    decode_hex(buf,sizeof(x),hexstr);
-    //memcpy(buf,x.bytes,sizeof(x));
-}
-
-void calc_md4str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
-{
-    bits128 x;
-    calc_md4(hexstr,buf,msg,len);
-    decode_hex(buf,sizeof(x),hexstr);
-    //memcpy(buf,x.bytes,sizeof(x));
-}
-
-void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
-{
-    bits128 x;
-    calc_md5(hexstr,msg,len);
-    decode_hex(buf,sizeof(x),hexstr);
-    //memcpy(buf,x.bytes,sizeof(x));
-}
-
 void calc_crc32str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
     uint32_t crc; uint8_t serialized[sizeof(crc)];
@@ -1279,7 +1274,7 @@ double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *
             weighted = weighted_orderbook(avebidp,aveaskp,highbidp,lowaskp,bittrex_orderbook(base,rel,25),1./(*CMC_averagep));
             if ( *CMC_averagep > SMALLVAL && weighted > SMALLVAL )
                 theoretical = calc_theoretical(weighted,*CMC_averagep,changes);
-            if ( counter++ < 100 )
+            if ( (0) && counter++ < 100 )
                 printf("HBLA.[%.8f %.8f] AVE.[%.8f %.8f] (%s) CMC %f %f %f %f\n",*highbidp,*lowaskp,*avebidp,*aveaskp,jprint(item,0),*CMC_averagep,changes[0],changes[1],changes[2]);
             free_json(cmcjson);
         }

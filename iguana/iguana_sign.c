@@ -568,14 +568,15 @@ void iguana_vinobjset(struct iguana_msgvin *vin,cJSON *item,uint8_t *spendscript
     }
 }
 
-int32_t iguana_vinarray_check(cJSON *vinarray,bits256 txid)
+int32_t iguana_vinarray_check(cJSON *vinarray,bits256 txid,int32_t vout)
 {
-    bits256 array_txid; cJSON *item; int32_t i,n = cJSON_GetArraySize(vinarray);
+    bits256 array_txid; cJSON *item; int32_t array_vout,i,n = cJSON_GetArraySize(vinarray);
     for (i=0; i<n; i++)
     {
         item = jitem(vinarray,i);
         array_txid = jbits256(item,"txid");
-        if ( bits256_cmp(array_txid,txid) == 0 )
+        array_vout = jint(item,"vout");
+        if ( bits256_cmp(array_txid,txid) == 0 && array_vout == vout )
         {
             printf("vinarray.[%d] duplicate\n",i);
             return(i);
@@ -704,11 +705,11 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
                 iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
                 sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,SIGHASH_ALL,vpnstr,suppress_pubkeys);
                 //printf("after vini.%d vinscript.%p spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].vinscript,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
-                if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash) < 0 )
+                if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash,msg->vins[i].prev_vout) < 0 )
                     jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
                 if ( msg->vins[i].spendscript == spendscript )
                     msg->vins[i].spendscript = 0;
-            } else if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash) < 0 )
+            } else if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash,msg->vins[i].prev_vout) < 0 )
                 jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
         }
         free(sigser);
@@ -975,7 +976,7 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
 
 int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *signedtxidp,char **signedtx,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxlen,struct vin_info *V,uint32_t sighash,int32_t signtx,int32_t suppress_pubkeys)
 {
-    bits256 sigtxid; uint8_t *sig,*script; struct vin_info *vp; char vpnstr[64]; int32_t scriptlen,complete=0,plen,j,vini=0,flag=0,siglen,numvouts,numsigs;
+    bits256 sigtxid; uint8_t *sig,*script; struct vin_info *vp; char vpnstr[64]; int32_t scriptlen,complete=0,j,vini=0,flag=0,siglen,numvouts,numsigs;
     numvouts = msgtx->tx_out;
     vpnstr[0] = 0;
     *signedtx = 0;
@@ -1005,7 +1006,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
                 if ( signtx != 0 && bits256_nonz(vp->signers[j].privkey) != 0 )
                 {
                     siglen = bitcoin_sign(coin->ctx,coin->symbol,sig,sigtxid,vp->signers[j].privkey,0);
-                    if ( (plen= bitcoin_pubkeylen(vp->signers[j].pubkey)) <= 0 )
+                    //if ( (plen= bitcoin_pubkeylen(vp->signers[j].pubkey)) <= 0 )
                         bitcoin_pubkey33(coin->ctx,vp->signers[j].pubkey,vp->signers[j].privkey);
                     sig[siglen++] = sighash;
                     vp->signers[j].siglen = siglen;
@@ -1275,7 +1276,7 @@ cJSON *bitcoin_txcreate(char *symbol,int32_t isPoS,int64_t locktime,uint32_t txv
     cJSON *json = cJSON_CreateObject();
     jaddnum(json,"version",txversion);
     if ( locktime == 0 && strcmp(symbol,"KMD") == 0 )
-        locktime = (uint32_t)time(NULL);
+        locktime = (uint32_t)time(NULL) - 55;
     jaddnum(json,"locktime",locktime);
     if ( isPoS != 0 )
         jaddnum(json,"timestamp",timestamp == 0 ? time(NULL) : timestamp);
@@ -1476,12 +1477,12 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                 //printf("finalized.%d\n",finalized);
                 if ( (complete= bitcoin_verifyvins(coin,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
-                    int32_t tmp; char str[65];
+                    int32_t tmp; //char str[65];
                     if ( (tmp= iguana_interpreter(coin,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
                     {
                         printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
                         complete = 0;
-                    } else printf("%s signed\n",bits256_str(str,*signedtxidp));
+                    } //else printf("%s signed\n",bits256_str(str,*signedtxidp));
                 } else printf("complete.%d\n",complete);
             } else printf("rwmsgtx error\n");
         } else fprintf(stderr,"no inputs in vins.(%s)\n",vins!=0?jprint(vins,0):"null");
