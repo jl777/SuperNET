@@ -370,7 +370,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 
 char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
 {
-    cJSON *array,*retjson,*item,*child,*exclude=0; int32_t i,j,dusted=0,n,execflag=0,flag,iter,numexcluded=0; char buf[1024],*field,*prefix="",*suffix=""; uint64_t dustsum=0,excluded=0,total=0,dividend=0,value,val,emit=0,dust=0; double ratio = 1.;
+    cJSON *array,*retjson,*item,*child,*exclude=0; int32_t i,j,emitted=0,dusted=0,n,execflag=0,flag,iter,numexcluded=0; char buf[1024],*field,*prefix="",*suffix=""; uint64_t dustsum=0,excluded=0,total=0,dividend=0,value,val,emit=0,dust=0; double ratio = 1.;
     if ( (retjson= LP_snapshot(coin,height)) != 0 )
     {
         //printf("SNAPSHOT.(%s)\n",retstr);
@@ -429,6 +429,7 @@ char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
                                         }
                                         else printf("%s\n",buf);
                                         emit += val;
+                                        emitted++;
                                     } else dustsum += val, dusted++;
                                 }
                             }
@@ -451,6 +452,7 @@ char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
         jaddstr(retjson,"coin",coin->symbol);
         jaddnum(retjson,"height",height);
         jaddnum(retjson,"total",dstr(total));
+        jaddnum(retjson,"emitted",emitted);
         jaddnum(retjson,"excluded",dstr(excluded));
         if ( dust != 0 )
         {
