@@ -223,3 +223,35 @@ sudo service ntp start
 
 Now things should be ready. To update and run notary node:
 pkill iguana; ./m_LP; tests/notaryinit
+
+
+
+##Build for OSX distribution##
+Get OSX SDK 10.6 from https://github.com/ca333/MacOSX-SDKs/releases/tag/10.6
+
+Unpack & move the .sdk folder to Xcodes SDK folder:
+
+```cd DownloadDirectory```
+
+```mv MacOSX10.6.sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/.```
+
+If you are using Xcode > 7.3 add the new SDK to XCode by changing MinimumSDKVersion in your Info.plist:
+
+```vi /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Info.plist```
+
+Change the value to:
+
+```
+<key>MinimumSDKVersion</key>
+<string>10.6</string>
+```
+Build crypto777 library and agents with OSX release makefile:
+
+```./m_onetime m_osx_release```
+
+Execute the OSX deploy script:
+
+```
+./osx_deploy.sh
+```
+The iguana binary and its linked libraries are in ```$HOME/tmp/iguana```.
