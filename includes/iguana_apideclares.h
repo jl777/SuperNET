@@ -67,6 +67,7 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
 TWO_STRINGS(basilisk,refresh,symbol,address);
 ZERO_ARGS(basilisk,cancelrefresh);
 STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore);
+HASH_ARRAY_STRING(basilisk,utxocombine,ignore,vals,symbol);
 
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr);
@@ -197,6 +198,8 @@ STRING_ARG(iguana,stakers,activecoin);
 
 STRING_ARG(jumblr,setpassphrase,passphrase);
 ZERO_ARGS(jumblr,status);
+ZERO_ARGS(jumblr,runsilent);
+ZERO_ARGS(jumblr,totransparent);
 
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);
@@ -225,6 +228,9 @@ STRING_ARG(InstantDEX,allpairs,exchange);
 THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
 ZERO_ARGS(InstantDEX,init);
 ZERO_ARGS(InstantDEX,getswaplist);
+ZERO_ARGS(InstantDEX,smartaddresses);
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,smartaddress,type,symbol,maxbid,minask);
+DOUBLE_ARG(InstantDEX,DEXratio,ratio);
 
 //THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
 //THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
@@ -298,7 +304,7 @@ THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);
 HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype);
 STRING_ARG(SuperNET,wif2priv,wif);
-STRING_ARG(SuperNET,priv2wif,priv);
+STRING_AND_INT(SuperNET,priv2wif,priv,wiftype);
 STRING_ARG(SuperNET,addr2rmd160,address);
 STRING_ARG(SuperNET,rmd160conv,rmd160);
 

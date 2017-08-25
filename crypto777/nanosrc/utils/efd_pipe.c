@@ -34,14 +34,14 @@ int nn_efd_init(struct nn_efd *self)
 {
     int rc,flags,p[2];
     PNACL_message("inside efd_init: pipe\n");
-    sleep(1);
+    //sleep(1);
 #if defined NN_HAVE_PIPE2
     rc = pipe2(p, O_NONBLOCK | O_CLOEXEC);
 #else
     rc = pipe(p);
 #endif
     PNACL_message("rc efd_init: %d\n",rc);
-    sleep(1);
+    //sleep(1);
     if (rc != 0 && (errno == EMFILE || errno == ENFILE))
         return -EMFILE;
     errno_assert (rc == 0);

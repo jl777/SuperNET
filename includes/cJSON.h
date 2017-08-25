@@ -211,7 +211,7 @@ extern "C"
     char *get_cJSON_fieldname(cJSON *obj);
     void ensure_jsonitem(cJSON *json,char *field,char *value);
     int32_t in_jsonarray(cJSON *array,char *value);
-    char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params);
+    char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout);
     uint64_t calc_nxt64bits(const char *str);
     int32_t expand_nxt64bits(char *str,uint64_t nxt64bits);
     char *nxt64str(uint64_t nxt64bits);

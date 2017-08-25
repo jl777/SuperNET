@@ -19,7 +19,7 @@ cJSON *instantdex_statemachinejson(struct bitcoin_swapinfo *swap);
 
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params)
 {
-    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params));
+    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,0));
 }
 
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
@@ -137,11 +137,29 @@ int32_t bitcoin_wif2priv(uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
 
 int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype)
 {
-    uint8_t data[128]; int32_t len;
+    uint8_t data[128]; int32_t len = 32;
     memcpy(data+1,privkey.bytes,sizeof(privkey));
-    data[33] = 1;
-    len = base58encode_checkbuf(addrtype,data,33);
-    
+    data[1 + len++] = 1;
+    len = base58encode_checkbuf(addrtype,data,len);
+    if ( bitcoin_base58encode(wifstr,data,len) == 0 )
+        return(-1);
+    if ( 1 )
+    {
+        uint8_t checktype; bits256 checkpriv; char str[65],str2[65];
+        if ( bitcoin_wif2priv(&checktype,&checkpriv,wifstr) == sizeof(bits256) )
+        {
+            if ( checktype != addrtype || bits256_cmp(checkpriv,privkey) != 0 )
+                printf("(%s) -> wif.(%s) addrtype.%02x -> %02x (%s)\n",bits256_str(str,privkey),wifstr,addrtype,checktype,bits256_str(str2,checkpriv));
+        }
+    }
+    return((int32_t)strlen(wifstr));
+}
+
+int32_t bitcoin_priv2wiflong(char *wifstr,bits256 privkey,uint8_t addrtype)
+{
+    uint8_t data[128]; int32_t len = 32;
+    memcpy(data+1,privkey.bytes,sizeof(privkey));
+    len = base58encode_checkbuf(addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
         return(-1);
     if ( 1 )

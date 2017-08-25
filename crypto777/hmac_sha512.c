@@ -621,4 +621,28 @@ char *hmac_whirlpool_str(char *dest,char *key,int32_t key_size,char *message)
  	return(dest);
 }
 
+void calc_md2str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
+{
+    bits128 x;
+    calc_md2(hexstr,buf,msg,len);
+    decode_hex(buf,sizeof(x),hexstr);
+    //memcpy(buf,x.bytes,sizeof(x));
+}
+
+void calc_md4str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
+{
+    bits128 x;
+    calc_md4(hexstr,buf,msg,len);
+    decode_hex(buf,sizeof(x),hexstr);
+    //memcpy(buf,x.bytes,sizeof(x));
+}
+
+void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
+{
+    bits128 x;
+    calc_md5(hexstr,msg,len);
+    decode_hex(buf,sizeof(x),hexstr);
+    //memcpy(buf,x.bytes,sizeof(x));
+}
+
 

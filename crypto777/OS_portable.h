@@ -129,7 +129,8 @@ int32_t hseek(HUFF *hp,int32_t offset,int32_t mode);
 #define portable_mutex_unlock pthread_mutex_unlock
 #define OS_thread_create pthread_create
 
-#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
+#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0,0)
+#define issue_curlt(cmdstr,timeout) bitcoind_RPC(0,"curl",cmdstr,0,0,0,timeout)
 
 struct allocitem { uint32_t allocsize,type; } PACKED;
 struct queueitem { struct queueitem *next,*prev; uint32_t allocsize,type;  } PACKED;
@@ -197,6 +198,8 @@ int32_t OS_nonportable_init();
 
 void OS_portable_init();
 void OS_init();
+int32_t sortds(double *buf,uint32_t num,int32_t size);
+int32_t revsortds(double *buf,uint32_t num,int32_t size);
 
 double OS_portable_milliseconds();
 void OS_portable_randombytes(uint8_t *x,long xlen);
@@ -347,7 +350,7 @@ char *hmac_tiger_str(char *dest,char *key,int32_t key_size,char *message);
 char *hmac_whirlpool_str(char *dest,char *key,int32_t key_size,char *message);
 int nn_base64_encode(const uint8_t *in,size_t in_len,char *out,size_t out_len);
 int nn_base64_decode(const char *in,size_t in_len,uint8_t *out,size_t out_len);
-
+void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen);
 void sha256_sha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void rmd160ofsha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
@@ -358,6 +361,8 @@ void calc_base64_encodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_base64_decodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_hexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_unhexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
+int32_t safecopy(char *dest,char *src,long len);
+double dxblend(double *destp,double val,double decay);
 
 uint64_t calc_ipbits(char *ip_port);
 void expand_ipbits(char *ipaddr,uint64_t ipbits);
@@ -384,6 +389,7 @@ int32_t iguana_rwvarint(int32_t rwflag,uint8_t *serialized,uint64_t *varint64p);
 int32_t iguana_rwvarint32(int32_t rwflag,uint8_t *serialized,uint32_t *int32p);
 int32_t iguana_rwvarstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
 int32_t iguana_rwmem(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
+#define bits256_nonz(a) (((a).ulongs[0] | (a).ulongs[1] | (a).ulongs[2] | (a).ulongs[3]) != 0)
 
 bits256 bits256_ave(bits256 a,bits256 b);
 bits256 bits256_doublesha256(char *hashstr,uint8_t *data,int32_t datalen);
