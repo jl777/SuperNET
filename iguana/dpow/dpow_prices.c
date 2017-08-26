@@ -1832,6 +1832,9 @@ void PAX_genecbsplines(struct PAX_data *dp)
     portable_mutex_unlock(&mutex);
 }
 
+#define BTCFACTOR_TIMESTAMP 1503746319
+#define BTCFACTOR_HEIGHT 466266
+
 int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t idlegap)
 {
     static double lastupdate,lastdayupdate; static int32_t didinit; static char *userhome; int32_t idlegap = 10;
@@ -1921,7 +1924,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             pvals[2] = MAX_CURRENCIES + 3;
             pvals[3] = PAX_val32(dp->kmdbtc * 1000);
             double btcfactor;
-            if ( time(NULL) > 1503742923+24*3600*0 )
+            if ( time(NULL) > BTCFACTOR_TIMESTAMP )
                 btcfactor = .00001;
             else btcfactor = .001;
             pvals[4] = PAX_val32(dp->btcusd * btcfactor);
