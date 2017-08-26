@@ -561,7 +561,7 @@ void dex_channelsend(struct supernet_info *myinfo,bits256 srchash,bits256 destha
 
 void dpow_randipbits(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *retjson)
 {
-    int32_t m; uint32_t ipbits; char *coinstr;
+    int32_t m; uint32_t ipbits; char *coinstr; cJSON *infojson;
     if ( is_cJSON_Array(retjson) == 0 )
     {
         if ( (m= myinfo->numdpowipbits) > 0 )
@@ -572,6 +572,11 @@ void dpow_randipbits(struct supernet_info *myinfo,struct iguana_info *coin,cJSON
         }
         if ( (coinstr= jstr(retjson,"coin")) == 0 )
             jaddstr(retjson,"coin",coin->symbol);
+        if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
+        {
+            jaddnum(retjson,"notaryheight",juint(infojson,"blocks"));
+            free_json(infojson);
+        }
     }
 }
 
