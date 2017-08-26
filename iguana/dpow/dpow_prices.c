@@ -1908,7 +1908,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
         }
         timestamp = (uint32_t)time(NULL);
         int32_t dispflag = ((rand() % 6) == 0);
-        printf("PAX_IDLE.%d %.8f %.8f\n",dispflag,dp->kmdbtc,dp->btcusd);
+        //printf("PAX_IDLE.%d %.8f %.8f\n",dispflag,dp->kmdbtc,dp->btcusd);
         if ( dp->kmdbtc == 0 || dp->btcusd == 0 || dispflag != 0 )
         {
             PAX_update(dp,&dp->btcusd,&dp->kmdbtc);
@@ -1930,8 +1930,6 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             //else btcfactor = .001;
             pvals[4] = PAX_val32(dp->btcusd * btcfactor);
             pvals[5] = PAX_val32(dp->CNYUSD);
-            //if ( dispflag != 0 )
-                printf("KMD %.8f BTC %f CNY %f (%f) btcusd pval.%u\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD,pvals[4]);
             sprintf(fname,"/%s/.komodo/komodofeed",userhome);
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
@@ -1943,11 +1941,11 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
                     printf("error writing pvals to (%s)\n",fname);
                 fclose(fp);
             }
-            //if ( dispflag != 0 )
+            if ( dispflag != 0 )
             {
                 for (i=0; i<6; i++)
                     printf("%u ",pvals[i]);
-                printf("pvals -> %s\n",fname);
+                printf("KMD %.8f BTC %f CNY %f (%f) btcusd pval.%u\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD,pvals[4]);
             }
         }
     }
