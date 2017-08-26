@@ -1924,13 +1924,13 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             pvals[2] = MAX_CURRENCIES + 3;
             pvals[3] = PAX_val32(dp->kmdbtc * 1000);
             double btcfactor;
-            if ( time(NULL) > BTCFACTOR_TIMESTAMP )
+            //if ( time(NULL) > BTCFACTOR_TIMESTAMP )
                 btcfactor = .00001;
-            else btcfactor = .001;
+            //else btcfactor = .001;
             pvals[4] = PAX_val32(dp->btcusd * btcfactor);
             pvals[5] = PAX_val32(dp->CNYUSD);
-            if ( dispflag != 0 )
-                printf("KMD %.8f BTC %f CNY %f (%f)\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD);
+            //if ( dispflag != 0 )
+                printf("KMD %.8f BTC %f CNY %f (%f) btcusd pval.%u\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD,pvals[4]);
             sprintf(fname,"/%s/.komodo/komodofeed",userhome);
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
