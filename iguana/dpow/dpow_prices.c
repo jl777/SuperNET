@@ -1839,7 +1839,6 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
 {
     static double lastupdate,lastdayupdate; static int32_t didinit; static char *userhome; int32_t idlegap = 10;
     FILE *fp; long filesize; char fname[512]; double splineval; uint32_t pvals[128],timestamp; int32_t i,datenum,seconds,c; struct tai t; struct PAX_data *dp; uint8_t data[512];
-    printf("PAX_IDLE\n");
     if ( Currencymasks[0] == 0 )
         return(0);
     if ( didinit == 0 )
@@ -1909,6 +1908,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
         }
         timestamp = (uint32_t)time(NULL);
         int32_t dispflag = ((rand() % 6) == 0);
+        printf("PAX_IDLE.%d %.8f %.8f\n",dispflag,dp->kmdbtc,dp->btcusd);
         if ( dp->kmdbtc == 0 || dp->btcusd == 0 || dispflag != 0 )
         {
             PAX_update(dp,&dp->btcusd,&dp->kmdbtc);
