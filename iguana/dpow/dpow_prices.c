@@ -1920,7 +1920,11 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             pvals[1] = timestamp;
             pvals[2] = MAX_CURRENCIES + 3;
             pvals[3] = PAX_val32(dp->kmdbtc * 1000);
-            pvals[4] = PAX_val32(dp->btcusd * .001);
+            double btcfactor;
+            if ( time(NULL) > 1503742923+24*3600*0 )
+                btcfactor = .00001;
+            else btcfactor = .001;
+            pvals[4] = PAX_val32(dp->btcusd * btcfactor);
             pvals[5] = PAX_val32(dp->CNYUSD);
             if ( dispflag != 0 )
                 printf("KMD %.8f BTC %f CNY %f (%f)\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD);
