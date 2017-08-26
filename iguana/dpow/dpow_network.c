@@ -1318,7 +1318,7 @@ struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
     struct dpow_nanoutxo ratify,notarize;
-    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,ipbits[64];
+    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,ipbits[128];
     char symbol[16];
     uint8_t senderind,version0,version1,packet[];
 } PACKED;
@@ -2026,10 +2026,10 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         printf("%d NANOSEND.%d ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
 }
 
-void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)
+void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t maxipbits,int32_t fromid,uint32_t senderipbits)
 {
     int32_t i,j,matched,missing,n; char ipaddr[64];
-    if ( numipbits >= 64 )
+    if ( numipbits >= maxipbits )
     {
         static int32_t counter;
         if ( counter++ < 100 )
@@ -2112,7 +2112,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                                 printf("received nnpacket for (%s)\n",np->symbol);
                             else
                             {
-                                dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind,np->myipbits);
+                                dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,sizeof(np->ipbits)/sizeof(*np->ipbits),np->senderind,np->myipbits);
                                 if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
                                 {
                                     //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d i.%d senderind.%d myind.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz,i,np->senderind,bp->myind);

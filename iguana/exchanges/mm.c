@@ -786,12 +786,14 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
 
 void LP_main(void *ptr)
 {
-    char *passphrase; double profitmargin; cJSON *argjson = ptr;
+    char *passphrase; double profitmargin; uint16_t port; cJSON *argjson = ptr;
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
         LP_profitratio += profitmargin;
-        LPinit(7779,7780,7781,7782,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+        if ( (port= juint(argjson,"rpcport")) < 1000 )
+            port = 7779;
+        LPinit(port,7780,7781,7782,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 

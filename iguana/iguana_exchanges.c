@@ -784,7 +784,8 @@ void exchanges777_loop(void *ptr)
     printf("exchanges loop.(%s)\n",exchange->name);
     while ( 1 )
     {
-        PAX_idle(myinfo);
+        if ( strcmp("bitcoin",exchange->name) == 0 )
+            PAX_idle(myinfo);
         flag = retval = 0;
         retstr = 0;
         if ( (req= queue_dequeue(&exchange->requestQ)) != 0 )
