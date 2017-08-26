@@ -1839,6 +1839,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
 {
     static double lastupdate,lastdayupdate; static int32_t didinit; static char *userhome; int32_t idlegap = 10;
     FILE *fp; long filesize; char fname[512]; double splineval; uint32_t pvals[128],timestamp; int32_t i,datenum,seconds,c; struct tai t; struct PAX_data *dp; uint8_t data[512];
+    printf("PAX_IDLE\n");
     if ( Currencymasks[0] == 0 )
         return(0);
     if ( didinit == 0 )
@@ -1942,7 +1943,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
                     printf("error writing pvals to (%s)\n",fname);
                 fclose(fp);
             }
-            if ( dispflag != 0 )
+            //if ( dispflag != 0 )
             {
                 for (i=0; i<6; i++)
                     printf("%u ",pvals[i]);
