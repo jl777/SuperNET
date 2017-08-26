@@ -1429,10 +1429,11 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
 {
     int32_t i,n,iter,seconds,datenum; uint32_t timestamp; char url[1024],url2[1024],*dstr,*str;
     double kmddaily=0.,btcusd=0.,ask,high,low,bid,close,vol,quotevol,open,price = 0.;
-    //cJSON *kmdtrades,*kmdtrades2,*,*bitcoincharts,;
+    double USD_average,avebid,aveask,bidvol,askvol,highbid,lowask,CMC_average,changes[3]; //struct exchange_quote sortbuf[512]; struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *argjson = cJSON_Parse("{}");
+ //cJSON *kmdtrades,*kmdtrades2,*,*bitcoincharts,;
     cJSON *quandl,*kmdhist,*array,*item,*bitcoinave,*blockchaininfo,*btctrades,*coindesk=0;
     sprintf(url,"https://poloniex.com/public?command=returnTradeHistory&currencyPair=USDT_BTC&start=%u&end=%u",(uint32_t)time(NULL)-60,(uint32_t)time(NULL));
-    btctrades = url_json(url);
+    btctrades = 0;//url_json(url);
     //kmdtrades = url_json("https://poloniex.com/public?command=returnTradeHistory&currencyPair=USDT_BTC");
     //kmdtrades2 = url_json("https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-KMD&count=50");
     *kmdbtcp = 0;
@@ -1461,7 +1462,6 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
     }
     if ( 1 )
     {
-        double USD_average,avebid,aveask,bidvol,askvol,highbid,lowask,CMC_average,changes[3]; //struct exchange_quote sortbuf[512]; struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *argjson = cJSON_Parse("{}");
         //aveask = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&askvol,"KMD","BTC",1,argjson);
         //avebid = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&bidvol,"KMD","BTC",-1,argjson);
         if ( 0 && avebid > SMALLVAL && aveask > SMALLVAL )
@@ -1522,6 +1522,8 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
         free(btctrades);
         //printf("poloniex.%d\n",n);
     }
+    *btcusdp = get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,"bitcoin","BTC","USD",&USD_average);
+    printf("theoretical BTC %.2f\n",*btcusdp);
     if ( 0 && bitcoinave != 0 )
     {
         if ( (price= jdouble(bitcoinave,"24h_avg")) > SMALLVAL )
