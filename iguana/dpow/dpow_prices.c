@@ -1907,8 +1907,8 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             PAX_emitprices(pvals,dp);
         }
         timestamp = (uint32_t)time(NULL);
-        int32_t dispflag = ((rand() % 64) == 0);
-        if ( dp->kmdbtc == 0 || dispflag != 0 )
+        int32_t dispflag = ((rand() % 6) == 0);
+        if ( dp->kmdbtc == 0 || dp->btcusd == 0 || dispflag != 0 )
         {
             PAX_update(dp,&dp->btcusd,&dp->kmdbtc);
             for (i=0; i<MAX_CURRENCIES; i++)
