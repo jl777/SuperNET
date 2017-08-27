@@ -909,7 +909,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
 
 char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint8_t pubtype)
 {
-    int32_t i; uint8_t tmptype,pubkey33[33]; char str[65],str2[65],buf[8192],wifstr[128],coinaddr[64]; bits256 checkprivkey,privkey,pubkey; cJSON *retjson;
+    int32_t i; uint8_t tmptype,pubkey33[33],rmd160[20]; char str[65],str2[65],buf[8192],wifstr[128],coinaddr[64]; bits256 checkprivkey,privkey,pubkey; cJSON *retjson;
     retjson = cJSON_CreateArray();
     if ( passphrase == 0 || passphrase[0] == 0 )
         passphrase = "password";
@@ -925,6 +925,7 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
         bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
         bitcoin_priv2wif(0,wifstr,privkey,188);
         bitcoin_wif2priv(0,&tmptype,&checkprivkey,wifstr);
+        bitcoin_addr2rmd160(taddr,&tmptype,rmd160,coinaddr);
         if ( bits256_cmp(checkprivkey,privkey) != 0 )
         {
             printf("WIF.(%s) error -> %s vs %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkprivkey));
