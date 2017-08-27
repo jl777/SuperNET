@@ -923,6 +923,7 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
         sprintf(buf,"secretaddress %s %03d",passphrase,i);
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)buf,(int32_t)strlen(buf));
         bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
+        bitcoin_priv2wif(0,wifstr,privkey,188);
         bitcoin_wif2priv(0,&tmptype,&checkprivkey,wifstr);
         if ( bits256_cmp(checkprivkey,privkey) != 0 )
         {
