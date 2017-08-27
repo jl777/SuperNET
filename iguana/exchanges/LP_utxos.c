@@ -907,6 +907,41 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
     return(total);
 }
 
+char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint8_t pubtype)
+{
+    int32_t i; uint8_t tmptype,pubkey33[33]; char str[65],str2[65],buf[8192],wifstr[128],coinaddr[64]; bits256 checkprivkey,privkey,pubkey; cJSON *retjson;
+    retjson = cJSON_CreateArray();
+    if ( passphrase == 0 || passphrase[0] == 0 )
+        passphrase = "password";
+    if ( n <= 0 )
+        n = 16;
+    else if ( n > 777 )
+        n = 777;
+    printf("secrets.[%d] <%s> t.%u p.%u\n",n,passphrase,taddr,pubtype);
+    for (i=0; i<n; i++)
+    {
+        sprintf(buf,"secretaddress %s %03d",passphrase,i);
+        conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)buf,(int32_t)strlen(buf));
+        bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
+        bitcoin_wif2priv(0,&tmptype,&checkprivkey,wifstr);
+        if ( bits256_cmp(checkprivkey,privkey) != 0 )
+        {
+            printf("WIF.(%s) error -> %s vs %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkprivkey));
+            free_json(retjson);
+            return(clonestr("{\"error\":\"couldnt validate wifstr\"}"));
+        }
+        else if ( tmptype != pubtype )
+        {
+            printf("checktype.%d != pubtype.%d\n",tmptype,pubtype);
+            free_json(retjson);
+            return(clonestr("{\"error\":\"couldnt validate pubtype\"}"));
+        }
+        jaddistr(retjson,coinaddr);
+    }
+    printf("retjson.(%s)\n",jprint(retjson,0));
+    return(jprint(retjson,1));
+}
+
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     static uint32_t counter;

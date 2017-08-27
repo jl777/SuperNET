@@ -164,6 +164,13 @@ dividends(coin, height, <args>)\n\
         {
             return(LP_portfolio());
         }
+        else if ( strcmp(method,"secretaddresses") == 0 )
+        {
+            uint8_t taddr,pubtype;
+            pubtype = (jobj(argjson,"pubtype") == 0) ? 60 : juint(argjson,"pubtype");
+            taddr = (jobj(argjson,"taddr") == 0) ? 0 : juint(argjson,"taddr");
+            return(LP_secretaddresses(ctx,jstr(argjson,"passphrase"),juint(argjson,"num"),taddr,pubtype));
+        }
         if ( base != 0 && rel != 0 )
         {
             double price,bid,ask;
