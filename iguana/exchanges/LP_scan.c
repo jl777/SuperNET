@@ -362,6 +362,8 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
         }
     }
     jadd(retjson,"balances",array);
+    jaddstr(retjson,"coin",coin->symbol);
+    jaddnum(retjson,"height",height);
     jaddnum(retjson,"numaddresses",n);
     jaddnum(retjson,"total",dstr(balance));
     jaddnum(retjson,"noaddr_total",dstr(noaddr_balance));
@@ -410,6 +412,8 @@ char *LP_snapshot_balance(struct iguana_info *coin,int32_t height,cJSON *argjson
         free_json(snapjson);
     }
     jadd(retjson,"balances",array);
+    jaddstr(retjson,"coin",coin->symbol);
+    jaddnum(retjson,"height",height);
     jaddnum(retjson,"balance",dstr(balance));
     return(jprint(retjson,1));
 }
