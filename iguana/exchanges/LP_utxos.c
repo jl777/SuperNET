@@ -909,7 +909,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
 
 char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint8_t pubtype)
 {
-    int32_t i; uint8_t tmptype,pubkey33[33],rmd160[20]; char str[65],str2[65],buf[8192],wifstr[128],coinaddr[64]; bits256 checkprivkey,privkey,pubkey; cJSON *retjson;
+    int32_t i; uint8_t tmptype,pubkey33[33],rmd160[20]; char str[65],str2[65],buf[8192],wifstr[128],coinaddr[64]; bits256 checkprivkey,privkey,pubkey; cJSON *retjson,*item;
     retjson = cJSON_CreateObject();
     if ( passphrase == 0 || passphrase[0] == 0 )
         passphrase = "password";
@@ -943,6 +943,13 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
         jaddstr(retjson,coinaddr,wifstr);
         printf("./komodo-cli jumblr_secret %s\n",coinaddr);
     }
+    printf("\"addresses\":[")
+    for (i=0; i<n; i++)
+    {
+        item = jitem(retjson,i);
+        printf("\\\"%s\\\", ",get_cJSON_fieldname(item));
+    }
+    printf("]\n");
     return(jprint(retjson,1));
 }
 
