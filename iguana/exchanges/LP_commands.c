@@ -120,6 +120,7 @@ getprices(base, rel)\n\
 sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 getmessages(firsti=0, num=100)\n\
 clearmessages(firsti=0, num=100)\n\
+secretaddresses(passphrase, num=10, pubtype=60, taddr=0)\n\
 snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
