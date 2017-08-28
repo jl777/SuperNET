@@ -278,6 +278,8 @@ int sort_balance(void *a,void *b)
     return((aval == bval) ? 0 : ((aval < bval) ? 1 : -1));
 }
 
+// a primitive restore can be done by loading the previous snapshot and creating a virtual tx for all the balance at height-1. this wont allow anything but new snapshots, but for many use cases that is all that is needed
+
 cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 {
     static char lastcoin[16]; static int32_t maxsnapht;
