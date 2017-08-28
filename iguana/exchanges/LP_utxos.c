@@ -942,7 +942,7 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
             return(clonestr("{\"error\":\"couldnt validate pubtype\"}"));
         }
         jaddstr(retjson,coinaddr,wifstr);
-        sprintf(output+strlen(output),"\\\"%s\\\", ",coinaddr);
+        sprintf(output+strlen(output),"\\\"%s\\\"%c ",coinaddr,i<n-1?',':' ');
         printf("./komodo-cli jumblr_secret %s\n",coinaddr);
     }
     printf("%s]\n",output);
