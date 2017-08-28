@@ -387,6 +387,7 @@ char *LP_snapshot_balance(struct iguana_info *coin,int32_t height,cJSON *argjson
                         value = (uint64_t)(child->valuedouble * SATOSHIDEN);
                         if ( (refaddr= get_cJSON_fieldname(child)) != 0 )
                         {
+                            //printf("check %s %.8f against %d\n",refaddr,dstr(value),m);
                             for (j=0; j<m; j++)
                             {
                                 if ( (coinaddr= jstri(addrs,j)) != 0 )
@@ -401,8 +402,6 @@ char *LP_snapshot_balance(struct iguana_info *coin,int32_t height,cJSON *argjson
                                     }
                                 }
                             }
-                            if ( j < m )
-                                break;
                         }
                     }
                 }
