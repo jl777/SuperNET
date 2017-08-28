@@ -368,6 +368,53 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
     return(retjson);
 }
 
+char *LP_snapshot_balance(struct iguana_info *coin,int32_t height,cJSON *argjson)
+{
+    cJSON *snapjson,*retjson,*balances,*array,*addrs,*child,*item,*item2; char *coinaddr,*refaddr; int32_t i,n,j,m; uint64_t value,balance = 0;
+    retjson = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    if ( (snapjson= LP_snapshot(coin,height)) != 0 )
+    {
+        if ( (addrs= jarray(&m,argjson,"addresses")) != 0 )
+        {
+            if ( (balances= jarray(&n,snapjson,"balances")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(balances,i);
+                    if ( (child= item->child) != 0 )
+                    {
+                        value = (uint64_t)(child->valuedouble * SATOSHIDEN);
+                        if ( (refaddr= get_cJSON_fieldname(child)) != 0 )
+                        {
+                            for (j=0; j<m; j++)
+                            {
+                                if ( (coinaddr= jstri(addrs,j)) != 0 )
+                                {
+                                    if ( strcmp(coinaddr,refaddr) == 0 )
+                                    {
+                                        item2 = cJSON_CreateObject();
+                                        jaddnum(item2,coinaddr,dstr(value));
+                                        jaddi(array,item2);
+                                        balance += value;
+                                        break;
+                                    }
+                                }
+                            }
+                            if ( j < m )
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+        free_json(snapjson);
+    }
+    jadd(retjson,"balances",array);
+    jaddnum(retjson,"balance",dstr(balance));
+    return(jprint(retjson,1));
+}
+
 char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
 {
     cJSON *array,*retjson,*item,*child,*exclude=0; int32_t i,j,emitted=0,dusted=0,n,execflag=0,flag,iter,numexcluded=0; char buf[1024],*field,*prefix="",*suffix=""; uint64_t dustsum=0,excluded=0,total=0,dividend=0,value,val,emit=0,dust=0; double ratio = 1.;

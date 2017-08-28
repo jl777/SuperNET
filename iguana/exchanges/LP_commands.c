@@ -266,6 +266,12 @@ dividends(coin, height, <args>)\n\
                     return(LP_dividends(ptr,juint(argjson,"height"),argjson));
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
+            else if ( strcmp(method,"balance") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                    return(LP_snapshot_balance(ptr,juint(argjson,"height"),argjson));
+                else return(clonestr("{\"error\":\"cant find coind\"}"));
+            }
             if ( LP_isdisabled(coin,0) != 0 )
                 return(clonestr("{\"error\":\"coin is disabled\"}"));
             if ( strcmp(method,"inventory") == 0 )
