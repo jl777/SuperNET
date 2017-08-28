@@ -121,6 +121,7 @@ sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 getmessages(firsti=0, num=100)\n\
 clearmessages(firsti=0, num=100)\n\
 snapshot(coin, height)\n\
+snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
 \"}"));
     
@@ -266,7 +267,7 @@ dividends(coin, height, <args>)\n\
                     return(LP_dividends(ptr,juint(argjson,"height"),argjson));
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
-            else if ( strcmp(method,"balance") == 0 )
+            else if ( strcmp(method,"snapshot_balance") == 0 )
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     return(LP_snapshot_balance(ptr,juint(argjson,"height"),argjson));
