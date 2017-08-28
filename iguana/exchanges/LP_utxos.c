@@ -947,7 +947,7 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
     for (i=0; i<n; i++)
     {
         item = jitem(retjson,i);
-        printf("\\\"%s\\\", ",get_cJSON_fieldname(item));
+        printf("\\\"%s\\\", ",item->child != 0 ? get_cJSON_fieldname(item->child) : "");
     }
     printf("]\n");
     return(jprint(retjson,1));
