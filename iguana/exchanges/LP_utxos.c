@@ -943,7 +943,7 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
         jaddstr(retjson,coinaddr,wifstr);
         printf("./komodo-cli jumblr_secret %s\n",coinaddr);
     }
-    printf("\"addresses\":[")
+    printf("\"addresses\":[");
     for (i=0; i<n; i++)
     {
         item = jitem(retjson,i);
