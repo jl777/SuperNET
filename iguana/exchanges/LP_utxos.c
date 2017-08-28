@@ -909,7 +909,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
 
 char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint8_t pubtype)
 {
-    int32_t i; uint8_t tmptype,pubkey33[33],rmd160[20]; char str[65],str2[65],buf[8192],wifstr[128],coinaddr[64]; bits256 checkprivkey,privkey,pubkey; cJSON *retjson,*item;
+    int32_t i; uint8_t tmptype,pubkey33[33],rmd160[20]; char output[777*45],str[65],str2[65],buf[8192],wifstr[128],coinaddr[64]; bits256 checkprivkey,privkey,pubkey; cJSON *retjson;
     retjson = cJSON_CreateObject();
     if ( passphrase == 0 || passphrase[0] == 0 )
         passphrase = "password";
@@ -920,6 +920,7 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
     conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
     printf("generator (%s) secrets.[%d] <%s> t.%u p.%u\n",coinaddr,n,passphrase,taddr,pubtype);
+    sprintf(output,"\"addresses\":[");
     for (i=0; i<n; i++)
     {
         sprintf(buf,"secretaddress %s %03d",passphrase,i);
@@ -941,15 +942,10 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
             return(clonestr("{\"error\":\"couldnt validate pubtype\"}"));
         }
         jaddstr(retjson,coinaddr,wifstr);
+        sprintf(output+strlen(output),"\\\"%s\\\", ",coinaddr);
         printf("./komodo-cli jumblr_secret %s\n",coinaddr);
     }
-    printf("\"addresses\":[");
-    for (i=0; i<n; i++)
-    {
-        item = jitem(retjson,i);
-        printf("\\\"%s\\\", ",item->child != 0 ? get_cJSON_fieldname(item->child) : "");
-    }
-    printf("]\n");
+    printf("%s]\n",output);
     return(jprint(retjson,1));
 }
 
