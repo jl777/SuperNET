@@ -392,7 +392,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
     }
     //printf("numutxos vs mine.%d\n",LP_mypeer != 0 ? LP_mypeer->numutxos : -1);
-    if ( LP_mypeer != 0 && LP_mypeer->numutxos < mostutxos && mostpeer != 0 && time(NULL) > lastresync+10 )
+    if ( LP_mypeer != 0 && mostpeer != 0 && ((LP_mypeer->numutxos < mostutxos && time(NULL) > lastresync+10) || time(NULL) > lastresync+60) )
     {
         //printf("myutxos.%d most.%d %s\n",LP_mypeer->numutxos,mostutxos,mostpeer->ipaddr);
         LP_peer_utxosquery(LP_mypeer,myport,pubsock,mostpeer,now,60,(mostutxos-LP_mypeer->numutxos) * 2);
