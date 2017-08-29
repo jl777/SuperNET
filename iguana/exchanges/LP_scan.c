@@ -374,11 +374,12 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 
 char *LP_snapshot_balance(struct iguana_info *coin,int32_t height,cJSON *argjson)
 {
-    cJSON *snapjson,*retjson,*balances,*array,*addrs,*child,*item,*item2; char *coinaddr,*refaddr; int32_t i,n,j,m; uint64_t value,balance = 0;
+    cJSON *snapjson,*retjson,*balances,*array,*addrs,*child,*item,*item2; char *coinaddr,*refaddr; int32_t i,n,j,m; uint64_t total=0,value,balance = 0;
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     if ( (snapjson= LP_snapshot(coin,height)) != 0 )
     {
+        total = jdouble(snapjson,"total");
         if ( (addrs= jarray(&m,argjson,"addresses")) != 0 )
         {
             if ( (balances= jarray(&n,snapjson,"balances")) != 0 )
@@ -417,6 +418,7 @@ char *LP_snapshot_balance(struct iguana_info *coin,int32_t height,cJSON *argjson
     jaddstr(retjson,"coin",coin->symbol);
     jaddnum(retjson,"height",height);
     jaddnum(retjson,"balance",dstr(balance));
+    jaddnum(retjson,"total",dstr(total));
     return(jprint(retjson,1));
 }
 
