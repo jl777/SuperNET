@@ -550,7 +550,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     }
     if ( numconfirms <= 0 )
     {
-        printf("LP_utxoadd reject numconfirms.%d\n",numconfirms);
+        //printf("LP_utxoadd reject numconfirms.%d\n",numconfirms);
         return(0);
     }
     numconfirms = -1;
@@ -905,6 +905,48 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
     }
     //printf("privkey.%s %.8f\n",symbol,dstr(total));
     return(total);
+}
+
+char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint8_t pubtype)
+{
+    int32_t i; uint8_t tmptype,pubkey33[33],rmd160[20]; char output[777*45],str[65],str2[65],buf[8192],wifstr[128],coinaddr[64]; bits256 checkprivkey,privkey,pubkey; cJSON *retjson;
+    retjson = cJSON_CreateObject();
+    if ( passphrase == 0 || passphrase[0] == 0 )
+        passphrase = "password";
+    if ( n <= 0 )
+        n = 16;
+    else if ( n > 777 )
+        n = 777;
+    conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+    bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
+    printf("generator (%s) secrets.[%d] <%s> t.%u p.%u\n",coinaddr,n,passphrase,taddr,pubtype);
+    sprintf(output,"\"addresses\":[");
+    for (i=0; i<n; i++)
+    {
+        sprintf(buf,"secretaddress %s %03d",passphrase,i);
+        conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)buf,(int32_t)strlen(buf));
+        bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
+        bitcoin_priv2wif(0,wifstr,privkey,188);
+        bitcoin_wif2priv(0,&tmptype,&checkprivkey,wifstr);
+        bitcoin_addr2rmd160(taddr,&tmptype,rmd160,coinaddr);
+        if ( bits256_cmp(checkprivkey,privkey) != 0 )
+        {
+            printf("WIF.(%s) error -> %s vs %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkprivkey));
+            free_json(retjson);
+            return(clonestr("{\"error\":\"couldnt validate wifstr\"}"));
+        }
+        else if ( tmptype != pubtype )
+        {
+            printf("checktype.%d != pubtype.%d\n",tmptype,pubtype);
+            free_json(retjson);
+            return(clonestr("{\"error\":\"couldnt validate pubtype\"}"));
+        }
+        jaddstr(retjson,coinaddr,wifstr);
+        sprintf(output+strlen(output),"\\\"%s\\\"%c ",coinaddr,i<n-1?',':' ');
+        printf("./komodo-cli jumblr_secret %s\n",coinaddr);
+    }
+    printf("%s]\n",output);
+    return(jprint(retjson,1));
 }
 
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)

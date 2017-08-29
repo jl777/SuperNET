@@ -120,7 +120,9 @@ getprices(base, rel)\n\
 sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 getmessages(firsti=0, num=100)\n\
 clearmessages(firsti=0, num=100)\n\
+secretaddresses(passphrase, num=10, pubtype=60, taddr=0)\n\
 snapshot(coin, height)\n\
+snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
 \"}"));
     
@@ -163,6 +165,13 @@ dividends(coin, height, <args>)\n\
         else if ( strcmp(method,"portfolio") == 0 )
         {
             return(LP_portfolio());
+        }
+        else if ( strcmp(method,"secretaddresses") == 0 )
+        {
+            uint8_t taddr,pubtype;
+            pubtype = (jobj(argjson,"pubtype") == 0) ? 60 : juint(argjson,"pubtype");
+            taddr = (jobj(argjson,"taddr") == 0) ? 0 : juint(argjson,"taddr");
+            return(LP_secretaddresses(ctx,jstr(argjson,"passphrase"),juint(argjson,"num"),taddr,pubtype));
         }
         if ( base != 0 && rel != 0 )
         {
@@ -257,6 +266,12 @@ dividends(coin, height, <args>)\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     return(LP_dividends(ptr,juint(argjson,"height"),argjson));
+                else return(clonestr("{\"error\":\"cant find coind\"}"));
+            }
+            else if ( strcmp(method,"snapshot_balance") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                    return(LP_snapshot_balance(ptr,juint(argjson,"height"),argjson));
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             if ( LP_isdisabled(coin,0) != 0 )

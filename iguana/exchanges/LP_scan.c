@@ -146,7 +146,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
         } else printf("LP_txinterestvalue no addresses found?\n");
         //char str[65]; printf("%s %.8f <- %s.(%s) txobj.(%s)\n",destaddr,dstr(value),coin->symbol,bits256_str(str,txid),jprint(txobj,0));
         free_json(txobj);
-    } else { char str[65]; printf("null gettxout return %s/v%d\n",bits256_str(str,txid),vout); }
+    } //else { char str[65]; printf("null gettxout return %s/v%d\n",bits256_str(str,txid),vout); }
     return(value);
 }
 
@@ -211,7 +211,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
         }
         free_json(txobj);
         return(0);
-    } else printf("LP_transactioninit error for %s %s\n",coin->symbol,bits256_str(str,txid));
+    } //else printf("LP_transactioninit error for %s %s\n",coin->symbol,bits256_str(str,txid));
     return(-1);
 }
 
@@ -277,6 +277,8 @@ int sort_balance(void *a,void *b)
     //printf("%.8f vs %.8f -> %d\n",dstr(aval),dstr(bval),(int32_t)(bval - aval));
     return((aval == bval) ? 0 : ((aval < bval) ? 1 : -1));
 }
+
+// a primitive restore can be done by loading the previous snapshot and creating a virtual tx for all the balance at height-1. this wont allow anything but new snapshots, but for many use cases that is all that is needed
 
 cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 {
@@ -362,10 +364,62 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
         }
     }
     jadd(retjson,"balances",array);
+    jaddstr(retjson,"coin",coin->symbol);
+    jaddnum(retjson,"height",height);
     jaddnum(retjson,"numaddresses",n);
     jaddnum(retjson,"total",dstr(balance));
     jaddnum(retjson,"noaddr_total",dstr(noaddr_balance));
     return(retjson);
+}
+
+char *LP_snapshot_balance(struct iguana_info *coin,int32_t height,cJSON *argjson)
+{
+    cJSON *snapjson,*retjson,*balances,*array,*addrs,*child,*item,*item2; char *coinaddr,*refaddr; int32_t i,n,j,m; uint64_t total=0,value,balance = 0;
+    retjson = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    if ( (snapjson= LP_snapshot(coin,height)) != 0 )
+    {
+        total = jdouble(snapjson,"total");
+        if ( (addrs= jarray(&m,argjson,"addresses")) != 0 )
+        {
+            if ( (balances= jarray(&n,snapjson,"balances")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(balances,i);
+                    if ( (child= item->child) != 0 )
+                    {
+                        value = (uint64_t)(child->valuedouble * SATOSHIDEN);
+                        if ( (refaddr= get_cJSON_fieldname(child)) != 0 )
+                        {
+                            //printf("check %s %.8f against %d\n",refaddr,dstr(value),m);
+                            for (j=0; j<m; j++)
+                            {
+                                if ( (coinaddr= jstri(addrs,j)) != 0 )
+                                {
+                                    if ( strcmp(coinaddr,refaddr) == 0 )
+                                    {
+                                        item2 = cJSON_CreateObject();
+                                        jaddnum(item2,coinaddr,dstr(value));
+                                        jaddi(array,item2);
+                                        balance += value;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        free_json(snapjson);
+    }
+    jadd(retjson,"balances",array);
+    jaddstr(retjson,"coin",coin->symbol);
+    jaddnum(retjson,"height",height);
+    jaddnum(retjson,"balance",dstr(balance));
+    jaddnum(retjson,"total",dstr(total));
+    return(jprint(retjson,1));
 }
 
 char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
