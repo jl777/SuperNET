@@ -1170,6 +1170,7 @@ void iguana_rpcloop(void *args)
         sleep(3);
     }
     printf(">>>>>>>>>> iguana_rpcloop 127.0.0.1:%d bind sock.%d iguana API enabled <<<<<<<<<\n",port,bindsock);
+    fflush(stdout);
     space = calloc(1,size);
     while ( bindsock >= 0 )
     {
