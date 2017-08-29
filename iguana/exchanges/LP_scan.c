@@ -211,7 +211,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
         }
         free_json(txobj);
         return(0);
-    } else printf("LP_transactioninit error for %s %s\n",coin->symbol,bits256_str(str,txid));
+    } //else printf("LP_transactioninit error for %s %s\n",coin->symbol,bits256_str(str,txid));
     return(-1);
 }
 
