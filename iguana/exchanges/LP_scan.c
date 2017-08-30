@@ -179,7 +179,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
                         {
                             strcpy(tx->outpoints[i].coinaddr,address);
                         } else printf("LP_transactioninit: unexpected address.(%s)\n",jprint(addresses,0));
-                    } else printf("LP_transactioninit: unexpected address.(%p)\n",jprint(addresses,0));
+                    } else printf("LP_transactioninit: unexpected address.(%p) (%s) n.%d\n",jprint(addresses,0),addresses!=0?jprint(addresses,0):"",n);
                 }
             }
         }
@@ -395,7 +395,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
                 {
                     for (i=0; i<tx->numvouts; i++)
                         banned_balance += tx->outpoints[i].value;
-                    char str[256]; printf("skip banned %s bannedtotal: %.8f\n",bits256_str(str,tx->txid),dstr(banned_balance));
+                    //char str[256]; printf("skip banned %s bannedtotal: %.8f\n",bits256_str(str,tx->txid),dstr(banned_balance));
                     continue;
                 }
             }
