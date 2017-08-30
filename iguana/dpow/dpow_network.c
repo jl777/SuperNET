@@ -2093,7 +2093,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( (flags & 1) == 0 && (size= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) > 0 )
         {
             num++;
-            if ( size > 0 )
+            if ( size >= sizeof(*np) )
             {
                 //fprintf(stderr,"%d ",size);
                 if ( np->version0 == (DPOW_VERSION & 0xff) && np->version1 == ((DPOW_VERSION >> 8) & 0xff) )
