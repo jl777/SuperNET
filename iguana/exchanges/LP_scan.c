@@ -179,7 +179,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
                         {
                             strcpy(tx->outpoints[i].coinaddr,address);
                         } else printf("LP_transactioninit: unexpected address.(%s)\n",jprint(addresses,0));
-                    } else printf("LP_transactioninit: unexpected address.(%p) (%s) n.%d\n",jprint(addresses,0),addresses!=0?jprint(addresses,0):"",n);
+                    } else printf("LP_transactioninit: unexpected addresses ht.%d i.%d (%s) n.%d\n",height,i,jprint(vout,0),n);
                 }
             }
         }
