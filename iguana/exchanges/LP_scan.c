@@ -217,8 +217,8 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
 
 int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
 {
-    int32_t i,iter,numtx,checkht=-1; cJSON *blockobj,*txs; bits256 txid; struct LP_transaction *tx;
-    if ( (blockobj= LP_blockjson(&checkht,coin->symbol,0,height)) != 0 )
+    int32_t i,j,iter,numtx,checkht=-1; cJSON *blockobj,*txs; bits256 txid; struct LP_transaction *tx;
+    if ( (blockobj= LP_blockjson(&checkht,coin->symbol,0,height)) != 0 && checkht == height )
     {
         if ( (txs= jarray(&numtx,blockobj,"tx")) != 0 )
         {
@@ -236,8 +236,24 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
                         tx->height = height;
                     }
                     if ( iter == 1 )
-                        LP_transactioninit(coin,txid,iter);
-                } else LP_transactioninit(coin,txid,iter);
+                        for (j=0; j<10; j++)
+                        {
+                            if (LP_transactioninit(coin,txid,iter) == 0 )
+                                break;
+                            printf("transaction ht.%d init error.%d, pause\n",height,j);
+                            sleep(1);
+                        }
+                }
+                else
+                {
+                    for (j=0; j<10; j++)
+                    {
+                        if (LP_transactioninit(coin,txid,iter) == 0 )
+                            break;
+                        printf("transaction ht.%d init error.%d, pause\n",height,j);
+                        sleep(1);
+                    }
+                }
             }
         }
         free_json(blockobj);
