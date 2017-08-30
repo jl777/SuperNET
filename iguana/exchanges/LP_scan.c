@@ -446,7 +446,7 @@ char *LP_snapshot_balance(struct iguana_info *coin,int32_t height,cJSON *argjson
     array = cJSON_CreateArray();
     if ( (snapjson= LP_snapshot(coin,height)) != 0 )
     {
-        total = jdouble(snapjson,"total");
+        total = jdouble(snapjson,"total") * SATOSHIDEN;
         if ( (addrs= jarray(&m,argjson,"addresses")) != 0 )
         {
             if ( (balances= jarray(&n,snapjson,"balances")) != 0 )
