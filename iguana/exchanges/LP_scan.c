@@ -173,16 +173,13 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
                 {
                     if ( (addresses= jarray(&n,sobj,"addresses")) != 0 && n > 0 )
                     {
-                        //printf("%s\n",jprint(addresses,0));
                         if ( n > 1 )
                             printf("LP_transactioninit: txid.(%s) multiple addresses.[%s]\n",bits256_str(str,txid),jprint(addresses,0));
                         if ( (address= jstri(addresses,0)) != 0 && strlen(address) < sizeof(tx->outpoints[i].coinaddr) )
                         {
                             strcpy(tx->outpoints[i].coinaddr,address);
-                            if ( 0 && strcmp(address,"RXzsovGBQ3W97xnVC6JnWxXsV4qb7p7iBi") == 0 )
-                                printf("%s %.8f at height.%d\n",address,dstr(tx->outpoints[i].value),height);
-                        }
-                    }
+                        } else printf("LP_transactioninit: unexpected address.(%s)\n",jprint(addresses,0));
+                    } else printf("LP_transactioninit: unexpected address.(%p)\n",jprint(addresses,0));
                 }
             }
         }
@@ -204,7 +201,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
                         tx->outpoints[spentvout].spendheight = height;
                         //printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
                     } else printf("LP_transactioninit: %s spentvout.%d < numvouts.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts);
-                } //else printf("LP_transactioninit: couldnt find (%s) ht.%d %s\n",bits256_str(str,spenttxid),height,jprint(vin,0));
+                } else printf("LP_transactioninit: couldnt find (%s) ht.%d %s\n",bits256_str(str,spenttxid),height,jprint(vin,0));
                 if ( bits256_cmp(spenttxid,txid) == 0 )
                     printf("spending same tx's %p vout ht.%d %s.[%d] s%d\n",tx,height,bits256_str(str,txid),tx!=0?tx->numvouts:0,spentvout);
             }
