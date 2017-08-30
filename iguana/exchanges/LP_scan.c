@@ -319,7 +319,7 @@ int sort_balance(void *a,void *b)
 cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 {
    static bits256 bannedarray[64]; static int32_t numbanned,indallvouts,maxsnapht; static char lastcoin[16];
-    struct LP_transaction *tx,*tmp; struct LP_address *ap,*atmp; int32_t i,j,n,skipflag=0,startht,endht,ht; uint64_t banned_balance=0,balance=0,noaddr_balance=0; cJSON *retjson,*array,*item;
+    struct LP_transaction *tx,*tmp; struct LP_address *ap,*atmp; int32_t isKMD,i,j,n,skipflag=0,startht,endht,ht; uint64_t banned_balance=0,balance=0,noaddr_balance=0; cJSON *retjson,*array,*item;
     if ( bannedarray[0].txid == 0 )
         numbanned = komodo_bannedset(&indallvouts,bannedarray,(int32_t)(sizeof(bannedarray)/sizeof(*bannedarray)));
     startht = 1;
@@ -368,19 +368,23 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
     {
         ap->balance = 0;
     }
+    isKMD = (strcmp(coin->symbol,"KMD") == 0) ? 1 : 0;
     HASH_ITER(hh,coin->transactions,tx,tmp)
     {
         if ( tx->height < height )
         {
-            for (j=0; j<numbanned; j++)
-                if ( bits256_cmp(bannedarray[j],tx->txid) == 0 )
-                    break;
-            if ( j < numbanned )
+            if ( isKMD != 0 )
             {
-                for (i=0; i<tx->numvouts; i++)
-                    banned_balance += tx->outpoints[i].value;
-                char str[256]; printf("skip banned %s bannedtotal: %.8f\n",bits256_str(str,tx->txid),dstr(banned_balance));
-                continue;
+                for (j=0; j<numbanned; j++)
+                    if ( bits256_cmp(bannedarray[j],tx->txid) == 0 )
+                        break;
+                if ( j < numbanned )
+                {
+                    for (i=0; i<tx->numvouts; i++)
+                        banned_balance += tx->outpoints[i].value;
+                    char str[256]; printf("skip banned %s bannedtotal: %.8f\n",bits256_str(str,tx->txid),dstr(banned_balance));
+                    continue;
+                }
             }
             for (i=0; i<tx->numvouts; i++)
             {
