@@ -1276,7 +1276,7 @@ cJSON *bitcoin_txcreate(char *symbol,int32_t isPoS,int64_t locktime,uint32_t txv
     cJSON *json = cJSON_CreateObject();
     jaddnum(json,"version",txversion);
     if ( locktime == 0 && strcmp(symbol,"KMD") == 0 )
-        locktime = (uint32_t)time(NULL);
+        locktime = (uint32_t)time(NULL) - 55;
     jaddnum(json,"locktime",locktime);
     if ( isPoS != 0 )
         jaddnum(json,"timestamp",timestamp == 0 ? time(NULL) : timestamp);
