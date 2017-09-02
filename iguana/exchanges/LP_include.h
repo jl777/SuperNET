@@ -166,7 +166,7 @@ struct basilisk_swapinfo
     uint8_t userdata_bobrefund[256],userdata_bobrefundlen;
 };
 
-struct LP_outpoint { bits256 spendtxid; uint64_t value,interest; int32_t spendvini,spendheight; };
+struct LP_outpoint { bits256 spendtxid; uint64_t value,interest; int32_t spendvini,spendheight; char coinaddr[40]; };
 
 struct LP_transaction
 {
@@ -175,10 +175,17 @@ struct LP_transaction
     struct LP_outpoint outpoints[];
 };
 
+struct LP_address
+{
+    UT_hash_handle hh;
+    int64_t balance;
+    char coinaddr[40];
+};
+
 struct iguana_info
 {
     UT_hash_handle hh;
-    portable_mutex_t txmutex; struct LP_transaction *transactions;
+    portable_mutex_t txmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock; uint16_t busport;
     uint32_t counter,inactive,lastmempool,lastgetinfo;

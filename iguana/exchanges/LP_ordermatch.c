@@ -606,7 +606,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
                             vout = jint(item,"vout");
                             vol = jdouble(item,"volume");
                             metric = price / bestprice;
-                            if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && (long long)(vol*SATOSHIDEN) == butxo->S.satoshis && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 )//&& butxo->T.bestflag == 0 )
+                            if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && (long long)(vol*SATOSHIDEN) == butxo->S.satoshis && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 && butxo->T.bestflag == 0 )
                             {
                                 if ( LP_iseligible(&val,&val2,butxo->iambob,butxo->coin,butxo->payment.txid,butxo->payment.vout,butxo->S.satoshis,butxo->deposit.txid,butxo->deposit.vout) > 0 )
                                 {
@@ -662,6 +662,27 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
                         break;
                     }
                 }
+                if ( bestutxo == 0 )
+                {
+                    int32_t numrestraints;
+                    for (i=numrestraints=0; i<numasks; i++)
+                    {
+                        item = jitem(asks,i);
+                        pubkey = jbits256(item,"pubkey");
+                        if ( bits256_cmp(pubkey,LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
+                        {
+                            txid = jbits256(item,"txid");
+                            vout = jint(item,"vout");
+                            if ( (butxo= LP_utxofind(1,txid,vout)) != 0 )
+                            {
+                                numrestraints++;
+                                butxo->T.bestflag = 0;
+                                pubp->numerrors = 0;
+                            }
+                        }
+                    }
+                    printf("no bob utxo found -> cleared %d restraints\n",numrestraints);
+                }
             }
             free_json(orderbook);
         }
@@ -669,6 +690,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
     }
     if ( bestutxo == 0 || *ordermatchpricep == 0. || *bestdestsatoshisp == 0 )
         return(0);
+    bestutxo->T.bestflag = 1;
     int32_t changed;
     LP_mypriceset(&changed,autxo->coin,base,1. / *ordermatchpricep);
     return(bestutxo);

@@ -2025,7 +2025,7 @@ int32_t bitcoin_p2shscript(uint8_t *script,int32_t n,const uint8_t *p2shscript,c
 
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params)
 {
-    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,2));
+    return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,4));
 }
 
 char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *method,char *params,int32_t timeout)
