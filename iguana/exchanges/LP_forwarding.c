@@ -18,6 +18,19 @@
 //  marketmaker
 //
 
+cJSON *LP_dereference(cJSON *argjson,char *excludemethod)
+{
+    cJSON *reqjson = 0;
+    if ( jstr(argjson,"method2") != 0 && strncmp(excludemethod,jstr(argjson,"method2"),strlen(excludemethod)) != 0 )
+    {
+        reqjson = jduplicate(argjson);
+        jdelete(reqjson,"method");
+        jaddstr(reqjson,"method",jstr(argjson,"method2"));
+    }
+    return(reqjson);
+}
+
+/*
 struct LP_forwardinfo
 {
     UT_hash_handle hh;
@@ -176,24 +189,13 @@ int32_t LP_forwarding_register(bits256 pubkey,char *publicaddr,uint16_t publicpo
         if ( peer->pushsock >= 0 )
         {
             if ( LP_send(peer->pushsock,argstr,arglen,0) != arglen )
-                printf("error sending command to %s:%u\n",peer->ipaddr,peer->port);
-            else printf("sent register to %s:%u\n",peer->ipaddr,peer->port);
+            {
+                if ( strncmp(peer->ipaddr,"5.9.253",strlen("5.9.253")) == 0 )
+                    printf("error registering with %s:%u\n",peer->ipaddr,peer->port);
+            }
             n++;
         }
         //printf("register.(%s) %s %u with (%s)\n",publicaddr,ipaddr,publicport,peer->ipaddr);
-        /*if ( (retstr= issue_LP_register(peer->ipaddr,peer->port,pubkey,ipaddr,publicport)) != 0 )
-        {
-            //printf("[%s] LP_register.(%s) returned.(%s)\n",publicaddr,peer->ipaddr,retstr);
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( jint(retjson,"registered") != 0 && ++n >= max )
-                    retval = 0;
-                free_json(retjson);
-            }
-            free(retstr);
-        } else printf("timeout registering with %s errs.%d good.%d\n",peer->ipaddr,peer->errors,peer->good);
-        if ( retval == 0 )
-            break;*/
     }
     free(argstr);
     return(n);
@@ -218,18 +220,6 @@ char *LP_registerall(int32_t numnodes)
     return(jprint(retjson,1));
 }
 
-cJSON *LP_dereference(cJSON *argjson,char *excludemethod)
-{
-    cJSON *reqjson = 0;
-    if ( jstr(argjson,"method2") != 0 && strncmp(excludemethod,jstr(argjson,"method2"),strlen(excludemethod)) != 0 )
-    {
-        reqjson = jduplicate(argjson);
-        jdelete(reqjson,"method");
-        jaddstr(reqjson,"method",jstr(argjson,"method2"));
-    }
-    return(reqjson);
-}
-
 char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
 {
     struct LP_forwardinfo *ptr=0; uint8_t *data; int32_t datalen=0,sentbytes=0; char *msg,*retstr=0; cJSON *retjson=0,*argjson=0,*reqjson=0;
@@ -245,7 +235,7 @@ char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
         if ( reqjson != 0 )
         {
             retstr = LP_command_process(ctx,LP_mypeer != 0 ? LP_mypeer->ipaddr : "127.0.0.1",LP_mypubsock,reqjson,0,0,LP_profitratio - 1.);
-            printf("LP_forwardhex.(%s) -> (%s)\n",jprint(reqjson,0),retstr!=0?retstr:"");
+            //printf("LP_forwardhex.(%s) -> (%s)\n",jprint(reqjson,0),retstr!=0?retstr:"");
             if ( pubsock >= 0 )
             {
                 msg = jprint(reqjson,0);
@@ -255,16 +245,20 @@ char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
     }
     else if ( (ptr= LP_forwardfind(pubkey)) != 0 )
     {
-        if ( ptr->pushsock >= 0 )//&& ptr->hello != 0 )
+        if ( ptr->pushsock >= 0 )
         {
             printf("%s forwardhex.(%s)\n",ptr->pushaddr,(char *)data);
             sentbytes = LP_send(ptr->pushsock,(char *)data,datalen,0);
         }
         retjson = cJSON_CreateObject();
-        if ( sentbytes == datalen )
+        if ( sentbytes >= 0 )
         {
             jaddstr(retjson,"result","success");
-            jaddnum(retjson,"forwarded",sentbytes);
+            if ( sentbytes == datalen )
+                jaddnum(retjson,"forwarded",sentbytes);
+            else if ( sentbytes == 0 )
+                jaddnum(retjson,"queued",sentbytes);
+            else jaddnum(retjson,"mismatch",sentbytes);
             retstr = jprint(retjson,1);
         }
         else
@@ -294,11 +288,12 @@ char *LP_forwardhex(void *ctx,int32_t pubsock,bits256 pubkey,char *hexstr)
     return(retstr);
 }
 
-int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,bits256 pubkey,char *jsonstr,int32_t freeflag)
+int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,bits256 pubkey,char *jsonstr,int32_t freeflag)
 {
-    struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *msg,*hexstr,*retstr; int32_t len,retval = -1; cJSON *retjson,*reqjson,*argjson;
+    struct LP_forwardinfo *ptr; struct LP_peerinfo *peer,*tmp; char *msg,*hexstr,*retstr; int32_t len,n=0,mlen; cJSON *reqjson,*argjson;
     if ( jsonstr == 0 || jsonstr[0] == 0 )
         return(-1);
+    len = (int32_t)strlen(jsonstr) + 1;
     if ( bits256_nonz(pubkey) != 0 )
     {
         if ( bits256_cmp(pubkey,LP_mypubkey) == 0 )
@@ -306,55 +301,44 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,double profitmargin,
             printf("GOT FORWARDED.(%s)\n",myipaddr);
             if ( (argjson= cJSON_Parse(jsonstr)) != 0 )
             {
-                if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,0,0,profitmargin)) != 0 )
+                if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,0,0)) != 0 )
                     free(retstr);
                 free_json(argjson);
             }
+            if ( freeflag != 0 )
+                free(jsonstr);
             return(1);
         }
-        else if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 && ptr->lasttime > time(NULL)-LP_KEEPALIVE )
+        else if ( IAMLP != 0 && (ptr= LP_forwardfind(pubkey)) != 0 && ptr->pushsock >= 0 )
         {
             printf("GOT FORWARDED.(%s) -> pushsock.%d\n",jsonstr,ptr->pushsock);
-            len = (int32_t)strlen(jsonstr);
-            if ( LP_send(ptr->pushsock,jsonstr,(int32_t)strlen(jsonstr)+1,0) == len+1 )
+            if ( LP_send(ptr->pushsock,jsonstr,len,freeflag) == len )
                 return(1);
         }
     }
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        if ( bits256_nonz(pubkey) != 0 )
-        {
-            if ( (retstr= issue_LP_lookup(peer->ipaddr,peer->port,pubkey)) != 0 )
-            {
-                if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-                    if ( jint(retjson,"forwarding") != 0 && peer->pushsock >= 0 )
-                        retval = 0;
-                    free_json(retjson);
-                }
-                free(retstr);
-            }
-        } else retval = 0;
-        if ( retval >= 0 && peer->pushsock >= 0 )
-        {
-            printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,jsonstr);
-            len = (int32_t)strlen(jsonstr) + 1;
-            hexstr = malloc(len*2 + 1);
-            init_hexbytes_noT(hexstr,(uint8_t *)jsonstr,len);
-            if ( freeflag != 0 )
-                free(jsonstr);
-            reqjson = cJSON_CreateObject();
-            jaddstr(reqjson,"method","forwardhex");
-            jaddstr(reqjson,"hex",hexstr);
-            jaddbits256(reqjson,"pubkey",pubkey);
-            free(hexstr);
-            msg = jprint(reqjson,1);
-            return(LP_send(peer->pushsock,msg,(int32_t)strlen(msg)+1,1));
-        } else retval = -1;
-    }
+    hexstr = malloc(len*2 + 1);
+    init_hexbytes_noT(hexstr,(uint8_t *)jsonstr,len);
     if ( freeflag != 0 )
         free(jsonstr);
-    return(-1);
+    reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","forwardhex");
+    jaddstr(reqjson,"hex",hexstr);
+    free(hexstr);
+    msg = jprint(reqjson,1);
+    mlen = (int32_t)strlen(msg) + 1;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        //printf("found LPnode.(%s) forward.(%s)\n",peer->ipaddr,msg);
+        if ( LP_send(peer->pushsock,msg,mlen,0) == mlen )
+            n++;
+        if ( n >= 8 )//sizeof(default_LPnodes)/sizeof(*default_LPnodes) )
+            break;
+    }
+    if ( msg != 0 )
+        free(msg);
+    if ( n == 0 )
+        return(-1);
+    else return(n-1);
 }
 
 
@@ -363,5 +347,5 @@ char *LP_broadcasted(cJSON *argjson)
     printf("RECV BROADCAST.(%s)\n",jprint(argjson,0));
     return(clonestr("{\"result\":\"need to update broadcast messages\"}"));
 }
-
+*/
 
