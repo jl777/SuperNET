@@ -606,9 +606,17 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 
     #ifdef _WIN32
     if ( system("curl.exe -s4 checkip.amazonaws.com > ~\Temp") == 0 )
+    {
+        if ( (myipaddr= OS_filestr(&filesize,"~\Temp")) != 0 && myipaddr[0] != 0 )
+        {
+            n = strlen(myipaddr);
+            if ( myipaddr[n-1] == '\n' )
+                myipaddr[--n] = 0;
+            strcpy(LP_myipaddr,myipaddr);
+        } else printf("error getting myipaddr\n");
+    } else printf("error issuing curl\n");
     #else
     if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
-    #endif
     {
         if ( (myipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && myipaddr[0] != 0 )
         {
@@ -618,6 +626,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             strcpy(LP_myipaddr,myipaddr);
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
+    #endif
     if ( IAMLP != 0 )
     {
         pubsock = -1;
