@@ -62,7 +62,7 @@ bits256 LP_mypub25519,LP_mypriv25519;
 
 void tradebot_swap_balancingtrade(struct basilisk_swap *swap,int32_t iambob)
 {
-    
+
 }
 
 void tradebot_pendingadd(cJSON *tradejson,char *base,double basevolume,char *rel,double relvolume)
@@ -603,7 +603,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_portfoliomutex);
     LP_sessionid = (uint32_t)time(NULL);
     printf("getting myipaddr sessionid.%u\n",LP_sessionid);
+
+    #ifdef _WIN32
+    if ( system(".\curl.exe -s4 checkip.amazonaws.com > ~\Temp") == 0 )
+    #else
     if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
+    #endif
     {
         if ( (myipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && myipaddr[0] != 0 )
         {
@@ -680,6 +685,3 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000000 / MAINLOOP_PERSEC);
     }
 }
-
-
-
