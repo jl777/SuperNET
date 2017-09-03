@@ -287,6 +287,7 @@ int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,s
 int32_t category_peer(struct supernet_info *myinfo,struct iguana_peer *addr,bits256 category,bits256 subhash);
 int32_t bitcoin_wif2priv(uint8_t *addrtypep,bits256 *privkeyp,char *wifstr);
 int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype);
+int32_t bitcoin_priv2wiflong(char *wifstr,bits256 privkey,uint8_t addrtype);
 bits256 iguana_chaingenesis(struct supernet_info *myinfo,char *symbol,uint8_t zcash,uint8_t auxpow,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),bits256 genesishash,char *genesisblock,char *hashalgostr,int32_t version,uint32_t timestamp,uint32_t bits,uint32_t nonce,bits256 merkle_root);
 int32_t iguana_send_ConnectTo(struct iguana_info *coin,struct iguana_peer *addr);
 cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t height,struct vin_info *V);
@@ -528,7 +529,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
 int32_t iguana_markedunspents_find(struct iguana_info *coin,int32_t *firstslotp,bits256 txid,int32_t vout);
 void jumblr_opidsupdate(struct supernet_info *myinfo,struct iguana_info *coin);
 
-char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkey,struct vin_info *V);
+char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkeys,struct vin_info *V);
 bits256 scrypt_blockhash(const void *input);
 bits256 iguana_calcblockhash(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),uint8_t *serialized,int32_t len);
 struct bitcoin_eventitem *instantdex_event(char *cmdstr,cJSON *argjson,cJSON *newjson,uint8_t *serdata,int32_t serdatalen);
@@ -604,12 +605,12 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fil
 void basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notaries,uint32_t ipbits);
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr);
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20]);
-void basilisk_requests_poll(struct supernet_info *myinfo);
+int32_t basilisk_requests_poll(struct supernet_info *myinfo);
 void dpow_psockloop(void *_ptr);
-int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *BTCaddr,char *KMDaddr);
-int32_t smartaddress(struct supernet_info *myinfo,bits256 *privkeyp,char *coinaddr);
-int32_t smartaddress_pubkey(struct supernet_info *myinfo,bits256 *privkeyp,bits256 pubkey);
-int32_t smartaddress_pubkey33(struct supernet_info *myinfo,bits256 *privkeyp,uint8_t *pubkey33);
+int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *typestr,char *symbol,double maxbid,double minask);
+int32_t smartaddress(struct supernet_info *myinfo,char *typestr,double *bidaskp,bits256 *privkeyp,char *symbol,char *coinaddr);
+int32_t smartaddress_pubkey(struct supernet_info *myinfo,char *typestr,double *bidaskp,bits256 *privkeyp,char *symbol,bits256 pubkey);
+int32_t smartaddress_pubkey33(struct supernet_info *myinfo,char *typestr,double *bidaskp,bits256 *privkeyp,char *symbol,uint8_t *pubkey33);
 
 void iguana_RTreset(struct iguana_info *coin);
 void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight);
@@ -629,10 +630,11 @@ int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *ref
 bits256 mpz_div64(bits256 hash,uint64_t divval);
 void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coin);
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval);
-void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,char *BTCaddr,char *KMDaddr,bits256 privkey);
-bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,char *KMDaddr,char *prefix);
+void smartaddress_update(struct supernet_info *myinfo,int32_t selector);
+bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,uint8_t pubtype,char *KMDaddr,char *prefix);
 char *jumblr_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wifstr);
 int64_t iguana_esttxfee(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,char *signedtx,int32_t numvins);
+int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr);
 
 // ------------------------------------------------------[ Preparation ]----
 // Initialise a gfshare context for producing shares
@@ -659,7 +661,7 @@ void iguana_schnorr(struct supernet_info *myinfo);
 void iguana_fixsecp(struct supernet_info *myinfo);
 int32_t bitcoin_timelockspend(uint8_t *script,int32_t n,uint8_t rmd160[20],uint32_t timestamp);
 
-char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *utxos,char *remoteaddr,struct vin_info *V,int32_t maxmode);
+char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t *satoshis,int32_t numoutputs,char *changeaddr,int64_t txfee,cJSON *utxos,char *remoteaddr,struct vin_info *V,int32_t maxmode);
 uint64_t _iguana_interest(uint32_t now,int32_t height,uint32_t txlocktime,uint64_t value);
 
 #include "../includes/iguana_api.h"

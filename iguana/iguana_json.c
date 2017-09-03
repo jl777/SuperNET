@@ -18,7 +18,7 @@
 
 cJSON *helpjson(cJSON *json,cJSON *array,cJSON *agents,char *agentstr,char *method,cJSON *methodargs)
 {
-    cJSON *methodobj,*item; int32_t i,n; char url[2048],curl[2048];
+    cJSON *methodobj,*item; int32_t i,n; char url[2048],curl[2048]; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     /*if ( *agentstrp == 0 || strcmp(*agentstrp,agentstr) != 0 )
     {
         if ( array != 0 )
@@ -43,8 +43,8 @@ cJSON *helpjson(cJSON *json,cJSON *array,cJSON *agents,char *agentstr,char *meth
     methodobj = cJSON_CreateObject();
     jaddstr(methodobj,"agent",agentstr);
     jaddstr(methodobj,"method",method);
-    sprintf(url,"http://127.0.0.1:7778/api/%s/%s",agentstr,method);
-    sprintf(curl,"curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"%s\\\",\\\"method\\\":\\\"%s\\\"",agentstr,method);
+    sprintf(url,"http://127.0.0.1:%u/api/%s/%s",myinfo->rpcport,agentstr,method);
+    sprintf(curl,"curl --url \"http://127.0.0.1:%u\" --data \"{\\\"agent\\\":\\\"%s\\\",\\\"method\\\":\\\"%s\\\"",myinfo->rpcport,agentstr,method);
     if ( methodargs != 0 && (n= cJSON_GetArraySize(methodargs)) > 0 )
     {
         //printf("method.%s n.%d %s\n",method,n,jprint(methodargs,0));
@@ -203,7 +203,7 @@ cJSON *SuperNET_helpjson()
 
 int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
 {
-    cJSON *item,*fieldsarray; int32_t j,m,width=1,size = 0;
+    cJSON *item,*fieldsarray; int32_t j,m,width=1,size = 0; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     char *methodstr,*typestr,outstr[2048],outstr2[2048],fields[8192],str[2],agent_method[256],*fieldname;
     form[0] = 0;
     if ( (methodstr= jstr(methoditem,"method")) == 0 )
@@ -252,7 +252,7 @@ int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
             //printf("fields[%d] (%s)\n",j,fields);
         }
     } else sprintf(fields+strlen(fields),"<b>%s</b> <textarea rows=\"0\" cols=\"0\"></textarea>",agent_method);
-    sprintf(&form[size],"<form action=\"http://127.0.0.1:7778/api/%s/%s\" oninput=\"%s\">%s<output for=\"%s\"></output><input type=\"submit\" value=\"%s\"></form>",agent,methodstr,outstr,fields,outstr2,methodstr);
+    sprintf(&form[size],"<form action=\"http://127.0.0.1:%u/api/%s/%s\" oninput=\"%s\">%s<output for=\"%s\"></output><input type=\"submit\" value=\"%s\"></form>",myinfo->rpcport,agent,methodstr,outstr,fields,outstr2,methodstr);
     if ( fp != 0 )
         fprintf(fp,"%s\n",&form[size]);
     //printf("%s\n",&form[size]);

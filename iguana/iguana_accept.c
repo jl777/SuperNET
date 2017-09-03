@@ -115,7 +115,7 @@ void iguana_acceptloop(void *args)
             printf("another daemon running, no need to have iguana accept connections\n");
             return;
         }
-        //if ( port != IGUANA_RPCPORT )
+        //if ( port != myinfo->rpcport )
         //    return;
         sleep(5);
     }

@@ -546,7 +546,7 @@ static char *print_object(cJSON *item,int32_t depth,int32_t fmt)
 /* Get Array size/item / object item. */
 int32_t    cJSON_GetArraySize(cJSON *array)							{cJSON *c; if ( array == 0 ) return(0); c=array->child;int32_t i=0;while(c)i++,c=c->next;return i;}
 cJSON *cJSON_GetArrayItem(cJSON *array,int32_t item)				{cJSON *c=array->child;  while (c && item>0) item--,c=c->next; return c;}
-cJSON *cJSON_GetObjectItem(cJSON *object,const char *string)	{cJSON *c=object->child; while (c && cJSON_strcasecmp(c->string,string)) c=c->next; return c;}
+cJSON *cJSON_GetObjectItem(cJSON *object,const char *string)	{ if ( object == 0 ) return(0); cJSON *c=object->child; while (c && cJSON_strcasecmp(c->string,string)) c=c->next; return c;}
 
 /* Utility for array list handling. */
 static void suffix_object(cJSON *prev,cJSON *item) {prev->next=item;item->prev=prev;}
@@ -858,7 +858,7 @@ bits256 get_API_bits256(cJSON *obj)
     }
     return(hash);
 }
-bits256 jbits256(cJSON *json,char *field) { if ( field == 0 ) return(get_API_bits256(json)); return(get_API_bits256(cJSON_GetObjectItem(json,field))); }
+bits256 jbits256(cJSON *json,char *field) { if ( field == 0 ) return(get_API_bits256(json)); return(get_API_bits256(json != 0 ? cJSON_GetObjectItem(json,field) : 0)); }
 bits256 jbits256i(cJSON *json,int32_t i) { return(get_API_bits256(cJSON_GetArrayItem(json,i))); }
 void jaddbits256(cJSON *json,char *field,bits256 hash) { char str[65]; bits256_str(str,hash), jaddstr(json,field,str); }
 void jaddibits256(cJSON *json,bits256 hash) { char str[65]; bits256_str(str,hash), jaddistr(json,str); }
@@ -896,10 +896,14 @@ int32_t jnum(cJSON *obj,char *field)
 
 void ensure_jsonitem(cJSON *json,char *field,char *value)
 {
-    cJSON *obj = cJSON_GetObjectItem(json,field);
-    if ( obj == 0 )
-        cJSON_AddItemToObject(json,field,cJSON_CreateString(value));
-    else cJSON_ReplaceItemInObject(json,field,cJSON_CreateString(value));
+    cJSON *obj;
+    if ( json != 0 )
+    {
+        obj = cJSON_GetObjectItem(json,field);
+        if ( obj == 0 )
+            cJSON_AddItemToObject(json,field,cJSON_CreateString(value));
+        else cJSON_ReplaceItemInObject(json,field,cJSON_CreateString(value));
+    }
 }
 
 int32_t in_jsonarray(cJSON *array,char *value)

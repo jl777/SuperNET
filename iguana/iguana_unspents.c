@@ -1896,7 +1896,10 @@ INT_ARRAY_STRING(iguana,dividends,height,vals,symbol)
                                     {
                                         sprintf(buf,"%s %s %.8f %s",prefix,field,dstr(val),suffix);
                                         if ( execflag != 0 )
-                                            system(buf);
+                                        {
+                                            if ( system(buf) != 0 )
+                                                printf("error system.(%s)\n",buf);
+                                        }
                                         else printf("%s\n",buf);
                                         emit += val;
                                     } else dustsum += val;

@@ -17,13 +17,8 @@
 #define LIQUIDITY_PROVIDER 1
 
 #if LIQUIDITY_PROVIDER
-#ifdef _WIN32
-#include <curl.h>
-#include <easy.h>
-#else
 #include <curl/curl.h>
 #include <curl/easy.h>
-#endif
 
 // return data from the server
 #define CURL_GLOBAL_ALL (CURL_GLOBAL_SSL|CURL_GLOBAL_WIN32)
@@ -62,7 +57,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     //printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
     {
-        if ( strcmp(command,"signrawtransaction") != 0 )
+        if ( strcmp(command,"signrawtransaction") != 0 && strcmp(command,"getrawtransaction") != 0 )
             printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
         return(rpcstr);
     }
@@ -90,7 +85,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
         }
         else if ( (error->type&0xff) != cJSON_NULL || (result->type&0xff) != cJSON_NULL )
         {
-            if ( strcmp(command,"signrawtransaction") != 0 && strcmp(command,"sendrawtransaction") != 0 )
+            if ( strcmp(command,"getrawtransaction") != 0 && strcmp(command,"signrawtransaction") != 0 && strcmp(command,"sendrawtransaction") != 0 )
                 printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC (%s) error.%s\n",debugstr,command,rpcstr);
             retstr = rpcstr;
             rpcstr = 0;
@@ -120,7 +115,7 @@ char *Jay_NXTrequest(char *command,char *params)
     return(retstr);
 }
 
-char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params)
+char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
     static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
     struct curl_slist *headers = NULL; struct return_string s; CURLcode res; CURL *curl_handle;
@@ -142,7 +137,7 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     if ( url[0] == 0 )
         strcpy(url,"http://127.0.0.1:7776");
     if ( specialcase != 0 && (0) )
-        printf("<<<<<<<<<<< bitcoind_RPC: debug.(%s) url.(%s) command.(%s) params.(%s)\n",debugstr,url,command,params);
+        printf("<<<<<<<<<<< bitcoind_RPC: userpass.(%s) url.(%s) command.(%s) params.(%s)\n",userpass,url,command,params);
 try_again:
     if ( retstrp != 0 )
         *retstrp = 0;
@@ -158,7 +153,8 @@ try_again:
     curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,		&s); 			// we pass our 's' struct to the callback
     curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
 	curl_easy_setopt(curl_handle,CURLOPT_NOPROGRESS,	1L);			// no progress callback
-    //curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,	60L);
+    if ( timeout > 0 )
+        curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,	timeout); // causes problems with iguana timeouts
     if ( strncmp(url,"https",5) == 0 )
     {
         curl_easy_setopt(curl_handle,CURLOPT_SSL_VERIFYPEER,0);
@@ -206,9 +202,9 @@ try_again:
     if ( res != CURLE_OK )
     {
         numretries++;
-        if ( specialcase != 0 )
+        if ( specialcase != 0 || timeout != 0 )
         {
-            printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,s.ptr,res);
+            //printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,s.ptr,res);
             free(s.ptr);
             return(0);
         }

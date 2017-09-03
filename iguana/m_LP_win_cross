@@ -1,0 +1,9 @@
+#!/bin/bash
+#./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
+rm -f ../agents/iguana *.o
+git pull
+cd secp256k1; ./m_win_cross; cd ..
+cd ../crypto777; ./m_LP_win_cross; cd ../iguana
+i686-w64-mingw32-gcc -w -static-libgcc -g -fno-aggressive-loop-optimizations -Wno-deprecated -c -O2 -DLIQUIDITY_PROVIDER=1 *.c ../basilisk/basilisk.c ../gecko/gecko.c ../datachain/datachain.c -L../win_lib/lib -I../win_lib/include -lcurl -lws2_32
+i686-w64-mingw32-gcc -w -static-libgcc -g -fno-aggressive-loop-optimizations -Wno-deprecated -c -DLIQUIDITY_PROVIDER=1  main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c iguana_ramchain.c -L../win_lib/lib -I../win_lib/include -lcurl -lws2_32
+i686-w64-mingw32-gcc -w -DWIN32 -static-libgcc -g -o ../agents/iguana.exe *.o ../agents/libcrypto777.a secp256k1.a -static-libgcc -DPTW32_STATIC_LIB -lm -DCURL_STATICLIB -lpthread -L../win_lib/lib -I../win_lib/include -lcurl -I../nanomsg/include -L../nanomsg/lib -lnanomsg -I../iguana -I../includes -I../crypto777 -lws2_32 -lsetupapi
