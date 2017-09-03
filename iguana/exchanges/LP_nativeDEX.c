@@ -605,7 +605,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     printf("getting myipaddr sessionid.%u\n",LP_sessionid);
 
     #ifdef _WIN32
-    if ( system(".\curl.exe -s4 checkip.amazonaws.com > ~\Temp") == 0 )
+    if ( system("curl.exe -s4 checkip.amazonaws.com > ~\Temp") == 0 )
     #else
     if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
     #endif
