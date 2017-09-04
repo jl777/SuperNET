@@ -13,6 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#ifndef FROM_JS
 #include "OS_portable.h"
 #include "../includes/curve25519.h"
 
@@ -213,3 +214,4 @@ int32_t iguana_rwmem(int32_t rwflag,uint8_t *serialized,int32_t len,void *endian
     else memcpy(serialized,endianedp,len);
     return(len);
 }
+#endif
