@@ -71,6 +71,7 @@ struct LP_queue
 } *LP_Q;
 int32_t LP_Qenqueued,LP_Qerrors,LP_Qfound;
 
+#ifndef FROM_JS
 void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 {
     struct LP_queue *ptr;
@@ -718,3 +719,5 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
     }
     return(pullsock);
 }
+#endif
+
