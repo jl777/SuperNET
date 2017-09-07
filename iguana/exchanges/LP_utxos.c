@@ -561,7 +561,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     }
     if ( numconfirms <= 0 )
     {
-        printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
+        //printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
         return(0);
     }
     if ( dispflag != 0 )

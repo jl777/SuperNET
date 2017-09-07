@@ -173,16 +173,16 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
                 {
                     if ( (addresses= jarray(&n,sobj,"addresses")) != 0 && n > 0 )
                     {
-                        //printf("%s\n",jprint(addresses,0));
                         if ( n > 1 )
                             printf("LP_transactioninit: txid.(%s) multiple addresses.[%s]\n",bits256_str(str,txid),jprint(addresses,0));
                         if ( (address= jstri(addresses,0)) != 0 && strlen(address) < sizeof(tx->outpoints[i].coinaddr) )
                         {
                             strcpy(tx->outpoints[i].coinaddr,address);
-                            if ( 0 && strcmp(address,"RXzsovGBQ3W97xnVC6JnWxXsV4qb7p7iBi") == 0 )
-                                printf("%s %.8f at height.%d\n",address,dstr(tx->outpoints[i].value),height);
-                        }
+                        } else if ( tx->outpoints[i].value != 0 )
+                            printf("LP_transactioninit: unexpected address.(%s)\n",jprint(addresses,0));
                     }
+                    //else if ( tx->outpoints[i].value != 0 )
+                    //    printf("LP_transactioninit: pax tx ht.%d i.%d (%s) n.%d\n",height,i,jprint(vout,0),n);
                 }
             }
         }
@@ -217,8 +217,8 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
 
 int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
 {
-    int32_t i,iter,numtx,checkht=-1; cJSON *blockobj,*txs; bits256 txid; struct LP_transaction *tx;
-    if ( (blockobj= LP_blockjson(&checkht,coin->symbol,0,height)) != 0 )
+    int32_t i,j,iter,numtx,checkht=-1; cJSON *blockobj,*txs; bits256 txid; struct LP_transaction *tx;
+    if ( (blockobj= LP_blockjson(&checkht,coin->symbol,0,height)) != 0 && checkht == height )
     {
         if ( (txs= jarray(&numtx,blockobj,"tx")) != 0 )
         {
@@ -236,8 +236,24 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
                         tx->height = height;
                     }
                     if ( iter == 1 )
-                        LP_transactioninit(coin,txid,iter);
-                } else LP_transactioninit(coin,txid,iter);
+                        for (j=0; j<10; j++)
+                        {
+                            if (LP_transactioninit(coin,txid,iter) == 0 )
+                                break;
+                            printf("transaction ht.%d init error.%d, pause\n",height,j);
+                            sleep(1);
+                        }
+                }
+                else
+                {
+                    for (j=0; j<10; j++)
+                    {
+                        if (LP_transactioninit(coin,txid,iter) == 0 )
+                            break;
+                        printf("transaction ht.%d init error.%d, pause\n",height,j);
+                        sleep(1);
+                    }
+                }
             }
         }
         free_json(blockobj);
@@ -264,6 +280,42 @@ int32_t LP_scanblockchain(struct iguana_info *coin,int32_t startheight,int32_t e
     return(endheight);
 }
 
+char *banned_txids[] =
+{
+    "78cb4e21245c26b015b888b14c4f5096e18137d2741a6de9734d62b07014dfca", //233559
+    "00697be658e05561febdee1aafe368b821ca33fbb89b7027365e3d77b5dfede5", //234172
+    "e909465788b32047c472d73e882d79a92b0d550f90be008f76e1edaee6d742ea", //234187
+    "f56c6873748a327d0b92b8108f8ec8505a2843a541b1926022883678fb24f9dc", //234188
+    "abf08be07d8f5b3a433ddcca7ef539e79a3571632efd6d0294ec0492442a0204", //234213
+    "3b854b996cc982fba8c06e76cf507ae7eed52ab92663f4c0d7d10b3ed879c3b0", //234367
+    "fa9e474c2cda3cb4127881a40eb3f682feaba3f3328307d518589024a6032cc4", //234635
+    "ca746fa13e0113c4c0969937ea2c66de036d20274efad4ce114f6b699f1bc0f3", //234662
+    "43ce88438de4973f21b1388ffe66e68fda592da38c6ef939be10bb1b86387041", //234697
+    "0aeb748de82f209cd5ff7d3a06f65543904c4c17387c9d87c65fd44b14ad8f8c", //234899
+    "bbd3a3d9b14730991e1066bd7c626ca270acac4127131afe25f877a5a886eb25", //235252
+    "fa9943525f2e6c32cbc243294b08187e314d83a2870830180380c3c12a9fd33c", //235253
+    "a01671c8775328a41304e31a6693bbd35e9acbab28ab117f729eaba9cb769461", //235265
+    "2ef49d2d27946ad7c5d5e4ab5c089696762ff04e855f8ab48e83bdf0cc68726d", //235295
+    "c85dcffb16d5a45bd239021ad33443414d60224760f11d535ae2063e5709efee", //235296
+    // all vouts banned
+    "c4ea1462c207547cd6fb6a4155ca6d042b22170d29801a465db5c09fec55b19d", //246748
+    "305dc96d8bc23a69d3db955e03a6a87c1832673470c32fe25473a46cc473c7d1", //247204
+};
+
+int32_t komodo_bannedset(int32_t *indallvoutsp,bits256 *array,int32_t max)
+{
+    int32_t i;
+    if ( sizeof(banned_txids)/sizeof(*banned_txids) > max )
+    {
+        fprintf(stderr,"komodo_bannedset: buffer too small %ld vs %d\n",(long)sizeof(banned_txids)/sizeof(*banned_txids),max);
+        exit(-1);
+    }
+    for (i=0; i<sizeof(banned_txids)/sizeof(*banned_txids); i++)
+        decode_hex(array[i].bytes,sizeof(array[i]),banned_txids[i]);
+    *indallvoutsp = i-2;
+    return(i);
+}
+
 int sort_balance(void *a,void *b)
 {
     int64_t aval,bval;
@@ -282,9 +334,10 @@ int sort_balance(void *a,void *b)
 
 cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 {
-    static char lastcoin[16]; static int32_t maxsnapht;
-    struct LP_transaction *tx,*tmp; struct LP_address *ap,*atmp; int32_t i,n,skipflag=0,startht,endht,ht; uint64_t balance=0,noaddr_balance=0; cJSON *retjson,*array,*item;
-    //LP_blockinit(coin,421011);
+   static bits256 bannedarray[64]; static int32_t numbanned,indallvouts,maxsnapht; static char lastcoin[16];
+    struct LP_transaction *tx,*tmp; struct LP_address *ap,*atmp; int32_t isKMD,i,j,n,skipflag=0,startht,endht,ht; uint64_t banned_balance=0,balance=0,noaddr_balance=0; cJSON *retjson,*array,*item;
+    if ( bannedarray[0].txid == 0 )
+        numbanned = komodo_bannedset(&indallvouts,bannedarray,(int32_t)(sizeof(bannedarray)/sizeof(*bannedarray)));
     startht = 1;
     endht = height-1;
     if ( strcmp(coin->symbol,lastcoin) == 0 )
@@ -331,10 +384,24 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
     {
         ap->balance = 0;
     }
+    isKMD = (strcmp(coin->symbol,"KMD") == 0) ? 1 : 0;
     HASH_ITER(hh,coin->transactions,tx,tmp)
     {
         if ( tx->height < height )
         {
+            if ( isKMD != 0 )
+            {
+                for (j=0; j<numbanned; j++)
+                    if ( bits256_cmp(bannedarray[j],tx->txid) == 0 )
+                        break;
+                if ( j < numbanned )
+                {
+                    for (i=0; i<tx->numvouts; i++)
+                        banned_balance += tx->outpoints[i].value;
+                    //char str[256]; printf("skip banned %s bannedtotal: %.8f\n",bits256_str(str,tx->txid),dstr(banned_balance));
+                    continue;
+                }
+            }
             for (i=0; i<tx->numvouts; i++)
             {
                 if ( (ht=tx->outpoints[i].spendheight) > 0 && ht < height )
@@ -379,7 +446,7 @@ char *LP_snapshot_balance(struct iguana_info *coin,int32_t height,cJSON *argjson
     array = cJSON_CreateArray();
     if ( (snapjson= LP_snapshot(coin,height)) != 0 )
     {
-        total = jdouble(snapjson,"total");
+        total = jdouble(snapjson,"total") * SATOSHIDEN;
         if ( (addrs= jarray(&m,argjson,"addresses")) != 0 )
         {
             if ( (balances= jarray(&n,snapjson,"balances")) != 0 )

@@ -13,6 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
+#ifndef FROM_JS
 #include "OS_portable.h"
 #define LIQUIDITY_PROVIDER 1
 
@@ -370,4 +371,5 @@ void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *
 {
     return(clonestr("{\"error\":\"curl is disabled\"}"));
 }
+#endif
 #endif
