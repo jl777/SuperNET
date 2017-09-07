@@ -446,7 +446,6 @@ void iguana_ensure_privkey(struct iguana_info *coin,bits256 privkey)
         }
     }
 }
-#endif
 
 
 int32_t basilisk_rawtx_return(struct basilisk_rawtx *rawtx,cJSON *item,int32_t lockinputs,struct vin_info *V)
@@ -484,6 +483,7 @@ int32_t basilisk_rawtx_return(struct basilisk_rawtx *rawtx,cJSON *item,int32_t l
     }
     return(retval);
 }
+#endif
 
 cJSON *LP_createvins(struct basilisk_rawtx *dest,struct vin_info *V,struct basilisk_rawtx *rawtx,uint8_t *userdata,int32_t userdatalen,uint32_t sequenceid)
 {

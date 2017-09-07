@@ -105,9 +105,22 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
 
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
 {
-    char *retstr; cJSON *retjson = 0;
-    //retstr = bitcoind_passthru("BTC","46.4.125.2:50001","",method,params);
-    //printf("%s %s -> %s\n",method,params,retstr);
+    static uint32_t stratumid;
+    char *retstr,stratumreq[8192]; cJSON *retjson = 0;
+    // "getinfo", "getrawmempool", "paxprice", "gettxout", "getrawtransaction", "getblock", "listunspent", "listtransactions", "validateaddress", "importprivkey"
+    // bitcoind_passthru callers: "importaddress", "estimatefee", "getblockhash", "sendrawtransaction", "signrawtransaction"
+    
+    //"server.version", "server.banner", "server.donation_address", "server.peers.subscribe", "--blockchain.numblocks.subscribe", "blockchain.headers.subscribe", "blockchain.address.subscribe", "blockchain.address.get_history", "blockchain.address.get_mempool", "blockchain.address.get_balance", "--blockchain.address.get_proof", "blockchain.address.listunspent", "--blockchain.utxo.get_address", "blockchain.block.get_header", "blockchain.block.get_chunk", "blockchain.transaction.broadcast", "blockchain.transaction.get_merkle", "blockchain.transaction.get", "blockchain.estimatefee"
+    
+    // 1.1: "blockchain.scripthash.get_balance", "blockchain.scripthash.get_history", "blockchain.scripthash.get_mempool", "blockchain.scripthash.listunspent", "blockchain.scripthash.subscribe", "server.features", "server.add_peer"
+    method = "server.version";
+    params = "[]";
+    sprintf(stratumreq,"{ \"id\": %u, \"method\":\"%s\", \"params\": %s }",stratumid++,method,params);
+    if ( (retstr= issue_curlt("46.4.125.2:50001",LP_HTTP_TIMEOUT*5)) != 0 )
+    {
+        printf("%s %s -> %s\n",method,params,retstr);
+        free(retstr);
+    }
     if ( coin != 0 )
     {
         //printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
@@ -165,10 +178,15 @@ cJSON *LP_assethbla(char *assetid)
     return(retjson);
 }
 
-cJSON *LP_getinfo(char *symbol)
+int32_t LP_getheight(struct iguana_info *coin)
 {
-    struct iguana_info *coin = LP_coinfind(symbol);
-    return(bitcoin_json(coin,"getinfo","[]"));
+    cJSON *retjson; int32_t height = -1; //struct iguana_info *coin = LP_coinfind(symbol);
+    if ( (retjson= bitcoin_json(coin,"getinfo","[]")) != 0 )
+    {
+        height = jint(retjson,"blocks");
+        free_json(retjson);
+    }
+    return(height);
 }
 
 cJSON *LP_getmempool(char *symbol)
@@ -205,6 +223,25 @@ cJSON *LP_getblock(char *symbol,bits256 txid)
     char buf[128],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
     sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
     return(bitcoin_json(coin,"getblock",buf));
+}
+
+int32_t LP_txheight(uint32_t *timestampp,uint32_t *blocktimep,struct iguana_info *coin,bits256 txid)
+{
+    bits256 blockhash; cJSON *blockobj,*txobj; int32_t height = 0;
+    if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
+    {
+        *timestampp = juint(txobj,"locktime");
+        *blocktimep = juint(txobj,"blocktime");
+        blockhash = jbits256(txobj,"blockhash");
+        if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
+        {
+            height = jint(blockobj,"height");
+            //printf("%s LP_txheight.%d\n",coin->symbol,height);
+            free_json(blockobj);
+        } //else printf("%s LP_txheight error (%s)\n",coin->symbol,jprint(txobj,0));
+        free_json(txobj);
+    }
+    return(height);
 }
 
 cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
@@ -331,6 +368,33 @@ char *LP_blockhashstr(char *symbol,int32_t height)
     return(retstr);
 }
 
+cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t height)
+{
+    cJSON *json = 0; int32_t flag = 0;
+    if ( blockhashstr == 0 )
+        blockhashstr = LP_blockhashstr(symbol,height), flag = 1;
+    if ( blockhashstr != 0 )
+    {
+        if ( (json= LP_getblockhashstr(symbol,blockhashstr)) != 0 )
+        {
+            if ( *heightp != 0 )
+            {
+                *heightp = juint(json,"height");
+                if ( height >= 0 && *heightp != height )
+                {
+                    printf("unexpected height %d vs %d for %s (%s)\n",*heightp,height,blockhashstr,jprint(json,0));
+                    *heightp = -1;
+                    free_json(json);
+                    json = 0;
+                }
+            }
+        }
+        if ( flag != 0 && blockhashstr != 0 )
+            free(blockhashstr);
+    }
+    return(json);
+}
+
 char *LP_sendrawtransaction(char *symbol,char *signedtx)
 {
     cJSON *array; char *paramstr,*retstr; struct iguana_info *coin = LP_coinfind(symbol);
@@ -384,31 +448,3 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
     free(paramstr);
     return(signedtx);
 }
-
-cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t height)
-{
-    cJSON *json = 0; int32_t flag = 0;
-    if ( blockhashstr == 0 )
-        blockhashstr = LP_blockhashstr(symbol,height), flag = 1;
-    if ( blockhashstr != 0 )
-    {
-        if ( (json= LP_getblockhashstr(symbol,blockhashstr)) != 0 )
-        {
-            if ( *heightp != 0 )
-            {
-                *heightp = juint(json,"height");
-                if ( height >= 0 && *heightp != height )
-                {
-                    printf("unexpected height %d vs %d for %s (%s)\n",*heightp,height,blockhashstr,jprint(json,0));
-                    *heightp = -1;
-                    free_json(json);
-                    json = 0;
-                }
-            }
-        }
-        if ( flag != 0 && blockhashstr != 0 )
-            free(blockhashstr);
-    }
-    return(json);
-}
-

@@ -75,25 +75,6 @@ struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,i
     return(tx);
 }
 
-int32_t LP_txheight(uint32_t *timestampp,uint32_t *blocktimep,struct iguana_info *coin,bits256 txid)
-{
-    bits256 blockhash; cJSON *blockobj,*txobj; int32_t height = 0;
-    if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
-    {
-        *timestampp = juint(txobj,"locktime");
-        *blocktimep = juint(txobj,"blocktime");
-        blockhash = jbits256(txobj,"blockhash");
-        if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
-        {
-            height = jint(blockobj,"height");
-            //printf("%s LP_txheight.%d\n",coin->symbol,height);
-            free_json(blockobj);
-        } //else printf("%s LP_txheight error (%s)\n",coin->symbol,jprint(txobj,0));
-        free_json(txobj);
-    }
-    return(height);
-}
-
 int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
 {
     int32_t i,ht,num = 0; uint32_t timestamp,blocktime; struct LP_transaction *tx,*tmp;
