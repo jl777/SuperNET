@@ -106,8 +106,8 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
 {
     char *retstr; cJSON *retjson = 0;
-    retstr = bitcoind_passthru("BTC","46.4.125.2:50001","",method,params);
-    printf("%s %s -> %s\n",method,params,retstr);
+    //retstr = bitcoind_passthru("BTC","46.4.125.2:50001","",method,params);
+    //printf("%s %s -> %s\n",method,params,retstr);
     if ( coin != 0 )
     {
         //printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
