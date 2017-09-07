@@ -115,10 +115,10 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
     // 1.1: "blockchain.scripthash.get_balance", "blockchain.scripthash.get_history", "blockchain.scripthash.get_mempool", "blockchain.scripthash.listunspent", "blockchain.scripthash.subscribe", "server.features", "server.add_peer"
     method = "server.version";
     params = "[]";
-    sprintf(stratumreq,"{ \"id\": %u, \"method\":\"%s\", \"params\": %s }",stratumid++,method,params);
+    sprintf(stratumreq,"{ \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",stratumid++,method,params);
     if ( (retstr= issue_curlt("46.4.125.2:50001",LP_HTTP_TIMEOUT*5)) != 0 )
     {
-        printf("%s %s -> %s\n",method,params,retstr);
+        printf("%s -> %s\n",stratumreq,retstr);
         free(retstr);
     }
     if ( coin != 0 )
