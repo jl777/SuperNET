@@ -952,9 +952,14 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     static uint32_t counter;
-    bits256 privkey,userpub,userpass,checkkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype,rmd160[20];
+    bits256 privkey,userpub,userpass,checkkey; char tmpstr[128],pstr[65]; cJSON *retjson; uint8_t tmptype,rmd160[20];
     if ( passphrase != 0 && passphrase[0] != 0 )
+    {
         conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+        vcalc_sha256(0,checkkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+        printf("SHA256.(%s) ",bits256_str(pstr,checkkey));
+        printf("privkey.(%s)\n",bits256_str(pstr,privkey));
+    }
     else
     {
         bitcoin_wif2priv(coin->wiftaddr,&tmptype,&privkey,wifstr);
