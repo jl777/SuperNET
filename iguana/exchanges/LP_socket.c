@@ -293,7 +293,7 @@ cJSON *electrum_submit(char *method,char *params,int32_t timeout)
 {
     static uint32_t stratumid;
     // queue id and string and callback
-    char stratumreq[16384];
+    char stratumreq[16384]; cJSON *retjson = 0;
     sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",stratumid++,method,params);
     while ( LP_sendstr != 0 )
         usleep(10000);
@@ -304,8 +304,11 @@ cJSON *electrum_submit(char *method,char *params,int32_t timeout)
     while ( ((char *)LP_electrum_buf)[0] == 0 )
         usleep(10000);
     if ( ((char *)LP_electrum_buf)[0] != 0 )
-        return(cJSON_Parse(LP_electrum_buf));
-    else return(0);
+    {
+        retjson = cJSON_Parse(LP_electrum_buf);
+        memset(LP_electrum_buf,0,LP_electrum_maxlen);
+    }
+    return(retjson);
 }
 
 cJSON *electrum_noargs(char *method,int32_t timeout)
