@@ -259,7 +259,7 @@ void LP_dedicatedloop(int32_t (*recvfunc)(char *ipaddr,char *str,int32_t len),ch
         {
             *sendstrp = 0;
             printf("sending.(%s)\n",str);
-            if ( LP_socketsend(sock,(uint8_t *)str,(int32_t)strlen(str)+1) <= 0 )
+            if ( LP_socketsend(sock,(uint8_t *)str,(int32_t)strlen(str)) <= 0 )
             {
                 printf("%s:%u is dead\n",ipaddr,port);
                 closesocket(sock);
