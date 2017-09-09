@@ -222,6 +222,7 @@ int32_t LP_socketrecv(int32_t sock,uint8_t *recvbuf,int32_t maxlen)
     int32_t recvlen = -1;
     while ( 1 )
     {
+        printf("recv on sock.%d\n",sock);
         if ( (recvlen= (int32_t)recv(sock,recvbuf,maxlen,0)) < 0 )
         {
             if ( errno == EAGAIN )
@@ -256,6 +257,7 @@ void LP_dedicatedloop(int32_t (*recvfunc)(char *ipaddr,char *str,int32_t len),ch
         if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 && (str= *sendstrp) != 0 )
         {
             *sendstrp = 0;
+            printf("sending.(%s)\n",str);
             if ( LP_socketsend(sock,(uint8_t *)str,(int32_t)strlen(str+1)) <= 0 )
             {
                 printf("%s:%u is dead\n",ipaddr,port);
