@@ -265,6 +265,11 @@ void LP_dedicatedloop(int32_t (*recvfunc)(char *ipaddr,char *str,int32_t len),ch
                 sock = -1;
                 break;
             }
+            else if ( (len= LP_socketrecv(sock,buf,bufsize)) > 0 )
+            {
+                (*recvfunc)(ipaddr,(char *)buf,len);
+                flag++;
+            } else printf("recv.%d\n",len);
             flag++;
         }
         if ( flag == 0 )
