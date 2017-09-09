@@ -284,7 +284,7 @@ void LP_dedicatedloop(int32_t (*recvfunc)(char *ipaddr,char *str,int32_t len),ch
 
 int32_t LP_recvfunc(char *ipaddr,char *str,int32_t len)
 {
-    printf("RECV.(%s) from %s\n",str,ipaddr);
+    //printf("RECV.(%s) from %s\n",str,ipaddr);
     // get callback for id and callback
     return(0);
 }
@@ -295,15 +295,12 @@ cJSON *electrum_submit(char *method,char *params,int32_t timeout)
     // queue id and string and callback
     char stratumreq[16384];
     sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",stratumid++,method,params);
-    printf("submit.(%s)\n",stratumreq);
     while ( LP_sendstr != 0 )
         usleep(10000);
-    printf("clear buf\n");
     ((char *)LP_electrum_buf)[0] = 0;
     LP_sendstr = stratumreq;
     while ( LP_sendstr != 0 )
         usleep(10000);
-    printf("wait for return\n");
     while ( ((char *)LP_electrum_buf)[0] == 0 )
         usleep(10000);
     if ( ((char *)LP_electrum_buf)[0] != 0 )
@@ -366,7 +363,7 @@ cJSON *electrum_addpeer(char *endpoint) { return(electrum_strarg("server.add_pee
 cJSON *electrum_sendrawtransaction(char *rawtx) { return(electrum_strarg("blockchain.transaction.broadcast",rawtx,ELECTRUM_TIMEOUT)); }
 
 cJSON *electrum_estimatefee(int32_t numblocks) { return(electrum_intarg("blockchain.estimatefee",numblocks,ELECTRUM_TIMEOUT)); }
-cJSON *electrum_getheader(bits256 blockhash) { return(electrum_hasharg("blockchain.block.get_header",blockhash,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_getheader(int32_t n) { return(electrum_intarg("blockchain.block.get_header",n,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_getchunk(bits256 blockhash) { return(electrum_hasharg("blockchain.block.get_chunk",blockhash,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_getmerkle(bits256 txid) { return(electrum_hasharg("blockchain.transaction.get_merkle",txid,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_transaction(bits256 txid) { return(electrum_hasharg("blockchain.transaction.get",txid,ELECTRUM_TIMEOUT)); }
@@ -389,7 +386,7 @@ void electrum_test()
     if ( (retjson= electrum_estimatefee(6)) != 0 )
         printf("electrum_estimatefee %s\n",jprint(retjson,1));
     decode_hex(hash.bytes,sizeof(hash),"0000000000000000005087f8845f9ed0282559017e3c6344106de15e46c07acd");
-    if ( (retjson= electrum_getheader(hash)) != 0 )
+    if ( (retjson= electrum_getheader(3)) != 0 )
         printf("electrum_getheader %s\n",jprint(retjson,1));
     if ( (retjson= electrum_getchunk(hash)) != 0 )
         printf("electrum_getchunk %s\n",jprint(retjson,1));
