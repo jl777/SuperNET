@@ -113,7 +113,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
     //"server.version", "server.banner", "server.donation_address", "server.peers.subscribe", "--blockchain.numblocks.subscribe", "blockchain.headers.subscribe", "blockchain.address.subscribe", "blockchain.address.get_history", "blockchain.address.get_mempool", "blockchain.address.get_balance", "--blockchain.address.get_proof", "blockchain.address.listunspent", "--blockchain.utxo.get_address", "blockchain.block.get_header", "blockchain.block.get_chunk", "blockchain.transaction.broadcast", "blockchain.transaction.get_merkle", "blockchain.transaction.get", "blockchain.estimatefee"
     
     // 1.1: "blockchain.scripthash.get_balance", "blockchain.scripthash.get_history", "blockchain.scripthash.get_mempool", "blockchain.scripthash.listunspent", "blockchain.scripthash.subscribe", "server.features", "server.add_peer"
-    method = "server.version";
+    method = "server.peers.subscribe";
     params = "[]";
     sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",stratumid++,method,params);
     LP_sendstr = stratumreq;

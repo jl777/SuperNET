@@ -213,7 +213,7 @@ int32_t LP_socketsend(int32_t sock,uint8_t *serialized,int32_t len)
             if ( remains > 0 )
                 printf("%d LP_socket sent.%d remains.%d of len.%d\n",sock,numsent,remains,len);
         }
-        printf("numsent.%d vs remains.%d len.%d sock.%d\n",numsent,remains,len,sock);
+        //printf("numsent.%d vs remains.%d len.%d sock.%d\n",numsent,remains,len,sock);
     }
     return(len);
 }
