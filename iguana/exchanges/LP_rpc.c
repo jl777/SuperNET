@@ -105,18 +105,21 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
 
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
 {
-    //static uint32_t stratumid;
-    cJSON *retjson = 0; char *retstr;//,stratumreq[8192];
+    static uint32_t stratumid;
+    cJSON *retjson = 0; char *retstr,stratumreq[8192];
     // "getinfo", "getrawmempool", "paxprice", "gettxout", "getrawtransaction", "getblock", "listunspent", "listtransactions", "validateaddress", "importprivkey"
     // bitcoind_passthru callers: "importaddress", "estimatefee", "getblockhash", "sendrawtransaction", "signrawtransaction"
     
     //"server.version", "server.banner", "server.donation_address", "server.peers.subscribe", "--blockchain.numblocks.subscribe", "blockchain.headers.subscribe", "blockchain.address.subscribe", "blockchain.address.get_history", "blockchain.address.get_mempool", "blockchain.address.get_balance", "--blockchain.address.get_proof", "blockchain.address.listunspent", "--blockchain.utxo.get_address", "blockchain.block.get_header", "blockchain.block.get_chunk", "blockchain.transaction.broadcast", "blockchain.transaction.get_merkle", "blockchain.transaction.get", "blockchain.estimatefee"
     
     // 1.1: "blockchain.scripthash.get_balance", "blockchain.scripthash.get_history", "blockchain.scripthash.get_mempool", "blockchain.scripthash.listunspent", "blockchain.scripthash.subscribe", "server.features", "server.add_peer"
-    /*method = "server.version";
+    method = "server.version";
     params = "[]";
     sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",stratumid++,method,params);
-    if ( (retstr= issue_curlt("46.4.125.2:50001",LP_HTTP_TIMEOUT*5)) != 0 )
+    LP_sendstr = stratumreq;
+    while ( LP_sendstr != 0 )
+        usleep(10000);
+    /*if ( (retstr= issue_curlt("46.4.125.2:50001",LP_HTTP_TIMEOUT*5)) != 0 )
     {
         printf("%s -> %s\n",stratumreq,retstr);
         free(retstr);
