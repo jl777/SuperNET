@@ -409,17 +409,19 @@ void electrum_test()
         printf("electrum_address_getbalance %s\n",jprint(retjson,1));
     if ( (retjson= electrum_address_listunspent(addr)) != 0 )
         printf("electrum_address_listunspent %s\n",jprint(retjson,1));
-    script = "76a914b598062b55362952720718e7da584a46a27bedee88ac";
-    if ( (retjson= electrum_script_gethistory(script)) != 0 )
-        printf("electrum_script_gethistory %s\n",jprint(retjson,1));
-    if ( (retjson= electrum_script_getmempool(script)) != 0 )
-        printf("electrum_script_getmempool %s\n",jprint(retjson,1));
-    if ( (retjson= electrum_script_getbalance(script)) != 0 )
-        printf("electrum_script_getbalance %s\n",jprint(retjson,1));
-    if ( (retjson= electrum_script_listunspent(script)) != 0 )
-        printf("electrum_script_listunspent %s\n",jprint(retjson,1));
-
-    if ( (retjson= electrum_addpeer("electrum.be")) != 0 )
+    if ( 0 )
+    {
+        script = "76a914b598062b55362952720718e7da584a46a27bedee88ac";
+        if ( (retjson= electrum_script_gethistory(script)) != 0 )
+            printf("electrum_script_gethistory %s\n",jprint(retjson,1));
+        if ( (retjson= electrum_script_getmempool(script)) != 0 )
+            printf("electrum_script_getmempool %s\n",jprint(retjson,1));
+        if ( (retjson= electrum_script_getbalance(script)) != 0 )
+            printf("electrum_script_getbalance %s\n",jprint(retjson,1));
+        if ( (retjson= electrum_script_listunspent(script)) != 0 )
+            printf("electrum_script_listunspent %s\n",jprint(retjson,1));
+    }
+    if ( (retjson= electrum_addpeer("electrum.be:50001")) != 0 )
         printf("electrum_addpeer %s\n",jprint(retjson,1));
     if ( (retjson= electrum_sendrawtransaction("0100000001b7e6d69a0fd650926bd5fbe63cc8578d976c25dbdda8dd61db5e05b0de4041fe000000006b483045022100de3ae8f43a2a026bb46f6b09b890861f8aadcb16821f0b01126d70fa9ae134e4022000925a842073484f1056c7fc97399f2bbddb9beb9e49aca76835cdf6e9c91ef3012103cf5ce3233e6d6e22291ebef454edff2b37a714aed685ce94a7eb4f83d8e4254dffffffff014c4eaa0b000000001976a914b598062b55362952720718e7da584a46a27bedee88ac00000000")) != 0 )
         printf("electrum_sendrawtransaction %s\n",jprint(retjson,1));
