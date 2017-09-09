@@ -390,8 +390,8 @@ void electrum_test()
     decode_hex(hash.bytes,sizeof(hash),"0000000000000000005087f8845f9ed0282559017e3c6344106de15e46c07acd");
     if ( (retjson= electrum_getheader(3)) != 0 )
         printf("electrum_getheader %s\n",jprint(retjson,1));
-    if ( (retjson= electrum_getchunk(3)) != 0 )
-        printf("electrum_getchunk %s\n",jprint(retjson,1));
+    //if ( (retjson= electrum_getchunk(3)) != 0 )
+    //    printf("electrum_getchunk %s\n",jprint(retjson,1));
     decode_hex(hash.bytes,sizeof(hash),"b967a7d55889fe11e993430921574ec6379bc8ce712a652c3fcb66c6be6e925c");
     if ( (retjson= electrum_getmerkle(hash,403000)) != 0 )
         printf("electrum_getmerkle %s\n",jprint(retjson,1));

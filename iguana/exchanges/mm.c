@@ -817,7 +817,7 @@ int main(int argc, const char * argv[])
             exit(-1);
         } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
-        LP_dedicatedloop(LP_recvfunc,&LP_sendstr,"88.198.241.196",50001);
+        LP_dedicatedloop(LP_recvfunc,&LP_sendstr,"46.4.125.2",50001);//88.198.241.196",50001);
         while ( 1 )
             sleep(1);
         profitmargin = jdouble(retjson,"profitmargin");
