@@ -241,7 +241,7 @@ int32_t LP_electrum_maxlen; void *LP_electrum_buf;
 void LP_dedicatedloop(int32_t (*recvfunc)(char *ipaddr,char *str,int32_t len),char **sendstrp,char *ipaddr,uint16_t port)
 {
     struct pollfd fds; uint8_t *buf; char *str; int32_t len,sock,bufsize,flag,timeout = 10;
-    LP_electrum_maxlen = bufsize = IGUANA_MAXPACKETSIZE * 2;
+    LP_electrum_maxlen = bufsize = IGUANA_MAXPACKETSIZE * 10;
     LP_electrum_buf = buf = malloc(bufsize);
     sock = LP_socket(0,ipaddr,port);
     while ( sock >= 0 )
