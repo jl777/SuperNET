@@ -364,9 +364,15 @@ cJSON *electrum_sendrawtransaction(char *rawtx) { return(electrum_strarg("blockc
 
 cJSON *electrum_estimatefee(int32_t numblocks) { return(electrum_intarg("blockchain.estimatefee",numblocks,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_getheader(int32_t n) { return(electrum_intarg("blockchain.block.get_header",n,ELECTRUM_TIMEOUT)); }
-cJSON *electrum_getchunk(bits256 blockhash) { return(electrum_hasharg("blockchain.block.get_chunk",blockhash,ELECTRUM_TIMEOUT)); }
-cJSON *electrum_getmerkle(bits256 txid) { return(electrum_hasharg("blockchain.transaction.get_merkle",txid,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_getchunk(int32_t n) { return(electrum_intarg("blockchain.block.get_chunk",n,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_transaction(bits256 txid) { return(electrum_hasharg("blockchain.transaction.get",txid,ELECTRUM_TIMEOUT)); }
+
+cJSON *electrum_getmerkle(bits256 txid,int32_t height)
+{
+    char params[128],str[65];
+    sprintf(params,"[\"%s\", %d]",bits256_str(str,txid),height);
+    return(electrum_submit("blockchain.transaction.get_merkle",params,ELECTRUM_TIMEOUT));
+}
 
 void electrum_test()
 {
@@ -388,10 +394,10 @@ void electrum_test()
     decode_hex(hash.bytes,sizeof(hash),"0000000000000000005087f8845f9ed0282559017e3c6344106de15e46c07acd");
     if ( (retjson= electrum_getheader(3)) != 0 )
         printf("electrum_getheader %s\n",jprint(retjson,1));
-    if ( (retjson= electrum_getchunk(hash)) != 0 )
+    if ( (retjson= electrum_getchunk(3)) != 0 )
         printf("electrum_getchunk %s\n",jprint(retjson,1));
     decode_hex(hash.bytes,sizeof(hash),"b967a7d55889fe11e993430921574ec6379bc8ce712a652c3fcb66c6be6e925c");
-    if ( (retjson= electrum_getmerkle(hash)) != 0 )
+    if ( (retjson= electrum_getmerkle(hash,403000)) != 0 )
         printf("electrum_getmerkle %s\n",jprint(retjson,1));
     if ( (retjson= electrum_transaction(hash)) != 0 )
         printf("electrum_transaction %s\n",jprint(retjson,1));
