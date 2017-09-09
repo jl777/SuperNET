@@ -284,7 +284,7 @@ void LP_dedicatedloop(int32_t (*recvfunc)(char *ipaddr,char *str,int32_t len),ch
 
 int32_t LP_recvfunc(char *ipaddr,char *str,int32_t len)
 {
-    //printf("RECV.(%s) from %s\n",str,ipaddr);
+    printf("RECV.(%s) from %s\n",str,ipaddr);
     // get callback for id and callback
     return(0);
 }
@@ -345,7 +345,7 @@ cJSON *electrum_banner() { return(electrum_noargs("server.banner",ELECTRUM_TIMEO
 cJSON *electrum_donation() { return(electrum_noargs("server.donation_address",ELECTRUM_TIMEOUT)); }
 cJSON *electrum_peers() { return(electrum_noargs("server.peers.subscribe",ELECTRUM_TIMEOUT)); }
 cJSON *electrum_features() { return(electrum_noargs("server.features",ELECTRUM_TIMEOUT)); }
-cJSON *electrum_headers() { return(electrum_noargs("blockchain.headers.subscribe",ELECTRUM_TIMEOUT)); }
+cJSON *electrum_headers_subscribe() { return(electrum_noargs("blockchain.headers.subscribe",ELECTRUM_TIMEOUT)); }
 
 cJSON *electrum_script_getbalance(char *script) { return(electrum_strarg("blockchain.scripthash.get_balance",script,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_script_gethistory(char *script) { return(electrum_strarg("blockchain.scripthash.get_history",script,ELECTRUM_TIMEOUT)); }
@@ -383,12 +383,8 @@ void electrum_test()
         printf("electrum_banner %s\n",jprint(retjson,1));
     if ( (retjson= electrum_donation()) != 0 )
         printf("electrum_donation %s\n",jprint(retjson,1));
-    //if ( (retjson= electrum_peers()) != 0 )
-    //    printf("electrum_peers %s\n",jprint(retjson,1));
     if ( (retjson= electrum_features()) != 0 )
         printf("electrum_features %s\n",jprint(retjson,1));
-    if ( (retjson= electrum_headers()) != 0 )
-        printf("electrum_headers %s\n",jprint(retjson,1));
     if ( (retjson= electrum_estimatefee(6)) != 0 )
         printf("electrum_estimatefee %s\n",jprint(retjson,1));
     decode_hex(hash.bytes,sizeof(hash),"0000000000000000005087f8845f9ed0282559017e3c6344106de15e46c07acd");
@@ -402,8 +398,6 @@ void electrum_test()
     if ( (retjson= electrum_transaction(hash)) != 0 )
         printf("electrum_transaction %s\n",jprint(retjson,1));
     addr = "14NeevLME8UAANiTCVNgvDrynUPk1VcQKb";
-    //if ( (retjson= electrum_address_subscribe(addr)) != 0 )
-    //    printf("electrum_address_subscribe %s\n",jprint(retjson,1));
     if ( (retjson= electrum_address_gethistory(addr)) != 0 )
         printf("electrum_address_gethistory %s\n",jprint(retjson,1));
     if ( (retjson= electrum_address_getmempool(addr)) != 0 )
@@ -413,8 +407,6 @@ void electrum_test()
     if ( (retjson= electrum_address_listunspent(addr)) != 0 )
         printf("electrum_address_listunspent %s\n",jprint(retjson,1));
     script = "76a914b598062b55362952720718e7da584a46a27bedee88ac";
-    //if ( (retjson= electrum_script_subscribe(script)) != 0 )
-    //    printf("electrum_script_subscribe %s\n",jprint(retjson,1));
     if ( (retjson= electrum_script_gethistory(script)) != 0 )
         printf("electrum_script_gethistory %s\n",jprint(retjson,1));
     if ( (retjson= electrum_script_getmempool(script)) != 0 )
@@ -428,4 +420,13 @@ void electrum_test()
         printf("electrum_addpeer %s\n",jprint(retjson,1));
     if ( (retjson= electrum_sendrawtransaction("0100000001b7e6d69a0fd650926bd5fbe63cc8578d976c25dbdda8dd61db5e05b0de4041fe000000006b483045022100de3ae8f43a2a026bb46f6b09b890861f8aadcb16821f0b01126d70fa9ae134e4022000925a842073484f1056c7fc97399f2bbddb9beb9e49aca76835cdf6e9c91ef3012103cf5ce3233e6d6e22291ebef454edff2b37a714aed685ce94a7eb4f83d8e4254dffffffff014c4eaa0b000000001976a914b598062b55362952720718e7da584a46a27bedee88ac00000000")) != 0 )
         printf("electrum_sendrawtransaction %s\n",jprint(retjson,1));
+ 
+    if ( (retjson= electrum_headers_subscribe()) != 0 )
+        printf("electrum_headers %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_peers()) != 0 )
+        printf("electrum_peers %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_address_subscribe(addr)) != 0 )
+        printf("electrum_address_subscribe %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_script_subscribe(script)) != 0 )
+        printf("electrum_script_subscribe %s\n",jprint(retjson,1));
 }
