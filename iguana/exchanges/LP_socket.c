@@ -375,8 +375,8 @@ void electrum_test()
         printf("electrum_banner %s\n",jprint(retjson,1));
     if ( (retjson= electrum_donation()) != 0 )
         printf("electrum_donation %s\n",jprint(retjson,1));
-    if ( (retjson= electrum_peers()) != 0 )
-        printf("electrum_peers %s\n",jprint(retjson,1));
+    //if ( (retjson= electrum_peers()) != 0 )
+    //    printf("electrum_peers %s\n",jprint(retjson,1));
     if ( (retjson= electrum_features()) != 0 )
         printf("electrum_features %s\n",jprint(retjson,1));
     if ( (retjson= electrum_headers()) != 0 )
