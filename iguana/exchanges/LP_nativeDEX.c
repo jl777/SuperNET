@@ -568,6 +568,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
 #endif
     OS_randombytes((void *)&n,sizeof(n));
+    electrum_test();
     if ( jobj(argjson,"gui") != 0 )
         safecopy(LP_gui,jstr(argjson,"gui"),sizeof(LP_gui));
     if ( jobj(argjson,"canbind") == 0 )

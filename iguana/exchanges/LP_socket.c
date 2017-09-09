@@ -236,17 +236,13 @@ int32_t LP_socketrecv(int32_t sock,uint8_t *recvbuf,int32_t maxlen)
     return(recvlen);
 }
 
-int32_t LP_recvfunc(char *ipaddr,char *str,int32_t len)
-{
-    printf("RECV.(%s) from %s\n",str,ipaddr);
-    return(0);
-}
+int32_t LP_electrum_maxlen; void *LP_electrum_buf;
 
 void LP_dedicatedloop(int32_t (*recvfunc)(char *ipaddr,char *str,int32_t len),char **sendstrp,char *ipaddr,uint16_t port)
 {
     struct pollfd fds; uint8_t *buf; char *str; int32_t len,sock,bufsize,flag,timeout = 10;
-    bufsize = IGUANA_MAXPACKETSIZE * 2;
-    buf = malloc(bufsize);
+    LP_electrum_maxlen = bufsize = IGUANA_MAXPACKETSIZE * 2;
+    LP_electrum_buf = buf = malloc(bufsize);
     sock = LP_socket(0,ipaddr,port);
     while ( sock >= 0 )
     {
@@ -284,3 +280,144 @@ void LP_dedicatedloop(int32_t (*recvfunc)(char *ipaddr,char *str,int32_t len),ch
     free(buf);
 }
 
+// create new electrum server connection, add to list of electrum servers, sendstr, Q, etc.
+
+int32_t LP_recvfunc(char *ipaddr,char *str,int32_t len)
+{
+    printf("RECV.(%s) from %s\n",str,ipaddr);
+    // get callback for id and callback
+    return(0);
+}
+
+cJSON *electrum_submit(char *method,char *params,int32_t timeout)
+{
+    static uint32_t stratumid;
+    // queue id and string and callback
+    char stratumreq[16384];
+    while ( LP_sendstr != 0 )
+        usleep(10000);
+    ((char *)LP_electrum_buf)[0] = 0;
+    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",stratumid++,method,params);
+    LP_sendstr = stratumreq;
+    while ( LP_sendstr != 0 )
+        usleep(10000);
+    if ( ((char *)LP_electrum_buf)[0] != 0 )
+        return(cJSON_Parse(LP_electrum_buf));
+    else return(0);
+}
+
+cJSON *electrum_noargs(char *method,int32_t timeout)
+{
+    return(electrum_submit(method,"[]",timeout));
+}
+
+cJSON *electrum_strarg(char *method,char *arg,int32_t timeout)
+{
+    char params[16384];
+    if ( strlen(arg) < sizeof(params) )
+    {
+        sprintf(params,"[\"%s\"]",arg);
+        return(electrum_submit(method,params,timeout));
+    } else return(0);
+}
+
+cJSON *electrum_intarg(char *method,int32_t arg,int32_t timeout)
+{
+    char params[64];
+    sprintf(params,"[\"%d\"]",arg);
+    return(electrum_submit(method,params,timeout));
+}
+
+cJSON *electrum_hasharg(char *method,bits256 arg,int32_t timeout)
+{
+    char params[128],str[65];
+    sprintf(params,"[\"%s\"]",bits256_str(str,arg));
+    return(electrum_submit(method,params,timeout));
+}
+
+#define ELECTRUM_TIMEOUT 2
+//" "--blockchain.numblocks.subscribe", "--blockchain.address.get_proof", "--blockchain.utxo.get_address",
+
+cJSON *electrum_version() { return(electrum_noargs("server.version",ELECTRUM_TIMEOUT)); }
+cJSON *electrum_banner() { return(electrum_noargs("server.banner",ELECTRUM_TIMEOUT)); }
+cJSON *electrum_donation() { return(electrum_noargs("server.donation_address",ELECTRUM_TIMEOUT)); }
+cJSON *electrum_peers() { return(electrum_noargs("server.peers.subscribe",ELECTRUM_TIMEOUT)); }
+cJSON *electrum_features() { return(electrum_noargs("server.features",ELECTRUM_TIMEOUT)); }
+cJSON *electrum_headers() { return(electrum_noargs("blockchain.headers.subscribe",ELECTRUM_TIMEOUT)); }
+
+cJSON *electrum_script_getbalance(char *script) { return(electrum_strarg("blockchain.scripthash.get_balance",script,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_script_gethistory(char *script) { return(electrum_strarg("blockchain.scripthash.get_history",script,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_script_getmempool(char *script) { return(electrum_strarg("blockchain.scripthash.get_mempool",script,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_script_listunspent(char *script) { return(electrum_strarg("blockchain.scripthash.listunspent",script,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_script_subscribe(char *script) { return(electrum_strarg("blockchain.scripthash.subscribe",script,ELECTRUM_TIMEOUT)); }
+
+cJSON *electrum_address_subscribe(char *addr) { return(electrum_strarg("blockchain.address.subscribe",addr,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_address_gethistory(char *addr) { return(electrum_strarg("blockchain.address.get_history",addr,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_address_getmempool(char *addr) { return(electrum_strarg("blockchain.address.get_mempool",addr,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_address_getbalance(char *addr) { return(electrum_strarg("blockchain.address.get_balance",addr,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_address_listunspent(char *addr) { return(electrum_strarg("blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)); }
+
+cJSON *electrum_addpeer(char *endpoint) { return(electrum_strarg("server.add_peer",endpoint,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_sendrawtransaction(char *rawtx) { return(electrum_strarg("blockchain.transaction.broadcast",rawtx,ELECTRUM_TIMEOUT)); }
+
+cJSON *electrum_estimatefee(int32_t numblocks) { return(electrum_intarg("blockchain.estimatefee",numblocks,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_getheader(bits256 blockhash) { return(electrum_hasharg("blockchain.block.get_header",blockhash,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_getchunk(bits256 blockhash) { return(electrum_hasharg("blockchain.block.get_chunk",blockhash,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_getmerkle(bits256 txid) { return(electrum_hasharg("blockchain.transaction.get_merkle",txid,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_transaction(bits256 txid) { return(electrum_hasharg("blockchain.transaction.get",txid,ELECTRUM_TIMEOUT)); }
+
+void electrum_test()
+{
+    cJSON *retjson; bits256 hash; char *addr,*script;
+    if ( (retjson= electrum_version()) != 0 )
+        printf("electrum_version %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_banner()) != 0 )
+        printf("electrum_banner %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_donation()) != 0 )
+        printf("electrum_donation %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_peers()) != 0 )
+        printf("electrum_peers %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_features()) != 0 )
+        printf("electrum_features %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_headers()) != 0 )
+        printf("electrum_headers %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_estimatefee(6)) != 0 )
+        printf("electrum_estimatefee %s\n",jprint(retjson,1));
+    decode_hex(hash.bytes,sizeof(hash),"0000000000000000005087f8845f9ed0282559017e3c6344106de15e46c07acd");
+    if ( (retjson= electrum_getheader(hash)) != 0 )
+        printf("electrum_getheader %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_getchunk(hash)) != 0 )
+        printf("electrum_getchunk %s\n",jprint(retjson,1));
+    decode_hex(hash.bytes,sizeof(hash),"b967a7d55889fe11e993430921574ec6379bc8ce712a652c3fcb66c6be6e925c");
+    if ( (retjson= electrum_getmerkle(hash)) != 0 )
+        printf("electrum_getmerkle %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_transaction(hash)) != 0 )
+        printf("electrum_transaction %s\n",jprint(retjson,1));
+    addr = "14NeevLME8UAANiTCVNgvDrynUPk1VcQKb";
+    //if ( (retjson= electrum_address_subscribe(addr)) != 0 )
+    //    printf("electrum_address_subscribe %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_address_gethistory(addr)) != 0 )
+        printf("electrum_address_gethistory %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_address_getmempool(addr)) != 0 )
+        printf("electrum_address_getmempool %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_address_getbalance(addr)) != 0 )
+        printf("electrum_address_getbalance %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_address_listunspent(addr)) != 0 )
+        printf("electrum_address_listunspent %s\n",jprint(retjson,1));
+    script = "76a914b598062b55362952720718e7da584a46a27bedee88ac";
+    //if ( (retjson= electrum_script_subscribe(script)) != 0 )
+    //    printf("electrum_script_subscribe %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_script_gethistory(script)) != 0 )
+        printf("electrum_script_gethistory %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_script_getmempool(script)) != 0 )
+        printf("electrum_script_getmempool %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_script_getbalance(script)) != 0 )
+        printf("electrum_script_getbalance %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_script_listunspent(script)) != 0 )
+        printf("electrum_script_listunspent %s\n",jprint(retjson,1));
+
+    if ( (retjson= electrum_addpeer("electrum.be")) != 0 )
+        printf("electrum_addpeer %s\n",jprint(retjson,1));
+    if ( (retjson= electrum_sendrawtransaction("0100000001b7e6d69a0fd650926bd5fbe63cc8578d976c25dbdda8dd61db5e05b0de4041fe000000006b483045022100de3ae8f43a2a026bb46f6b09b890861f8aadcb16821f0b01126d70fa9ae134e4022000925a842073484f1056c7fc97399f2bbddb9beb9e49aca76835cdf6e9c91ef3012103cf5ce3233e6d6e22291ebef454edff2b37a714aed685ce94a7eb4f83d8e4254dffffffff014c4eaa0b000000001976a914b598062b55362952720718e7da584a46a27bedee88ac00000000")) != 0 )
+        printf("electrum_sendrawtransaction %s\n",jprint(retjson,1));
+}
