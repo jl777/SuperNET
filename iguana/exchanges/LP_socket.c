@@ -213,7 +213,7 @@ int32_t LP_socketsend(int32_t sock,uint8_t *serialized,int32_t len)
             if ( remains > 0 )
                 printf("%d LP_socket sent.%d remains.%d of len.%d\n",sock,numsent,remains,len);
         }
-        printf("(%s): numsent.%d vs remains.%d len.%d sock.%d\n",serialized,numsent,remains,len,sock);
+        printf("numsent.%d vs remains.%d len.%d sock.%d\n",numsent,remains,len,sock);
     }
     return(len);
 }
@@ -259,7 +259,7 @@ void LP_dedicatedloop(int32_t (*recvfunc)(char *ipaddr,char *str,int32_t len),ch
         {
             *sendstrp = 0;
             printf("sending.(%s)\n",str);
-            if ( LP_socketsend(sock,(uint8_t *)str,(int32_t)strlen(str+1)) <= 0 )
+            if ( LP_socketsend(sock,(uint8_t *)str,(int32_t)strlen(str)+1) <= 0 )
             {
                 printf("%s:%u is dead\n",ipaddr,port);
                 closesocket(sock);
