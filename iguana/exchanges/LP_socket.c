@@ -362,10 +362,9 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     return(item != 0);
 }
 
-void LP_dedicatedloop(char *symbol,char *ipaddr,uint16_t port)
+void LP_dedicatedloop(void *arg)
 {
-    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct stritem *sitem; struct electrum_info *ep;
-    ep = LP_electrum_info(symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10);
+    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct stritem *sitem; struct electrum_info *ep = arg;
     printf("ep.%p for %s:%u num.%d\n",ep,ep->ipaddr,ep->port,Num_electrums);
     while ( ep->sock >= 0 )
     {

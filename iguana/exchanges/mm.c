@@ -799,12 +799,17 @@ void LP_main(void *ptr)
 
 int main(int argc, const char * argv[])
 {
-    char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
+    char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase; struct electrum_info *ep;
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
     cJSON *retjson,*loginjson; int32_t i;
     OS_init();
+    ep = LP_electrum_info("BTC","46.4.125.2",50001,IGUANA_MAXPACKETSIZE * 10); //88.198.241.196"
+    if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
+    {
+        printf("error launching LP_main (%s)\n",jprint(retjson,0));
+        exit(-1);
+    } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
     printf("call test\n");
-    LP_dedicatedloop("BTC","46.4.125.2",50001);//88.198.241.196",50001);
     if ( (1) )
     {
         electrum_test();
