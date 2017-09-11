@@ -257,10 +257,12 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
     portable_mutex_lock(&LP_electrummutex);
     if ( ep == 0 )
     {
+        printf("find random electrum.%s\n",symbol);
         memset(rbuf,0,sizeof(rbuf));
         recent_ep = 0;
         recent = (uint32_t)time(NULL) - 300;
         for (i=0; i<Num_electrums; i++)
+        {
             if ( strcmp(symbol,ep->symbol) == 0 && ep->sock >= 0 )
             {
                 if ( ep->lasttime > recent )
@@ -275,6 +277,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
                     recent_ep = ep;
                 }
             }
+        }
         ep = recent_ep;
         printf("n.%d recent.%p\n",n,ep);
         if ( n > 0 )
@@ -365,7 +368,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 void LP_dedicatedloop(void *arg)
 {
     struct pollfd fds; int32_t i,len,flag,timeout = 10; struct stritem *sitem; struct electrum_info *ep = arg;
-    printf("ep.%p for %s:%u num.%d\n",ep,ep->ipaddr,ep->port,Num_electrums);
+    printf("ep.%p sock.%d for %s:%u num.%d %p\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums);
     while ( ep->sock >= 0 )
     {
         flag = 0;
@@ -399,6 +402,7 @@ void LP_dedicatedloop(void *arg)
                 usleep(100000);
         }
     }
+    printf("close %s:%u\n",ep->ipaddr,ep->port);
     if ( Num_electrums > 0 )
     {
         portable_mutex_lock(&LP_electrummutex);
@@ -434,6 +438,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
     if ( ep != 0 )
     {
         sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
+        printf("stratumreq.(%s)\n",stratumreq);
         ep->buf[0] = 0;
         sitem = (struct stritem *)queueitem(stratumreq);
         sitem->DL.type = ep->stratumid++;
@@ -514,7 +519,10 @@ void electrum_test()
 {
     cJSON *retjson; bits256 hash; struct electrum_info *ep = 0; char *addr,*script,*symbol = "BTC";
     while ( Num_electrums == 0 )
+    {
         sleep(1);
+        printf("Num_electrums %p -> %d\n",&Num_electrums,Num_electrums);
+    }
     printf("found electrum server\n");
     if ( (retjson= electrum_version(symbol,ep,0)) != 0 )
         printf("electrum_version %s\n",jprint(retjson,1));
