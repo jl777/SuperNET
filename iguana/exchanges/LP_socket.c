@@ -298,6 +298,7 @@ struct electrum_info *LP_electrum_info(char *symbol,char *ipaddr,uint16_t port,i
     safecopy(ep->ipaddr,ipaddr,sizeof(ep->ipaddr));
     ep->port = port;
     ep->bufsize = bufsize;
+    ep->lasttime = (uint32_t)time(NULL);
     sprintf(name,"%s_%s_%u_electrum_sendQ",symbol,ipaddr,port);
     queue_enqueue(name,&ep->sendQ,queueitem(str));
     if ( (sitem= queue_dequeue(&ep->sendQ)) == 0 && strcmp(sitem->str,str) != 0 )
