@@ -806,9 +806,9 @@ int main(int argc, const char * argv[])
     ep = LP_electrum_info("BTC","46.4.125.2",50001,IGUANA_MAXPACKETSIZE * 10); //88.198.241.196"
     if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
     {
-        printf("error launching LP_main (%s)\n",jprint(retjson,0));
+        printf("error launching LP_dedicatedloop (%s:%u)\n",ep->ipaddr,ep->port);
         exit(-1);
-    } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
+    } else printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
     printf("call test\n");
     if ( (1) )
     {

@@ -377,7 +377,7 @@ void LP_dedicatedloop(void *arg)
             printf("sending.(%s)\n",sitem->str);
             if ( LP_socketsend(ep->sock,(uint8_t *)sitem->str,(int32_t)strlen(sitem->str)) <= 0 )
             {
-                printf("%s:%u is dead\n",ipaddr,port);
+                printf("%s:%u is dead\n",ep->ipaddr,ep->port);
                 closesocket(ep->sock);
                 ep->sock = -1;
                 break;
