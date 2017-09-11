@@ -276,6 +276,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
                 }
             }
         ep = recent_ep;
+        printf("n.%d recent.%p\n",n,ep);
         if ( n > 0 )
         {
             i = (rand() % n);
