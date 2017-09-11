@@ -330,7 +330,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 stritem = (struct stritem *)item;
                 if ( item->type == idnum )
                 {
-                    printf("matched idnum.%d\n",idnum);
+                    //printf("matched idnum.%d\n",idnum);
                     DL_DELETE(ep->pendingQ.list,item);
                     break;
                 }
@@ -439,7 +439,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
     if ( ep != 0 )
     {
         sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-        printf("stratumreq.(%s)\n",stratumreq);
+        //printf("stratumreq.(%s)\n",stratumreq);
         ep->buf[0] = 0;
         sitem = (struct stritem *)queueitem(stratumreq);
         sitem->DL.type = ep->stratumid++;
