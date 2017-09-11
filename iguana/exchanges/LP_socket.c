@@ -257,14 +257,14 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
     portable_mutex_lock(&LP_electrummutex);
     if ( ep == 0 )
     {
-        printf("find random electrum.%s from %d\n",symbol,Num_electrums);
+        //printf("find random electrum.%s from %d\n",symbol,Num_electrums);
         memset(rbuf,0,sizeof(rbuf));
         recent_ep = 0;
         recent = (uint32_t)time(NULL) - 300;
         for (i=0; i<Num_electrums; i++)
         {
             ep = Electrums[i];
-            if ( strcmp(symbol,ep->symbol) == 0 && ep->sock >= 0 && ep->pending == 0 )
+            if ( strcmp(symbol,ep->symbol) == 0 && ep->sock >= 0 )
             {
                 if ( ep->lasttime > recent )
                 {
@@ -280,7 +280,6 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
             }
         }
         ep = recent_ep;
-        printf("n.%d recent.%p\n",n,ep);
         if ( n > 0 )
         {
             i = (rand() % n);
