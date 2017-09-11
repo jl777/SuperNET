@@ -442,7 +442,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             sitem->retptrp = (void **)retjsonp;
         else sitem->retptrp = (void **)&retjson;
         queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
-    }
+    } else printf("couldnt find electrum server for (%s %s)\n",method,params);
     return(retjson);
 }
 
