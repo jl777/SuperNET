@@ -242,7 +242,7 @@ struct electrum_info
 {
     queue_t sendQ,pendingQ;
     int32_t bufsize,sock;
-    uint32_t stratumid,lasttime;
+    uint32_t stratumid,lasttime,pending;
     char ipaddr[64],symbol[16];
     uint16_t port;
     uint8_t buf[];
@@ -264,7 +264,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
         for (i=0; i<Num_electrums; i++)
         {
             ep = Electrums[i];
-            if ( strcmp(symbol,ep->symbol) == 0 && ep->sock >= 0 )
+            if ( strcmp(symbol,ep->symbol) == 0 && ep->sock >= 0 && ep->pending == 0 )
             {
                 if ( ep->lasttime > recent )
                 {
@@ -376,9 +376,9 @@ void LP_dedicatedloop(void *arg)
         memset(&fds,0,sizeof(fds));
         fds.fd = ep->sock;
         fds.events |= (POLLOUT | POLLIN);
-        if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 && (sitem= queue_dequeue(&ep->sendQ)) != 0 )
+        if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 && ep->pending == 0 && (sitem= queue_dequeue(&ep->sendQ)) != 0 )
         {
-            printf("sending.(%s)\n",sitem->str);
+            ep->pending = (uint32_t)time(NULL);
             if ( LP_socketsend(ep->sock,(uint8_t *)sitem->str,(int32_t)strlen(sitem->str)) <= 0 )
             {
                 printf("%s:%u is dead\n",ep->ipaddr,ep->port);
@@ -395,6 +395,7 @@ void LP_dedicatedloop(void *arg)
             {
                 if ( (len= LP_socketrecv(ep->sock,ep->buf,ep->bufsize)) > 0 )
                 {
+                    ep->pending = 0;
                     LP_recvfunc(ep,(char *)ep->buf,len);
                     flag++;
                 }
