@@ -372,7 +372,7 @@ void LP_dedicatedloop(char *symbol,char *ipaddr,uint16_t port)
         fds.events |= (POLLOUT | POLLIN);
         if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 && (sitem= queue_dequeue(&ep->sendQ)) != 0 )
         {
-            //printf("sending.(%s)\n",str);
+            printf("sending.(%s)\n",sitem->str);
             if ( LP_socketsend(ep->sock,(uint8_t *)sitem->str,(int32_t)strlen(sitem->str)) <= 0 )
             {
                 printf("%s:%u is dead\n",ipaddr,port);
