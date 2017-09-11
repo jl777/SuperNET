@@ -514,6 +514,9 @@ cJSON *electrum_getmerkle(char *symbol,struct electrum_info *ep,cJSON **retjsonp
 void electrum_test()
 {
     cJSON *retjson; bits256 hash; struct electrum_info *ep = 0; char *addr,*script,*symbol = "BTC";
+    while ( Num_electrums == 0 )
+        sleep(1);
+    printf("found electrum server\n");
     if ( (retjson= electrum_version(symbol,ep,0)) != 0 )
         printf("electrum_version %s\n",jprint(retjson,1));
     if ( (retjson= electrum_banner(symbol,ep,0)) != 0 )
