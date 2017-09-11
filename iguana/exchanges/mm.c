@@ -803,6 +803,9 @@ int main(int argc, const char * argv[])
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
     cJSON *retjson,*loginjson; int32_t i;
     OS_init();
+    printf("call test\n");
+    electrum_test();
+    getchar();
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
