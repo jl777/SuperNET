@@ -805,9 +805,12 @@ int main(int argc, const char * argv[])
     OS_init();
     printf("call test\n");
     LP_dedicatedloop("BTC","46.4.125.2",50001);//88.198.241.196",50001);
-    electrum_test();
-    while ( 1 )
-        sleep(1);
+    if ( (1) )
+    {
+        electrum_test();
+        while ( 1 )
+            sleep(1);
+    }
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
@@ -821,7 +824,7 @@ int main(int argc, const char * argv[])
             exit(-1);
         } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
-        while ( 1 )
+        while ( (1) )
             sleep(1);
         profitmargin = jdouble(retjson,"profitmargin");
         minask = jdouble(retjson,"minask");
