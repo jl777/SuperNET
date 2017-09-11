@@ -255,7 +255,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 {
     struct electrum_info *rbuf[128],*recent_ep; uint32_t recent,mostrecent = 0; int32_t i,n = 0;
     portable_mutex_lock(&LP_electrummutex);
-    if ( ep != 0 )
+    if ( ep == 0 )
     {
         memset(rbuf,0,sizeof(rbuf));
         recent_ep = 0;
