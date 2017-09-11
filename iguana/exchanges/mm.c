@@ -805,7 +805,8 @@ int main(int argc, const char * argv[])
     OS_init();
     printf("call test\n");
     electrum_test();
-    getchar();
+    while ( 1 )
+        sleep(1);
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
