@@ -804,6 +804,7 @@ int main(int argc, const char * argv[])
     cJSON *retjson,*loginjson; int32_t i;
     OS_init();
     printf("call test\n");
+    LP_dedicatedloop("BTC","46.4.125.2",50001);//88.198.241.196",50001);
     electrum_test();
     while ( 1 )
         sleep(1);
@@ -820,7 +821,6 @@ int main(int argc, const char * argv[])
             exit(-1);
         } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
-        LP_dedicatedloop("BTC","46.4.125.2",50001);//88.198.241.196",50001);
         while ( 1 )
             sleep(1);
         profitmargin = jdouble(retjson,"profitmargin");
