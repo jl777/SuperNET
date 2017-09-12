@@ -566,7 +566,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
         {
             // do callback
             stritem = (struct stritem *)item;
-            //printf("callback.%p (%s) -> (%s)\n",strjson,stritem->str,jprint(strjson,0));
+            printf("callback.%p (%s) -> (%s)\n",strjson,stritem->str,jprint(strjson,0));
             if ( stritem->retptrp != 0 )
             {
                 *((cJSON **)stritem->retptrp) = strjson;
@@ -604,6 +604,7 @@ void LP_dedicatedloop(void *arg)
                 ep->sock = -1;
                 break;
             }
+            printf("SEND.(%s) to %s:%u\n",sitem->str,ep->ipaddr,ep->port);
             queue_enqueue("pendingQ",&ep->pendingQ,(struct queueitem *)sitem);
             flag++;
         }
