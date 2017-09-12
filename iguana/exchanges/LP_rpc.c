@@ -255,10 +255,10 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
                 len = (int32_t)strlen(hexstr+1) >> 1;
                 serialized = malloc(len);
                 decode_hex(serialized,len,hexstr+1);
-                printf("DATA.(%s)\n",hexstr+1);
+                //printf("DATA.(%s)\n",hexstr+1);
                 retjson = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,sizeof(extraspace),serialized,len,0,0);
                 free(serialized);
-                printf("TX.(%s) match.%d\n",jprint(retjson,0),bits256_cmp(txid,checktxid));
+                //printf("TX.(%s) match.%d\n",jprint(retjson,0),bits256_cmp(txid,checktxid));
                 return(retjson);
             } else printf("non-hex tx.(%s)\n",hexstr);
             return(cJSON_Parse("{\"error\":\"non hex transaction\"}"));
