@@ -545,7 +545,9 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     numconfirms = -1;
     if ( (txobj= LP_gettx(symbol,txid)) != 0 )
     {
-        numconfirms = jint(txobj,"confirmations");
+        if ( coin->electrum == 0 )
+            numconfirms = jint(txobj,"confirmations");
+        else numconfirms = coin->height - jint(txobj,"height");
         free_json(txobj);
     }
     if ( numconfirms <= 0 )
@@ -556,7 +558,9 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     numconfirms = -1;
     if ( (txobj= LP_gettx(symbol,txid2)) != 0 )
     {
-        numconfirms = jint(txobj,"confirmations");
+        if ( coin->electrum == 0 )
+            numconfirms = jint(txobj,"confirmations");
+        else numconfirms = coin->height - jint(txobj,"height");
         free_json(txobj);
     }
     if ( numconfirms <= 0 )
