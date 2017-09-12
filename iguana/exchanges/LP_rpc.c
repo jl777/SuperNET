@@ -280,7 +280,6 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
         sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
         if ( (hexobj= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
-            printf("HEX.(%s)\n",jprint(hexobj,0));
             hexstr = jprint(hexobj,1);
             if ( (len= is_hexstr(hexstr,0)) > 2 )
             {
@@ -288,6 +287,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                 serialized = malloc(len);
                 decode_hex(serialized,len,hexstr);
                 LP_swap_coinaddr(coin,coinaddr,&value,serialized,len,0);
+                printf("HEX.(%s) %s %.8f\n",hexstr,coinaddr,dstr(value));
                 if ( (listjson= electrum_address_listunspent(coin->symbol,0,0,coinaddr)) != 0 )
                 {
                     if ( (array= jarray(&n,listjson,"result")) != 0 )
@@ -334,7 +334,6 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                     free_json(listjson);
                 }
             }
-            free_json(hexobj);
             return(retjson);
         }
         return(cJSON_Parse("{\"error\":\"couldnt get tx\"}"));
@@ -525,6 +524,8 @@ double LP_getestimatedrate(struct iguana_info *coin)
                 if ( retstr[0] != '-' )
                 {
                     rate = atof(retstr) / 1024.;
+                    if ( rate < 20 )
+                        rate = 20.;
                     coin->rate = rate;
                     coin->ratetime = (uint32_t)time(NULL);
                     printf("estimated rate.(%s) %s -> %.8f\n",coin->symbol,retstr,rate);
