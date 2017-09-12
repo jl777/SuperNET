@@ -266,7 +266,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
 
 cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 {
-    char buf[128],str[65],coinaddr[64],*hexstr; uint64_t value; uint8_t *serialized; cJSON *sobj,*addresses,*item,*array,*listjson,*retjson=0; int32_t i,n,v,len; bits256 t; struct iguana_info *coin;
+    char buf[128],str[65],coinaddr[64],*hexstr; uint64_t value; uint8_t *serialized; cJSON *sobj,*addresses,*item,*array,*hexobj,*listjson,*retjson=0; int32_t i,n,v,len; bits256 t; struct iguana_info *coin;
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
@@ -278,9 +278,10 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
     else
     {
         sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
-        if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
+        if ( (hexobj= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
-            hexstr = jprint(retjson,1);
+            printf("HEX.(%s)\n",jprint(hexobj,0));
+            hexstr = jprint(hexobj,1);
             if ( (len= is_hexstr(hexstr,0)) > 2 )
             {
                 len >>= 1;
@@ -333,6 +334,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                     free_json(listjson);
                 }
             }
+            free_json(hexobj);
             return(retjson);
         }
         return(cJSON_Parse("{\"error\":\"couldnt get tx\"}"));
