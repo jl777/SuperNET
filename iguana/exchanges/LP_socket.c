@@ -498,22 +498,30 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
 
 int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 {
-    cJSON *strjson,*errjson,*resultjson; char *method; int32_t height; uint32_t idnum=0; struct stritem *stritem; struct queueitem *item = 0;
+    cJSON *strjson,*errjson,*resultjson,*paramsjson; char *method; int32_t i,n,height; uint32_t idnum=0; struct stritem *stritem; struct queueitem *item = 0;
     ep->lasttime = (uint32_t)time(NULL);
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
+        resultjson = jobj(strjson,"result");
         if ( (method= jstr(strjson,"method")) != 0 )
         {
-            resultjson = jobj(strjson,"result");
             if ( strcmp(method,"blockchain.headers.subscribe") == 0 )
             {
                 printf("%p headers.(%s)\n",strjson,jprint(strjson,0));
-                if ( (height= jint(resultjson,"block_height")) > 0 && ep->heightp != 0 && ep->heighttimep != 0 )
+                if ( (paramsjson= jarray(&n,strjson,"params")) != 0 )
                 {
-                    *(ep->heightp) = height;
-                    *(ep->heighttimep) = (uint32_t)time(NULL);
-                    printf("set height.%d\n",height);
+                    for (i=0; i<n; i++)
+                        resultjson = jitem(paramsjson,i);
                 }
+            }
+        }
+        if ( resultjson != 0 )
+        {
+            if ( (height= jint(resultjson,"block_height")) > 0 && ep->heightp != 0 && ep->heighttimep != 0 )
+            {
+                *(ep->heightp) = height;
+                *(ep->heighttimep) = (uint32_t)time(NULL);
+                printf("set height.%d\n",height);
             }
         }
         idnum = juint(strjson,"id");
