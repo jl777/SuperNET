@@ -561,7 +561,7 @@ void stats_rpcloop(void *args)
     socklen_t clilen; char helpname[512],remoteaddr[64],*buf,*retstr,*space;
     struct sockaddr_in cli_addr; uint32_t ipbits,i,size = 32*IGUANA_MAXPACKETSIZE + 512;
     if ( (port= *(uint16_t *)args) == 0 )
-        port = 7779;
+        port = LP_RPCPORT;
     if ( jsonbuf == 0 )
         jsonbuf = calloc(1,IGUANA_MAXPACKETSIZE);
     while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
@@ -1022,7 +1022,7 @@ char *stats_update(FILE *logfp,char *destdir,char *statefname,char *komodofname)
 
 int main(int argc, const char * argv[])
 {
-    struct tai T; uint32_t timestamp; struct DEXstats_disp prices[365]; int32_t i,n,seconds,leftdatenum; FILE *fp,*logfp; char *filestr,*retstr,*statefname,logfname[512],komodofile[512]; uint16_t port = 7779;
+    struct tai T; uint32_t timestamp; struct DEXstats_disp prices[365]; int32_t i,n,seconds,leftdatenum; FILE *fp,*logfp; char *filestr,*retstr,*statefname,logfname[512],komodofile[512]; uint16_t port = LP_RPCPORT;
     if ( argc < 2 )
     {
         statefname = "/root/.komodo/KV/komodostate";
