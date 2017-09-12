@@ -57,6 +57,7 @@ int32_t LP_pendingswaps,LP_showwif,USERPASS_COUNTER,IAMLP = 0;
 uint32_t LP_sessionid;
 double LP_profitratio = 1.;
 bits256 LP_mypub25519,LP_mypriv25519;
+uint8_t LP_myrmd160[20];
 
 // stubs
 

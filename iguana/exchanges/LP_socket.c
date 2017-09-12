@@ -306,7 +306,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
-    char stratumreq[16384]; struct stritem *sitem; cJSON *retjson = 0;
+    char stratumreq[16384]; uint32_t expiration; struct stritem *sitem; cJSON *retjson = 0;
     if ( ep == 0 )
         ep = electrum_server(symbol,0);
     if ( ep != 0 )
@@ -319,9 +319,17 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             sitem->retptrp = (void **)retjsonp;
         else sitem->retptrp = (void **)&retjson;
         queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
-        //if ( sitem->retptrp == (void **)&retjson )
-        //    while (retjson == 0 )
-        //        usleep(10000);
+        if ( sitem->retptrp == (void **)&retjson )
+        {
+            expiration = (uint32_t)time(NULL) + timeout + 1;
+            while ( retjson == 0 && time(NULL) <= expiration )
+               usleep(10000);
+            if ( retjson == 0 )
+            {
+                printf("unexpected timeout with null retjson\n");
+                retjson = cJSON_Parse("{\"error\":\"timeout\"}");
+            }
+        }
     } else printf("couldnt find electrum server for (%s %s)\n",method,params);
     return(retjson);
 }
@@ -503,7 +511,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
         resultjson = jobj(strjson,"result");
-        //printf("result.(%s)\n",jprint(resultjson,0));
+        printf("result.(%s)\n",jprint(resultjson,0));
         if ( (method= jstr(strjson,"method")) != 0 )
         {
             if ( strcmp(method,"blockchain.headers.subscribe") == 0 )

@@ -143,6 +143,8 @@ struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
         portable_mutex_lock(&LP_pubkeymutex);
         pubp = calloc(1,sizeof(*pubp));
         pubp->pubkey = pubkey;
+        if ( bits256_cmp(LP_mypub25519,pubkey) == 0 )
+            memcpy(pubp->rmd160,LP_myrmd160,sizeof(pubp->rmd160));
         HASH_ADD_KEYPTR(hh,LP_pubkeyinfos,&pubp->pubkey,sizeof(pubp->pubkey),pubp);
         portable_mutex_unlock(&LP_pubkeymutex);
         if ( (pubp= LP_pubkeyfind(pubkey)) == 0 )
