@@ -257,9 +257,9 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
                 free(serialized);
                 printf("TX.(%s) match.%d\n",jprint(retjson,0),bits256_cmp(txid,checktxid));
                 return(retjson);
-            }
+            } else printf("non-hex tx.(%s)\n",hexstr);
             return(cJSON_Parse("{\"error\":\"non hex transaction\"}"));
-        }
+        } else printf("failed blockcjhain.transaction.get\n");
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
     }
 }
@@ -395,7 +395,9 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
     {
         sprintf(buf,"[\"%s\"]",coinaddr);
         if ( (retjson= bitcoin_json(coin,"blockchain.address.listunspent",buf)) != 0 )
-            printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
+        {
+            //printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
+        }
         return(retjson);
     }
 }
