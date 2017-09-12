@@ -295,8 +295,8 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                         for (i=0; i<n; i++)
                         {
                             item = jitem(array,i);
-                            t = jbits256(item,"txid");
-                            v = jint(item,"vout");
+                            t = jbits256(item,"tx_hash");
+                            v = jint(item,"tx_pos");
                             if ( v == vout && bits256_cmp(t,txid) == 0 )
                             {
                                 retjson = cJSON_CreateObject();
@@ -316,6 +316,8 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                                     "version": 1,
                                     "coinbase": false
                                 }*/
+                                if ( value != j64bits(item,"value") )
+                                    printf("value %llu != %llu\n",(long long)value,(long long)j64bits(item,"value"));
                                 jaddnum(retjson,"value",dstr(value));
                                 jaddbits256(retjson,"txid",t);
                                 jaddnum(retjson,"vout",v);

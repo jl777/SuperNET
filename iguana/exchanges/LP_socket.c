@@ -611,7 +611,7 @@ void LP_dedicatedloop(void *arg)
                 ep->sock = -1;
                 break;
             }
-            printf("SEND.(%s) to %s:%u\n",sitem->str,ep->ipaddr,ep->port);
+            //printf("SEND.(%s) to %s:%u\n",sitem->str,ep->ipaddr,ep->port);
             queue_enqueue("pendingQ",&ep->pendingQ,(struct queueitem *)sitem);
             flag++;
         }
