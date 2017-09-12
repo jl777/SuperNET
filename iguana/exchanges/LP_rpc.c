@@ -266,7 +266,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
 
 cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 {
-    char buf[128],str[65],coinaddr[64],*hexstr; uint8_t *serialized; cJSON *item,*array,*listjson,*retjson=0; int32_t i,n,v,len; bits256 t; struct iguana_info *coin;
+    char buf[128],str[65],coinaddr[64],*hexstr; uint64_t value; uint8_t *serialized; cJSON *sobj,*addresses,*item,*array,*listjson,*retjson=0; int32_t i,n,v,len; bits256 t; struct iguana_info *coin;
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
@@ -286,7 +286,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                 len >>= 1;
                 serialized = malloc(len);
                 decode_hex(serialized,len,hexstr);
-                LP_swap_coinaddr(coin,coinaddr,serialized,len,0);
+                LP_swap_coinaddr(coin,coinaddr,&value,serialized,len,0);
                 if ( (listjson= electrum_address_listunspent(coin->symbol,0,0,coinaddr)) != 0 )
                 {
                     if ( (array= jarray(&n,listjson,"result")) != 0 )
@@ -299,9 +299,33 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                             if ( v == vout && bits256_cmp(t,txid) == 0 )
                             {
                                 retjson = cJSON_CreateObject();
+                                /*{
+                                    "bestblock": "002f7bbe3973b735f535d472501962e86ce8dbc76c73ac5a310a905931b907fa",
+                                    "confirmations": 7,
+                                    "value": 2013.10431750,
+                                    "scriptPubKey": {
+                                        "asm": "03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828 OP_CHECKSIG",
+                                        "hex": "2103b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828ac",
+                                        "reqSigs": 1,
+                                        "type": "pubkey",
+                                        "addresses": [
+                                                      "RNJmgYaFF5DbnrNUX6pMYz9rcnDKC2tuAc"
+                                                      ]
+                                    },
+                                    "version": 1,
+                                    "coinbase": false
+                                }*/
+                                jaddnum(retjson,"value",dstr(value));
                                 jaddbits256(retjson,"txid",t);
                                 jaddnum(retjson,"vout",v);
-                                jaddstr(retjson,"address",coinaddr);
+                                addresses = cJSON_CreateArray();
+                                jaddistr(addresses,coinaddr);
+                                sobj = cJSON_CreateObject();
+                                jaddnum(sobj,"reqSigs",1);
+                                jaddstr(sobj,"type","pubkey");
+                                jadd(sobj,"addresses",addresses);
+                                jadd(retjson,"scriptPubkey",sobj);
+                                printf("GETTXOUT.(%s)\n",jprint(retjson,0));
                                 break;
                             }
                         }

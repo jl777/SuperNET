@@ -261,7 +261,7 @@ struct basilisk_swap
     
 };
 
-void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint8_t *data,int32_t datalen,int32_t vout);
+void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t vout);
 void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
 uint32_t basilisk_requestid(struct basilisk_request *rp);
 uint32_t basilisk_quoteid(struct basilisk_request *rp);
