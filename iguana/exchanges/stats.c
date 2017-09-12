@@ -561,7 +561,7 @@ void stats_rpcloop(void *args)
     socklen_t clilen; char helpname[512],remoteaddr[64],*buf,*retstr,*space;
     struct sockaddr_in cli_addr; uint32_t ipbits,i,size = 32*IGUANA_MAXPACKETSIZE + 512;
     if ( (port= *(uint16_t *)args) == 0 )
-        port = LP_RPCPORT;
+        port = 7779;
     if ( jsonbuf == 0 )
         jsonbuf = calloc(1,IGUANA_MAXPACKETSIZE);
     while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
