@@ -515,7 +515,7 @@ int32_t LP_importaddress(char *symbol,char *address)
 
 double LP_getestimatedrate(struct iguana_info *coin)
 {
-    char buf[512],*retstr; double rate = 20;
+    char buf[512],*retstr; double rate = 0.00000020;
     if ( coin == 0 )
         return(0.0001);
     if ( (strcmp(coin->symbol,"BTC") == 0 || coin->txfee == 0) )
@@ -528,8 +528,8 @@ double LP_getestimatedrate(struct iguana_info *coin)
                 if ( retstr[0] != '-' )
                 {
                     rate = atof(retstr) / 1024.;
-                    if ( rate < 20 )
-                        rate = 20.;
+                    if ( rate < 0.00000020 )
+                        rate = 0.00000020;
                     coin->rate = rate;
                     coin->ratetime = (uint32_t)time(NULL);
                     printf("estimated rate.(%s) %s -> %.8f\n",coin->symbol,retstr,rate);
