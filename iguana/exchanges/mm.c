@@ -793,7 +793,7 @@ void LP_main(void *ptr)
         LP_profitratio += profitmargin;
         if ( (port= juint(argjson,"rpcport")) < 1000 )
             port = LP_RPCPORT;
-        LPinit(port,7780,7781,7782,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+        LPinit(port,LP_RPCPORT+1,LP_RPCPORT+2,LP_RPCPORT+3,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 
