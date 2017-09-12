@@ -133,7 +133,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             else
             {
                 retjson = electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT);
-                printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
+                //printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
                 if ( (resultjson= jobj(retjson,"result")) != 0 )
                 {
                     resultjson = jduplicate(resultjson);
@@ -361,7 +361,7 @@ double LP_getestimatedrate(struct iguana_info *coin)
     char buf[512],*retstr,*result; cJSON *retjson = 0; double rate = 20;
     if ( coin != 0 && (strcmp(coin->symbol,"BTC") == 0 || coin->txfee == 0) )
     {
-        if ( coin->rate != 0. && time(NULL) > coin->ratetime+60 )
+        if ( coin->rate == 0. || time(NULL) > coin->ratetime+60 )
         {
             sprintf(buf,"[%d]",3);
             if ( (retstr= LP_apicall(coin,"estimatefee",buf)) != 0 )

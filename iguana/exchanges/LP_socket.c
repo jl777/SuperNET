@@ -511,7 +511,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
         resultjson = jobj(strjson,"result");
-        printf("result.(%s)\n",jprint(resultjson,0));
+        //printf("result.(%s)\n",jprint(resultjson,0));
         if ( (method= jstr(strjson,"method")) != 0 )
         {
             if ( strcmp(method,"blockchain.headers.subscribe") == 0 )
