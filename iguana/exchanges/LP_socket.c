@@ -295,23 +295,38 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 
 struct electrum_info *LP_electrum_info(char *symbol,char *ipaddr,uint16_t port,int32_t bufsize)
 {
-    struct electrum_info *ep; struct stritem *sitem; char name[512],*str = "init string";
-    ep = calloc(1,sizeof(*ep) + bufsize);
-    ep->sock = LP_socket(0,ipaddr,port);
-    safecopy(ep->symbol,symbol,sizeof(ep->symbol));
-    safecopy(ep->ipaddr,ipaddr,sizeof(ep->ipaddr));
-    ep->port = port;
-    ep->bufsize = bufsize;
-    ep->lasttime = (uint32_t)time(NULL);
-    sprintf(name,"%s_%s_%u_electrum_sendQ",symbol,ipaddr,port);
-    queue_enqueue(name,&ep->sendQ,queueitem(str));
-    if ( (sitem= queue_dequeue(&ep->sendQ)) == 0 && strcmp(sitem->str,str) != 0 )
-        printf("error with string sendQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
-    sprintf(name,"%s_%s_%u_electrum_pendingQ",symbol,ipaddr,port);
-    queue_enqueue(name,&ep->pendingQ,queueitem(str));
-    if ( (sitem= queue_dequeue(&ep->pendingQ)) == 0 && strcmp(sitem->str,str) != 0 )
-        printf("error with string pendingQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
-    electrum_server(symbol,ep);
+    struct electrum_info *ep=0; int32_t i; struct stritem *sitem; char name[512],*str = "init string";
+    portable_mutex_lock(&LP_electrummutex);
+    for (i=0; i<Num_electrums; i++)
+    {
+        ep = Electrums[i];
+        if ( strcmp(ep->ipaddr,ipaddr) == 0 && ep->port == port && strcmp(ep->symbol,symbol) == 0 )
+        {
+            printf("%s.(%s:%u) already an electrum server\n",symbol,ipaddr,port);
+            break;
+        }
+        ep = 0;
+    }
+    portable_mutex_unlock(&LP_electrummutex);
+    if ( ep == 0 )
+    {
+        ep = calloc(1,sizeof(*ep) + bufsize);
+        ep->sock = LP_socket(0,ipaddr,port);
+        safecopy(ep->symbol,symbol,sizeof(ep->symbol));
+        safecopy(ep->ipaddr,ipaddr,sizeof(ep->ipaddr));
+        ep->port = port;
+        ep->bufsize = bufsize;
+        ep->lasttime = (uint32_t)time(NULL);
+        sprintf(name,"%s_%s_%u_electrum_sendQ",symbol,ipaddr,port);
+        queue_enqueue(name,&ep->sendQ,queueitem(str));
+        if ( (sitem= queue_dequeue(&ep->sendQ)) == 0 && strcmp(sitem->str,str) != 0 )
+            printf("error with string sendQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
+        sprintf(name,"%s_%s_%u_electrum_pendingQ",symbol,ipaddr,port);
+        queue_enqueue(name,&ep->pendingQ,queueitem(str));
+        if ( (sitem= queue_dequeue(&ep->pendingQ)) == 0 && strcmp(sitem->str,str) != 0 )
+            printf("error with string pendingQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
+        electrum_server(symbol,ep);
+    }
     return(ep);
 }
 
