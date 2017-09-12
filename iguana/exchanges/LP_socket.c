@@ -312,7 +312,6 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
     if ( ep != 0 )
     {
         sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-        //printf("stratumreq.(%s)\n",stratumreq);
         ep->buf[0] = 0;
         sitem = (struct stritem *)queueitem(stratumreq);
         sitem->DL.type = ep->stratumid++;
@@ -320,6 +319,9 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             sitem->retptrp = (void **)retjsonp;
         else sitem->retptrp = (void **)&retjson;
         queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
+        if ( sitem->retptrp == (void **)&retjson )
+            while (retjson == 0 )
+                usleep(10000);
     } else printf("couldnt find electrum server for (%s %s)\n",method,params);
     return(retjson);
 }
@@ -496,16 +498,17 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
 
 int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 {
-    cJSON *strjson; char *method; int32_t height; uint32_t idnum=0; struct stritem *stritem; struct queueitem *item = 0;
+    cJSON *strjson,*errjson,*resultjson; char *method; int32_t height; uint32_t idnum=0; struct stritem *stritem; struct queueitem *item = 0;
     ep->lasttime = (uint32_t)time(NULL);
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
         if ( (method= jstr(strjson,"method")) != 0 )
         {
+            resultjson = jobj(strjson,"result");
             if ( strcmp(method,"blockchain.headers.subscribe") == 0 )
             {
-                printf("headers.(%s)\n",jprint(strjson,0));
-                if ( (height= jint(strjson,"blocks")) > 0 && ep->heightp != 0 && ep->heighttimep != 0 )
+                printf("%p headers.(%s)\n",strjson,jprint(strjson,0));
+                if ( (height= jint(resultjson,"block_height")) > 0 && ep->heightp != 0 && ep->heighttimep != 0 )
                 {
                     *(ep->heightp) = height;
                     *(ep->heighttimep) = (uint32_t)time(NULL);
@@ -530,12 +533,13 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 {
                     DL_DELETE(ep->pendingQ.list,item);
                     printf("expired (%s)\n",stritem->str);
-                    strjson = cJSON_CreateObject();
-                    jaddnum(strjson,"id",item->type);
-                    jaddstr(strjson,"error","timeout");
                     if ( stritem->retptrp != 0 )
-                        *((cJSON **)stritem->retptrp) = strjson;
-                    else free_json(strjson);
+                    {
+                        errjson = cJSON_CreateObject();
+                        jaddnum(errjson,"id",item->type);
+                        jaddstr(errjson,"error","timeout");
+                        *((cJSON **)stritem->retptrp) = errjson;
+                    };
                 }
                 item = 0;
             }
@@ -545,10 +549,12 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
         {
             // do callback
             stritem = (struct stritem *)item;
-            printf("callback (%s) -> (%s)\n",stritem->str,jprint(strjson,0));
+            printf("callback.%p (%s) -> (%s)\n",strjson,stritem->str,jprint(strjson,0));
             if ( stritem->retptrp != 0 )
+            {
                 *((cJSON **)stritem->retptrp) = strjson;
-            else free_json(strjson);
+                strjson = 0;
+            }
             free(item);
         }
         if ( strjson != 0 )
@@ -563,10 +569,8 @@ void LP_dedicatedloop(void *arg)
     if ( (coin= LP_coinfind(ep->symbol)) != 0 )
         ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
     if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,0)) != 0 )
-    {
         free_json(retjson);
-    }
-    printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums);
+    printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p %s ht.%d\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums,ep->symbol,*ep->heightp);
     while ( ep->sock >= 0 )
     {
         flag = 0;
