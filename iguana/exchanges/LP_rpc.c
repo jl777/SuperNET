@@ -112,7 +112,7 @@ char *LP_apicall(struct iguana_info *coin,char *method,char *params)
 
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
 {
-    cJSON *retjson = 0; char *retstr;
+    cJSON *resultjson,*retjson = 0; char *retstr;
     // "getinfo", "getrawmempool", "paxprice", "gettxout", "getrawtransaction", "getblock", "listunspent", "listtransactions", "validateaddress", "importprivkey"
     // bitcoind_passthru callers: "importaddress", "estimatefee", "getblockhash", "sendrawtransaction", "signrawtransaction"
     if ( coin != 0 )
@@ -134,6 +134,12 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             {
                 retjson = electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT);
                 printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
+                if ( (resultjson= jobj(retjson,"result")) != 0 )
+                {
+                    resultjson = jduplicate(resultjson);
+                    free_json(retjson);
+                    retjson = resultjson;
+                }
             }
         } else retjson = cJSON_Parse("{\"result\":\"disabled\"}");
     } else printf("bitcoin_json cant talk to NULL coin\n");
@@ -220,8 +226,16 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 cJSON *LP_gettx(char *symbol,bits256 txid)
 {
     char buf[128],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
-    return(bitcoin_json(coin,"getrawtransaction",buf));
+    if ( coin->electrum == 0 )
+    {
+        sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
+        return(bitcoin_json(coin,"getrawtransaction",buf));
+    }
+    else
+    {
+        sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
+        return(bitcoin_json(coin,"blockchain.transaction.get",buf));
+    }
 }
 
 cJSON *LP_getblock(char *symbol,bits256 txid)

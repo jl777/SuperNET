@@ -522,7 +522,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
             {
                 *(ep->heightp) = height;
                 *(ep->heighttimep) = (uint32_t)time(NULL);
-                printf(">>>>>>>>> set height.%d\n",height);
+                printf("ELECTRUM >>>>>>>>> set height.%d\n",height);
             }
         }
         idnum = juint(strjson,"id");
@@ -558,7 +558,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
         {
             // do callback
             stritem = (struct stritem *)item;
-            printf("callback.%p (%s) -> (%s)\n",strjson,stritem->str,jprint(strjson,0));
+            //printf("callback.%p (%s) -> (%s)\n",strjson,stritem->str,jprint(strjson,0));
             if ( stritem->retptrp != 0 )
             {
                 *((cJSON **)stritem->retptrp) = strjson;
