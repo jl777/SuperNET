@@ -105,9 +105,19 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
 
 char *LP_apicall(struct iguana_info *coin,char *method,char *params)
 {
+    cJSON *retjson,*resultjson;
     if ( coin->electrum != 0 )
-        return(jprint(electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT),1));
-    else return(bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params));
+    {
+        if ( (retjson= electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT)) != 0 )
+        {
+            if ( (resultjson= jobj(retjson,"result")) != 0 )
+            {
+                resultjson = jduplicate(resultjson);
+                free_json(retjson);
+                return(jprint(resultjson,1));
+            } else return(jprint(retjson,1));
+        } return(clonestr("{\"error\":\"electrum no response\"}"));
+    } else return(bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params));
 }
 
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
@@ -358,27 +368,23 @@ int32_t LP_importaddress(char *symbol,char *address)
 
 double LP_getestimatedrate(struct iguana_info *coin)
 {
-    char buf[512],*retstr,*result; cJSON *retjson = 0; double rate = 20;
+    char buf[512],*retstr; double rate = 20;
     if ( coin != 0 && (strcmp(coin->symbol,"BTC") == 0 || coin->txfee == 0) )
     {
         if ( coin->rate == 0. || time(NULL) > coin->ratetime+60 )
         {
             sprintf(buf,"[%d]",3);
+            printf("estimate fee\n");
             if ( (retstr= LP_apicall(coin,"estimatefee",buf)) != 0 )
             {
-                if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                    result = jstr(retjson,"result");
-                else result = retstr;
-                if ( result[0] != '-' )
+                if ( retstr[0] != '-' )
                 {
-                    rate = atof(result) / 1024.;
+                    rate = atof(retstr) / 1024.;
                     coin->rate = rate;
                     coin->ratetime = (uint32_t)time(NULL);
-                    printf("estimated rate.(%s) %s -> %.8f\n",coin->symbol,result,rate);
+                    printf("estimated rate.(%s) %s -> %.8f\n",coin->symbol,retstr,rate);
                 }
                 free(retstr);
-                if ( retjson != 0 )
-                    free_json(retjson);
             }
         } else rate = coin->rate;
     } else return((double)coin->txfee / LP_AVETXSIZE);
