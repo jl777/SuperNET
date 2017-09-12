@@ -298,12 +298,11 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 struct electrum_info *LP_electrum_info(char *symbol,char *ipaddr,uint16_t port,int32_t bufsize)
 {
     struct electrum_info *ep=0; int32_t i; struct stritem *sitem; char name[512],*str = "init string";
-    printf("electrum info\n");
     portable_mutex_lock(&LP_electrummutex);
     for (i=0; i<Num_electrums; i++)
     {
         ep = Electrums[i];
-        printf("i.%d %p\n",i,ep);
+        printf("i.%d %p %s %s:%u vs %s.(%s:%u)\n",i,ep,ep->symbol,ep->ipaddr,ep->port,symbol,ipaddr,port);
         if ( strcmp(ep->ipaddr,ipaddr) == 0 && ep->port == port && strcmp(ep->symbol,symbol) == 0 )
         {
             printf("%s.(%s:%u) already an electrum server\n",symbol,ipaddr,port);
