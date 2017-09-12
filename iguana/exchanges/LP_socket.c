@@ -441,8 +441,8 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
     struct electrum_info *ep; cJSON *retjson = cJSON_CreateObject();
     jaddstr(retjson,"ipaddr",ipaddr);
     jaddnum(retjson,"port",port);
-    printf("electrum server %s:%u\n",ipaddr,port);
     ep = LP_electrum_info(coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10);
+    printf("ep.%p electrum server %s:%u\n",ep,ipaddr,port);
     if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
     {
         printf("error launching LP_dedicatedloop %s.(%s:%u)\n",coin->symbol,ep->ipaddr,ep->port);
@@ -454,6 +454,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
         jaddstr(retjson,"result","success");
         coin->electrum = ep;
     }
+    printf("(%s)\n",jprint(retjson,0));
     return(retjson);
 }
 
