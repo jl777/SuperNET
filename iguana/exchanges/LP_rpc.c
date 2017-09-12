@@ -247,10 +247,12 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
         if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
             hexstr = jprint(retjson,1);
-            if ( (len= is_hexstr(hexstr,0)) > 2 )
+            if ( hexstr[0] == '"' && hexstr[strlen(hexstr)-1] == '"' )
+                hexstr[strlen(hexstr)-1] = 0;
+            if ( (len= is_hexstr(hexstr+1,0)) > 2 )
             {
                 memset(&msgtx,0,sizeof(msgtx));
-                len >>= 1;
+                len = (int32_t)strlen(hexstr+1) >> 1;
                 serialized = malloc(len);
                 decode_hex(serialized,len,hexstr);
                 retjson = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,sizeof(extraspace),serialized,len,0,0);
