@@ -541,7 +541,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
             }
         }
         idnum = juint(strjson,"id");
-        if ( 0 ) // crashes cipi's node
+        //if ( 0 ) // crashes cipi's node
         {
             portable_mutex_lock(&ep->pendingQ.mutex);
             if ( ep->pendingQ.list != 0 )
@@ -551,14 +551,14 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                     stritem = (struct stritem *)item;
                     if ( item->type == idnum )
                     {
-                        //printf("matched idnum.%d\n",idnum);
+                        printf("matched idnum.%d\n",idnum);
                         DL_DELETE(ep->pendingQ.list,item);
                         break;
                     }
-                    if ( stritem->expiration < ep->lasttime )
+                    if ( 0 && stritem->expiration < ep->lasttime )
                     {
-                        DL_DELETE(ep->pendingQ.list,item);
                         printf("expired (%s)\n",stritem->str);
+                        DL_DELETE(ep->pendingQ.list,item);
                         if ( stritem->retptrp != 0 )
                         {
                             errjson = cJSON_CreateObject();
