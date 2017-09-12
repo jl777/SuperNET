@@ -243,8 +243,8 @@ int32_t LP_socketrecv(int32_t sock,uint8_t *recvbuf,int32_t maxlen)
 struct electrum_info
 {
     queue_t sendQ,pendingQ;
-    int32_t bufsize,sock;
-    uint32_t stratumid,lasttime,pending;
+    int32_t bufsize,sock,*heightp;
+    uint32_t stratumid,lasttime,pending,*heighttimep;
     char ipaddr[64],symbol[16];
     uint16_t port;
     uint8_t buf[];
@@ -252,6 +252,14 @@ struct electrum_info
 int32_t Num_electrums;
 
 // purge timedout
+/*
+if ( (retjson= electrum_address_listunspent(symbol,ep,0,addr)) != 0 )
+you can call it like the above, where symbol is the coin, ep is the electrum server info pointer, the 0 is a callback ptr where 0 means to block till it is done
+all the API calls have the same three args
+if the callback ptr is &retjson, then on completion it will put the cJSON *ptr into it, so to spawn a bunch of calls you need to call with symbol,ep,&retjsons[i],...
+default timeout is set to 2 seconds, not sure if that is enough, on each receive from any server, requests that are timeout are purged (and if a callback set, will just return and "error" timeout JSON
+a null value for ep will make it choose a random server for that coin
+ */
 
 struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 {
@@ -295,190 +303,6 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
     return(ep);
 }
 
-struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipaddr,uint16_t port,int32_t bufsize)
-{
-    struct electrum_info *ep=0; int32_t i; struct stritem *sitem; char name[512],*str = "init string";
-    *alreadyp = 0;
-    portable_mutex_lock(&LP_electrummutex);
-    for (i=0; i<Num_electrums; i++)
-    {
-        ep = Electrums[i];
-        //printf("i.%d %p %s %s:%u vs %s.(%s:%u)\n",i,ep,ep->symbol,ep->ipaddr,ep->port,symbol,ipaddr,port);
-        if ( strcmp(ep->ipaddr,ipaddr) == 0 && ep->port == port && strcmp(ep->symbol,symbol) == 0 )
-        {
-            *alreadyp = 1;
-            printf("%s.(%s:%u) already an electrum server\n",symbol,ipaddr,port);
-            break;
-        }
-        ep = 0;
-    }
-    portable_mutex_unlock(&LP_electrummutex);
-    if ( ep == 0 )
-    {
-        ep = calloc(1,sizeof(*ep) + bufsize);
-        ep->sock = LP_socket(0,ipaddr,port);
-        safecopy(ep->symbol,symbol,sizeof(ep->symbol));
-        safecopy(ep->ipaddr,ipaddr,sizeof(ep->ipaddr));
-        ep->port = port;
-        ep->bufsize = bufsize;
-        ep->lasttime = (uint32_t)time(NULL);
-        sprintf(name,"%s_%s_%u_electrum_sendQ",symbol,ipaddr,port);
-        queue_enqueue(name,&ep->sendQ,queueitem(str));
-        if ( (sitem= queue_dequeue(&ep->sendQ)) == 0 && strcmp(sitem->str,str) != 0 )
-            printf("error with string sendQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
-        sprintf(name,"%s_%s_%u_electrum_pendingQ",symbol,ipaddr,port);
-        queue_enqueue(name,&ep->pendingQ,queueitem(str));
-        if ( (sitem= queue_dequeue(&ep->pendingQ)) == 0 && strcmp(sitem->str,str) != 0 )
-            printf("error with string pendingQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
-        electrum_server(symbol,ep);
-    }
-    return(ep);
-}
-
-int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
-{
-    cJSON *strjson; uint32_t idnum=0; struct stritem *stritem; struct queueitem *item = 0;
-    ep->lasttime = (uint32_t)time(NULL);
-    if ( (strjson= cJSON_Parse(str)) != 0 )
-    {
-        idnum = juint(strjson,"id");
-        portable_mutex_lock(&ep->pendingQ.mutex);
-        if ( ep->pendingQ.list != 0 )
-        {
-            DL_FOREACH(ep->pendingQ.list,item)
-            {
-                stritem = (struct stritem *)item;
-                if ( item->type == idnum )
-                {
-                    //printf("matched idnum.%d\n",idnum);
-                    DL_DELETE(ep->pendingQ.list,item);
-                    break;
-                }
-                if ( stritem->expiration < ep->lasttime )
-                {
-                    DL_DELETE(ep->pendingQ.list,item);
-                    printf("expired (%s)\n",stritem->str);
-                    strjson = cJSON_CreateObject();
-                    jaddnum(strjson,"id",item->type);
-                    jaddstr(strjson,"error","timeout");
-                    if ( stritem->retptrp != 0 )
-                        *((cJSON **)stritem->retptrp) = strjson;
-                    else free_json(strjson);
-                }
-                item = 0;
-            }
-        }
-        portable_mutex_unlock(&ep->pendingQ.mutex);
-        if ( item != 0 )
-        {
-            // do callback
-            stritem = (struct stritem *)item;
-            printf("callback (%s) -> (%s)\n",stritem->str,jprint(strjson,0));
-            if ( stritem->retptrp != 0 )
-                *((cJSON **)stritem->retptrp) = strjson;
-            else free_json(strjson);
-            free(item);
-        }
-        if ( strjson != 0 )
-            free_json(strjson);
-    }
-    return(item != 0);
-}
-
-void LP_dedicatedloop(void *arg)
-{
-    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct stritem *sitem; struct electrum_info *ep = arg;
-    printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums);
-    while ( ep->sock >= 0 )
-    {
-        flag = 0;
-        memset(&fds,0,sizeof(fds));
-        fds.fd = ep->sock;
-        fds.events |= (POLLOUT | POLLIN);
-        if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 && ep->pending == 0 && (sitem= queue_dequeue(&ep->sendQ)) != 0 )
-        {
-            ep->pending = (uint32_t)time(NULL);
-            if ( LP_socketsend(ep->sock,(uint8_t *)sitem->str,(int32_t)strlen(sitem->str)) <= 0 )
-            {
-                printf("%s:%u is dead\n",ep->ipaddr,ep->port);
-                closesocket(ep->sock);
-                ep->sock = -1;
-                break;
-            }
-            queue_enqueue("pendingQ",&ep->pendingQ,(struct queueitem *)sitem);
-            flag++;
-        }
-        if ( flag == 0 )
-        {
-            if ( (fds.revents & POLLIN) != 0 )
-            {
-                if ( (len= LP_socketrecv(ep->sock,ep->buf,ep->bufsize)) > 0 )
-                {
-                    ep->pending = 0;
-                    LP_recvfunc(ep,(char *)ep->buf,len);
-                    flag++;
-                }
-            }
-            if ( flag == 0 )
-                usleep(100000);
-        }
-    }
-    printf("close %s:%u\n",ep->ipaddr,ep->port);
-    if ( Num_electrums > 0 )
-    {
-        portable_mutex_lock(&LP_electrummutex);
-        for (i=0; i<Num_electrums; i++)
-        {
-            if ( Electrums[i] == ep )
-            {
-                Electrums[i] = Electrums[--Num_electrums];
-                Electrums[Num_electrums] = 0;
-                break;
-            }
-        }
-        portable_mutex_unlock(&LP_electrummutex);
-    }
-    free(ep);
-}
-
-cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
-{
-    struct electrum_info *ep; int32_t already; cJSON *retjson = cJSON_CreateObject();
-    jaddstr(retjson,"ipaddr",ipaddr);
-    jaddnum(retjson,"port",port);
-    ep = LP_electrum_info(&already,coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10);
-    if ( already == 0 )
-    {
-        if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
-        {
-            printf("error launching LP_dedicatedloop %s.(%s:%u)\n",coin->symbol,ep->ipaddr,ep->port);
-            jaddstr(retjson,"error","couldnt launch electrum thread");
-        }
-        else
-        {
-            printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
-            jaddstr(retjson,"result","success");
-            coin->electrum = ep;
-        }
-    }
-    else
-    {
-        jaddstr(retjson,"result","success");
-        jaddstr(retjson,"status","already there");
-    }
-    printf("(%s)\n",jprint(retjson,0));
-    return(retjson);
-}
-
-/*
-if ( (retjson= electrum_address_listunspent(symbol,ep,0,addr)) != 0 )
-you can call it like the above, where symbol is the coin, ep is the electrum server info pointer, the 0 is a callback ptr where 0 means to block till it is done
-all the API calls have the same three args
-if the callback ptr is &retjson, then on completion it will put the cJSON *ptr into it, so to spawn a bunch of calls you need to call with symbol,ep,&retjsons[i],...
-default timeout is set to 2 seconds, not sure if that is enough, on each receive from any server, requests that are timeout are purged (and if a callback set, will just return and "error" timeout JSON
-a null value for ep will make it choose a random server for that coin
- */
-                                                                                                                                        
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
@@ -629,3 +453,198 @@ void electrum_test()
     if ( (retjson= electrum_address_subscribe(symbol,ep,0,addr)) != 0 )
         printf("electrum_address_subscribe %s\n",jprint(retjson,1));
 }
+
+struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipaddr,uint16_t port,int32_t bufsize)
+{
+    struct electrum_info *ep=0; int32_t i; struct stritem *sitem; char name[512],*str = "init string";
+    *alreadyp = 0;
+    portable_mutex_lock(&LP_electrummutex);
+    for (i=0; i<Num_electrums; i++)
+    {
+        ep = Electrums[i];
+        //printf("i.%d %p %s %s:%u vs %s.(%s:%u)\n",i,ep,ep->symbol,ep->ipaddr,ep->port,symbol,ipaddr,port);
+        if ( strcmp(ep->ipaddr,ipaddr) == 0 && ep->port == port && strcmp(ep->symbol,symbol) == 0 )
+        {
+            *alreadyp = 1;
+            printf("%s.(%s:%u) already an electrum server\n",symbol,ipaddr,port);
+            break;
+        }
+        ep = 0;
+    }
+    portable_mutex_unlock(&LP_electrummutex);
+    if ( ep == 0 )
+    {
+        ep = calloc(1,sizeof(*ep) + bufsize);
+        ep->sock = LP_socket(0,ipaddr,port);
+        safecopy(ep->symbol,symbol,sizeof(ep->symbol));
+        safecopy(ep->ipaddr,ipaddr,sizeof(ep->ipaddr));
+        ep->port = port;
+        ep->bufsize = bufsize;
+        ep->lasttime = (uint32_t)time(NULL);
+        sprintf(name,"%s_%s_%u_electrum_sendQ",symbol,ipaddr,port);
+        queue_enqueue(name,&ep->sendQ,queueitem(str));
+        if ( (sitem= queue_dequeue(&ep->sendQ)) == 0 && strcmp(sitem->str,str) != 0 )
+            printf("error with string sendQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
+        sprintf(name,"%s_%s_%u_electrum_pendingQ",symbol,ipaddr,port);
+        queue_enqueue(name,&ep->pendingQ,queueitem(str));
+        if ( (sitem= queue_dequeue(&ep->pendingQ)) == 0 && strcmp(sitem->str,str) != 0 )
+            printf("error with string pendingQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
+        electrum_server(symbol,ep);
+    }
+    return(ep);
+}
+
+int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
+{
+    cJSON *strjson; char *method; int32_t height; uint32_t idnum=0; struct stritem *stritem; struct queueitem *item = 0;
+    ep->lasttime = (uint32_t)time(NULL);
+    if ( (strjson= cJSON_Parse(str)) != 0 )
+    {
+        if ( (method= jstr(strjson,"method")) != 0 )
+        {
+            if ( strcmp(method,"blockchain.headers.subscribe") == 0 )
+            {
+                printf("headers.(%s)\n",jprint(strjson,0));
+                if ( (height= jint(strjson,"blocks")) > 0 && ep->heightp != 0 && ep->heighttimep != 0 )
+                {
+                    *(ep->heightp) = height;
+                    *(ep->heighttimep) = (uint32_t)time(NULL);
+                    printf("set height.%d\n",height);
+                }
+            }
+        }
+        idnum = juint(strjson,"id");
+        portable_mutex_lock(&ep->pendingQ.mutex);
+        if ( ep->pendingQ.list != 0 )
+        {
+            DL_FOREACH(ep->pendingQ.list,item)
+            {
+                stritem = (struct stritem *)item;
+                if ( item->type == idnum )
+                {
+                    //printf("matched idnum.%d\n",idnum);
+                    DL_DELETE(ep->pendingQ.list,item);
+                    break;
+                }
+                if ( stritem->expiration < ep->lasttime )
+                {
+                    DL_DELETE(ep->pendingQ.list,item);
+                    printf("expired (%s)\n",stritem->str);
+                    strjson = cJSON_CreateObject();
+                    jaddnum(strjson,"id",item->type);
+                    jaddstr(strjson,"error","timeout");
+                    if ( stritem->retptrp != 0 )
+                        *((cJSON **)stritem->retptrp) = strjson;
+                    else free_json(strjson);
+                }
+                item = 0;
+            }
+        }
+        portable_mutex_unlock(&ep->pendingQ.mutex);
+        if ( item != 0 )
+        {
+            // do callback
+            stritem = (struct stritem *)item;
+            printf("callback (%s) -> (%s)\n",stritem->str,jprint(strjson,0));
+            if ( stritem->retptrp != 0 )
+                *((cJSON **)stritem->retptrp) = strjson;
+            else free_json(strjson);
+            free(item);
+        }
+        if ( strjson != 0 )
+            free_json(strjson);
+    }
+    return(item != 0);
+}
+
+void LP_dedicatedloop(void *arg)
+{
+    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct electrum_info *ep = arg;
+    if ( (coin= LP_coinfind(ep->symbol)) != 0 )
+        ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
+    if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,0)) != 0 )
+    {
+        free_json(retjson);
+    }
+    printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums);
+    while ( ep->sock >= 0 )
+    {
+        flag = 0;
+        memset(&fds,0,sizeof(fds));
+        fds.fd = ep->sock;
+        fds.events |= (POLLOUT | POLLIN);
+        if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 && ep->pending == 0 && (sitem= queue_dequeue(&ep->sendQ)) != 0 )
+        {
+            ep->pending = (uint32_t)time(NULL);
+            if ( LP_socketsend(ep->sock,(uint8_t *)sitem->str,(int32_t)strlen(sitem->str)) <= 0 )
+            {
+                printf("%s:%u is dead\n",ep->ipaddr,ep->port);
+                closesocket(ep->sock);
+                ep->sock = -1;
+                break;
+            }
+            queue_enqueue("pendingQ",&ep->pendingQ,(struct queueitem *)sitem);
+            flag++;
+        }
+        if ( flag == 0 )
+        {
+            if ( (fds.revents & POLLIN) != 0 )
+            {
+                if ( (len= LP_socketrecv(ep->sock,ep->buf,ep->bufsize)) > 0 )
+                {
+                    ep->pending = 0;
+                    LP_recvfunc(ep,(char *)ep->buf,len);
+                    flag++;
+                }
+            }
+            if ( flag == 0 )
+                usleep(100000);
+        }
+    }
+    printf("close %s:%u\n",ep->ipaddr,ep->port);
+    if ( Num_electrums > 0 )
+    {
+        portable_mutex_lock(&LP_electrummutex);
+        for (i=0; i<Num_electrums; i++)
+        {
+            if ( Electrums[i] == ep )
+            {
+                Electrums[i] = Electrums[--Num_electrums];
+                Electrums[Num_electrums] = 0;
+                break;
+            }
+        }
+        portable_mutex_unlock(&LP_electrummutex);
+    }
+    free(ep);
+}
+
+cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
+{
+    struct electrum_info *ep; int32_t already; cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"ipaddr",ipaddr);
+    jaddnum(retjson,"port",port);
+    ep = LP_electrum_info(&already,coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10);
+    if ( already == 0 )
+    {
+        if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
+        {
+            printf("error launching LP_dedicatedloop %s.(%s:%u)\n",coin->symbol,ep->ipaddr,ep->port);
+            jaddstr(retjson,"error","couldnt launch electrum thread");
+        }
+        else
+        {
+            printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
+            jaddstr(retjson,"result","success");
+            coin->electrum = ep;
+        }
+    }
+    else
+    {
+        jaddstr(retjson,"result","success");
+        jaddstr(retjson,"status","already there");
+    }
+    printf("(%s)\n",jprint(retjson,0));
+    return(retjson);
+}
+

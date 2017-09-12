@@ -103,6 +103,13 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
+char *LP_apicall(struct iguana_info *coin,char *method,char *params)
+{
+    if ( coin->electrum != 0 )
+        return(jprint(electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT),1));
+    else return(bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params));
+}
+
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
 {
     cJSON *retjson = 0; char *retstr;
@@ -113,15 +120,21 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
         //printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
         if ( coin->inactive == 0 || strcmp(method,"importprivkey") == 0  || strcmp(method,"validateaddress") == 0 )
         {
-            retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
-            if ( retstr != 0 && retstr[0] != 0 )
+            if ( coin->electrum == 0 )
             {
-                //printf("%s: %s.%s -> (%s)\n",coin->symbol,method,params,retstr);
-                retjson = cJSON_Parse(retstr);
-                free(retstr);
+                retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
+                if ( retstr != 0 && retstr[0] != 0 )
+                {
+                    //printf("%s: %s.%s -> (%s)\n",coin->symbol,method,params,retstr);
+                    retjson = cJSON_Parse(retstr);
+                    free(retstr);
+                }
             }
-            //usleep(100);
-            //printf("dpow_gettxout.(%s)\n",retstr);
+            else
+            {
+                retjson = electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT);
+                printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
+            }
         } else retjson = cJSON_Parse("{\"result\":\"disabled\"}");
     } else printf("bitcoin_json cant talk to NULL coin\n");
     return(retjson);
@@ -167,11 +180,17 @@ cJSON *LP_assethbla(char *assetid)
 
 int32_t LP_getheight(struct iguana_info *coin)
 {
-    cJSON *retjson; int32_t height = -1; //struct iguana_info *coin = LP_coinfind(symbol);
-    if ( (retjson= bitcoin_json(coin,"getinfo","[]")) != 0 )
+    cJSON *retjson; char *method = "getinfo"; int32_t height = coin->height;
+    if ( coin->electrum == 0 && time(NULL) > coin->heighttime+60 )
     {
-        height = jint(retjson,"blocks");
-        free_json(retjson);
+        if ( strcmp(coin->symbol,"BTC") == 0 )
+            method = "getblockchaininfo";
+        if ( (retjson= bitcoin_json(coin,method,"[]")) != 0 )
+        {
+            coin->height = height = jint(retjson,"blocks");
+            free_json(retjson);
+            coin->heighttime = (uint32_t)time(NULL);
+        }
     }
     return(height);
 }
@@ -315,16 +334,9 @@ int32_t LP_importaddress(char *symbol,char *address)
     return(1);
 }
 
-char *LP_apicall(struct iguana_info *coin,char *method,char *params)
-{
-    if ( coin->electrum != 0 )
-        return(jprint(electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT),1));
-    else return(bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params));
-}
-
 double LP_getestimatedrate(struct iguana_info *coin)
 {
-    char buf[512],*retstr; double rate = 20;
+    char buf[512],*retstr,*result; cJSON *retjson = 0; double rate = 20;
     if ( coin != 0 && (strcmp(coin->symbol,"BTC") == 0 || coin->txfee == 0) )
     {
         if ( coin->rate != 0. && time(NULL) > coin->ratetime+60 )
@@ -332,14 +344,19 @@ double LP_getestimatedrate(struct iguana_info *coin)
             sprintf(buf,"[%d]",3);
             if ( (retstr= LP_apicall(coin,"estimatefee",buf)) != 0 )
             {
-                if ( retstr[0] != '-' )
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                    result = jstr(retjson,"result");
+                else result = retstr;
+                if ( result[0] != '-' )
                 {
-                    rate = atof(retstr) / 1024.;
+                    rate = atof(result) / 1024.;
                     coin->rate = rate;
                     coin->ratetime = (uint32_t)time(NULL);
-                    printf("estimated rate.(%s) %s -> %.8f\n",coin->symbol,retstr,rate);
+                    printf("estimated rate.(%s) %s -> %.8f\n",coin->symbol,result,rate);
                 }
                 free(retstr);
+                if ( retjson != 0 )
+                    free_json(retjson);
             }
         } else rate = coin->rate;
     } else return((double)coin->txfee / LP_AVETXSIZE);

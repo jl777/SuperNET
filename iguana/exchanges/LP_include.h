@@ -187,8 +187,8 @@ struct iguana_info
     UT_hash_handle hh;
     portable_mutex_t txmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
-    int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock; uint16_t busport;
-    uint32_t counter,inactive,lastmempool,lastgetinfo,ratetime;
+    int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
+    uint32_t counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
