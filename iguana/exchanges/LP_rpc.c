@@ -232,7 +232,7 @@ cJSON *LP_paxprice(char *fiat)
 
 cJSON *LP_gettx(char *symbol,bits256 txid)
 {
-    char buf[128],str[65],*hexstr; int32_t len; bits256 checktxid; cJSON *retjson; struct iguana_info *coin; struct iguana_msgtx msgtx; uint8_t extraspace[8192],*serialized;
+    char buf[128],str[65],*hexstr; int32_t len; bits256 checktxid; cJSON *retjson; struct iguana_info *coin; struct iguana_msgtx msgtx; uint8_t *extraspace,*serialized;
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
@@ -256,8 +256,10 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
                 serialized = malloc(len);
                 decode_hex(serialized,len,hexstr+1);
                 //printf("DATA.(%s)\n",hexstr+1);
-                retjson = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,sizeof(extraspace),serialized,len,0,0);
+                extraspace = calloc(1,100000);
+                retjson = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,100000,serialized,len,0,0);
                 free(serialized);
+                free(extraspace);
                 //printf("TX.(%s) match.%d\n",jprint(retjson,0),bits256_cmp(txid,checktxid));
                 return(retjson);
             } else printf("non-hex tx.(%s)\n",hexstr);
