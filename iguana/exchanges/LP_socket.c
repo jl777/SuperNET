@@ -548,6 +548,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
             {
                 DL_FOREACH(ep->pendingQ.list,item)
                 {
+                    printf("idnum.%d\n",item->type);
                     stritem = (struct stritem *)item;
                     if ( item->type == idnum )
                     {
