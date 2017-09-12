@@ -307,6 +307,13 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
 {
     // queue id and string and callback
     char stratumreq[16384]; uint32_t expiration; struct stritem *sitem; cJSON *retjson = 0;
+    if ( strcmp(method,"getrawmempool") == 0 )
+    {
+        retjson = cJSON_Parse("{\"error\":\"unsupported method\"}");
+        if ( retjsonp != 0 )
+            *retjsonp = retjson;
+        return(retjson);
+    }
     if ( ep == 0 )
         ep = electrum_server(symbol,0);
     if ( ep != 0 )
