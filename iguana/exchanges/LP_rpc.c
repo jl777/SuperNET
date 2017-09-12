@@ -254,7 +254,8 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
                 memset(&msgtx,0,sizeof(msgtx));
                 len = (int32_t)strlen(hexstr+1) >> 1;
                 serialized = malloc(len);
-                decode_hex(serialized,len,hexstr);
+                decode_hex(serialized,len,hexstr+1);
+                printf("DATA.(%s)\n",hexstr+1);
                 retjson = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,sizeof(extraspace),serialized,len,0,0);
                 free(serialized);
                 printf("TX.(%s) match.%d\n",jprint(retjson,0),bits256_cmp(txid,checktxid));
