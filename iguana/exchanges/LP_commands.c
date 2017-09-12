@@ -262,7 +262,7 @@ dividends(coin, height, <args>)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     ptr->inactive = 0;
-                    return(jprint(LP_electrumserver(ptr,ipaddr,port),1));
+                    return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             else if ( strcmp(method,"snapshot") == 0 )
