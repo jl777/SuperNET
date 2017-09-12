@@ -215,6 +215,7 @@ char *LP_prices()
 
 void LP_prices_parse(cJSON *obj)
 {
+    static uint8_t zeroes[20];
     struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid; char *base,*rel,*hexstr; double askprice;
     pubkey = jbits256(obj,"pubkey");
     if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
@@ -222,7 +223,7 @@ void LP_prices_parse(cJSON *obj)
         if ( (hexstr= jstr(obj,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
         {
             decode_hex(rmd160,sizeof(rmd160),hexstr);
-            if ( memcmp(pubp->rmd160,rmd160,sizeof(rmd160)) != 0 )
+            if ( memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 && memcmp(pubp->rmd160,rmd160,sizeof(rmd160)) != 0 )
             {
                 for (i=0; i<20; i++)
                     printf("%02x",pubp->rmd160[i]);
