@@ -1,2 +1,2 @@
 source userpass
-curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"swapstatus\",\"requestid\":2291973695,\"quoteid\":3387529385}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"swapstatus\",\"requestid\":2291973695,\"quoteid\":3387529385}"
