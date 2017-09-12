@@ -541,34 +541,37 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
             }
         }
         idnum = juint(strjson,"id");
-        portable_mutex_lock(&ep->pendingQ.mutex);
-        if ( ep->pendingQ.list != 0 )
+        if ( 0 ) // crashes cipi's node
         {
-            DL_FOREACH(ep->pendingQ.list,item)
+            portable_mutex_lock(&ep->pendingQ.mutex);
+            if ( ep->pendingQ.list != 0 )
             {
-                stritem = (struct stritem *)item;
-                if ( item->type == idnum )
+                DL_FOREACH(ep->pendingQ.list,item)
                 {
-                    //printf("matched idnum.%d\n",idnum);
-                    DL_DELETE(ep->pendingQ.list,item);
-                    break;
-                }
-                if ( stritem->expiration < ep->lasttime )
-                {
-                    DL_DELETE(ep->pendingQ.list,item);
-                    printf("expired (%s)\n",stritem->str);
-                    if ( stritem->retptrp != 0 )
+                    stritem = (struct stritem *)item;
+                    if ( item->type == idnum )
                     {
-                        errjson = cJSON_CreateObject();
-                        jaddnum(errjson,"id",item->type);
-                        jaddstr(errjson,"error","timeout");
-                        *((cJSON **)stritem->retptrp) = errjson;
-                    };
+                        //printf("matched idnum.%d\n",idnum);
+                        DL_DELETE(ep->pendingQ.list,item);
+                        break;
+                    }
+                    if ( stritem->expiration < ep->lasttime )
+                    {
+                        DL_DELETE(ep->pendingQ.list,item);
+                        printf("expired (%s)\n",stritem->str);
+                        if ( stritem->retptrp != 0 )
+                        {
+                            errjson = cJSON_CreateObject();
+                            jaddnum(errjson,"id",item->type);
+                            jaddstr(errjson,"error","timeout");
+                            *((cJSON **)stritem->retptrp) = errjson;
+                        };
+                    }
+                    item = 0;
                 }
-                item = 0;
             }
+            portable_mutex_unlock(&ep->pendingQ.mutex);
         }
-        portable_mutex_unlock(&ep->pendingQ.mutex);
         if ( item != 0 )
         {
             // do callback
