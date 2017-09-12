@@ -52,6 +52,7 @@ struct LP_pubkeyinfo
     bits256 pubkey;
     double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
     uint32_t timestamp,istrusted,numerrors;
+    uint8_t rmd160[20];
 } *LP_pubkeyinfos;
 
 int32_t LP_pricevalid(double price)
@@ -171,7 +172,7 @@ char *LP_pubkey_trustset(bits256 pubkey,uint32_t trustval)
 
 cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
 {
-    int32_t baseid,relid; char *base; double price; cJSON *item,*array,*obj;
+    int32_t baseid,relid; char *base,hexstr[41]; double price; cJSON *item,*array,*obj;
     obj = cJSON_CreateObject();
     array = cJSON_CreateArray();
     for (baseid=0; baseid<LP_numpriceinfos; baseid++)
@@ -191,6 +192,8 @@ cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
         }
     }
     jaddbits256(obj,"pubkey",pubp->pubkey);
+    init_hexbytes_noT(hexstr,pubp->rmd160,sizeof(pubp->rmd160));
+    jaddstr(obj,"rmd160",hexstr);
     jaddnum(obj,"timestamp",pubp->timestamp);
     jadd(obj,"asks",array);
     if ( pubp->istrusted != 0 )
@@ -210,10 +213,21 @@ char *LP_prices()
 
 void LP_prices_parse(cJSON *obj)
 {
-    struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; int32_t i,n,relid; char *base,*rel; double askprice;
+    struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid; char *base,*rel,*hexstr; double askprice;
     pubkey = jbits256(obj,"pubkey");
     if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
     {
+        if ( (hexstr= jstr(obj,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
+        {
+            decode_hex(rmd160,sizeof(rmd160),hexstr);
+            if ( memcmp(pubp->rmd160,rmd160,sizeof(rmd160)) != 0 )
+            {
+                for (i=0; i<20; i++)
+                    printf("%02x",pubp->rmd160[i]);
+                char str[65]; printf(" -> rmd160.(%s) for %s\n",hexstr,bits256_str(str,pubkey));
+                memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
+            }
+        }
         if ( (timestamp= juint(obj,"timestamp")) > pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
         {
             pubp->timestamp = timestamp;

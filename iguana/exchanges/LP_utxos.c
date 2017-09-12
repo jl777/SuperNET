@@ -567,11 +567,6 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( dispflag != 0 )
         printf("%.8f %.8f %s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",dstr(val),dstr(val2),coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
     dispflag = 1;
-    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,txid,vout,txid2,vout2)) >= 0 )
-    {
-        printf("utxoadd selector.%d spent in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
-        return(0);
-    }
     if ( (utxo= LP_utxofinds(iambob,txid,vout,txid2,vout2)) != 0 )
     {
         if ( 0 && LP_ismine(utxo) == 0 )
@@ -632,6 +627,11 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( LP_ismine(utxo) > 0 )
         utxo->T.sessionid = LP_sessionid;
     else utxo->T.sessionid = sessionid;
+    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,txid,vout,txid2,vout2)) >= 0 )
+    {
+        printf("utxoadd selector.%d spent in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
+        utxo->T.spentflag = (uint32_t)time(NULL);
+    }
     printf("U.%d %s %.8f %.8f addutxo.%d pubkey.%s session.%u\n",LP_mypeer!=0?LP_mypeer->numutxos:-1,symbol,dstr(value),dstr(value2),LP_ismine(utxo) > 0,bits256_str(str,utxo->pubkey),utxo->T.sessionid);
     portable_mutex_lock(&LP_utxomutex);
     HASH_ADD_KEYPTR(hh,LP_utxoinfos[iambob],utxo->key,sizeof(utxo->key),utxo);
