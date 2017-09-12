@@ -805,7 +805,7 @@ int main(int argc, const char * argv[])
     OS_init();
     if ( (1) )
     {
-        ep = LP_electrum_info(&already,"BTC","46.4.125.2",50001,IGUANA_MAXPACKETSIZE * 10); //88.198.241.196"
+        ep = LP_electrum_info(&already,"BTC","88.198.241.196",50001,IGUANA_MAXPACKETSIZE * 10); 
         if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
         {
             printf("error launching LP_dedicatedloop (%s:%u)\n",ep->ipaddr,ep->port);
