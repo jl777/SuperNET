@@ -383,7 +383,7 @@ cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
 
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
-    char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
+    char buf[128]; cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
@@ -394,7 +394,9 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
     else
     {
         sprintf(buf,"[\"%s\"]",coinaddr);
-        return(bitcoin_json(coin,"blockchain.address.listunspent",buf));
+        if ( (retjson= bitcoin_json(coin,"blockchain.address.listunspent",buf)) != 0 )
+            printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
+        return(retjson);
     }
 }
 

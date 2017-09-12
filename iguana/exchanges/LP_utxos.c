@@ -808,7 +808,7 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
 
 uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
-    char *script; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,targetval,value,total = 0;
+    char *script; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,targetval,value,total = 0;
     if ( coin == 0 )
     {
         printf("coin not active\n");
@@ -831,14 +831,27 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    satoshis = SATOSHIDEN * jdouble(item,"amount");
-                    if ( satoshis == 0 )
-                        satoshis = SATOSHIDEN * jdouble(item,"value");
-                    if ( LP_inventory_prevent(iambob,jbits256(item,"txid"),juint(item,"vout")) == 0 && jint(item,"confirmations") > 0 )
+                    if ( coin->electrum == 0 )
                     {
-                        //printf("%s\n",jprint(item,0));
-                        values[i] = satoshis;
-                    } else used++;
+                        satoshis = SATOSHIDEN * jdouble(item,"amount");
+                        if ( satoshis == 0 )
+                            satoshis = SATOSHIDEN * jdouble(item,"value");
+                        if ( LP_inventory_prevent(iambob,jbits256(item,"txid"),juint(item,"vout")) == 0 && jint(item,"confirmations") > 0 )
+                        {
+                            //printf("%s\n",jprint(item,0));
+                            values[i] = satoshis;
+                        } else used++;
+                    }
+                    else
+                    {
+                     //{"value":1000000,"tx_hash":"4e4f818c53486c0576693b4cd379849e5ff95538b38e4100f48884073a4e7636","tx_pos":0,"height":484877}
+                            satoshis = j64bits(item,"value");
+                        if ( LP_inventory_prevent(iambob,jbits256(item,"tx_hash"),juint(item,"tx_pos")) == 0 && jint(item,"height") < coin->height )
+                        {
+                            printf("%s\n",jprint(item,0));
+                            values[i] = satoshis;
+                        } else used++;
+                    }
                     //printf("%.8f ",dstr(satoshis));
                 }
                 //printf("array.%d\n",n);
@@ -850,9 +863,18 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                     if ( (i= LP_maxvalue(values,n)) >= 0 )
                     {
                         item = jitem(array,i);
-                        deposittxid = jbits256(item,"txid");
-                        depositvout = juint(item,"vout");
-                        script = jstr(item,"scriptPubKey");
+                        if ( coin->electrum == 0 )
+                        {
+                            deposittxid = jbits256(item,"txid");
+                            depositvout = juint(item,"vout");
+                            script = jstr(item,"scriptPubKey");
+                        }
+                        else
+                        {
+                            deposittxid = jbits256(item,"tx_hash");
+                            depositvout = juint(item,"tx_pos");
+                            script = coin->smartaddr;
+                        }
                         depositval = values[i];
                         values[i] = 0, used++;
                         if ( iambob == 0 )
@@ -872,9 +894,21 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         if ( i >= 0 || (i= LP_nearestvalue(iambob,values,n,targetval)) >= 0 )
                         {
                             item = jitem(array,i);
-                            txid = jbits256(item,"txid");
-                            vout = juint(item,"vout");
-                            if ( jstr(item,"scriptPubKey") != 0 && strcmp(script,jstr(item,"scriptPubKey")) == 0 )
+                            cmpflag = 0;
+                            if ( coin->electrum == 0 )
+                            {
+                                txid = jbits256(item,"txid");
+                                vout = juint(item,"vout");
+                                if ( jstr(item,"scriptPubKey") != 0 && strcmp(script,jstr(item,"scriptPubKey")) == 0 )
+                                    cmpflag = 1;
+                            }
+                            else
+                            {
+                                txid = jbits256(item,"tx_hash");
+                                vout = juint(item,"tx_pos");
+                                cmpflag = 1;
+                            }
+                            if ( cmpflag != 0 )
                             {
                                 value = values[i];
                                 values[i] = 0, used++;
