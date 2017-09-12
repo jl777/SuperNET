@@ -296,10 +296,12 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 struct electrum_info *LP_electrum_info(char *symbol,char *ipaddr,uint16_t port,int32_t bufsize)
 {
     struct electrum_info *ep=0; int32_t i; struct stritem *sitem; char name[512],*str = "init string";
+    printf("electrum info\n");
     portable_mutex_lock(&LP_electrummutex);
     for (i=0; i<Num_electrums; i++)
     {
         ep = Electrums[i];
+        printf("i.%d %p\n",i,ep);
         if ( strcmp(ep->ipaddr,ipaddr) == 0 && ep->port == port && strcmp(ep->symbol,symbol) == 0 )
         {
             printf("%s.(%s:%u) already an electrum server\n",symbol,ipaddr,port);
@@ -308,6 +310,7 @@ struct electrum_info *LP_electrum_info(char *symbol,char *ipaddr,uint16_t port,i
         ep = 0;
     }
     portable_mutex_unlock(&LP_electrummutex);
+    printf("electrum info ep.%p\n",ep);
     if ( ep == 0 )
     {
         ep = calloc(1,sizeof(*ep) + bufsize);
@@ -386,7 +389,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 void LP_dedicatedloop(void *arg)
 {
     struct pollfd fds; int32_t i,len,flag,timeout = 10; struct stritem *sitem; struct electrum_info *ep = arg;
-    printf("ep.%p sock.%d for %s:%u num.%d %p\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums);
+    printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums);
     while ( ep->sock >= 0 )
     {
         flag = 0;
