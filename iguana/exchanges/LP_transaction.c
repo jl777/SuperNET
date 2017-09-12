@@ -1160,7 +1160,7 @@ int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay)
     return(-1);
 }
 
-void LP_swap_coinaddr(struct basilisk_swap *swap,struct iguana_info *coin,char *coinaddr,uint8_t *data,int32_t datalen)
+void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint8_t *data,int32_t datalen,int32_t v)
 {
     cJSON *txobj,*vouts,*vout,*addresses,*item,*skey; uint8_t extraspace[8192]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; int32_t n,m,suppress_pubkeys = 0;
     if ( (txobj= bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&signedtxid,&msgtx,extraspace,sizeof(extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
@@ -1168,7 +1168,7 @@ void LP_swap_coinaddr(struct basilisk_swap *swap,struct iguana_info *coin,char *
         //char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,signedtxid),jprint(txobj,0));
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && n > 0 )
         {
-            vout = jitem(vouts,0);
+            vout = jitem(vouts,v);
             //printf("VOUT.(%s)\n",jprint(vout,0));
             if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
             {
@@ -1217,7 +1217,7 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
                     printf("%02x",swap->bobpayment.redeemscript[j]);
                 printf(" <- redeem.%d\n",swap->bobpayment.I.redeemlen);
                 printf(" <- GENERATED BOB PAYMENT.%d destaddr.(%s)\n",swap->bobpayment.I.datalen,swap->bobpayment.I.destaddr);
-                LP_swap_coinaddr(swap,&swap->bobcoin,checkaddr,swap->bobpayment.txbytes,swap->bobpayment.I.datalen);
+                LP_swap_coinaddr(&swap->bobcoin,checkaddr,swap->bobpayment.txbytes,swap->bobpayment.I.datalen,0);
                 if ( strcmp(swap->bobpayment.I.destaddr,checkaddr) != 0 )
                 {
                     printf("BOBPAYMENT REDEEMADDR MISMATCH??? %s != %s\n",swap->bobpayment.I.destaddr,checkaddr);
@@ -1251,7 +1251,7 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
                 for (j=0; j<swap->bobdeposit.I.datalen; j++)
                     printf("%02x",swap->bobdeposit.txbytes[j]);
                 printf(" <- GENERATED BOB DEPOSIT.%d (%s)\n",swap->bobdeposit.I.datalen,swap->bobdeposit.I.destaddr);
-                LP_swap_coinaddr(swap,&swap->bobcoin,checkaddr,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen);
+                LP_swap_coinaddr(&swap->bobcoin,checkaddr,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen,0);
                 if ( strcmp(swap->bobdeposit.I.destaddr,checkaddr) != 0 )
                 {
                     printf("BOBDEPOSIT REDEEMADDR MISMATCH??? %s != %s\n",swap->bobdeposit.I.destaddr,checkaddr);

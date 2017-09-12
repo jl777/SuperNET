@@ -533,7 +533,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
             printf("%02x",rawtx->redeemscript[i]);
         bitcoin_address(redeemaddr,rawtx->coin->taddr,rawtx->coin->p2shtype,rawtx->redeemscript,rawtx->I.redeemlen);
         printf(" received redeemscript.(%s) %s taddr.%d\n",redeemaddr,rawtx->coin->symbol,rawtx->coin->taddr);
-        LP_swap_coinaddr(swap,rawtx->coin,checkaddr,data,datalen);
+        LP_swap_coinaddr(rawtx->coin,checkaddr,data,datalen,0);
         if ( strcmp(redeemaddr,checkaddr) != 0 )
         {
             printf("REDEEMADDR MISMATCH??? %s != %s\n",redeemaddr,checkaddr);
@@ -592,7 +592,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
                     if ( rawtx == &swap->otherfee )
                     {
                         char str[65];
-                        LP_swap_coinaddr(swap,rawtx->coin,rawtx->p2shaddr,data,datalen);
+                        LP_swap_coinaddr(rawtx->coin,rawtx->p2shaddr,data,datalen,0);
                         printf("got %s txid.%s (%s) -> %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0),rawtx->p2shaddr);
                     } else bitcoin_address(rawtx->p2shaddr,rawtx->coin->taddr,rawtx->coin->p2shtype,rawtx->spendscript,hexlen);
                 }
