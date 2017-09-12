@@ -132,6 +132,8 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             }
             else
             {
+                if ( strcmp(method,"listunspent") == 0 )
+                    method = "blockchain.address.listunspent";
                 retjson = electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT);
                 printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
             }
