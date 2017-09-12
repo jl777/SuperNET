@@ -379,6 +379,13 @@ dividends(coin, height, <args>)\n\
         {
             if ( strcmp(method,"register") == 0 )
                 return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
+            else if ( base != 0 && rel != 0 && strcmp(method,"pricearray") == 0 )
+            {
+                uint32_t firsttime;
+                if ( (firsttime= juint(argjson,"firsttime")) < time(NULL)-30*24*3600 )
+                    firsttime = (uint32_t)(time(NULL)-30*24*3600);
+                return(jprint(LP_pricearray(base,rel,firsttime,juint(argjson,"lasttime"),jint(argjson,"timescale")),1));
+            }
             else if ( strcmp(method,"lookup") == 0 )
                 return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
             if ( strcmp(method,"broadcast") == 0 )
