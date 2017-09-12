@@ -665,7 +665,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"status","already there");
     }
-    printf("(%s)\n",jprint(retjson,0));
+    //printf("(%s)\n",jprint(retjson,0));
     return(retjson);
 }
 

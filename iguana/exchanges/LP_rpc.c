@@ -375,7 +375,7 @@ double LP_getestimatedrate(struct iguana_info *coin)
         {
             sprintf(buf,"[%d]",3);
             printf("estimate fee\n");
-            if ( (retstr= LP_apicall(coin,"estimatefee",buf)) != 0 )
+            if ( (retstr= LP_apicall(coin,coin->electrum==0?"estimatefee" : "blockchain.estimatefee",buf)) != 0 )
             {
                 if ( retstr[0] != '-' )
                 {
