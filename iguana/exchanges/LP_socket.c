@@ -295,23 +295,24 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
     return(ep);
 }
 
-struct electrum_info *LP_electrum_info(char *symbol,char *ipaddr,uint16_t port,int32_t bufsize)
+struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipaddr,uint16_t port,int32_t bufsize)
 {
     struct electrum_info *ep=0; int32_t i; struct stritem *sitem; char name[512],*str = "init string";
+    *alreadyp = 0;
     portable_mutex_lock(&LP_electrummutex);
     for (i=0; i<Num_electrums; i++)
     {
         ep = Electrums[i];
-        printf("i.%d %p %s %s:%u vs %s.(%s:%u)\n",i,ep,ep->symbol,ep->ipaddr,ep->port,symbol,ipaddr,port);
+        //printf("i.%d %p %s %s:%u vs %s.(%s:%u)\n",i,ep,ep->symbol,ep->ipaddr,ep->port,symbol,ipaddr,port);
         if ( strcmp(ep->ipaddr,ipaddr) == 0 && ep->port == port && strcmp(ep->symbol,symbol) == 0 )
         {
+            *alreadyp = 1;
             printf("%s.(%s:%u) already an electrum server\n",symbol,ipaddr,port);
             break;
         }
         ep = 0;
     }
     portable_mutex_unlock(&LP_electrummutex);
-    printf("electrum info ep.%p\n",ep);
     if ( ep == 0 )
     {
         ep = calloc(1,sizeof(*ep) + bufsize);
@@ -322,16 +323,13 @@ struct electrum_info *LP_electrum_info(char *symbol,char *ipaddr,uint16_t port,i
         ep->bufsize = bufsize;
         ep->lasttime = (uint32_t)time(NULL);
         sprintf(name,"%s_%s_%u_electrum_sendQ",symbol,ipaddr,port);
-        printf("create queue.%s\n",name);
         queue_enqueue(name,&ep->sendQ,queueitem(str));
         if ( (sitem= queue_dequeue(&ep->sendQ)) == 0 && strcmp(sitem->str,str) != 0 )
             printf("error with string sendQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
         sprintf(name,"%s_%s_%u_electrum_pendingQ",symbol,ipaddr,port);
-        printf("create queue.%s\n",name);
         queue_enqueue(name,&ep->pendingQ,queueitem(str));
         if ( (sitem= queue_dequeue(&ep->pendingQ)) == 0 && strcmp(sitem->str,str) != 0 )
             printf("error with string pendingQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
-        printf("call electrum server\n");
         electrum_server(symbol,ep);
     }
     return(ep);
@@ -445,21 +443,28 @@ void LP_dedicatedloop(void *arg)
 
 cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
 {
-    struct electrum_info *ep; cJSON *retjson = cJSON_CreateObject();
+    struct electrum_info *ep; int32_t already; cJSON *retjson = cJSON_CreateObject();
     jaddstr(retjson,"ipaddr",ipaddr);
     jaddnum(retjson,"port",port);
-    ep = LP_electrum_info(coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10);
-    printf("ep.%p electrum server %s:%u\n",ep,ipaddr,port);
-    if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
+    ep = LP_electrum_info(&already,coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10);
+    if ( already == 0 )
     {
-        printf("error launching LP_dedicatedloop %s.(%s:%u)\n",coin->symbol,ep->ipaddr,ep->port);
-        jaddstr(retjson,"error","couldnt launch electrum thread");
+        if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
+        {
+            printf("error launching LP_dedicatedloop %s.(%s:%u)\n",coin->symbol,ep->ipaddr,ep->port);
+            jaddstr(retjson,"error","couldnt launch electrum thread");
+        }
+        else
+        {
+            printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
+            jaddstr(retjson,"result","success");
+            coin->electrum = ep;
+        }
     }
     else
     {
-        printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
         jaddstr(retjson,"result","success");
-        coin->electrum = ep;
+        jaddstr(retjson,"status","already there");
     }
     printf("(%s)\n",jprint(retjson,0));
     return(retjson);

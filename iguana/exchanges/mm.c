@@ -801,11 +801,11 @@ int main(int argc, const char * argv[])
 {
     char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase; struct electrum_info *ep;
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
-    cJSON *retjson,*loginjson; int32_t i;
+    cJSON *retjson,*loginjson; int32_t i,already;
     OS_init();
     if ( (1) )
     {
-        ep = LP_electrum_info("BTC","46.4.125.2",50001,IGUANA_MAXPACKETSIZE * 10); //88.198.241.196"
+        ep = LP_electrum_info(&already,"BTC","46.4.125.2",50001,IGUANA_MAXPACKETSIZE * 10); //88.198.241.196"
         if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
         {
             printf("error launching LP_dedicatedloop (%s:%u)\n",ep->ipaddr,ep->port);
