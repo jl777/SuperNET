@@ -319,9 +319,9 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             sitem->retptrp = (void **)retjsonp;
         else sitem->retptrp = (void **)&retjson;
         queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
-        if ( sitem->retptrp == (void **)&retjson )
-            while (retjson == 0 )
-                usleep(10000);
+        //if ( sitem->retptrp == (void **)&retjson )
+        //    while (retjson == 0 )
+        //        usleep(10000);
     } else printf("couldnt find electrum server for (%s %s)\n",method,params);
     return(retjson);
 }
