@@ -318,13 +318,16 @@ struct electrum_info *LP_electrum_info(char *symbol,char *ipaddr,uint16_t port,i
         ep->bufsize = bufsize;
         ep->lasttime = (uint32_t)time(NULL);
         sprintf(name,"%s_%s_%u_electrum_sendQ",symbol,ipaddr,port);
+        printf("create queue.%s\n",name);
         queue_enqueue(name,&ep->sendQ,queueitem(str));
         if ( (sitem= queue_dequeue(&ep->sendQ)) == 0 && strcmp(sitem->str,str) != 0 )
             printf("error with string sendQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
         sprintf(name,"%s_%s_%u_electrum_pendingQ",symbol,ipaddr,port);
+        printf("create queue.%s\n",name);
         queue_enqueue(name,&ep->pendingQ,queueitem(str));
         if ( (sitem= queue_dequeue(&ep->pendingQ)) == 0 && strcmp(sitem->str,str) != 0 )
             printf("error with string pendingQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
+        printf("call electrum server\n");
         electrum_server(symbol,ep);
     }
     return(ep);
