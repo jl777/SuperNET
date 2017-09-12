@@ -19,25 +19,26 @@
 //  marketmaker
 //
 
-uint64_t LP_txfeecalc(char *symbol,uint64_t txfee)
+uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee)
 {
-    struct iguana_info *coin;
-    if ( strcmp(symbol,"BTC") == 0 )
+    if ( coin != 0 )
     {
-        if ( txfee == 0 && (txfee= LP_getestimatedrate(symbol) * LP_AVETXSIZE) < LP_MIN_TXFEE )
+        if ( strcmp(coin->symbol,"BTC") == 0 )
+        {
+            if ( txfee == 0 && (txfee= LP_getestimatedrate(coin) * LP_AVETXSIZE) < LP_MIN_TXFEE )
+                txfee = LP_MIN_TXFEE;
+        }
+        else txfee = coin->txfee;
+        if ( txfee < LP_MIN_TXFEE )
             txfee = LP_MIN_TXFEE;
     }
-    else if ( (coin= LP_coinfind(symbol)) != 0 )
-        txfee = coin->txfee;
-    if ( txfee < LP_MIN_TXFEE )
-        txfee = LP_MIN_TXFEE;
     return(txfee);
 }
 
 void LP_txfees(uint64_t *txfeep,uint64_t *desttxfeep,char *base,char *rel)
 {
-    *txfeep = LP_txfeecalc(base,0);
-    *desttxfeep = LP_txfeecalc(rel,0);
+    *txfeep = LP_txfeecalc(LP_coinfind(base),0);
+    *desttxfeep = LP_txfeecalc(LP_coinfind(rel),0);
 }
 
 double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
@@ -709,8 +710,8 @@ char *LP_bestfit(char *rel,double relvolume)
 char *LP_ordermatch(char *base,int64_t txfee,double maxprice,double maxvolume,char *rel,bits256 txid,int32_t vout,bits256 feetxid,int32_t feevout,int64_t desttxfee,int32_t duration)
 {
     struct LP_quoteinfo Q; int64_t bestsatoshis=0,bestdestsatoshis = 0; double ordermatchprice = 0.; struct LP_utxoinfo *autxo,*bestutxo;
-    txfee = LP_txfeecalc(base,txfee);
-    desttxfee = LP_txfeecalc(rel,desttxfee);
+    txfee = LP_txfeecalc(LP_coinfind(base),txfee);
+    desttxfee = LP_txfeecalc(LP_coinfind(rel),desttxfee);
     if ( (autxo= LP_utxopairfind(0,txid,vout,feetxid,feevout)) == 0 )
         return(clonestr("{\"error\":\"cant find alice utxopair\"}"));
     if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,SATOSHIDEN*maxvolume)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )

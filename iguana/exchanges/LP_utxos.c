@@ -296,7 +296,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
     if ( bypass != 0 )
         val = satoshis;
     else val = LP_txvalue(destaddr,symbol,txid,vout);
-    txfee = LP_txfeecalc(symbol,0);
+    txfee = LP_txfeecalc(LP_coinfind(symbol),0);
     if ( val >= satoshis && val > (1+LP_MINSIZE_TXFEEMULT)*txfee )
     {
         threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : (LP_DEXFEE(satoshis) + txfee);
@@ -524,7 +524,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("LP_utxoadd reject inactive %s\n",symbol);
         return(0);
     }
-    txfee = LP_txfeecalc(coin->symbol,0);
+    txfee = LP_txfeecalc(coin,0);
     if ( iambob != 0 && value2 < 9 * (value >> 3) + 2*txfee ) // big txfee padding
     {
         if ( value2 > 2*txfee )
@@ -817,7 +817,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
     //printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
-        txfee = LP_txfeecalc(coin->symbol,0);
+        txfee = LP_txfeecalc(coin,0);
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
             for (iambob=0; iambob<=1; iambob++)

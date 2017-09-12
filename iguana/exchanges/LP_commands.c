@@ -121,6 +121,7 @@ sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 getmessages(firsti=0, num=100)\n\
 clearmessages(firsti=0, num=100)\n\
 secretaddresses(passphrase, num=10, pubtype=60, taddr=0)\n\
+electrum(coin, ipaddr, port)\n\
 snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
@@ -255,6 +256,14 @@ dividends(coin, height, <args>)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     ptr->inactive = (uint32_t)time(NULL);
                 return(jprint(LP_coinsjson(0),1));
+            }
+            else if ( strcmp(method,"electrum") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                {
+                    ptr->inactive = 0;
+                    return(jprint(LP_electrumserver(ptr,ipaddr,port),1));
+                } else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             else if ( strcmp(method,"snapshot") == 0 )
             {

@@ -421,6 +421,26 @@ void LP_dedicatedloop(void *arg)
     free(ep);
 }
 
+cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
+{
+    struct electrum_info *ep; cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"ipaddr",ipaddr);
+    jaddnum(retjson,"port",port);
+    ep = LP_electrum_info(coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10);
+    if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
+    {
+        printf("error launching LP_dedicatedloop %s.(%s:%u)\n",coin->symbol,ep->ipaddr,ep->port);
+        jaddstr(retjson,"error","couldnt launch electrum thread");
+    }
+    else
+    {
+        printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
+        jaddstr(retjson,"result","success");
+        coin->electrum = ep;
+    }
+    return(retjson);
+}
+
 /*
 if ( (retjson= electrum_address_listunspent(symbol,ep,0,addr)) != 0 )
 you can call it like the above, where symbol is the coin, ep is the electrum server info pointer, the 0 is a callback ptr where 0 means to block till it is done

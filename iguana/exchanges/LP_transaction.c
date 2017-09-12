@@ -703,7 +703,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
             if ( strcmp(coin->symbol,"BTC") != 0 )
                 return(retval);
             len = rawtx->I.datalen;
-            newtxfee = LP_txfeecalc(coin->symbol,0);
+            newtxfee = LP_txfeecalc(coin,0);
             printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
         } else break;
         if ( strcmp(str,"myfee") == 0 )
@@ -742,7 +742,7 @@ int32_t basilisk_rawtx_sign(char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t 
             free(signedtx);
             if ( strcmp(symbol,"BTC") != 0 )
                 return(retval);
-            estimatedrate = LP_getestimatedrate(symbol);
+            estimatedrate = LP_getestimatedrate(LP_coinfind(symbol));
             newtxfee = estimatedrate * dest->I.datalen;
         } else break;
     }
@@ -786,7 +786,7 @@ char *basilisk_swap_Aspend(char *name,char *symbol,uint64_t Atxfee,uint8_t wifta
          privBn.bytes[i] = rev.bytes[31 - i];*/
         if ( (txfee= Atxfee) == 0 )
         {
-            if ( (txfee= LP_getestimatedrate(symbol) * LP_AVETXSIZE) < LP_MIN_TXFEE )
+            if ( (txfee= LP_getestimatedrate(LP_coinfind(symbol)) * LP_AVETXSIZE) < LP_MIN_TXFEE )
                 txfee = LP_MIN_TXFEE;
         }
         //txfee = LP_txfee(symbol);

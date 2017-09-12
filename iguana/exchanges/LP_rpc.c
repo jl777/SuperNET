@@ -315,21 +315,33 @@ int32_t LP_importaddress(char *symbol,char *address)
     return(1);
 }
 
-double LP_getestimatedrate(char *symbol)
+char *LP_apicall(struct iguana_info *coin,char *method,char *params)
 {
-    char buf[512],*retstr; double rate = 20; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( coin->electrum != 0 )
+        return(jprint(electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT),1));
+    else return(bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params));
+}
+
+double LP_getestimatedrate(struct iguana_info *coin)
+{
+    char buf[512],*retstr; double rate = 20;
     if ( coin != 0 && (strcmp(coin->symbol,"BTC") == 0 || coin->txfee == 0) )
     {
-        sprintf(buf,"[%d]",3);
-        if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"estimatefee",buf)) != 0 )
+        if ( coin->rate != 0. && time(NULL) > coin->ratetime+60 )
         {
-            if ( retstr[0] != '-' )
+            sprintf(buf,"[%d]",3);
+            if ( (retstr= LP_apicall(coin,"estimatefee",buf)) != 0 )
             {
-                rate = atof(retstr) / 1024.;
-                //printf("estimated rate.(%s) %s -> %.8f\n",symbol,retstr,rate);
+                if ( retstr[0] != '-' )
+                {
+                    rate = atof(retstr) / 1024.;
+                    coin->rate = rate;
+                    coin->ratetime = (uint32_t)time(NULL);
+                    printf("estimated rate.(%s) %s -> %.8f\n",coin->symbol,retstr,rate);
+                }
+                free(retstr);
             }
-            free(retstr);
-        }
+        } else rate = coin->rate;
     } else return((double)coin->txfee / LP_AVETXSIZE);
     return(SATOSHIDEN * rate);
 }

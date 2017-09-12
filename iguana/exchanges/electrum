@@ -1,0 +1,2 @@
+source userpass
+curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"electrum\",\"coin\":\"BTC\",\"ipaddr\":\"88.198.241.196\",\"port\":50001}"

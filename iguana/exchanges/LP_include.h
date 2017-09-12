@@ -188,11 +188,12 @@ struct iguana_info
     portable_mutex_t txmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock; uint16_t busport;
-    uint32_t counter,inactive,lastmempool,lastgetinfo;
+    uint32_t counter,inactive,lastmempool,lastgetinfo,ratetime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
-    double price_kmd,force,perc,goal,goalperc,relvolume;
+    double price_kmd,force,perc,goal,goalperc,relvolume,rate;
+    void *electrum;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33];
 };
@@ -283,7 +284,7 @@ int32_t LP_coinbus(uint16_t coin_busport);
 struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
-uint64_t LP_txfeecalc(char *symbol,uint64_t txfee);
+uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee);
 
 
 #endif

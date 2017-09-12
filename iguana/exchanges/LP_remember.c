@@ -615,8 +615,10 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     Adest = Bdest = AAdest = ABdest = 0;
     if ( bobcoin[0] == 0 || alicecoin[0] == 0 )
         return(0);
-    Atxfee = LP_txfeecalc(alicecoin,Atxfee);
-    Btxfee = LP_txfeecalc(bobcoin,Btxfee);
+    alice = LP_coinfind(alicecoin);
+    bob = LP_coinfind(bobcoin);
+    Atxfee = LP_txfeecalc(alice,Atxfee);
+    Btxfee = LP_txfeecalc(bob,Btxfee);
     //printf("%s %.8f txfee, %s %.8f txfee\n",alicecoin,dstr(Atxfee),bobcoin,dstr(Btxfee));
     //printf("privAm.(%s) %p/%p\n",bits256_str(str,privAm),Adest,AAdest);
     //printf("privBn.(%s) %p/%p\n",bits256_str(str,privBn),Bdest,ABdest);
@@ -624,7 +626,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     {
         if ( iambob == 0 )
         {
-            if ( (alice= LP_coinfind(alicecoin)) != 0 )
+            if ( alice != 0 )
             {
                 bitcoin_address(Adestaddr,alice->taddr,alice->pubtype,pubkey33,33);
                 AAdest = Adestaddr;
@@ -637,7 +639,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         }
         else
         {
-            if ( (bob= LP_coinfind(bobcoin)) != 0 )
+            if ( bob != 0 )
             {
                 bitcoin_address(destaddr,bob->taddr,bob->pubtype,pubkey33,33);
                 Bdest = destaddr;
