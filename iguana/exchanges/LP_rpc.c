@@ -132,8 +132,6 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             }
             else
             {
-                if ( strcmp(method,"listunspent") == 0 )
-                    method = "blockchain.address.listunspent";
                 retjson = electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT);
                 printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
             }
@@ -262,8 +260,16 @@ cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
     char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
-    return(bitcoin_json(coin,"listunspent",buf));
+    if ( coin->electrum == 0 )
+    {
+        sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
+        return(bitcoin_json(coin,"listunspent",buf));
+    }
+    else
+    {
+        sprintf(buf,"[\"%s\"]",coinaddr);
+        return(bitcoin_json(coin,"blockchain.address.listunspent",buf));
+    }
 }
 
 cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t skip)
