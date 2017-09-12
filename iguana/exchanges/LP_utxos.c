@@ -852,7 +852,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                             satoshis = j64bits(item,"value");
                         if ( LP_inventory_prevent(iambob,jbits256(item,"tx_hash"),juint(item,"tx_pos")) == 0 && jint(item,"height") < coin->height )
                         {
-                            printf("%s\n",jprint(item,0));
+                            //printf("%s\n",jprint(item,0));
                             values[i] = satoshis;
                         } else used++;
                     }
@@ -883,7 +883,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         values[i] = 0, used++;
                         if ( iambob == 0 )
                             targetval = (depositval / 776) + txfee;
-                        else targetval = (depositval / 9) * 8 + 2*txfee;
+                        else targetval = (depositval / 10) * 8 - 2*txfee;
                         printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
                         if ( depositval < (1+LP_MINSIZE_TXFEEMULT)*txfee )
                             continue;

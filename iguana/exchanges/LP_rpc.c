@@ -292,7 +292,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                 serialized = malloc(len);
                 decode_hex(serialized,len,hexstr+1);
                 LP_swap_coinaddr(coin,coinaddr,&value,serialized,len,vout);
-                printf("HEX.(%s) len.%d %s %.8f\n",hexstr+1,len,coinaddr,dstr(value));
+                //printf("HEX.(%s) len.%d %s %.8f\n",hexstr+1,len,coinaddr,dstr(value));
                 if ( (listjson= electrum_address_listunspent(coin->symbol,0,0,coinaddr)) != 0 )
                 {
                     if ( (array= jarray(&n,listjson,"result")) != 0 )
