@@ -803,7 +803,7 @@ int main(int argc, const char * argv[])
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
     cJSON *retjson,*loginjson; int32_t i;
     OS_init();
-    if ( (1) )
+    if ( (0) )
     {
         ep = LP_electrum_info("BTC","46.4.125.2",50001,IGUANA_MAXPACKETSIZE * 10); //88.198.241.196"
         if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
