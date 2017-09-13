@@ -623,7 +623,7 @@ void LP_dedicatedloop(void *arg)
                 {
                     if ( item->type == 0xffffffff )
                     {
-                        printf("purge %s\n",((struct stritem *)item)->str);
+                        printf("purge %s",((struct stritem *)item)->str);
                         DL_DELETE(ep->pendingQ.list,item);
                         free(item);
                     }

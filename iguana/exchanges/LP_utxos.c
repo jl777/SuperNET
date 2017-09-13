@@ -817,7 +817,7 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
 
 uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
-    char *script; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,targetval,value,total = 0;
+    char *script; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,value,total = 0; int64_t targetval;
     if ( coin == 0 )
     {
         printf("coin not active\n");
@@ -889,6 +889,8 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         if ( iambob == 0 )
                             targetval = (depositval / 776) + txfee;
                         else targetval = (depositval / 9) * 8 - 2*txfee;
+                        if ( targetval < txfee*2 )
+                            targetval = txfee*2
                         printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
                         if ( depositval < (1+LP_MINSIZE_TXFEEMULT)*txfee )
                             continue;
