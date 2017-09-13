@@ -554,7 +554,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                     stritem = (struct stritem *)item;
                     if ( item->type == idnum )
                     {
-                        printf("matched idnum.%d\n",idnum);
+                        //printf("matched idnum.%d\n",idnum);
                         item->type = 0xffffffff;
                         if ( stritem->retptrp != 0 )
                         {
