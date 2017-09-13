@@ -176,20 +176,13 @@ struct LP_transaction
     struct LP_outpoint outpoints[];
 };
 
-struct LP_address
-{
-    UT_hash_handle hh;
-    int64_t balance;
-    char coinaddr[40];
-};
-
 struct iguana_info
 {
     UT_hash_handle hh;
     portable_mutex_t txmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime;
+    uint32_t counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
@@ -221,6 +214,22 @@ struct LP_utxoinfo
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
     char coin[16],coinaddr[64],spendscript[256],gui[16];
+};
+
+struct LP_address_utxo
+{
+    struct LP_address_utxo *next,*prev;
+    struct _LP_utxoinfo U;
+    uint32_t height,SPV,spentflag;
+};
+
+struct LP_address
+{
+    UT_hash_handle hh;
+    struct LP_address_utxo *utxos;
+    int64_t balance;
+    uint32_t monitor;
+    char coinaddr[40];
 };
 
 struct LP_peerinfo
@@ -287,6 +296,7 @@ struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
 uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee);
+struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr);
 
 
 #endif

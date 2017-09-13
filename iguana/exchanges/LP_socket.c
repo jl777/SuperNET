@@ -321,6 +321,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
         ep->buf[0] = 0;
         sitem = (struct stritem *)queueitem(stratumreq);
+        sitem->expiration = timeout;
         sitem->DL.type = ep->stratumid++;
         if ( retjsonp != 0 )
             sitem->retptrp = (void **)retjsonp;
@@ -541,25 +542,33 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
             }
         }
         idnum = juint(strjson,"id");
-        //if ( 0 ) // crashes cipi's node
+        //if ( 0 ) // crashes cipi's node likely due to mutex across threads
         {
             portable_mutex_lock(&ep->pendingQ.mutex);
             if ( ep->pendingQ.list != 0 )
             {
                 DL_FOREACH(ep->pendingQ.list,item)
                 {
-                    printf("idnum.%d\n",item->type);
+                    if ( item->type == 0xffffffff )
+                        continue;
                     stritem = (struct stritem *)item;
                     if ( item->type == idnum )
                     {
                         printf("matched idnum.%d\n",idnum);
-                        DL_DELETE(ep->pendingQ.list,item);
+                        item->type = 0xffffffff;
+                        if ( stritem->retptrp != 0 )
+                        {
+                            *((cJSON **)stritem->retptrp) = strjson;
+                            strjson = 0;
+                        }
+                        //DL_DELETE(ep->pendingQ.list,item);
                         break;
                     }
-                    if ( 0 && stritem->expiration < ep->lasttime )
+                    if ( stritem->expiration < ep->lasttime )
                     {
                         printf("expired (%s)\n",stritem->str);
-                        DL_DELETE(ep->pendingQ.list,item);
+                        item->type = 0xffffffff;
+                        //DL_DELETE(ep->pendingQ.list,item);
                         if ( stritem->retptrp != 0 )
                         {
                             errjson = cJSON_CreateObject();
@@ -568,22 +577,9 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                             *((cJSON **)stritem->retptrp) = errjson;
                         };
                     }
-                    item = 0;
                 }
             }
             portable_mutex_unlock(&ep->pendingQ.mutex);
-        }
-        if ( item != 0 )
-        {
-            // do callback
-            stritem = (struct stritem *)item;
-            //printf("callback.%p (%s) -> (%s)\n",strjson,stritem->str,jprint(strjson,0));
-            if ( stritem->retptrp != 0 )
-            {
-                *((cJSON **)stritem->retptrp) = strjson;
-                strjson = 0;
-            }
-            free(item);
         }
         if ( strjson != 0 )
             free_json(strjson);
@@ -593,7 +589,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 
 void LP_dedicatedloop(void *arg)
 {
-    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct electrum_info *ep = arg;
+    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct queueitem *item = 0; struct electrum_info *ep = arg;
     if ( (coin= LP_coinfind(ep->symbol)) != 0 )
         ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
     if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,0)) != 0 )
@@ -615,8 +611,26 @@ void LP_dedicatedloop(void *arg)
                 ep->sock = -1;
                 break;
             }
+            if ( sitem->expiration != 0 )
+                sitem->expiration += (uint32_t)time(NULL);
+            else sitem->expiration = (uint32_t)time(NULL) + ELECTRUM_TIMEOUT;
             //printf("SEND.(%s) to %s:%u\n",sitem->str,ep->ipaddr,ep->port);
-            queue_enqueue("pendingQ",&ep->pendingQ,(struct queueitem *)sitem);
+            //queue_enqueue("pendingQ",&ep->pendingQ,(struct queueitem *)sitem);
+            portable_mutex_lock(&ep->pendingQ.mutex);
+            if ( ep->pendingQ.list != 0 )
+            {
+                DL_FOREACH(ep->pendingQ.list,item)
+                {
+                    if ( item->type == 0xffffffff )
+                    {
+                        printf("purge %s\n",((struct stritem *)item)->str);
+                        DL_DELETE(ep->pendingQ.list,item);
+                        free(item);
+                    }
+                }
+            }
+            DL_APPEND(ep->pendingQ.list,&sitem->DL);
+            portable_mutex_unlock(&ep->pendingQ.mutex);
             flag++;
         }
         if ( flag == 0 )

@@ -55,6 +55,69 @@ struct LP_pubkeyinfo
     uint8_t rmd160[20];
 } *LP_pubkeyinfos;
 
+
+struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap;
+    HASH_FIND(hh,coin->addresses,coinaddr,strlen(coinaddr),ap);
+    return(ap);
+}
+
+struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap;
+    ap = calloc(1,sizeof(*ap));
+    safecopy(ap->coinaddr,coinaddr,sizeof(ap->coinaddr));
+    HASH_ADD_KEYPTR(hh,coin->addresses,ap->coinaddr,strlen(ap->coinaddr),ap);
+    return(ap);
+}
+
+struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap;
+    if ( (ap= _LP_addressfind(coin,coinaddr)) == 0 )
+        ap = _LP_addressadd(coin,coinaddr);
+    return(ap);
+}
+
+void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value)
+{
+    struct LP_address *ap; struct LP_address_utxo *up;
+    portable_mutex_lock(&coin->txmutex);
+    if ( (ap= _LP_address(coin,coinaddr)) != 0 )
+    {
+        up = calloc(1,sizeof(*up));
+        up->U.txid = txid;
+        up->U.vout = vout;
+        up->U.value = value;
+        DL_APPEND(ap->utxos,up);
+    }
+    portable_mutex_unlock(&coin->txmutex);
+}
+
+void LP_address_monitor(struct LP_pubkeyinfo *pubp)
+{
+    struct iguana_info *coin,*tmp; char coinaddr[64]; cJSON *retjson; struct LP_address *ap;
+    HASH_ITER(hh,LP_coins,coin,tmp)
+    {
+        bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
+        portable_mutex_lock(&coin->txmutex);
+        if ( (ap= _LP_address(coin,coinaddr)) != 0 )
+        {
+            ap->monitor = (uint32_t)time(NULL);
+        }
+        portable_mutex_unlock(&coin->txmutex);
+        if ( coin->electrum != 0 )
+        {
+            if ( (retjson= electrum_address_subscribe(coin->symbol,coin->electrum,0,coinaddr)) != 0 )
+            {
+                printf("%s MONITOR.(%s)\n",coin->symbol,coinaddr);
+                free_json(retjson);
+            }
+        }
+    }
+}
+
 int32_t LP_pricevalid(double price)
 {
     if ( price > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN )
@@ -229,6 +292,7 @@ void LP_prices_parse(cJSON *obj)
                     printf("%02x",pubp->rmd160[i]);
                 char str[65]; printf(" -> rmd160.(%s) for %s\n",hexstr,bits256_str(str,pubkey));
                 memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
+                LP_address_monitor(pubp);
             }
         }
         if ( (timestamp= juint(obj,"timestamp")) > pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )

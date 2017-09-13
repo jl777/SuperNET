@@ -642,6 +642,11 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
         HASH_ADD_KEYPTR(hh2,LP_utxoinfos2[iambob],utxo->key2,sizeof(utxo->key2),utxo);
     portable_mutex_unlock(&LP_utxomutex);
+    if ( coin->electrum == 0 )
+    {
+        LP_address_utxoadd(coin,coinaddr,txid,vout,value);
+        LP_address_utxoadd(coin,coinaddr,txid2,vout2,value2);
+    }
     if ( iambob != 0 )
     {
         if ( LP_mypeer != 0 )

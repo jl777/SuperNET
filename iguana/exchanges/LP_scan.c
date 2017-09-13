@@ -19,30 +19,6 @@
 //
 
 
-struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
-{
-    struct LP_address *ap;
-    HASH_FIND(hh,coin->addresses,coinaddr,strlen(coinaddr),ap);
-    return(ap);
-}
-
-struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
-{
-    struct LP_address *ap;
-    ap = calloc(1,sizeof(*ap));
-    safecopy(ap->coinaddr,coinaddr,sizeof(ap->coinaddr));
-    HASH_ADD_KEYPTR(hh,coin->addresses,ap->coinaddr,strlen(ap->coinaddr),ap);
-    return(ap);
-}
-
-struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
-{
-    struct LP_address *ap;
-    if ( (ap= _LP_addressfind(coin,coinaddr)) == 0 )
-        ap = _LP_addressadd(coin,coinaddr);
-    return(ap);
-}
-
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid)
 {
     struct LP_transaction *tx;
