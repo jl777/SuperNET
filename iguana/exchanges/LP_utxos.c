@@ -642,7 +642,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
         HASH_ADD_KEYPTR(hh2,LP_utxoinfos2[iambob],utxo->key2,sizeof(utxo->key2),utxo);
     portable_mutex_unlock(&LP_utxomutex);
-    if ( coin->electrum == 0 )
+    if ( 0 && coin->electrum == 0 )
     {
         LP_address_utxoadd(coin,coinaddr,txid,vout,value);
         LP_address_utxoadd(coin,coinaddr,txid2,vout2,value2);
@@ -888,7 +888,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         values[i] = 0, used++;
                         if ( iambob == 0 )
                             targetval = (depositval / 776) + txfee;
-                        else targetval = (depositval / 9) * 8 - 2*txfee;
+                        else targetval = (depositval / 9) * 8 + 2*txfee;
                         if ( targetval < txfee*2 )
                             targetval = txfee*2;
                         printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
