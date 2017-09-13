@@ -521,7 +521,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     }
     if ( (coin= LP_coinfind(symbol)) == 0 || (IAMLP == 0 && coin->inactive != 0) )
     {
-        printf("LP_utxoadd reject inactive %s\n",symbol);
+        //printf("LP_utxoadd reject inactive %s\n",symbol);
         return(0);
     }
     txfee = LP_txfeecalc(coin,0);
