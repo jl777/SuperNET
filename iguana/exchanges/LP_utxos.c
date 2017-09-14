@@ -385,7 +385,7 @@ int32_t LP_inventory_prevent(int32_t iambob,bits256 txid,int32_t vout)
     {
         //if ( utxo->T.spentflag != 0 )
         {
-            char str[65]; printf("prevent adding %s/v%d to inventory\n",bits256_str(str,txid),vout);
+            char str[65]; printf("prevent adding iambob.%d %s/v%d to inventory\n",iambob,bits256_str(str,txid),vout);
             return(1);
         }
     }
@@ -875,7 +875,12 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         {
                             //printf("%s\n",jprint(item,0));
                             values[i] = satoshis;
-                        } else used++;
+                        }
+                        else
+                        {
+                            printf("skip.(%s)\n",jprint(item,0));
+                            used++;
+                        }
                     }
                     //printf("%.8f ",dstr(satoshis));
                 }
