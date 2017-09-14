@@ -786,8 +786,8 @@ cJSON *LP_inventory(char *symbol,int32_t iambob)
             u = (iambob != 0) ? utxo->deposit : utxo->fee;
             if ( LP_iseligible(&val,&val2,iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) == 0 )
             {
-                if ( utxo->T.spentflag == 0 )
-                    utxo->T.spentflag = (uint32_t)time(NULL);
+                //if ( utxo->T.spentflag == 0 )
+                //    utxo->T.spentflag = (uint32_t)time(NULL);
                 printf("%s %s ineligible %.8f %.8f\n",utxo->coin,bits256_str(str,u.txid),dstr(val),dstr(val2));
                 continue;
             }
@@ -796,7 +796,7 @@ cJSON *LP_inventory(char *symbol,int32_t iambob)
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
         }
         else if ( LP_ismine(utxo) > 0 )
-            printf("skip %s %s %d %d %d %d\n",utxo->coin,bits256_str(str,u.txid),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
+            printf("skip %s %s %d %d %d %d\n",utxo->coin,bits256_str(str,utxo->payment.txid),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
     }
     return(array);
 }
