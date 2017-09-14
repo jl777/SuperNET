@@ -326,7 +326,7 @@ void electrum_process_array(struct iguana_info *coin,cJSON *array)
                     tx->height = jint(item,"height");
                     printf(">>>>>>>>>> set %s <- height %d\n",bits256_str(str,txid),tx->height);
                 }
-                if ( (v= jint(item,"tx_pos")) >= 0 && v < tx->numvouts )
+                if ( jobj(item,"tx_pos") != 0 && jobj(item,"value") != 0 && (v= jint(item,"tx_pos")) >= 0 && v < tx->numvouts )
                 {
                     value = j64bits(item,"value");
                     if ( value != tx->outpoints[v].value )
@@ -335,7 +335,6 @@ void electrum_process_array(struct iguana_info *coin,cJSON *array)
                         tx->outpoints[v].value = value;
                     }
                 }
-                printf("v.%d numvouts.%d %.8f\n",v,tx->numvouts,dstr(tx->outpoints[v].value));
             }
         }
     }
