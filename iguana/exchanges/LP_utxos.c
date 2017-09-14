@@ -864,9 +864,10 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                     item = jitem(array,i);
                     if ( coin->electrum == 0 )
                     {
-                        satoshis = SATOSHIDEN * jdouble(item,"amount");
-                        if ( satoshis == 0 )
-                            satoshis = SATOSHIDEN * jdouble(item,"value");
+                        //satoshis = SATOSHIDEN * jdouble(item,"amount");
+                        //if ( satoshis == 0 )
+                        //    satoshis = SATOSHIDEN * jdouble(item,"value");
+                        satoshis = LP_txvalue(destaddr,coin->symbol,jbits256(item,"hash"),juint(item,"vout"));
                         if ( LP_inventory_prevent(iambob,coin->symbol,jbits256(item,"txid"),juint(item,"vout")) == 0 && jint(item,"confirmations") > 0 )
                         {
                             //printf("%s\n",jprint(item,0));
