@@ -575,6 +575,11 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         return(0);
     if ( coinaddr != 0 )
         coinaddr[0] = 0;
+    if ( (tx= LP_transactionfind(coin,txid)) == 0 )
+    {
+        LP_transactioninit(coin,txid,0);
+        LP_transactioninit(coin,txid,1);
+    }
     if ( (tx= LP_transactionfind(coin,txid)) != 0 )
     {
         if ( vout < tx->numvouts )
@@ -588,23 +593,16 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
             {
                 if ( coinaddr != 0 )
                 {
-                    value = LP_txinterestvalue(&tx->outpoints[vout].interest,coinaddr,coin,txid,vout);
+                    if ( tx->outpoints[vout].coinaddr[0] == 0 )
+                        LP_txinterestvalue(&tx->outpoints[vout].interest,tx->outpoints[vout].coinaddr,coin,txid,vout);
+                    strcpy(coinaddr,tx->outpoints[vout].coinaddr);
                     printf("(%s) return value %.8f + interest %.8f\n",coinaddr,dstr(tx->outpoints[vout].value),dstr(tx->outpoints[vout].interest));
                 }
                 return(tx->outpoints[vout].value + tx->outpoints[vout].interest);
             }
         } else printf("vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
     }
-    if ( tx == 0 )
-    {
-        LP_transactioninit(coin,txid,0);
-        LP_transactioninit(coin,txid,1);
-    }
-    if ( coinaddr == 0 )
-        coinaddr = _coinaddr;
-    value = LP_txinterestvalue(&interest,coinaddr,coin,txid,vout);
-    printf("coinaddr.(%s) value %.8f interest %.8f\n",coinaddr,dstr(value),dstr(interest));
-    return(value + interest);
+    return(0);
 }
 
 int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 searchtxid,int32_t searchvout)
