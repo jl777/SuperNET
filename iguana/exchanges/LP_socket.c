@@ -335,6 +335,7 @@ void electrum_process_array(struct iguana_info *coin,cJSON *array)
                         tx->outpoints[v].value = value;
                     }
                 }
+                printf("v.%d numvouts.%d %.8f (%s)\n",jint(item,"tx_pos"),tx->numvouts,dstr(tx->outpoints[v].value),jprint(item,0));
             }
         }
     }
