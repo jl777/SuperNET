@@ -127,6 +127,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
         vouts = jarray(&numvouts,txobj,"vout");
         if ( iter == 0 && vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins)) != 0 )
         {
+            printf("create txid numvouts.%d numvins.%d\n",numvouts,numvins);
             for (i=0; i<numvouts; i++)
             {
                 vout = jitem(vouts,i);
