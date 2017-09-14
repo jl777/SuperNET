@@ -867,7 +867,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         satoshis = SATOSHIDEN * jdouble(item,"amount");
                         if ( satoshis == 0 )
                             satoshis = SATOSHIDEN * jdouble(item,"value");
-                        if ( LP_inventory_prevent(iambob,jbits256(item,"txid"),juint(item,"vout")) == 0 && jint(item,"confirmations") > 0 )
+                        if ( LP_inventory_prevent(iambob,coin->symbol,jbits256(item,"txid"),juint(item,"vout")) == 0 && jint(item,"confirmations") > 0 )
                         {
                             //printf("%s\n",jprint(item,0));
                             values[i] = satoshis;
@@ -877,7 +877,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                     {
                      //{"value":1000000,"tx_hash":"4e4f818c53486c0576693b4cd379849e5ff95538b38e4100f48884073a4e7636","tx_pos":0,"height":484877}
                             satoshis = j64bits(item,"value");
-                        if ( LP_inventory_prevent(iambob,jbits256(item,"tx_hash"),juint(item,"tx_pos")) == 0 && jint(item,"height") < coin->height )
+                        if ( LP_inventory_prevent(iambob,coin->symbol,jbits256(item,"tx_hash"),juint(item,"tx_pos")) == 0 && jint(item,"height") < coin->height )
                         {
                             //printf("%s\n",jprint(item,0));
                             values[i] = satoshis;
