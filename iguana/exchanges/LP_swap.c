@@ -635,9 +635,9 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                 if ( suppress_swapsend == 0 )
                 {
                     retval = LP_swapsend(pairsock,swap,msgbits,sendbuf,sendlen,nextbits,rawtx->I.crcs);
-                    if ( LP_waitmempool(rawtx->coin->symbol,rawtx->I.destaddr,rawtx->I.signedtxid,LP_SWAPSTEP_TIMEOUT) < 0 )
+                    if ( LP_waitmempool(rawtx->coin->symbol,rawtx->I.destaddr,rawtx->I.signedtxid,LP_SWAPSTEP_TIMEOUT*10) < 0 )
                     {
-                        char str[65]; printf("failed to find %s %s in the mempool?\n",rawtx->name,bits256_str(str,rawtx->I.actualtxid));
+                        char str[65]; printf("failed to find %s %s %s in the mempool?\n",rawtx->name,rawtx->I.destaddr,bits256_str(str,rawtx->I.actualtxid));
                         retval = -1;
                     }
                     return(retval);
