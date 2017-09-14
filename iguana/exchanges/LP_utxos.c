@@ -291,7 +291,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
     //struct LP_utxoinfo *utxo;
     uint64_t val,val2=0,txfee,threshold=0; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct iguana_info *coin = LP_coinfind(symbol);
     destaddr[0] = destaddr2[0] = 0;
-    if ( coin != 0 && ((IAMLP != 0 && coin->inactive != 0) || coin->electrum != 0) )
+    if ( coin != 0 && IAMLP != 0 && coin->inactive != 0 )
         bypass = 1;
     if ( bypass != 0 )
         val = satoshis;
