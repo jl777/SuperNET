@@ -575,7 +575,7 @@ int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
     
 uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 {
-    struct LP_transaction *tx; struct iguana_info *coin;
+    struct LP_transaction *tx; struct iguana_info *coin; char str[65];
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
         return(0);
     if ( coinaddr != 0 )
@@ -592,7 +592,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         {
             if ( bits256_nonz(tx->outpoints[vout].spendtxid) != 0 )
             {
-                //char str[65]; printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
+                printf("LP_txvalue %s/v%d is spent\n",bits256_str(str,txid),vout);
                 return(0);
             }
             else
@@ -606,8 +606,8 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
                 }
                 return(tx->outpoints[vout].value + tx->outpoints[vout].interest);
             }
-        } else printf("vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
-    }
+        } else printf("LP_txvalue vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
+    } else printf("LP_txvalue couldnt find tx %s\n",bits256_str(str,txid));
     return(0);
 }
 
