@@ -83,6 +83,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
     destaddr[0] = 0;
     if ( (txobj= LP_gettxout(coin->symbol,txid,vout)) != 0 )
     {
+        // GETTXOUT.({"value":0.01200000,"txid":"6f5adfefad102e39f62a6bacb222ebace6ce5c084116c08a62cac1182729dd46","vout":1,"scriptPubkey":{"reqSigs":1,"type":"pubkey","addresses":["19Cq6MBaD8LY7trqs99ypqKAms3GcLs6J9"]}})
         if ( (value= jdouble(txobj,"amount")*SATOSHIDEN) == 0 && (value= jdouble(txobj,"value")*SATOSHIDEN) == 0 )
         {
             char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d\n",coin->symbol,bits256_str(str,txid),jprint(txobj,0),vout);

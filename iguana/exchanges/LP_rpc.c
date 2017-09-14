@@ -336,7 +336,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                                 jaddnum(sobj,"reqSigs",1);
                                 jaddstr(sobj,"type","pubkey");
                                 jadd(sobj,"addresses",addresses);
-                                jadd(retjson,"scriptPubkey",sobj);
+                                jadd(retjson,"scriptPubKey",sobj);
                                 printf("GETTXOUT.(%s)\n",jprint(retjson,0));
                                 break;
                             }
