@@ -244,12 +244,12 @@ char *LP_postedprice(cJSON *argjson)
 int32_t LP_quote_checkmempool(struct LP_quoteinfo *qp)
 {
     int32_t selector,spendvini; bits256 spendtxid;
-    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,qp->srccoin,qp->txid,qp->vout,qp->txid2,qp->vout2)) >= 0 )
+    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,qp->srccoin,qp->coinaddr,qp->txid,qp->vout,qp->txid2,qp->vout2)) >= 0 )
     {
         char str[65]; printf("LP_tradecommand selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
         return(-1);
     }
-    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,qp->destcoin,qp->desttxid,qp->destvout,qp->feetxid,qp->feevout)) >= 0 )
+    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,qp->destcoin,qp->destaddr,qp->desttxid,qp->destvout,qp->feetxid,qp->feevout)) >= 0 )
     {
         char str[65]; printf("LP_tradecommand dest selector.%d in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
         return(-1);

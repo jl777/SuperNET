@@ -904,7 +904,7 @@ bits256 _LP_swap_spendtxid(char *symbol,char *destaddr,char *coinaddr,bits256 ut
 
 bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t vout)
 {
-    bits256 spendtxid,txid; char *catstr,*addr; cJSON *array,*item,*item2,*txobj,*vins; int32_t i,n,m,spendvin; char coinaddr[64],str[65];
+    bits256 spendtxid; int32_t spendvin; char coinaddr[64],str[65];
     // listtransactions or listspents
     destaddr[0] = 0;
     coinaddr[0] = 0;
@@ -913,95 +913,6 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t v
         printf("spend of %s/v%d detected\n",bits256_str(str,utxotxid),vout);
     return(spendtxid);
     //char str[65]; printf("swap %s spendtxid.(%s)\n",symbol,bits256_str(str,utxotxid));
-    if ( (0) && strcmp("BTC",symbol) == 0 )
-    {
-        //[{"type":"sent","confirmations":379,"height":275311,"timestamp":1492084664,"txid":"8703c5517bc57db38134058370a14e99b8e662b99ccefa2061dea311bbd02b8b","vout":0,"amount":117.50945263,"spendtxid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","vin":0,"paid":{"type":"paid","txid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","height":275663,"timestamp":1492106024,"vouts":[{"RUDpN6PEBsE7ZFbGjUxk1W3QVsxnjBLYw6":117.50935263}]}}]
-        /*LP_swap_getcoinaddr(symbol,coinaddr,utxotxid,vout);
-        if ( coinaddr[0] != 0 )
-            spendtxid = _LP_swap_spendtxid(symbol,destaddr,coinaddr,utxotxid,vout);*/
-    }
-    else
-    {
-        if ( (array= LP_listtransactions(symbol,destaddr,1000,0)) != 0 )
-        {
-            if ( (n= cJSON_GetArraySize(array)) > 0 )
-            {
-                for (i=0; i<n; i++)
-                {
-                    if ( (item= jitem(array,i)) == 0 )
-                        continue;
-                    txid = jbits256(item,"txid");
-                    if ( vout == juint(item,"vout") && bits256_cmp(txid,utxotxid) == 0 && (addr= jstr(item,"address")) != 0 )
-                    {
-                        if ( (catstr= jstr(item,"category")) != 0 )
-                        {
-                            if (strcmp(catstr,"send") == 0 )
-                            {
-                                strncpy(destaddr,addr,63);
-                                //printf("(%s) <- (%s) item.%d.[%s]\n",destaddr,coinaddr,i,jprint(item,0));
-                                if ( coinaddr[0] != 0 )
-                                    break;
-                            }
-                            if (strcmp(catstr,"receive") == 0 )
-                            {
-                                strncpy(coinaddr,addr,63);
-                                //printf("receive dest.(%s) <- (%s)\n",destaddr,coinaddr);
-                                if ( destaddr[0] != 0 )
-                                    break;
-                            }
-                        }
-                    }
-                }
-            }
-            free_json(array);
-        }
-        if ( destaddr[0] != 0 )
-        {
-            if ( (array= LP_listtransactions(symbol,destaddr,1000,0)) != 0 )
-            {
-                if ( (n= cJSON_GetArraySize(array)) > 0 )
-                {
-                    for (i=0; i<n; i++)
-                    {
-                        if ( (item= jitem(array,i)) == 0 )
-                            continue;
-                        if ( (catstr= jstr(item,"category")) != 0 && strcmp(catstr,"send") == 0 )
-                        {
-                            txid = jbits256(item,"txid");
-                            if ( (txobj= LP_gettx(symbol,txid)) != 0 )
-                            {
-                                if ( (vins= jarray(&m,txobj,"vin")) != 0 && m > jint(item,"vout") )
-                                {
-                                    item2 = jitem(vins,jint(item,"vout"));
-                                    if ( bits256_cmp(utxotxid,jbits256(item2,"txid")) == 0 && vout == jint(item2,"vout") )
-                                    {
-                                        spendtxid = txid;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if ( i == n )
-                        printf("dpowlist: native couldnt find spendtxid for %s\n",bits256_str(str,utxotxid));
-                }
-                free_json(array);
-            }
-            if ( bits256_nonz(spendtxid) != 0 )
-                return(spendtxid);
-        }
-        /*if ( iguana_isnotarychain(symbol) >= 0 )
-        {
-            LP_swap_getcoinaddr(symbol,coinaddr,utxotxid,vout);
-            printf("fallback use DEX for native (%s) (%s)\n",coinaddr,bits256_str(str,utxotxid));
-            if ( coinaddr[0] != 0 )
-            {
-                spendtxid = _LP_swap_spendtxid(symbol,destaddr,coinaddr,utxotxid,vout);
-                printf("spendtxid.(%s)\n",bits256_str(str,spendtxid));
-            }
-        }*/
-    }
-    return(spendtxid);
 }
 
 int32_t basilisk_swap_bobredeemscript(int32_t depositflag,int32_t *secretstartp,uint8_t *redeemscript,uint32_t locktime,bits256 pubA0,bits256 pubB0,bits256 pubB1,bits256 privAm,bits256 privBn,uint8_t *secretAm,uint8_t *secretAm256,uint8_t *secretBn,uint8_t *secretBn256)
@@ -1162,7 +1073,7 @@ int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay)
 
 void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t v)
 {
-    cJSON *txobj,*vouts,*vout,*addresses,*item,*skey; uint8_t extraspace[32768]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; int32_t n,m,suppress_pubkeys = 0;
+    cJSON *txobj,*vouts,*vout,*addresses,*item,*skey; uint8_t extraspace[32768]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; double val; int32_t n,m,suppress_pubkeys = 0;
     if ( valuep != 0 )
         *valuep = 0;
     if ( (txobj= bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&signedtxid,&msgtx,extraspace,sizeof(extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
@@ -1173,8 +1084,11 @@ void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,u
             vout = jitem(vouts,v);
             if ( valuep != 0 )
             {
-                if ( (*valuep= SATOSHIDEN * jdouble(vout,"value")) == 0 )
-                    *valuep= SATOSHIDEN * jdouble(vout,"amount");
+                *valuep = 0;
+                if ( (val= jdouble(vout,"value")) < SMALLVAL )
+                    val = jdouble(vout,"amount");
+                if ( val > SMALLVAL )
+                    *valuep = (val * SATOSHIDEN + 0.0000000049);
             }
             //printf("VOUT.(%s)\n",jprint(vout,0));
             if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
@@ -1424,7 +1338,7 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
                 printf("%02x",swap->aliceclaim.txbytes[i]);
             printf(" <- aliceclaim\n");*/
             //basilisk_txlog(swap,&swap->aliceclaim,swap->I.putduration+swap->I.callduration);
-            return(LP_waitmempool(swap->bobcoin.symbol,swap->bobdeposit.I.signedtxid,10));
+            return(LP_waitmempool(swap->bobcoin.symbol,swap->bobdeposit.I.destaddr,swap->bobdeposit.I.signedtxid,10));
         } else printf("error signing aliceclaim suppress.%d vin.(%s)\n",swap->aliceclaim.I.suppress_pubkeys,swap->bobdeposit.I.destaddr);
     }
     printf("error with bobdeposit\n");
@@ -1442,7 +1356,7 @@ int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t 
         if ( bits256_nonz(swap->alicepayment.I.signedtxid) != 0 )
             swap->aliceunconf = 1;
         basilisk_dontforget_update(swap,&swap->alicepayment);
-        return(LP_waitmempool(swap->alicecoin.symbol,swap->alicepayment.I.signedtxid,10));
+        return(LP_waitmempool(swap->alicecoin.symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,10));
         //printf("import alicepayment address.(%s)\n",swap->alicepayment.p2shaddr);
         //LP_importaddress(swap->alicecoin.symbol,swap->alicepayment.p2shaddr);
         return(0);
@@ -1489,7 +1403,7 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
                 printf("%02x",swap->alicespend.txbytes[i]);
             printf(" <- alicespend\n\n");*/
             swap->I.alicespent = 1;
-            return(LP_waitmempool(swap->bobcoin.symbol,swap->bobpayment.I.signedtxid,10));
+            return(LP_waitmempool(swap->bobcoin.symbol,swap->bobpayment.I.destaddr,swap->bobpayment.I.signedtxid,10));
         } else printf("error signing aliceclaim suppress.%d vin.(%s)\n",swap->alicespend.I.suppress_pubkeys,swap->bobpayment.I.destaddr);
     }
     printf("error validating bobpayment\n");

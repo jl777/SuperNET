@@ -172,7 +172,7 @@ struct LP_outpoint { bits256 spendtxid; uint64_t value,interest; int32_t spendvi
 struct LP_transaction
 {
     UT_hash_handle hh;
-    bits256 txid; int32_t height,numvouts,numvins; uint32_t timestamp;
+    bits256 txid; int32_t height,numvouts,numvins; //uint32_t timestamp;
     struct LP_outpoint outpoints[];
 };
 
@@ -182,12 +182,12 @@ struct iguana_info
     portable_mutex_t txmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor;
+    uint32_t counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,unspenttime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag;
-    char symbol[16],smartaddr[64],userpass[1024],serverport[128];
+    char symbol[16],smartaddr[64],userpass[1024],serverport[128],lastunspent[64];
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
-    void *electrum;
+    void *electrum; void *ctx;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33];
 };
@@ -297,6 +297,11 @@ int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
 uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee);
 struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr);
+int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson);
+int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t duration);
+struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid);
+int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter);
+int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
 
 
 #endif

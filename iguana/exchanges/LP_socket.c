@@ -244,6 +244,7 @@ struct electrum_info
 {
     queue_t sendQ,pendingQ;
     int32_t bufsize,sock,*heightp;
+    struct iguana_info *coin;
     uint32_t stratumid,lasttime,pending,*heighttimep;
     char ipaddr[64],symbol[16];
     uint16_t port;
@@ -301,6 +302,30 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
     else printf("Electrum server pointer buf overflow %d\n",Num_electrums);
     portable_mutex_unlock(&LP_electrummutex);
     return(ep);
+}
+
+void electrum_process_array(struct iguana_info *coin,cJSON *array)
+{
+    int32_t i,n; bits256 txid; cJSON *item; struct LP_transaction *tx;
+    if ( array != 0 && coin != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(array,i);
+            txid = jbits256(item,"tx_hash");
+            if ( (tx= LP_transactionfind(coin,txid)) == 0 )
+            {
+                LP_transactioninit(coin,txid,0);
+                LP_transactioninit(coin,txid,1);
+                tx = LP_transactionfind(coin,txid);
+            }
+            if ( tx != 0 && tx->height <= 0 )
+            {
+                tx->height = jint(item,"height");
+                char str[65]; printf(">>>>>>>>>> set %s <- height %d\n",bits256_str(str,txid),tx->height);
+            }
+        }
+    }
 }
 
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
@@ -390,11 +415,55 @@ cJSON *electrum_script_getmempool(char *symbol,struct electrum_info *ep,cJSON **
 cJSON *electrum_script_listunspent(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *script) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.scripthash.listunspent",script,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_script_subscribe(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *script) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.scripthash.subscribe",script,ELECTRUM_TIMEOUT)); }
 
-cJSON *electrum_address_subscribe(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.subscribe",addr,ELECTRUM_TIMEOUT)); }
-cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_history",addr,ELECTRUM_TIMEOUT)); }
-cJSON *electrum_address_getmempool(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_mempool",addr,ELECTRUM_TIMEOUT)); }
-cJSON *electrum_address_getbalance(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_balance",addr,ELECTRUM_TIMEOUT)); }
-cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_address_subscribe(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
+{
+    cJSON *retjson;
+    if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.subscribe",addr,ELECTRUM_TIMEOUT)) != 0 )
+    {
+        printf("subscribe.(%s)\n",jprint(retjson,0));
+    }
+    return(retjson);
+}
+
+cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
+{
+    cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
+    retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_history",addr,ELECTRUM_TIMEOUT);
+    printf("history.(%s)\n",jprint(retjson,0));
+    electrum_process_array(coin,retjson);
+    return(retjson);
+}
+
+cJSON *electrum_address_getmempool(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
+{
+    cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
+    retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_mempool",addr,ELECTRUM_TIMEOUT);
+    //printf("MEMPOOL.(%s)\n",jprint(retjson,0));
+    electrum_process_array(coin,retjson);
+    return(retjson);
+}
+
+cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
+{
+    cJSON *retjson=0; struct iguana_info *coin = LP_coinfind(symbol);
+    //printf("electrum listunspent last.(%s lag %d)\n",coin->lastunspent,(int32_t)(time(NULL) - coin->unspenttime));
+    if ( strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+10 )
+    {
+        if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
+        {
+            printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
+            electrum_process_array(coin,retjson);
+            strcpy(coin->lastunspent,addr);
+            coin->unspenttime = (uint32_t)time(NULL);
+        }
+    }
+    return(retjson);
+}
+
+cJSON *electrum_address_getbalance(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
+{
+    return(electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_balance",addr,ELECTRUM_TIMEOUT));
+}
 
 cJSON *electrum_addpeer(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *endpoint) { return(electrum_strarg(symbol,ep,retjsonp,"server.add_peer",endpoint,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_sendrawtransaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *rawtx) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.transaction.broadcast",rawtx,ELECTRUM_TIMEOUT)); }
@@ -402,7 +471,12 @@ cJSON *electrum_sendrawtransaction(char *symbol,struct electrum_info *ep,cJSON *
 cJSON *electrum_estimatefee(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t numblocks) { return(electrum_intarg(symbol,ep,retjsonp,"blockchain.estimatefee",numblocks,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_getheader(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t n) { return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.get_header",n,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_getchunk(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t n) { return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.get_chunk",n,ELECTRUM_TIMEOUT)); }
-cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid) { return(electrum_hasharg(symbol,ep,retjsonp,"blockchain.transaction.get",txid,ELECTRUM_TIMEOUT)); }
+
+cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
+{
+    char str[65]; printf("%s TRANSACTION.(%s)\n",symbol,bits256_str(str,txid));
+    return(electrum_hasharg(symbol,ep,retjsonp,"blockchain.transaction.get",txid,ELECTRUM_TIMEOUT));
+}
 
 cJSON *electrum_getmerkle(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid,int32_t height)
 {
@@ -502,6 +576,7 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
         safecopy(ep->ipaddr,ipaddr,sizeof(ep->ipaddr));
         ep->port = port;
         ep->bufsize = bufsize;
+        ep->coin = LP_coinfind(symbol);
         ep->lasttime = (uint32_t)time(NULL);
         sprintf(name,"%s_%s_%u_electrum_sendQ",symbol,ipaddr,port);
         queue_enqueue(name,&ep->sendQ,queueitem(str));
@@ -534,6 +609,11 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                     for (i=0; i<n; i++)
                         resultjson = jitem(paramsjson,i);
                 }
+            }
+            else if ( strcmp(method,"blockchain.address.subscribe") == 0 )
+            {
+                printf("recv addr subscribe.(%s)\n",jprint(resultjson,0));
+                electrum_process_array(ep->coin,resultjson);
             }
         }
         if ( resultjson != 0 )

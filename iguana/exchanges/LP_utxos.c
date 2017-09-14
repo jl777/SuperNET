@@ -291,7 +291,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
     //struct LP_utxoinfo *utxo;
     uint64_t val,val2=0,txfee,threshold=0; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct iguana_info *coin = LP_coinfind(symbol);
     destaddr[0] = destaddr2[0] = 0;
-    if ( coin != 0 && ((IAMLP != 0 && coin->inactive != 0) || coin->electrum != 0) )
+    if ( coin != 0 && IAMLP != 0 && coin->inactive != 0 )
         bypass = 1;
     if ( bypass != 0 )
         val = satoshis;
@@ -513,7 +513,7 @@ void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,char *gui,uint32_t sessionid)
 {
-    uint64_t val,val2=0,tmpsatoshis,txfee; cJSON *txobj; int32_t spendvini,numconfirms,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    uint64_t val,val2=0,tmpsatoshis,txfee; int32_t spendvini,numconfirms,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 || sessionid == 0 )
     {
         printf("session.%u malformed addutxo %d %d %d %d %d %d %d %d %d\n",sessionid,symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
@@ -537,23 +537,13 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("trying to add Alice utxo when not mine? %s/v%d\n",bits256_str(str,txid),vout);
         return(0);
     }
-    if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
-    {
-        printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f:%.8f, value2 %.8f:%.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(val),dstr(value2),dstr(val2),dstr(tmpsatoshis));
-        return(0);
-    }
-    numconfirms = -1;
+    /*numconfirms = -1;
     if ( (txobj= LP_gettx(symbol,txid)) != 0 )
     {
         if ( coin->electrum == 0 )
             numconfirms = jint(txobj,"confirmations");
         else numconfirms = coin->height - jint(txobj,"height");
         free_json(txobj);
-    }
-    if ( numconfirms <= 0 )
-    {
-        printf("LP_utxoadd reject numconfirms.%d\n",numconfirms);
-        return(0);
     }
     numconfirms = -1;
     if ( (txobj= LP_gettx(symbol,txid2)) != 0 )
@@ -567,6 +557,29 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     {
         printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
         return(0);
+    }*/
+    if ( coin->inactive == 0 )
+    {
+        if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
+        {
+            printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f:%.8f, value2 %.8f:%.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(val),dstr(value2),dstr(val2),dstr(tmpsatoshis));
+            return(0);
+        }
+        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,0)) <= 0 )
+        {
+            printf("LP_utxoadd reject numconfirms.%d %s.%s\n",numconfirms,symbol,bits256_str(str,txid));
+            return(0);
+        }
+        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,0)) <= 0 )
+        {
+            printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
+            return(0);
+        }
+    }
+    else
+    {
+        val = value;
+        val2 = value2;
     }
     if ( dispflag != 0 )
         printf("%.8f %.8f %s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",dstr(val),dstr(val2),coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
@@ -631,7 +644,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( LP_ismine(utxo) > 0 )
         utxo->T.sessionid = LP_sessionid;
     else utxo->T.sessionid = sessionid;
-    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,txid,vout,txid2,vout2)) >= 0 )
+    if ( coin->inactive == 0 && (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,coinaddr,txid,vout,txid2,vout2)) >= 0 )
     {
         printf("utxoadd selector.%d spent in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
         utxo->T.spentflag = (uint32_t)time(NULL);
@@ -866,9 +879,9 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                 //printf("array.%d\n",n);
                 while ( used < n-1 )
                 {
-                    for (i=0; i<n; i++)
-                       printf("%.8f ",dstr(values[i]));
-                    printf("used.%d of n.%d\n",used,n);
+                    //for (i=0; i<n; i++)
+                    //   printf("%.8f ",dstr(values[i]));
+                    //printf("used.%d of n.%d\n",used,n);
                     if ( (i= LP_maxvalue(values,n)) >= 0 )
                     {
                         item = jitem(array,i);
@@ -891,7 +904,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         else targetval = (depositval / 9) * 8 + 2*txfee;
                         if ( targetval < txfee*2 )
                             targetval = txfee*2;
-                        printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
+                        //printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
                         if ( depositval < (1+LP_MINSIZE_TXFEEMULT)*txfee )
                             continue;
                         i = -1;
@@ -904,7 +917,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         }
                         if ( i >= 0 || (i= LP_nearestvalue(iambob,values,n,targetval)) >= 0 )
                         {
-                            printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
+                            //printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
                             item = jitem(array,i);
                             cmpflag = 0;
                             if ( coin->electrum == 0 )
@@ -933,7 +946,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 }
                                 else
                                 {
-                                    printf("call utxoadd\n");
+                                    //printf("call utxoadd\n");
                                     if ( (utxo= LP_utxoadd(0,mypubsock,coin->symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coin->smartaddr,mypub,LP_gui,LP_sessionid)) != 0 )
                                     {
                                     }
@@ -1041,7 +1054,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             userpub = curve25519(userpass,curve25519_basepoint9());
             printf("userpass.(%s)\n",bits256_str(USERPASS,userpub));
         }
-        if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
+        if ( coin->electrum == 0 && (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
         {
             if ( jobj(retjson,"error") != 0 )
             {

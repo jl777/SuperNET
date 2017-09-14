@@ -635,9 +635,9 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                 if ( suppress_swapsend == 0 )
                 {
                     retval = LP_swapsend(pairsock,swap,msgbits,sendbuf,sendlen,nextbits,rawtx->I.crcs);
-                    if ( LP_waitmempool(rawtx->coin->symbol,rawtx->I.signedtxid,LP_SWAPSTEP_TIMEOUT) < 0 )
+                    if ( LP_waitmempool(rawtx->coin->symbol,rawtx->I.destaddr,rawtx->I.signedtxid,LP_SWAPSTEP_TIMEOUT*10) < 0 )
                     {
-                        char str[65]; printf("failed to find %s %s in the mempool?\n",rawtx->name,bits256_str(str,rawtx->I.actualtxid));
+                        char str[65]; printf("failed to find %s %s %s in the mempool?\n",rawtx->name,rawtx->I.destaddr,bits256_str(str,rawtx->I.actualtxid));
                         retval = -1;
                     }
                     return(retval);
@@ -716,11 +716,11 @@ void LP_bobloop(void *_swap)
             basilisk_bobdeposit_refund(swap,swap->I.putduration);
             //printf("depositlen.%d\n",swap->bobdeposit.I.datalen);
             LP_swapsfp_update(&swap->I.req);
-            if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*3,LP_verify_otherfee) < 0 )
+            if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_otherfee) < 0 )
                 printf("error waiting for alicefee\n");
             else if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 )
                 printf("error sending bobdeposit\n");
-            else if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*3,LP_verify_alicepayment) < 0 )
+            else if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_alicepayment) < 0 )
                 printf("error waiting for alicepayment\n");
             else
             {
@@ -731,7 +731,7 @@ void LP_bobloop(void *_swap)
                     if ( strcmp(swap->alicecoin.symbol,"BTC") == 0 )
                         m = 0;
                     else m = 1;
-                    while ( (n= LP_numconfirms(swap,&swap->alicepayment,1)) < m ) // sync with alice
+                    while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,1)) < m ) // sync with alice
                     {
                         char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                         sleep(3);
@@ -775,7 +775,7 @@ void LP_aliceloop(void *_swap)
             LP_swapsfp_update(&swap->I.req);
             if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
                 printf("error sending alicefee\n");
-            else if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*3,LP_verify_bobdeposit) < 0 )
+            else if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_bobdeposit) < 0 )
                 printf("error waiting for bobdeposit\n");
             else if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x1000,data,maxlen,&swap->alicepayment,0x800,0) == 0 )
                 printf("error sending alicepayment\n");
@@ -784,24 +784,24 @@ void LP_aliceloop(void *_swap)
                 if ( strcmp(swap->alicecoin.symbol,"BTC") == 0 )
                     m = 0;
                 else m = 1;
-                while ( (n= LP_numconfirms(swap,&swap->alicepayment,1)) < m )
+                while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,1)) < m )
                 {
                     char str[65];printf("%d waiting for alicepayment to be confirmed.%d %s %s\n",n,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
-                    sleep(LP_SWAPSTEP_TIMEOUT);
+                    sleep(10);
                 }
                 swap->sentflag = 1;
-                if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*3,LP_verify_bobpayment) < 0 )
+                if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_bobpayment) < 0 )
                     printf("error waiting for bobpayment\n");
                 else
                 {
-                    while ( (n= LP_numconfirms(swap,&swap->bobpayment,1)) < swap->I.bobconfirms )
+                    while ( (n= LP_numconfirms(swap->bobcoin.symbol,swap->bobpayment.I.destaddr,swap->bobpayment.I.signedtxid,1)) < swap->I.bobconfirms )
                     {
                         char str[65];printf("%d waiting for bobpayment to be confirmed.%d %s %s\n",n,swap->I.bobconfirms,swap->bobcoin.symbol,bits256_str(str,swap->bobpayment.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
                     }
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x20000,data,maxlen,&swap->alicespend,0x40000,0) == 0 )
                         printf("error sending alicespend\n");
-                    while ( (n= LP_numconfirms(swap,&swap->alicespend,1)) < swap->I.aliceconfirms )
+                    while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicespend.I.destaddr,swap->alicespend.I.signedtxid,1)) < swap->I.aliceconfirms )
                     {
                         char str[65];printf("%d waiting for alicespend to be confirmed.%d %s %s\n",n,swap->I.aliceconfirms,swap->bobcoin.symbol,bits256_str(str,swap->alicespend.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
