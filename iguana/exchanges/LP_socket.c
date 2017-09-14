@@ -523,7 +523,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
         resultjson = jobj(strjson,"result");
-        printf("strjson.(%s)\n",jprint(strjson,0));
+        //printf("strjson.(%s)\n",jprint(strjson,0));
         if ( (method= jstr(strjson,"method")) != 0 )
         {
             if ( strcmp(method,"blockchain.headers.subscribe") == 0 )
@@ -554,7 +554,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 stritem = (struct stritem *)item;
                 if ( item->type == idnum )
                 {
-                    printf("matched idnum.%d result.%p\n",idnum,resultjson);
+                    //printf("matched idnum.%d result.%p\n",idnum,resultjson);
                     DL_DELETE(ep->pendingQ.list,item);
                     *((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : strjson);
                     resultjson = strjson = 0;
@@ -624,7 +624,7 @@ void LP_dedicatedloop(void *arg)
             }
             DL_APPEND(ep->pendingQ.list,&sitem->DL);
             portable_mutex_unlock(&ep->pendingQ.mutex);*/
-            printf("%p SEND.(%s) to %s:%u\n",sitem,sitem->str,ep->ipaddr,ep->port);
+            //printf("%p SEND.(%s) to %s:%u\n",sitem,sitem->str,ep->ipaddr,ep->port);
             queue_enqueue("pendingQ",&ep->pendingQ,&sitem->DL);
             flag++;
         }

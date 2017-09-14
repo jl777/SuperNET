@@ -284,7 +284,6 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
         sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
         if ( (hexobj= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
-            printf("hexobj.(%s)\n",jprint(hexobj,0));
             hexstr = jprint(hexobj,1);
             if ( hexstr[0] == '"' && hexstr[strlen(hexstr)-1] == '"' )
                 hexstr[strlen(hexstr)-1] = 0;
@@ -294,10 +293,10 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                 serialized = malloc(len);
                 decode_hex(serialized,len,hexstr+1);
                 LP_swap_coinaddr(coin,coinaddr,&value,serialized,len,vout);
-                printf("HEX.(%s) len.%d %s %.8f\n",hexstr+1,len,coinaddr,dstr(value));
+                //printf("HEX.(%s) len.%d %s %.8f\n",hexstr+1,len,coinaddr,dstr(value));
                 if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr)) != 0 )
                 {
-                    printf("array.(%s)\n",jprint(array,0));
+                    //printf("array.(%s)\n",jprint(array,0));
                     if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
                     {
                         for (i=0; i<n; i++)
