@@ -270,7 +270,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
 
 cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 {
-    char buf[128],str[65],coinaddr[64],*hexstr; uint64_t value; uint8_t *serialized; cJSON *sobj,*addresses,*item,*array,*hexobj,*listjson,*retjson=0; int32_t i,n,v,len; bits256 t; struct iguana_info *coin;
+    char buf[128],str[65],coinaddr[64],*hexstr; uint64_t value; uint8_t *serialized; cJSON *sobj,*addresses,*item,*array,*hexobj,*retjson=0; int32_t i,n,v,len; bits256 t; struct iguana_info *coin;
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
@@ -284,6 +284,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
         sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
         if ( (hexobj= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
+            printf("hexobj.(%s)\n",jprint(hexobj,0));
             hexstr = jprint(hexobj,1);
             if ( hexstr[0] == '"' && hexstr[strlen(hexstr)-1] == '"' )
                 hexstr[strlen(hexstr)-1] = 0;
@@ -293,10 +294,11 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                 serialized = malloc(len);
                 decode_hex(serialized,len,hexstr+1);
                 LP_swap_coinaddr(coin,coinaddr,&value,serialized,len,vout);
-                //printf("HEX.(%s) len.%d %s %.8f\n",hexstr+1,len,coinaddr,dstr(value));
-                if ( (listjson= electrum_address_listunspent(coin->symbol,0,&listjson,coinaddr)) != 0 )
+                printf("HEX.(%s) len.%d %s %.8f\n",hexstr+1,len,coinaddr,dstr(value));
+                if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr)) != 0 )
                 {
-                    if ( (array= jarray(&n,listjson,"result")) != 0 )
+                    printf("array.(%s)\n",jprint(array,0));
+                    if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
                     {
                         for (i=0; i<n; i++)
                         {
@@ -339,7 +341,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                             }
                         }
                     }
-                    free_json(listjson);
+                    free_json(array);
                 }
             }
             return(retjson);
