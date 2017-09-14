@@ -306,7 +306,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 
 void electrum_process_array(struct iguana_info *coin,cJSON *array)
 {
-    int32_t i,n; bits256 txid; cJSON *item; struct LP_transaction *tx;
+    int32_t i,v,n; char str[65]; uint64_t value; bits256 txid; cJSON *item; struct LP_transaction *tx;
     if ( array != 0 && coin != 0 && (n= cJSON_GetArraySize(array)) > 0 )
     {
         for (i=0; i<n; i++)
@@ -319,10 +319,22 @@ void electrum_process_array(struct iguana_info *coin,cJSON *array)
                 LP_transactioninit(coin,txid,1);
                 tx = LP_transactionfind(coin,txid);
             }
-            if ( tx != 0 && tx->height <= 0 )
+            if ( tx != 0 )
             {
-                tx->height = jint(item,"height");
-                char str[65]; printf(">>>>>>>>>> set %s <- height %d\n",bits256_str(str,txid),tx->height);
+                if (tx->height <= 0 )
+                {
+                    tx->height = jint(item,"height");
+                    printf(">>>>>>>>>> set %s <- height %d\n",bits256_str(str,txid),tx->height);
+                }
+                if ( (v= jint(item,"tx_pos")) >= 0 && v < tx->numvouts )
+                {
+                    value = j64bits(item,"value");
+                    if ( value != tx->outpoints[v].value )
+                    {
+                        printf(">>>>>>>>>> set %s/v%d <- %.8f vs %.8f\n",bits256_str(str,txid),v,dstr(value),dstr(tx->outpoints[v].value));
+                        tx->outpoints[v].value = value;
+                    }
+                }
             }
         }
     }
