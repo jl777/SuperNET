@@ -326,7 +326,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                                     "coinbase": false
                                 }*/
                                 if ( value != j64bits(item,"value") )
-                                    printf("value %llu != %llu\n",(long long)value,(long long)j64bits(item,"value"));
+                                    printf("LP_gettxout: value %llu != %llu\n",(long long)value,(long long)j64bits(item,"value"));
                                 jaddnum(retjson,"value",dstr(value));
                                 jaddbits256(retjson,"txid",t);
                                 jaddnum(retjson,"vout",v);

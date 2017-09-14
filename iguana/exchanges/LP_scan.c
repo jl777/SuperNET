@@ -78,13 +78,18 @@ int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
 
 uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_info *coin,bits256 txid,int32_t vout)
 {
-    uint64_t interest,value = 0; cJSON *txobj,*sobj,*array; int32_t n=0;
+    uint64_t interest,value = 0; double val; cJSON *txobj,*sobj,*array; int32_t n=0;
     *interestp = 0;
     destaddr[0] = 0;
     if ( (txobj= LP_gettxout(coin->symbol,txid,vout)) != 0 )
     {
         // GETTXOUT.({"value":0.01200000,"txid":"6f5adfefad102e39f62a6bacb222ebace6ce5c084116c08a62cac1182729dd46","vout":1,"scriptPubkey":{"reqSigs":1,"type":"pubkey","addresses":["19Cq6MBaD8LY7trqs99ypqKAms3GcLs6J9"]}})
-        if ( (value= jdouble(txobj,"amount")*SATOSHIDEN) == 0 && (value= jdouble(txobj,"value")*SATOSHIDEN) == 0 )
+        if ( (val= jdouble(txobj,"amount")) < SMALLVAL )
+            val = jdouble(txobj,"value");
+        if ( val > SMALLVAL )
+            value = (val * SATOSHIDEN + 0.0000000049);
+        else value = 0;
+        if ( value == 0 )
         {
             char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d\n",coin->symbol,bits256_str(str,txid),jprint(txobj,0),vout);
         }
@@ -99,6 +104,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
         if ( (sobj= jobj(txobj,"scriptPubKey")) != 0 && (array= jarray(&n,sobj,"addresses")) != 0 )
         {
             strcpy(destaddr,jstri(array,0));
+            printf("set destaddr.(%s)\n",destaddr);
             if ( n > 1 )
                 printf("LP_txinterestvalue warning: violation of 1 output assumption n.%d\n",n);
         } else printf("LP_txinterestvalue no addresses found?\n");
