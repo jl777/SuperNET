@@ -565,7 +565,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     }*/
     if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,0)) <= 0 )
     {
-        printf("LP_utxoadd reject numconfirms.%d\n",numconfirms);
+        printf("LP_utxoadd reject numconfirms.%d %s.%s\n",numconfirms,symbol,bits256_str(str,txid));
         return(0);
     }
     if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,0)) <= 0 )
@@ -871,9 +871,9 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                 //printf("array.%d\n",n);
                 while ( used < n-1 )
                 {
-                    for (i=0; i<n; i++)
-                       printf("%.8f ",dstr(values[i]));
-                    printf("used.%d of n.%d\n",used,n);
+                    //for (i=0; i<n; i++)
+                    //   printf("%.8f ",dstr(values[i]));
+                    //printf("used.%d of n.%d\n",used,n);
                     if ( (i= LP_maxvalue(values,n)) >= 0 )
                     {
                         item = jitem(array,i);
@@ -896,7 +896,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         else targetval = (depositval / 9) * 8 + 2*txfee;
                         if ( targetval < txfee*2 )
                             targetval = txfee*2;
-                        printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
+                        //printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
                         if ( depositval < (1+LP_MINSIZE_TXFEEMULT)*txfee )
                             continue;
                         i = -1;
@@ -909,7 +909,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         }
                         if ( i >= 0 || (i= LP_nearestvalue(iambob,values,n,targetval)) >= 0 )
                         {
-                            printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
+                            //printf("iambob.%d i.%d %.8f target %.8f\n",iambob,i,dstr(depositval),dstr(targetval));
                             item = jitem(array,i);
                             cmpflag = 0;
                             if ( coin->electrum == 0 )
@@ -938,7 +938,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                                 }
                                 else
                                 {
-                                    printf("call utxoadd\n");
+                                    //printf("call utxoadd\n");
                                     if ( (utxo= LP_utxoadd(0,mypubsock,coin->symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coin->smartaddr,mypub,LP_gui,LP_sessionid)) != 0 )
                                     {
                                     }

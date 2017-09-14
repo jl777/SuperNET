@@ -570,7 +570,7 @@ int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
     
 uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 {
-    struct LP_transaction *tx; char _coinaddr[64]; uint64_t interest = 0,value = 0; struct iguana_info *coin;
+    struct LP_transaction *tx; struct iguana_info *coin;
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
         return(0);
     if ( coinaddr != 0 )
