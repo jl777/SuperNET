@@ -839,7 +839,7 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
 
 uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
-    char *script; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,value,total = 0; int64_t targetval;
+    char *script,destaddr[64]; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,value,total = 0; int64_t targetval;
     if ( coin == 0 )
     {
         printf("coin not active\n");
@@ -877,6 +877,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                     {
                      //{"value":1000000,"tx_hash":"4e4f818c53486c0576693b4cd379849e5ff95538b38e4100f48884073a4e7636","tx_pos":0,"height":484877}
                             satoshis = j64bits(item,"value");
+                        satoshis = LP_txvalue(destaddr,coin->symbol,jbits256(item,"tx_hash"),juint(item,"tx_pos"));
                         if ( LP_inventory_prevent(iambob,coin->symbol,jbits256(item,"tx_hash"),juint(item,"tx_pos")) == 0 && jint(item,"height") < coin->height )
                         {
                             //printf("%s\n",jprint(item,0));
