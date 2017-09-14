@@ -451,7 +451,7 @@ cJSON *electrum_address_getmempool(char *symbol,struct electrum_info *ep,cJSON *
 {
     cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
     retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_mempool",addr,ELECTRUM_TIMEOUT);
-    //printf("MEMPOOL.(%s)\n",jprint(retjson,0));
+    printf("MEMPOOL.(%s)\n",jprint(retjson,0));
     electrum_process_array(coin,retjson);
     return(retjson);
 }
