@@ -120,7 +120,9 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
     if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
     {
         //printf("TX.(%s)\n",jprint(txobj,0));
-        height = LP_txheight(coin,txid);
+        if ( coin->electrum == 0 )
+            height = LP_txheight(coin,txid);
+        else height = -1;
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
         if ( iter == 0 && vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins)) != 0 )
@@ -655,7 +657,7 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
 
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t duration)
 {
-    struct iguana_info *coin; cJSON *array; uint32_t expiration,i,n;
+    struct iguana_info *coin; struct LP_transaction *tx; cJSON *array,*item; uint32_t expiration,i,n;
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
         return(-1);
     expiration = (uint32_t)time(NULL) + duration;
@@ -668,13 +670,19 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t duration
         }
         else
         {
+            if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->height >= 0 )
+            {
+                char str[65]; printf("LP_waitmempool found %s %s\n",symbol,bits256_str(str,txid));
+                return(tx->height);
+            }
             if ( (array= electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr)) != 0 )
             {
                 if ( (n= cJSON_GetArraySize(array)) > 0 )
                 {
                     for (i=0; i<n; i++)
                     {
-                        if ( bits256_cmp(txid,jbits256i(array,i)) == 0 )
+                        item = jitem(array,i);
+                        if ( bits256_cmp(txid,jbits256(item,"tx_hash")) == 0 )
                         {
                             free(array);
                             char str[65]; printf("found %s %s in mempool\n",symbol,bits256_str(str,txid));

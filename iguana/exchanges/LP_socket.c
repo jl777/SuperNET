@@ -313,12 +313,13 @@ void electrum_process_array(struct iguana_info *coin,cJSON *array)
         {
             item = jitem(array,i);
             txid = jbits256(item,"tx_hash");
-            if ( LP_transactionfind(coin,txid) == 0 )
+            if ( (tx= LP_transactionfind(coin,txid)) == 0 )
             {
                 LP_transactioninit(coin,txid,0);
                 LP_transactioninit(coin,txid,1);
+                tx = LP_transactionfind(coin,txid);
             }
-            if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->height <= 0 )
+            if ( tx != 0 && tx->height <= 0 )
             {
                 tx->height = jint(item,"height");
                 char str[65]; printf(">>>>>>>>>> set %s <- height %d\n",bits256_str(str,txid),tx->height);
