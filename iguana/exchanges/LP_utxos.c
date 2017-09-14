@@ -537,11 +537,6 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("trying to add Alice utxo when not mine? %s/v%d\n",bits256_str(str,txid),vout);
         return(0);
     }
-    if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
-    {
-        printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f:%.8f, value2 %.8f:%.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(val),dstr(value2),dstr(val2),dstr(tmpsatoshis));
-        return(0);
-    }
     /*numconfirms = -1;
     if ( (txobj= LP_gettx(symbol,txid)) != 0 )
     {
@@ -563,15 +558,28 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
         return(0);
     }*/
-    if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,0)) <= 0 )
+    if ( coin->inactive == 0 )
     {
-        printf("LP_utxoadd reject numconfirms.%d %s.%s\n",numconfirms,symbol,bits256_str(str,txid));
-        return(0);
+        if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
+        {
+            printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f:%.8f, value2 %.8f:%.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(val),dstr(value2),dstr(val2),dstr(tmpsatoshis));
+            return(0);
+        }
+        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,0)) <= 0 )
+        {
+            printf("LP_utxoadd reject numconfirms.%d %s.%s\n",numconfirms,symbol,bits256_str(str,txid));
+            return(0);
+        }
+        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,0)) <= 0 )
+        {
+            printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
+            return(0);
+        }
     }
-    if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,0)) <= 0 )
+    else
     {
-        printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
-        return(0);
+        val = value;
+        val2 = value2;
     }
     if ( dispflag != 0 )
         printf("%.8f %.8f %s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",dstr(val),dstr(val2),coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
@@ -636,7 +644,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( LP_ismine(utxo) > 0 )
         utxo->T.sessionid = LP_sessionid;
     else utxo->T.sessionid = sessionid;
-    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,coinaddr,txid,vout,txid2,vout2)) >= 0 )
+    if ( coin->inactive == 0 && (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,coinaddr,txid,vout,txid2,vout2)) >= 0 )
     {
         printf("utxoadd selector.%d spent in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
         utxo->T.spentflag = (uint32_t)time(NULL);

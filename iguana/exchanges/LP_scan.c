@@ -104,7 +104,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
         if ( (sobj= jobj(txobj,"scriptPubKey")) != 0 && (array= jarray(&n,sobj,"addresses")) != 0 )
         {
             strcpy(destaddr,jstri(array,0));
-            printf("set destaddr.(%s)\n",destaddr);
+            //printf("set destaddr.(%s)\n",destaddr);
             if ( n > 1 )
                 printf("LP_txinterestvalue warning: violation of 1 output assumption n.%d\n",n);
         } else printf("LP_txinterestvalue no addresses found?\n");
