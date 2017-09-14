@@ -108,7 +108,7 @@ char *LP_apicall(struct iguana_info *coin,char *method,char *params)
     cJSON *retjson,*resultjson;
     if ( coin->electrum != 0 )
     {
-        if ( (retjson= electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT)) != 0 )
+        if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT)) != 0 )
         {
             if ( (resultjson= jobj(retjson,"result")) != 0 )
             {
@@ -142,13 +142,15 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             }
             else
             {
-                retjson = electrum_submit(coin->symbol,coin->electrum,0,method,params,LP_HTTP_TIMEOUT);
-                //printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
-                if ( (resultjson= jobj(retjson,"result")) != 0 )
+                if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT)) != 0 )
                 {
-                    resultjson = jduplicate(resultjson);
-                    free_json(retjson);
-                    retjson = resultjson;
+                //printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
+                    if ( (resultjson= jobj(retjson,"result")) != 0 )
+                    {
+                        resultjson = jduplicate(resultjson);
+                        free_json(retjson);
+                        retjson = resultjson;
+                    }
                 }
             }
         } else retjson = cJSON_Parse("{\"result\":\"disabled\"}");
@@ -295,7 +297,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                 decode_hex(serialized,len,hexstr+1);
                 LP_swap_coinaddr(coin,coinaddr,&value,serialized,len,vout);
                 //printf("HEX.(%s) len.%d %s %.8f\n",hexstr+1,len,coinaddr,dstr(value));
-                if ( (listjson= electrum_address_listunspent(coin->symbol,0,0,coinaddr)) != 0 )
+                if ( (listjson= electrum_address_listunspent(coin->symbol,0,&listjson,coinaddr)) != 0 )
                 {
                     if ( (array= jarray(&n,listjson,"result")) != 0 )
                     {
@@ -493,7 +495,7 @@ int32_t LP_importaddress(char *symbol,char *address)
         return(-2);
     if ( coin->electrum != 0 )
     {
-        if ( (retjson= electrum_address_subscribe(symbol,0,0,address)) != 0 )
+        if ( (retjson= electrum_address_subscribe(symbol,0,&retjson,address)) != 0 )
         {
             printf("importaddress.(%s) -> %s\n",address,jprint(retjson,0));
             free_json(retjson);

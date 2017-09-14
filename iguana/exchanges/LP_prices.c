@@ -109,7 +109,7 @@ void LP_address_monitor(struct LP_pubkeyinfo *pubp)
         portable_mutex_unlock(&coin->txmutex);
         if ( coin->electrum != 0 )
         {
-            if ( (retjson= electrum_address_subscribe(coin->symbol,coin->electrum,0,coinaddr)) != 0 )
+            if ( (retjson= electrum_address_subscribe(coin->symbol,coin->electrum,&retjson,coinaddr)) != 0 )
             {
                 printf("%s MONITOR.(%s)\n",coin->symbol,coinaddr);
                 free_json(retjson);

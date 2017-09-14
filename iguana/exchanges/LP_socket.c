@@ -26,7 +26,7 @@
 #include <WinSock2.h>
 #endif
 
-#define ELECTRUM_TIMEOUT 5
+#define ELECTRUM_TIMEOUT 3
 
 int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
@@ -243,7 +243,6 @@ int32_t LP_socketrecv(int32_t sock,uint8_t *recvbuf,int32_t maxlen)
 struct electrum_info
 {
     queue_t sendQ,pendingQ;
-    cJSON *retjson;
     int32_t bufsize,sock,*heightp;
     uint32_t stratumid,lasttime,pending,*heighttimep;
     char ipaddr[64],symbol[16];
@@ -254,7 +253,7 @@ int32_t Num_electrums;
 
 // purge timedout
 /*
-if ( (retjson= electrum_address_listunspent(symbol,ep,0,addr)) != 0 )
+if ( (retjson= electrum_address_listunspent(symbol,ep,&retjson,addr)) != 0 )
 you can call it like the above, where symbol is the coin, ep is the electrum server info pointer, the 0 is a callback ptr where 0 means to block till it is done
 all the API calls have the same three args
 if the callback ptr is &retjson, then on completion it will put the cJSON *ptr into it, so to spawn a bunch of calls you need to call with symbol,ep,&retjsons[i],...
@@ -304,56 +303,54 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
     return(ep);
 }
 
-// overlapped execution not debugged
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
     char stratumreq[16384]; uint32_t expiration; struct stritem *sitem;
     if ( ep == 0 )
         ep = electrum_server(symbol,0);
-    if ( ep != 0 )
+    if ( ep != 0 && retjsonp != 0 )
     {
         if ( strcmp(method,"getrawmempool") == 0 )
         {
-            ep->retjson = cJSON_Parse("{\"error\":\"unsupported method\"}");
-            if ( retjsonp != 0 )
-                *retjsonp = ep->retjson;
-            return(ep->retjson);
+            *retjsonp = cJSON_Parse("{\"error\":\"unsupported method\"}");
+            return(*retjsonp);
         }
         sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
         ep->buf[0] = 0;
         sitem = (struct stritem *)queueitem(stratumreq);
         sitem->expiration = timeout;
         sitem->DL.type = ep->stratumid++;
-        if ( retjsonp != 0 )
-            sitem->retptrp = (void **)retjsonp;
-        else sitem->retptrp = (void **)&ep->retjson;
+        sitem->retptrp = (void **)retjsonp;
         queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
-        if ( sitem->retptrp == (void **)&ep->retjson )
+        expiration = (uint32_t)time(NULL) + timeout + 1;
+        while ( *retjsonp == 0 && time(NULL) <= expiration )
+            usleep(10000);
+        if ( *retjsonp == 0 )
         {
-            expiration = (uint32_t)time(NULL) + timeout + 1;
-            while ( ep->retjson == 0 && time(NULL) <= expiration )
-               usleep(10000);
-            if ( ep->retjson == 0 )
-            {
-                printf("unexpected timeout with null retjson: %s %s\n",method,params);
-                ep->retjson = cJSON_Parse("{\"error\":\"timeout\"}");
-            }
+            printf("unexpected timeout with null retjson: %s %s\n",method,params);
+            *retjsonp = cJSON_Parse("{\"error\":\"timeout\"}");
         }
-    } else printf("couldnt find electrum server for (%s %s)\n",method,params);
-    return(ep->retjson);
+        return(*retjsonp);
+    } else printf("couldnt find electrum server for (%s %s) or no retjsonp.%p\n",method,params,retjsonp);
+    return(0);
 }
 
 cJSON *electrum_noargs(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,int32_t timeout)
 {
+    cJSON *retjson;
+    if ( retjsonp == 0 )
+        retjsonp = &retjson;
     return(electrum_submit(symbol,ep,retjsonp,method,"[]",timeout));
 }
 
 cJSON *electrum_strarg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *arg,int32_t timeout)
 {
-    char params[16384];
+    char params[16384]; cJSON *retjson;
     if ( strlen(arg) < sizeof(params) )
     {
+        if ( retjsonp == 0 )
+            retjsonp = &retjson;
         sprintf(params,"[\"%s\"]",arg);
         return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
     } else return(0);
@@ -361,14 +358,18 @@ cJSON *electrum_strarg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
 
 cJSON *electrum_intarg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,int32_t arg,int32_t timeout)
 {
-    char params[64];
+    char params[64]; cJSON *retjson;
+    if ( retjsonp == 0 )
+        retjsonp = &retjson;
     sprintf(params,"[\"%d\"]",arg);
     return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
 }
 
 cJSON *electrum_hasharg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,bits256 arg,int32_t timeout)
 {
-    char params[128],str[65];
+    char params[128],str[65]; cJSON *retjson;
+    if ( retjsonp == 0 )
+        retjsonp = &retjson;
     sprintf(params,"[\"%s\"]",bits256_str(str,arg));
     return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
 }
@@ -549,33 +550,25 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
         {
             DL_FOREACH(ep->pendingQ.list,item)
             {
-                if ( item->type == 0xffffffff )
-                    continue;
                 stritem = (struct stritem *)item;
                 if ( item->type == idnum )
                 {
+                    DL_DELETE(ep->pendingQ.list,item);
                     //printf("matched idnum.%d\n",idnum);
-                    item->type = 0xffffffff;
-                    if ( stritem->retptrp != 0 )
-                    {
-                        *((cJSON **)stritem->retptrp) = strjson;
-                        strjson = 0;
-                    }
-                    //DL_DELETE(ep->pendingQ.list,item);
+                    *((cJSON **)stritem->retptrp) = strjson;
+                    strjson = 0;
+                    free(item);
                     break;
                 }
                 if ( stritem->expiration < ep->lasttime )
                 {
+                    DL_DELETE(ep->pendingQ.list,item);
                     printf("expired (%s)\n",stritem->str);
-                    item->type = 0xffffffff;
-                    //DL_DELETE(ep->pendingQ.list,item);
-                    if ( stritem->retptrp != 0 )
-                    {
-                        errjson = cJSON_CreateObject();
-                        jaddnum(errjson,"id",item->type);
-                        jaddstr(errjson,"error","timeout");
-                        *((cJSON **)stritem->retptrp) = errjson;
-                    };
+                    errjson = cJSON_CreateObject();
+                    jaddnum(errjson,"id",item->type);
+                    jaddstr(errjson,"error","timeout");
+                    *((cJSON **)stritem->retptrp) = errjson;
+                    free(item);
                 }
             }
         }
@@ -588,7 +581,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 
 void LP_dedicatedloop(void *arg)
 {
-    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct queueitem *item = 0; struct electrum_info *ep = arg;
+    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct electrum_info *ep = arg;
     if ( (coin= LP_coinfind(ep->symbol)) != 0 )
         ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
     if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,0)) != 0 )
@@ -613,7 +606,7 @@ void LP_dedicatedloop(void *arg)
             if ( sitem->expiration != 0 )
                 sitem->expiration += (uint32_t)time(NULL);
             else sitem->expiration = (uint32_t)time(NULL) + ELECTRUM_TIMEOUT;
-            portable_mutex_lock(&ep->pendingQ.mutex);
+            /*portable_mutex_lock(&ep->pendingQ.mutex);
             if ( ep->pendingQ.list != 0 )
             {
                 printf("list %p\n",ep->pendingQ.list);
@@ -628,9 +621,10 @@ void LP_dedicatedloop(void *arg)
                     }
                 }
             }
-            printf("%p SEND.(%s) to %s:%u\n",sitem,sitem->str,ep->ipaddr,ep->port);
             DL_APPEND(ep->pendingQ.list,&sitem->DL);
-            portable_mutex_unlock(&ep->pendingQ.mutex);
+            portable_mutex_unlock(&ep->pendingQ.mutex);*/
+            printf("%p SEND.(%s) to %s:%u\n",sitem,sitem->str,ep->ipaddr,ep->port);
+            queue_enqueue("pendingQ",&ep->pendingQ,&sitem->DL);
             flag++;
         }
         if ( flag == 0 )
