@@ -378,11 +378,17 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
     return(jprint(utxosjson,1));
 }
 
-int32_t LP_inventory_prevent(int32_t iambob,bits256 txid,int32_t vout)
+int32_t LP_inventory_prevent(int32_t iambob,char *symbol,bits256 txid,int32_t vout)
 {
-    struct LP_utxoinfo *utxo;
+    struct LP_utxoinfo *utxo; struct LP_transaction *tx; struct iguana_info *coin;
     if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 || (utxo= LP_utxo2find(iambob,txid,vout)) != 0 )
     {
+        if ( (coin= LP_coinfind(symbol)) != 0 && (tx= LP_transactionfind(coin,txid)) != 0 )
+        {
+            if ( tx->outpoints[vout].spendheight > 0 )
+                utxo->T.spentflag = tx->outpoints[vout].spendheight;
+            else utxo->T.spentflag = 0;
+        }
         if ( utxo->T.spentflag != 0 )
         {
             char str[65]; printf("prevent adding iambob.%d %s/v%d to inventory\n",iambob,bits256_str(str,txid),vout);
