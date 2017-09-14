@@ -447,13 +447,13 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     cJSON *retjson=0; struct iguana_info *coin = LP_coinfind(symbol);
     if ( strcmp(coin->lastunspent,addr) == 0 && time(NULL) > coin->unspenttime+10 )
     {
-        strcpy(coin->lastunspent,addr);
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
             printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
             electrum_process_array(coin,retjson);
+            strcpy(coin->lastunspent,addr);
+            coin->unspenttime = (uint32_t)time(NULL);
         }
-        coin->unspenttime = (uint32_t)time(NULL);
     }
     return(retjson);
 }
