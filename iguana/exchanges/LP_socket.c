@@ -313,11 +313,6 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         ep = electrum_server(symbol,0);
     if ( ep != 0 )
     {
-        if ( ep->retjson != 0 )
-        {
-            free_json(ep->retjson);
-            ep->retjson = 0;
-        }
         if ( strcmp(method,"getrawmempool") == 0 )
         {
             ep->retjson = cJSON_Parse("{\"error\":\"unsupported method\"}");
