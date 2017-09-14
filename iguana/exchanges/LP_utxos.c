@@ -513,7 +513,7 @@ void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,char *gui,uint32_t sessionid)
 {
-    uint64_t val,val2=0,tmpsatoshis,txfee; cJSON *txobj; int32_t spendvini,numconfirms,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    uint64_t val,val2=0,tmpsatoshis,txfee; int32_t spendvini,numconfirms,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 || sessionid == 0 )
     {
         printf("session.%u malformed addutxo %d %d %d %d %d %d %d %d %d\n",sessionid,symbol == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
@@ -542,18 +542,13 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f:%.8f, value2 %.8f:%.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(val),dstr(value2),dstr(val2),dstr(tmpsatoshis));
         return(0);
     }
-    numconfirms = -1;
+    /*numconfirms = -1;
     if ( (txobj= LP_gettx(symbol,txid)) != 0 )
     {
         if ( coin->electrum == 0 )
             numconfirms = jint(txobj,"confirmations");
         else numconfirms = coin->height - jint(txobj,"height");
         free_json(txobj);
-    }
-    if ( numconfirms <= 0 )
-    {
-        printf("LP_utxoadd reject numconfirms.%d\n",numconfirms);
-        return(0);
     }
     numconfirms = -1;
     if ( (txobj= LP_gettx(symbol,txid2)) != 0 )
@@ -564,6 +559,16 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         free_json(txobj);
     }
     if ( numconfirms <= 0 )
+    {
+        printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
+        return(0);
+    }*/
+    if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,0)) <= 0 )
+    {
+        printf("LP_utxoadd reject numconfirms.%d\n",numconfirms);
+        return(0);
+    }
+    if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,0)) <= 0 )
     {
         printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
         return(0);
@@ -631,7 +636,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( LP_ismine(utxo) > 0 )
         utxo->T.sessionid = LP_sessionid;
     else utxo->T.sessionid = sessionid;
-    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,txid,vout,txid2,vout2)) >= 0 )
+    if ( (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,coinaddr,txid,vout,txid2,vout2)) >= 0 )
     {
         printf("utxoadd selector.%d spent in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
         utxo->T.spentflag = (uint32_t)time(NULL);
@@ -1041,7 +1046,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             userpub = curve25519(userpass,curve25519_basepoint9());
             printf("userpass.(%s)\n",bits256_str(USERPASS,userpub));
         }
-        if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
+        if ( coin->electrum == 0 && (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
         {
             if ( jobj(retjson,"error") != 0 )
             {

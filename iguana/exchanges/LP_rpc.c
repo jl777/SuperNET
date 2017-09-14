@@ -212,12 +212,14 @@ int32_t LP_getheight(struct iguana_info *coin)
     return(height);
 }
 
-cJSON *LP_getmempool(char *symbol)
+cJSON *LP_getmempool(char *symbol,char *coinaddr)
 {
-    struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin == 0 )
-        return(cJSON_Parse("{\"error\":\"no coin\"}"));
-    return(bitcoin_json(coin,"getrawmempool","[]"));
+    cJSON *array; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( coin == 0 || (coin->electrum != 0 && coinaddr == 0) )
+        return(cJSON_Parse("{\"error\":\"no native coin\"}"));
+    if ( coin->electrum == 0 )
+        return(bitcoin_json(coin,"getrawmempool","[]"));
+    else return(electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr));
 }
 
 cJSON *LP_paxprice(char *fiat)
@@ -349,45 +351,6 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
     }
 }
 
-cJSON *LP_getblock(char *symbol,bits256 txid)
-{
-    char buf[128],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin == 0 )
-        return(cJSON_Parse("{\"error\":\"no coin\"}"));
-    sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
-    return(bitcoin_json(coin,"getblock",buf));
-}
-
-int32_t LP_txheight(uint32_t *timestampp,uint32_t *blocktimep,struct iguana_info *coin,bits256 txid)
-{
-    bits256 blockhash; cJSON *blockobj,*txobj; int32_t height = 0;
-    if ( coin == 0 )
-        return(-1);
-    if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
-    {
-        *timestampp = juint(txobj,"locktime");
-        *blocktimep = juint(txobj,"blocktime");
-        blockhash = jbits256(txobj,"blockhash");
-        if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
-        {
-            height = jint(blockobj,"height");
-            //printf("%s LP_txheight.%d\n",coin->symbol,height);
-            free_json(blockobj);
-        } //else printf("%s LP_txheight error (%s)\n",coin->symbol,jprint(txobj,0));
-        free_json(txobj);
-    }
-    return(height);
-}
-
-cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
-{
-    char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin == 0 )
-        return(cJSON_Parse("{\"error\":\"no coin\"}"));
-    sprintf(buf,"[\"%s\"]",blockhashstr);
-    return(bitcoin_json(coin,"getblock",buf));
-}
-
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
     char buf[128]; cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
@@ -397,19 +360,10 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
     {
         sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
         return(bitcoin_json(coin,"listunspent",buf));
-    }
-    else
-    {
-        sprintf(buf,"[\"%s\"]",coinaddr);
-        if ( (retjson= bitcoin_json(coin,"blockchain.address.listunspent",buf)) != 0 )
-        {
-            //printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
-        }
-        return(retjson);
-    }
+    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr));
 }
 
-cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t skip)
+/*cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t skip)
 {
     char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
@@ -418,7 +372,7 @@ cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t ski
         count = 100;
     sprintf(buf,"[\"%s\", %d, %d, true]",coinaddr,count,skip);
     return(bitcoin_json(coin,"listtransactions",buf));
-}
+}*/
 
 cJSON *LP_validateaddress(char *symbol,char *address)
 {
@@ -493,33 +447,36 @@ int32_t LP_importaddress(char *symbol,char *address)
         return(-2);
     if ( coin->electrum != 0 )
     {
-        if ( (retjson= electrum_address_subscribe(symbol,0,&retjson,address)) != 0 )
+        if ( (retjson= electrum_address_subscribe(symbol,coin->electrum,&retjson,address)) != 0 )
         {
             printf("importaddress.(%s) -> %s\n",address,jprint(retjson,0));
             free_json(retjson);
         }
         return(0);
     }
-    if ( (validatejson= LP_validateaddress(symbol,address)) != 0 )
+    else
     {
-        if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
+        if ( (validatejson= LP_validateaddress(symbol,address)) != 0 )
         {
-            if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
-                doneflag = 1;
+            if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
+            {
+                if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
+                    doneflag = 1;
+            }
+            free_json(validatejson);
         }
-        free_json(validatejson);
+        if ( isvalid == 0 )
+            return(-1);
+        if ( doneflag != 0 )
+            return(0); // success
+        sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
+        if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"importaddress",buf)) != 0 )
+        {
+            //printf("importaddress.(%s %s) -> (%s)\n",symbol,address,retstr);
+            free(retstr);
+        } //else printf("importaddress.(%s %s)\n",symbol,address);
+        return(1);
     }
-    if ( isvalid == 0 )
-        return(-1);
-    if ( doneflag != 0 )
-        return(0); // success
-    sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
-    if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"importaddress",buf)) != 0 )
-    {
-        //printf("importaddress.(%s %s) -> (%s)\n",symbol,address,retstr);
-        free(retstr);
-    } //else printf("importaddress.(%s %s)\n",symbol,address);
-    return(1);
 }
 
 double LP_getestimatedrate(struct iguana_info *coin)
@@ -550,6 +507,176 @@ double LP_getestimatedrate(struct iguana_info *coin)
     return(SATOSHIDEN * rate);
 }
 
+char *LP_sendrawtransaction(char *symbol,char *signedtx)
+{
+    cJSON *array; char *paramstr,*tmpstr,*retstr=0; int32_t n; cJSON *retjson; struct iguana_info *coin;
+    coin = LP_coinfind(symbol);
+    if ( coin == 0 )
+        return(0);
+    if ( coin->electrum == 0 )
+    {
+        array = cJSON_CreateArray();
+        jaddistr(array,signedtx);
+        paramstr = jprint(array,1);
+        retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"sendrawtransaction",paramstr);
+        //printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
+        free(paramstr);
+    }
+    else
+    {
+        if ( (retjson= electrum_sendrawtransaction(symbol,coin->electrum,&retjson,signedtx)) != 0 )
+        {
+            retstr = jprint(retjson,1);
+            printf("electrum sendrawtx.(%s) -> %s\n",signedtx,retstr);
+            n = (int32_t)strlen(retstr);
+            if ( retstr[0] == '"' && retstr[n-1] == '"' )
+            {
+                retstr[n-1] = 0;
+                tmpstr = clonestr(retstr+1);
+                free(retstr);
+                retstr = tmpstr;
+            }
+        }
+    }
+    return(retstr);
+}
+
+char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkeys,struct vin_info *V)
+{
+    cJSON *array,*json,*retjson; int32_t len; uint8_t *data; char str[65],*paramstr,*retstr,*hexstr,*signedtx=0; struct iguana_msgtx msgtx; struct iguana_info *coin = LP_coinfind(symbol);
+    memset(signedtxidp,0,sizeof(*signedtxidp));
+    *completedp = 0;
+    if ( coin == 0 )
+    {
+        printf("LP_signrawtx cant find coin.(%s)\n",symbol);
+        return(0);
+    }
+    //int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson)
+    memset(&msgtx,0,sizeof(msgtx));
+    signedtx = 0;
+    memset(signedtxidp,0,sizeof(*signedtxidp));
+    //printf("locktime.%u sequenceid.%x rawtx.(%s) vins.(%s)\n",locktime,sequenceid,rawtxbytes,jprint(vins,0));
+    if ( (*completedp= iguana_signrawtransaction(coin->ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,1000000,&msgtx,&signedtx,signedtxidp,V,16,rawtx,vins,privkeys)) < 0 )
+        //if ( (signedtx= LP_signrawtx(symbol,signedtxidp,&completed,vins,rawtxbytes,privkeys,V)) == 0 )
+        printf("couldnt sign transaction.%s %s\n",rawtx,bits256_str(str,*signedtxidp));
+    else if ( *completedp == 0 )
+    {
+        printf("incomplete signing %s (%s)\n",rawtx,jprint(vins,0));
+        if ( signedtx != 0 )
+            free(signedtx), signedtx = 0;
+    } else printf("basilisk_swap_bobtxspend %s -> %s\n",rawtx,bits256_str(str,*signedtxidp));
+    if ( signedtx == 0 )
+    {
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"error","couldnt sign tx");
+        jaddstr(retjson,"coin",coin->symbol);
+        jaddstr(retjson,"rawtx",rawtx);
+        jadd(retjson,"vins",vins);
+        jadd(retjson,"privkeys",privkeys);
+        return(jprint(retjson,1));
+    }
+    return(signedtx);
+    
+    array = cJSON_CreateArray();
+    jaddistr(array,rawtx);
+    jaddi(array,jduplicate(vins));
+    jaddi(array,jduplicate(privkeys));
+    paramstr = jprint(array,1);
+    //printf("signrawtransaction\n");
+    if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr)) != 0 )
+    {
+        if ( (json= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (hexstr= jstr(json,"hex")) != 0 )
+            {
+                len = (int32_t)strlen(hexstr);
+                signedtx = calloc(1,len+1);
+                strcpy(signedtx,hexstr);
+                *completedp = is_cJSON_True(jobj(json,"complete"));
+                data = malloc(len >> 1);
+                decode_hex(data,len>>1,hexstr);
+                *signedtxidp = bits256_doublesha256(0,data,len >> 1);
+            }
+            //else
+            printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
+            free_json(json);
+        }
+        free(retstr);
+    }
+    free(paramstr);
+    return(signedtx);
+}
+
+cJSON *LP_getblock(char *symbol,bits256 txid)
+{
+    char buf[128],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( coin == 0 || coin->electrum != 0 )
+        return(cJSON_Parse("{\"error\":\"no native coin\"}"));
+    sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
+    return(bitcoin_json(coin,"getblock",buf));
+}
+
+int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
+{
+    bits256 blockhash; struct LP_transaction *tx; cJSON *blockobj,*txobj; int32_t height = 0;
+    if ( coin == 0 )
+        return(-1);
+    if ( coin->electrum == 0 )
+    {
+        if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
+        {
+            //*timestampp = juint(txobj,"locktime");
+            //*blocktimep = juint(txobj,"blocktime");
+            blockhash = jbits256(txobj,"blockhash");
+            if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
+            {
+                height = jint(blockobj,"height");
+                //printf("%s LP_txheight.%d\n",coin->symbol,height);
+                free_json(blockobj);
+            } //else printf("%s LP_txheight error (%s)\n",coin->symbol,jprint(txobj,0));
+            free_json(txobj);
+        }
+    }
+    else
+    {
+        if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+            height = tx->height;
+    }
+    return(height);
+}
+
+int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t mempool)
+{
+    struct iguana_info *coin; int32_t ht,numconfirms = 100;
+    //#ifndef BASILISK_DISABLEWAITTX
+    cJSON *txobj;
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
+        return(-1);
+    if ( coin->electrum == 0 )
+    {
+        numconfirms = -1;
+        if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+        {
+            if ( coin->electrum == 0 )
+                numconfirms = jint(txobj,"confirmations");
+            else numconfirms = coin->height - jint(txobj,"height");
+            free_json(txobj);
+        }
+        else if ( mempool != 0 && LP_mempoolscan(symbol,txid) >= 0 )
+            numconfirms = 0;
+    }
+    else
+    {
+        if ( (ht= LP_txheight(coin,txid)) > 0 && ht <= coin->height )
+            numconfirms = (coin->height - ht);
+        else if ( mempool != 0 && LP_waitmempool(symbol,coinaddr,txid,-1) >= 0 )
+            numconfirms = 0;
+    }
+    //#endif
+    return(numconfirms);
+}
+
+// not in electrum path
 uint64_t LP_txfee(char *symbol)
 {
     uint64_t txfee = 0;
@@ -561,7 +688,7 @@ uint64_t LP_txfee(char *symbol)
 char *LP_blockhashstr(char *symbol,int32_t height)
 {
     cJSON *array; char *paramstr,*retstr; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin == 0 )
+    if ( coin == 0 || coin->electrum != 0 )
         return(0);
     array = cJSON_CreateArray();
     jaddinum(array,height);
@@ -571,9 +698,23 @@ char *LP_blockhashstr(char *symbol,int32_t height)
     return(retstr);
 }
 
+cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
+{
+    char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( coin == 0 || coin->electrum != 0 )
+        return(cJSON_Parse("{\"error\":\"no native coin daemon\"}"));
+    sprintf(buf,"[\"%s\"]",blockhashstr);
+    return(bitcoin_json(coin,"getblock",buf));
+}
+
 cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t height)
 {
-    cJSON *json = 0; int32_t flag = 0;
+    cJSON *json = 0; int32_t flag = 0; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( coin == 0 || coin->electrum != 0 )
+    {
+        printf("unexpected electrum path for %s\n",symbol);
+        return(0);
+    }
     if ( blockhashstr == 0 )
         blockhashstr = LP_blockhashstr(symbol,height), flag = 1;
     if ( blockhashstr != 0 )
@@ -598,56 +739,3 @@ cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t hei
     return(json);
 }
 
-char *LP_sendrawtransaction(char *symbol,char *signedtx)
-{
-    cJSON *array; char *paramstr,*retstr; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin == 0 )
-        return(0);
-    array = cJSON_CreateArray();
-    jaddistr(array,signedtx);
-    paramstr = jprint(array,1);
-    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"sendrawtransaction",paramstr);
-    //printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
-    free(paramstr);
-    return(retstr);
-}
-
-char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkeys,struct vin_info *V)
-{
-    cJSON *array,*json; int32_t len; uint8_t *data; char *paramstr,*retstr,*hexstr,*signedtx=0; struct iguana_info *coin = LP_coinfind(symbol);
-    memset(signedtxidp,0,sizeof(*signedtxidp));
-    *completedp = 0;
-    if ( coin == 0 )
-    {
-        printf("LP_signrawtx cant find coin.(%s)\n",symbol);
-        return(0);
-    }
-    array = cJSON_CreateArray();
-    jaddistr(array,rawtx);
-    jaddi(array,jduplicate(vins));
-    jaddi(array,jduplicate(privkeys));
-    paramstr = jprint(array,1);
-    //printf("signrawtransaction\n");
-    if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr)) != 0 )
-    {
-        if ( (json= cJSON_Parse(retstr)) != 0 )
-        {
-            if ( (hexstr= jstr(json,"hex")) != 0 )
-            {
-                len = (int32_t)strlen(hexstr);
-                signedtx = calloc(1,len+1);
-                strcpy(signedtx,hexstr);
-                *completedp = is_cJSON_True(jobj(json,"complete"));
-                data = malloc(len >> 1);
-                decode_hex(data,len>>1,hexstr);
-                *signedtxidp = bits256_doublesha256(0,data,len >> 1);
-            }
-            //else
-                printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
-            free_json(json);
-        }
-        free(retstr);
-    }
-    free(paramstr);
-    return(signedtx);
-}

@@ -265,6 +265,7 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
     coin->wiftype = wiftype;
     coin->inactive = (uint32_t)time(NULL);
     coin->bussock = LP_coinbus(busport);
+    coin->ctx = bitcoin_ctx();
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;
     else name2 = name;

@@ -28,7 +28,7 @@ struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid)
     return(tx);
 }
 
-struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,int32_t height,int32_t numvouts,int32_t numvins,uint32_t timestamp)
+struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,int32_t height,int32_t numvouts,int32_t numvins)
 {
     struct LP_transaction *tx; int32_t i;
     if ( (tx= LP_transactionfind(coin,txid)) == 0 )
@@ -42,7 +42,7 @@ struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,i
         tx->height = height;
         tx->numvouts = numvouts;
         tx->numvins = numvins;
-        tx->timestamp = timestamp;
+        //tx->timestamp = timestamp;
         tx->txid = txid;
         portable_mutex_lock(&coin->txmutex);
         HASH_ADD_KEYPTR(hh,coin->transactions,tx->txid.bytes,sizeof(tx->txid),tx);
@@ -53,7 +53,7 @@ struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,i
 
 int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
 {
-    int32_t i,ht,num = 0; uint32_t timestamp,blocktime; struct LP_transaction *tx,*tmp;
+    int32_t i,ht,num = 0; struct LP_transaction *tx,*tmp;
     HASH_ITER(hh,coin->transactions,tx,tmp)
     {
         for (i=0; i<tx->numvouts; i++)
@@ -62,7 +62,7 @@ int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
                 continue;
             if ( (ht= tx->outpoints[i].spendheight) == 0 )
             {
-                tx->outpoints[i].spendheight = LP_txheight(&timestamp,&blocktime,coin,tx->outpoints[i].spendtxid);
+                tx->outpoints[i].spendheight = LP_txheight(coin,tx->outpoints[i].spendtxid);
             }
             if ( (ht= tx->outpoints[i].spendheight) != 0 && ht > lastheight )
             {
@@ -109,16 +109,14 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
 
 int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
 {
-    struct LP_transaction *tx; char *address; int32_t i,n,height,numvouts,numvins,spentvout; uint32_t timestamp,blocktime; cJSON *txobj,*vins,*vouts,*vout,*vin,*sobj,*addresses; bits256 spenttxid; char str[65];
+    struct LP_transaction *tx; char *address; int32_t i,n,height,numvouts,numvins,spentvout; cJSON *txobj,*vins,*vouts,*vout,*vin,*sobj,*addresses; bits256 spenttxid; char str[65];
     if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
     {
         //printf("TX.(%s)\n",jprint(txobj,0));
-        height = LP_txheight(&timestamp,&blocktime,coin,txid);
-        if ( timestamp == 0 && height > 0 )
-            timestamp = blocktime;
+        height = LP_txheight(coin,txid);
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
-        if ( iter == 0 && vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins,timestamp)) != 0 )
+        if ( iter == 0 && vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins)) != 0 )
         {
             for (i=0; i<numvouts; i++)
             {
@@ -622,9 +620,9 @@ int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 se
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
 {
     int32_t i,n; cJSON *array; bits256 txid; struct iguana_info *coin; struct LP_transaction *tx;
-    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 || coin->electrum != 0 )
         return(-1);
-    if ( (array= LP_getmempool(symbol)) != 0 )
+    if ( (array= LP_getmempool(symbol,0)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -648,40 +646,46 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
     return(-1);
 }
 
-int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t mempool)
+int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t duration)
 {
-    struct iguana_info *coin; int32_t numconfirms = 100;
-//#ifndef BASILISK_DISABLEWAITTX
-    cJSON *txobj;
-    if ( (coin= LP_coinfind(rawtx->coin->symbol)) == 0 || coin->inactive != 0 )
+    struct iguana_info *coin; cJSON *array; uint32_t expiration,i,n;
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
         return(-1);
-    numconfirms = -1;
-    if ( (txobj= LP_gettx(rawtx->coin->symbol,rawtx->I.signedtxid)) != 0 )
+    expiration = (uint32_t)time(NULL) + duration;
+    while ( 1 )
     {
         if ( coin->electrum == 0 )
-            numconfirms = jint(txobj,"confirmations");
-        else numconfirms = coin->height - jint(txobj,"height");
-        free_json(txobj);
-    }
-    else if ( mempool != 0 && LP_mempoolscan(rawtx->coin->symbol,rawtx->I.signedtxid) >= 0 )
-        numconfirms = 0;
-//#endif
-    return(numconfirms);
-}
-
-int32_t LP_waitmempool(char *symbol,bits256 txid,int32_t duration)
-{
-    uint32_t expiration = (uint32_t)time(NULL) + duration;
-    while ( time(NULL) < expiration )
-    {
-        if ( LP_mempoolscan(symbol,txid) >= 0 )
-            return(0);
+        {
+            if ( LP_mempoolscan(symbol,txid) >= 0 )
+                return(0);
+        }
+        else
+        {
+            if ( (array= electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr)) != 0 )
+            {
+                if ( (n= cJSON_GetArraySize(array)) > 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        if ( bits256_cmp(txid,jbits256i(array,i)) == 0 )
+                        {
+                            free(array);
+                            char str[65]; printf("found %s %s in mempool\n",symbol,bits256_str(str,txid));
+                            return(0);
+                        }
+                    }
+                }
+                free(array);
+            }
+        }
+        if ( time(NULL) < expiration )
+            break;
         usleep(500000);
     }
     return(-1);
 }
 
-int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
+int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,char *coinaddr,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
 {
     struct iguana_info *coin; int32_t selector; cJSON *array;
     if ( symbol == 0 || symbol[0] == 0 || bits256_nonz(searchtxid) == 0 || bits256_nonz(searchtxid2) == 0 )
@@ -690,7 +694,7 @@ int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,b
         return(-1);
     if ( time(NULL) > coin->lastmempool+LP_MEMPOOL_TIMEINCR )
     {
-        if ( (array= LP_getmempool(symbol)) != 0 )
+        if ( (array= LP_getmempool(symbol,coinaddr)) != 0 )
         {
             free_json(array);
             coin->lastmempool = (uint32_t)time(NULL);
