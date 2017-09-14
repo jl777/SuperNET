@@ -878,7 +878,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                         }
                         else
                         {
-                            printf("skip.(%s)\n",jprint(item,0));
+                            printf("skip.(%s) coinht.%d\n",jprint(item,0),coin->height);
                             used++;
                         }
                     }
