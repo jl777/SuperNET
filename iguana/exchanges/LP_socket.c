@@ -462,7 +462,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     //printf("electrum listunspent last.(%s lag %d)\n",coin->lastunspent,(int32_t)(time(NULL) - coin->unspenttime));
     //if ( strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+10 )
     {
-        if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_history",addr,ELECTRUM_TIMEOUT)) != 0 )
+        if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.history",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
             printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
             electrum_process_array(coin,retjson);

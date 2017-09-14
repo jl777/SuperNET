@@ -98,6 +98,7 @@ void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int
 void LP_address_monitor(struct LP_pubkeyinfo *pubp)
 {
     struct iguana_info *coin,*tmp; char coinaddr[64]; cJSON *retjson; struct LP_address *ap;
+    return;
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
         bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
