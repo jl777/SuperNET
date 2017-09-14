@@ -354,7 +354,8 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
     char buf[128]; cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin == 0 )
+    printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
+    if ( coin == 0 || coin->inactive != 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
     {
