@@ -105,16 +105,17 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
 
 char *LP_apicall(struct iguana_info *coin,char *method,char *params)
 {
-    cJSON *retjson,*resultjson;
+    cJSON *retjson,*resultjson; char *retstr;
     if ( coin->electrum != 0 )
     {
         if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT)) != 0 )
         {
+            printf("got.%p (%s)\n",retjson,jprint(retjson,0));
             if ( (resultjson= jobj(retjson,"result")) != 0 )
             {
-                resultjson = jduplicate(resultjson);
+                retstr = jprint(resultjson,0);
                 free_json(retjson);
-                return(jprint(resultjson,1));
+                return(retstr);
             } else return(jprint(retjson,1));
         } return(clonestr("{\"error\":\"electrum no response\"}"));
     } else return(bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params));
