@@ -182,9 +182,9 @@ struct iguana_info
     portable_mutex_t txmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor;
+    uint32_t counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,unspenttime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag;
-    char symbol[16],smartaddr[64],userpass[1024],serverport[128];
+    char symbol[16],smartaddr[64],userpass[1024],serverport[128],lastunspent[64];
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
