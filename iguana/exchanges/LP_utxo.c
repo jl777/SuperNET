@@ -151,7 +151,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
         {
             if ( up->spendheight <= 0 )
-                jaddi(array,LP_address_item(up,electrumret));
+                jaddi(array,LP_address_item(coin,up,electrumret));
         }
     }
     portable_mutex_unlock(&coin->txmutex);
