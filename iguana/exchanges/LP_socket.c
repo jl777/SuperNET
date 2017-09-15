@@ -647,6 +647,8 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
             DL_FOREACH(ep->pendingQ.list,item)
             {
                 stritem = (struct stritem *)item;
+                if ( *stritem->retptrp != 0 )
+                    continue;
                 if ( item->type == idnum )
                 {
                     //printf("matched idnum.%d result.%p\n",idnum,resultjson);
@@ -658,13 +660,13 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 }
                 if ( stritem->expiration < ep->lasttime )
                 {
-                    DL_DELETE(ep->pendingQ.list,item);
+                    //DL_DELETE(ep->pendingQ.list,item);
                     printf("expired (%s)\n",stritem->str);
                     errjson = cJSON_CreateObject();
                     jaddnum(errjson,"id",item->type);
                     jaddstr(errjson,"error","timeout");
                     *((cJSON **)stritem->retptrp) = errjson;
-                    free(item);
+                    //free(item);
                 }
             }
         }
