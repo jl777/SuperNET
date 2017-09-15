@@ -453,7 +453,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
                     strcpy(coinaddr,tx->outpoints[vout].coinaddr);
                     //printf("(%s) return value %.8f + interest %.8f\n",coinaddr,dstr(tx->outpoints[vout].value),dstr(tx->outpoints[vout].interest));
                 }
-                return(tx->outpoints[vout].value + tx->outpoints[vout].interest);
+                return(tx->outpoints[vout].value + 0*tx->outpoints[vout].interest);
             }
         } else printf("LP_txvalue vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
     }
