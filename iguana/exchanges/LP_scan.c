@@ -609,7 +609,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
                 return(tx->outpoints[vout].value + tx->outpoints[vout].interest);
             }
         } else printf("LP_txvalue vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
-    } else printf("LP_txvalue couldnt find tx %s\n",bits256_str(str,txid));
+    } else printf("LP_txvalue couldnt find %s tx %s\n",coin->symbol,bits256_str(str,txid));
     return(0);
 }
 
