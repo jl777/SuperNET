@@ -90,6 +90,7 @@ struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
 void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag;
+    return;
     portable_mutex_lock(&coin->txmutex);
     if ( (ap= _LP_address(coin,coinaddr)) != 0 )
     {
