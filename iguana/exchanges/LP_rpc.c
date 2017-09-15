@@ -617,66 +617,6 @@ cJSON *LP_getblock(char *symbol,bits256 txid)
     return(bitcoin_json(coin,"getblock",buf));
 }
 
-int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
-{
-    bits256 blockhash; struct LP_transaction *tx; cJSON *blockobj,*txobj; int32_t height = 0;
-    if ( coin == 0 )
-        return(-1);
-    if ( coin->electrum == 0 )
-    {
-        if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
-        {
-            //*timestampp = juint(txobj,"locktime");
-            //*blocktimep = juint(txobj,"blocktime");
-            blockhash = jbits256(txobj,"blockhash");
-            if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
-            {
-                height = jint(blockobj,"height");
-                //printf("%s LP_txheight.%d\n",coin->symbol,height);
-                free_json(blockobj);
-            } //else printf("%s LP_txheight error (%s)\n",coin->symbol,jprint(txobj,0));
-            free_json(txobj);
-        }
-    }
-    else
-    {
-        if ( (tx= LP_transactionfind(coin,txid)) != 0 )
-            height = tx->height;
-    }
-    return(height);
-}
-
-int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t mempool)
-{
-    struct iguana_info *coin; int32_t ht,numconfirms = 100;
-    //#ifndef BASILISK_DISABLEWAITTX
-    cJSON *txobj;
-    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
-        return(-1);
-    if ( coin->electrum == 0 )
-    {
-        numconfirms = -1;
-        if ( (txobj= LP_gettx(symbol,txid)) != 0 )
-        {
-            if ( coin->electrum == 0 )
-                numconfirms = jint(txobj,"confirmations");
-            else numconfirms = coin->height - jint(txobj,"height");
-            free_json(txobj);
-        }
-        else if ( mempool != 0 && LP_mempoolscan(symbol,txid) >= 0 )
-            numconfirms = 0;
-    }
-    else
-    {
-        if ( (ht= LP_txheight(coin,txid)) > 0 && ht <= coin->height )
-            numconfirms = (coin->height - ht);
-        else if ( mempool != 0 && LP_waitmempool(symbol,coinaddr,txid,-1) >= 0 )
-            numconfirms = 0;
-    }
-    //#endif
-    return(numconfirms);
-}
-
 // not in electrum path
 uint64_t LP_txfee(char *symbol)
 {

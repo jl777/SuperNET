@@ -302,6 +302,7 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t duration
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid);
 int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter);
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
+int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
 
 
 #endif

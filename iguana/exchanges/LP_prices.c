@@ -80,7 +80,7 @@ struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
     return(ap);
 }
 
-void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value)
+/*void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value)
 {
     struct LP_address *ap; struct LP_address_utxo *up;
     portable_mutex_lock(&coin->txmutex);
@@ -117,7 +117,7 @@ void LP_address_monitor(struct LP_pubkeyinfo *pubp)
             }
         }
     }
-}
+}*/
 
 int32_t LP_pricevalid(double price)
 {
@@ -293,7 +293,7 @@ void LP_prices_parse(cJSON *obj)
                     printf("%02x",pubp->rmd160[i]);
                 char str[65]; printf(" -> rmd160.(%s) for %s\n",hexstr,bits256_str(str,pubkey));
                 memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
-                LP_address_monitor(pubp);
+                //LP_address_monitor(pubp);
             }
         }
         if ( (timestamp= juint(obj,"timestamp")) > pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
