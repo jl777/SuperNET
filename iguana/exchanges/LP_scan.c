@@ -575,7 +575,7 @@ int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
     
 uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 {
-    struct LP_transaction *tx; struct iguana_info *coin; char str[65],str2[65];
+    struct LP_transaction *tx; cJSON *txobj; uint64_t value; struct iguana_info *coin; char str[65],str2[65];
     if ( bits256_nonz(txid) == 0 )
         return(0);
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
@@ -609,7 +609,17 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
                 return(tx->outpoints[vout].value + tx->outpoints[vout].interest);
             }
         } else printf("LP_txvalue vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
-    } else printf("LP_txvalue couldnt find %s tx %s\n",coin->symbol,bits256_str(str,txid));
+    }
+    else
+    {
+        printf("pruned node? LP_txvalue couldnt find %s tx %s\n",coin->symbol,bits256_str(str,txid));
+        if ( (txobj= LP_gettxout(coin->symbol,txid,vout)) != 0 )
+        {
+            value = SATOSHIDEN * jdouble(txobj,"value");
+            free_json(txobj);
+            return(value);
+        }
+    }
     return(0);
 }
 
