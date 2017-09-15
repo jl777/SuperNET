@@ -85,6 +85,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_coins.c"
 #include "LP_rpc.c"
 #include "LP_prices.c"
+#include "LP_utxo.c"
 #include "LP_scan.c"
 #include "LP_transaction.c"
 #include "LP_remember.c"
@@ -419,11 +420,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        int32_t height; bits256 zero; struct LP_address *ap,*atmp; struct LP_address_utxo *up;
+        int32_t height; bits256 zero; //struct LP_address *ap,*atmp; struct LP_address_utxo *up;
         //printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
         if ( coin->inactive != 0 || coin->electrum != 0 )
             continue;
-        if ( time(NULL) > coin->lastmonitor+60 )
+        /*if ( time(NULL) > coin->lastmonitor+60 )
         {
             portable_mutex_lock(&coin->txmutex);
             HASH_ITER(hh,coin->addresses,ap,atmp)
@@ -442,7 +443,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             }
             portable_mutex_unlock(&coin->txmutex);
             coin->lastmonitor = (uint32_t)time(NULL);
-        }
+        }*/
         memset(zero.bytes,0,sizeof(zero));
         if ( time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {

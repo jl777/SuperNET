@@ -80,7 +80,7 @@ struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
     return(ap);
 }
 
-void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value)
+/*void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value)
 {
     struct LP_address *ap; struct LP_address_utxo *up;
     portable_mutex_lock(&coin->txmutex);
@@ -98,6 +98,7 @@ void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int
 void LP_address_monitor(struct LP_pubkeyinfo *pubp)
 {
     struct iguana_info *coin,*tmp; char coinaddr[64]; cJSON *retjson; struct LP_address *ap;
+    return;
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
         bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
@@ -111,12 +112,12 @@ void LP_address_monitor(struct LP_pubkeyinfo *pubp)
         {
             if ( (retjson= electrum_address_subscribe(coin->symbol,coin->electrum,&retjson,coinaddr)) != 0 )
             {
-                printf("%s MONITOR.(%s) -> %p\n",coin->symbol,coinaddr,retjson);
+                printf("%s MONITOR.(%s) -> %s\n",coin->symbol,coinaddr,jprint(retjson,0));
                 free_json(retjson);
             }
         }
     }
-}
+}*/
 
 int32_t LP_pricevalid(double price)
 {
@@ -292,7 +293,7 @@ void LP_prices_parse(cJSON *obj)
                     printf("%02x",pubp->rmd160[i]);
                 char str[65]; printf(" -> rmd160.(%s) for %s\n",hexstr,bits256_str(str,pubkey));
                 memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
-                LP_address_monitor(pubp);
+                //LP_address_monitor(pubp);
             }
         }
         if ( (timestamp= juint(obj,"timestamp")) > pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )

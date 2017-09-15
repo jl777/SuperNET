@@ -1073,7 +1073,7 @@ int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay)
 
 void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t v)
 {
-    cJSON *txobj,*vouts,*vout,*addresses,*item,*skey; uint8_t extraspace[32768]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; double val; int32_t n,m,suppress_pubkeys = 0;
+    cJSON *txobj,*vouts,*vout,*addresses,*item,*skey; uint8_t extraspace[32768]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; int32_t n,m,suppress_pubkeys = 0;
     if ( valuep != 0 )
         *valuep = 0;
     if ( (txobj= bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&signedtxid,&msgtx,extraspace,sizeof(extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
@@ -1083,13 +1083,7 @@ void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,u
         {
             vout = jitem(vouts,v);
             if ( valuep != 0 )
-            {
-                *valuep = 0;
-                if ( (val= jdouble(vout,"value")) < SMALLVAL )
-                    val = jdouble(vout,"amount");
-                if ( val > SMALLVAL )
-                    *valuep = (val * SATOSHIDEN + 0.0000000049);
-            }
+                *valuep = LP_value_extract(vout);
             //printf("VOUT.(%s)\n",jprint(vout,0));
             if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
             {
