@@ -57,7 +57,7 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                value = LP_value_extract(item);
+                value = LP_value_extract(item,1);
                 valuesum += value;
             }
         }

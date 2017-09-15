@@ -28,13 +28,13 @@
 
 // locally track spends, height
 
-uint64_t LP_value_extract(cJSON *obj)
+uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
 {
     double val = 0.; uint64_t value;
     if ( (val= jdouble(obj,"amount")) < SMALLVAL )
         val = jdouble(obj,"value");
     if ( val > SMALLVAL )
-        value = ((val + jdouble(obj,"interest")) * SATOSHIDEN + 0.0000000049);
+        value = ((val + jdouble(obj,"interest")*addinterest) * SATOSHIDEN + 0.0000000049);
     else value = 0;
     return(value);
 }
@@ -262,7 +262,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
     destaddr[0] = 0;
     if ( (txobj= LP_gettxout(coin->symbol,txid,vout)) != 0 )
     {
-        if ( (value= LP_value_extract(txobj)) == 0 )
+        if ( (value= LP_value_extract(txobj,0)) == 0 )
         {
             char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d\n",coin->symbol,bits256_str(str,txid),jprint(txobj,0),vout);
         }
@@ -298,7 +298,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
             for (i=0; i<numvouts; i++)
             {
                 vout = jitem(vouts,i);
-                tx->outpoints[i].value = LP_value_extract(vout);
+                tx->outpoints[i].value = LP_value_extract(vout,0);
                 tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
                 LP_destaddr(tx->outpoints[i].coinaddr,vout);
                 /*if ( (sobj= jobj(vout,"scriptPubKey")) != 0 )

@@ -735,7 +735,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                     {
                         txid = jbits256(item,"txid");
                         vout = juint(item,"vout");
-                        value = LP_value_extract(item);
+                        value = LP_value_extract(item,0);
                         height = coin->height - jint(item,"confirmations");
                     }
                     else
