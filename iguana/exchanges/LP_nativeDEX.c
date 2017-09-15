@@ -420,30 +420,27 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        int32_t height; bits256 zero; //struct LP_address *ap,*atmp; struct LP_address_utxo *up;
+        int32_t height; bits256 zero; struct LP_address *ap,*atmp; struct LP_address_utxo *up,*utmp;
         //printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
         if ( coin->inactive != 0 || coin->electrum != 0 )
             continue;
-        /*if ( time(NULL) > coin->lastmonitor+60 )
+        if ( time(NULL) > coin->lastmonitor+60 )
         {
             portable_mutex_lock(&coin->txmutex);
             HASH_ITER(hh,coin->addresses,ap,atmp)
             {
-                if ( ap->monitor != 0 )
+                DL_FOREACH_SAFE(ap->utxos,up,utmp)
                 {
-                    DL_FOREACH(ap->utxos,up)
+                    if ( up->spentflag == 0 )
                     {
-                        if ( up->spentflag == 0 )
-                        {
-                            if ( LP_txvalue(0,coin->symbol,up->U.txid,up->U.vout) == 0 )
-                                up->spentflag = (uint32_t)time(NULL);
-                        }
+                        if ( LP_txvalue(0,coin->symbol,up->U.txid,up->U.vout) == 0 )
+                            up->spentflag = (uint32_t)time(NULL);
                     }
                 }
             }
             portable_mutex_unlock(&coin->txmutex);
             coin->lastmonitor = (uint32_t)time(NULL);
-        }*/
+        }
         memset(zero.bytes,0,sizeof(zero));
         if ( time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {

@@ -18,6 +18,16 @@
 //  marketmaker
 //
 
+// listunspent: valid for local node, mostly valid for electrum
+
+// full node + electrum for external listunspent, gettxout to validate
+// pruned node + electrum for external listunspent, gettxout to validate
+// full node, network for external listunspent, gettxout to validate
+// pruned node, network for external listunspent, gettxout to validate
+// electrum only, network for gettxout
+
+// locally track spends, height
+
 uint64_t LP_value_extract(cJSON *obj)
 {
     double val = 0.; uint64_t value;
@@ -28,6 +38,85 @@ uint64_t LP_value_extract(cJSON *obj)
     else value = 0;
     return(value);
 }
+
+struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap;
+    HASH_FIND(hh,coin->addresses,coinaddr,strlen(coinaddr),ap);
+    return(ap);
+}
+
+struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap;
+    ap = calloc(1,sizeof(*ap));
+    safecopy(ap->coinaddr,coinaddr,sizeof(ap->coinaddr));
+    HASH_ADD_KEYPTR(hh,coin->addresses,ap->coinaddr,strlen(ap->coinaddr),ap);
+    return(ap);
+}
+
+struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap;
+    if ( (ap= _LP_addressfind(coin,coinaddr)) == 0 )
+        ap = _LP_addressadd(coin,coinaddr);
+    return(ap);
+}
+
+void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height)
+{
+    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag;
+    portable_mutex_lock(&coin->txmutex);
+    if ( (ap= _LP_address(coin,coinaddr)) != 0 )
+    {
+        flag = 0;
+        DL_FOREACH_SAFE(ap->utxos,up,tmp)
+        {
+            if ( vout == up->U.vout && bits256_cmp(up->U.txid,txid) == 0 )
+            {
+                if ( up->U.height <= 0 && height > 0 )
+                    up->U.height = height;
+                flag = 1;
+                break;
+            }
+        }
+        if ( flag == 0 )
+        {
+            up = calloc(1,sizeof(*up));
+            up->U.txid = txid;
+            up->U.vout = vout;
+            up->U.height = height;
+            up->U.value = value;
+            DL_APPEND(ap->utxos,up);
+        }
+    }
+    portable_mutex_unlock(&coin->txmutex);
+}
+
+/*void LP_address_monitor(struct LP_pubkeyinfo *pubp)
+{
+    struct iguana_info *coin,*tmp; char coinaddr[64]; cJSON *retjson; struct LP_address *ap;
+    return;
+    HASH_ITER(hh,LP_coins,coin,tmp)
+    {
+        bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
+        portable_mutex_lock(&coin->txmutex);
+        if ( (ap= _LP_address(coin,coinaddr)) != 0 )
+        {
+            ap->monitor = (uint32_t)time(NULL);
+        }
+        portable_mutex_unlock(&coin->txmutex);
+        if ( coin->electrum != 0 )
+        {
+            if ( (retjson= electrum_address_subscribe(coin->symbol,coin->electrum,&retjson,coinaddr)) != 0 )
+            {
+                printf("%s MONITOR.(%s) -> %s\n",coin->symbol,coinaddr,jprint(retjson,0));
+                free_json(retjson);
+            }
+        }
+    }
+}
+*/
 
 void LP_utxosetkey(uint8_t *key,bits256 txid,int32_t vout)
 {
@@ -270,9 +359,33 @@ int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
     return(value + interest);
 }
 
+int32_t LP_destaddr(char *destaddr,cJSON *item)
+{
+    int32_t m,retval = -1; cJSON *addresses,*skey; char *addr;
+    if ( (skey= jobj(item,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
+    {
+        item = jitem(addresses,0);
+        if ( (addr= jstr(item,0)) != 0 )
+        {
+            safecopy(destaddr,addr,64);
+            retval = 0;
+        }
+        //printf("item.(%s) -> dest.(%s)\n",jprint(item,0),destaddr);
+    }
+    return(retval);
+}
+
+int32_t LP_txdestaddr(char *destaddr,bits256 txid,int32_t vout,cJSON *txobj)
+{
+    int32_t n,retval = -1; cJSON *vouts;
+    if ( (vouts= jarray(&n,txobj,"vout")) != 0 && vout < n )
+        retval = LP_destaddr(destaddr,jitem(vouts,vout));
+    return(retval);
+}
+
 uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 {
-    struct LP_transaction *tx; cJSON *txobj; uint64_t value; struct iguana_info *coin; char str[65],str2[65];
+    struct LP_transaction *tx; cJSON *txobj; uint64_t value; struct iguana_info *coin; char str[65],str2[65],_coinaddr[65];
     if ( bits256_nonz(txid) == 0 )
         return(0);
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
@@ -312,6 +425,9 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         if ( (txobj= LP_gettxout(coin->symbol,txid,vout)) != 0 )
         {
             value = SATOSHIDEN * jdouble(txobj,"value");
+            if ( coinaddr == 0 )
+                coinaddr = _coinaddr;
+            LP_destaddr(coinaddr,txobj);
             free_json(txobj);
             printf("pruned node? LP_txvalue couldnt find %s tx %s, but gettxout %.8f\n",coin->symbol,bits256_str(str,txid),dstr(value));
             return(value);

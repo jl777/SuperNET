@@ -192,7 +192,7 @@ struct iguana_info
     uint8_t pubkey33[33];
 };
 
-struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout; };
+struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout,height; };
 
 struct LP_utxostats { uint32_t sessionid,lasttime,errors,swappending,spentflag,lastspentcheck,bestflag; };
 
@@ -209,7 +209,6 @@ struct LP_utxoinfo
     struct _LP_utxoinfo payment,deposit,fee;
     struct LP_utxostats T;
     struct LP_utxoswap S;
-    //struct LP_utxonetwork N;
     int32_t iambob,iamlp;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
@@ -303,6 +302,7 @@ struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid)
 int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter);
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
+void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height);
 
 
 #endif

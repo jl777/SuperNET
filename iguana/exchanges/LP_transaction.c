@@ -795,33 +795,13 @@ char *basilisk_swap_Aspend(char *name,char *symbol,uint64_t Atxfee,uint8_t wifta
     return(signedtx);
 }
 
-int32_t LP_swap_txdestaddr(char *destaddr,bits256 txid,int32_t vout,cJSON *txobj)
-{
-    int32_t n,m,retval = -1; cJSON *vouts,*item,*addresses,*skey; char *addr;
-    if ( (vouts= jarray(&n,txobj,"vout")) != 0 && vout < n )
-    {
-        item = jitem(vouts,vout);
-        if ( (skey= jobj(item,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
-        {
-            item = jitem(addresses,0);
-            if ( (addr= jstr(item,0)) != 0 )
-            {
-                safecopy(destaddr,addr,64);
-                retval = 0;
-            }
-            //printf("item.(%s) -> dest.(%s)\n",jprint(item,0),destaddr);
-        }
-    }
-    return(retval);
-}
-
 int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
 {
     cJSON *retjson;
     coinaddr[0] = 0;
     if ( (retjson= LP_gettx(symbol,txid)) != 0 )
     {
-        LP_swap_txdestaddr(coinaddr,txid,vout,retjson);
+        LP_txdestaddr(coinaddr,txid,vout,retjson);
         free_json(retjson);
     }
     return(coinaddr[0] != 0);

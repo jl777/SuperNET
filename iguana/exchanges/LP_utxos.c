@@ -537,11 +537,6 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
         HASH_ADD_KEYPTR(hh2,LP_utxoinfos2[iambob],utxo->key2,sizeof(utxo->key2),utxo);
     portable_mutex_unlock(&LP_utxomutex);
-    /*if ( 0 && coin->electrum == 0 )
-    {
-        LP_address_utxoadd(coin,coinaddr,txid,vout,value);
-        LP_address_utxoadd(coin,coinaddr,txid2,vout2,value2);
-    }*/
     if ( iambob != 0 )
     {
         if ( LP_mypeer != 0 )
@@ -715,7 +710,7 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
 
 uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
-    char *script,destaddr[64]; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,value,total = 0; int64_t targetval;
+    char *script,destaddr[64]; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,height,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,value,total = 0; int64_t targetval;
     if ( coin == 0 )
     {
         printf("coin not active\n");
@@ -732,41 +727,33 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                 if ( iambob == 0 )
                     values = calloc(n,sizeof(*values));
                 else memset(values,0,n * sizeof(*values));
-                //if ( iambob == 0 && IAMLP != 0 )
-                //    continue;
                 used = 0;
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
                     if ( coin->electrum == 0 )
                     {
-                        //satoshis = SATOSHIDEN * jdouble(item,"amount");
-                        //if ( satoshis == 0 )
-                        //    satoshis = SATOSHIDEN * jdouble(item,"value");
-                        satoshis = LP_txvalue(destaddr,coin->symbol,jbits256(item,"txid"),juint(item,"vout"));
-                        if ( LP_inventory_prevent(iambob,coin->symbol,jbits256(item,"txid"),juint(item,"vout")) == 0 && jint(item,"confirmations") > 0 )
-                        {
-                            //printf("%s\n",jprint(item,0));
-                            values[i] = satoshis;
-                        } else used++;
+                        txid = jbits256(item,"txid");
+                        vout = juint(item,"vout");
+                        value = LP_value_extract(item);
+                        height = coin->height - jint(item,"confirmations");
                     }
                     else
                     {
-                     //{"value":1000000,"tx_hash":"4e4f818c53486c0576693b4cd379849e5ff95538b38e4100f48884073a4e7636","tx_pos":0,"height":484877}
-                            satoshis = j64bits(item,"value");
-                        satoshis = LP_txvalue(destaddr,coin->symbol,jbits256(item,"tx_hash"),juint(item,"tx_pos"));
-                        if ( LP_inventory_prevent(iambob,coin->symbol,jbits256(item,"tx_hash"),juint(item,"tx_pos")) == 0 && jint(item,"height") < coin->height )
-                        {
-                            //printf("%s\n",jprint(item,0));
-                            values[i] = satoshis;
-                        }
-                        else
-                        {
-                            printf("skip.(%s) coinht.%d\n",jprint(item,0),coin->height);
-                            used++;
-                        }
+                        txid = jbits256(item,"tx_hash");
+                        vout = juint(item,"tx_pos");
+                        value = j64bits(item,"value");
+                        height = jint(item,"height");
                     }
-                    //printf("%.8f ",dstr(satoshis));
+                    satoshis = LP_txvalue(destaddr,coin->symbol,txid,vout);
+                    if ( satoshis != value )
+                        printf("unexpected privkey_init value mismatch %.8f vs %.8f (%s)\n",dstr(satoshis),dstr(value),jprint(item,0));
+                    if ( LP_inventory_prevent(iambob,coin->symbol,txid,vout) == 0 && height > 0 )
+                    {
+                        //printf("%s\n",jprint(item,0));
+                        values[i] = satoshis;
+                        LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height);
+                    } else used++;
                 }
                 //printf("array.%d\n",n);
                 while ( used < n-1 )
