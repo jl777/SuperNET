@@ -351,19 +351,6 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
     }
 }
 
-cJSON *LP_listunspent(char *symbol,char *coinaddr)
-{
-    char buf[128]; cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
-    //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
-    if ( coin == 0 || coin->inactive != 0 )
-        return(cJSON_Parse("{\"error\":\"no coin\"}"));
-    if ( coin->electrum == 0 )
-    {
-        sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
-        return(bitcoin_json(coin,"listunspent",buf));
-    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr));
-}
-
 /*cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t skip)
 {
     char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
@@ -408,6 +395,43 @@ cJSON *LP_validateaddress(char *symbol,char *address)
         sprintf(buf,"[\"%s\"]",address);
         return(bitcoin_json(coin,"validateaddress",buf));
     }
+}
+
+int32_t LP_address_ismine(char *symbol,char *address)
+{
+    int32_t doneflag = 0; cJSON *retjson;
+    if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
+    {
+        if ( jobj(retjson,"ismine") != 0 && is_cJSON_True(jobj(retjson,"ismine")) != 0 )
+        {
+            doneflag = 1;
+            //printf("%s already ismine\n",address);
+        }
+        //printf("%s\n",jprint(retjson,0));
+        free_json(retjson);
+    }
+    return(doneflag);
+}
+
+cJSON *LP_listunspent(char *symbol,char *coinaddr)
+{
+    char buf[128]; cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
+    //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
+    if ( coin == 0 || coin->inactive != 0 )
+        return(cJSON_Parse("{\"error\":\"no coin\"}"));
+    if ( coin->electrum == 0 )
+    {
+        if ( LP_address_ismine(symbol,coinaddr) > 0 )
+        {
+            sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
+            return(bitcoin_json(coin,"listunspent",buf));
+        }
+        else
+        {
+            printf("return local RAM listunspent\n");
+            return(0);
+        }
+    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr));
 }
 
 cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
