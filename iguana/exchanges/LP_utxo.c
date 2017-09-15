@@ -90,7 +90,6 @@ struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
 void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag;
-    return;
     portable_mutex_lock(&coin->txmutex);
     if ( (ap= _LP_address(coin,coinaddr)) != 0 )
     {
@@ -249,7 +248,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
     struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; cJSON *txobj,*vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
     if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
     {
-        printf("TX.(%s)\n",jprint(txobj,0));
+        //printf("TX.(%s)\n",jprint(txobj,0));
         if ( coin->electrum == 0 )
             height = LP_txheight(coin,txid);
         else height = -1;
@@ -257,7 +256,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
         vouts = jarray(&numvouts,txobj,"vout");
         if ( iter == 0 && vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins)) != 0 )
         {
-            printf("create txid numvouts.%d numvins.%d\n",numvouts,numvins);
+            //printf("create txid numvouts.%d numvins.%d\n",numvouts,numvins);
             for (i=0; i<numvouts; i++)
             {
                 vout = jitem(vouts,i);
