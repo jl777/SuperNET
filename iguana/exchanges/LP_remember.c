@@ -567,9 +567,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     Dredeemlen >>= 1;
                     decode_hex(Dredeemscript,Dredeemlen,rstr);
                 }
-                if ( (value= jdouble(txobj,"amount") * SATOSHIDEN) == 0 )
-                    value = jdouble(txobj,"value") * SATOSHIDEN;
-                values[i] = value;
+                values[i] = value = LP_value_extract(txobj);
                 if ( (symbol= jstr(txobj,"coin")) != 0 )
                 {
                     if ( i == BASILISK_ALICESPEND || i == BASILISK_BOBPAYMENT || i == BASILISK_BOBDEPOSIT || i == BASILISK_BOBREFUND || i == BASILISK_BOBRECLAIM || i == BASILISK_ALICECLAIM )

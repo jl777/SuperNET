@@ -41,37 +41,6 @@ int32_t LP_isunspent(struct LP_utxoinfo *utxo)
     else return(0);
 }
 
-void LP_utxosetkey(uint8_t *key,bits256 txid,int32_t vout)
-{
-    memcpy(key,txid.bytes,sizeof(txid));
-    memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
-}
-
-struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
-{
-    struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
-    LP_utxosetkey(key,txid,vout);
-    HASH_FIND(hh,LP_utxoinfos[iambob],key,sizeof(key),utxo);
-    return(utxo);
-}
-
-struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)
-{
-    struct LP_utxoinfo *utxo=0; uint8_t key2[sizeof(txid2) + sizeof(vout2)];
-    LP_utxosetkey(key2,txid2,vout2);
-    HASH_FIND(hh2,LP_utxoinfos2[iambob],key2,sizeof(key2),utxo);
-    return(utxo);
-}
-
-struct LP_utxoinfo *LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
-{
-    struct LP_utxoinfo *utxo=0;
-    portable_mutex_lock(&LP_utxomutex);
-    utxo = _LP_utxofind(iambob,txid,vout);
-    portable_mutex_unlock(&LP_utxomutex);
-    return(utxo);
-}
-
 struct LP_utxoinfo *LP_utxopairfind(int32_t iambob,bits256 txid,int32_t vout,bits256 txid2,int32_t vout2)
 {
     struct LP_utxoinfo *utxo=0; struct _LP_utxoinfo u;
@@ -82,15 +51,6 @@ struct LP_utxoinfo *LP_utxopairfind(int32_t iambob,bits256 txid,int32_t vout,bit
             return(utxo);
     }
     return(0);
-}
-
-struct LP_utxoinfo *LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)
-{
-    struct LP_utxoinfo *utxo=0;
-    portable_mutex_lock(&LP_utxomutex);
-    utxo = _LP_utxo2find(iambob,txid2,vout2);
-    portable_mutex_unlock(&LP_utxomutex);
-    return(utxo);
 }
 
 struct LP_utxoinfo *LP_utxofinds(int32_t iambob,bits256 txid,int32_t vout,bits256 txid2,int32_t vout2)
@@ -286,75 +246,6 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
     return(item);
 }
 
-int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
-{
-    //struct LP_utxoinfo *utxo;
-    uint64_t val,val2=0,txfee,threshold=0; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 )
-    {
-        printf("null txid not eligible\n");
-        return(-1);
-    }
-    destaddr[0] = destaddr2[0] = 0;
-    if ( coin != 0 && IAMLP != 0 && coin->inactive != 0 )
-        bypass = 1;
-    if ( bypass != 0 )
-        val = satoshis;
-    else val = LP_txvalue(destaddr,symbol,txid,vout);
-    txfee = LP_txfeecalc(LP_coinfind(symbol),0);
-    if ( val >= satoshis && val > (1+LP_MINSIZE_TXFEEMULT)*txfee )
-    {
-        threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : (LP_DEXFEE(satoshis) + txfee);
-        if ( bypass != 0 )
-            val2 = threshold;
-        else val2 = LP_txvalue(destaddr2,symbol,txid2,vout2);
-        if ( val2 >= threshold )
-        {
-            if ( bypass == 0 && strcmp(destaddr,destaddr2) != 0 )
-                printf("mismatched %s destaddr (%s) vs (%s)\n",symbol,destaddr,destaddr2);
-            else if ( bypass == 0 && ((iambob == 0 && val2 > val) || (iambob != 0 && val2 <= satoshis)) )
-                printf("iambob.%d ineligible due to offsides: val %.8f and val2 %.8f vs %.8f diff %lld\n",iambob,dstr(val),dstr(val2),dstr(satoshis),(long long)(val2 - val));
-            else
-            {
-                *valp = val;
-                *val2p = val2;
-                return(1);
-            }
-        } // else printf("no val2\n");
-    }
-    char str[65],str2[65]; printf("spent.%d %s txid or value %.8f < %.8f or val2 %.8f < %.8f, %s/v%d %s/v%d or < 10x txfee %.8f\n",iambob,symbol,dstr(val),dstr(satoshis),dstr(val2),dstr(threshold),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2,dstr(txfee));
-    /*for (iter=0; iter<2; iter++)
-    {
-        if ( (utxo= LP_utxofind(iter,txid,vout)) != 0 )
-        {
-            //printf("iambob.%d case 00\n",iter);
-            if ( utxo->T.spentflag == 0 )
-                utxo->T.spentflag = (uint32_t)time(NULL);
-        }
-        if ( (utxo= LP_utxo2find(iter,txid,vout)) != 0 )
-        {
-            //printf("iambob.%d case 01\n",iter);
-            if ( utxo->T.spentflag == 0 )
-                utxo->T.spentflag = (uint32_t)time(NULL);
-        }
-        if ( (utxo= LP_utxofind(iter,txid2,vout2)) != 0 )
-        {
-            //printf("iambob.%d case 10\n",iter);
-            if ( utxo->T.spentflag == 0 )
-                utxo->T.spentflag = (uint32_t)time(NULL);
-        }
-        if ( (utxo= LP_utxo2find(iter,txid2,vout2)) != 0 )
-        {
-            //printf("iambob.%d case 11\n",iter);
-            if ( utxo->T.spentflag == 0 )
-                utxo->T.spentflag = (uint32_t)time(NULL);
-        }
-    }*/
-    *valp = val;
-    *val2p = val2;
-    return(0);
-}
-
 char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t lastn)
 {
     int32_t i,n,m; uint64_t val,val2; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo,*tmp; cJSON *utxosjson = cJSON_CreateArray();
@@ -381,26 +272,6 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
             cJSON_DeleteItemFromArray(utxosjson,0);
     }
     return(jprint(utxosjson,1));
-}
-
-int32_t LP_inventory_prevent(int32_t iambob,char *symbol,bits256 txid,int32_t vout)
-{
-    struct LP_utxoinfo *utxo; struct LP_transaction *tx; struct iguana_info *coin;
-    if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 || (utxo= LP_utxo2find(iambob,txid,vout)) != 0 )
-    {
-        if ( (coin= LP_coinfind(symbol)) != 0 && (tx= LP_transactionfind(coin,txid)) != 0 )
-        {
-            if ( tx->outpoints[vout].spendheight > 0 )
-                utxo->T.spentflag = tx->outpoints[vout].spendheight;
-            else utxo->T.spentflag = 0;
-        }
-        if ( utxo->T.spentflag != 0 )
-        {
-            char str[65]; printf("prevent adding iambob.%d %s/v%d to inventory\n",iambob,bits256_str(str,txid),vout);
-            return(1);
-        }
-    }
-    return(0);
 }
 
 struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
@@ -666,11 +537,11 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
     if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
         HASH_ADD_KEYPTR(hh2,LP_utxoinfos2[iambob],utxo->key2,sizeof(utxo->key2),utxo);
     portable_mutex_unlock(&LP_utxomutex);
-    if ( 0 && coin->electrum == 0 )
+    /*if ( 0 && coin->electrum == 0 )
     {
         LP_address_utxoadd(coin,coinaddr,txid,vout,value);
         LP_address_utxoadd(coin,coinaddr,txid2,vout2,value2);
-    }
+    }*/
     if ( iambob != 0 )
     {
         if ( LP_mypeer != 0 )

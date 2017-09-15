@@ -329,7 +329,7 @@ void electrum_process_array(struct iguana_info *coin,cJSON *array)
                 if ( jobj(item,"tx_pos") != 0 && jobj(item,"value") != 0 && (v= jint(item,"tx_pos")) >= 0 && v < tx->numvouts )
                 {
                     value = j64bits(item,"value");
-                    if ( value != tx->outpoints[v].value )
+                    if ( tx->outpoints[v].value == 0 && value != tx->outpoints[v].value )
                     {
                         printf(">>>>>>>>>> set %s/v%d <- %.8f vs %.8f\n",bits256_str(str,txid),v,dstr(value),dstr(tx->outpoints[v].value));
                         tx->outpoints[v].value = value;
