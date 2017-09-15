@@ -333,7 +333,7 @@ void electrum_process_array(struct iguana_info *coin,char *coinaddr,cJSON *array
                     {
                         printf(">>>>>>>>>> set %s/v%d <- %.8f vs %.8f\n",bits256_str(str,txid),v,dstr(value),dstr(tx->outpoints[v].value));
                         tx->outpoints[v].value = value;
-                        LP_address_utxoadd(coin,coinaddr,txid,v,value,tx->height);
+                        LP_address_utxoadd(coin,coinaddr,txid,v,value,tx->height,-1);
                     }
                 }
                 printf("v.%d numvouts.%d %.8f (%s)\n",jint(item,"tx_pos"),tx->numvouts,dstr(tx->outpoints[jint(item,"tx_pos")].value),jprint(item,0));
@@ -461,7 +461,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
 {
     cJSON *retjson=0; struct iguana_info *coin = LP_coinfind(symbol);
     //printf("electrum listunspent last.(%s lag %d)\n",coin->lastunspent,(int32_t)(time(NULL) - coin->unspenttime));
-    //if ( strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+10 )
+    if ( strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+10 )
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {

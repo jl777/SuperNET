@@ -431,10 +431,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             {
                 DL_FOREACH_SAFE(ap->utxos,up,utmp)
                 {
-                    if ( up->spentflag == 0 )
+                    if ( up->spendheight <= 0 )
                     {
                         if ( LP_txvalue(0,coin->symbol,up->U.txid,up->U.vout) == 0 )
-                            up->spentflag = (uint32_t)time(NULL);
+                            up->spendheight = 1;
                     }
                 }
             }

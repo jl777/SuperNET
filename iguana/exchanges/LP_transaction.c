@@ -1053,7 +1053,7 @@ int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay)
 
 void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t v)
 {
-    cJSON *txobj,*vouts,*vout,*addresses,*item,*skey; uint8_t extraspace[32768]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; int32_t n,m,suppress_pubkeys = 0;
+    cJSON *txobj,*vouts,*vout; uint8_t extraspace[32768]; bits256 signedtxid; struct iguana_msgtx msgtx; int32_t n,suppress_pubkeys = 0;
     if ( valuep != 0 )
         *valuep = 0;
     if ( (txobj= bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&signedtxid,&msgtx,extraspace,sizeof(extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
@@ -1065,7 +1065,7 @@ void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,u
             if ( valuep != 0 )
                 *valuep = LP_value_extract(vout);
             //printf("VOUT.(%s)\n",jprint(vout,0));
-            if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
+            /*if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
             {
                 item = jitem(addresses,0);
                 //printf("item.(%s)\n",jprint(item,0));
@@ -1074,7 +1074,8 @@ void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,u
                     safecopy(coinaddr,addr,64);
                     //printf("extracted.(%s)\n",coinaddr);
                 }
-            }
+            }*/
+            LP_destaddr(coinaddr,vout);
         }
         free_json(txobj);
     }
