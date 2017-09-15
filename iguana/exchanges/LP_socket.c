@@ -470,7 +470,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
             strcpy(coin->lastunspent,addr);
             coin->unspenttime = (uint32_t)time(NULL);
         }
-    }
+    } else retjson = LP_address_utxos(coin,addr,1);
     return(retjson);
 }
 

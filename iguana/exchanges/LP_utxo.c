@@ -34,7 +34,7 @@ uint64_t LP_value_extract(cJSON *obj)
     if ( (val= jdouble(obj,"amount")) < SMALLVAL )
         val = jdouble(obj,"value");
     if ( val > SMALLVAL )
-        value = (val * SATOSHIDEN + 0.0000000049);
+        value = ((val + jdouble(obj,"interest")) * SATOSHIDEN + 0.0000000049);
     else value = 0;
     return(value);
 }
@@ -118,6 +118,44 @@ void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int
         }
     }
     portable_mutex_unlock(&coin->txmutex);
+}
+
+cJSON *LP_address_item(struct iguana_info *coin,struct LP_address_utxo *up,int32_t electrumret)
+{
+    cJSON *item = cJSON_CreateObject();
+    if ( electrumret == 0 )
+    {
+        jaddbits256(item,"txid",up->U.txid);
+        jaddnum(item,"vout",up->U.vout);
+        jaddnum(item,"confirmations",coin->height - up->U.height);
+        jaddnum(item,"amount",dstr(up->U.value));
+        jaddstr(item,"scriptPubKey","");
+    }
+    else
+    {
+        jaddbits256(item,"tx_hash",up->U.txid);
+        jaddnum(item,"tx_pos",up->U.vout);
+        jaddnum(item,"height",up->U.height);
+        jadd64bits(item,"value",up->U.value);
+    }
+    return(item);
+}
+
+cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
+{
+    cJSON *array; struct LP_address *ap; struct LP_address_utxo *up,*tmp;
+    array = cJSON_CreateArray();
+    portable_mutex_lock(&coin->txmutex);
+    if ( (ap= _LP_addressfind(coin,coinaddr)) != 0 )
+    {
+        DL_FOREACH_SAFE(ap->utxos,up,tmp)
+        {
+            if ( up->spendheight <= 0 )
+                jaddi(array,LP_address_item(up,electrumret));
+        }
+    }
+    portable_mutex_unlock(&coin->txmutex);
+    return(array);
 }
 
 /*void LP_address_monitor(struct LP_pubkeyinfo *pubp)
@@ -423,7 +461,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
     {
         if ( (txobj= LP_gettxout(coin->symbol,txid,vout)) != 0 )
         {
-            value = SATOSHIDEN * jdouble(txobj,"value");
+            value = SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
             if ( coinaddr == 0 )
                 coinaddr = _coinaddr;
             LP_destaddr(coinaddr,txobj);

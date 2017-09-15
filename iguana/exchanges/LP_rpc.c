@@ -425,12 +425,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
         {
             sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
             return(bitcoin_json(coin,"listunspent",buf));
-        }
-        else
-        {
-            printf("return local RAM listunspent\n");
-            return(0);
-        }
+        } else return(LP_address_utxos(coin,coinaddr,0));
     } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr));
 }
 
