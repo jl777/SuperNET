@@ -419,7 +419,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        int32_t height; bits256 zero; struct LP_address *ap,*atmp; struct LP_address_utxo *up;
+        int32_t height; bits256 zero; //struct LP_address *ap,*atmp; struct LP_address_utxo *up;
         //printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
         if ( coin->inactive != 0 || coin->electrum != 0 )
             continue;
