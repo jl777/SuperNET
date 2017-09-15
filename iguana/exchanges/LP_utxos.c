@@ -747,7 +747,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                     }
                     satoshis = LP_txvalue(destaddr,coin->symbol,txid,vout);
                     if ( satoshis != value )
-                        printf("unexpected privkey_init value mismatch %.8f vs %.8f (%s)\n",dstr(satoshis),dstr(value),jprint(item,0));
+                        printf("unexpected privkey_init value mismatch %.8f vs %.8f (%s) %.8f %.8f\n",dstr(satoshis),dstr(value),jprint(item,0),jdouble(item,"amount"),jdouble(item,"interest"));
                     if ( LP_inventory_prevent(iambob,coin->symbol,txid,vout) == 0 && height > 0 )
                     {
                         //printf("%s\n",jprint(item,0));
