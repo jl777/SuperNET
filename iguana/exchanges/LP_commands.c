@@ -334,7 +334,11 @@ dividends(coin, height, <args>)\n\
             argjson = reqjson;
         }
     }
-    if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
+    if ( strcmp(method,"postprice") == 0 )
+        retstr = LP_postedprice(argjson);
+    else if ( strcmp(method,"postutxos") == 0 )
+        retstr = LP_postedutxos(argjson);
+    else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
         return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
     else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
         retstr = clonestr("{\"result\":\"coin is disabled\"}");
@@ -352,10 +356,6 @@ dividends(coin, height, <args>)\n\
         retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
         //return(LP_numutxos());
     }
-    else if ( strcmp(method,"postprice") == 0 )
-        retstr = LP_postedprice(argjson);
-    else if ( strcmp(method,"postutxos") == 0 )
-        retstr = LP_postedutxos(argjson);
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
     else if ( strcmp(method,"getprices") == 0 )
