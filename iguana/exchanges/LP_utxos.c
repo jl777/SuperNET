@@ -697,7 +697,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                     {
                         //printf("%s\n",jprint(item,0));
                         values[i] = satoshis;
-                        //flag += LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
+                        flag += LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
                     } else used++;
                 }
                 //printf("array.%d\n",n);

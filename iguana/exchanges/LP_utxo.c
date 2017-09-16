@@ -99,7 +99,7 @@ struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr)
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0;
-    portable_mutex_lock(&coin->txmutex);
+    printf("%s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
     if ( (ap= _LP_address(coin,coinaddr)) != 0 )
     {
         flag = 0;
@@ -123,14 +123,16 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             up->U.height = height;
             up->U.value = value;
             up->spendheight = spendheight;
+            portable_mutex_lock(&coin->txmutex);
             DL_APPEND(ap->utxos,up);
+            portable_mutex_unlock(&coin->txmutex);
             retval = 1;
-            //char str[65];
-            //if ( height > 0 )
-            //    printf(">>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
+            char str[65];
+            if ( height > 0 )
+                printf(">>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
     }
-    portable_mutex_unlock(&coin->txmutex);
+    printf("done %s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
     return(retval);
 }
 
