@@ -170,6 +170,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
         }
         portable_mutex_unlock(&coin->txmutex);
     }
+    printf("%s %s utxos.(%s)\n",coin->symbol,coinaddr,jprint(array,0));
     return(array);
 }
 
