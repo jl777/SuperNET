@@ -457,7 +457,7 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
     return(height);
 }
 
-int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t mempool)
+int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool)
 {
     struct iguana_info *coin; int32_t ht,numconfirms = 100;
     //#ifndef BASILISK_DISABLEWAITTX
@@ -467,11 +467,9 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t mempool)
     if ( coin->electrum == 0 )
     {
         numconfirms = -1;
-        if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+        if ( (txobj= LP_gettxout(symbol,txid,vout)) != 0 )
         {
-            if ( coin->electrum == 0 )
-                numconfirms = jint(txobj,"confirmations");
-            else numconfirms = coin->height - jint(txobj,"height");
+            numconfirms = jint(txobj,"confirmations");
             free_json(txobj);
         }
         else if ( mempool != 0 && LP_mempoolscan(symbol,txid) >= 0 )

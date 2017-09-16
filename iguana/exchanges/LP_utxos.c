@@ -407,12 +407,12 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
             printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f:%.8f, value2 %.8f:%.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(val),dstr(value2),dstr(val2),dstr(tmpsatoshis));
             return(0);
         }
-        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,0)) <= 0 )
+        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,vout,0)) <= 0 )
         {
             printf("LP_utxoadd reject numconfirms.%d %s.%s\n",numconfirms,symbol,bits256_str(str,txid));
             return(0);
         }
-        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,0)) <= 0 )
+        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,vout2,0)) <= 0 )
         {
             printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
             return(0);
