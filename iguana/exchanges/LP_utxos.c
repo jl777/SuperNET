@@ -788,7 +788,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
             }
         }
         free_json(array);
-        LP_postutxos(coin->symbol);
+        //LP_postutxos(coin->symbol);
     }
     //printf("privkey.%s %.8f\n",symbol,dstr(total));
     return(flag);
