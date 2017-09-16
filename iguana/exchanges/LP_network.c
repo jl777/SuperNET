@@ -311,7 +311,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                     jdelete(argjson,"method2");
                 jaddstr(argjson,"method2",method);
                 jaddstr(argjson,"method",method);
-                //printf("CRC32.%u (%s)\n",crc32,(char *)msg);
+                printf("CRC32.%u (%s)\n",crc32,(char *)msg);
                 LP_broadcast_finish(pubsock,base,rel,msg,argjson,0);
             } // else printf("no valid method in (%s)\n",msgstr);
             free_json(argjson);
