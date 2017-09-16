@@ -356,7 +356,7 @@ dividends(coin, height, <args>)\n\
     else if ( strcmp(method,"postprice") == 0 )
         retstr = LP_postedprice(argjson);
     else if ( strcmp(method,"postutxos") == 0 )
-        return(LP_postedutxos(argjson));
+        retstr = LP_postedutxos(argjson);
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
     else if ( strcmp(method,"getprices") == 0 )
@@ -425,6 +425,7 @@ dividends(coin, height, <args>)\n\
                     else
                     {
                         memset(zero.bytes,0,sizeof(zero));
+                        printf("broadcast.(%s)\n",jprint(reqjson,0));
                         LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
                     }
                     retstr = clonestr("{\"result\":\"success\"}");

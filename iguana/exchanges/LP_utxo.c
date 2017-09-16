@@ -205,9 +205,9 @@ void LP_postutxos(int32_t sock,char *symbol)
 char *LP_postedutxos(cJSON *argjson)
 {
     int32_t i,n,v,ht,errs,height; uint64_t value,val; cJSON *array,*item,*txobj; bits256 txid; char str[65],*symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin;
+    printf("posted.(%s)\n",jprint(argjson,0));
     if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
     {
-        printf("posted.(%s)\n",jprint(argjson,0));
         if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )
         {
             if ( (array= jarray(&n,argjson,"utxos")) != 0 )
