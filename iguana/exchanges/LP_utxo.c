@@ -124,7 +124,9 @@ void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int
             up->U.value = value;
             up->spendheight = spendheight;
             DL_APPEND(ap->utxos,up);
-            char str[65]; printf(">>>>>>>>>> %s %s/v%d ht.%d %.8f\n",coin->symbol,bits256_str(str,txid),vout,height,dstr(value));
+            char str[65];
+            if ( height > 0 )
+                printf(">>>>>>>>>> %s %s/v%d ht.%d %.8f\n",coin->symbol,bits256_str(str,txid),vout,height,dstr(value));
         }
     }
     portable_mutex_unlock(&coin->txmutex);
