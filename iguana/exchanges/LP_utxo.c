@@ -231,7 +231,7 @@ char *LP_postedutxos(cJSON *argjson)
                             errs++;
                         }
                         ht = coin->height - jint(txobj,"confirmations");
-                        if  ( ht != height && ht+1 != height )
+                        if  ( ht < height-2 )
                         {
                             printf("REJECT %s %s/v%d ht.%d vs %d\n",symbol,bits256_str(str,txid),v,ht,height);
                             errs++;
