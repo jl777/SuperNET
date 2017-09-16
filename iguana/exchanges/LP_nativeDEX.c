@@ -51,7 +51,6 @@ uint16_t LP_fixed_pairport,LP_publicport;
 int32_t LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
-int32_t LP_mypushsock = -1;
 int32_t LP_pendingswaps,LP_showwif,USERPASS_COUNTER,IAMLP = 0;
 uint32_t LP_sessionid;
 double LP_profitratio = 1.;
@@ -402,20 +401,23 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         lastresync = (uint32_t)time(NULL);
         //LP_peer_pricesquery(mostpeer->ipaddr,mostpeer->port);
     }
-    if ( enable_utxos && (counter % 6000) == 10 )
+    if ( (counter % 6000) == 10 )
     {
         LP_myutxo_updates(ctx,pubsock,passphrase);
-        HASH_ITER(hh,LP_utxoinfos[0],utxo,utmp)
+        if ( enable_utxos )
         {
-            LP_utxo_spentcheck(pubsock,utxo);
-        }
-        HASH_ITER(hh,LP_utxoinfos[1],utxo,utmp)
-        {
-            LP_utxo_spentcheck(pubsock,utxo);
-            if ( LP_isunspent(utxo) > 0 && utxo->T.lasttime == 0 && LP_ismine(utxo) > 0 )
+            HASH_ITER(hh,LP_utxoinfos[0],utxo,utmp)
             {
-                char str[65]; printf("publish mybob %s\n",bits256_str(str,utxo->payment.txid));
-                LP_utxo_clientpublish(utxo);
+                LP_utxo_spentcheck(pubsock,utxo);
+            }
+            HASH_ITER(hh,LP_utxoinfos[1],utxo,utmp)
+            {
+                LP_utxo_spentcheck(pubsock,utxo);
+                if ( LP_isunspent(utxo) > 0 && utxo->T.lasttime == 0 && LP_ismine(utxo) > 0 )
+                {
+                    char str[65]; printf("publish mybob %s\n",bits256_str(str,utxo->payment.txid));
+                    LP_utxo_clientpublish(utxo);
+                }
             }
         }
     }

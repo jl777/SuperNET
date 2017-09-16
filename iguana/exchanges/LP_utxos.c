@@ -652,9 +652,10 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
     return(mini);
 }
 
-uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
+int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
-    char *script,destaddr[64]; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,height,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,value,total = 0; int64_t targetval;
+    int32_t enable_utxos = 0;
+    char *script,destaddr[64]; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,flag=0,height,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,value,total = 0; int64_t targetval;
     if ( coin == 0 )
     {
         printf("coin not active\n");
@@ -696,9 +697,11 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
                     {
                         //printf("%s\n",jprint(item,0));
                         values[i] = satoshis;
-                        LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
+                        flag += LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
                     } else used++;
                 }
+                if ( enable_utxos == 0 )
+                    continue;
                 //printf("array.%d\n",n);
                 while ( used < n-1 )
                 {
@@ -785,10 +788,10 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
             }
         }
         free_json(array);
-        LP_postutxos(mypubsock,coin->symbol);
+        LP_postutxos(coin->symbol);
     }
     //printf("privkey.%s %.8f\n",symbol,dstr(total));
-    return(total);
+    return(flag);
 }
 
 char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint8_t pubtype)
@@ -904,7 +907,10 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase,int32_t inito
         if ( bits256_nonz(privkey) == 0 || coin->smartaddr[0] == 0 )
             privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
         if ( coin->inactive == 0 && initonly == 0 )
-            LP_privkey_init(pubsock,coin,privkey,pubkey);
+        {
+            if ( LP_privkey_init(pubsock,coin,privkey,pubkey) > 0 )
+                LP_postutxos(coin->symbol);
+        }
     }
 }
 

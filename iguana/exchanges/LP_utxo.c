@@ -180,7 +180,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
     return(array);
 }
 
-void LP_postutxos(int32_t sock,char *symbol)
+void LP_postutxos(char *symbol)
 {
     bits256 zero; char *msg; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
     if ( (coin= LP_coinfind(symbol)) != 0 && (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
