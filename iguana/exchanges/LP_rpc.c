@@ -60,6 +60,8 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
 char *issue_LP_numutxos(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
 {
     char url[512],*retstr;
+    printf("deprecated issue_LP_numutxos\n");
+    return(0);
     sprintf(url,"http://%s:%u/api/stats/numutxos?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,numpeers,numutxos);
     retstr = LP_issue_curl("numutxos",destip,port,url);
     //printf("%s -> getpeers.(%s)\n",destip,retstr);
@@ -69,6 +71,8 @@ char *issue_LP_numutxos(char *destip,uint16_t destport,char *ipaddr,uint16_t por
 char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
 {
     char url[512];
+    printf("deprecated issue_LP_getutxos\n");
+    return(0);
     sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,numpeers,numutxos);
     return(LP_issue_curl("getutxos",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
@@ -77,6 +81,8 @@ char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,
 char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t lastn)
 {
     char url[512];//,*retstr;
+    printf("deprecated issue_LP_clientgetutxos\n");
+    return(0);
     sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=127.0.0.1&port=0",destip,destport,coin,lastn);
     return(LP_issue_curl("clientgetutxos",destip,destport,url));
     //retstr = issue_curlt(url,LP_HTTP_TIMEOUT);

@@ -587,24 +587,6 @@ int32_t LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
         retval = LP_utxosparse(destipaddr,destport,retstr,now);
         //printf("got.(%s)\n",retstr);
         free(retstr);
-        /*i = 0;
-        if ( lastn >= mypeer->numutxos )
-            firsti = -1;
-        else firsti = (mypeer->numutxos - lastn);
-        HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
-        {
-            if ( i++ < firsti )
-                continue;
-            if ( utxo->lasttime != now && strcmp(utxo->ipaddr,"127.0.0.1") != 0 )
-            {
-                char str[65]; printf("{%s:%u %s} ",utxo->ipaddr,utxo->port,bits256_str(str,utxo->txid));
-                flag++;
-                if ( (retstr= issue_LP_notifyutxo(destipaddr,destport,utxo)) != 0 )
-                    free(retstr);
-            }
-        }
-        if ( flag != 0 )
-            printf(" <- missing utxos\n");*/
     }
     return(retval);
 }
