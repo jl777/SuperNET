@@ -371,6 +371,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
         else height = -1;
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
+        // maybe filter so only addresses we care about are using RAM
         if ( iter == 0 && vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins)) != 0 )
         {
             //printf("create txid numvouts.%d numvins.%d\n",numvouts,numvins);
@@ -380,22 +381,6 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
                 tx->outpoints[i].value = LP_value_extract(vout,0);
                 tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
                 LP_destaddr(tx->outpoints[i].coinaddr,vout);
-                /*if ( (sobj= jobj(vout,"scriptPubKey")) != 0 )
-                {
-                    if ( (addresses= jarray(&n,sobj,"addresses")) != 0 && n > 0 )
-                    {
-                        if ( n > 1 )
-                            printf("LP_transactioninit: txid.(%s) multiple addresses.[%s]\n",bits256_str(str,txid),jprint(addresses,0));
-                        if ( (address= jstri(addresses,0)) != 0 && strlen(address) < sizeof(tx->outpoints[i].coinaddr) )
-                        {
-                            strcpy(tx->outpoints[i].coinaddr,address);
-                            //printf("(%s %.8f) ",address,dstr(tx->outpoints[i].value));
-                        } else if ( tx->outpoints[i].value != 0 )
-                            printf("LP_transactioninit: unexpected address.(%s)\n",jprint(addresses,0));
-                    }
-                    //else if ( tx->outpoints[i].value != 0 )
-                    //    printf("LP_transactioninit: pax tx ht.%d i.%d (%s) n.%d\n",height,i,jprint(vout,0),n);
-                }*/
             }
             //printf("numvouts.%d\n",numvouts);
         }
@@ -416,7 +401,8 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
                         tx->outpoints[spentvout].spendvini = i;
                         tx->outpoints[spentvout].spendheight = height > 0 ? height : 1;
                         LP_address_utxoadd(coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
-                        printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
+                        if ( strcmp(coin->symbol,"BTC") != 0 )
+                            printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
                     } else printf("LP_transactioninit: %s spentvout.%d < numvouts.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts);
                 } //else printf("LP_transactioninit: couldnt find (%s) ht.%d %s\n",bits256_str(str,spenttxid),height,jprint(vin,0));
                 if ( bits256_cmp(spenttxid,txid) == 0 )
