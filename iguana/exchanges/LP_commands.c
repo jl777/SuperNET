@@ -348,7 +348,11 @@ dividends(coin, height, <args>)\n\
     else if ( strcmp(method,"getcoins") == 0 )
         return(jprint(LP_coinsjson(0),1));
     else if ( strcmp(method,"numutxos") == 0 )
-        return(LP_numutxos());
+    {
+        printf("deprecated numutxos received\n");
+        retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
+        //return(LP_numutxos());
+    }
     else if ( strcmp(method,"postprice") == 0 )
         retstr = LP_postedprice(argjson);
     else if ( strcmp(method,"postutxos") == 0 )
@@ -368,7 +372,11 @@ dividends(coin, height, <args>)\n\
     else if ( strcmp(method,"getpeers") == 0 )
         return(LP_peers());
     else if ( strcmp(method,"getutxos") == 0 )
-        return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
+    {
+        printf("deprecated getutxos received\n");
+        retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
+        //return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
+    }
     else if ( strcmp(method,"utxo") == 0 )
     {
         printf("deprecated utxo received\n");
