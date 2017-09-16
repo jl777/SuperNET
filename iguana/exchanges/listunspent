@@ -1,0 +1,2 @@
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"listunspent\",\"coin\":\"BTC\",\"address\":\"1DPDsPCNNCF5SHhPPrddXcJe78rM6CBcH3\"}"
