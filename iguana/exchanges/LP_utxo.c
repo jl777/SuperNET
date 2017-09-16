@@ -191,7 +191,8 @@ void LP_postutxos(int32_t sock,char *symbol)
         else
         {
             memset(zero.bytes,0,sizeof(zero));
-            jaddstr(reqjson,"method","postutxos");
+            jaddstr(reqjson,"method","sendmessage");
+            jaddstr(reqjson,"method2","postutxos");
             jaddstr(reqjson,"coin",symbol);
             jaddstr(reqjson,"coinaddr",coin->smartaddr);
             jadd(reqjson,"utxos",array);
