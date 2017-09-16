@@ -219,7 +219,7 @@ struct LP_address_utxo
 {
     struct LP_address_utxo *next,*prev;
     struct _LP_utxoinfo U;
-    uint32_t SPV,spendheight;
+    int32_t SPV,spendheight;
 };
 
 struct LP_address
