@@ -338,6 +338,16 @@ dividends(coin, height, <args>)\n\
         retstr = LP_postedprice(argjson);
     else if ( strcmp(method,"postutxos") == 0 )
         retstr = LP_postedutxos(argjson);
+    else if ( strcmp(method,"getprices") == 0 )
+        return(LP_prices());
+    else if ( strcmp(method,"orderbook") == 0 )
+        return(LP_orderbook(base,rel,jint(argjson,"duration")));
+    else if ( strcmp(method,"listunspent") == 0 )
+    {
+        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+            return(jprint(LP_address_utxos(ptr,jstr(argjson,"address"),1),1));
+        else return(clonestr("{\"error\":\"cant find coind\"}"));
+    }
     else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
         return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
     else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
@@ -358,16 +368,6 @@ dividends(coin, height, <args>)\n\
     }
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
-    else if ( strcmp(method,"getprices") == 0 )
-        return(LP_prices());
-    else if ( strcmp(method,"listunspent") == 0 )
-    {
-        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
-            return(jprint(LP_address_utxos(ptr,jstr(argjson,"address"),1),1));
-        else return(clonestr("{\"error\":\"cant find coind\"}"));
-    }
-    else if ( strcmp(method,"orderbook") == 0 )
-        return(LP_orderbook(base,rel,jint(argjson,"duration")));
     else if ( strcmp(method,"registerall") == 0 )
         return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
     else if ( strcmp(method,"forward") == 0 )
