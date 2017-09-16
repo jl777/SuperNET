@@ -87,6 +87,15 @@ struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
     return(ap);
 }
 
+struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap;
+    portable_mutex_lock(&coin->txmutex);
+    ap = _LP_addressfind(coin,coinaddr);
+    portable_mutex_unlock(&coin->txmutex);
+    return(ap);
+}
+
 void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag;
@@ -145,17 +154,86 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
 {
     cJSON *array; struct LP_address *ap; struct LP_address_utxo *up,*tmp;
     array = cJSON_CreateArray();
-    portable_mutex_lock(&coin->txmutex);
-    if ( (ap= _LP_addressfind(coin,coinaddr)) != 0 )
+    if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
-        DL_FOREACH_SAFE(ap->utxos,up,tmp)
+        portable_mutex_lock(&coin->txmutex);
+        if ( (ap= _LP_addressfind(coin,coinaddr)) != 0 )
         {
-            if ( up->spendheight <= 0 )
-                jaddi(array,LP_address_item(coin,up,electrumret));
+            DL_FOREACH_SAFE(ap->utxos,up,tmp)
+            {
+                if ( up->spendheight <= 0 )
+                    jaddi(array,LP_address_item(coin,up,electrumret));
+            }
+        }
+        portable_mutex_unlock(&coin->txmutex);
+    }
+    return(array);
+}
+
+void LP_postutxos(int32_t pubsock,char *symbol)
+{
+    bits256 zero; char *msg; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
+    if ( (coin= LP_coinfind(symbol)) != 0 && (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
+    {
+        if ( cJSON_GetArraySize(array) == 0 )
+            free_json(array);
+        else
+        {
+            memset(zero.bytes,0,sizeof(zero));
+            jaddstr(reqjson,"method","postutxos");
+            jaddstr(reqjson,"coin",symbol);
+            jaddstr(reqjson,"coinaddr",coin->smartaddr);
+            jadd(reqjson,"utxos",array);
+            msg = jprint(reqjson,1);
+            printf("post (%s)\n",msg);
+            LP_broadcast_message(pubsock,symbol,symbol,zero,msg);
         }
     }
-    portable_mutex_unlock(&coin->txmutex);
-    return(array);
+}
+
+char *LP_postedutxos(cJSON *argjson)
+{
+    int32_t i,n,v,ht,errs,height; uint64_t value,val; cJSON *array,*item,*txobj; bits256 txid; char str[65],*symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin;
+    if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
+    {
+        printf("posted.(%s)\n",jprint(argjson,0));
+        if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )
+        {
+            if ( (array= jarray(&n,argjson,"utxos")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    errs = 0;
+                    item = jitem(array,i);
+                    txid = jbits256(item,"tx_hash");
+                    v = jint(item,"tx_pos");
+                    height = jint(item,"height");
+                    val = j64bits(item,"value");
+                    if ( coin->electrum == 0 && (txobj= LP_gettxout(symbol,txid,v)) != 0 )
+                    {
+                        value = LP_value_extract(txobj,0);
+                        if ( value != val )
+                        {
+                            printf("%s %s/v%d value.%llu vs %llu\n",symbol,bits256_str(str,txid),v,(long long)value,(long long)val);
+                            errs++;
+                        }
+                        ht = coin->height - jint(txobj,"confirmations");
+                        if  ( ht != height )
+                        {
+                            printf("%s %s/v%d ht.%d vs %d\n",symbol,bits256_str(str,txid),v,ht,height);
+                            errs++;
+                        }
+                        free_json(txobj);
+                    }
+                    if ( errs == 0 )
+                        LP_address_utxoadd(coin,coinaddr,txid,v,val,height,-1);
+                }
+            }
+        }
+        else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr)) != 0 )
+            free_json(array);
+    }
+    return(clonestr("{\"result\":\"success\"}"));
 }
 
 /*void LP_address_monitor(struct LP_pubkeyinfo *pubp)

@@ -249,6 +249,7 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t lastn)
 {
     int32_t i,n,m; uint64_t val,val2; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo,*tmp; cJSON *utxosjson = cJSON_CreateArray();
+    printf("deprecated! LP_utxos\n");
     //n = mypeer != 0 ? mypeer->numutxos : 0;
     if ( lastn <= 0 )
         lastn = LP_PROPAGATION_SLACK * 2;
@@ -365,32 +366,12 @@ char *LP_spentcheck(cJSON *argjson)
 void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
 {
     bits256 zero; char *msg;
-    if ( LP_isunspent(utxo) > 0 )
+    if ( 0 && LP_isunspent(utxo) > 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
         msg = jprint(LP_utxojson(utxo),1);
         LP_broadcast_message(LP_mypubsock,utxo->coin,"",zero,msg);
     }
-    /*struct LP_peerinfo *peer,*tmp; cJSON *retjson; char *retstr; int32_t n = 0;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        if ( (retstr= issue_LP_notifyutxo(peer->ipaddr,peer->port,utxo)) != 0 )
-        {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( jobj(retjson,"error") == 0 )
-                {
-                    utxo->T.lasttime = (uint32_t)time(NULL);
-                    n++;
-                }
-                free_json(retjson);
-            }
-            free(retstr);
-        }
-        //if ( utxo->T.lasttime != 0 )
-        //    return(0);
-    }
-    return(n);*/
 }
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *spendscript,char *coinaddr,bits256 pubkey,char *gui,uint32_t sessionid)
@@ -419,27 +400,6 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
         printf("trying to add Alice utxo when not mine? %s/v%d\n",bits256_str(str,txid),vout);
         return(0);
     }
-    /*numconfirms = -1;
-    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
-    {
-        if ( coin->electrum == 0 )
-            numconfirms = jint(txobj,"confirmations");
-        else numconfirms = coin->height - jint(txobj,"height");
-        free_json(txobj);
-    }
-    numconfirms = -1;
-    if ( (txobj= LP_gettx(symbol,txid2)) != 0 )
-    {
-        if ( coin->electrum == 0 )
-            numconfirms = jint(txobj,"confirmations");
-        else numconfirms = coin->height - jint(txobj,"height");
-        free_json(txobj);
-    }
-    if ( numconfirms <= 0 )
-    {
-        printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
-        return(0);
-    }*/
     if ( coin->inactive == 0 )
     {
         if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
@@ -612,6 +572,8 @@ int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
 int32_t LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport,int32_t maxentries)
 {
     char *retstr; struct LP_peerinfo *peer; uint32_t now; int32_t retval = -1;
+    printf("deprecated LP_utxosquery\n");
+    return(-1);
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
     if ( coin == 0 )
         coin = "";
@@ -841,6 +803,7 @@ uint64_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypr
             }
         }
         free_json(array);
+        LP_postutxos(mypubsock,coin->symbol);
     }
     //printf("privkey.%s %.8f\n",symbol,dstr(total));
     return(total);

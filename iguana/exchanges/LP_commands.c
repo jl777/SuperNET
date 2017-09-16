@@ -351,6 +351,8 @@ dividends(coin, height, <args>)\n\
         return(LP_numutxos());
     else if ( strcmp(method,"postprice") == 0 )
         retstr = LP_postedprice(argjson);
+    else if ( strcmp(method,"postutxos") == 0 )
+        retstr = LP_postedutxos(argjson);
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
     else if ( strcmp(method,"getprices") == 0 )
@@ -388,6 +390,12 @@ dividends(coin, height, <args>)\n\
                 return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
             else if ( strcmp(method,"lookup") == 0 )
                 return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
+            else if ( strcmp(method,"listunspent") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+                    return(jprint(LP_address_utxos(ptr,jstr(argjson,"address"),1),1));
+                else return(clonestr("{\"error\":\"cant find coind\"}"));
+            }
             if ( strcmp(method,"broadcast") == 0 )
             {
                 bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
