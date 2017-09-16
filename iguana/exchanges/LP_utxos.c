@@ -700,8 +700,6 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                         flag += LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
                     } else used++;
                 }
-                if ( enable_utxos == 0 )
-                    continue;
                 //printf("array.%d\n",n);
                 while ( used < n-1 )
                 {
@@ -785,6 +783,8 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                 }
                 if ( iambob == 1 )
                     free(values);
+                if ( enable_utxos == 0 )
+                    break;
             }
         }
         free_json(array);
