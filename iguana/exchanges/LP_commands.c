@@ -356,7 +356,7 @@ dividends(coin, height, <args>)\n\
     else if ( strcmp(method,"postprice") == 0 )
         retstr = LP_postedprice(argjson);
     else if ( strcmp(method,"postutxos") == 0 )
-        retstr = LP_postedutxos(argjson);
+        return(LP_postedutxos(argjson));
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
     else if ( strcmp(method,"getprices") == 0 )
