@@ -163,7 +163,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
     array = cJSON_CreateArray();
     if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
-        portable_mutex_lock(&coin->addrmutex);
+        //portable_mutex_lock(&coin->addrmutex);
         if ( (ap= _LP_addressfind(coin,coinaddr)) != 0 )
         {
             DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -176,7 +176,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                 }
             }
         }
-        portable_mutex_unlock(&coin->addrmutex);
+        //portable_mutex_unlock(&coin->addrmutex);
     }
     //printf("%s %s utxos.(%s) ap.%p\n",coin->symbol,coinaddr,jprint(array,0),ap);
     return(array);
