@@ -124,9 +124,9 @@ void LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int
             up->U.value = value;
             up->spendheight = spendheight;
             DL_APPEND(ap->utxos,up);
-            char str[65];
-            if ( height > 0 )
-                printf(">>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
+            //char str[65];
+            //if ( height > 0 )
+            //    printf(">>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
     }
     portable_mutex_unlock(&coin->txmutex);
@@ -164,17 +164,17 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
         {
             DL_FOREACH_SAFE(ap->utxos,up,tmp)
             {
-                char str[65]; printf("LP_address_utxos %s/v%d %.8f ht.%d spend.%d\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),up->U.height,up->spendheight);
+                //char str[65]; printf("LP_address_utxos %s/v%d %.8f ht.%d spend.%d\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),up->U.height,up->spendheight);
                 if ( up->spendheight <= 0 )
                 {
                     jaddi(array,LP_address_item(coin,up,electrumret));
-                    printf("new array %s\n",jprint(array,0));
+                    //printf("new array %s\n",jprint(array,0));
                 }
             }
         }
         portable_mutex_unlock(&coin->txmutex);
     }
-    printf("%s %s utxos.(%s) ap.%p\n",coin->symbol,coinaddr,jprint(array,0),ap);
+    //printf("%s %s utxos.(%s) ap.%p\n",coin->symbol,coinaddr,jprint(array,0),ap);
     return(array);
 }
 
@@ -183,7 +183,7 @@ void LP_postutxos(int32_t pubsock,char *symbol)
     bits256 zero; char *msg; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
     if ( (coin= LP_coinfind(symbol)) != 0 && (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
     {
-        printf("LP_postutxos pubsock.%d %s %s\n",pubsock,symbol,coin->smartaddr);
+        //printf("LP_postutxos pubsock.%d %s %s\n",pubsock,symbol,coin->smartaddr);
         if ( cJSON_GetArraySize(array) == 0 )
             free_json(array);
         else
