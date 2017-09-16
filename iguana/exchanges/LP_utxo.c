@@ -90,16 +90,16 @@ struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
 struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr)
 {
     struct LP_address *ap;
-    portable_mutex_lock(&coin->txmutex);
+    portable_mutex_lock(&coin->addrmutex);
     ap = _LP_addressfind(coin,coinaddr);
-    portable_mutex_unlock(&coin->txmutex);
+    portable_mutex_unlock(&coin->addrmutex);
     return(ap);
 }
 
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0;
-    printf("%s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
+    //printf("%s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
     if ( (ap= _LP_address(coin,coinaddr)) != 0 )
     {
         flag = 0;
@@ -123,16 +123,16 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             up->U.height = height;
             up->U.value = value;
             up->spendheight = spendheight;
-            portable_mutex_lock(&coin->txmutex);
+            portable_mutex_lock(&coin->addrmutex);
             DL_APPEND(ap->utxos,up);
-            portable_mutex_unlock(&coin->txmutex);
+            portable_mutex_unlock(&coin->addrmutex);
             retval = 1;
             char str[65];
             if ( height > 0 )
                 printf(">>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
     }
-    printf("done %s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
+    //printf("done %s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
     return(retval);
 }
 
@@ -163,7 +163,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
     array = cJSON_CreateArray();
     if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
-        portable_mutex_lock(&coin->txmutex);
+        portable_mutex_lock(&coin->addrmutex);
         if ( (ap= _LP_addressfind(coin,coinaddr)) != 0 )
         {
             DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -176,7 +176,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                 }
             }
         }
-        portable_mutex_unlock(&coin->txmutex);
+        portable_mutex_unlock(&coin->addrmutex);
     }
     //printf("%s %s utxos.(%s) ap.%p\n",coin->symbol,coinaddr,jprint(array,0),ap);
     return(array);
@@ -256,12 +256,12 @@ char *LP_postedutxos(cJSON *argjson)
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
         bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
-        portable_mutex_lock(&coin->txmutex);
+        portable_mutex_lock(&coin->addrmutex);
         if ( (ap= _LP_address(coin,coinaddr)) != 0 )
         {
             ap->monitor = (uint32_t)time(NULL);
         }
-        portable_mutex_unlock(&coin->txmutex);
+        portable_mutex_unlock(&coin->addrmutex);
         if ( coin->electrum != 0 )
         {
             if ( (retjson= electrum_address_subscribe(coin->symbol,coin->electrum,&retjson,coinaddr)) != 0 )
