@@ -379,7 +379,9 @@ dividends(coin, height, <args>)\n\
     }
     else if ( strcmp(method,"utxo") == 0 )
     {
-        printf("deprecated utxo received\n");
+        static uint32_t counter;
+        if ( counter++ < 3 )
+            printf("deprecated utxo received\n");
         //if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
          //   retstr = clonestr("{\"result\":\"success\",\"utxo\":\"received\"}");
         //else
