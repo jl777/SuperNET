@@ -665,7 +665,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
         txfee = LP_txfeecalc(coin,0);
-        if ( 0 && is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+        if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
             for (iambob=0; iambob<=1; iambob++)
             {
@@ -701,7 +701,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                     } else used++;
                 }
                 //printf("array.%d\n",n);
-                while ( used < n-1 )
+                while ( 0 && used < n-1 )
                 {
                     //for (i=0; i<n; i++)
                     //   printf("%.8f ",dstr(values[i]));
@@ -783,12 +783,13 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                 }
                 if ( iambob == 1 )
                     free(values);
-                if ( enable_utxos == 0 )
-                    break;
+                //if ( enable_utxos == 0 )
+                //    break;
             }
         }
         free_json(array);
-        //LP_postutxos(coin->symbol);
+        if ( flag != 0 )
+            LP_postutxos(coin->symbol);
     }
     //printf("privkey.%s %.8f\n",symbol,dstr(total));
     return(flag);
