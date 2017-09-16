@@ -697,11 +697,11 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                     {
                         //printf("%s\n",jprint(item,0));
                         values[i] = satoshis;
-                        flag += LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
+                        //flag += LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
                     } else used++;
                 }
                 //printf("array.%d\n",n);
-                while ( 0 && used < n-1 )
+                while ( used < n-1 )
                 {
                     //for (i=0; i<n; i++)
                     //   printf("%.8f ",dstr(values[i]));
@@ -783,8 +783,8 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                 }
                 if ( iambob == 1 )
                     free(values);
-                //if ( enable_utxos == 0 )
-                //    break;
+                if ( enable_utxos == 0 )
+                    break;
             }
         }
         free_json(array);
