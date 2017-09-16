@@ -232,17 +232,16 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
         peerind = 1;
         sock0 = LP_peerindsock(&peerind);
     }
-    portable_mutex_lock(&LP_networkmutex);
     if ( sock0 >= 0 )
         _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
     if ( sock1 >= 0 )
         _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
-    portable_mutex_unlock(&LP_networkmutex);
 }
 
 void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
 {
     //struct iguana_info *coin; int32_t flag=0,socks[2];
+    portable_mutex_lock(&LP_networkmutex);
     if ( pubsock >= 0 )
     {
         //socks[0] = socks[1] = -1;
@@ -254,6 +253,7 @@ void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *m
             _LP_queuesend(crc32,pubsock,-1,msg,msglen,0);
         //else _LP_queuesend(socks[0],socks[1],msg,msglen,0);
     } else _LP_queuesend(crc32,-1,-1,msg,msglen,1);
+    portable_mutex_unlock(&LP_networkmutex);
 }
 
 // first 2 bytes == (crc32 & 0xffff) if encrypted, then nonce is next crypto_box_NONCEBYTES
