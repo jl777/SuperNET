@@ -58,7 +58,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
 {
     uint32_t ipbits; int32_t pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
     printf("addpeer (%s:%u)\n",ipaddr,port);
-    if ( port > 10000 )
+    if ( port >= LP_ELECTRUM_MINPORT )
         return(0);
 #ifdef LP_STRICTPEERS
     if ( strncmp("5.9.253",ipaddr,strlen("5.9.253")) != 0 )
