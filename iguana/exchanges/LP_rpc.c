@@ -263,8 +263,8 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
                 serialized = malloc(len);
                 decode_hex(serialized,len,hexstr+1);
                 //printf("DATA.(%s)\n",hexstr+1);
-                extraspace = calloc(1,100000);
-                retjson = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,100000,serialized,len,0,0);
+                extraspace = calloc(1,1000000);
+                retjson = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,1000000,serialized,len,0,0);
                 free(serialized);
                 free(extraspace);
                 //printf("TX.(%s) match.%d\n",jprint(retjson,0),bits256_cmp(txid,checktxid));
@@ -619,9 +619,10 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
                 signedtx = calloc(1,len+1);
                 strcpy(signedtx,hexstr);
                 *completedp = is_cJSON_True(jobj(json,"complete"));
-                data = malloc(len >> 1);
-                decode_hex(data,len>>1,hexstr);
-                *signedtxidp = bits256_doublesha256(0,data,len >> 1);
+                len >>= 1;
+                data = malloc(len);
+                decode_hex(data,len,hexstr);
+                *signedtxidp = bits256_doublesha256(0,data,len);
             }
             //else
             printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
