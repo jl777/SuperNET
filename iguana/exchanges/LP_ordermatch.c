@@ -602,7 +602,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
                         {
                             if ( bestprice == 0. ) // assumes price ordered asks
                                 bestprice = price;
-                            //printf("item.[%d] %s\n",i,jprint(item,0));
+                            printf("item.[%d] %s\n",i,jprint(item,0));
                             txid = jbits256(item,"txid");
                             vout = jint(item,"vout");
                             vol = jdouble(item,"volume");
@@ -689,6 +689,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
         }
         free(obookstr);
     }
+    printf("bestutxo.%p %.8f %.8f\n",bestutxo,*ordermatchpricep,dstr(*bestdestsatoshisp));
     if ( bestutxo == 0 || *ordermatchpricep == 0. || *bestdestsatoshisp == 0 )
         return(0);
     bestutxo->T.bestflag = 1;
