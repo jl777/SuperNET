@@ -592,6 +592,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
             continue;
         bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
         basesatoshis = maxsatoshis = 0;
+        printf("pubp.(%s)\n",coinaddr);
         //char str[65],str2[65]; printf("check utxo.%s/v%d from %s\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,utxo->pubkey));
         if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL && (ap= LP_addressfind(basecoin,coinaddr)) != 0 )
         {
