@@ -447,7 +447,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                         }
                     }
                 }
-                else
+                else if ( 0 )
                 {
                     if ( (retjson= electrum_address_listunspent(coin->symbol,coin->electrum,&retjson,ap->coinaddr)) != 0 )
                         free_json(retjson);
