@@ -591,20 +591,23 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
         if ( memcmp(zeroes,pubp->rmd160,sizeof(pubp->rmd160)) == 0 )
             continue;
         bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
-        basesatoshis = maxsatoshis = 0;
+        basesatoshis = maxsatoshis = n = 0;
         ap = 0;
         //char str[65],str2[65]; printf("check utxo.%s/v%d from %s\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,utxo->pubkey));
-        if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL && (ap= LP_addressfind(basecoin,coinaddr)) != 0 )
+        //if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && pubp != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL )
+        //if ( polarity > 0 )
+        //    basesatoshis = utxo->S.satoshis;
+        //else basesatoshis = utxo->S.satoshis * price;
+        if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL )
         {
-            n = LP_address_minmax(&basesatoshis,&maxsatoshis,ap);
-            //if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && pubp != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL )
-            //if ( polarity > 0 )
-            //    basesatoshis = utxo->S.satoshis;
-            //else basesatoshis = utxo->S.satoshis * price;
-            if ( polarity < 0 )
+            if ( (ap= LP_addressfind(basecoin,coinaddr)) != 0 )
             {
-                basesatoshis *= price;
-                maxsatoshis *= price;
+                n = LP_address_minmax(&basesatoshis,&maxsatoshis,ap);
+                if ( polarity < 0 )
+                {
+                    basesatoshis *= price;
+                    maxsatoshis *= price;
+                }
             }
             if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,basesatoshis,maxsatoshis,pubp->pubkey,now - pubp->timestamp)) != 0 )
             {
