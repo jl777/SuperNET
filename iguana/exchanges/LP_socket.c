@@ -644,7 +644,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
             {
                 *(ep->heightp) = height;
                 *(ep->heighttimep) = (uint32_t)time(NULL);
-                printf("ELECTRUM >>>>>>>>> set height.%d\n",height);
+                printf("%s ELECTRUM >>>>>>>>> set height.%d\n",ep->symbol,height);
             }
         }
         idnum = juint(strjson,"id");
