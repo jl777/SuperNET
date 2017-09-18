@@ -432,7 +432,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             continue;
         if ( time(NULL) > coin->lastmonitor+60 )
         {
-            portable_mutex_lock(&coin->addrmutex);
+            //portable_mutex_lock(&coin->addrmutex);
             HASH_ITER(hh,coin->addresses,ap,atmp)
             {
                 if ( coin->electrum == 0 )
@@ -447,13 +447,13 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                         }
                     }
                 }
-                else if ( 0 )
+                else
                 {
                     if ( (retjson= electrum_address_listunspent(coin->symbol,coin->electrum,&retjson,ap->coinaddr)) != 0 )
                         free_json(retjson);
                 }
             }
-            portable_mutex_unlock(&coin->addrmutex);
+            //portable_mutex_unlock(&coin->addrmutex);
             coin->lastmonitor = (uint32_t)time(NULL);
         }
         if ( coin->electrum != 0 )
