@@ -18,7 +18,7 @@
 //  marketmaker
 //
 
-struct LP_orderbookentry { bits256 pubkey; double price; uint64_t basesatoshis,maxsatoshis; int32_t age,numutxos; char coinaddr[64]; };
+struct LP_orderbookentry { bits256 pubkey; double price; uint64_t basesatoshis,maxsatoshis; uint32_t timestamp; int32_t numutxos; char coinaddr[64]; };
 
 #define LP_MAXPRICEINFOS 256
 struct LP_priceinfo
@@ -539,12 +539,12 @@ cJSON *LP_orderbookjson(struct LP_orderbookentry *op)
         //jaddbits256(item,"txid",op->txid);
         //jaddnum(item,"vout",op->vout);
         jaddbits256(item,"pubkey",op->pubkey);
-        jaddnum(item,"age",op->age);
+        jaddnum(item,"age",time(NULL)-op->timestamp);
     }
     return(item);
 }
 
-struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,double price,int32_t numutxos,uint64_t basesatoshis,uint64_t maxsatoshis,bits256 pubkey,int32_t age)
+struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,double price,int32_t numutxos,uint64_t basesatoshis,uint64_t maxsatoshis,bits256 pubkey,uint32_t timestamp)
 {
     struct LP_orderbookentry *op;
     if ( (op= calloc(1,sizeof(*op))) != 0 )
@@ -559,7 +559,7 @@ struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,d
         op->basesatoshis = basesatoshis;
         op->maxsatoshis = maxsatoshis;
         op->pubkey = pubkey;
-        op->age = age;
+        op->timestamp = timestamp;
     }
     return(op);
 }
@@ -609,7 +609,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
                     maxsatoshis *= price;
                 }
             }
-            if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,basesatoshis,maxsatoshis,pubp->pubkey,now - pubp->timestamp)) != 0 )
+            if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,basesatoshis,maxsatoshis,pubp->pubkey,pubp->timestamp)) != 0 )
             {
                 *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                 (*arrayp)[num++] = op;
