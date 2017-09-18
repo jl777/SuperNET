@@ -789,7 +789,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         }
         free_json(array);
         if ( flag != 0 )
-            LP_postutxos(coin->symbol);
+            LP_postutxos(coin->symbol,coin->smartaddr);
     }
     //printf("privkey.%s %.8f\n",symbol,dstr(total));
     return(flag);
@@ -909,8 +909,8 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase,int32_t inito
             privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
         if ( coin->inactive == 0 && initonly == 0 )
         {
-            if ( LP_privkey_init(pubsock,coin,privkey,pubkey) > 0 || (rand() % 10) == 0 )
-                LP_postutxos(coin->symbol);
+            if ( LP_privkey_init(pubsock,coin,privkey,pubkey) == 0 && (rand() % 10) == 0 )
+                LP_postutxos(coin->symbol,coin->smartaddr);
         }
     }
 }

@@ -470,7 +470,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
         {
             //printf("%s %s LISTUNSPENT.(%s)\n",symbol,addr,jprint(retjson,0));
             if ( electrum_process_array(coin,addr,retjson) != 0 )
-                LP_postutxos(coin->symbol);
+                LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
             coin->unspenttime = (uint32_t)time(NULL);
         }
