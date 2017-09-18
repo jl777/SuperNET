@@ -698,6 +698,10 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         free(asks[i]);
         asks[i] = 0;
     }
+    if ( basecoin->lastmonitor > 60 )
+        basecoin->lastmonitor -= 60;
+    if ( relcoin->lastmonitor > 60 )
+        relcoin->lastmonitor -= 60;
     jadd(retjson,"asks",array);
     jaddnum(retjson,"numasks",numasks);
     jaddstr(retjson,"base",base);
