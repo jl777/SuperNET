@@ -455,6 +455,13 @@ void LP_listunspent_issue(char *symbol,char *coinaddr)
             if ( (destport= LP_randpeer(destip)) > 0 )
             {
                 retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( electrum_process_array(coin,coinaddr,retjson) != 0 )
+                    {
+                        LP_postutxos(symbol);
+                    }
+                }
                 //printf("rand %s listunspent.(%s) to %s:%u -> %s\n",symbol,coinaddr,destip,destport,retstr);
             }
         }
