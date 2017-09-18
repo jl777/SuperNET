@@ -437,6 +437,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             {
                 if ( coin->electrum == 0 )
                 {
+                    // issue listunspent
                     DL_FOREACH_SAFE(ap->utxos,up,utmp)
                     {
                         if ( up->spendheight <= 0 )

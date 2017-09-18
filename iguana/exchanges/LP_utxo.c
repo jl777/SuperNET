@@ -81,7 +81,7 @@ struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
 
 struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
 {
-    struct LP_address *ap;
+    struct LP_address *ap = 0;
     if ( (ap= _LP_addressfind(coin,coinaddr)) == 0 )
         ap = _LP_addressadd(coin,coinaddr);
     return(ap);
@@ -89,10 +89,25 @@ struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
 
 struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr)
 {
-    struct LP_address *ap;
-    portable_mutex_lock(&coin->addrmutex);
-    ap = _LP_addressfind(coin,coinaddr);
-    portable_mutex_unlock(&coin->addrmutex);
+    struct LP_address *ap = 0;
+    if ( coin != 0 )
+    {
+        portable_mutex_lock(&coin->addrmutex);
+        ap = _LP_addressfind(coin,coinaddr);
+        portable_mutex_unlock(&coin->addrmutex);
+    }
+    return(ap);
+}
+
+struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr)
+{
+    struct LP_address *ap = 0;
+    if ( coin != 0 )
+    {
+        portable_mutex_lock(&coin->addrmutex);
+        ap = _LP_address(coin,coinaddr);
+        portable_mutex_unlock(&coin->addrmutex);
+    }
     return(ap);
 }
 

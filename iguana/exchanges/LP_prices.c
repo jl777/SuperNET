@@ -649,7 +649,11 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
 
 char *LP_orderbook(char *base,char *rel,int32_t duration)
 {
-    uint32_t now,i; struct LP_priceinfo *basepp=0,*relpp=0; struct LP_orderbookentry **bids = 0,**asks = 0; cJSON *retjson,*array; int32_t numbids=0,numasks=0,cachenumbids,cachenumasks,baseid,relid;
+    uint32_t now,i; struct LP_priceinfo *basepp=0,*relpp=0; struct LP_orderbookentry **bids = 0,**asks = 0; cJSON *retjson,*array; struct iguana_info *basecoin,*relcoin; int32_t numbids=0,numasks=0,cachenumbids,cachenumasks,baseid,relid;
+    basecoin = LP_coinfind(base);
+    relcoin = LP_coinfind(rel);
+    if ( basecoin == 0 || relcoin == 0 )
+        return(clonestr("{\"error\":\"base or rel not added\"}"));
     if ( (basepp= LP_priceinfofind(base)) == 0 || (relpp= LP_priceinfofind(rel)) == 0 )
         return(clonestr("{\"error\":\"base or rel not added\"}"));
     if ( duration <= 0 )
@@ -679,7 +683,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     {
         jaddi(array,LP_orderbookjson(rel,bids[i]));
         if ( i < 3 )
-            LP_check_unspents(rel,bids[i]);
+            LP_address(relcoin,bids[i]->coinaddr);
         free(bids[i]);
         bids[i] = 0;
     }
@@ -690,7 +694,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     {
         jaddi(array,LP_orderbookjson(base,asks[i]));
         if ( i < 3 )
-            LP_check_unspents(base,asks[i]);
+            LP_address(basecoin,asks[i]->coinaddr);
         free(asks[i]);
         asks[i] = 0;
     }
