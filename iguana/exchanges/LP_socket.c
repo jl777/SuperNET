@@ -466,7 +466,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            //printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
+            printf("%s %s LISTUNSPENT.(%s)\n",symbol,addr,jprint(retjson,0));
             if ( electrum_process_array(coin,addr,retjson) != 0 )
                 LP_postutxos(coin->symbol);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
@@ -616,7 +616,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
         resultjson = jobj(strjson,"result");
-        printf("strjson.(%s)\n",jprint(strjson,0));
+        //printf("strjson.(%s)\n",jprint(strjson,0));
         if ( (method= jstr(strjson,"method")) != 0 )
         {
             if ( strcmp(method,"blockchain.headers.subscribe") == 0 )
