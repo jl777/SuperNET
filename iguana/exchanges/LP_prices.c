@@ -676,7 +676,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=0; i<numbids; i++)
     {
         jaddi(array,LP_orderbookjson(rel,bids[i]));
-        if ( i < 3 )
+        if ( i == 0 || relcoin->electrum == 0 )
             LP_address(relcoin,bids[i]->coinaddr);
         free(bids[i]);
         bids[i] = 0;
@@ -687,7 +687,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=0; i<numasks; i++)
     {
         jaddi(array,LP_orderbookjson(base,asks[i]));
-        if ( i < 3 )
+        if ( i == 0 || basecoin->electrum == 0 )
             LP_address(basecoin,asks[i]->coinaddr);
         free(asks[i]);
         asks[i] = 0;

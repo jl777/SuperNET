@@ -459,7 +459,7 @@ void LP_listunspent_issue(char *symbol,char *coinaddr)
                 {
                     if ( electrum_process_array(coin,coinaddr,retjson) != 0 )
                     {
-                        LP_postutxos(symbol);
+                        LP_postutxos(symbol); // might be good to not saturate
                     }
                 }
                 //printf("rand %s listunspent.(%s) to %s:%u -> %s\n",symbol,coinaddr,destip,destport,retstr);
