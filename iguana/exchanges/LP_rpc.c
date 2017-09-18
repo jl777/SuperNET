@@ -251,6 +251,8 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
+    if ( bits256_nonz(txid) == 0 )
+        return(cJSON_Parse("{\"error\":\"null txid\"}"));
     if ( coin->electrum == 0 )
     {
         sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
@@ -290,6 +292,8 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
+    if ( bits256_nonz(txid) == 0 )
+        return(cJSON_Parse("{\"error\":\"null txid\"}"));
     if ( coin->electrum == 0 )
     {
         sprintf(buf,"[\"%s\", %d, true]",bits256_str(str,txid),vout);

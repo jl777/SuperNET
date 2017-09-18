@@ -502,6 +502,8 @@ cJSON *electrum_getmerkle(char *symbol,struct electrum_info *ep,cJSON **retjsonp
 {
     char params[128],str[65];
     sprintf(params,"[\"%s\", %d]",bits256_str(str,txid),height);
+    if ( bits256_nonz(txid) == 0 )
+        return(cJSON_Parse("{\"error\":\"null txid\"}"));
     return(electrum_submit(symbol,ep,retjsonp,"blockchain.transaction.get_merkle",params,ELECTRUM_TIMEOUT));
 }
 
