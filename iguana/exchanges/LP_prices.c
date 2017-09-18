@@ -643,7 +643,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
 
 char *LP_orderbook(char *base,char *rel,int32_t duration)
 {
-    uint32_t now,i; struct LP_priceinfo *basepp=0,*relpp=0; struct LP_orderbookentry **bids = 0,**asks = 0; cJSON *retjson,*array; struct iguana_info *basecoin,*relcoin; int32_t numbids=0,numasks=0,cachenumbids,cachenumasks,baseid,relid;
+    uint32_t now,i; struct LP_priceinfo *basepp=0,*relpp=0; struct LP_orderbookentry **bids = 0,**asks = 0; cJSON *retjson,*array; struct iguana_info *basecoin,*relcoin; int32_t n,numbids=0,numasks=0,cachenumbids,cachenumasks,baseid,relid;
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( basecoin == 0 || relcoin == 0 )
@@ -673,22 +673,22 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         //    printf("%.8f ",asks[i]->price);
         //printf("sorted asks.%d\n",numasks);
     }
-    for (i=0; i<numbids; i++)
+    for (i=n=0; i<numbids; i++)
     {
         jaddi(array,LP_orderbookjson(rel,bids[i]));
-        if ( i == 0 || relcoin->electrum == 0 )
-            LP_address(relcoin,bids[i]->coinaddr);
+        if ( bids[i]->numutxos == 0 && (n == 0 || relcoin->electrum == 0) )
+            LP_address(relcoin,bids[i]->coinaddr), n++;
         free(bids[i]);
         bids[i] = 0;
     }
     jadd(retjson,"bids",array);
     jaddnum(retjson,"numbids",numbids);
     array = cJSON_CreateArray();
-    for (i=0; i<numasks; i++)
+    for (i=n=0; i<numasks; i++)
     {
         jaddi(array,LP_orderbookjson(base,asks[i]));
-        if ( i == 0 || basecoin->electrum == 0 )
-            LP_address(basecoin,asks[i]->coinaddr);
+        if ( asks[i]->numutxos == 0 && (n == 0 || basecoin->electrum == 0) )
+            LP_address(basecoin,asks[i]->coinaddr), n++;
         free(asks[i]);
         asks[i] = 0;
     }
