@@ -455,7 +455,7 @@ void LP_listunspent_issue(char *symbol,char *coinaddr)
             if ( (destport= LP_randpeer(destip)) > 0 )
             {
                 retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
-                printf("rand %s listunspent.(%s) to %s:%u -> %s\n",symbol,coinaddr,destip,destport,retstr);
+                //printf("rand %s listunspent.(%s) to %s:%u -> %s\n",symbol,coinaddr,destip,destport,retstr);
             }
         }
         if ( retjson != 0 )
