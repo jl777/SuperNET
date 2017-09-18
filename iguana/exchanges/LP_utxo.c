@@ -96,6 +96,24 @@ struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr)
     return(ap);
 }
 
+int32_t LP_address_minmax(uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
+{
+    struct LP_address_utxo *up,*tmp; int32_t n = 0;
+    *minp = *maxp = 0;
+    DL_FOREACH_SAFE(ap->utxos,up,tmp)
+    {
+        if ( up->spendheight <= 0 )
+        {
+            if ( up->U.value > *maxp )
+                *maxp = up->U.value;
+            if ( *minp == 0 || up->U.value < *minp )
+                *minp = up->U.value;
+            n++;
+        }
+    }
+    return(n);
+}
+
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0;

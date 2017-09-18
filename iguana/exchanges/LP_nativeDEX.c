@@ -84,8 +84,8 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_bitcoin.c"
 #include "LP_coins.c"
 #include "LP_rpc.c"
-#include "LP_prices.c"
 #include "LP_utxo.c"
+#include "LP_prices.c"
 #include "LP_scan.c"
 #include "LP_transaction.c"
 #include "LP_remember.c"
@@ -356,7 +356,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             //if ( IAMLP != 0 && peer->numpeers != numpeers )
             //    printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,numpeers);
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
+            {
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+                LP_peer_pricesquery(peer->ipaddr,peer->port);
+            }
             if ( enable_utxos && IAMLP != 0 && LP_mypeer != 0 && strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 if ( (retstr= issue_LP_numutxos(peer->ipaddr,peer->port,LP_mypeer->ipaddr,LP_mypeer->port,LP_mypeer->numpeers,LP_mypeer->numutxos)) != 0 )
