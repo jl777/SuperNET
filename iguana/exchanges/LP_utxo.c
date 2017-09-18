@@ -407,7 +407,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
     return(value);
 }
 
-int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJSON *txobj)
+cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJSON *txobj)
 {
     struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; cJSON *vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
     if ( txobj != 0 || (txobj= LP_gettx(coin->symbol,txid)) != 0 )
