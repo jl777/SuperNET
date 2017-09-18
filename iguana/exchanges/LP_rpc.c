@@ -262,6 +262,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     }
     else
     {
+        printf("gettx\n");
         sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
         if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
@@ -303,6 +304,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
     }
     else
     {
+        printf("gettxout v%d\n",vout);
         sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
         if ( (hexobj= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
