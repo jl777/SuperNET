@@ -233,7 +233,7 @@ void LP_postutxos(char *symbol,char *coinaddr)
             jaddstr(reqjson,"coinaddr",coinaddr);
             jadd(reqjson,"utxos",array);
             msg = jprint(reqjson,1);
-            printf("post (%s) -> %d\n",msg,LP_mypubsock);
+            //printf("post (%s) -> %d\n",msg,LP_mypubsock);
             LP_broadcast_message(LP_mypubsock,symbol,symbol,zero,msg);
         }
     }
