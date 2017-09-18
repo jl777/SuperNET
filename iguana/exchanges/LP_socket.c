@@ -324,19 +324,21 @@ int32_t electrum_process_array(struct iguana_info *coin,char *coinaddr,cJSON *ar
                 if (tx->height <= 0 )
                 {
                     tx->height = jint(item,"height");
-                    printf(">>>>>>>>>> set %s <- height %d\n",bits256_str(str,txid),tx->height);
+                    printf("%s %s >>>>>>>>>> set %s <- height %d\n",coin->symbol,coinaddr,bits256_str(str,txid),tx->height);
                 }
-                if ( jobj(item,"tx_pos") != 0 && jobj(item,"value") != 0 && (v= jint(item,"tx_pos")) >= 0 && v < tx->numvouts )
+                value = j64bits(item,"value");
+                v = jint(item,"tx_pos");
+                if ( jobj(item,"tx_pos") != 0 && jobj(item,"value") != 0 && v >= 0 && v < tx->numvouts )
                 {
-                    value = j64bits(item,"value");
                     if ( tx->outpoints[v].value == 0 && value != tx->outpoints[v].value )
                     {
-                        printf(">>>>>>>>>> set %s/v%d <- %.8f vs %.8f\n",bits256_str(str,txid),v,dstr(value),dstr(tx->outpoints[v].value));
+                        printf("%s %s >>>>>>>>>> set %s/v%d <- %.8f vs %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),v,dstr(value),dstr(tx->outpoints[v].value));
                         tx->outpoints[v].value = value;
-                        flag += LP_address_utxoadd(coin,coinaddr,txid,v,value,tx->height,-1);
                     }
                 }
-                printf("v.%d numvouts.%d %.8f (%s)\n",jint(item,"tx_pos"),tx->numvouts,dstr(tx->outpoints[jint(item,"tx_pos")].value),jprint(item,0));
+                if ( value != 0 && tx->height > 0 )
+                    flag += LP_address_utxoadd(coin,coinaddr,txid,v,value,tx->height,-1);
+                //printf("v.%d numvouts.%d %.8f (%s)\n",jint(item,"tx_pos"),tx->numvouts,dstr(tx->outpoints[jint(item,"tx_pos")].value),jprint(item,0));
             }
         }
     }

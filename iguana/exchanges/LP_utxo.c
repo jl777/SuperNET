@@ -163,8 +163,8 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             portable_mutex_unlock(&coin->addrmutex);
             retval = 1;
             char str[65];
-            if ( 0 && height > 0 )
-                printf(">>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
+            if ( height > 0 )
+                printf("ADDRESS_UTXO >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
     }
     //printf("done %s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
