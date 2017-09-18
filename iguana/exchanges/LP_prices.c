@@ -216,7 +216,8 @@ char *LP_prices()
 void LP_prices_parse(cJSON *obj)
 {
     static uint8_t zeroes[20];
-    struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid; char *base,*rel,*hexstr; double askprice;
+    struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid; char *base,*rel,*hexstr; double askprice; uint32_t now;
+    now = (uint32_t)time(NULL);
     pubkey = jbits256(obj,"pubkey");
     if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
     {
@@ -232,7 +233,10 @@ void LP_prices_parse(cJSON *obj)
                 //LP_address_monitor(pubp);
             }
         }
-        if ( (timestamp= juint(obj,"timestamp")) > pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
+        timestamp = juint(obj,"timestamp");
+        if ( timestamp > now )
+            timestamp = now;
+        if ( timestamp > pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
         {
             pubp->timestamp = timestamp;
             for (i=0; i<n; i++)
