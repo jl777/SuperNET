@@ -412,7 +412,7 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
     struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; cJSON *txobj,*vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
     if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
     {
-        //printf("TX.(%s)\n",jprint(txobj,0));
+        printf("LP_transactioninit.(%s)\n",jprint(txobj,0));
         if ( coin->electrum == 0 )
             height = LP_txheight(coin,txid);
         else height = -1;
