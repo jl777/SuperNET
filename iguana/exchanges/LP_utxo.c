@@ -407,12 +407,11 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
     return(value);
 }
 
-int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
+int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJSON *txobj)
 {
-    struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; cJSON *txobj,*vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
-    if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
+    struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; cJSON *vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
+    if ( txobj != 0 || (txobj= LP_gettx(coin->symbol,txid)) != 0 )
     {
-        printf("LP_transactioninit.(%s)\n",jprint(txobj,0));
         if ( coin->electrum == 0 )
             height = LP_txheight(coin,txid);
         else height = -1;
@@ -456,10 +455,13 @@ int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
                     printf("spending same tx's %p vout ht.%d %s.[%d] s%d\n",tx,height,bits256_str(str,txid),tx!=0?tx->numvouts:0,spentvout);
             }
         }
-        free_json(txobj);
-        return(0);
+        if ( iter == 1 )
+        {
+            free_json(txobj);
+            return(0);
+        } else return(txobj);
     } //else printf("LP_transactioninit error for %s %s\n",coin->symbol,bits256_str(str,txid));
-    return(-1);
+    return(0);
 }
 
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
@@ -532,7 +534,7 @@ int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
 
 uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 {
-    struct LP_transaction *tx; cJSON *txobj; uint64_t value; struct iguana_info *coin; char str[65],str2[65],_coinaddr[65];
+    struct LP_transaction *tx; cJSON *txobj=0; uint64_t value; struct iguana_info *coin; char str[65],str2[65],_coinaddr[65];
     if ( bits256_nonz(txid) == 0 )
         return(0);
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
@@ -541,8 +543,8 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         coinaddr[0] = 0;
     if ( (tx= LP_transactionfind(coin,txid)) == 0 )
     {
-        LP_transactioninit(coin,txid,0);
-        LP_transactioninit(coin,txid,1);
+        txobj = LP_transactioninit(coin,txid,0,0);
+        LP_transactioninit(coin,txid,1,txobj);
         tx = LP_transactionfind(coin,txid);
     }
     if ( tx != 0 )

@@ -42,7 +42,7 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
                     if ( iter == 1 )
                         for (j=0; j<10; j++)
                         {
-                            if (LP_transactioninit(coin,txid,iter) == 0 )
+                            if (LP_transactioninit(coin,txid,iter,0) == 0 )
                                 break;
                             printf("transaction ht.%d init error.%d, pause\n",height,j);
                             sleep(1);
@@ -52,7 +52,7 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
                 {
                     for (j=0; j<10; j++)
                     {
-                        if (LP_transactioninit(coin,txid,iter) == 0 )
+                        if (LP_transactioninit(coin,txid,iter,0) == 0 )
                             break;
                         printf("transaction ht.%d init error.%d, pause\n",height,j);
                         sleep(1);
@@ -435,8 +435,8 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
                 txid = jbits256i(array,i);
                 if ( (tx= LP_transactionfind(coin,txid)) == 0 )
                 {
-                    LP_transactioninit(coin,txid,0);
-                    LP_transactioninit(coin,txid,1);
+                    LP_transactioninit(coin,txid,0,0);
+                    LP_transactioninit(coin,txid,1,0);
                 }
                 if ( bits256_cmp(txid,searchtxid) == 0 )
                 {

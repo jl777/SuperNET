@@ -306,7 +306,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 
 int32_t electrum_process_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
 {
-    int32_t i,v,n,flag = 0; char str[65]; uint64_t value; bits256 txid; cJSON *item; struct LP_transaction *tx;
+    int32_t i,v,n,flag = 0; char str[65]; uint64_t value; bits256 txid; cJSON *item,*txobj; struct LP_transaction *tx;
     if ( array != 0 && coin != 0 && (n= cJSON_GetArraySize(array)) > 0 )
     {
         for (i=0; i<n; i++)
@@ -315,8 +315,8 @@ int32_t electrum_process_array(struct iguana_info *coin,char *coinaddr,cJSON *ar
             txid = jbits256(item,"tx_hash");
             if ( (tx= LP_transactionfind(coin,txid)) == 0 )
             {
-                LP_transactioninit(coin,txid,0);
-                LP_transactioninit(coin,txid,1);
+                txobj = LP_transactioninit(coin,txid,0,0);
+                LP_transactioninit(coin,txid,1,txobj);
                 tx = LP_transactionfind(coin,txid);
             }
             if ( tx != 0 )
