@@ -909,7 +909,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase,int32_t inito
             privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
         if ( coin->inactive == 0 && initonly == 0 )
         {
-            if ( LP_privkey_init(pubsock,coin,privkey,pubkey) > 0 )
+            if ( LP_privkey_init(pubsock,coin,privkey,pubkey) > 0 || (rand() % 10) == 0 )
                 LP_postutxos(coin->symbol);
         }
     }
