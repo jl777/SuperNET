@@ -109,6 +109,14 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
+char *issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/listunspent?coin=%s&address=%s",destip,destport,symbol,coinaddr);
+    //printf("listunspent.(%s)\n",url);
+    return(LP_issue_curl("listunspent",destip,destport,url));
+}
+
 char *LP_apicall(struct iguana_info *coin,char *method,char *params)
 {
     cJSON *retjson; char *retstr;
@@ -433,6 +441,28 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
             return(bitcoin_json(coin,"listunspent",buf));
         } else return(LP_address_utxos(coin,coinaddr,0));
     } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr));
+}
+
+void LP_listunspent_issue(char *symbol,char *coinaddr)
+{
+    struct iguana_info *coin; cJSON *retjson=0; char *retstr=0,destip[64]; uint16_t destport;
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        if ( coin->electrum != 0 )
+            retjson = electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr);
+        else
+        {
+            if ( (destport= LP_randpeer(destip)) > 0 )
+            {
+                retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
+                printf("rand %s listunspent.(%s) to %s:%u -> %s\n",symbol,coinaddr,destip,destport,retstr);
+            }
+        }
+        if ( retjson != 0 )
+            free_json(retjson);
+        if ( retstr != 0 )
+            free(retstr);
+    }
 }
 
 cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)

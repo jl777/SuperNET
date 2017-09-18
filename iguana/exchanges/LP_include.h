@@ -306,6 +306,7 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);
 void LP_postutxos(char *symbol);
+uint16_t LP_randpeer(char *destip);
 
 
 #endif

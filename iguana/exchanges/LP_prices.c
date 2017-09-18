@@ -530,11 +530,12 @@ static int _cmp_orderbook(const void *a,const void *b)
 #undef ptr_b
 }
 
-cJSON *LP_orderbookjson(struct LP_orderbookentry *op)
+cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
 {
     cJSON *item = cJSON_CreateObject();
     if ( LP_pricevalid(op->price) > 0 )
     {
+        jaddstr(item,"coin",symbol);
         jaddstr(item,"address",op->coinaddr);
         jaddnum(item,"price",op->price);
         jaddnum(item,"numutxos",op->numutxos);
@@ -546,6 +547,12 @@ cJSON *LP_orderbookjson(struct LP_orderbookentry *op)
         jaddnum(item,"age",time(NULL)-op->timestamp);
     }
     return(item);
+}
+
+void LP_check_unspents(char *symbol,struct LP_orderbookentry *op)
+{
+    if ( op->numutxos == 0 )
+        LP_listunspent_issue(symbol,op->coinaddr);
 }
 
 struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,double price,int32_t numutxos,uint64_t basesatoshis,uint64_t maxsatoshis,bits256 pubkey,uint32_t timestamp)
@@ -670,7 +677,9 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     }
     for (i=0; i<numbids; i++)
     {
-        jaddi(array,LP_orderbookjson(bids[i]));
+        jaddi(array,LP_orderbookjson(rel,bids[i]));
+        if ( i < 3 )
+            LP_check_unspents(rel,bids[i]);
         free(bids[i]);
         bids[i] = 0;
     }
@@ -679,7 +688,9 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     array = cJSON_CreateArray();
     for (i=0; i<numasks; i++)
     {
-        jaddi(array,LP_orderbookjson(asks[i]));
+        jaddi(array,LP_orderbookjson(base,asks[i]));
+        if ( i < 3 )
+            LP_check_unspents(base,asks[i]);
         free(asks[i]);
         asks[i] = 0;
     }
