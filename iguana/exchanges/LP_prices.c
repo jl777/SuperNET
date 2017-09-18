@@ -549,12 +549,6 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
     return(item);
 }
 
-void LP_check_unspents(char *symbol,struct LP_orderbookentry *op)
-{
-    if ( op->numutxos == 0 )
-        LP_listunspent_issue(symbol,op->coinaddr);
-}
-
 struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,double price,int32_t numutxos,uint64_t basesatoshis,uint64_t maxsatoshis,bits256 pubkey,uint32_t timestamp)
 {
     struct LP_orderbookentry *op;
@@ -698,10 +692,10 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         free(asks[i]);
         asks[i] = 0;
     }
-    if ( basecoin->lastmonitor > 60 )
-        basecoin->lastmonitor -= 60;
-    if ( relcoin->lastmonitor > 60 )
-        relcoin->lastmonitor -= 60;
+    if ( basecoin->lastmonitor > 3600 )
+        basecoin->lastmonitor -= 3600;
+    if ( relcoin->lastmonitor > 3600 )
+        relcoin->lastmonitor -= 3600;
     jadd(retjson,"asks",array);
     jaddnum(retjson,"numasks",numasks);
     jaddstr(retjson,"base",base);

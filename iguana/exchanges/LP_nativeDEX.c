@@ -430,14 +430,14 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         //printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
         if ( coin->inactive != 0 )
             continue;
-        if ( time(NULL) > coin->lastmonitor+60 )
+        if ( time(NULL) > coin->lastmonitor+600 )
         {
             //portable_mutex_lock(&coin->addrmutex);
             HASH_ITER(hh,coin->addresses,ap,atmp)
             {
                 if ( coin->electrum == 0 )
                 {
-                    // issue listunspent
+                    LP_listunspent_issue(coin->symbol,ap->coinaddr);
                     DL_FOREACH_SAFE(ap->utxos,up,utmp)
                     {
                         if ( up->spendheight <= 0 )

@@ -324,7 +324,7 @@ int32_t electrum_process_array(struct iguana_info *coin,char *coinaddr,cJSON *ar
                 if (tx->height <= 0 )
                 {
                     tx->height = jint(item,"height");
-                    printf("%s %s >>>>>>>>>> set %s <- height %d\n",coin->symbol,coinaddr,bits256_str(str,txid),tx->height);
+                    //printf("%s %s >>>>>>>>>> set %s <- height %d\n",coin->symbol,coinaddr,bits256_str(str,txid),tx->height);
                 }
                 value = j64bits(item,"value");
                 v = jint(item,"tx_pos");
@@ -468,7 +468,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            printf("%s %s LISTUNSPENT.(%s)\n",symbol,addr,jprint(retjson,0));
+            //printf("%s %s LISTUNSPENT.(%s)\n",symbol,addr,jprint(retjson,0));
             if ( electrum_process_array(coin,addr,retjson) != 0 )
                 LP_postutxos(coin->symbol);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
