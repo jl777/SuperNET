@@ -163,8 +163,6 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
                     {
                         free_json(retjson);
                         retjson = 0;
-                        retjson = electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT);
-                        printf("RETRY.(%s)\n",jprint(retjson,0));
                     }
                 //printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
                     /*if ( (resultjson= jobj(retjson,"result")) != 0 )
@@ -278,7 +276,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     else
     {
         sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
-        if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
+        if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 || (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
             hexstr = jprint(retjson,1);
             if ( strlen(hexstr) > 10000 )
