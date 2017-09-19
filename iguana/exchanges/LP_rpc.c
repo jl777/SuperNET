@@ -266,6 +266,12 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
         if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
             hexstr = jprint(retjson,1);
+            if ( strlen(hexstr) > 50000 )
+            {
+                printf("rawtransaction too big %d\n",(int32_t)strlen(hexstr));
+                free(hexstr);
+                return(cJSON_Parse("{\"error\":\"transaction too big\"}"));
+            }
             if ( hexstr[0] == '"' && hexstr[strlen(hexstr)-1] == '"' )
                 hexstr[strlen(hexstr)-1] = 0;
             if ( (len= is_hexstr(hexstr+1,0)) > 2 )
@@ -274,6 +280,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
                 len = (int32_t)strlen(hexstr+1) >> 1;
                 serialized = malloc(len);
                 decode_hex(serialized,len,hexstr+1);
+                free(hexstr);
                 //printf("DATA.(%s)\n",hexstr+1);
                 extraspace = calloc(1,1000000);
                 retjson = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,1000000,serialized,len,0,0);
@@ -282,6 +289,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
                 //printf("TX.(%s) match.%d\n",jprint(retjson,0),bits256_cmp(txid,checktxid));
                 return(retjson);
             } else printf("non-hex tx.(%s)\n",hexstr);
+            free(hexstr);
             return(cJSON_Parse("{\"error\":\"non hex transaction\"}"));
         } else printf("failed blockcjhain.transaction.get\n");
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
@@ -308,6 +316,12 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
         if ( (hexobj= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
             hexstr = jprint(hexobj,1);
+            if ( strlen(hexstr) > 50000 )
+            {
+                printf("rawtransaction too big %d\n",(int32_t)strlen(hexstr));
+                free(hexstr);
+                return(cJSON_Parse("{\"error\":\"transaction too big\"}"));
+            }
             if ( hexstr[0] == '"' && hexstr[strlen(hexstr)-1] == '"' )
                 hexstr[strlen(hexstr)-1] = 0;
             if ( (len= is_hexstr(hexstr+1,0)) > 2 )
@@ -317,6 +331,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                 decode_hex(serialized,len,hexstr+1);
                 LP_swap_coinaddr(coin,coinaddr,&value,serialized,len,vout);
                 //printf("HEX.(%s) len.%d %s %.8f\n",hexstr+1,len,coinaddr,dstr(value));
+                free(hexstr);
                 if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr)) != 0 )
                 {
                     //printf("array.(%s)\n",jprint(array,0));
@@ -365,7 +380,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                     }
                     free_json(array);
                 }
-            }
+            } else free(hexstr);
             return(retjson);
         }
         return(cJSON_Parse("{\"error\":\"couldnt get tx\"}"));
