@@ -250,6 +250,8 @@ cJSON *LP_paxprice(char *fiat)
 cJSON *LP_gettx(char *symbol,bits256 txid)
 {
     char buf[128],str[65],*hexstr; int32_t len; bits256 checktxid; cJSON *retjson; struct iguana_info *coin; struct iguana_msgtx msgtx; uint8_t *extraspace,*serialized;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
