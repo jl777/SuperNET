@@ -459,8 +459,8 @@ void LP_abutxo_set(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP
     autxo->payment.vout = qp->destvout;
     //autxo->payment.value = qp->value;
     autxo->iambob = 0;
-    autxo->deposit.txid = qp->feetxid;
-    autxo->deposit.vout = qp->feevout;
+    autxo->fee.txid = qp->feetxid;
+    autxo->fee.vout = qp->feevout;
     //autxo->deposit.value = up2->U.value;
     autxo->S.satoshis = qp->destsatoshis;
 }
