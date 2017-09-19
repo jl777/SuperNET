@@ -27,36 +27,22 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
         if ( (txs= jarray(&numtx,blockobj,"tx")) != 0 )
         {
             for (iter=0; iter<2; iter++)
-            for (i=0; i<numtx; i++)
             {
-                txid = jbits256i(txs,i);
-                if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+                for (i=0; i<numtx; i++)
                 {
-                    if ( tx->height == 0 )
-                        tx->height = height;
-                    else if ( tx->height != height )
+                    txid = jbits256i(txs,i);
+                    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
                     {
-                        printf("LP_blockinit: tx->height %d != %d\n",tx->height,height);
-                        tx->height = height;
-                    }
-                    if ( iter == 1 )
-                        for (j=0; j<10; j++)
+                        if ( tx->height == 0 )
+                            tx->height = height;
+                        else if ( tx->height != height )
                         {
-                            if (LP_transactioninit(coin,txid,iter,0) == 0 )
-                                break;
-                            printf("%s transaction ht.%d init error.%d, pause\n",bits256_str(str,txid),height,j);
-                            sleep(10);
+                            printf("LP_blockinit: tx->height %d != %d\n",tx->height,height);
+                            tx->height = height;
                         }
-                }
-                else
-                {
-                    for (j=0; j<10; j++)
-                    {
-                        if (LP_transactioninit(coin,txid,iter,0) == 0 )
-                            break;
-                        printf("%s transaction ht.%d init error.%d, pause\n",bits256_str(str,txid),height,j);
-                        sleep(10);
-                    }
+                        if ( iter == 1 )
+                            LP_transactioninit(coin,txid,iter,0);
+                    } else LP_transactioninit(coin,txid,iter,0);
                 }
             }
         }
