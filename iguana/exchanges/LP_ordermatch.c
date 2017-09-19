@@ -992,7 +992,7 @@ struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchp
                     else
                     {
                         if ( i == 0 )
-                            printf("too expensive maxprice %.8f vs %.8f\n",maxprice,price);
+                            printf("too expensive maxprice %.8f vs %.8f\n",minprice,price);
                         break;
                     }
                 }
