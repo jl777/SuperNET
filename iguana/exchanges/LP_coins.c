@@ -172,7 +172,7 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,c
 
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 {
-    char wifstr[128]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
+    struct electrum_info *ep; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
     if ( showwif != 0 )
     {
@@ -187,6 +187,11 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     else jaddstr(item,"status","active");
     if ( coin->isPoS != 0 )
         jaddstr(item,"type","PoS");
+    if ( (ep= coin->electrum) != 0 )
+    {
+        sprintf(ipaddr,"%s:%u",ep->ipaddr,ep->port);
+        jaddstr(item,"electrum",ipaddr);
+    }
     jaddstr(item,"smartaddress",coin->smartaddr);
     jaddstr(item,"rpc",coin->serverport);
     jaddnum(item,"pubtype",coin->pubtype);
