@@ -760,15 +760,15 @@ char *LP_autotrade(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *r
 
 char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration)
 {
-    struct LP_utxoinfo *bobutxo,*aliceutxo; cJSON *bestitem=0; int32_t DEXselector=0; uint32_t expiration; double price; struct LP_pubkeyinfo *pubp;
+    struct LP_utxoinfo *aliceutxo; cJSON *bestitem=0; int32_t DEXselector=0; uint32_t expiration; double price; struct LP_pubkeyinfo *pubp;
     if ( (aliceutxo= LP_utxopairfind(0,qp->desttxid,qp->destvout,qp->feetxid,qp->feevout)) == 0 )
     {
         char str[65],str2[65]; printf("dest.(%s)/v%d fee.(%s)/v%d\n",bits256_str(str,qp->desttxid),qp->destvout,bits256_str(str2,qp->feetxid),qp->feevout);
         return(clonestr("{\"error\":\"cant find alice utxopair\"}"));
     }
-    if ( (bobutxo= LP_utxopairfind(1,qp->txid,qp->vout,qp->txid2,qp->vout2)) == 0 )
+    /*if ( (bobutxo= LP_utxopairfind(1,qp->txid,qp->vout,qp->txid2,qp->vout2)) == 0 )
         return(clonestr("{\"error\":\"cant find bob utxopair\"}"));
-    bobutxo->T.bestflag = (uint32_t)time(NULL);
+    bobutxo->T.bestflag = (uint32_t)time(NULL);*/
     //if ( (retstr= LP_registerall(0)) != 0 )
     //    free(retstr);
     price = LP_query(ctx,myipaddr,mypubsock,"request",qp);
@@ -778,7 +778,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
         if ( price <= maxprice )
         {
             price = LP_query(ctx,myipaddr,mypubsock,"connect",qp);
-            LP_requestinit(&qp->R,qp->srchash,qp->desthash,bobutxo->coin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
+            LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
             expiration = (uint32_t)time(NULL) + timeout;
             while ( time(NULL) < expiration )
             {
@@ -788,7 +788,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
             }
             if ( aliceutxo->S.swap == 0 )
             {
-                if ( (pubp= LP_pubkeyadd(bobutxo->pubkey)) != 0 )
+                if ( (pubp= LP_pubkeyadd(qp->srchash)) != 0 )
                     pubp->numerrors++;
                 jaddstr(bestitem,"status","couldnt establish connection");
             } else jaddstr(bestitem,"status","connected");
@@ -939,6 +939,75 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
     return(bestutxo);
 }
 
+struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *rel,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,double relvolume,char *gui)
+{
+    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*asks,*item; int32_t i,n,numasks,max = 1000; struct LP_address_utxo **utxos; double minvol,maxvol,price; struct LP_pubkeyinfo *pubp; struct iguana_info *relcoin;
+    *ordermatchpricep = 0.;
+    *bestsatoshisp = *bestdestsatoshisp = 0;
+    relcoin = LP_coinfind(rel);
+    if ( duration <= 0 )
+        duration = LP_ORDERBOOK_DURATION;
+    if ( maxprice <= 0. || LP_priceinfofind(rel) == 0 || relcoin == 0 )
+        return(0);
+    utxos = calloc(max,sizeof(*utxos));
+    LP_txfees(&txfee,&desttxfee,autxo->coin,rel);
+    if ( (obookstr= LP_orderbook(autxo->coin,rel,duration)) != 0 )
+    {
+        if ( (orderbook= cJSON_Parse(obookstr)) != 0 )
+        {
+            if ( (asks= jarray(&numasks,orderbook,"bids")) != 0 )
+            {
+                for (i=0; i<numasks; i++)
+                {
+                    item = jitem(asks,i);
+                    price = jdouble(item,"price");
+                    if ( LP_pricevalid(price) > 0 && price <= maxprice )
+                    {
+                        pubkey = jbits256(item,"pubkey");
+                        if ( bits256_cmp(pubkey,LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
+                        {
+                            if ( (n= jint(item,"numutxos")) > 1 )
+                            {
+                                minvol = jdouble(item,"minvolume");
+                                maxvol = jdouble(item,"maxvolume");
+                                if ( relvolume >= minvol && relvolume <= maxvol )
+                                {
+                                    bitcoin_address(coinaddr,relcoin->taddr,relcoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
+                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,relcoin,coinaddr,txfee,relvolume,price)) != 0 )
+                                    {
+                                        bestutxo->pubkey = pubp->pubkey;
+                                        safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
+                                        autxo->S.satoshis = bestutxo->S.satoshis;
+                                        *bestsatoshisp = bestutxo->S.satoshis / price;
+                                        *ordermatchpricep = price;
+                                        *bestdestsatoshisp = autxo->S.satoshis;
+                                        printf("ordermatch %.8f %.8f %.8f\n",price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp));
+                                        break;
+                                    }
+                                }
+                            }
+                        } else printf("self trading or blacklisted peer\n");
+                    }
+                    else
+                    {
+                        if ( i == 0 )
+                            printf("too expensive maxprice %.8f vs %.8f\n",maxprice,price);
+                        break;
+                    }
+                }
+            }
+            free_json(orderbook);
+        }
+        free(obookstr);
+    }
+    free(utxos);
+    if ( *ordermatchpricep == 0. || *bestdestsatoshisp == 0 )
+        return(0);
+    int32_t changed;
+    LP_mypriceset(&changed,autxo->coin,rel,*ordermatchpricep);
+    return(bestutxo);
+}
+
 char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui)
 {
     uint64_t desttxfee,txfee; int64_t bestsatoshis=0,bestdestsatoshis=0; struct LP_utxoinfo *autxo,_best,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q;
@@ -968,38 +1037,38 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"quote validation error\"}"));
     }
     printf("do quote.(%s)\n",jprint(LP_quotejson(&Q),1));
-    return(clonestr("{\"result\":\"success\"}"));
-    //return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration));
+    return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration));
 }
 
-char *LP_autosell(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double basevolume,int32_t timeout,int32_t duration)
+char *LP_autosell(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double basevolume,int32_t timeout,int32_t duration,char *gui)
 {
-    uint64_t desttxfee,txfee; int64_t bestsatoshis=0,bestdestsatoshis=0; struct LP_utxoinfo *autxo,*butxo,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q;
+    uint64_t desttxfee,txfee; int64_t bestsatoshis=0,bestdestsatoshis=0; struct LP_utxoinfo *butxo,_best,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q;
     if ( duration <= 0 )
         duration = LP_ORDERBOOK_DURATION;
     if ( timeout <= 0 )
         timeout = LP_AUTOTRADE_TIMEOUT;
     if ( maxprice <= 0. || basevolume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
-    if ( (autxo= LP_utxo_bestfit(base,SATOSHIDEN * basevolume)) == 0 )
+    if ( (butxo= LP_utxo_bestfit(base,SATOSHIDEN * basevolume)) == 0 )
         return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
     LP_txfees(&txfee,&desttxfee,base,rel);
-    //if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,SATOSHIDEN*basevolume*maxprice)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
+    if ( (bestutxo= LP_sellutxo(&_best,&ordermatchprice,&bestsatoshis,&bestdestsatoshis,butxo,rel,maxprice,duration,txfee,desttxfee,SATOSHIDEN*basevolume*maxprice,gui)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
     {
         printf("bestutxo.%p ordermatchprice %.8f bestdestsatoshis %.8f\n",bestutxo,ordermatchprice,dstr(bestdestsatoshis));
         return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
     }
-    if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestsatoshis,bestdestsatoshis) < 0 )
+    if ( LP_quoteinfoinit(&Q,bestutxo,base,ordermatchprice,bestsatoshis,bestdestsatoshis) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
-    if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypub25519,autxo->coinaddr) < 0 )
+    if ( LP_quotedestinfo(&Q,bestutxo->payment.txid,bestutxo->payment.vout,bestutxo->deposit.txid,bestutxo->deposit.vout,LP_mypub25519,bestutxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
-    if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
+    if ( (qprice= LP_quote_validate(bestutxo,butxo,&Q,0)) <= SMALLVAL )
     {
         printf("quote validate error %.0f\n",qprice);
         return(clonestr("{\"error\":\"quote validation error\"}"));
     }
     printf("do quote.(%s)\n",jprint(LP_quotejson(&Q),1));
-    return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration));
+    return(clonestr("{\"result\":\"success\"}"));
+    //return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration));
 }
 
 

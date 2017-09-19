@@ -244,7 +244,7 @@ dividends(coin, height, <args>)\n\
             {
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autosell(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
+                    return(LP_autosell(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
