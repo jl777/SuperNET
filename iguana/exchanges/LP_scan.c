@@ -45,7 +45,7 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
                             if (LP_transactioninit(coin,txid,iter,0) == 0 )
                                 break;
                             printf("transaction ht.%d init error.%d, pause\n",height,j);
-                            sleep(1);
+                            sleep(10);
                         }
                 }
                 else
@@ -55,7 +55,7 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
                         if (LP_transactioninit(coin,txid,iter,0) == 0 )
                             break;
                         printf("transaction ht.%d init error.%d, pause\n",height,j);
-                        sleep(1);
+                        sleep(10);
                     }
                 }
             }
