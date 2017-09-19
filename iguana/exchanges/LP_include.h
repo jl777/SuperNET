@@ -49,7 +49,7 @@
 #define LP_MINVOL 10
 #define LP_MINCLIENTVOL 20
 #define LP_MINSIZE_TXFEEMULT 10
-#define LP_REQUIRED_TXFEE 0.95
+#define LP_REQUIRED_TXFEE 0.9
 
 #define LP_DEXFEE(destsatoshis) ((destsatoshis) / INSTANTDEX_INSURANCEDIV)
 #define LP_DEPOSITSATOSHIS(satoshis) ((satoshis) + (satoshis >> 3))
