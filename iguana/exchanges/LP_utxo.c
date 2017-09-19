@@ -33,7 +33,7 @@ uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
     double val = 0.; uint64_t value = 0;
     if ( (val= jdouble(obj,"amount")) < SMALLVAL )
         val = jdouble(obj,"value");
-    value = val * SATOSHIDEN + 0.0000000049;
+    value = val * SATOSHIDEN + 0.0000000059;
     if ( value != 0 )
     {
         if ( addinterest != 0 && jobj(obj,"interest") != 0 )
@@ -280,7 +280,7 @@ char *LP_postedutxos(cJSON *argjson)
                         value = LP_value_extract(txobj,0);
                         if ( value != 0 && value != val )
                         {
-                            printf("REJECT %s %s/v%d value.%llu vs %llu (%s)\n",symbol,bits256_str(str,txid),v,(long long)value,(long long)val,jprint(item,0));
+                            printf("REJECT %s %s/v%d value.%llu vs %llu (%s)\n",symbol,bits256_str(str,txid),v,(long long)value,(long long)val,jprint(txobj,0));
                             errs++;
                         }
                         if ( coin->height != 0 )
