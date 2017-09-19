@@ -984,7 +984,7 @@ struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchp
                                 {
                                     printf("%s %.8f [%.8f] %.8f\n",jprint(item,0),minvol,basevolume*price,maxvol);
                                     bitcoin_address(coinaddr,relcoin->taddr,relcoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
-                                    if ( (bestutxo= LP_address_utxopair(0,bestutxo,utxos,max,relcoin,coinaddr,desttxfee,basevolume,price)) != 0 )
+                                    if ( (bestutxo= LP_address_utxopair(0,bestutxo,utxos,max,relcoin,coinaddr,desttxfee,basevolume*price,price)) != 0 )
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
