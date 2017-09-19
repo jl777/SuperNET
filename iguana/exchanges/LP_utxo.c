@@ -622,9 +622,10 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
             LP_destaddr(coinaddr,txobj);
             free_json(txobj);
             //printf("pruned node? LP_txvalue couldnt find %s tx %s, but gettxout %.8f\n",coin->symbol,bits256_str(str,txid),dstr(value));
-            return(value);
+            if ( value != 0 )
+                return(value);
         }
-        printf("pruned node? LP_txvalue couldnt find %s tx %s\n",coin->symbol,bits256_str(str,txid));
+        printf("pruned node? LP_txvalue couldnt find %s tx %s/v%d\n",coin->symbol,bits256_str(str,txid),vout);
     }
     return(0);
 }
