@@ -629,7 +629,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
             {
                 if ( aliceutxo->S.swap != 0 )
                     break;
-                sleep(1);
+                sleep(3);
             }
             if ( aliceutxo->S.swap == 0 )
             {
