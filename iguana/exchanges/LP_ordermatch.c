@@ -843,7 +843,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t relflag,struct LP_utxoinfo *utxo
         {
             if ( relflag != 0 )
                 targetval = SATOSHIDEN * (volume / price) + 2*txfee;
-            else targetval = SATOSHIDEN * (volume*price) + 2*txfee;
+            else targetval = SATOSHIDEN * (volume * price) + 2*txfee;
             {
                 int32_t i;
                 for (i=0; i<m; i++)
@@ -988,6 +988,8 @@ struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchp
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
+                                       // ordermatch 0.00050029 12.99990000 0.00000250
+                                       // 0.00156398 0.01062943 0.00164483 0.00163831 0.00200000 0.00091512 0.03616972 0.00149051 0.00011714 0.03721034 0.02667164 0.00126502 0.03982604 0.00158423 0.00129022 0.04057810 0.00137594 0.00100000 0.00055601 0.00067499 0.00022800 0.12000000 0.03679745 0.00191550 0.00068144 0.00060983 0.00155659 0.03500084 0.00186860 0.00065110 0.00062265 0.00017046 0.00001468 0.00051851 0.00571714 0.00205292 0.00309702 0.03363277 targetval 0.00070640 vol 0.00500290 price 0.00050029 txfee 0.00035195
                                         *bestsatoshisp = autxo->S.satoshis;
                                         *ordermatchpricep = price;
                                         *bestdestsatoshisp = bestutxo->S.satoshis;
