@@ -167,11 +167,11 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     LP_txfees(&qp->txfee,&qp->desttxfee,utxo->coin,qp->destcoin);
     qp->satoshis = satoshis;//(destsatoshis / price) + 0.49;
     qp->destsatoshis = destsatoshis;
-    if ( qp->txfee >= qp->satoshis || qp->txfee >= utxo->deposit.value || utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis) ) //utxo->iambob == 0 ||
+    /*if ( qp->txfee >= qp->satoshis || qp->txfee >= utxo->deposit.value || utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis) ) //utxo->iambob == 0 ||
     {
         printf("quoteinit error.(%d %d %d %d) %.8f vs %.8f\n",utxo->iambob == 0,qp->txfee >= qp->satoshis,qp->txfee >= utxo->deposit.value,utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis),dstr(utxo->deposit.value),dstr(LP_DEPOSITSATOSHIS(qp->satoshis)));
         return(-1);
-    }
+    }*/
     qp->txid = utxo->payment.txid;
     qp->vout = utxo->payment.vout;
     qp->txid2 = utxo->deposit.txid;
