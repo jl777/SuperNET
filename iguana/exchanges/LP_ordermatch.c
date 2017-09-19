@@ -167,7 +167,7 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     LP_txfees(&qp->txfee,&qp->desttxfee,utxo->coin,qp->destcoin);
     qp->satoshis = satoshis;//(destsatoshis / price) + 0.49;
     qp->destsatoshis = destsatoshis;
-    if ( utxo->iambob == 0 || qp->txfee >= qp->satoshis || qp->txfee >= utxo->deposit.value || utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis) )
+    if ( qp->txfee >= qp->satoshis || qp->txfee >= utxo->deposit.value || utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis) ) //utxo->iambob == 0 ||
     {
         printf("quoteinit error.(%d %d %d %d) %.8f vs %.8f\n",utxo->iambob == 0,qp->txfee >= qp->satoshis,qp->txfee >= utxo->deposit.value,utxo->deposit.value < LP_DEPOSITSATOSHIS(qp->satoshis),dstr(utxo->deposit.value),dstr(LP_DEPOSITSATOSHIS(qp->satoshis)));
         return(-1);
@@ -849,9 +849,6 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t relflag,struct LP_utxoinfo *utxo
                 for (i=0; i<m; i++)
                     printf("%.8f ",dstr(utxos[i]->U.value));
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f\n",dstr(targetval),volume,price,dstr(txfee));
-                //{"coin":"BTC","address":"1L7Kzud7jC3LnLyZmtg85XxxvADLuLwfwr","price":0.00050196,"numutxos":22,"minvolume":0.00011714,"maxvolume":0.10820861,"pubkey":"1bfcfc1d48dbe3e1332b09cb48e50e7789bdde2308b74f905299db12d093fa2d","age":13} 0.00011714 [0.00501960] 0.10820861
-                //0.00100000 0.00100000 0.00200000 0.08947953 0.10820861 0.03616972 0.00126502 0.04057810 0.00091512 0.00011714 0.00164483 0.00149051 0.00158423 0.00129022 0.03982604 0.03721034 0.00163831 0.00137594 0.00156398 0.02667164 0.00099693 0.01062943 targetval 0.00070641 vol 0.00501960 price 0.00050196 txfee 0.00035195
-                //ordermatch 0.00050196 12.99990000 0.00000251
             }
             if ( (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 )
             {
@@ -991,8 +988,6 @@ struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchp
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
-                                       // ordermatch 0.00050029 12.99990000 0.00000250
-                                       // 0.00156398 0.01062943 0.00164483 0.00163831 0.00200000 0.00091512 0.03616972 0.00149051 0.00011714 0.03721034 0.02667164 0.00126502 0.03982604 0.00158423 0.00129022 0.04057810 0.00137594 0.00100000 0.00055601 0.00067499 0.00022800 0.12000000 0.03679745 0.00191550 0.00068144 0.00060983 0.00155659 0.03500084 0.00186860 0.00065110 0.00062265 0.00017046 0.00001468 0.00051851 0.00571714 0.00205292 0.00309702 0.03363277 targetval 0.00070640 vol 0.00500290 price 0.00050029 txfee 0.00035195
                                         *bestsatoshisp = autxo->S.satoshis;
                                         *ordermatchpricep = price;
                                         *bestdestsatoshisp = bestutxo->S.satoshis;
