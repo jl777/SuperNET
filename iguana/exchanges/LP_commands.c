@@ -103,9 +103,8 @@ enable(coin)\n\
 disable(coin)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
-ordermatch(base, txfee=0, rel, desttxfee=0, price, relvolume=0, txid, vout, feetxid, feevout, duration=3600)\n\
-trade(price, timeout=10, duration=3600, <quotejson returned from ordermatch>)\n\
-autotrade(base, rel, price, relvolume, timeout=10, duration=3600)\n\
+buy(base, rel, price, relvolume, timeout=10, duration=3600)\n\
+sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
@@ -212,7 +211,7 @@ dividends(coin, height, <args>)\n\
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
-            else if ( strcmp(method,"ordermatch") == 0 )
+            /*else if ( strcmp(method,"ordermatch") == 0 )
             {
                 if ( price > SMALLVAL )
                 return(LP_ordermatch(base,j64bits(argjson,"txfee"),price,jdouble(argjson,"relvolume"),rel,jbits256(argjson,"txid"),jint(argjson,"vout"),jbits256(argjson,"feetxid"),jint(argjson,"feevout"),j64bits(argjson,"desttxfee"),jint(argjson,"duration")));
@@ -232,6 +231,20 @@ dividends(coin, height, <args>)\n\
                 if ( price > SMALLVAL )
                 {
                     return(LP_autotrade(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
+                } else return(clonestr("{\"error\":\"no price set\"}"));
+            }*/
+            else if ( strcmp(method,"buy") == 0 )
+            {
+                if ( price > SMALLVAL )
+                {
+                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui")));
+                } else return(clonestr("{\"error\":\"no price set\"}"));
+            }
+            else if ( strcmp(method,"sell") == 0 )
+            {
+                if ( price > SMALLVAL )
+                {
+                    return(LP_autosell(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }

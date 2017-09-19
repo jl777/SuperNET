@@ -131,6 +131,21 @@ int32_t LP_address_minmax(uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
     return(n);
 }
 
+int32_t LP_address_utxo_ptrs(struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap)
+{
+    struct LP_address_utxo *up,*tmp; int32_t n = 0;
+    DL_FOREACH_SAFE(ap->utxos,up,tmp)
+    {
+        if ( up->spendheight <= 0 )
+        {
+            utxos[n++] = up;
+            if ( n >= max )
+                break;
+        }
+    }
+    return(n);
+}
+
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0;
