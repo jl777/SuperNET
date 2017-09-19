@@ -589,7 +589,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             else if ( strcmp(method,"connect") == 0 ) // bob
             {
                 retval = 4;
-                if ( butxo->T.swappending != 0 && butxo->S.swap == 0 )
+                if ( butxo->S.swap == 0 ) //butxo->T.swappending != 0 &&
                     LP_connectstartbob(ctx,pubsock,butxo,argjson,Q.srccoin,Q.destcoin,qprice,&Q);
                 else printf("pend.%u swap %p when connect came in (%s)\n",butxo->T.swappending,butxo->S.swap,jprint(argjson,0));
             }
