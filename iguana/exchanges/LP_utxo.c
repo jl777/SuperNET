@@ -29,6 +29,7 @@
 // handle spurious errors
 // handle invalid data
 
+//REJECT KMD ccee27b53b52ca61bbc9fdc7de5feb0a12c14d4d92639414d372f002cc3d092f/v0 value.468169379 vs 468169380 ({"bestblock":"080400d4216c02d100004fd2f4f3505ddb507b643785e02703d3412feba39fb1","confirmations":2356,"value":4.68169380,"scriptPubKey":{"asm":"0224e31f93eff0cc30eaf0b2389fbc591085c0e122c4d11862c1729d090106c842 OP_CHECKSIG","hex":"210224e31f93eff0cc30eaf0b2389fbc591085c0e122c4d11862c1729d090106c842ac","reqSigs":1,"type":"pubkey","addresses":["RFssbc211PJdVy1bvcvAG5X2N4ovPAoy5o"]},"version":1,"coinbase":true})
 
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
 {

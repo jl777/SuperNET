@@ -371,7 +371,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             usleep(10000);
         if ( *retjsonp == 0 )
         {
-            printf("unexpected %s timeout with null retjson: %s %s\n",ep->symbol,method,params);
+            //printf("unexpected %s timeout with null retjson: %s %s\n",ep->symbol,method,params);
             *retjsonp = cJSON_Parse("{\"error\":\"timeout\"}");
         }
         return(*retjsonp);
@@ -666,11 +666,14 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 if ( stritem->expiration < ep->lasttime )
                 {
                     DL_DELETE(ep->pendingQ.list,item);
-                    printf("expired %s (%s)\n",ep->symbol,stritem->str);
-                    errjson = cJSON_CreateObject();
-                    jaddnum(errjson,"id",item->type);
-                    jaddstr(errjson,"error","timeout");
-                    *((cJSON **)stritem->retptrp) = errjson;
+                    if ( 0 )
+                    {
+                        printf("expired %s (%s)\n",ep->symbol,stritem->str);
+                        errjson = cJSON_CreateObject();
+                        jaddnum(errjson,"id",item->type);
+                        jaddstr(errjson,"error","timeout");
+                        *((cJSON **)stritem->retptrp) = errjson;
+                    }
                     free(item);
                 }
             }
