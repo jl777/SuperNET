@@ -554,7 +554,7 @@ int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
 
 uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 {
-    struct LP_transaction *tx; cJSON *txobj=0; uint64_t value; struct iguana_info *coin; char str[65],str2[65],_coinaddr[65];
+    struct LP_transaction *tx; cJSON *txobj=0; uint64_t value; struct iguana_info *coin; char str[65],_coinaddr[65];
     if ( bits256_nonz(txid) == 0 )
         return(0);
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
