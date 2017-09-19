@@ -908,6 +908,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
+                                        autxo->S.satoshis = bestutxo->S.satoshis * price;
                                         *bestsatoshisp = bestutxo->S.satoshis;
                                         *ordermatchpricep = price;
                                         *bestdestsatoshisp = autxo->S.satoshis;
