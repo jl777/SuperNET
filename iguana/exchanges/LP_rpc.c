@@ -274,7 +274,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
         if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
             hexstr = jprint(retjson,1);
-            if ( strlen(hexstr) > 50000 )
+            if ( strlen(hexstr) > 100000 )
             {
                 printf("rawtransaction too big %d\n",(int32_t)strlen(hexstr));
                 free(hexstr);
