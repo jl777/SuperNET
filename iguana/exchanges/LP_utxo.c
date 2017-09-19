@@ -262,13 +262,13 @@ char *LP_postedutxos(cJSON *argjson)
                         value = LP_value_extract(txobj,0);
                         if ( value != val )
                         {
-                            printf("REJECT %s %s/v%d value.%llu vs %llu\n",symbol,bits256_str(str,txid),v,(long long)value,(long long)val);
+                            printf("REJECT %s %s/v%d value.%llu vs %llu (%s)\n",symbol,bits256_str(str,txid),v,(long long)value,(long long)val,jprint(item,0));
                             errs++;
                         }
                         ht = coin->height - jint(txobj,"confirmations");
                         if  ( ht < height-2 )
                         {
-                            printf("REJECT %s %s/v%d ht.%d vs %d\n",symbol,bits256_str(str,txid),v,ht,height);
+                            printf("REJECT %s %s/v%d ht.%d vs %d (%s)\n",symbol,bits256_str(str,txid),v,ht,height,jprint(item,0));
                             errs++;
                         }
                         free_json(txobj);

@@ -608,7 +608,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
                             vol = jdouble(item,"volume");
                             metric = price / bestprice;
                             printf("metric %f vol %f add pings, electrum cache\n",metric,vol);
-                            // check utxos > 1 for pubkey
+                            // check utxos > 1 for pubkey, SPV validate recv'ed
                             /*if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && (long long)(vol*SATOSHIDEN) == butxo->S.satoshis && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 && butxo->T.bestflag == 0 )
                             {
                                 printf("got butxo? %p\n",butxo);
