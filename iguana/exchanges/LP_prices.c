@@ -610,11 +610,11 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
             if ( (ap= LP_addressfind(basecoin,coinaddr)) != 0 )
             {
                 n = LP_address_minmax(&minsatoshis,&maxsatoshis,ap);
-                /*if ( polarity < 0 )
+                if ( polarity < 0 )
                 {
                     minsatoshis *= price;
                     maxsatoshis *= price;
-                }*/
+                }
             }
             if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,minsatoshis,maxsatoshis,pubp->pubkey,pubp->timestamp)) != 0 )
             {
