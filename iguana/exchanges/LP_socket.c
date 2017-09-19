@@ -371,7 +371,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             usleep(10000);
         if ( *retjsonp == 0 )
         {
-            printf("unexpected timeout with null retjson: %s %s\n",method,params);
+            printf("unexpected %s timeout with null retjson: %s %s\n",ep->symbol,method,params);
             *retjsonp = cJSON_Parse("{\"error\":\"timeout\"}");
         }
         return(*retjsonp);
