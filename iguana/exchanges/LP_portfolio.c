@@ -415,7 +415,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
     }
 }
 
-int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel)
+int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui)
 {
     char *retstr2; double bid,ask,maxprice; uint32_t requestid,quoteid,iter,i; cJSON *retjson2;
     requestid = quoteid = 0;
@@ -437,7 +437,7 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
                 break;
             if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
             {
-                if ( (retstr2= LP_autobuy(ctx,"127.0.0.1",-1,buy->symbol,sell->symbol,maxprice,relvolume,60,24*3600)) != 0 )
+                if ( (retstr2= LP_autobuy(ctx,"127.0.0.1",-1,buy->symbol,sell->symbol,maxprice,relvolume,60,24*3600,gui)) != 0 )
                 {
                     if ( (retjson2= cJSON_Parse(retstr2)) != 0 )
                     {
@@ -546,7 +546,7 @@ void prices_loop(void *ignore)
             {
                 if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 && buy->inactive == 0 && sell->inactive == 0 )
                 {
-                    if ( LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,1) < 0 )
+                    if ( LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,1,"portfolio") < 0 )
                     {
                         array = jarray(&m,retjson,"portfolio");
                         if ( array != 0 && (n= LP_portfolio_order(trades,(int32_t)(sizeof(trades)/sizeof(*trades)),array)) > 0 )
@@ -557,7 +557,7 @@ void prices_loop(void *ignore)
                                 {
                                     buy = LP_coinfind(trades[i].buycoin);
                                     sell = LP_coinfind(trades[i].sellcoin);
-                                    if ( buy != 0 && sell != 0 && LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,0) == 0 )
+                                    if ( buy != 0 && sell != 0 && LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,0,"portfolio") == 0 )
                                         break;
                                 }
                             }
