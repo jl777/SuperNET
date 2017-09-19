@@ -607,7 +607,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
                             vout = jint(item,"vout");
                             vol = jdouble(item,"volume");
                             metric = price / bestprice;
-                            printf("metric %f vol %f add pings numutxos.%d min %.8f max %.8f\n",metric,vol,jint(item,"numutxos"),jdouble(item,"minvolume"),jdouble(item,"maxvolume"));
+                            printf("maxdest %.8f metric %f vol %f add pings numutxos.%d min %.8f max %.8f\n",dstr(maxdestsatoshis),metric,vol,jint(item,"numutxos"),jdouble(item,"minvolume"),jdouble(item,"maxvolume"));
                             // check utxos > 1 for pubkey, SPV validate recv'ed
                             /*if ( (butxo= LP_utxofind(1,txid,vout)) != 0 && (long long)(vol*SATOSHIDEN) == butxo->S.satoshis && LP_isavailable(butxo) > 0 && LP_ismine(butxo) == 0 && butxo->T.bestflag == 0 )
                             {

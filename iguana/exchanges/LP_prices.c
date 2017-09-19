@@ -636,7 +636,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
                 }
             }*/
         }
-        printf("pubp.(%s) %.8f %p\n",coinaddr,price,ap);
+        //printf("pubp.(%s) %.8f %p\n",coinaddr,price,ap);
     }
     return(num);
 }
