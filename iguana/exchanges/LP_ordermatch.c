@@ -868,7 +868,9 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t relflag,struct LP_utxoinfo *utxo
                         utxo->deposit.txid = up2->U.txid;
                         utxo->deposit.vout = up2->U.vout;
                         utxo->deposit.value = up2->U.value;
-                        utxo->S.satoshis = SATOSHIDEN * (relvolume / price);
+                        if ( relflag != 0 )
+                            utxo->S.satoshis = SATOSHIDEN * (volume / price);
+                        else utxo->S.satoshis = SATOSHIDEN * (volume * price);
                         return(utxo);
                     }
                 }
