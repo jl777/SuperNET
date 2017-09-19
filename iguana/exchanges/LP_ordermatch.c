@@ -989,9 +989,9 @@ struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchp
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
                                         autxo->S.satoshis = bestutxo->S.satoshis;
-                                        *bestsatoshisp = bestutxo->S.satoshis / price;
+                                        *bestsatoshisp = autxo->S.satoshis;
                                         *ordermatchpricep = price;
-                                        *bestdestsatoshisp = autxo->S.satoshis;
+                                        *bestdestsatoshisp = bestutxo->S.satoshis;
                                         printf("ordermatch %.8f %.8f %.8f\n",price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp));
                                         break;
                                     }
