@@ -844,6 +844,12 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t relflag,struct LP_utxoinfo *utxo
             if ( relflag != 0 )
                 targetval = SATOSHIDEN * (volume / price) + 2*txfee;
             else targetval = SATOSHIDEN * (volume*price) + 2*txfee;
+            {
+                int32_t i;
+                for (i=0; i<m; i++)
+                    printf("%.8f ",dstr(utxos[i]->U.value));
+                printf("targetval %.8f vol %.8f price %.8f txfee %.8f\n",dstr(targetval),volume,price,dstr(txfee));
+            }
             if ( (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 )
             {
                 up = utxos[mini];
