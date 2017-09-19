@@ -718,13 +718,10 @@ char *LP_ordermatch(char *base,int64_t txfee,double maxprice,double maxvolume,ch
     desttxfee = LP_txfeecalc(LP_coinfind(rel),desttxfee);
     if ( (autxo= LP_utxopairfind(0,txid,vout,feetxid,feevout)) == 0 )
         return(clonestr("{\"error\":\"cant find alice utxopair\"}"));
-    printf("call LP_bestutxo\n");
     if ( (bestutxo= LP_bestutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,SATOSHIDEN*maxvolume)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
         return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
-    printf("call LP_quoteinfoinit\n");
     if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestsatoshis,bestdestsatoshis) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
-    printf("call LP_quotedestinfo\n");
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypub25519,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
     return(jprint(LP_quotejson(&Q),1));
