@@ -970,11 +970,11 @@ struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchp
                             {
                                 minvol = jdouble(item,"minvolume");
                                 maxvol = jdouble(item,"maxvolume");
-                                printf("%s %.8f [%.8f] %.8f\n",jprint(item,0),minvol/price,basevolume,maxvol/price);
                                 if ( basevolume >= minvol/price && basevolume <= maxvol/price )
                                 {
+                                    printf("%s %.8f [%.8f] %.8f\n",jprint(item,0),minvol/price,basevolume,maxvol/price);
                                     bitcoin_address(coinaddr,relcoin->taddr,relcoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
-                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,relcoin,coinaddr,desttxfee,basevolume,price)) != 0 )
+                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,relcoin,coinaddr,desttxfee,basevolume*price,price)) != 0 )
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
@@ -992,7 +992,7 @@ struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchp
                     else
                     {
                         if ( i == 0 )
-                            printf("too expensive maxprice %.8f vs %.8f\n",minprice,price);
+                            printf("too little minprice %.8f vs %.8f\n",minprice,price);
                         break;
                     }
                 }
