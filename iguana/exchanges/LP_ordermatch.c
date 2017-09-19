@@ -514,6 +514,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     char *method,*msg; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; int32_t retval = -1; struct LP_quoteinfo Q;
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
+        //LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
         printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
         retval = 1;
         if ( LP_quoteparse(&Q,argjson) == 0 && bits256_cmp(LP_mypub25519,Q.srchash) == 0 )
@@ -524,10 +525,32 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 return(-3);
             }
             price = ask;
-            memset(&A,0,sizeof(A));
             memset(&B,0,sizeof(B));
-            autxo = &A;
             butxo = &B;
+            butxo->pubkey = Q.srchash;
+            safecopy(butxo->coin,Q.srccoin,sizeof(butxo->coin));
+            safecopy(butxo->coinaddr,Q.coinaddr,sizeof(butxo->coinaddr));
+            butxo->payment.txid = Q.txid;
+            butxo->payment.vout = Q.vout;
+            //butxo->payment.value = Q.value;
+            butxo->iambob = 1;
+            butxo->deposit.txid = Q.txid2;
+            butxo->deposit.vout = Q.vout2;
+            //butxo->deposit.value = up2->U.value;
+            butxo->S.satoshis = Q.satoshis;
+            memset(&A,0,sizeof(A));
+            autxo = &A;
+            autxo->pubkey = Q.desthash;
+            safecopy(autxo->coin,Q.destcoin,sizeof(autxo->coin));
+            safecopy(autxo->coinaddr,Q.destaddr,sizeof(autxo->coinaddr));
+            autxo->payment.txid = Q.desttxid;
+            autxo->payment.vout = Q.destvout;
+            //autxo->payment.value = Q.value;
+            autxo->iambob = 0;
+            autxo->deposit.txid = Q.feetxid;
+            autxo->deposit.vout = Q.feevout;
+            //autxo->deposit.value = up2->U.value;
+            autxo->S.satoshis = Q.destsatoshis;
             if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
             {
                 printf("quote validate error %.0f\n",qprice);
@@ -766,11 +789,6 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
         char str[65],str2[65]; printf("dest.(%s)/v%d fee.(%s)/v%d\n",bits256_str(str,qp->desttxid),qp->destvout,bits256_str(str2,qp->feetxid),qp->feevout);
         return(clonestr("{\"error\":\"cant find alice utxopair\"}"));
     }
-    /*if ( (bobutxo= LP_utxopairfind(1,qp->txid,qp->vout,qp->txid2,qp->vout2)) == 0 )
-        return(clonestr("{\"error\":\"cant find bob utxopair\"}"));
-    bobutxo->T.bestflag = (uint32_t)time(NULL);*/
-    //if ( (retstr= LP_registerall(0)) != 0 )
-    //    free(retstr);
     price = LP_query(ctx,myipaddr,mypubsock,"request",qp);
     bestitem = LP_quotejson(qp);
     if ( LP_pricevalid(price) > 0 )
