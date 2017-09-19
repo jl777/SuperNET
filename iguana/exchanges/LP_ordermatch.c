@@ -907,6 +907,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                             {
                                 minvol = jdouble(item,"minvolume");
                                 maxvol = jdouble(item,"maxvolume");
+                                printf("%s minvol %.8f %.8f maxvol %.8f\n",jprint(item,0),minvol,relvolume,maxvol);
                                 if ( relvolume >= minvol && relvolume <= maxvol )
                                 {
                                     bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
