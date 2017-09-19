@@ -26,7 +26,7 @@
 #include <WinSock2.h>
 #endif
 
-#define ELECTRUM_TIMEOUT 3
+#define ELECTRUM_TIMEOUT 5
 
 int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
