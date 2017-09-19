@@ -153,6 +153,21 @@ int32_t LP_address_utxo_ptrs(struct LP_address_utxo **utxos,int32_t max,struct L
     return(n);
 }
 
+struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout)
+{
+    struct LP_address *ap; struct LP_address_utxo *up,*tmp;
+    //printf("%s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
+    if ( (ap= _LP_address(coin,coinaddr)) != 0 )
+    {
+        DL_FOREACH_SAFE(ap->utxos,up,tmp)
+        {
+            if ( vout == up->U.vout && bits256_cmp(up->U.txid,txid) == 0 )
+                return(up);
+        }
+    }
+    return(0);
+}
+
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0;
@@ -619,7 +634,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
     //struct LP_utxoinfo *utxo;
-    uint64_t val,val2=0,txfee,threshold=0; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct iguana_info *coin = LP_coinfind(symbol);
+    struct LP_address_utxo *up; uint64_t val,val2=0,txfee,threshold=0; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 )
     {
         printf("null txid not eligible\n");
@@ -631,6 +646,10 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
     if ( bypass != 0 )
         val = satoshis;
     else val = LP_txvalue(destaddr,symbol,txid,vout);
+    if ( (up= LP_address_utxofind(coin,destaddr,txid,vout)) != 0 && up->spendheight > 0 )
+        return(-2);
+    if ( (up= LP_address_utxofind(coin,destaddr,txid2,vout2)) != 0 && up->spendheight > 0 )
+        return(-3);
     txfee = LP_txfeecalc(LP_coinfind(symbol),0);
     if ( val >= satoshis && val > (1+LP_MINSIZE_TXFEEMULT)*txfee )
     {
