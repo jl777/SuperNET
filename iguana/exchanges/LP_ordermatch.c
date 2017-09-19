@@ -257,10 +257,9 @@ int32_t LP_quote_checkmempool(struct LP_quoteinfo *qp)
     return(0);
 }
 
-double LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxop,struct LP_quoteinfo *qp,int32_t iambob)
+double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP_quoteinfo *qp,int32_t iambob)
 {
     double qprice; uint64_t txfee,desttxfee,srcvalue,srcvalue2,destvalue,destvalue2;
-    *autxop = *butxop = 0;
     if ( LP_iseligible(&srcvalue,&srcvalue2,1,qp->srccoin,qp->txid,qp->vout,qp->satoshis,qp->txid2,qp->vout2) == 0 )
     {
         printf("bob not eligible\n");
@@ -273,19 +272,19 @@ double LP_quote_validate(struct LP_utxoinfo **autxop,struct LP_utxoinfo **butxop
     }
     if ( LP_quote_checkmempool(qp) < 0 )
         return(-4);
-    if ( (*butxop= LP_utxofind(1,qp->txid,qp->vout)) == 0 )
-        return(-5);
-    if ( bits256_cmp((*butxop)->deposit.txid,qp->txid2) != 0 || (*butxop)->deposit.vout != qp->vout2 )
+    //if ( iambob != 0 && (*butxop= LP_utxofind(1,qp->txid,qp->vout)) == 0 )
+    //    return(-5);
+    if ( bits256_cmp(butxo->deposit.txid,qp->txid2) != 0 || butxo->deposit.vout != qp->vout2 )
         return(-6);
-    if ( strcmp((*butxop)->coinaddr,qp->coinaddr) != 0 )
+    if ( strcmp(butxo->coinaddr,qp->coinaddr) != 0 )
         return(-7);
     if ( iambob == 0 )
     {
-        if ( (*autxop= LP_utxofind(0,qp->desttxid,qp->destvout)) == 0 )
-            return(-8);
-        if ( bits256_cmp((*autxop)->fee.txid,qp->feetxid) != 0 || (*autxop)->fee.vout != qp->feevout )
+        //if ( (*autxop= LP_utxofind(0,qp->desttxid,qp->destvout)) == 0 )
+        //    return(-8);
+        if ( bits256_cmp(autxo->fee.txid,qp->feetxid) != 0 || autxo->fee.vout != qp->feevout )
             return(-9);
-        if ( strcmp((*autxop)->coinaddr,qp->destaddr) != 0 )
+        if ( strcmp(autxo->coinaddr,qp->destaddr) != 0 )
             return(-10);
     }
     if ( destvalue < qp->desttxfee+qp->destsatoshis || srcvalue < qp->txfee+qp->satoshis )
@@ -446,7 +445,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     if ( bits256_cmp(Q.desthash,LP_mypub25519) != 0 )
         return(clonestr("{\"result\",\"update stats\"}"));
     printf("CONNECTED.(%s)\n",jprint(argjson,0));
-    if ( (qprice= LP_quote_validate(&autxo,&butxo,&Q,0)) <= SMALLVAL )
+    //if ( (qprice= LP_quote_validate(&autxo,&butxo,&Q,0)) <= SMALLVAL )
     {
         LP_availableset(autxo);
         LP_pendingswaps--;
@@ -529,7 +528,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 return(-3);
             }
             price = ask;
-            if ( (qprice= LP_quote_validate(&autxo,&butxo,&Q,1)) <= SMALLVAL )
+            //if ( (qprice= LP_quote_validate(&autxo,&butxo,&Q,1)) <= SMALLVAL )
             {
                 printf("quote validate error %.0f\n",qprice);
                 return(-4);
@@ -941,7 +940,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
 
 char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui)
 {
-    uint64_t desttxfee,txfee; int64_t bestsatoshis=0,bestdestsatoshis=0; struct LP_utxoinfo *autxo,*butxo,_best,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q;
+    uint64_t desttxfee,txfee; int64_t bestsatoshis=0,bestdestsatoshis=0; struct LP_utxoinfo *autxo,_best,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q;
     printf("LP_autobuy\n");
     if ( duration <= 0 )
         duration = LP_ORDERBOOK_DURATION;
@@ -962,7 +961,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypub25519,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
-    if ( (qprice= LP_quote_validate(&autxo,&butxo,&Q,0)) <= SMALLVAL )
+    if ( (qprice= LP_quote_validate(autxo,bestutxo,&Q,0)) <= SMALLVAL )
     {
         printf("quote validate error %.0f\n",qprice);
         return(clonestr("{\"error\":\"quote validation error\"}"));
@@ -993,7 +992,7 @@ char *LP_autosell(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *re
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,LP_mypub25519,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
-    if ( (qprice= LP_quote_validate(&autxo,&butxo,&Q,0)) <= SMALLVAL )
+    if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
     {
         printf("quote validate error %.0f\n",qprice);
         return(clonestr("{\"error\":\"quote validation error\"}"));
