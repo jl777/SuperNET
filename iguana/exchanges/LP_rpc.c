@@ -159,6 +159,13 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             {
                 if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT)) != 0 )
                 {
+                    if ( jobj(retjson,"error") != 0 )
+                    {
+                        free_json(retjson);
+                        retjson = 0;
+                        retjson = electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT);
+                        printf("RETRY.(%s)\n",jprint(retjson,0));
+                    }
                 //printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
                     /*if ( (resultjson= jobj(retjson,"result")) != 0 )
                     {

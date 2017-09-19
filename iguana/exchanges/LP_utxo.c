@@ -26,6 +26,9 @@
 // pruned node, network for external listunspent, gettxout to validate
 // electrum only, network for gettxout
 
+// handle spurious errors
+// handle invalid data
+
 
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
 {

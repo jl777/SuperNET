@@ -666,7 +666,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 if ( stritem->expiration < ep->lasttime )
                 {
                     DL_DELETE(ep->pendingQ.list,item);
-                    printf("expired (%s)\n",stritem->str);
+                    printf("expired %s (%s)\n",ep->symbol,stritem->str);
                     errjson = cJSON_CreateObject();
                     jaddnum(errjson,"id",item->type);
                     jaddstr(errjson,"error","timeout");
