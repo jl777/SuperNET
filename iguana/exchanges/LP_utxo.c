@@ -193,7 +193,7 @@ cJSON *LP_address_item(struct iguana_info *coin,struct LP_address_utxo *up,int32
     {
         jaddbits256(item,"txid",up->U.txid);
         jaddnum(item,"vout",up->U.vout);
-        jaddnum(item,"confirmations",coin->height - up->U.height);
+        jaddnum(item,"confirmations",LP_getheight(coin) - up->U.height);
         jaddnum(item,"amount",dstr(up->U.value));
         jaddstr(item,"scriptPubKey","");
     }
@@ -281,11 +281,11 @@ char *LP_postedutxos(cJSON *argjson)
                             errs++;
                         }
                         if ( coin->height != 0 )
-                            ht = coin->height - jint(txobj,"confirmations");
+                            ht = LP_getheight(coin) - jint(txobj,"confirmations");
                         else ht = 0;
                         if  ( ht != 0 && ht < height-2 )
                         {
-                            printf("REJECT %s %s/v%d ht.%d vs %d (%s)\n",symbol,bits256_str(str,txid),v,ht,height,jprint(item,0));
+                            printf("REJECT %s %s/v%d ht.%d vs %d confs.%d (%s)\n",symbol,bits256_str(str,txid),v,ht,height,jint(txobj,"confirmations"),jprint(item,0));
                             errs++;
                         }
                         free_json(txobj);

@@ -401,7 +401,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
         return(-1);
     }
     privkey = LP_privkey(utxo->coinaddr,coin->taddr);
-    if ( bits256_nonz(privkey) != 0 && qp->quotetime >= qp->timestamp-3 && qp->quotetime <= utxo->T.swappending && bits256_cmp(LP_mypub25519,qp->srchash) == 0 )
+    if ( bits256_nonz(privkey) != 0 && bits256_cmp(LP_mypub25519,qp->srchash) == 0 ) //qp->quotetime >= qp->timestamp-3 && qp->quotetime <= utxo->T.swappending && 
     {
         if ( (pair= LP_nanobind(ctx,pairstr)) >= 0 )
         {
