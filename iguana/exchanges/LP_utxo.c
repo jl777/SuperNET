@@ -126,7 +126,7 @@ int32_t LP_address_minmax(uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
             n++;
         }
     }
-    if ( n > 0 )
+    if ( 0 && n > 0 )
         printf("n.%d %s min %.8f max %.8f\n",n,ap->coinaddr,dstr(*minp),dstr(*maxp));
     return(n);
 }
