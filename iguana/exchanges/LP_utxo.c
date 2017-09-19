@@ -26,11 +26,6 @@
 // pruned node, network for external listunspent, gettxout to validate
 // electrum only, network for gettxout
 
-// locally track spends, height
-/*spent.0 BTC txid or value 0.00980000 < 0.00937462 or val2 0.00000000 < 0.00043744, e85478826d74936168197a655bc81bb918a31c278295a5f68d0eaff32b1a3900/v1 83a8baea6a5741c2c96ac346aef905c0f694acf6beeb764508969271b8fe6db0/v0 or < 10x txfee 0.00042538
-BTC 83a8baea6a5741c2c96ac346aef905c0f694acf6beeb764508969271b8fe6db0 ineligible 0.00980000 0.00000000
-couldnt find.245433003 peerind.2 Q.13 err.0 match.5
-*/
 
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
 {
