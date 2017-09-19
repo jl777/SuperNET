@@ -30,12 +30,15 @@
 
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
 {
-    double val = 0.; uint64_t value;
+    double val = 0.; uint64_t value = 0;
     if ( (val= jdouble(obj,"amount")) < SMALLVAL )
         val = jdouble(obj,"value");
-    if ( val > SMALLVAL )
-        value = ((val + jdouble(obj,"interest")*addinterest) * SATOSHIDEN + 0.0000000049);
-    else value = 0;
+    value = val * SATOSHIDEN + 0.0000000049;
+    if ( value != 0 )
+    {
+        if ( addinterest != 0 && jobj(obj,"interest") != 0 )
+            value += (jdouble(obj,"interest") * SATOSHIDEN);
+    }
     return(value);
 }
 
@@ -464,7 +467,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                         tx->outpoints[spentvout].spendvini = i;
                         tx->outpoints[spentvout].spendheight = height > 0 ? height : 1;
                         LP_address_utxoadd(coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
-                        if ( strcmp(coin->symbol,"BTC") != 0 )
+                        if ( 0 && strcmp(coin->symbol,"BTC") != 0 )
                             printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
                     } else printf("LP_transactioninit: %s spentvout.%d < numvouts.%d spendheight.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts,tx->outpoints[spentvout].spendheight);
                 } //else printf("LP_transactioninit: couldnt find (%s) ht.%d %s\n",bits256_str(str,spenttxid),height,jprint(vin,0));
