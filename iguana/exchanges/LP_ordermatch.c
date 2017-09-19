@@ -834,14 +834,16 @@ int32_t LP_nearest_utxovalue(struct LP_address_utxo **utxos,int32_t n,uint64_t t
     return(mini);
 }
 
-struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double relvolume,double price)
+struct LP_utxoinfo *LP_address_utxopair(int32_t relflag,struct LP_utxoinfo *utxo,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double volume,double price)
 {
     struct LP_address *ap; uint64_t targetval; int32_t m,mini; struct LP_address_utxo *up,*up2;
     if ( (ap= LP_addressfind(coin,coinaddr)) != 0 )
     {
         if ( (m= LP_address_utxo_ptrs(utxos,max,ap)) > 1 )
         {
-            targetval = SATOSHIDEN * (relvolume / price) + 2*txfee;
+            if ( relflag != 0 )
+                targetval = SATOSHIDEN * (volume / price) + 2*txfee;
+            else targetval = SATOSHIDEN * (volume*price) + 2*txfee;
             if ( (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 )
             {
                 up = utxos[mini];
@@ -904,7 +906,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                                 if ( relvolume >= minvol && relvolume <= maxvol )
                                 {
                                     bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
-                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,basecoin,coinaddr,txfee,relvolume,price)) != 0 )
+                                    if ( (bestutxo= LP_address_utxopair(1,bestutxo,utxos,max,basecoin,coinaddr,txfee,relvolume,price)) != 0 )
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
@@ -972,9 +974,9 @@ struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchp
                                 maxvol = jdouble(item,"maxvolume");
                                 if ( basevolume >= minvol/price && basevolume <= maxvol/price )
                                 {
-                                    printf("%s %.8f [%.8f] %.8f\n",jprint(item,0),minvol/price,basevolume,maxvol/price);
+                                    printf("%s %.8f [%.8f] %.8f\n",jprint(item,0),minvol,basevolume*price,maxvol);
                                     bitcoin_address(coinaddr,relcoin->taddr,relcoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
-                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,relcoin,coinaddr,desttxfee,basevolume*price,price)) != 0 )
+                                    if ( (bestutxo= LP_address_utxopair(0,bestutxo,utxos,max,relcoin,coinaddr,desttxfee,basevolume,price)) != 0 )
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
