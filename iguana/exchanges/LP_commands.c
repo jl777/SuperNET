@@ -104,7 +104,6 @@ disable(coin)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600)\n\
-sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
@@ -124,7 +123,8 @@ snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
 \"}"));
-    
+    //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
+
     base = jstr(argjson,"base");
     rel = jstr(argjson,"rel");
     if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
@@ -244,7 +244,7 @@ dividends(coin, height, <args>)\n\
             {
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autosell(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume")*price,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
