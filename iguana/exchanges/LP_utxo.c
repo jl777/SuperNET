@@ -265,7 +265,9 @@ char *LP_postedutxos(cJSON *argjson)
                             printf("REJECT %s %s/v%d value.%llu vs %llu (%s)\n",symbol,bits256_str(str,txid),v,(long long)value,(long long)val,jprint(item,0));
                             errs++;
                         }
-                        ht = coin->height - jint(txobj,"confirmations");
+                        if ( coin->height != 0 )
+                            ht = coin->height - jint(txobj,"confirmations");
+                        else ht = 0;
                         if  ( ht != 0 && ht < height-2 )
                         {
                             printf("REJECT %s %s/v%d ht.%d vs %d (%s)\n",symbol,bits256_str(str,txid),v,ht,height,jprint(item,0));
