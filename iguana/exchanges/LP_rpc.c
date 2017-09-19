@@ -549,7 +549,7 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 
 int32_t LP_importaddress(char *symbol,char *address)
 {
-    char buf[1024],*retstr; cJSON *validatejson,*retjson; int32_t isvalid=0,doneflag = 0; struct iguana_info *coin;
+    char buf[1024],*retstr; cJSON *validatejson; int32_t isvalid=0,doneflag = 0; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(-2);
     coin = LP_coinfind(symbol);
@@ -557,11 +557,11 @@ int32_t LP_importaddress(char *symbol,char *address)
         return(-2);
     if ( coin->electrum != 0 )
     {
-        if ( (retjson= electrum_address_subscribe(symbol,coin->electrum,&retjson,address)) != 0 )
+        /*if ( (retjson= electrum_address_subscribe(symbol,coin->electrum,&retjson,address)) != 0 )
         {
             printf("importaddress.(%s) -> %s\n",address,jprint(retjson,0));
             free_json(retjson);
-        }
+        }*/
         return(0);
     }
     else

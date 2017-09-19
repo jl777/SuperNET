@@ -531,9 +531,12 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
     else
     {
         if ( (ht= LP_txheight(coin,txid)) > 0 && ht <= coin->height )
-            numconfirms = (coin->height - ht);
-        else if ( mempool != 0 && LP_waitmempool(symbol,coinaddr,txid,-1) >= 0 )
-            numconfirms = 0;
+            numconfirms = (LP_getheight(coin) - ht);
+        else if ( mempool != 0 )
+        {
+            if (LP_waitmempool(symbol,coinaddr,txid,30) >= 0 )
+                numconfirms = 0;
+        }
     }
     //#endif
     return(numconfirms);
