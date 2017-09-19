@@ -726,7 +726,7 @@ void LP_dedicatedloop(void *arg)
             }
             DL_APPEND(ep->pendingQ.list,&sitem->DL);
             portable_mutex_unlock(&ep->pendingQ.mutex);*/
-            printf("%p SENT.(%s) to %s:%u\n",sitem,sitem->str,ep->ipaddr,ep->port);
+            //printf("%p SENT.(%s) to %s:%u\n",sitem,sitem->str,ep->ipaddr,ep->port);
             queue_enqueue("pendingQ",&ep->pendingQ,&sitem->DL);
             flag++;
         }
