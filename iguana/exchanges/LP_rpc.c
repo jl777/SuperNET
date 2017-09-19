@@ -120,6 +120,8 @@ char *issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coi
 char *LP_apicall(struct iguana_info *coin,char *method,char *params)
 {
     cJSON *retjson; char *retstr;
+    if ( coin == 0 )
+        return(0);
     if ( coin->electrum != 0 )
     {
         if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT)) != 0 )
@@ -211,9 +213,10 @@ cJSON *LP_assethbla(char *assetid)
 
 int32_t LP_getheight(struct iguana_info *coin)
 {
-    cJSON *retjson; char *method = "getinfo"; int32_t height = coin->height;
+    cJSON *retjson; char *method = "getinfo"; int32_t height;
     if ( coin == 0 )
         return(-1);
+    height = coin->height;
     if ( coin->electrum == 0 && time(NULL) > coin->heighttime+60 )
     {
         if ( strcmp(coin->symbol,"BTC") == 0 )
@@ -230,7 +233,10 @@ int32_t LP_getheight(struct iguana_info *coin)
 
 cJSON *LP_getmempool(char *symbol,char *coinaddr)
 {
-    cJSON *array; struct iguana_info *coin = LP_coinfind(symbol);
+    cJSON *array; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
     if ( coin == 0 || (coin->electrum != 0 && coinaddr == 0) )
         return(cJSON_Parse("{\"error\":\"no native coin\"}"));
     if ( coin->electrum == 0 )
@@ -301,6 +307,8 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
 cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 {
     char buf[128],str[65],coinaddr[64],*hexstr; uint64_t value; uint8_t *serialized; cJSON *sobj,*addresses,*item,*array,*hexobj,*retjson=0; int32_t i,n,v,len; bits256 t; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
@@ -402,7 +410,10 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 
 cJSON *LP_validateaddress(char *symbol,char *address)
 {
-    char buf[512],coinaddr[64],checkaddr[64],script[128]; int32_t i; uint8_t rmd160[20],addrtype; cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
+    char buf[512],coinaddr[64],checkaddr[64],script[128]; int32_t i; uint8_t rmd160[20],addrtype; cJSON *retjson; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin != 0 && coin->electrum != 0 )
@@ -438,6 +449,8 @@ cJSON *LP_validateaddress(char *symbol,char *address)
 int32_t LP_address_ismine(char *symbol,char *address)
 {
     int32_t doneflag = 0; cJSON *retjson;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
         if ( jobj(retjson,"ismine") != 0 && is_cJSON_True(jobj(retjson,"ismine")) != 0 )
@@ -453,7 +466,10 @@ int32_t LP_address_ismine(char *symbol,char *address)
 
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
-    char buf[128]; cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
+    char buf[128]; cJSON *retjson; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
     //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
     if ( coin == 0 || coin->inactive != 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
@@ -470,6 +486,8 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
 void LP_listunspent_issue(char *symbol,char *coinaddr)
 {
     struct iguana_info *coin; cJSON *retjson=0; char *retstr=0,destip[64]; uint16_t destport;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return;
     if ( (coin= LP_coinfind(symbol)) != 0 )
     {
         if ( coin->electrum != 0 )
@@ -500,6 +518,8 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 {
     static void *ctx;
     char buf[512],address[64]; cJSON *retjson; struct iguana_info *coin; int32_t doneflag = 0;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
@@ -529,7 +549,10 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 
 int32_t LP_importaddress(char *symbol,char *address)
 {
-    char buf[1024],*retstr; cJSON *validatejson,*retjson; int32_t isvalid=0,doneflag = 0; struct iguana_info *coin = LP_coinfind(symbol);
+    char buf[1024],*retstr; cJSON *validatejson,*retjson; int32_t isvalid=0,doneflag = 0; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(-2);
+    coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(-2);
     if ( coin->electrum != 0 )
@@ -597,6 +620,8 @@ double LP_getestimatedrate(struct iguana_info *coin)
 char *LP_sendrawtransaction(char *symbol,char *signedtx)
 {
     cJSON *array; char *paramstr,*tmpstr,*retstr=0; int32_t n; cJSON *retjson; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(0);
@@ -630,7 +655,10 @@ char *LP_sendrawtransaction(char *symbol,char *signedtx)
 
 char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkeys,struct vin_info *V)
 {
-    cJSON *array,*json,*retjson; int32_t len; uint8_t *data; char str[65],*paramstr,*retstr,*hexstr,*signedtx=0; struct iguana_msgtx msgtx; struct iguana_info *coin = LP_coinfind(symbol);
+    cJSON *array,*json,*retjson; int32_t len; uint8_t *data; char str[65],*paramstr,*retstr,*hexstr,*signedtx=0; struct iguana_msgtx msgtx; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
+    coin = LP_coinfind(symbol);
     memset(signedtxidp,0,sizeof(*signedtxidp));
     *completedp = 0;
     if ( coin == 0 )
@@ -697,7 +725,10 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
 
 cJSON *LP_getblock(char *symbol,bits256 txid)
 {
-    char buf[128],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
+    char buf[128],str[65]; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
     if ( coin == 0 || coin->electrum != 0 )
         return(cJSON_Parse("{\"error\":\"no native coin\"}"));
     sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
@@ -708,6 +739,8 @@ cJSON *LP_getblock(char *symbol,bits256 txid)
 uint64_t LP_txfee(char *symbol)
 {
     uint64_t txfee = 0;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(LP_MIN_TXFEE);
     if ( strcmp(symbol,"BTC") != 0 )
         txfee = LP_MIN_TXFEE;
     return(txfee);
@@ -715,7 +748,10 @@ uint64_t LP_txfee(char *symbol)
 
 char *LP_blockhashstr(char *symbol,int32_t height)
 {
-    cJSON *array; char *paramstr,*retstr; struct iguana_info *coin = LP_coinfind(symbol);
+    cJSON *array; char *paramstr,*retstr; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
+    coin = LP_coinfind(symbol);
     if ( coin == 0 || coin->electrum != 0 )
         return(0);
     array = cJSON_CreateArray();
@@ -728,7 +764,10 @@ char *LP_blockhashstr(char *symbol,int32_t height)
 
 cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
 {
-    char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
+    char buf[128]; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
     if ( coin == 0 || coin->electrum != 0 )
         return(cJSON_Parse("{\"error\":\"no native coin daemon\"}"));
     sprintf(buf,"[\"%s\"]",blockhashstr);
@@ -737,7 +776,10 @@ cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
 
 cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t height)
 {
-    cJSON *json = 0; int32_t flag = 0; struct iguana_info *coin = LP_coinfind(symbol);
+    cJSON *json = 0; int32_t flag = 0; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
     if ( coin == 0 || coin->electrum != 0 )
     {
         printf("unexpected electrum path for %s\n",symbol);
