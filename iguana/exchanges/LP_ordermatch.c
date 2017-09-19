@@ -437,6 +437,34 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
     return(retval);
 }
 
+void LP_abutxo_set(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP_quoteinfo *qp)
+{
+    memset(butxo,0,sizeof(*butxo));
+    butxo->pubkey = qp->srchash;
+    safecopy(butxo->coin,qp->srccoin,sizeof(butxo->coin));
+    safecopy(butxo->coinaddr,qp->coinaddr,sizeof(butxo->coinaddr));
+    butxo->payment.txid = qp->txid;
+    butxo->payment.vout = qp->vout;
+    //butxo->payment.value = qp->value;
+    butxo->iambob = 1;
+    butxo->deposit.txid = qp->txid2;
+    butxo->deposit.vout = qp->vout2;
+    //butxo->deposit.value = up2->U.value;
+    butxo->S.satoshis = qp->satoshis;
+    memset(autxo,0,sizeof(*autxo));
+    autxo->pubkey = qp->desthash;
+    safecopy(autxo->coin,qp->destcoin,sizeof(autxo->coin));
+    safecopy(autxo->coinaddr,qp->destaddr,sizeof(autxo->coinaddr));
+    autxo->payment.txid = qp->desttxid;
+    autxo->payment.vout = qp->destvout;
+    //autxo->payment.value = qp->value;
+    autxo->iambob = 0;
+    autxo->deposit.txid = qp->feetxid;
+    autxo->deposit.vout = qp->feevout;
+    //autxo->deposit.value = up2->U.value;
+    autxo->S.satoshis = qp->destsatoshis;
+}
+
 char *LP_connectedalice(cJSON *argjson) // alice
 {
     cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo A,B,*autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin;
@@ -445,10 +473,9 @@ char *LP_connectedalice(cJSON *argjson) // alice
     if ( bits256_cmp(Q.desthash,LP_mypub25519) != 0 )
         return(clonestr("{\"result\",\"update stats\"}"));
     printf("CONNECTED.(%s)\n",jprint(argjson,0));
-    memset(&A,0,sizeof(A));
-    memset(&B,0,sizeof(B));
     autxo = &A;
     butxo = &B;
+    LP_abutxo_set(autxo,butxo,&Q);
     if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
     {
         LP_availableset(autxo);
@@ -525,32 +552,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 return(-3);
             }
             price = ask;
-            memset(&B,0,sizeof(B));
-            butxo = &B;
-            butxo->pubkey = Q.srchash;
-            safecopy(butxo->coin,Q.srccoin,sizeof(butxo->coin));
-            safecopy(butxo->coinaddr,Q.coinaddr,sizeof(butxo->coinaddr));
-            butxo->payment.txid = Q.txid;
-            butxo->payment.vout = Q.vout;
-            //butxo->payment.value = Q.value;
-            butxo->iambob = 1;
-            butxo->deposit.txid = Q.txid2;
-            butxo->deposit.vout = Q.vout2;
-            //butxo->deposit.value = up2->U.value;
-            butxo->S.satoshis = Q.satoshis;
-            memset(&A,0,sizeof(A));
             autxo = &A;
-            autxo->pubkey = Q.desthash;
-            safecopy(autxo->coin,Q.destcoin,sizeof(autxo->coin));
-            safecopy(autxo->coinaddr,Q.destaddr,sizeof(autxo->coinaddr));
-            autxo->payment.txid = Q.desttxid;
-            autxo->payment.vout = Q.destvout;
-            //autxo->payment.value = Q.value;
-            autxo->iambob = 0;
-            autxo->deposit.txid = Q.feetxid;
-            autxo->deposit.vout = Q.feevout;
-            //autxo->deposit.value = up2->U.value;
-            autxo->S.satoshis = Q.destsatoshis;
+            butxo = &B;
+            LP_abutxo_set(autxo,butxo,&Q);
             if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
             {
                 printf("quote validate error %.0f\n",qprice);

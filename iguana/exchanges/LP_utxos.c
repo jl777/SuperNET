@@ -394,7 +394,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,int32_t mypubsock,char *symbol,bit
             tmpsatoshis = (((value2 - 2*txfee) / 9) << 3);
         else return(0);
     } else tmpsatoshis = (value - txfee);
-    char str[65],str2[65],dispflag = (iambob == 0);
+    char str[65],str2[65],dispflag = 0;//(iambob == 0);
     if ( iambob == 0 && bits256_cmp(pubkey,LP_mypub25519) != 0 )
     {
         printf("trying to add Alice utxo when not mine? %s/v%d\n",bits256_str(str,txid),vout);
@@ -681,7 +681,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                         txid = jbits256(item,"txid");
                         vout = juint(item,"vout");
                         value = LP_value_extract(item,0);
-                        height = coin->height - jint(item,"confirmations");
+                        height = LP_getheight(coin) - jint(item,"confirmations");
                     }
                     else
                     {
