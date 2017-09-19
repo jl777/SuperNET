@@ -819,7 +819,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         printf("quote validate error %.0f\n",qprice);
         return(clonestr("{\"error\":\"quote validation error\"}"));
     }
-    printf("do quote.(%s)\n",jprint(LP_quotejson(&Q),1));
+    //printf("do quote.(%s)\n",jprint(LP_quotejson(&Q),1));
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration));
 }
 

@@ -573,7 +573,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
         {
             if ( bits256_nonz(tx->outpoints[vout].spendtxid) != 0 )
             {
-                printf("LP_txvalue %s/v%d is spent at %s\n",bits256_str(str,txid),vout,bits256_str(str2,tx->outpoints[vout].spendtxid));
+                //printf("LP_txvalue %s/v%d is spent at %s\n",bits256_str(str,txid),vout,bits256_str(str2,tx->outpoints[vout].spendtxid));
                 return(0);
             }
             else
@@ -688,7 +688,7 @@ int32_t LP_inventory_prevent(int32_t iambob,char *symbol,bits256 txid,int32_t vo
         }
         if ( utxo->T.spentflag != 0 )
         {
-            char str[65]; printf("prevent adding iambob.%d %s/v%d to inventory\n",iambob,bits256_str(str,txid),vout);
+            //char str[65]; printf("prevent adding iambob.%d %s/v%d to inventory\n",iambob,bits256_str(str,txid),vout);
             return(1);
         }
     }
