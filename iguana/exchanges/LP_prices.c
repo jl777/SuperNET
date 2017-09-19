@@ -539,10 +539,10 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
         jaddstr(item,"address",op->coinaddr);
         jaddnum(item,"price",op->price);
         jaddnum(item,"numutxos",op->numutxos);
-        if ( op->minsatoshis != 0 )
-            jaddnum(item,"minvolume",1./dstr(op->minsatoshis));
-        if ( op->maxsatoshis != 0 )
-            jaddnum(item,"maxvolume",1./dstr(op->maxsatoshis));
+        //if ( op->minsatoshis != 0 )
+            jaddnum(item,"minvolume",dstr(op->minsatoshis));
+        //if ( op->maxsatoshis != 0 )
+            jaddnum(item,"maxvolume",dstr(op->maxsatoshis));
         //jaddbits256(item,"txid",op->txid);
         //jaddnum(item,"vout",op->vout);
         jaddbits256(item,"pubkey",op->pubkey);
@@ -610,11 +610,11 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
             if ( (ap= LP_addressfind(basecoin,coinaddr)) != 0 )
             {
                 n = LP_address_minmax(&minsatoshis,&maxsatoshis,ap);
-                if ( polarity < 0 )
+                /*if ( polarity < 0 )
                 {
                     minsatoshis *= price;
                     maxsatoshis *= price;
-                }
+                }*/
             }
             if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,minsatoshis,maxsatoshis,pubp->pubkey,pubp->timestamp)) != 0 )
             {
