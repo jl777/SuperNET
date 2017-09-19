@@ -939,9 +939,9 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
     return(bestutxo);
 }
 
-struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *rel,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,double relvolume,char *gui)
+struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *rel,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,double basevolume,char *gui)
 {
-    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*asks,*item; int32_t i,n,numasks,max = 1000; struct LP_address_utxo **utxos; double minvol,maxvol,price; struct LP_pubkeyinfo *pubp; struct iguana_info *relcoin;
+    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*bids,*item; int32_t i,n,numasks,max = 1000; struct LP_address_utxo **utxos; double minvol,maxvol,price; struct LP_pubkeyinfo *pubp; struct iguana_info *relcoin;
     *ordermatchpricep = 0.;
     *bestsatoshisp = *bestdestsatoshisp = 0;
     relcoin = LP_coinfind(rel);
@@ -955,11 +955,11 @@ struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchp
     {
         if ( (orderbook= cJSON_Parse(obookstr)) != 0 )
         {
-            if ( (asks= jarray(&numasks,orderbook,"bids")) != 0 )
+            if ( (bids= jarray(&numasks,orderbook,"bids")) != 0 )
             {
                 for (i=0; i<numasks; i++)
                 {
-                    item = jitem(asks,i);
+                    item = jitem(bids,i);
                     price = jdouble(item,"price");
                     if ( LP_pricevalid(price) > 0 && price <= maxprice )
                     {
@@ -970,10 +970,11 @@ struct LP_utxoinfo *LP_sellutxo(struct LP_utxoinfo *bestutxo,double *ordermatchp
                             {
                                 minvol = jdouble(item,"minvolume");
                                 maxvol = jdouble(item,"maxvolume");
-                                if ( relvolume >= minvol && relvolume <= maxvol )
+                                printf("%s %.8f %.8f\n",jprint(item,0),minvol/price,maxvol/price);
+                                if ( basevolume >= minvol/price && basevolume <= maxvol/price )
                                 {
                                     bitcoin_address(coinaddr,relcoin->taddr,relcoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
-                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,relcoin,coinaddr,txfee,relvolume,price)) != 0 )
+                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,relcoin,coinaddr,txfee,basevolume,price)) != 0 )
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
