@@ -36,7 +36,7 @@ uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
     double val = 0.; uint64_t value = 0;
     if ( (val= jdouble(obj,"amount")) < SMALLVAL )
         val = jdouble(obj,"value");
-    value = val * SATOSHIDEN + 0.000000009;
+    value = (val + 0.0000000049) * SATOSHIDEN;
     if ( value != 0 )
     {
         if ( addinterest != 0 && jobj(obj,"interest") != 0 )
