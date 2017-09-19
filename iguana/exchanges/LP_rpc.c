@@ -276,7 +276,9 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     else
     {
         sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
-        if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 || (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
+        if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 ||
+            (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 ||
+            (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
             hexstr = jprint(retjson,1);
             if ( strlen(hexstr) > 10000 )
