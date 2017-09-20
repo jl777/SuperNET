@@ -2619,7 +2619,8 @@ cJSON *bitcoin_txscript(char *asmstr,char **vardata,int32_t numvars)
 {
     int32_t i; cJSON *scriptjson,*array;
     scriptjson = cJSON_CreateObject();
-    jaddstr(scriptjson,"asm",asmstr);
+    if ( asmstr != 0 )
+        jaddstr(scriptjson,"asm",asmstr);
     jaddnum(scriptjson,"numvars",numvars);
     if ( numvars > 0 )
     {
@@ -3186,7 +3187,7 @@ int32_t iguana_parsevoutobj(uint8_t *serialized,int32_t maxsize,struct iguana_ms
 cJSON *iguana_voutjson(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,struct iguana_msgvout *vout,int32_t txi,bits256 txid)
 {
     // 035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055e OP_CHECKSIG
-    char scriptstr[IGUANA_MAXSCRIPTSIZE+1],asmstr[2*IGUANA_MAXSCRIPTSIZE+1]; int32_t i,m,n,scriptlen,asmtype; struct vin_info *vp;
+    char scriptstr[IGUANA_MAXSCRIPTSIZE+1]; int32_t i,m,n,scriptlen,asmtype; struct vin_info *vp;
     uint8_t space[8192]; cJSON *addrs,*skey,*json = cJSON_CreateObject();
     vp = calloc(1,sizeof(*vp));
     jadd64bits(json,"satoshis",vout->value);
@@ -3196,12 +3197,12 @@ cJSON *iguana_voutjson(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,struct igu
     if ( vout->pk_script != 0 && vout->pk_scriptlen*2+1 < sizeof(scriptstr) )
     {
         memset(vp,0,sizeof(*vp));
-        if ( (asmtype= iguana_calcrmd160(taddr,pubtype,p2shtype,asmstr,vp,vout->pk_script,vout->pk_scriptlen,txid,txi,0xffffffff)) >= 0 )
+        if ( (asmtype= iguana_calcrmd160(taddr,pubtype,p2shtype,0,vp,vout->pk_script,vout->pk_scriptlen,txid,txi,0xffffffff)) >= 0 )
         {
             skey = cJSON_CreateObject();
-            scriptlen = iguana_scriptgen(taddr,pubtype,p2shtype,&m,&n,vp->coinaddr,space,asmstr,vp->rmd160,asmtype,vp,txi);
-            if ( asmstr[0] != 0 )
-                jaddstr(skey,"asm",asmstr);
+            scriptlen = iguana_scriptgen(taddr,pubtype,p2shtype,&m,&n,vp->coinaddr,space,0,vp->rmd160,asmtype,vp,txi);
+            //if ( asmstr[0] != 0 )
+            //    jaddstr(skey,"asm",asmstr);
             addrs = cJSON_CreateArray();
             if ( vp->N == 1 )
             {
