@@ -198,7 +198,7 @@ int32_t LP_socketsend(int32_t sock,uint8_t *serialized,int32_t len)
     flags = MSG_NOSIGNAL;
 #endif
     remains = len;
-    while ( remains > 0 )
+    while ( sock >= 0 && remains > 0 )
     {
         if ( (numsent= (int32_t)send(sock,serialized,remains,flags)) < 0 )
         {
@@ -225,7 +225,7 @@ int32_t LP_socketsend(int32_t sock,uint8_t *serialized,int32_t len)
 int32_t LP_socketrecv(int32_t sock,uint8_t *recvbuf,int32_t maxlen)
 {
     int32_t recvlen = -1;
-    while ( 1 )
+    while ( sock >= 0 )
     {
         if ( (recvlen= (int32_t)recv(sock,recvbuf,maxlen,0)) < 0 )
         {
@@ -574,7 +574,7 @@ void electrum_test()
 
 struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipaddr,uint16_t port,int32_t bufsize)
 {
-    struct electrum_info *ep=0; int32_t i; struct stritem *sitem; char name[512],*str = "init string";
+    struct electrum_info *ep=0; int32_t i,sock; struct stritem *sitem; char name[512],*str = "init string";
     *alreadyp = 0;
     portable_mutex_lock(&LP_electrummutex);
     for (i=0; i<Num_electrums; i++)
@@ -592,8 +592,13 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
     portable_mutex_unlock(&LP_electrummutex);
     if ( ep == 0 )
     {
+        if ( (sock= LP_socket(0,ipaddr,port)) < 0 )
+        {
+            printf("error connecting to %s:%u\n",ipaddr,port);
+            return(0);
+        }
         ep = calloc(1,sizeof(*ep) + bufsize);
-        ep->sock = LP_socket(0,ipaddr,port);
+        ep->sock = sock;
         safecopy(ep->symbol,symbol,sizeof(ep->symbol));
         safecopy(ep->ipaddr,ipaddr,sizeof(ep->ipaddr));
         ep->port = port;
@@ -771,7 +776,11 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
     struct electrum_info *ep; int32_t already; cJSON *retjson = cJSON_CreateObject();
     jaddstr(retjson,"ipaddr",ipaddr);
     jaddnum(retjson,"port",port);
-    ep = LP_electrum_info(&already,coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10);
+    if ( (ep= LP_electrum_info(&already,coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10)) == 0 )
+    {
+        jaddstr(retjson,"error","couldnt connect to electrum server");
+        return(retjson);
+    }
     if ( already == 0 )
     {
         if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
