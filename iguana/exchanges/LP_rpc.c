@@ -306,7 +306,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
             } else printf("non-hex tx.(%s)\n",hexstr);
             free(hexstr);
             return(cJSON_Parse("{\"error\":\"non hex transaction\"}"));
-        } else printf("failed blockchain.transaction.get\n");
+        } else printf("failed blockchain.transaction.get %s\n",buf);
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
     }
 }
