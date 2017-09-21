@@ -202,7 +202,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
-                printf("%s\n",jstr(argjson,"method"));
+                fprintf(stderr,"%s ",jstr(argjson,"method"));
                 if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                 {
                 }
