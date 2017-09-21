@@ -540,9 +540,9 @@ struct LP_utxoinfo *LP_butxo_add(struct LP_utxoinfo *butxo)
 
 void LP_butxo_swapfields_copy(struct LP_utxoinfo *destutxo,struct LP_utxoinfo *srcutxo)
 {
-    printf("LP_butxo_swapfields_copy\n");
+    printf("LP_butxo_swapfields_copy %u <- %u\n",destutxo->T.swappending,srcutxo->T.swappending);
     destutxo->S = srcutxo->S;
-    destutxo->T.swappending = srcutxo->T.swappending;
+    destutxo->T = srcutxo->T;
 }
 
 void LP_butxo_swapfields(struct LP_utxoinfo *butxo)
@@ -740,6 +740,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             autxo = &A;
             butxo = &B;
             LP_abutxo_set(autxo,butxo,&Q);
+            LP_butxo_swapfields(butxo);
             if ( strcmp(method,"request") == 0 )
             {
                 if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
@@ -755,7 +756,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     else
                     {
                         n = LP_listunspent_issue(coin->symbol,Q.coinaddr);
-                        printf("need to verify\n");
+                        //printf("need to verify\n");
                     }
                     butxo = LP_address_utxopair(butxo,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,1,Q.desttxfee);
                     Q.txid = butxo->payment.txid;
