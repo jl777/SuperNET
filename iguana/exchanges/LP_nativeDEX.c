@@ -286,7 +286,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     printf("self broadcast.(%s)\n",Broadcaststr);
                     str = Broadcaststr;
                     Broadcaststr = 0;
-                    if ( (retstr= LP_process_message(ctx,"selfbroadcast",myipaddr,-1,(void *)str,(int32_t)strlen(str)+1,-1)) != 0 )
+                    if ( (retstr= LP_process_message(ctx,"selfbroadcast",myipaddr,pubsock,(void *)str,(int32_t)strlen(str)+1,sock)) != 0 )
                         free(retstr);
                     free(str);
                 }
