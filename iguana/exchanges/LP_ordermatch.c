@@ -706,6 +706,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             price = ask;
             autxo = &A;
             butxo = &B;
+            LP_abutxo_set(autxo,0,&Q);
             if ( strcmp(method,"request") == 0 )
             {
                 utxos = calloc(max,sizeof(*utxos));
@@ -721,7 +722,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             Q.vout = butxo->payment.vout;
             Q.txid2 = butxo->deposit.txid;
             Q.vout2 = butxo->deposit.vout;
-            LP_abutxo_set(autxo,butxo,&Q);
+            LP_abutxo_set(0,butxo,&Q);
             LP_butxo_swapfields(butxo);
             if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
             {
