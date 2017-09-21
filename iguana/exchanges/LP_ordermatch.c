@@ -739,20 +739,32 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             price = ask;
             autxo = &A;
             butxo = &B;
-            LP_abutxo_set(autxo,0,&Q);
+            LP_abutxo_set(autxo,butxo,&Q);
             if ( strcmp(method,"request") == 0 )
             {
-                //utxos = calloc(max,sizeof(*utxos));
-                if ( coin->electrum != 0 )
+                if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
                 {
-                    if ( (array= LP_listunspent(coin->symbol,Q.coinaddr)) != 0 )
+                    if ( coin->electrum != 0 )
                     {
-                        n = cJSON_GetArraySize(array);
-                        free_json(array);
-                    } else n = 0;
-                } else n = LP_listunspent_issue(coin->symbol,Q.coinaddr);
-                butxo = LP_address_utxopair(butxo,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,1,Q.desttxfee);
-                //free(utxos), utxos = 0;
+                        if ( (array= LP_listunspent(coin->symbol,Q.coinaddr)) != 0 )
+                        {
+                            n = cJSON_GetArraySize(array);
+                            free_json(array);
+                        } else n = 0;
+                    }
+                    else
+                    {
+                        n = LP_listunspent_issue(coin->symbol,Q.coinaddr);
+                        printf("need to verify\n");
+                    }
+                    butxo = LP_address_utxopair(butxo,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,1,Q.desttxfee);
+                    Q.txid = butxo->payment.txid;
+                    Q.vout = butxo->payment.vout;
+                    Q.txid2 = butxo->deposit.txid;
+                    Q.vout2 = butxo->deposit.vout;
+                    LP_abutxo_set(0,butxo,&Q);
+                    LP_butxo_swapfields(butxo);
+                }
             }
             if ( butxo == 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 || butxo->payment.vout < 0 || butxo->deposit.vout < 0 )
             {
@@ -760,12 +772,6 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 return(1);
             }
             printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
-            Q.txid = butxo->payment.txid;
-            Q.vout = butxo->payment.vout;
-            Q.txid2 = butxo->deposit.txid;
-            Q.vout2 = butxo->deposit.vout;
-            LP_abutxo_set(0,butxo,&Q);
-            LP_butxo_swapfields(butxo);
             if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
             {
                 printf("quote validate error %.0f\n",qprice);
