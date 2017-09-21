@@ -494,6 +494,7 @@ struct LP_utxoinfo *_LP_butxo_find(struct LP_utxoinfo *butxo)
 {
     int32_t i; struct LP_utxoinfo *utxo=0; uint32_t now = (uint32_t)time(NULL);
     //portable_mutex_lock(&LP_butxomutex);
+    printf("_LP_butxo_find\n");
     for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
     {
         utxo = &BUTXOS[i];
@@ -504,6 +505,7 @@ struct LP_utxoinfo *_LP_butxo_find(struct LP_utxoinfo *butxo)
         utxo = 0;
     }
     //portable_mutex_unlock(&LP_butxomutex);
+    printf("_LP_butxo_find %p\n",utxo);
     return(utxo);
 }
 
@@ -511,6 +513,7 @@ struct LP_utxoinfo *LP_butxo_add(struct LP_utxoinfo *butxo)
 {
     static struct LP_utxoinfo zeroes;
     int32_t i; struct LP_utxoinfo *utxo=0;
+    printf("LP_butxo_add\n");
     portable_mutex_lock(&LP_butxomutex);
     if ( (utxo= _LP_butxo_find(butxo)) == 0 )
     {
@@ -526,11 +529,13 @@ struct LP_utxoinfo *LP_butxo_add(struct LP_utxoinfo *butxo)
         }
     }
     portable_mutex_unlock(&LP_butxomutex);
+    printf("LP_butxo_add %p\n",utxo);
     return(utxo);
 }
 
 void LP_butxo_swapfields_copy(struct LP_utxoinfo *destutxo,struct LP_utxoinfo *srcutxo)
 {
+    printf("LP_butxo_swapfields_copy\n");
     destutxo->S = srcutxo->S;
     destutxo->T.swappending = srcutxo->T.swappending;
 }
@@ -538,6 +543,7 @@ void LP_butxo_swapfields_copy(struct LP_utxoinfo *destutxo,struct LP_utxoinfo *s
 void LP_butxo_swapfields(struct LP_utxoinfo *butxo)
 {
     struct LP_utxoinfo *getutxo=0;
+    printf("swapfields\n");
     portable_mutex_lock(&LP_butxomutex);
     if ( (getutxo= _LP_butxo_find(butxo)) != 0 )
         LP_butxo_swapfields_copy(butxo,getutxo);
@@ -547,6 +553,7 @@ void LP_butxo_swapfields(struct LP_utxoinfo *butxo)
 void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo)
 {
     struct LP_utxoinfo *setutxo;
+    printf("swapfields set\n");
     if ( (setutxo= LP_butxo_add(butxo)) != 0 )
     {
         LP_butxo_swapfields_copy(setutxo,butxo);
