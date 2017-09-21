@@ -594,7 +594,9 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
         if ( (pair= LP_nanobind(ctx,pairstr)) >= 0 )
         {
             LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis-qp->txfee,rel,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
+            printf("call swapinit\n");
             swap = LP_swapinit(1,0,privkey,&qp->R,qp);
+            printf("swapinit.%p\n",swap);
             swap->N.pair = pair;
             utxo->S.swap = swap;
             swap->utxo = utxo;
@@ -764,6 +766,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     {
                         bits256 zero;
                         memset(&zero,0,sizeof(zero));
+                        if ( pubsock >= 0 )
+                            nn_send(pubsock,msg,(int32_t)strlen(msg)+1,0);
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg); //butxo->S.otherpubkey
                     }
                     butxo->T.lasttime = (uint32_t)time(NULL);

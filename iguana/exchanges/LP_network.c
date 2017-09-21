@@ -214,7 +214,7 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
                 printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
             else
             {
-                printf("Q sent %u\n",crc32);
+                printf("Q sent %u msglen.%d\n",crc32,msglen);
                 sock0 = -1;
             }
         }
