@@ -318,11 +318,11 @@ void command_rpcloop(void *myipaddr)
         {
             if ( peer->errors >= LP_MAXPEER_ERRORS )
             {
-                if ( (rand() % 1000) == 0 )
+                if ( (rand() % 10000) == 0 )
                     peer->errors--;
                 else
                 {
-                    printf("skip %s\n",peer->ipaddr);
+                    //printf("skip %s\n",peer->ipaddr);
                     continue;
                 }
             }
