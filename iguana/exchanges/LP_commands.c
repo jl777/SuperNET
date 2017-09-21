@@ -440,6 +440,7 @@ dividends(coin, height, <args>)\n\
                         memset(zero.bytes,0,sizeof(zero));
                         //printf("broadcast.(%s)\n",jprint(reqjson,0));
                         LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
+                        Broadcaststr = jprint(reqjson,0);
                     }
                     retstr = clonestr("{\"result\":\"success\"}");
                 } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");

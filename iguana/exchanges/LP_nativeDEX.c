@@ -32,7 +32,7 @@
 #include "LP_include.h"
 portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex;
 int32_t LP_canbind;
-
+char *Broadcaststr;
 struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
 struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 struct LP_forwardinfo *LP_forwardinfos;
@@ -266,7 +266,7 @@ int32_t LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pu
 
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock)
 {
-    int32_t recvlen=1,nonz = 0; void *ptr; char *retstr; struct nn_pollfd pfd;
+    int32_t recvlen=1,nonz = 0; void *ptr; char *retstr,*str; struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
         while ( nonz < 1000 && recvlen > 0 )
@@ -281,6 +281,15 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 nonz++;
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
+                if ( Broadcaststr != 0 )
+                {
+                    printf("self broadcast.(%s)\n",Broadcaststr);
+                    str = Broadcaststr;
+                    Broadcaststr = 0;
+                    if ( (retstr= LP_process_message(ctx,"selfbroadcast",myipaddr,-1,(void *)str,(int32_t)strlen(str)+1,-1)) != 0 )
+                        free(retstr);
+                    free(str);
+                }
             }
         }
     }
