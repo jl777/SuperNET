@@ -214,7 +214,7 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
                 printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
             else
             {
-                printf("Q sent %u msglen.%d\n",crc32,msglen);
+                //printf("Q sent %u msglen.%d\n",crc32,msglen);
                 sock0 = -1;
             }
         }
@@ -311,7 +311,8 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                     jdelete(argjson,"method2");
                 jaddstr(argjson,"method2",method);
                 jaddstr(argjson,"method",method);
-                //printf("CRC32.%u (%s)\n",crc32,(char *)msg);
+                if ( strncmp(method,"connect",7) == 0 )
+                    printf("CRC32.%u (%s)\n",crc32,msgstr);
                 LP_broadcast_finish(pubsock,base,rel,msg,argjson,0);
             } // else printf("no valid method in (%s)\n",msgstr);
             free_json(argjson);

@@ -762,7 +762,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     jaddbits256(retjson,"pubkey",butxo->S.otherpubkey);
                     jaddstr(retjson,"method","reserved");
                     msg = jprint(retjson,1);
-                    printf("set swappending.%u accept qprice %.8f, min %.8f\n(%s)",butxo->T.swappending,qprice,price,msg);
+                    printf("set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
                     {
                         bits256 zero;
                         memset(&zero,0,sizeof(zero));
@@ -820,8 +820,8 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
                 if ( aliceutxo->S.swap != 0 )
                     break;
                 sleep(3);
-                price = LP_query(ctx,myipaddr,mypubsock,"connect",qp);
-                LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
+                //price = LP_query(ctx,myipaddr,mypubsock,"connect",qp);
+                //LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
             }
             if ( aliceutxo->S.swap == 0 )
             {
