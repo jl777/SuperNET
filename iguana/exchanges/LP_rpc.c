@@ -508,8 +508,9 @@ void LP_listunspent_issue(char *symbol,char *coinaddr)
                 retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    if ( electrum_process_array(coin,coin->electrum,coinaddr,retjson) != 0 )
+                    if ( electrum_process_array(coin,0,coinaddr,retjson) != 0 )
                     {
+                        printf("PROCESS INTERNAL.(%s)\n",coin->symbol);
                         LP_postutxos(symbol,coinaddr); // might be good to not saturate
                     }
                 }
