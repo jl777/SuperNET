@@ -57,7 +57,7 @@ int32_t LP_sockcheck(int32_t sock)
     struct nn_pollfd pfd;
     pfd.fd = sock;
     pfd.events = NN_POLLOUT;
-    if ( nn_poll(&pfd,1,1) > 0 )
+    if ( nn_poll(&pfd,1,10) > 0 )
         return(1);
     else return(-1);
 }
@@ -162,7 +162,7 @@ void queue_loop(void *ignore)
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
                     else flag = 1;
-                }
+                } else printf("sock not ready to send.%d\n",ptr->msglen);
             }
             else if ( time(NULL) > ptr->starttime+13 )
             {
@@ -562,7 +562,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
-                timeout = 1;
+                timeout = 10;
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                 nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 if ( ispaired != 0 )
@@ -700,7 +700,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                     exit(-1);
                 }
             }
-            timeout = 1;
+            timeout = 10;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             //maxsize = 2 * 1024 * 1024;
