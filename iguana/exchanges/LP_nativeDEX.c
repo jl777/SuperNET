@@ -283,7 +283,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     free(retstr);
                 if ( Broadcaststr != 0 )
                 {
-                    printf("self broadcast.(%s)\n",Broadcaststr);
+                    //printf("self broadcast.(%s)\n",Broadcaststr);
                     str = Broadcaststr;
                     Broadcaststr = 0;
                     if ( (argjson= cJSON_Parse(str)) != 0 )
