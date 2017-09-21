@@ -923,7 +923,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                                 //printf("%s minvol %.8f %.8f maxvol %.8f\n",jprint(item,0),minvol,relvolume,maxvol);
                                 //if ( relvolume >= minvol && relvolume <= maxvol )
                                 {
-                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,basecoin,coinaddr,txfee,relvolume,price,0,desttxfee)) != 0 )
+                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,basecoin,coinaddr,txfee,dstr(bestutxo->S.satoshis * price - desttxfee),price,0,desttxfee)) != 0 )
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
@@ -931,7 +931,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                                         *bestsatoshisp = bestutxo->S.satoshis - txfee;
                                         *ordermatchpricep = price;
                                         *bestdestsatoshisp = autxo->S.satoshis;
-                                        printf("ordermatch %.8f %.8f %.8f\n",price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp));
+                                        printf("ordermatch %.8f %.8f %.8f txfees (%.8f %.8f)\n",price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp),dstr(txfee),dstr(desttxfee));
                                         break;
                                     }
                                 }
