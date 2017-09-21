@@ -467,17 +467,17 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
 {
     cJSON *retjson=0; struct iguana_info *coin = LP_coinfind(symbol);
     //printf("electrum listunspent last.(%s lag %d)\n",coin->lastunspent,(int32_t)(time(NULL) - coin->unspenttime));
-    if ( strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+10 )
+    //if ( strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+10 )
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            //printf("%s %s LISTUNSPENT.(%s)\n",symbol,addr,jprint(retjson,0));
+            printf("%s %s LISTUNSPENT.(%s)\n",symbol,addr,jprint(retjson,0));
             if ( electrum_process_array(coin,addr,retjson) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
             coin->unspenttime = (uint32_t)time(NULL);
         }
-    } else retjson = LP_address_utxos(coin,addr,1);
+    } //else retjson = LP_address_utxos(coin,addr,1);
     return(retjson);
 }
 
