@@ -310,6 +310,7 @@ int32_t electrum_process_array(struct iguana_info *coin,char *coinaddr,cJSON *ar
     int32_t i,v,n,flag = 0; char str[65]; uint64_t value; bits256 txid; cJSON *item,*txobj; struct LP_transaction *tx;
     if ( array != 0 && coin != 0 && (n= cJSON_GetArraySize(array)) > 0 )
     {
+        printf("PROCESS %s %s num.%d\n",coin->symbol,coinaddr,n);
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
@@ -471,7 +472,6 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            printf("%s %s LISTUNSPENT.(%s)\n",symbol,addr,jprint(retjson,0));
             if ( electrum_process_array(coin,addr,retjson) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
