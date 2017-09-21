@@ -368,7 +368,7 @@ dividends(coin, height, <args>)\n\
         retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"reserved") == 0 )
     {
-        printf("RESERVED.(%s)\n",jprint(argjson,0));
+        //printf("RESERVED.(%s)\n",jprint(argjson,0));
         retstr = LP_quotereceived(argjson);
     }
     else if ( strcmp(method,"connected") == 0 )

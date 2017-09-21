@@ -490,10 +490,10 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
     return(0);
 }
 
-struct LP_utxoinfo *LP_butxo_find(struct LP_utxoinfo *butxo)
+struct LP_utxoinfo *_LP_butxo_find(struct LP_utxoinfo *butxo)
 {
     int32_t i; struct LP_utxoinfo *utxo=0; uint32_t now = (uint32_t)time(NULL);
-    portable_mutex_lock(&LP_butxomutex);
+    //portable_mutex_lock(&LP_butxomutex);
     for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
     {
         utxo = &BUTXOS[i];
@@ -503,7 +503,7 @@ struct LP_utxoinfo *LP_butxo_find(struct LP_utxoinfo *butxo)
             memset(utxo,0,sizeof(*utxo));
         utxo = 0;
     }
-    portable_mutex_unlock(&LP_butxomutex);
+    //portable_mutex_unlock(&LP_butxomutex);
     return(utxo);
 }
 
@@ -512,7 +512,7 @@ struct LP_utxoinfo *LP_butxo_add(struct LP_utxoinfo *butxo)
     static struct LP_utxoinfo zeroes;
     int32_t i; struct LP_utxoinfo *utxo=0;
     portable_mutex_lock(&LP_butxomutex);
-    if ( (utxo= LP_butxo_find(butxo)) == 0 )
+    if ( (utxo= _LP_butxo_find(butxo)) == 0 )
     {
         for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
         {
@@ -538,8 +538,10 @@ void LP_butxo_swapfields_copy(struct LP_utxoinfo *destutxo,struct LP_utxoinfo *s
 void LP_butxo_swapfields(struct LP_utxoinfo *butxo)
 {
     struct LP_utxoinfo *getutxo=0;
-    if ( (getutxo= LP_butxo_find(butxo)) != 0 )
+    portable_mutex_lock(&LP_butxomutex);
+    if ( (getutxo= _LP_butxo_find(butxo)) != 0 )
         LP_butxo_swapfields_copy(butxo,getutxo);
+    portable_mutex_unlock(&LP_butxomutex);
 }
 
 void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo)

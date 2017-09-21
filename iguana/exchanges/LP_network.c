@@ -157,7 +157,7 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                    else printf("%d %p qsent %u msglen.%d peerind.%d\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind);
+                    //else printf("%d %p qsent %u msglen.%d peerind.%d\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind);
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
@@ -311,11 +311,11 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                     jdelete(argjson,"method2");
                 jaddstr(argjson,"method2",method);
                 jaddstr(argjson,"method",method);
-                if ( strncmp(method,"connect",7) == 0 || strcmp(method,"reserved") == 0 )
-                    printf("CRC32.%u (%s)\n",crc32,msgstr);
+                //if ( strncmp(method,"connect",7) == 0 || strcmp(method,"reserved") == 0 )
+                //    printf("CRC32.%u (%s)\n",crc32,msgstr);
                 LP_broadcast_finish(pubsock,base,rel,msg,argjson,0);
-                if ( strncmp(method,"connect",7) == 0 || strcmp(method,"reserved") == 0 )
-                    printf("finished %u\n",crc32);
+                //if ( strncmp(method,"connect",7) == 0 || strcmp(method,"reserved") == 0 )
+                //    printf("finished %u\n",crc32);
             } // else printf("no valid method in (%s)\n",msgstr);
             free_json(argjson);
         } else printf("couldnt parse (%s)\n",msgstr);
