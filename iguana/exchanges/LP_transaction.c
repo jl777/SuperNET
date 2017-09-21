@@ -1306,12 +1306,12 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
         retval = 0;
         if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.wiftaddr,swap->bobcoin.taddr,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->aliceclaim,&swap->bobdeposit,swap->I.myprivs[0],0,userdata,len,1,swap->changermd160,swap->bobdeposit.I.destaddr)) == 0 )
         {
-            /*for (i=0; i<swap->bobdeposit.I.datalen; i++)
+            int32_t i; for (i=0; i<swap->bobdeposit.I.datalen; i++)
                 printf("%02x",swap->bobdeposit.txbytes[i]);
             printf(" <- bobdeposit\n");
             for (i=0; i<swap->aliceclaim.I.datalen; i++)
                 printf("%02x",swap->aliceclaim.txbytes[i]);
-            printf(" <- aliceclaim\n");*/
+            printf(" <- aliceclaim\n");
             //basilisk_txlog(swap,&swap->aliceclaim,swap->I.putduration+swap->I.callduration);
             return(LP_waitmempool(swap->bobcoin.symbol,swap->bobdeposit.I.destaddr,swap->bobdeposit.I.signedtxid,60));
         } else printf("error signing aliceclaim suppress.%d vin.(%s)\n",swap->aliceclaim.I.suppress_pubkeys,swap->bobdeposit.I.destaddr);

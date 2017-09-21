@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex;
 int32_t LP_canbind;
 
 struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
@@ -633,6 +633,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_electrummutex);
     portable_mutex_init(&LP_messagemutex);
     portable_mutex_init(&LP_portfoliomutex);
+    portable_mutex_init(&LP_butxomutex);
     LP_sessionid = (uint32_t)time(NULL);
     printf("getting myipaddr sessionid.%u\n",LP_sessionid);
     if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )

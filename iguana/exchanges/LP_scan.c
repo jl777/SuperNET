@@ -440,7 +440,10 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t duration
 {
     struct iguana_info *coin; struct LP_transaction *tx; cJSON *array,*item; uint32_t expiration,i,n;
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
+    {
+        printf("LP_waitmempool missing coin.%p or inactive\n",coin);
         return(-1);
+    }
     expiration = (uint32_t)time(NULL) + duration;
     while ( 1 )
     {
@@ -453,11 +456,12 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t duration
         {
             if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->height >= 0 )
             {
-                char str[65]; printf("LP_waitmempool found %s %s\n",symbol,bits256_str(str,txid));
+                char str[65]; printf("LP_waitmempool found confirmed %s %s\n",symbol,bits256_str(str,txid));
                 return(tx->height);
             }
             if ( (array= electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr)) != 0 )
             {
+                char str[65]; printf("check %s mempool.(%s)\n",bits256_str(str,txid),jprint(array,0));
                 if ( (n= cJSON_GetArraySize(array)) > 0 )
                 {
                     for (i=0; i<n; i++)

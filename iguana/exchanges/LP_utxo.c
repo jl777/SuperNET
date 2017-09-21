@@ -137,16 +137,19 @@ int32_t LP_address_minmax(uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
     return(n);
 }
 
-int32_t LP_address_utxo_ptrs(struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap)
+int32_t LP_address_utxo_ptrs(struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,int32_t avoidflag)
 {
     struct LP_address_utxo *up,*tmp; int32_t n = 0;
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
         if ( up->spendheight <= 0 )
         {
-            utxos[n++] = up;
-            if ( n >= max )
-                break;
+            if ( avoidflag == 0 || LP_butxo_findeither(up->U.txid,up->U.vout) == 0 )
+            {
+                utxos[n++] = up;
+                if ( n >= max )
+                    break;
+            }
         }
     }
     return(n);

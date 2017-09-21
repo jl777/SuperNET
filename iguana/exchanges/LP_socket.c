@@ -243,6 +243,7 @@ int32_t LP_socketrecv(int32_t sock,uint8_t *recvbuf,int32_t maxlen)
 struct electrum_info
 {
     queue_t sendQ,pendingQ;
+    struct electrum_info *prev;
     int32_t bufsize,sock,*heightp;
     struct iguana_info *coin;
     uint32_t stratumid,lasttime,pending,*heighttimep;
@@ -351,31 +352,33 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
     char stratumreq[16384]; uint32_t expiration; struct stritem *sitem;
     if ( ep == 0 )
         ep = electrum_server(symbol,0);
-    if ( ep != 0 && retjsonp != 0 )
+    while ( ep != 0 )
     {
-        *retjsonp = 0;
-        if ( strcmp(method,"getrawmempool") == 0 )
+        if ( ep != 0 && ep->sock >= 0 && retjsonp != 0 )
         {
-            *retjsonp = cJSON_Parse("{\"error\":\"unsupported method\"}");
-            return(*retjsonp);
-        }
-        sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-        ep->buf[0] = 0;
-        sitem = (struct stritem *)queueitem(stratumreq);
-        sitem->expiration = timeout;
-        sitem->DL.type = ep->stratumid++;
-        sitem->retptrp = (void **)retjsonp;
-        queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
-        expiration = (uint32_t)time(NULL) + timeout + 1;
-        while ( *retjsonp == 0 && time(NULL) <= expiration )
-            usleep(10000);
-        if ( *retjsonp == 0 )
-        {
-            //printf("unexpected %s timeout with null retjson: %s %s\n",ep->symbol,method,params);
-            *retjsonp = cJSON_Parse("{\"error\":\"timeout\"}");
-        }
-        return(*retjsonp);
-    } else printf("couldnt find electrum server for (%s %s) or no retjsonp.%p\n",method,params,retjsonp);
+            *retjsonp = 0;
+            sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
+            memset(ep->buf,0,ep->bufsize);
+            sitem = (struct stritem *)queueitem(stratumreq);
+            sitem->expiration = timeout;
+            sitem->DL.type = ep->stratumid++;
+            sitem->retptrp = (void **)retjsonp;
+            queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
+            expiration = (uint32_t)time(NULL) + timeout + 1;
+            while ( *retjsonp == 0 && time(NULL) <= expiration )
+                usleep(10000);
+            if ( ep->prev == 0 )
+            {
+                if ( *retjsonp == 0 )
+                {
+                    //printf("unexpected %s timeout with null retjson: %s %s\n",ep->symbol,method,params);
+                    *retjsonp = cJSON_Parse("{\"error\":\"timeout\"}");
+                }
+                return(*retjsonp);
+            }
+        } else printf("couldnt find electrum server for (%s %s) or no retjsonp.%p\n",method,params,retjsonp);
+        ep = ep->prev;
+    }
     return(0);
 }
 
@@ -753,7 +756,12 @@ void LP_dedicatedloop(void *arg)
                 usleep(100000);
         }
     }
-    printf("close %s:%u\n",ep->ipaddr,ep->port);
+    if ( coin->electrum == ep )
+    {
+        coin->electrum = ep->prev;
+        printf("set %s electrum to %s\n",coin->symbol,coin->electrum);
+    } else printf("backup electrum server closing\n");
+    printf(">>>>>>>>>> electrum close %s:%u\n",ep->ipaddr,ep->port);
     if ( Num_electrums > 0 )
     {
         portable_mutex_lock(&LP_electrummutex);
@@ -768,7 +776,8 @@ void LP_dedicatedloop(void *arg)
         }
         portable_mutex_unlock(&LP_electrummutex);
     }
-    free(ep);
+    ep->sock = -1;
+    //free(ep);
 }
 
 cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
@@ -792,6 +801,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
         {
             printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
             jaddstr(retjson,"result","success");
+            ep->prev = coin->electrum;
             coin->electrum = ep;
         }
     }
