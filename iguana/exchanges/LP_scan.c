@@ -478,7 +478,7 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t duration
                 free(array);
             }
         }
-        if ( time(NULL) < expiration )
+        if ( time(NULL) > expiration )
             break;
         usleep(500000);
     }

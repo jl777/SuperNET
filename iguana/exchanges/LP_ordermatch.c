@@ -352,16 +352,16 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
     jaddstr(reqjson,"method",method);
     msg = jprint(reqjson,1);
     printf("QUERY.(%s)\n",msg);
-    if ( strcmp(method,"connect") == 0 )
+    memset(&zero,0,sizeof(zero));
+    if ( 0 && strcmp(method,"connect") == 0 )
     {
         sleep(3);
-        memset(&zero,0,sizeof(zero));
         LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg);
     }
     else
     {
         memset(&zero,0,sizeof(zero));
-        LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg);
+        LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
         for (i=0; i<30; i++)
         {
             if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )
@@ -744,7 +744,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             if ( butxo == 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 || butxo->payment.vout < 0 || butxo->deposit.vout < 0 )
             {
                 char str[65]; printf("couldnt find bob utxos for autxo %s/v%d %.8f\n",bits256_str(str,autxo->payment.txid),autxo->payment.vout,dstr(autxo->S.satoshis));
-                return(-44);
+                return(1);
             }
             printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
             Q.txid = butxo->payment.txid;
@@ -785,10 +785,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         bits256 zero;
                         memset(&zero,0,sizeof(zero));
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg);//butxo->S.otherpubkey,msg);
-                        printf("return after RESERVED\n");
                         LP_butxo_swapfields_set(butxo);
                         printf("return after RESERVED\n");
-                        return(0);
+                        return(2);
                     }
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
             }
@@ -800,7 +799,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     // validate SPV alice
                     LP_connectstartbob(ctx,pubsock,butxo,argjson,Q.srccoin,Q.destcoin,qprice,&Q);
                     LP_butxo_swapfields_set(butxo);
-                    return(0);
+                    return(3);
                 }
                 else printf("pend.%u swap %p when connect came in (%s)\n",butxo->T.swappending,butxo->S.swap,jprint(argjson,0));
             }
