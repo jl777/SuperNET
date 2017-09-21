@@ -443,7 +443,7 @@ dividends(coin, height, <args>)\n\
                         if ( strcmp("connect",method) == 0 )
                             printf("broadcast.(%s)\n",jprint(reqjson,0));
                         msg = jprint(reqjson,0);
-                        _LP_send(pubsock,msg,(int32_t)strlen(msg)+1,0);
+                        //_LP_send(pubsock,msg,(int32_t)strlen(msg)+1,0);
                         LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,zero,msg);
                     }
                     retstr = clonestr("{\"result\":\"success\"}");

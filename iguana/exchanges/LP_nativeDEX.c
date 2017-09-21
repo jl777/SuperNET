@@ -202,8 +202,8 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
-                if ( jobj(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"connect") == 0 )
-                    fprintf(stderr,"%s ",jstr(argjson,"method"));
+                if ( jobj(argjson,"method") != 0 && strncmp(jstr(argjson,"method"),"connect",7) == 0 )
+                    fprintf(stderr,"%s\n",jsonstr);
                 if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                 {
                 }
