@@ -820,6 +820,8 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
                 if ( aliceutxo->S.swap != 0 )
                     break;
                 sleep(3);
+                price = LP_query(ctx,myipaddr,mypubsock,"connect",qp);
+                LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
             }
             if ( aliceutxo->S.swap == 0 )
             {

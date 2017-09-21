@@ -732,7 +732,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     while ( 1 )
     {
         nonz = 0;
-        fprintf(stderr,".");
+        //fprintf(stderr,".");
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport,passphrase) != 0 )
             nonz++;
         if ( LP_mypullsock >= 0 )
