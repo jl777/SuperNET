@@ -709,7 +709,6 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
         retval = 1;
-        printf("LP_tradecommand: check received %s\n",method);
         if ( LP_quoteparse(&Q,argjson) == 0 && bits256_cmp(LP_mypub25519,Q.srchash) == 0 && bits256_cmp(LP_mypub25519,Q.desthash) != 0 )
         {
             printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
@@ -765,14 +764,16 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     jaddbits256(retjson,"pubkey",butxo->S.otherpubkey);
                     jaddstr(retjson,"method","reserved");
                     msg = jprint(retjson,1);
+                    butxo->T.lasttime = (uint32_t)time(NULL);
                     printf("set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
                     {
                         bits256 zero;
                         memset(&zero,0,sizeof(zero));
-                        _LP_send(pubsock,msg,(int32_t)strlen(msg)+1,0);
+                        //_LP_send(pubsock,msg,(int32_t)strlen(msg)+1,0);
                         //LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg); //butxo->S.otherpubkey
+                        LP_butxo_swapfields_set(butxo);
+                        return(1);
                     }
-                    butxo->T.lasttime = (uint32_t)time(NULL);
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
             }
             else if ( strcmp(method,"connect") == 0 ) // bob
@@ -782,12 +783,15 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 {
                     // validate SPV alice
                     LP_connectstartbob(ctx,pubsock,butxo,argjson,Q.srccoin,Q.destcoin,qprice,&Q);
+                    LP_butxo_swapfields_set(butxo);
+                    return(2);
                 }
                 else printf("pend.%u swap %p when connect came in (%s)\n",butxo->T.swappending,butxo->S.swap,jprint(argjson,0));
             }
-            LP_butxo_swapfields_set(butxo);
         }
     }
+    if ( method != 0 )
+        printf("LP_tradecommand: check received %s\n",method);
     return(retval);
 }
 
