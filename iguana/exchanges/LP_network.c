@@ -314,6 +314,8 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                 if ( strncmp(method,"connect",7) == 0 || strcmp(method,"reserved") == 0 )
                     printf("CRC32.%u (%s)\n",crc32,msgstr);
                 LP_broadcast_finish(pubsock,base,rel,msg,argjson,0);
+                if ( strncmp(method,"connect",7) == 0 || strcmp(method,"reserved") == 0 )
+                    printf("finished %u\n",crc32);
             } // else printf("no valid method in (%s)\n",msgstr);
             free_json(argjson);
         } else printf("couldnt parse (%s)\n",msgstr);
