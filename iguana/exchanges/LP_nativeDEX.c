@@ -735,8 +735,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         //fprintf(stderr,".");
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport,passphrase) != 0 )
             nonz++;
-        if ( LP_mypullsock >= 0 )
-            nonz += LP_sock_check("SUB",ctx,myipaddr,-1,LP_mypullsock,"127.0.0.1");
+        //if ( LP_mypullsock >= 0 )
+        //    nonz += LP_sock_check("SUB",ctx,myipaddr,-1,LP_mypullsock,"127.0.0.1");
         if ( nonz == 0 )
             usleep(1000000 / MAINLOOP_PERSEC);
     }
