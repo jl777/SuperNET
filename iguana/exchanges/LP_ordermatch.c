@@ -968,9 +968,9 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         timeout = LP_AUTOTRADE_TIMEOUT;
     if ( maxprice <= 0. || relvolume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
-    if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * relvolume)) == 0 )
-        return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
     LP_txfees(&txfee,&desttxfee,base,rel);
+    if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * relvolume + desttxfee)) == 0 )
+        return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
     memset(&_best,0,sizeof(_best));
     if ( (bestutxo= LP_buyutxo(&_best,&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,relvolume,gui)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
     {
