@@ -442,9 +442,9 @@ int32_t LP_nearest_utxovalue(struct LP_address_utxo **utxos,int32_t n,uint64_t t
         if ( utxos[i] != 0 )
         {
             dist = (utxos[i]->U.value - targetval);
-            //printf("(%.8f %.8f %.8f).%d ",dstr(values[i]),dstr(dist),dstr(mindist),mini);
             if ( dist >= 0 && dist < mindist )
             {
+                printf("(%.8f %.8f %.8f).%d ",dstr(utxos[i]->U.value),dstr(dist),dstr(mindist),mini);
                 mini = i;
                 mindist = dist;
             }
