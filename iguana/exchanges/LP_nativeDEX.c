@@ -288,12 +288,13 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     Broadcaststr = 0;
                     if ( (argjson= cJSON_Parse(str)) != 0 )
                     {
+                        if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
+                            printf("self.(%s)\n",str);
                         if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                         {
                             if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
                             free(retstr);
                         }
-                        //LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0);
                         free_json(argjson);
                     }
                     free(str);
