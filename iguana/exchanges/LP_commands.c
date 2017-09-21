@@ -426,6 +426,7 @@ dividends(coin, height, <args>)\n\
                 bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
                 if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
                 {
+                    Broadcaststr = jprint(reqjson,0);
                     if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
                     {
                         cipherlen = (int32_t)strlen(cipherstr) >> 1;
@@ -440,7 +441,6 @@ dividends(coin, height, <args>)\n\
                         memset(zero.bytes,0,sizeof(zero));
                         printf("broadcast.(%s)\n",jprint(reqjson,0));
                         LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
-                        Broadcaststr = jprint(reqjson,0);
                     }
                     retstr = clonestr("{\"result\":\"success\"}");
                 } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
