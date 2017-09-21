@@ -460,7 +460,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
     {
         if ( (m= LP_address_utxo_ptrs(utxos,max,ap,avoidflag)) > 1 )
         {
-            targetval = SATOSHIDEN * ((volume+desttxfee) / price) + 2*txfee;
+            targetval = SATOSHIDEN * ((volume + dstr(desttxfee)) / price) + 2*txfee;
             {
                 int32_t i;
                 for (i=0; i<m; i++)
