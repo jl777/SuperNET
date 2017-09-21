@@ -471,7 +471,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
-                targetval = (targetval / 8) * 9 + 2*txfee;
+                targetval = (up->U.value / 8) * 9 + 2*txfee;
                 if ( (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 )
                 {
                     if ( up != 0 && (up2= utxos[mini]) != 0 )
@@ -485,7 +485,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
                         utxo->deposit.txid = up2->U.txid;
                         utxo->deposit.vout = up2->U.vout;
                         utxo->deposit.value = up2->U.value;
-                        utxo->S.satoshis = SATOSHIDEN * (volume / price);
+                        utxo->S.satoshis = SATOSHIDEN * ((volume + dstr(desttxfee)) / price);
                         return(utxo);
                     }
                 }
@@ -924,8 +924,8 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
-                                        autxo->S.satoshis = bestutxo->S.satoshis * price;
-                                        *bestsatoshisp = bestutxo->S.satoshis;
+                                        autxo->S.satoshis = bestutxo->S.satoshis * price - desttxfee;
+                                        *bestsatoshisp = bestutxo->S.satoshis - txfee;
                                         *ordermatchpricep = price;
                                         *bestdestsatoshisp = autxo->S.satoshis;
                                         printf("ordermatch %.8f %.8f %.8f\n",price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp));
