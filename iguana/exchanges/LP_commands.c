@@ -367,9 +367,15 @@ dividends(coin, height, <args>)\n\
     else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
         retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"reserved") == 0 )
+    {
+        printf("RESERVED.(%s)\n",jprint(argjson,0));
         retstr = LP_quotereceived(argjson);
+    }
     else if ( strcmp(method,"connected") == 0 )
+    {
+        printf("CONNECTED.(%s)\n",jprint(argjson,0));
         retstr = LP_connectedalice(argjson);
+    }
     else if ( strcmp(method,"checktxid") == 0 )
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"getcoins") == 0 )
