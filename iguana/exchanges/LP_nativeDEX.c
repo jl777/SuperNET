@@ -266,7 +266,7 @@ int32_t LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pu
 
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock)
 {
-    int32_t recvlen=1,nonz = 0; void *ptr; char *retstr,*str; struct nn_pollfd pfd;
+    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char *retstr,*str; struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
         while ( nonz < 1000 && recvlen > 0 )
@@ -286,8 +286,11 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     printf("self broadcast.(%s)\n",Broadcaststr);
                     str = Broadcaststr;
                     Broadcaststr = 0;
-                    if ( (retstr= LP_process_message(ctx,"selfbroadcast",myipaddr,pubsock,(void *)str,(int32_t)strlen(str)+1,sock)) != 0 )
-                        free(retstr);
+                    if ( (argjson= cJSON_Parse(str)) != 0 )
+                    {
+                        LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0);
+                        free_json(argjson);
+                    }
                     free(str);
                 }
             }
