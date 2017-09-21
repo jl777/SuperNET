@@ -307,14 +307,29 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 
 int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep,char *coinaddr,cJSON *array)
 {
-    int32_t i,v,n,flag = 0; char str[65]; uint64_t value; bits256 txid; cJSON *item,*txobj; struct LP_transaction *tx;
+    int32_t i,v,n,ht,flag = 0; char str[65]; uint64_t value; bits256 txid; cJSON *item,*txobj; struct LP_transaction *tx;
     if ( array != 0 && coin != 0 && (n= cJSON_GetArraySize(array)) > 0 )
     {
         //printf("PROCESS %s/%s %s num.%d\n",coin->symbol,ep!=0?ep->symbol:"nanolistunspent",coinaddr,n);
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
-            txid = jbits256(item,"tx_hash");
+            if ( coin->electrum == 0 )
+            {
+                txid = jbits256(item,"txid");
+                v = jint(item,"vout");
+                value = LP_value_extract(item,0);
+                ht = LP_txheight(coin,txid);
+            }
+            else
+            {
+                txid = jbits256(item,"tx_hash");
+                v = jint(item,"tx_pos");
+                value = j64bits(item,"value");
+                ht = jint(item,"height");
+            }
+            if ( bits256_nonz(txid) == 0 )
+                continue;
             if ( (tx= LP_transactionfind(coin,txid)) == 0 )
             {
                 txobj = LP_transactioninit(coin,txid,0,0);
@@ -325,12 +340,10 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
             {
                 if (tx->height <= 0 )
                 {
-                    tx->height = jint(item,"height");
+                    tx->height = ht;
                     //printf("%s %s >>>>>>>>>> set %s <- height %d\n",coin->symbol,coinaddr,bits256_str(str,txid),tx->height);
                 }
-                value = j64bits(item,"value");
-                v = jint(item,"tx_pos");
-                if ( jobj(item,"tx_pos") != 0 && jobj(item,"value") != 0 && v >= 0 && v < tx->numvouts )
+                if ( v >= 0 && v < tx->numvouts )
                 {
                     if ( tx->outpoints[v].value == 0 && value != tx->outpoints[v].value )
                     {
