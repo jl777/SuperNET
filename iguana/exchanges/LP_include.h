@@ -284,6 +284,7 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,bits256 pubkey,char 
 int32_t LP_ismine(struct LP_utxoinfo *utxo);
 int32_t LP_isavailable(struct LP_utxoinfo *utxo);
 struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port);
+uint64_t LP_value_extract(cJSON *obj,int32_t addinterest);
 char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
 void LP_availableset(struct LP_utxoinfo *utxo);
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2);
@@ -307,6 +308,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
 void LP_postutxos(char *symbol,char *coinaddr);
 uint16_t LP_randpeer(char *destip);
 int32_t LP_butxo_findeither(bits256 txid,int32_t vout);
+cJSON *LP_listunspent(char *symbol,char *coinaddr);
 
 
 #endif

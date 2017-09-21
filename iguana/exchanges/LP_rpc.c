@@ -313,7 +313,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
 
 cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 {
-    char buf[128],str[65],coinaddr[64],*hexstr; uint64_t value; uint8_t *serialized; cJSON *sobj,*addresses,*item,*array,*hexobj,*retjson=0; int32_t i,n,v,len; bits256 t; struct iguana_info *coin;
+    char buf[128],str[65],coinaddr[64],*hexstr; uint64_t value,val; uint8_t *serialized; cJSON *sobj,*addresses,*item,*array,*hexobj,*retjson=0; int32_t i,n,v,len; bits256 t; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -351,7 +351,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                 LP_swap_coinaddr(coin,coinaddr,&value,serialized,len,vout);
                 //printf("HEX.(%s) len.%d %s %.8f\n",hexstr+1,len,coinaddr,dstr(value));
                 free(hexstr);
-                if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr)) != 0 )
+                if ( (array= LP_listunspent(coin->symbol,coinaddr)) != 0 )
                 {
                     //printf("array.(%s)\n",jprint(array,0));
                     if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
@@ -359,8 +359,20 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                         for (i=0; i<n; i++)
                         {
                             item = jitem(array,i);
-                            t = jbits256(item,"tx_hash");
-                            v = jint(item,"tx_pos");
+                            if ( coin->electrum == 0 )
+                            {
+                                t = jbits256(item,"txid");
+                                v = jint(item,"vout");
+                                val = LP_value_extract(item,0);
+                            }
+                            else
+                            {
+                                t = jbits256(item,"tx_hash");
+                                v = jint(item,"tx_pos");
+                                val = j64bits(item,"value");
+                            }
+                            if ( value != val )
+                                printf("LP_gettxout: value %llu != %llu\n",(long long)value,(long long)val);
                             if ( v == vout && bits256_cmp(t,txid) == 0 )
                             {
                                 retjson = cJSON_CreateObject();
@@ -380,8 +392,6 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                                     "version": 1,
                                     "coinbase": false
                                 }*/
-                                if ( value != j64bits(item,"value") )
-                                    printf("LP_gettxout: value %llu != %llu\n",(long long)value,(long long)j64bits(item,"value"));
                                 jaddnum(retjson,"value",dstr(value));
                                 jaddbits256(retjson,"txid",t);
                                 jaddnum(retjson,"vout",v);

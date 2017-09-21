@@ -903,7 +903,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                     price = jdouble(item,"price");
                     if ( LP_pricevalid(price) > 0 && price <= maxprice )
                     {
-                        printf("%s\n",jprint(item,0));
+                        //printf("%s\n",jprint(item,0));
                         pubkey = jbits256(item,"pubkey");
                         if ( bits256_cmp(pubkey,LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
                         {
