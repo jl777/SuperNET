@@ -46,7 +46,7 @@ int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
     }
     if ( (sentbytes= nn_send(sock,msg,sendlen,0)) != sendlen )
         printf("LP_send sent %d instead of %d\n",sentbytes,sendlen);
-    //else printf("SENT.(%s)\n",msg);
+    else printf("SENT.(%s)\n",msg);
     if ( freeflag != 0 )
         free(msg);
     return(sentbytes);

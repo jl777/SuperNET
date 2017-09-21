@@ -767,6 +767,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         bits256 zero;
                         memset(&zero,0,sizeof(zero));
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg); //butxo->S.otherpubkey
+                        _LP_send(pubsock,msg,(int32_t)strlen(msg)+1,0);
                     }
                     butxo->T.lasttime = (uint32_t)time(NULL);
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
