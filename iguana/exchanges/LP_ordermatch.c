@@ -353,6 +353,7 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
     msg = jprint(reqjson,1);
     printf("QUERY.(%s)\n",msg);
     LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
+    LP_broadcast_message(-1,qp->srccoin,qp->destcoin,qp->srchash,msg);
     for (i=0; i<30; i++)
     {
         if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )
