@@ -565,7 +565,7 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
             numconfirms = (LP_getheight(coin) - ht);
         else if ( mempool != 0 )
         {
-            if (LP_waitmempool(symbol,coinaddr,txid,30) >= 0 )
+            if (LP_waitmempool(symbol,coinaddr,txid,vout,30) >= 0 )
                 numconfirms = 0;
         }
     }

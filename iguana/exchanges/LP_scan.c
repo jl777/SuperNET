@@ -436,9 +436,9 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
     return(-1);
 }
 
-int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t duration)
+int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration)
 {
-    struct iguana_info *coin; struct LP_transaction *tx; cJSON *array,*item; uint32_t expiration,i,n;
+    struct iguana_info *coin; cJSON *array,*item; uint32_t expiration,i,n;
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
     {
         printf("LP_waitmempool missing coin.%p or inactive\n",coin);
@@ -454,10 +454,13 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t duration
         }
         else
         {
-            if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->height >= 0 )
+            LP_listunspent_issue(coin->symbol,coinaddr);
+            struct LP_address_utxo *up;
+            if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
+            //if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->height > 0 )
             {
-                char str[65]; printf("LP_waitmempool found confirmed %s %s\n",symbol,bits256_str(str,txid));
-                return(tx->height);
+                char str[65]; printf("address_utxofind found confirmed %s %s ht.%d vs %d\n",symbol,bits256_str(str,txid),up->U.height,coin->height);
+                return(coin->height - up->U.height);
             }
             if ( (array= electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr)) != 0 )
             {
