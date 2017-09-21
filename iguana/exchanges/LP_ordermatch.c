@@ -456,7 +456,10 @@ struct LP_utxoinfo *LP_butxo_add(struct LP_utxoinfo *butxo)
         {
             utxo = &BUTXOS[i];
             if ( memcmp(&zeroes,utxo,sizeof(*utxo)) == 0 )
+            {
                 *utxo = *butxo;
+                break;
+            }
         }
     }
     portable_mutex_unlock(&LP_butxomutex);
@@ -771,6 +774,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         bits256 zero;
                         memset(&zero,0,sizeof(zero));
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg);//butxo->S.otherpubkey,msg);
+                        printf("return after RESERVED\n");
                         LP_butxo_swapfields_set(butxo);
                         printf("return after RESERVED\n");
                         return(0);
