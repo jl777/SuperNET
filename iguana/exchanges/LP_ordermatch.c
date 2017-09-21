@@ -485,7 +485,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
                         utxo->deposit.txid = up2->U.txid;
                         utxo->deposit.vout = up2->U.vout;
                         utxo->deposit.value = up2->U.value;
-                        utxo->S.satoshis = SATOSHIDEN * ((volume + dstr(desttxfee)) / price);
+                        utxo->S.satoshis = SATOSHIDEN * (volume / price);
                         return(utxo);
                     }
                 }
@@ -923,12 +923,12 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                                 //printf("%s minvol %.8f %.8f maxvol %.8f\n",jprint(item,0),minvol,relvolume,maxvol);
                                 //if ( relvolume >= minvol && relvolume <= maxvol )
                                 {
-                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,basecoin,coinaddr,txfee,dstr(bestutxo->S.satoshis * price - desttxfee),price,0,desttxfee)) != 0 )
+                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,basecoin,coinaddr,txfee,dstr(autxo->S.satoshis),price,0,desttxfee)) != 0 )
                                     {
                                         bestutxo->pubkey = pubp->pubkey;
                                         safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
-                                        autxo->S.satoshis = bestutxo->S.satoshis * price - desttxfee;
-                                        *bestsatoshisp = bestutxo->S.satoshis - txfee;
+                                        //autxo->S.satoshis = bestutxo->S.satoshis * price - desttxfee;
+                                        *bestsatoshisp = bestutxo->S.satoshis;
                                         *ordermatchpricep = price;
                                         *bestdestsatoshisp = autxo->S.satoshis;
                                         printf("ordermatch %.8f %.8f %.8f txfees (%.8f %.8f)\n",price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp),dstr(txfee),dstr(desttxfee));

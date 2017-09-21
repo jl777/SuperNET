@@ -290,7 +290,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
             continue;
         if ( LP_isavailable(utxo) > 0 && LP_ismine(utxo) > 0 )
         {
-            if ( utxo->S.satoshis >= destsatoshis/2 && (bestutxo == 0 || (bestutxo->S.satoshis < destsatoshis && utxo->S.satoshis >= destsatoshis) || (bestutxo->S.satoshis >= destsatoshis && utxo->S.satoshis < bestutxo->S.satoshis)) )
+            if ( utxo->S.satoshis >= destsatoshis && (bestutxo == 0 || (bestutxo->S.satoshis < destsatoshis && utxo->S.satoshis >= destsatoshis) || (bestutxo->S.satoshis >= destsatoshis && utxo->S.satoshis < bestutxo->S.satoshis)) )
             {
                 if ( LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout) == 0 )
                 {
