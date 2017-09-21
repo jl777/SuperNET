@@ -175,7 +175,10 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0;
     //printf("%s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
-    if ( (ap= _LP_address(coin,coinaddr)) != 0 )
+    if ( spendheight > 0 ) // dont autocreate entries for spends we dont care about
+        ap = LP_addressfind(coin,coinaddr);
+    else ap = LP_address(coin,coinaddr);
+    if ( ap != 0 )
     {
         flag = 0;
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
