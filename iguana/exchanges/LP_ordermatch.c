@@ -724,14 +724,14 @@ char *LP_connectedalice(cJSON *argjson) // alice
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
-    char *method,*msg; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
+    char *method,*msg; cJSON *retjson,*array; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t n,retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
         printf("LP_tradecommand: check received %s\n",method);
         retval = 1;
         if ( LP_quoteparse(&Q,argjson) == 0 && bits256_cmp(LP_mypub25519,Q.srchash) == 0 && bits256_cmp(LP_mypub25519,Q.desthash) != 0 )
         {
-            if ( (price= LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin)) <= SMALLVAL || ask <= SMALLVAL )
+            if ( (coin= LP_coinfind(Q.srccoin)) == 0 || (price= LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin)) <= SMALLVAL || ask <= SMALLVAL )
             {
                 printf("this node has no price for %s/%s\n",Q.srccoin,Q.destcoin);
                 return(-3);
@@ -743,6 +743,14 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             if ( strcmp(method,"request") == 0 )
             {
                 //utxos = calloc(max,sizeof(*utxos));
+                if ( coin->electrum != 0 )
+                {
+                    if ( (array= LP_listunspent(coin->symbol,Q.coinaddr)) != 0 )
+                    {
+                        n = cJSON_GetArraySize(array);
+                        free_json(array);
+                    } else n = 0;
+                } else n = LP_listunspent_issue(coin->symbol,Q.coinaddr);
                 butxo = LP_address_utxopair(butxo,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,1,Q.desttxfee);
                 //free(utxos), utxos = 0;
             }

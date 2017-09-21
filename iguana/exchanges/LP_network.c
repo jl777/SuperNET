@@ -162,7 +162,7 @@ void queue_loop(void *ignore)
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
                     else flag = 1;
-                } else printf("sock not ready to send.%d\n",ptr->msglen);
+                } //else printf("sock not ready to send.%d\n",ptr->msglen);
             }
             else if ( time(NULL) > ptr->starttime+13 )
             {
