@@ -712,7 +712,6 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         retval = 1;
         if ( LP_quoteparse(&Q,argjson) == 0 && bits256_cmp(LP_mypub25519,Q.srchash) == 0 && bits256_cmp(LP_mypub25519,Q.desthash) != 0 )
         {
-            printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
             if ( (price= LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin)) <= SMALLVAL || ask <= SMALLVAL )
             {
                 printf("this node has no price for %s/%s\n",Q.srccoin,Q.destcoin);
@@ -733,6 +732,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 char str[65]; printf("couldnt find bob utxos for autxo %s/v%d %.8f\n",bits256_str(str,autxo->payment.txid),autxo->payment.vout,dstr(autxo->S.satoshis));
                 return(-44);
             }
+            printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
             Q.txid = butxo->payment.txid;
             Q.vout = butxo->payment.vout;
             Q.txid2 = butxo->deposit.txid;
@@ -772,7 +772,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         //memset(&zero,0,sizeof(zero));
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
                         LP_butxo_swapfields_set(butxo);
-                        return(2);
+                        return(0);
                     }
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
             }
@@ -784,7 +784,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     // validate SPV alice
                     LP_connectstartbob(ctx,pubsock,butxo,argjson,Q.srccoin,Q.destcoin,qprice,&Q);
                     LP_butxo_swapfields_set(butxo);
-                    return(3);
+                    return(0);
                 }
                 else printf("pend.%u swap %p when connect came in (%s)\n",butxo->T.swappending,butxo->S.swap,jprint(argjson,0));
             }

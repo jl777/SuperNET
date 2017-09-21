@@ -207,6 +207,8 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                 {
                 }
+                if ( jobj(argjson,"method") != 0 && strncmp(jstr(argjson,"method"),"connect",7) == 0 )
+                    fprintf(stderr,"finished %s\n",jsonstr);
                 free_json(argjson);
             }
         }
@@ -320,9 +322,13 @@ void command_rpcloop(void *myipaddr)
         {
             if ( peer->errors >= LP_MAXPEER_ERRORS )
             {
-                if ( (rand() % 10000) == 0 )
+                if ( (rand() % 100) == 0 )
                     peer->errors--;
-                else continue;
+                else
+                {
+                    printf("skip %s\n",peer->ipaddr);
+                    continue;
+                }
             }
             //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
             nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr);
