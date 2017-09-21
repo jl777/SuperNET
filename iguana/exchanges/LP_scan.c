@@ -438,7 +438,7 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
 
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration)
 {
-    struct iguana_info *coin; cJSON *array,*item; uint32_t expiration,i,n;
+    struct iguana_info *coin; cJSON *array,*item; uint32_t expiration,i,n,numconfirms = -1;
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
     {
         printf("LP_waitmempool missing coin.%p or inactive\n",coin);
@@ -454,14 +454,6 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
         }
         else
         {
-            LP_listunspent_issue(coin->symbol,coinaddr);
-            struct LP_address_utxo *up;
-            if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
-            //if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->height > 0 )
-            {
-                char str[65]; printf("address_utxofind found confirmed %s %s ht.%d vs %d\n",symbol,bits256_str(str,txid),up->U.height,coin->height);
-                return(coin->height - up->U.height);
-            }
             if ( (array= electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr)) != 0 )
             {
                 char str[65]; printf("check %s mempool.(%s)\n",bits256_str(str,txid),jprint(array,0));
@@ -472,20 +464,29 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
                         item = jitem(array,i);
                         if ( bits256_cmp(txid,jbits256(item,"tx_hash")) == 0 )
                         {
-                            free(array);
                             char str[65]; printf("found %s %s in mempool\n",symbol,bits256_str(str,txid));
-                            return(0);
+                            numconfirms = 0;
+                            break;
                         }
                     }
                 }
                 free(array);
             }
+            LP_listunspent_issue(coin->symbol,coinaddr);
+            struct LP_address_utxo *up;
+            if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
+            //if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->height > 0 )
+            {
+                char str[65]; printf("address_utxofind found confirmed %s %s ht.%d vs %d\n",symbol,bits256_str(str,txid),up->U.height,coin->height);
+                if ( coin->height >= up->U.height )
+                    numconfirms = (coin->height - up->U.height + 1);
+            }
         }
-        if ( time(NULL) > expiration )
+        if ( time(NULL) > expiration || numconfirms >= 1 )
             break;
         usleep(500000);
     }
-    return(-1);
+    return(numconfirms);
 }
 
 int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,char *coinaddr,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
