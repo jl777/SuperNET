@@ -278,7 +278,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-                printf("received %d\n",recvlen);
+                fprintf(stderr,"%d ",recvlen);
                 nonz++;
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
@@ -333,8 +333,8 @@ void command_rpcloop(void *myipaddr)
             if ( coin->bussock >= 0 )
                 nonz += LP_sock_check(coin->symbol,ctx,origipaddr,-1,coin->bussock,LP_profitratio - 1.);
         }*/
-        if ( LP_mypullsock >= 0 )
-            nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1");
+        //if ( LP_mypullsock >= 0 )
+        //    nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1");
         //if ( LP_mybussock >= 0 )
         //    nonz += LP_sock_check("BUS",ctx,origipaddr,-1,LP_mybussock);
         if ( nonz == 0 )
@@ -725,10 +725,16 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
     //if ( (retstr= basilisk_swapentry(0,0)) != 0 )
     //    free(retstr);
+    int32_t nonz;
     while ( 1 )
     {
+        nonz = 0;
         //fprintf(stderr,".");
-        if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport,passphrase) == 0 )
+        if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport,passphrase) != 0 )
+            nonz++;
+        if ( LP_mypullsock >= 0 )
+            nonz += LP_sock_check("SUB",ctx,myipaddr,-1,LP_mypullsock,"127.0.0.1");
+        if ( nonz == 0 )
             usleep(1000000 / MAINLOOP_PERSEC);
     }
 }
