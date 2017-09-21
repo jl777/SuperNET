@@ -290,21 +290,26 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
         if ( strcmp(autxo->coinaddr,qp->destaddr) != 0 )
             return(-10);
     }
-    if ( destvalue < qp->desttxfee+qp->destsatoshis || srcvalue < qp->txfee+qp->satoshis )
+    if ( (autxo != 0 && destvalue < qp->desttxfee+qp->destsatoshis) || (butxo != 0 && srcvalue < qp->txfee+qp->satoshis) )
     {
         printf("destvalue %.8f srcvalue %.8f, destsatoshis %.8f or satoshis %.8f is too small txfees %.8f %.8f?\n",dstr(destvalue),dstr(srcvalue),dstr(qp->destsatoshis),dstr(qp->satoshis),dstr(qp->desttxfee),dstr(qp->txfee));
         return(-11);
     }
     if ( qp->satoshis != 0 )
-    {
         qprice = ((double)qp->destsatoshis / qp->satoshis);
+    LP_txfees(&txfee,&desttxfee,qp->srccoin,qp->destcoin);
+    printf("qprice %.8f <- %.8f/%.8f txfees.(%.8f %.8f) vs (%.8f %.8f)\n",qprice,dstr(qp->destsatoshis),dstr(qp->satoshis),dstr(qp->txfee),dstr(qp->desttxfee),dstr(txfee),dstr(desttxfee));
+    if ( qp->txfee < LP_REQUIRED_TXFEE*txfee || qp->desttxfee < LP_REQUIRED_TXFEE*desttxfee )
+        return(-14);
+    if ( butxo != 0 )
+    {
         if ( qp->satoshis < (srcvalue / LP_MINVOL) || srcvalue < qp->txfee*LP_MINSIZE_TXFEEMULT )
         {
             printf("utxo payment %.8f is less than %f covered by Q %.8f or <10x txfee %.8f\n",dstr(srcvalue),1./LP_MINVOL,dstr(qp->satoshis),dstr(qp->txfee));
             return(-12);
         }
     }
-    if ( qp->destsatoshis != 0 )
+    if ( autxo != 0 )
     {
         if ( qp->destsatoshis < (destvalue / LP_MINCLIENTVOL) || destvalue < qp->desttxfee*LP_MINSIZE_TXFEEMULT )
         {
@@ -312,10 +317,6 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
             return(-13);
         }
     }
-    LP_txfees(&txfee,&desttxfee,qp->srccoin,qp->destcoin);
-    printf("qprice %.8f <- %.8f/%.8f txfees.(%.8f %.8f) vs (%.8f %.8f)\n",qprice,dstr(qp->destsatoshis),dstr(qp->satoshis),dstr(qp->txfee),dstr(qp->desttxfee),dstr(txfee),dstr(desttxfee));
-    if ( qp->txfee < LP_REQUIRED_TXFEE*txfee || qp->desttxfee < LP_REQUIRED_TXFEE*desttxfee )
-        return(-14);
     return(qprice);
 }
 

@@ -305,12 +305,12 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
     return(ep);
 }
 
-int32_t electrum_process_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
+int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep,char *coinaddr,cJSON *array)
 {
     int32_t i,v,n,flag = 0; char str[65]; uint64_t value; bits256 txid; cJSON *item,*txobj; struct LP_transaction *tx;
     if ( array != 0 && coin != 0 && (n= cJSON_GetArraySize(array)) > 0 )
     {
-        printf("PROCESS %s %s num.%d\n",coin->symbol,coinaddr,n);
+        printf("PROCESS %s/%s %s num.%d\n",coin->symbol,ep!=0?ep->symbol:"nanolistunspent",coinaddr,n);
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
@@ -451,7 +451,7 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
     cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
     retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_history",addr,ELECTRUM_TIMEOUT);
     printf("history.(%s)\n",jprint(retjson,0));
-    electrum_process_array(coin,addr,retjson);
+    electrum_process_array(coin,ep,addr,retjson);
     return(retjson);
 }
 
@@ -460,7 +460,7 @@ cJSON *electrum_address_getmempool(char *symbol,struct electrum_info *ep,cJSON *
     cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
     retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_mempool",addr,ELECTRUM_TIMEOUT);
     //printf("MEMPOOL.(%s)\n",jprint(retjson,0));
-    electrum_process_array(coin,addr,retjson);
+    electrum_process_array(coin,ep,addr,retjson);
     return(retjson);
 }
 
@@ -472,7 +472,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            if ( electrum_process_array(coin,addr,retjson) != 0 )
+            if ( electrum_process_array(coin,ep,addr,retjson) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
             coin->unspenttime = (uint32_t)time(NULL);
