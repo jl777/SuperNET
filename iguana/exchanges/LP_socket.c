@@ -759,7 +759,7 @@ void LP_dedicatedloop(void *arg)
     if ( coin->electrum == ep )
     {
         coin->electrum = ep->prev;
-        printf("set %s electrum to %s\n",coin->symbol,coin->electrum);
+        printf("set %s electrum to %p\n",coin->symbol,coin->electrum);
     } else printf("backup electrum server closing\n");
     printf(">>>>>>>>>> electrum close %s:%u\n",ep->ipaddr,ep->port);
     if ( Num_electrums > 0 )
