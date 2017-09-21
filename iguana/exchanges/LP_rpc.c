@@ -503,18 +503,20 @@ void LP_listunspent_issue(char *symbol,char *coinaddr)
             retjson = electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr);
         else
         {
-            if ( (destport= LP_randpeer(destip)) > 0 )
+            if ( strcmp(coin->smartaddr,coinaddr) == 0 )
+            {
+                retjson = LP_listunspent(symbol,coinaddr);
+                printf("SELF_LISTUNSPENT.(%s %s)\n",symbol,coinaddr);
+            }
+            else if ( (destport= LP_randpeer(destip)) > 0 )
             {
                 retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
-                if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-                    if ( electrum_process_array(coin,0,coinaddr,retjson) != 0 )
-                    {
-                        printf("PROCESS INTERNAL.(%s)\n",coin->symbol);
-                        LP_postutxos(symbol,coinaddr); // might be good to not saturate
-                    }
-                }
-                //printf("rand %s listunspent.(%s) to %s:%u -> %s\n",symbol,coinaddr,destip,destport,retstr);
+                retjson = cJSON_Parse(retstr);
+            }
+            if ( retjson != 0 )
+            {
+                if ( electrum_process_array(coin,0,coinaddr,retjson) != 0 )
+                    LP_postutxos(symbol,coinaddr); // might be good to not saturate
             }
         }
         if ( retjson != 0 )
