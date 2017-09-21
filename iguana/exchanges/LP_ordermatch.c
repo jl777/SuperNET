@@ -705,10 +705,11 @@ char *LP_connectedalice(cJSON *argjson) // alice
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
-    char *method,*msg; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct LP_address_utxo **utxos; struct LP_quoteinfo Q; int32_t retval = -1,max=10000;
+    char *method,*msg; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
-        retval = 1;
+        printf("LP_tradecommand: check received %s\n",method);
+        //retval = 1;
         if ( LP_quoteparse(&Q,argjson) == 0 && bits256_cmp(LP_mypub25519,Q.srchash) == 0 && bits256_cmp(LP_mypub25519,Q.desthash) != 0 )
         {
             printf("TRADECOMMAND.(%s)\n",jprint(argjson,0));
@@ -723,9 +724,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             LP_abutxo_set(autxo,0,&Q);
             if ( strcmp(method,"request") == 0 )
             {
-                utxos = calloc(max,sizeof(*utxos));
+                //utxos = calloc(max,sizeof(*utxos));
                 butxo = LP_address_utxopair(butxo,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,1);
-                free(utxos);
+                //free(utxos), utxos = 0;
             }
             if ( butxo == 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 || butxo->payment.vout < 0 || butxo->deposit.vout < 0 )
             {
@@ -767,10 +768,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     butxo->T.lasttime = (uint32_t)time(NULL);
                     printf("set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
                     {
-                        bits256 zero;
-                        memset(&zero,0,sizeof(zero));
-                        //_LP_send(pubsock,msg,(int32_t)strlen(msg)+1,0);
-                        //LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg); //butxo->S.otherpubkey
+                        //bits256 zero;
+                        //memset(&zero,0,sizeof(zero));
+                        LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
                         LP_butxo_swapfields_set(butxo);
                         return(1);
                     }
@@ -788,10 +788,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 }
                 else printf("pend.%u swap %p when connect came in (%s)\n",butxo->T.swappending,butxo->S.swap,jprint(argjson,0));
             }
+            LP_butxo_swapfields_set(butxo);
         }
     }
-    if ( method != 0 )
-        printf("LP_tradecommand: check received %s\n",method);
     return(retval);
 }
 
