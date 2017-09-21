@@ -541,7 +541,10 @@ void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo)
 {
     struct LP_utxoinfo *setutxo;
     if ( (setutxo= LP_butxo_add(butxo)) != 0 )
+    {
         LP_butxo_swapfields_copy(setutxo,butxo);
+        printf("LP_butxo_swapfields_copy set\n");
+    }
 }
 
 void LP_abutxo_set(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP_quoteinfo *qp)
@@ -766,8 +769,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     {
                         bits256 zero;
                         memset(&zero,0,sizeof(zero));
-                        //_LP_send(pubsock,msg,(int32_t)strlen(msg)+1,0);
-                        LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg); //butxo->S.otherpubkey
+                        _LP_send(pubsock,msg,(int32_t)strlen(msg)+1,0);
+                        //LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg); //butxo->S.otherpubkey
                     }
                     butxo->T.lasttime = (uint32_t)time(NULL);
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
