@@ -334,7 +334,7 @@ int32_t LP_arrayfind(cJSON *array,bits256 txid,int32_t vout)
 
 double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_quoteinfo *qp)
 {
-    cJSON *reqjson; char *msg,*msg2; int32_t i,flag = 0; double price = 0.; struct LP_utxoinfo *utxo;
+    cJSON *reqjson; bits256 zero; char *msg,*msg2; int32_t i,flag = 0; double price = 0.; struct LP_utxoinfo *utxo;
     if ( strcmp(method,"request") == 0 )
     {
         if ( (utxo= LP_utxofind(0,qp->desttxid,qp->destvout)) != 0 && LP_ismine(utxo) > 0 && LP_isavailable(utxo) > 0 )
@@ -354,7 +354,8 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
     msg2 = clonestr(msg);
     printf("QUERY.(%s)\n",msg);
     LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
-    LP_broadcast_message(-1,qp->srccoin,qp->destcoin,qp->srchash,msg2);
+    memset(&zero,0,sizeof(zero));
+    LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg2);
     for (i=0; i<30; i++)
     {
         if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )

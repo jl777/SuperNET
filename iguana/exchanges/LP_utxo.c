@@ -81,7 +81,7 @@ struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
     struct LP_address *ap;
     ap = calloc(1,sizeof(*ap));
     safecopy(ap->coinaddr,coinaddr,sizeof(ap->coinaddr));
-    printf("LP_ADDRESS %s ADD.(%s)\n",coin->symbol,coinaddr);
+    //printf("LP_ADDRESS %s ADD.(%s)\n",coin->symbol,coinaddr);
     HASH_ADD_KEYPTR(hh,coin->addresses,ap->coinaddr,strlen(ap->coinaddr),ap);
     return(ap);
 }
