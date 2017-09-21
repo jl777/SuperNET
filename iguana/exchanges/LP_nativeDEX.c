@@ -202,7 +202,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
-                if ( jobj(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"postprice") != 0 )
+                if ( jobj(argjson,"method") != 0 && strcmp(jstr(argjson,"method"),"connect") == 0 )
                     fprintf(stderr,"%s ",jstr(argjson,"method"));
                 if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                 {
@@ -280,8 +280,8 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-                if ( recvlen > 1500 )
-                    fprintf(stderr,"%d ",recvlen);
+                //if ( recvlen > 1500 )
+                //    fprintf(stderr,"%d ",recvlen);
                 nonz++;
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
@@ -732,7 +732,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     while ( 1 )
     {
         nonz = 0;
-        //fprintf(stderr,".");
+        fprintf(stderr,".");
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport,passphrase) != 0 )
             nonz++;
         if ( LP_mypullsock >= 0 )

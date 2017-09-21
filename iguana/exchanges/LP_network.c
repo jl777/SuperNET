@@ -199,7 +199,7 @@ void queue_loop(void *ignore)
         //if ( n != 0 )
         //    printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
-            usleep(500000);
+            usleep(50000);
     }
 }
 
