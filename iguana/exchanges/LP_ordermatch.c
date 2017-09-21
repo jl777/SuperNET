@@ -772,6 +772,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         //memset(&zero,0,sizeof(zero));
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
                         LP_butxo_swapfields_set(butxo);
+                        printf("return after RESERVED\n");
                         return(0);
                     }
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
