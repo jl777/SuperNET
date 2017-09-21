@@ -429,43 +429,6 @@ int32_t LP_butxo_findeither(bits256 txid,int32_t vout)
     return(retval);
 }
 
-struct LP_utxoinfo *LP_butxo_find(struct LP_utxoinfo *butxo)
-{
-    int32_t i; struct LP_utxoinfo *utxo=0; uint32_t now = (uint32_t)time(NULL);
-    portable_mutex_lock(&LP_butxomutex);
-    for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
-    {
-        utxo = &BUTXOS[i];
-        if ( butxo->payment.vout == utxo->payment.vout && butxo->deposit.vout == utxo->deposit.vout && bits256_nonz(butxo->payment.txid) != 0 && bits256_nonz(butxo->deposit.txid) != 0 && bits256_cmp(butxo->payment.txid,utxo->payment.txid) == 0 && bits256_cmp(butxo->deposit.txid,utxo->deposit.txid) == 0 )
-            break;
-        if ( utxo->S.swap == 0 && now > utxo->T.swappending )
-            memset(utxo,0,sizeof(*utxo));
-    }
-    portable_mutex_unlock(&LP_butxomutex);
-    return(utxo);
-}
-
-struct LP_utxoinfo *LP_butxo_add(struct LP_utxoinfo *butxo)
-{
-    static struct LP_utxoinfo zeroes;
-    int32_t i; struct LP_utxoinfo *utxo=0;
-    portable_mutex_lock(&LP_butxomutex);
-    if ( (utxo= LP_butxo_find(butxo)) == 0 )
-    {
-        for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
-        {
-            utxo = &BUTXOS[i];
-            if ( memcmp(&zeroes,utxo,sizeof(*utxo)) == 0 )
-            {
-                *utxo = *butxo;
-                break;
-            }
-        }
-    }
-    portable_mutex_unlock(&LP_butxomutex);
-    return(utxo);
-}
-
 int32_t LP_nearest_utxovalue(struct LP_address_utxo **utxos,int32_t n,uint64_t targetval)
 {
     int32_t i,mini = -1; int64_t dist; uint64_t mindist = (1LL << 60);
@@ -525,6 +488,45 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
         }
     }
     return(0);
+}
+
+struct LP_utxoinfo *LP_butxo_find(struct LP_utxoinfo *butxo)
+{
+    int32_t i; struct LP_utxoinfo *utxo=0; uint32_t now = (uint32_t)time(NULL);
+    portable_mutex_lock(&LP_butxomutex);
+    for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
+    {
+        utxo = &BUTXOS[i];
+        if ( butxo->payment.vout == utxo->payment.vout && butxo->deposit.vout == utxo->deposit.vout && bits256_nonz(butxo->payment.txid) != 0 && bits256_nonz(butxo->deposit.txid) != 0 && bits256_cmp(butxo->payment.txid,utxo->payment.txid) == 0 && bits256_cmp(butxo->deposit.txid,utxo->deposit.txid) == 0 )
+            break;
+        if ( utxo->S.swap == 0 && now > utxo->T.swappending )
+            memset(utxo,0,sizeof(*utxo));
+        utxo = 0;
+    }
+    portable_mutex_unlock(&LP_butxomutex);
+    return(utxo);
+}
+
+struct LP_utxoinfo *LP_butxo_add(struct LP_utxoinfo *butxo)
+{
+    static struct LP_utxoinfo zeroes;
+    int32_t i; struct LP_utxoinfo *utxo=0;
+    portable_mutex_lock(&LP_butxomutex);
+    if ( (utxo= LP_butxo_find(butxo)) == 0 )
+    {
+        for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
+        {
+            utxo = &BUTXOS[i];
+            if ( memcmp(&zeroes,utxo,sizeof(*utxo)) == 0 )
+            {
+                *utxo = *butxo;
+                break;
+            }
+            utxo = 0;
+        }
+    }
+    portable_mutex_unlock(&LP_butxomutex);
+    return(utxo);
 }
 
 void LP_butxo_swapfields_copy(struct LP_utxoinfo *destutxo,struct LP_utxoinfo *srcutxo)
