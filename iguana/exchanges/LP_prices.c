@@ -287,7 +287,7 @@ void LP_peer_pricesquery(struct LP_peerinfo *peer)
     }
     if ( peer->needping != 0 )
     {
-        printf("%s needs ping\n",peer->ipaddr);
+        //printf("%s needs ping\n",peer->ipaddr);
     }
 }
 

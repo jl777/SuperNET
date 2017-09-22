@@ -66,7 +66,7 @@ char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,
     if ( rmd160str != 0 && bits256_nonz(pub) != 0 )
     {
         sprintf(url+strlen(url),"&rmd160=%s&pub=%s",rmd160str,bits256_str(str,pub));
-        printf("SEND (%s)\n",url);
+        //printf("SEND (%s)\n",url);
     }
     return(LP_issue_curl("notify",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
