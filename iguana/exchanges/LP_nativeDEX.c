@@ -343,23 +343,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                         free(retstr);
                     peer->needping = 0;
                 }
-                HASH_ITER(hh,LP_coins,coin,ctmp)
-                {
-                    char coinaddr[64]; cJSON *array; int32_t n;
-                    bitcoin_address(coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,sizeof(G.LP_myrmd160));
-                    if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
-                    {
-                        if ( (n= cJSON_GetArraySize(array)) > 0 )
-                        {
-                            if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coinaddr)) != 0 )
-                            {
-                                printf("compare (%s) vs (%s)\n",jprint(array,0),retstr);
-                                free(retstr);
-                            }
-                        }
-                        free_json(array);
-                    }
-                //sync listunspent,, spv
+                 //sync listunspent,, spv
             }
         }
         if ( peer->diduquery == 0 )
@@ -374,8 +358,27 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        int32_t height; bits256 zero; //struct LP_address *ap,*atmp; struct LP_address_utxo *up,*utmp;
-        //printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
+        int32_t height; bits256 zero; char coinaddr[64]; cJSON *array; int32_t n;
+        bitcoin_address(coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,sizeof(G.LP_myrmd160));
+        LP_listunspent_both(coin->symbol,coinaddr);
+        if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                HASH_ITER(hh,LP_peerinfos,peer,tmp)
+                {
+                    if ( peer->errors < LP_MAXPEER_ERRORS )
+                    {
+                        if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coinaddr)) != 0 )
+                        {
+                            printf(">>>>>>>> compare (%s) vs (%s)\n",jprint(array,0),retstr);
+                            free(retstr);
+                        }
+                    }
+                }
+            }
+            free_json(array);
+        }
         if ( coin->inactive != 0 )
             continue;
         if ( coin->electrum != 0 )
