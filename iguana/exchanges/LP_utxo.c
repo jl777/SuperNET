@@ -464,7 +464,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
         // maybe filter so only addresses we care about are using RAM
         if ( iter == 0 && vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins)) != 0 )
         {
-            //printf("create txid numvouts.%d numvins.%d\n",numvouts,numvins);
+            printf("create txid %s numvouts.%d numvins.%d\n",bits256_str(str,txid),numvouts,numvins);
             for (i=0; i<numvouts; i++)
             {
                 vout = jitem(vouts,i);
