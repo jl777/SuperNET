@@ -157,7 +157,7 @@ void LP_availableset(struct LP_utxoinfo *utxo)
 cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
 {
     struct _LP_utxoinfo u;
-    jaddstr(item,"method","oldutxo");
+    //jaddstr(item,"method","oldutxo");
     if ( utxo == 0 )
         return(item);
     if ( utxo->gui[0] != 0 )
