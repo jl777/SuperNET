@@ -491,8 +491,7 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
                     if ( (tx= LP_transactionfind(coin,txid)) != 0 )
                     {
                         tx->height = height;
-                        //for (j=0; j<tx->numvouts; j++)
-                        //    LP_address_utxoadd(coin,coinaddr,txid,j,0,height,-1);
+                        LP_address_utxoadd(coin,addr,txid,0,0,height,-1);
                     }
                 }
             }

@@ -481,7 +481,9 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
             struct LP_address_utxo *up;
             if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
             {
-                char str[65]; printf("address_utxofind found confirmed %s %s ht.%d vs %d\n",symbol,bits256_str(str,txid),up->U.height,coin->height);
+                char str[65]; printf("address_utxofind found confirmed %s %s %s ht.%d vs %d\n",symbol,coinaddr,bits256_str(str,txid),up->U.height,coin->height);
+                if ( coin->electrum != 0 && (array= electrum_address_gethistory(symbol,coin->electrum,&array,coinaddr)) != 0 )
+                    free_json(array);
                 if ( coin->height >= up->U.height )
                     numconfirms = (coin->height - up->U.height + 1);
             }
