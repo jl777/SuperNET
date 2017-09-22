@@ -167,7 +167,13 @@ dividends(coin, height, <args>)\n\
         {
             if ( LP_passphrase_init(jstr(argjson,"passphrase")) < 0 )
                 return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
-            else return(clonestr("{\"result\":\"success\"}"));
+            {
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"userpass",G.USERPASS);
+                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+                return(jprint(retjson,1));
+            }
         }
         else if ( strcmp(method,"portfolio") == 0 )
         {
