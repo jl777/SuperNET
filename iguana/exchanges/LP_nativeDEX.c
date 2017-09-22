@@ -343,7 +343,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                         free(retstr);
                     peer->needping = 0;
                 }
-                 //sync listunspent,, spv
             }
         }
         if ( peer->diduquery == 0 )
@@ -358,20 +357,20 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        int32_t height; bits256 zero; char coinaddr[64]; cJSON *array; int32_t n;
-        bitcoin_address(coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,sizeof(G.LP_myrmd160));
-        LP_listunspent_both(coin->symbol,coinaddr);
-        if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
+        int32_t height; bits256 zero; cJSON *array; int32_t n;
+        LP_listunspent_both(coin->symbol,coin->smartaddr);
+        if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
+                printf("[%s]\n\n",jprint(array,0));
                 HASH_ITER(hh,LP_peerinfos,peer,tmp)
                 {
                     if ( peer->errors < LP_MAXPEER_ERRORS )
                     {
-                        if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coinaddr)) != 0 )
+                        if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
                         {
-                            printf(">>>>>>>> compare (%s) vs (%s)\n",jprint(array,0),retstr);
+                            printf(">>>>>>>> compare %s %s (%s)\n",coin->symbol,coin->smartaddr,retstr);
                             free(retstr);
                         }
                     }
