@@ -755,7 +755,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr)
                 }
             }
         }
-    } else printf("%s coin.%p inactive.%d\n",symbol,coin,coin!=0?coin->inactive:-1);
+    } //else printf("%s coin.%p inactive.%d\n",symbol,coin,coin!=0?coin->inactive:-1);
     return(n);
 }
 

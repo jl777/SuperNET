@@ -194,7 +194,7 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
                     up->spendheight = spendheight, flag |= 4;
                 if ( up->U.value == 0 && up->U.value != value )
                     up->U.value = value, flag |= 8;
-                printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
+                //printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
                 break;
             }
         }
@@ -210,10 +210,10 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             DL_APPEND(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);
             retval = 1;
-            if ( height > 0 )
+            if ( 0 && height > 0 )
                 printf("ADDRESS_UTXO >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
-    } else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
+    } // else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
     //printf("done %s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
     return(retval);
 }
@@ -464,7 +464,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
         // maybe filter so only addresses we care about are using RAM
         if ( iter == 0 && vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins)) != 0 )
         {
-            printf("create txid %s numvouts.%d numvins.%d\n",bits256_str(str,txid),numvouts,numvins);
+            //printf("create txid %s numvouts.%d numvins.%d\n",bits256_str(str,txid),numvouts,numvins);
             for (i=0; i<numvouts; i++)
             {
                 vout = jitem(vouts,i);
