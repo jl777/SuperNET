@@ -733,6 +733,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr)
         }
         else
         {
+            //printf("my coin\n");
             sprintf(buf,"[1, 99999999, [\"%s\"]]",coinaddr);
             if ( (array= bitcoin_json(coin,"listunspent",buf)) != 0 )
             {

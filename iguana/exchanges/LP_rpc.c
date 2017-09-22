@@ -484,7 +484,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
             {
                 retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
                 retjson = cJSON_Parse(retstr);
-            }
+            } else printf("LP_listunspent_issue couldnt get a random peer?\n");
             if ( retjson != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
@@ -492,6 +492,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
                     LP_postutxos(symbol,coinaddr); // might be good to not saturate
             }
         }
+        printf("issue listunspent %s (%s)\n",coinaddr,jprint(retjson,0));
         if ( retjson != 0 )
             free_json(retjson);
         if ( retstr != 0 )
