@@ -415,7 +415,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                                                 post++;
                                             }
                                         }
-                                    }
+                                    } else printf("%s matches\n",peer->ipaddr);
                                     free_json(array2);
                                 }
                                 free(retstr);
