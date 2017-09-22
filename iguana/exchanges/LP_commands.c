@@ -359,6 +359,7 @@ dividends(coin, height, <args>)\n\
             char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
             LP_address_utxoadd(LP_coinfind(coin),coinaddr,txid,vout,value,height,-1);
         }
+        return(clonestr("{\"result\":\"success\"}"));
     }
     else if ( strcmp(method,"orderbook") == 0 )
         return(LP_orderbook(base,rel,jint(argjson,"duration")));
