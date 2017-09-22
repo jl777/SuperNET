@@ -373,7 +373,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                         item = jitem(array,i);
                         total += j64bits(item,"value");
                     }
-                    printf("[%s]\n%s %s %.8f %d\n",jprint(array,0),coin->symbol,coin->smartaddr,dstr(total),n);
+                    //printf("[%s]\n%s %s %.8f %d\n",jprint(array,0),coin->symbol,coin->smartaddr,dstr(total),n);
                     HASH_ITER(hh,LP_peerinfos,peer,tmp)
                     {
                         if ( strcmp(peer->ipaddr,LP_myipaddr) != 0 && peer->errors < LP_MAXPEER_ERRORS )
@@ -393,7 +393,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                                     }
                                     free_json(array2);
                                 }
-                                printf(">>>>>>>> compare %s %s (%.8f n%d) (%.8f m%d)\n",coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
+                                if ( total != total || n != m )
+                                {
+                                    printf(">>>>>>>> compare %s %s (%.8f n%d) (%.8f m%d)\n",coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
+                                    LP_postutxos(coin->symbol,coin->smartaddr);
+                                }
                                 free(retstr);
                             }
                         }
