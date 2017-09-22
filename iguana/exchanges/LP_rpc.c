@@ -436,7 +436,7 @@ int32_t LP_address_ismine(char *symbol,char *address)
         if ( jobj(retjson,"ismine") != 0 && is_cJSON_True(jobj(retjson,"ismine")) != 0 )
         {
             doneflag = 1;
-            printf("%s ismine (%s)\n",address,jprint(retjson,0));
+            //printf("%s ismine (%s)\n",address,jprint(retjson,0));
         }
         //printf("%s\n",jprint(retjson,0));
         free_json(retjson);
