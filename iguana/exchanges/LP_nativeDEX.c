@@ -373,7 +373,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                         item = jitem(array,i);
                         total += j64bits(item,"value");
                     }
-                    //printf("[%s]\n\n",jprint(array,0));
+                    printf("[%s]\n%s %s %.8f %d\n",jprint(array,0),coin->symbol,coin->smartaddr,dstr(total),n);
                     HASH_ITER(hh,LP_peerinfos,peer,tmp)
                     {
                         if ( strcmp(peer->ipaddr,LP_myipaddr) != 0 && peer->errors < LP_MAXPEER_ERRORS )
