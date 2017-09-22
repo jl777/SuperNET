@@ -725,7 +725,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
 int32_t LP_listunspent_both(char *symbol,char *coinaddr)
 {
     int32_t i,v,height,n=0; uint64_t value; bits256 txid; char buf[512]; cJSON *array,*item; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin != 0 )
+    if ( coin != 0 && coin->inactive == 0 )
     {
         if ( coin->electrum != 0 || LP_address_ismine(symbol,coinaddr) < 0 )
         {
@@ -917,7 +917,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
 
 struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,double relvolume,char *gui)
 {
-    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*asks,*item; int32_t i,n,numasks,max = 10000; struct LP_address_utxo **utxos; double price; struct LP_pubkeyinfo *pubp; struct iguana_info *basecoin;
+    bits256 pubkey; char *obookstr,coinaddr[64],str[65]; cJSON *orderbook,*asks,*item; int32_t i,n,numasks,max = 10000; struct LP_address_utxo **utxos; double price; struct LP_pubkeyinfo *pubp; struct iguana_info *basecoin;
     *ordermatchpricep = 0.;
     *bestsatoshisp = *bestdestsatoshisp = 0;
     basecoin = LP_coinfind(base);
@@ -940,32 +940,26 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                     price = jdouble(item,"price");
                     if ( LP_pricevalid(price) > 0 && price <= maxprice )
                     {
-                        printf("%s\n",jprint(item,0));
                         pubkey = jbits256(item,"pubkey");
+                        printf("%s -> %d\n",jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519));
                         if ( bits256_cmp(pubkey,G.LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
                         {
                             bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
                             n = LP_listunspent_both(base,coinaddr);
                             if ( n > 1 )
                             {
-                                //minvol = jdouble(item,"minvolume");
-                                //maxvol = jdouble(item,"maxvolume");
-                                //printf("%s minvol %.8f %.8f maxvol %.8f\n",jprint(item,0),minvol,relvolume,maxvol);
-                                //if ( relvolume >= minvol && relvolume <= maxvol )
+                                if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,basecoin,coinaddr,txfee,dstr(autxo->S.satoshis),price,0,desttxfee)) != 0 )
                                 {
-                                    if ( (bestutxo= LP_address_utxopair(bestutxo,utxos,max,basecoin,coinaddr,txfee,dstr(autxo->S.satoshis),price,0,desttxfee)) != 0 )
-                                    {
-                                        bestutxo->pubkey = pubp->pubkey;
-                                        safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
-                                        //autxo->S.satoshis = bestutxo->S.satoshis * price - desttxfee;
-                                        *bestsatoshisp = bestutxo->S.satoshis;
-                                        *ordermatchpricep = price;
-                                        *bestdestsatoshisp = autxo->S.satoshis;
-                                        printf("ordermatch %.8f %.8f %.8f txfees (%.8f %.8f)\n",price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp),dstr(txfee),dstr(desttxfee));
-                                        break;
-                                    }
+                                    bestutxo->pubkey = pubp->pubkey;
+                                    safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
+                                    //autxo->S.satoshis = bestutxo->S.satoshis * price - desttxfee;
+                                    *bestsatoshisp = bestutxo->S.satoshis;
+                                    *ordermatchpricep = price;
+                                    *bestdestsatoshisp = autxo->S.satoshis;
+                                    printf("ordermatch %.8f %.8f %.8f txfees (%.8f %.8f)\n",price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp),dstr(txfee),dstr(desttxfee));
+                                    break;
                                 }
-                            }
+                            } else printf("no unspents %s\n",bits256_str(str,pubkey));
                         } else printf("self trading or blacklisted peer\n");
                     }
                     else
