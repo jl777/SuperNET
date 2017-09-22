@@ -1527,6 +1527,30 @@ char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t 
     //printf("%s clientgetutxos.(%s)\n",url,retstr);
     //return(retstr);
 }
+void LP_address_monitor(struct LP_pubkeyinfo *pubp)
+{
+    struct iguana_info *coin,*tmp; char coinaddr[64]; cJSON *retjson; struct LP_address *ap;
+    return;
+    HASH_ITER(hh,LP_coins,coin,tmp)
+    {
+        bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
+        portable_mutex_lock(&coin->addrmutex);
+        if ( (ap= _LP_address(coin,coinaddr)) != 0 )
+        {
+            ap->monitor = (uint32_t)time(NULL);
+        }
+        portable_mutex_unlock(&coin->addrmutex);
+        if ( coin->electrum != 0 )
+        {
+            if ( (retjson= electrum_address_subscribe(coin->symbol,coin->electrum,&retjson,coinaddr)) != 0 )
+            {
+                printf("%s MONITOR.(%s) -> %s\n",coin->symbol,coinaddr,jprint(retjson,0));
+                free_json(retjson);
+            }
+        }
+    }
+}
+
 /*else if ( strcmp(method,"ordermatch") == 0 )
  {
  if ( price > SMALLVAL )

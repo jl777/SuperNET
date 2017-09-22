@@ -357,7 +357,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        int32_t height,i,n,m,post; bits256 zero; cJSON *array,*item,*array2; uint64_t total,total2;
+        int32_t height,i,j,n,m,v,post; bits256 zero,txid,txid2; cJSON *array,*item,*item2,*array2; uint64_t total,total2;
+        memset(&zero,0,sizeof(zero));
         if ( coin->inactive != 0 )
             continue;
         if ( (rand() % 100) == 0 )
@@ -388,16 +389,31 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                                     {
                                         for (i=0; i<m; i++)
                                         {
-                                            item = jitem(array,i);
-                                            total2 += j64bits(item,"value");
+                                            item2 = jitem(array2,i);
+                                            total2 += j64bits(item2,"value");
                                         }
                                     }
+                                    if ( total != total2 || n != m )
+                                    {
+                                        printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
+                                        for (i=0; i<n; i++)
+                                        {
+                                            item = jitem(array,i);
+                                            txid = jbits256(item,"tx_hash");
+                                            v = jint(item,"tx_pos");
+                                            for (j=0; j<m; j++)
+                                            {
+                                                if ( v == jint(jitem(array2,i),"tx_pos") && bits256_cmp(txid,jbits256(jitem(array2,i),"tx_hash")) == 0 )
+                                                    break;
+                                            }
+                                            if ( j == m )
+                                            {
+                                                printf("%s missing %s\n",peer->ipaddr,jprint(item,0));
+                                            }
+                                        }
+                                        post++;
+                                    }
                                     free_json(array2);
-                                }
-                                if ( total != total2 || n != m )
-                                {
-                                    printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
-                                    post++;
                                 }
                                 free(retstr);
                             }
