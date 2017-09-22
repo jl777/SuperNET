@@ -357,11 +357,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        int32_t height,i,j,n,m,v,post; bits256 zero,txid,txid2; cJSON *array,*item,*item2,*array2; uint64_t total,total2;
+        int32_t height,i,j,n,m,v,post; bits256 zero,txid; cJSON *array,*item,*item2,*array2; uint64_t total,total2;
         memset(&zero,0,sizeof(zero));
         if ( coin->inactive != 0 )
             continue;
-        if ( (rand() % 100) == 0 )
+        if ( (rand() % 1000) == 0 )
         {
             post = 0;
             LP_listunspent_both(coin->symbol,coin->smartaddr);

@@ -372,6 +372,10 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
                     free_json(array);
                 }
             } else free(hexstr);
+            if ( retjson == 0 )
+            {
+                
+            }
             return(retjson);
         }
         return(cJSON_Parse("{\"error\":\"couldnt get tx\"}"));

@@ -249,7 +249,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
             DL_FOREACH_SAFE(ap->utxos,up,tmp)
             {
                 //char str[65]; printf("LP_address_utxos %s/v%d %.8f ht.%d spend.%d\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),up->U.height,up->spendheight);
-                if ( up->spendheight <= 0 )
+                if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
                     jaddi(array,LP_address_item(coin,up,electrumret));
                     //printf("new array %s\n",jprint(array,0));
