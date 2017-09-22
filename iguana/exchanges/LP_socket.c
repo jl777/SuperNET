@@ -307,7 +307,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 
 int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep,char *coinaddr,cJSON *array)
 {
-    int32_t i,v,n,ht,flag = 0; char str[65]; uint64_t value; bits256 txid; cJSON *item,*txobj; struct LP_transaction *tx;
+    int32_t i,v,n,ht,flag = 0; char str[65]; uint64_t value; bits256 txid; cJSON *item,*retjson,*txobj; struct LP_transaction *tx;
     if ( array != 0 && coin != 0 && (n= cJSON_GetArraySize(array)) > 0 )
     {
         //printf("PROCESS %s/%s %s num.%d\n",coin->symbol,ep!=0?ep->symbol:"nanolistunspent",coinaddr,n);
@@ -320,6 +320,13 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                 v = jint(item,"vout");
                 value = LP_value_extract(item,0);
                 ht = LP_txheight(coin,txid);
+                if ( (retjson= LP_gettxout(coin->symbol,txid,v)) != 0 )
+                    free_json(retjson);
+                else
+                {
+                    printf("external unspent has no gettxout\n");
+                    flag += LP_address_utxoadd(coin,coinaddr,txid,v,value,0,1);
+                }
             }
             else
             {
