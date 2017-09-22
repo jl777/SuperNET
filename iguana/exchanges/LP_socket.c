@@ -472,18 +472,21 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
             item = jitem(retjson,i);
             txid = jbits256(item,"tx_hash");
             height = jint(item,"height");
-            //char str[65]; printf("history txinit %s ht.%d\n",bits256_str(str,txid),height);
-            txobj = LP_transactioninit(coin,txid,0,0);
-            txobj = LP_transactioninit(coin,txid,1,txobj);
-            if ( txobj != 0 )
-                free_json(txobj);
-            if ( height > 0 )
+            if ( (tx= LP_transactionfind(coin,txid)) == 0 )
             {
-                if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+                char str[65]; printf("history txinit %s ht.%d\n",bits256_str(str,txid),height);
+                txobj = LP_transactioninit(coin,txid,0,0);
+                txobj = LP_transactioninit(coin,txid,1,txobj);
+                if ( txobj != 0 )
+                    free_json(txobj);
+                if ( height > 0 )
                 {
-                    tx->height = height;
-                    //for (j=0; j<tx->numvouts; j++)
-                    //    LP_address_utxoadd(coin,coinaddr,txid,j,0,height,-1);
+                    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+                    {
+                        tx->height = height;
+                        //for (j=0; j<tx->numvouts; j++)
+                        //    LP_address_utxoadd(coin,coinaddr,txid,j,0,height,-1);
+                    }
                 }
             }
         }
