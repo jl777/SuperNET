@@ -730,6 +730,8 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr)
         if ( coin->electrum != 0 || LP_address_ismine(symbol,coinaddr) <= 0 )
         {
             //printf("issue path electrum.%p\n",coin->electrum);
+            if ( coin->electrum != 0 && (array= electrum_address_gethistory(symbol,coin->electrum,&array,coinaddr)) != 0 )
+                free_json(array);
             n = LP_listunspent_issue(symbol,coinaddr);
         }
         else

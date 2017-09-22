@@ -21,13 +21,14 @@
 
 int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
 {
-    int32_t i,iter,numtx,checkht=-1; cJSON *blockobj,*txs; bits256 txid; struct LP_transaction *tx;
+    int32_t i,iter,numtx,checkht=-1; cJSON *blockobj,*txs,*txobj; bits256 txid; struct LP_transaction *tx;
     if ( (blockobj= LP_blockjson(&checkht,coin->symbol,0,height)) != 0 && checkht == height )
     {
         if ( (txs= jarray(&numtx,blockobj,"tx")) != 0 )
         {
             for (iter=0; iter<2; iter++)
             {
+                txobj = 0;
                 for (i=0; i<numtx; i++)
                 {
                     txid = jbits256i(txs,i);
@@ -41,8 +42,10 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
                             tx->height = height;
                         }
                         if ( iter == 1 )
-                            LP_transactioninit(coin,txid,iter,0);
-                    } else LP_transactioninit(coin,txid,iter,0);
+                            txobj = LP_transactioninit(coin,txid,iter,0);
+                    } else txobj = LP_transactioninit(coin,txid,iter,0);
+                    if ( txobj != 0 )
+                        free_json(txobj), txobj = 0;
                 }
             }
         }
@@ -409,7 +412,7 @@ int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 se
 
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
 {
-    int32_t i,n; cJSON *array; bits256 txid; struct iguana_info *coin; struct LP_transaction *tx;
+    int32_t i,n; cJSON *array,*txobj; bits256 txid; struct iguana_info *coin; struct LP_transaction *tx;
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 || coin->electrum != 0 )
         return(-1);
     if ( (array= LP_getmempool(symbol,0)) != 0 )
@@ -421,8 +424,10 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
                 txid = jbits256i(array,i);
                 if ( (tx= LP_transactionfind(coin,txid)) == 0 )
                 {
-                    LP_transactioninit(coin,txid,0,0);
-                    LP_transactioninit(coin,txid,1,0);
+                    txobj = LP_transactioninit(coin,txid,0,0);
+                    txobj = LP_transactioninit(coin,txid,1,txobj);
+                    if ( txobj != 0 )
+                        free_json(txobj);
                 }
                 if ( bits256_cmp(txid,searchtxid) == 0 )
                 {

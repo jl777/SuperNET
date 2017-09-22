@@ -185,11 +185,12 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
         {
             if ( vout == up->U.vout && bits256_cmp(up->U.txid,txid) == 0 )
             {
-                if ( up->U.height <= 0 && height > 0 )
-                    up->U.height = height;
-                if ( spendheight > 0 )
-                    up->spendheight = spendheight;
-                flag = 1;
+                if ( up->U.height <= 0 && height > 0 && up->U.height != height )
+                    up->U.height = height, flag = 1;
+                if ( spendheight > 0 && up->spendheight != spendheight )
+                    up->spendheight = spendheight, flag = 1;
+                if ( up->U.value == 0 && up->U.value != value )
+                    up->U.value = value, flag = 1;
                 break;
             }
         }
@@ -492,6 +493,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                 tx->outpoints[i].value = LP_value_extract(vout,0);
                 tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
                 LP_destaddr(tx->outpoints[i].coinaddr,vout);
+                LP_address_utxoadd(coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
             }
             //printf("numvouts.%d\n",numvouts);
         }
@@ -523,11 +525,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                     printf("spending same tx's %p vout ht.%d %s.[%d] s%d\n",tx,height,bits256_str(str,txid),tx!=0?tx->numvouts:0,spentvout);
             }
         }
-        if ( iter == 1 )
-        {
-            free_json(txobj);
-            return(0);
-        } else return(txobj);
+        return(txobj);
     } //else printf("LP_transactioninit error for %s %s\n",coin->symbol,bits256_str(str,txid));
     return(0);
 }
@@ -615,7 +613,9 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
     if ( (tx= LP_transactionfind(coin,txid)) == 0 )
     {
         txobj = LP_transactioninit(coin,txid,0,0);
-        LP_transactioninit(coin,txid,1,txobj);
+        txobj = LP_transactioninit(coin,txid,1,txobj);
+        if ( txobj != 0 )
+            free_json(txobj);
         tx = LP_transactionfind(coin,txid);
     }
     if ( tx != 0 )

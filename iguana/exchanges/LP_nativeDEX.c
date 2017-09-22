@@ -343,7 +343,23 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                         free(retstr);
                     peer->needping = 0;
                 }
-                //sync listunspent, parse arrays in ordermatch, electrum history to prune, spv
+                HASH_ITER(hh,LP_coins,coin,ctmp)
+                {
+                    char coinaddr[64]; cJSON *array; int32_t n;
+                    bitcoin_address(coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,sizeof(G.LP_myrmd160));
+                    if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
+                    {
+                        if ( (n= cJSON_GetArraySize(array)) > 0 )
+                        {
+                            if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coinaddr)) != 0 )
+                            {
+                                printf("compare (%s) vs (%s)\n",jprint(array,0),retstr);
+                                free(retstr);
+                            }
+                        }
+                        free_json(array);
+                    }
+                //sync listunspent,, spv
             }
         }
         if ( peer->diduquery == 0 )

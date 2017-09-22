@@ -334,6 +334,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
             {
                 txobj = LP_transactioninit(coin,txid,0,0);
                 LP_transactioninit(coin,txid,1,txobj);
+                free_json(txobj);
                 tx = LP_transactionfind(coin,txid);
             }
             if ( tx != 0 )
@@ -351,7 +352,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                         tx->outpoints[v].value = value;
                     }
                 }
-                if ( value != 0 && tx->height > 0 )
+                if ( value != 0 || tx->height > 0 )
                     flag += LP_address_utxoadd(coin,coinaddr,txid,v,value,tx->height,-1);
                 //printf("v.%d numvouts.%d %.8f (%s)\n",jint(item,"tx_pos"),tx->numvouts,dstr(tx->outpoints[jint(item,"tx_pos")].value),jprint(item,0));
             }
@@ -461,10 +462,32 @@ cJSON *electrum_address_subscribe(char *symbol,struct electrum_info *ep,cJSON **
 
 cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
 {
-    cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
+    struct LP_transaction *tx; cJSON *retjson,*txobj,*item; int32_t i,n,height; bits256 txid; struct iguana_info *coin = LP_coinfind(symbol);
     retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_history",addr,ELECTRUM_TIMEOUT);
-    printf("history.(%s)\n",jprint(retjson,0));
-    electrum_process_array(coin,ep,addr,retjson);
+    //printf("history.(%s)\n",jprint(retjson,0));
+    if ( retjson != 0 && (n= cJSON_GetArraySize(retjson)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(retjson,i);
+            txid = jbits256(item,"tx_hash");
+            height = jint(item,"height");
+            char str[65]; printf("history txinit %s ht.%d\n",bits256_str(str,txid),height);
+            txobj = LP_transactioninit(coin,txid,0,0);
+            txobj = LP_transactioninit(coin,txid,1,txobj);
+            if ( txobj != 0 )
+                free_json(txobj);
+            if ( height > 0 )
+            {
+                if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+                {
+                    tx->height = height;
+                    //for (j=0; j<tx->numvouts; j++)
+                    //    LP_address_utxoadd(coin,coinaddr,txid,j,0,height,-1);
+                }
+            }
+        }
+    }
     return(retjson);
 }
 
