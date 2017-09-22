@@ -297,7 +297,7 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
     }
     if ( butxo != 0 && srcvalue < qp->txfee+qp->satoshis )
     {
-        printf("srcvalue %.8f satoshis %.8f is too small txfee %.8f?\n",dstr(srcvalue),dstr(qp->satoshis),dstr(qp->txfee));
+        printf("srcvalue %.8f [%.8f] satoshis %.8f is too small txfee %.8f?\n",dstr(srcvalue),dstr(srcvalue) - dstr(qp->txfee+qp->satoshis),dstr(qp->satoshis),dstr(qp->txfee));
         return(-33);
     }
     if ( qp->satoshis != 0 )
