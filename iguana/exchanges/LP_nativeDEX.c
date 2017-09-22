@@ -611,6 +611,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     //if ( (retstr= basilisk_swapentry(0,0)) != 0 )
     //    free(retstr);
     int32_t nonz;
+    printf("start mainloop\n");
     while ( 1 )
     {
         nonz = 0;
