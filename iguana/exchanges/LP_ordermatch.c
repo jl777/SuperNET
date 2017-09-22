@@ -729,12 +729,12 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr)
     {
         if ( coin->electrum != 0 || LP_address_ismine(symbol,coinaddr) <= 0 )
         {
-            printf("issue path electrum.%p\n",coin->electrum);
+            //printf("issue path electrum.%p\n",coin->electrum);
             n = LP_listunspent_issue(symbol,coinaddr);
         }
         else
         {
-            printf("my coin electrum.%p\n",coin->electrum);
+            //printf("my coin electrum.%p\n",coin->electrum);
             sprintf(buf,"[1, 99999999, [\"%s\"]]",coinaddr);
             if ( (array= bitcoin_json(coin,"listunspent",buf)) != 0 )
             {

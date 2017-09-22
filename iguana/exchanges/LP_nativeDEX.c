@@ -343,6 +343,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                         free(retstr);
                     peer->needping = 0;
                 }
+                //sync listunspent, parse arrays in ordermatch, electrum history to prune, spv
             }
         }
         if ( peer->diduquery == 0 )
