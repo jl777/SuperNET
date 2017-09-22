@@ -308,6 +308,7 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
         return(-14);
     if ( butxo != 0 )
     {
+        //qprice 2259.01692494 <- 10.34279604/0.00457845 txfees.(0.00042631 0.00010000) vs (0.00042791 0.00010000)
         if ( qp->satoshis < (srcvalue / LP_MINVOL) || srcvalue < qp->txfee*LP_MINSIZE_TXFEEMULT )
         {
             printf("utxo payment %.8f is less than %f covered by Q %.8f or <10x txfee %.8f\n",dstr(srcvalue),1./LP_MINVOL,dstr(qp->satoshis),dstr(qp->txfee));
@@ -467,7 +468,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
                     printf("%.8f ",dstr(utxos[i]->U.value));
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f\n",dstr(targetval),volume,price,dstr(txfee));
             }
-            if ( (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 )
+            if ( (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 && (double)utxos[mini]->U.value/targetval < LP_MINVOL )
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
@@ -499,7 +500,6 @@ struct LP_utxoinfo *_LP_butxo_find(struct LP_utxoinfo *butxo)
 {
     int32_t i; struct LP_utxoinfo *utxo=0; uint32_t now = (uint32_t)time(NULL);
     //portable_mutex_lock(&LP_butxomutex);
-    printf("_LP_butxo_find\n");
     for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
     {
         utxo = &BUTXOS[i];
@@ -510,7 +510,6 @@ struct LP_utxoinfo *_LP_butxo_find(struct LP_utxoinfo *butxo)
         utxo = 0;
     }
     //portable_mutex_unlock(&LP_butxomutex);
-    printf("_LP_butxo_find %p\n",utxo);
     return(utxo);
 }
 
@@ -518,7 +517,6 @@ struct LP_utxoinfo *LP_butxo_add(struct LP_utxoinfo *butxo)
 {
     static struct LP_utxoinfo zeroes;
     int32_t i; struct LP_utxoinfo *utxo=0;
-    printf("LP_butxo_add\n");
     portable_mutex_lock(&LP_butxomutex);
     if ( (utxo= _LP_butxo_find(butxo)) == 0 )
     {
@@ -534,13 +532,11 @@ struct LP_utxoinfo *LP_butxo_add(struct LP_utxoinfo *butxo)
         }
     }
     portable_mutex_unlock(&LP_butxomutex);
-    printf("LP_butxo_add %p\n",utxo);
     return(utxo);
 }
 
 void LP_butxo_swapfields_copy(struct LP_utxoinfo *destutxo,struct LP_utxoinfo *srcutxo)
 {
-    printf("LP_butxo_swapfields_copy %u <- %u\n",destutxo->T.swappending,srcutxo->T.swappending);
     destutxo->S = srcutxo->S;
     destutxo->T = srcutxo->T;
 }
@@ -548,7 +544,6 @@ void LP_butxo_swapfields_copy(struct LP_utxoinfo *destutxo,struct LP_utxoinfo *s
 void LP_butxo_swapfields(struct LP_utxoinfo *butxo)
 {
     struct LP_utxoinfo *getutxo=0;
-    printf("swapfields\n");
     portable_mutex_lock(&LP_butxomutex);
     if ( (getutxo= _LP_butxo_find(butxo)) != 0 )
         LP_butxo_swapfields_copy(butxo,getutxo);
@@ -558,11 +553,9 @@ void LP_butxo_swapfields(struct LP_utxoinfo *butxo)
 void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo)
 {
     struct LP_utxoinfo *setutxo;
-    printf("swapfields set\n");
     if ( (setutxo= LP_butxo_add(butxo)) != 0 )
     {
         LP_butxo_swapfields_copy(setutxo,butxo);
-        printf("LP_butxo_swapfields_copy set\n");
     }
 }
 
@@ -944,7 +937,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *space,double *ordermatchprice
                     if ( LP_pricevalid(price) > 0 && price <= maxprice )
                     {
                         pubkey = jbits256(item,"pubkey");
-                        printf("%s pubcmp %d\n",jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519));
+                        //printf("%s pubcmp %d\n",jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519));
                         if ( bits256_cmp(pubkey,G.LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
                         {
                             bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));

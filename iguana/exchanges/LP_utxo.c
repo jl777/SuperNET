@@ -344,7 +344,9 @@ struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
     if ( iambob != 0 )
     {
-        printf("_LP_utxofind deprecated iambob\n");
+        static uint32_t counter;
+        if ( counter++ < 3 )
+            printf("_LP_utxofind deprecated iambob\n");
         return(0);
     }
     LP_utxosetkey(key,txid,vout);
