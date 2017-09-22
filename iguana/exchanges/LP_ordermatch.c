@@ -727,7 +727,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr)
     int32_t i,v,height,n=0; uint64_t value; bits256 txid; char buf[512]; cJSON *array,*item; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin != 0 && coin->inactive == 0 )
     {
-        if ( coin->electrum != 0 || LP_address_ismine(symbol,coinaddr) < 0 )
+        if ( coin->electrum != 0 || LP_address_ismine(symbol,coinaddr) <= 0 )
         {
             printf("issue path electrum.%p\n",coin->electrum);
             n = LP_listunspent_issue(symbol,coinaddr);
