@@ -395,7 +395,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                                     }
                                     if ( total != total2 || n != m )
                                     {
-                                        printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
                                         for (i=0; i<n; i++)
                                         {
                                             item = jitem(array,i);
@@ -415,6 +414,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                                                 post++;
                                             }
                                         }
+                                        if ( post != 0 )
+                                            printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
                                     } //else printf("%s matches\n",peer->ipaddr);
                                     free_json(array2);
                                 }
