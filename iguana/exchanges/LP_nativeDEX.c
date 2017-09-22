@@ -357,11 +357,12 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        int32_t height,i,n,m; bits256 zero; cJSON *array,*item,*array2; uint64_t total,total2;
+        int32_t height,i,n,m,post; bits256 zero; cJSON *array,*item,*array2; uint64_t total,total2;
         if ( coin->inactive != 0 )
             continue;
         if ( (rand() % 100) == 0 )
         {
+            post = 0;
             LP_listunspent_both(coin->symbol,coin->smartaddr);
             if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
             {
@@ -393,10 +394,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                                     }
                                     free_json(array2);
                                 }
-                                if ( total != total || n != m )
+                                if ( total != total2 || n != m )
                                 {
-                                    printf(">>>>>>>> compare %s %s (%.8f n%d) (%.8f m%d)\n",coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
-                                    LP_postutxos(coin->symbol,coin->smartaddr);
+                                    printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
+                                    post++;
                                 }
                                 free(retstr);
                             }
@@ -405,6 +406,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 }
                 free_json(array);
             }
+            if ( post > 0 )
+                LP_postutxos(coin->symbol,coin->smartaddr);
         }
         if ( coin->electrum != 0 )
             continue;
