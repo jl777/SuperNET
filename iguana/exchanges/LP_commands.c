@@ -447,7 +447,7 @@ dividends(coin, height, <args>)\n\
                         char *msg;
                         memset(zero.bytes,0,sizeof(zero));
                         msg = jprint(reqjson,0);
-                        printf("broadcast.(%s)\n",msg);
+                        //printf("broadcast.(%s)\n",msg);
                         LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,zero,msg);
                     }
                     retstr = clonestr("{\"result\":\"success\"}");
