@@ -173,8 +173,8 @@ struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coina
 
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
-    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0;
-    //printf("%s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
+    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; char str[65];
+ //printf("%s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
     if ( coin == 0 )
         return(0);
     if ( spendheight > 0 ) // dont autocreate entries for spends we dont care about
@@ -194,6 +194,7 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
                     up->spendheight = spendheight, flag |= 4;
                 if ( up->U.value == 0 && up->U.value != value )
                     up->U.value = value, flag |= 8;
+                printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
                 break;
             }
         }
@@ -209,11 +210,10 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             DL_APPEND(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);
             retval = 1;
-            char str[65];
             if ( height > 0 )
                 printf("ADDRESS_UTXO >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
-    }
+    } else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
     //printf("done %s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
     return(retval);
 }
