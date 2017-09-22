@@ -64,7 +64,7 @@ char *issue_LP_uitem(char *destip,uint16_t destport,char *symbol,char *coinaddr,
         return(retstr);
     sprintf(url,"http://%s:%u/api/stats/uitem?coin=%s&coinaddr=%s&txid=%s&vout=%d&ht=%d&value=%llu",destip,destport,symbol,coinaddr,bits256_str(str,txid),vout,height,(long long)value);
     retstr = LP_issue_curl("uitem",destip,destport,url);
-    printf("uitem.(%s)\n",retstr);
+    //printf("uitem.(%s)\n",retstr);
     return(retstr);
 }
 
