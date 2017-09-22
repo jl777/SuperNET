@@ -722,9 +722,47 @@ char *LP_connectedalice(cJSON *argjson) // alice
     }
 }
 
+int32_t LP_listunspent_both(char *symbol,char *coinaddr)
+{
+    int32_t i,v,height,n=0; uint64_t value; bits256 txid; char buf[512]; cJSON *array,*item; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( coin != 0 )
+    {
+        if ( coin->electrum != 0 )
+        {
+            if ( (array= LP_listunspent(coin->symbol,coinaddr)) != 0 )
+            {
+                n = cJSON_GetArraySize(array);
+                free_json(array);
+            } else n = 0;
+        }
+        else
+        {
+            sprintf(buf,"[1, 99999999, [\"%s\"]]",coinaddr);
+            if ( (array= bitcoin_json(coin,"listunspent",buf)) != 0 )
+            {
+                if ( (n= cJSON_GetArraySize(array)) > 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(array,i);
+                        txid = jbits256(item,"txid");
+                        v = jint(item,"vout");
+                        value = LP_value_extract(item,0);
+                        height = LP_txheight(coin,txid);
+                        char str[65]; printf("LP_listunspent_both: %s/v%d ht.%d %.8f\n",bits256_str(str,txid),v,height,dstr(value));
+                        LP_address_utxoadd(coin,coinaddr,txid,v,value,height,-1);
+                    }
+                }
+            }
+            //printf("need to verify\n");
+        }
+    }
+    return(n);
+}
+
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
-    char *method,*msg; cJSON *retjson,*array; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t n,retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
+    char *method,*msg; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
         printf("LP_tradecommand: check received %s\n",method);
@@ -745,19 +783,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             {
                 if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
                 {
-                    if ( coin->electrum != 0 )
-                    {
-                        if ( (array= LP_listunspent(coin->symbol,Q.coinaddr)) != 0 )
-                        {
-                            n = cJSON_GetArraySize(array);
-                            free_json(array);
-                        } else n = 0;
-                    }
-                    else
-                    {
-                        n = LP_listunspent_issue(coin->symbol,Q.coinaddr);
-                        //printf("need to verify\n");
-                    }
+                    LP_listunspent_both(Q.srccoin,Q.coinaddr);
                     butxo = LP_address_utxopair(butxo,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,1,Q.desttxfee);
                     Q.txid = butxo->payment.txid;
                     Q.vout = butxo->payment.vout;
@@ -895,7 +921,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
 
 struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,double relvolume,char *gui)
 {
-    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*array,*asks,*item; int32_t i,n,numasks,max = 10000; struct LP_address_utxo **utxos; double price; struct LP_pubkeyinfo *pubp; struct iguana_info *basecoin;
+    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*asks,*item; int32_t i,n,numasks,max = 10000; struct LP_address_utxo **utxos; double price; struct LP_pubkeyinfo *pubp; struct iguana_info *basecoin;
     *ordermatchpricep = 0.;
     *bestsatoshisp = *bestdestsatoshisp = 0;
     basecoin = LP_coinfind(base);
@@ -923,14 +949,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                         if ( bits256_cmp(pubkey,G.LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
                         {
                             bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
-                            if ( basecoin->electrum != 0 )
-                            {
-                                if ( (array= LP_listunspent(basecoin->symbol,coinaddr)) != 0 )
-                                {
-                                    n = cJSON_GetArraySize(array);
-                                    free_json(array);
-                                } else n = 0;
-                            } else n = LP_listunspent_issue(basecoin->symbol,coinaddr);
+                            n = LP_listunspent_both(base,coinaddr);
                             if ( n > 1 )
                             {
                                 //minvol = jdouble(item,"minvolume");
