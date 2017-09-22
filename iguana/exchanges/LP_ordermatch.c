@@ -729,11 +729,12 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr)
     {
         if ( coin->electrum != 0 || LP_address_ismine(symbol,coinaddr) < 0 )
         {
+            printf("issue path\n");
             n = LP_listunspent_issue(symbol,coinaddr);
         }
         else
         {
-            //printf("my coin\n");
+            printf("my coin\n");
             sprintf(buf,"[1, 99999999, [\"%s\"]]",coinaddr);
             if ( (array= bitcoin_json(coin,"listunspent",buf)) != 0 )
             {
@@ -941,7 +942,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                     if ( LP_pricevalid(price) > 0 && price <= maxprice )
                     {
                         pubkey = jbits256(item,"pubkey");
-                        printf("%s -> %d\n",jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519));
+                        printf("%s pubcmp %d\n",jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519));
                         if ( bits256_cmp(pubkey,G.LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
                         {
                             bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
