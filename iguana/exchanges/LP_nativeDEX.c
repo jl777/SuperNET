@@ -269,12 +269,12 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
     int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char *retstr,*str; struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
-        while ( nonz < 1 && recvlen > 0 )
+        while ( nonz < 100 && recvlen > 0 )
         {
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
             pfd.events = NN_POLLIN;
-            if ( nn_poll(&pfd,1,10) != 1 )
+            if ( nn_poll(&pfd,1,1) != 1 )
                 break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
@@ -677,7 +677,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         {
             if ( nn_bind(pubsock,bindaddr) >= 0 )
             {
-                timeout = 10;
+                timeout = 1;
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             }
             else

@@ -57,7 +57,7 @@ int32_t LP_sockcheck(int32_t sock)
     struct nn_pollfd pfd;
     pfd.fd = sock;
     pfd.events = NN_POLLOUT;
-    if ( nn_poll(&pfd,1,10) > 0 )
+    if ( nn_poll(&pfd,1,1) > 0 )
         return(1);
     else return(-1);
 }
@@ -87,7 +87,7 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
 
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
 {
-    static uint32_t crcs[256]; static unsigned long dup,total;
+    static uint32_t crcs[8192]; static unsigned long dup,total;
     int32_t i;
     *duplicatep = 0;
     if ( ind < 0 )
@@ -565,7 +565,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
-                timeout = 10;
+                timeout = 1;
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                 nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 if ( ispaired != 0 )
@@ -703,7 +703,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                     exit(-1);
                 }
             }
-            timeout = 10;
+            timeout = 1;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             //maxsize = 2 * 1024 * 1024;
