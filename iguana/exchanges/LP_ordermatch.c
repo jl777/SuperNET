@@ -729,7 +729,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr)
     {
         if ( coin->electrum != 0 || LP_address_ismine(symbol,coinaddr) < 0 )
         {
-            printf("issue path\n");
+            printf("issue path electrum.%p\n",coin->electrum);
             n = LP_listunspent_issue(symbol,coinaddr);
         }
         else
