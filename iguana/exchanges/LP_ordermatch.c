@@ -962,7 +962,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *bestutxo,double *ordermatchpr
                                     printf("ordermatch %.8f %.8f %.8f txfees (%.8f %.8f)\n",price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp),dstr(txfee),dstr(desttxfee));
                                     break;
                                 }
-                            } else printf("no unspents %s\n",bits256_str(str,pubkey));
+                            } else printf("no unspents %s %s %s\n",base,coinaddr,bits256_str(str,pubkey));
                         } else printf("self trading or blacklisted peer\n");
                     }
                     else

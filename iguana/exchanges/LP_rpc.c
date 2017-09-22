@@ -486,7 +486,10 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
     if ( (coin= LP_coinfind(symbol)) != 0 )
     {
         if ( coin->electrum != 0 )
-            retjson = electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr);
+        {
+            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr)) != 0 )
+                n = cJSON_GetArraySize(retjson);
+        }
         else
         {
             if ( strcmp(coin->smartaddr,coinaddr) == 0 )
@@ -503,7 +506,9 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
             {
                 n = cJSON_GetArraySize(retjson);
                 if ( electrum_process_array(coin,0,coinaddr,retjson) != 0 )
-                    LP_postutxos(symbol,coinaddr); // might be good to not saturate
+                {
+                    //LP_postutxos(symbol,coinaddr); // might be good to not saturate
+                }
             }
         }
         //printf("issue listunspent %s (%s)\n",coinaddr,jprint(retjson,0));
