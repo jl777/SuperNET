@@ -311,7 +311,7 @@ void command_rpcloop(void *myipaddr)
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport)
 {
     static uint32_t counter,numpeers;
-    struct iguana_info *coin,*ctmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t nonz = 0;
+    struct iguana_info *coin,*ctmp; char *retstr,*retstr2,*origipaddr; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t nonz = 0;
     now = (uint32_t)time(NULL);
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
@@ -408,10 +408,13 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                                             }
                                             if ( j == m )
                                             {
+                                                //5.9.253.202 missing {"tx_hash":"3ff8700d545186b1dcb29f50ccb2d1a48b9b5a36dfae59254a96a7057ca55a3f","tx_pos":1,"height":8242,"value":"1000000000"}
                                                 printf("%s missing %s\n",peer->ipaddr,jprint(item,0));
+                                                if ( (retstr2= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"))) != 0 )
+                                                    free(retstr2);
+                                                post++;
                                             }
                                         }
-                                        post++;
                                     }
                                     free_json(array2);
                                 }
@@ -422,8 +425,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 }
                 free_json(array);
             }
-            if ( post > 0 )
-                LP_postutxos(coin->symbol,coin->smartaddr);
+            //if ( post > 0 )
+            //    LP_postutxos(coin->symbol,coin->smartaddr);
         }
         if ( coin->electrum != 0 )
             continue;

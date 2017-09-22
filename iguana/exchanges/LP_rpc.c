@@ -57,6 +57,15 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
     return(retstr);
 }
 
+char *issue_LP_uitem(char *destip,uint16_t destport,char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t height,uint64_t value)
+{
+    char url[512],*retstr,str[65];
+    if ( (retstr= LP_isitme(destip,destport)) != 0 )
+        return(retstr);
+    sprintf(url,"http://%s:%u/api/stats/uitem?coin=%s&coinaddr=%s&txid=%s&vout=%d&ht=%d&value=%llu",destip,destport,symbol,coinaddr,bits256_str(str,txid),vout,height,(long long)value);
+    return(LP_issue_curl("uitem",destip,destport,url));
+}
+
 char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,uint32_t sessionid,char *rmd160str,bits256 pub)
 {
     char url[512],*retstr,str[65];

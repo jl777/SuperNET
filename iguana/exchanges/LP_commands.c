@@ -129,6 +129,7 @@ dividends(coin, height, <args>)\n\
 
     base = jstr(argjson,"base");
     rel = jstr(argjson,"rel");
+    coin = jstr(argjson,"coin");
     if ( G.USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
     {
         if ( G.USERPASS_COUNTER == 0 )
@@ -345,6 +346,20 @@ dividends(coin, height, <args>)\n\
         retstr = LP_postedutxos(argjson);
     else if ( strcmp(method,"getprices") == 0 )
         return(LP_prices());
+    else if ( strcmp(method,"uitem") == 0 )
+    {
+        bits256 txid; int32_t vout,height; uint64_t value; char *coinaddr;
+        txid = jbits256(argjson,"txid");
+        vout = jint(argjson,"vout");
+        height = jint(argjson,"ht");
+        value = j64bits(argjson,"value");
+        coinaddr = jstr(argjson,"coinaddr");
+        if ( coin != 0 && coinaddr != 0 )
+        {
+            char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
+            LP_address_utxoadd(LP_coinfind(coin),coinaddr,txid,vout,value,height,-1);
+        }
+    }
     else if ( strcmp(method,"orderbook") == 0 )
         return(LP_orderbook(base,rel,jint(argjson,"duration")));
     else if ( strcmp(method,"listunspent") == 0 )
