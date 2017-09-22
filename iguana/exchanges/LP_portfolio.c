@@ -63,7 +63,7 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
         }
         free_json(array);
     }
-    if ( (array= LP_inventory(symbol,iambob)) != 0 )
+    if ( (array= LP_inventory(symbol)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 && is_cJSON_Array(array) != 0 )
         {
@@ -93,7 +93,7 @@ char *LP_portfolio()
                 continue;
             if ( iter == 0 )
             {
-                LP_privkey_init(-1,coin,LP_mypriv25519,LP_mypub25519);
+                LP_privkey_init(-1,coin,G.LP_mypriv25519,G.LP_mypub25519);
                 coin->balanceA = LP_balance(&coin->valuesumA,0,coin->symbol,coin->smartaddr);
                 coin->balanceB = LP_balance(&coin->valuesumB,1,coin->symbol,coin->smartaddr);
                 if ( strcmp(coin->symbol,"KMD") != 0 )
@@ -427,7 +427,7 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
         strcpy(LP_portfolio_rel,"");
         LP_portfolio_relvolume = 0.;
     }
-    printf("pending.%d base buy.%s, rel sell.%s relvolume %f maxprice %.8f (%.8f %.8f)\n",LP_pendingswaps,buy->symbol,sell->symbol,sell->relvolume,maxprice,bid,ask);
+    printf("pending.%d base buy.%s, rel sell.%s relvolume %f maxprice %.8f (%.8f %.8f)\n",G.LP_pendingswaps,buy->symbol,sell->symbol,sell->relvolume,maxprice,bid,ask);
     if ( LP_pricevalid(maxprice) > 0 )
     {
         relvolume = sell->relvolume;

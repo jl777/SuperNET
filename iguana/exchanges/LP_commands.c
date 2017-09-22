@@ -25,16 +25,16 @@ char *LP_numutxos()
     {
         jaddstr(retjson,"ipaddr",LP_mypeer->ipaddr);
         jaddnum(retjson,"port",LP_mypeer->port);
-        jaddnum(retjson,"numutxos",LP_mypeer->numutxos);
+        //jaddnum(retjson,"numutxos",LP_mypeer->numutxos);
         jaddnum(retjson,"numpeers",LP_mypeer->numpeers);
-        jaddnum(retjson,"session",LP_sessionid);
+        jaddnum(retjson,"session",G.LP_sessionid);
     } else jaddstr(retjson,"error","client node");
     return(jprint(retjson,1));
 }
 
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t changed,otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
+    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t changed,otherpeers,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
 //printf("stats_JSON(%s)\n",jprint(argjson,0));
     method = jstr(argjson,"method");
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (method == 0 || strcmp(method,"electrum") != 0) )
@@ -50,11 +50,11 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
             {
                 if ( 0 && (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
                     peer->numpeers = otherpeers;
-                if ( 0 && (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
+                /*if ( 0 && (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
                 {
                     printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
                     peer->numutxos = othernumutxos;
-                }
+                }*/
                 if ( peer->sessionid == 0 )
                     peer->sessionid = juint(argjson,"session");
                 //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
@@ -76,7 +76,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
     {
         static char *laststr;
         char *newstr; bits256 pubkey = jbits256(argjson,"pubkey");
-        if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,LP_mypub25519) == 0 )
+        if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,G.LP_mypub25519) == 0 )
         {
             newstr = jprint(argjson,0);
             if ( laststr == 0 || strcmp(laststr,newstr) != 0 )
@@ -112,6 +112,7 @@ getcoins()\n\
 getcoin(coin)\n\
 portfolio()\n\
 getpeers()\n\
+passphrase(passphrase)\n\
 listunspent(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
@@ -128,18 +129,18 @@ dividends(coin, height, <args>)\n\
 
     base = jstr(argjson,"base");
     rel = jstr(argjson,"rel");
-    if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
+    if ( G.USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
     {
-        if ( USERPASS_COUNTER == 0 )
+        if ( G.USERPASS_COUNTER == 0 )
         {
-            USERPASS_COUNTER = 1;
+            G.USERPASS_COUNTER = 1;
             retjson = cJSON_CreateObject();
-            jaddstr(retjson,"userpass",USERPASS);
-            jaddbits256(retjson,"mypubkey",LP_mypub25519);
+            jaddstr(retjson,"userpass",G.USERPASS);
+            jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
             jadd(retjson,"coins",LP_coinsjson(LP_showwif));
             return(jprint(retjson,1));
         }
-        if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
+        if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0 )
             return(clonestr("{\"error\":\"authentication error\"}"));
         jdelete(argjson,"userpass");
         if ( strcmp(method,"sendmessage") == 0 )
@@ -161,6 +162,12 @@ dividends(coin, height, <args>)\n\
         {
             LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
+        }
+        else if ( strcmp(method,"passphrase") == 0 )
+        {
+            if ( LP_passphrase_init(jstr(argjson,"passphrase")) < 0 )
+                return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
+            else return(clonestr("{\"result\":\"success\"}"));
         }
         else if ( strcmp(method,"portfolio") == 0 )
         {
@@ -212,28 +219,6 @@ dividends(coin, height, <args>)\n\
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
-            /*else if ( strcmp(method,"ordermatch") == 0 )
-            {
-                if ( price > SMALLVAL )
-                return(LP_ordermatch(base,j64bits(argjson,"txfee"),price,jdouble(argjson,"relvolume"),rel,jbits256(argjson,"txid"),jint(argjson,"vout"),jbits256(argjson,"feetxid"),jint(argjson,"feevout"),j64bits(argjson,"desttxfee"),jint(argjson,"duration")));
-                else return(clonestr("{\"error\":\"no price set\"}"));
-            }
-            else if ( strcmp(method,"trade") == 0 )
-            {
-                struct LP_quoteinfo Q;
-                if ( price > SMALLVAL || jobj(argjson,"quote") != 0 )
-                {
-                    LP_quoteparse(&Q,jobj(argjson,"quote"));
-                    return(LP_trade(ctx,myipaddr,pubsock,&Q,price,jint(argjson,"timeout"),jint(argjson,"duration")));
-                } else return(clonestr("{\"error\":\"no price set or no quote object\"}"));
-            }
-            else if ( strcmp(method,"autotrade") == 0 )
-            {
-                if ( price > SMALLVAL )
-                {
-                    return(LP_autotrade(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
-                } else return(clonestr("{\"error\":\"no price set\"}"));
-            }*/
             else if ( strcmp(method,"buy") == 0 )
             {
                 if ( price > SMALLVAL )
@@ -305,14 +290,14 @@ dividends(coin, height, <args>)\n\
                 {
                     //privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
                     //LP_utxopurge(0);
-                    if ( bits256_nonz(LP_mypriv25519) != 0 )
-                        LP_privkey_init(-1,ptr,LP_mypriv25519,LP_mypub25519);
+                    if ( bits256_nonz(G.LP_mypriv25519) != 0 )
+                        LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
                     jaddstr(retjson,"coin",coin);
                     jaddnum(retjson,"timestamp",time(NULL));
-                    jadd(retjson,"alice",LP_inventory(coin,0));
-                    jadd(retjson,"bob",LP_inventory(coin,1));
+                    jadd(retjson,"alice",LP_inventory(coin));
+                    //jadd(retjson,"bob",LP_inventory(coin,1));
                     return(jprint(retjson,1));
                 }
             }
@@ -466,7 +451,17 @@ dividends(coin, height, <args>)\n\
                 else return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
             }
             else if ( strcmp(method,"notify") == 0 )
+            {
+                char *rmd160str,str[65]; bits256 pub; struct LP_pubkeyinfo *pubp;
+                pub = jbits256(argjson,"pub");
+                if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
+                {
+                    if ( (pubp= LP_pubkeyadd(pub)) != 0 )
+                        decode_hex(pubp->rmd160,20,rmd160str);
+                    printf("NOTIFIED pub %s rmd160 %s\n",bits256_str(str,pub),rmd160str);
+                }
                 retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
+            }
         }
         else
         {

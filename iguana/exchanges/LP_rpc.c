@@ -48,54 +48,26 @@ char *LP_isitme(char *destip,uint16_t destport)
     } else return(0);
 }
 
-char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
+char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers)
 {
     char url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,numpeers,numutxos);
+    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d",destip,destport,ipaddr,port,numpeers);
     retstr = LP_issue_curl("getpeers",destip,port,url);
     //printf("%s -> getpeers.(%s)\n",destip,retstr);
     return(retstr);
 }
 
-char *issue_LP_numutxos(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
+char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,uint32_t sessionid,char *rmd160str,bits256 pub)
 {
-    char url[512],*retstr;
-    printf("deprecated issue_LP_numutxos\n");
-    return(0);
-    sprintf(url,"http://%s:%u/api/stats/numutxos?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,numpeers,numutxos);
-    retstr = LP_issue_curl("numutxos",destip,port,url);
-    //printf("%s -> getpeers.(%s)\n",destip,retstr);
-    return(retstr);
-}
-
-char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos)
-{
-    char url[512];
-    printf("deprecated issue_LP_getutxos\n");
-    return(0);
-    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,numpeers,numutxos);
-    return(LP_issue_curl("getutxos",destip,destport,url));
-    //return(issue_curlt(url,LP_HTTP_TIMEOUT));
-}
-
-char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t lastn)
-{
-    char url[512];//,*retstr;
-    printf("deprecated issue_LP_clientgetutxos\n");
-    return(0);
-    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=127.0.0.1&port=0",destip,destport,coin,lastn);
-    return(LP_issue_curl("clientgetutxos",destip,destport,url));
-    //retstr = issue_curlt(url,LP_HTTP_TIMEOUT);
-    //printf("%s clientgetutxos.(%s)\n",url,retstr);
-    //return(retstr);
-}
-
-char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,int32_t numutxos,uint32_t sessionid)
-{
-    char url[512],*retstr;
+    char url[512],*retstr,str[65];
     if ( (retstr= LP_isitme(destip,destport)) != 0 )
         return(retstr);
-    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&numpeers=%d&numutxos=%d&session=%u",destip,destport,ipaddr,port,numpeers,numutxos,sessionid);
+    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&numpeers=%d&session=%u",destip,destport,ipaddr,port,numpeers,sessionid);
+    if ( rmd160str != 0 && bits256_nonz(pub) != 0 )
+    {
+        sprintf(url+strlen(url),"&rmd160=%s&pub=%s",rmd160str,bits256_str(str,pub));
+        printf("SEND (%s)\n",url);
+    }
     return(LP_issue_curl("notify",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
@@ -306,7 +278,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
             } else printf("non-hex tx.(%s)\n",hexstr);
             free(hexstr);
             return(cJSON_Parse("{\"error\":\"non hex transaction\"}"));
-        } else printf("failed blockchain.transaction.get %s\n",buf);
+        } else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,buf);
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
     }
 }
@@ -441,7 +413,7 @@ cJSON *LP_validateaddress(char *symbol,char *address)
             strcat(script,"88ac");
             jaddstr(retjson,"scriptPubKey",script);
         }
-        bitcoin_address(coinaddr,coin->taddr,coin->pubtype,LP_myrmd160,20);
+        bitcoin_address(coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,20);
         if ( strcmp(address,coinaddr) == 0 )
             jadd(retjson,"ismine",cJSON_CreateTrue());
         jadd(retjson,"iswatchonly",cJSON_CreateFalse());

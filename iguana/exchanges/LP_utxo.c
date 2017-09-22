@@ -363,22 +363,37 @@ void LP_utxosetkey(uint8_t *key,bits256 txid,int32_t vout)
 struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
 {
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
+    if ( iambob != 0 )
+    {
+        printf("_LP_utxofind deprecated iambob\n");
+        return(0);
+    }
     LP_utxosetkey(key,txid,vout);
-    HASH_FIND(hh,LP_utxoinfos[iambob],key,sizeof(key),utxo);
+    HASH_FIND(hh,G.LP_utxoinfos,key,sizeof(key),utxo);
     return(utxo);
 }
 
 struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)
 {
     struct LP_utxoinfo *utxo=0; uint8_t key2[sizeof(txid2) + sizeof(vout2)];
+    if ( iambob != 0 )
+    {
+        printf("_LP_utxo2find deprecated iambob\n");
+        return(0);
+    }
     LP_utxosetkey(key2,txid2,vout2);
-    HASH_FIND(hh2,LP_utxoinfos2[iambob],key2,sizeof(key2),utxo);
+    HASH_FIND(hh2,G.LP_utxoinfos2,key2,sizeof(key2),utxo);
     return(utxo);
 }
 
 struct LP_utxoinfo *LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
 {
     struct LP_utxoinfo *utxo=0;
+    if ( iambob != 0 )
+    {
+        printf("LP_utxofind deprecated iambob\n");
+        return(0);
+    }
     portable_mutex_lock(&LP_utxomutex);
     utxo = _LP_utxofind(iambob,txid,vout);
     portable_mutex_unlock(&LP_utxomutex);
@@ -388,6 +403,11 @@ struct LP_utxoinfo *LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
 struct LP_utxoinfo *LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)
 {
     struct LP_utxoinfo *utxo=0;
+    if ( iambob != 0 )
+    {
+        printf("LP_utxo2find deprecated iambob\n");
+        return(0);
+    }
     portable_mutex_lock(&LP_utxomutex);
     utxo = _LP_utxo2find(iambob,txid2,vout2);
     portable_mutex_unlock(&LP_utxomutex);

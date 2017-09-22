@@ -75,8 +75,8 @@
 #define DEX_SLEEP 3
 #define BASILISK_KEYSIZE ((int32_t)(2*sizeof(bits256)+sizeof(uint32_t)*2))
 
-extern char GLOBAL_DBDIR[],USERPASS[],USERPASS_WIFSTR[];
-extern int32_t IAMLP,USERPASS_COUNTER;
+extern char GLOBAL_DBDIR[];
+extern int32_t IAMLP;
 
 struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; };
 
@@ -235,7 +235,7 @@ struct LP_peerinfo
 {
     UT_hash_handle hh;
     uint64_t ip_port;
-    uint32_t ipbits,errortime,errors,numpeers,numutxos,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
+    uint32_t ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
     int32_t pushsock,subsock;
     uint16_t port;
     char ipaddr[64];
@@ -290,7 +290,7 @@ void LP_availableset(struct LP_utxoinfo *utxo);
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2);
 int32_t LP_pullsock_check(void *ctx,char **retstrp,char *myipaddr,int32_t pubsock,int32_t pullsock);
 uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
-void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
+//void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 int32_t LP_coinbus(uint16_t coin_busport);
 struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);

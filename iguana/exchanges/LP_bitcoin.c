@@ -325,14 +325,12 @@ enum opcodetype
     OP_INVALIDOPCODE = 0xff,
 };
 
-struct { bits256 privkey; uint8_t rmd160[20]; } LP_privkeys[100]; int32_t LP_numprivkeys;
-
 bits256 LP_privkeyfind(uint8_t rmd160[20])
 {
     int32_t i; static bits256 zero;
-    for (i=0; i<LP_numprivkeys; i++)
-        if ( memcmp(rmd160,LP_privkeys[i].rmd160,20) == 0 )
-            return(LP_privkeys[i].privkey);
+    for (i=0; i<G.LP_numprivkeys; i++)
+        if ( memcmp(rmd160,G.LP_privkeys[i].rmd160,20) == 0 )
+            return(G.LP_privkeys[i].privkey);
     //for (i=0; i<20; i++)
     //    printf("%02x",rmd160[i]);
     //printf(" -> no privkey\n");
@@ -345,13 +343,13 @@ int32_t LP_privkeyadd(bits256 privkey,uint8_t rmd160[20])
     tmpkey = LP_privkeyfind(rmd160);
     if ( bits256_nonz(tmpkey) != 0 )
         return(-bits256_cmp(privkey,tmpkey));
-    LP_privkeys[LP_numprivkeys].privkey = privkey;
-    memcpy(LP_privkeys[LP_numprivkeys].rmd160,rmd160,20);
+    G.LP_privkeys[G.LP_numprivkeys].privkey = privkey;
+    memcpy(G.LP_privkeys[G.LP_numprivkeys].rmd160,rmd160,20);
     //int32_t i; for (i=0; i<20; i++)
     //    printf("%02x",rmd160[i]);
     //char str[65]; printf(" -> add privkey.(%s)\n",bits256_str(str,privkey));
-    LP_numprivkeys++;
-    return(LP_numprivkeys);
+    G.LP_numprivkeys++;
+    return(G.LP_numprivkeys);
 }
 
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp)
