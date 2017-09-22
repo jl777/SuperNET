@@ -472,7 +472,7 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
             item = jitem(retjson,i);
             txid = jbits256(item,"tx_hash");
             height = jint(item,"height");
-            char str[65]; printf("history txinit %s ht.%d\n",bits256_str(str,txid),height);
+            //char str[65]; printf("history txinit %s ht.%d\n",bits256_str(str,txid),height);
             txobj = LP_transactioninit(coin,txid,0,0);
             txobj = LP_transactioninit(coin,txid,1,txobj);
             if ( txobj != 0 )

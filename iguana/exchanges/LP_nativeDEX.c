@@ -358,28 +358,31 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         int32_t height; bits256 zero; cJSON *array; int32_t n;
-        LP_listunspent_both(coin->symbol,coin->smartaddr);
-        if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
+        if ( coin->inactive != 0 )
+            continue;
+        if ( (rand() % 100) == 0 )
         {
-            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            LP_listunspent_both(coin->symbol,coin->smartaddr);
+            if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
             {
-                printf("[%s]\n\n",jprint(array,0));
-                HASH_ITER(hh,LP_peerinfos,peer,tmp)
+                if ( (n= cJSON_GetArraySize(array)) > 0 )
                 {
-                    if ( peer->errors < LP_MAXPEER_ERRORS )
+                    printf("[%s]\n\n",jprint(array,0));
+                    HASH_ITER(hh,LP_peerinfos,peer,tmp)
                     {
-                        if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
+                        if ( strcmp(peer->ipaddr,LP_myipaddr) != 0 && peer->errors < LP_MAXPEER_ERRORS )
                         {
-                            printf(">>>>>>>> compare %s %s (%s)\n",coin->symbol,coin->smartaddr,retstr);
-                            free(retstr);
+                            if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
+                            {
+                                printf(">>>>>>>> compare %s %s (%s)\n",coin->symbol,coin->smartaddr,retstr);
+                                free(retstr);
+                            }
                         }
                     }
                 }
+                free_json(array);
             }
-            free_json(array);
         }
-        if ( coin->inactive != 0 )
-            continue;
         if ( coin->electrum != 0 )
             continue;
         memset(zero.bytes,0,sizeof(zero));

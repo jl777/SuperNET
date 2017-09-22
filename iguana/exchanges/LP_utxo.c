@@ -185,12 +185,13 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
         {
             if ( vout == up->U.vout && bits256_cmp(up->U.txid,txid) == 0 )
             {
+                flag = 1;
                 if ( up->U.height <= 0 && height > 0 && up->U.height != height )
-                    up->U.height = height, flag = 1;
+                    up->U.height = height, flag |= 2;
                 if ( spendheight > 0 && up->spendheight != spendheight )
-                    up->spendheight = spendheight, flag = 1;
+                    up->spendheight = spendheight, flag |= 4;
                 if ( up->U.value == 0 && up->U.value != value )
-                    up->U.value = value, flag = 1;
+                    up->U.value = value, flag |= 8;
                 break;
             }
         }
