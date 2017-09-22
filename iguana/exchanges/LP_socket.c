@@ -361,8 +361,8 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                 }
                 if ( value != 0 || tx->height > 0 )
                     flag += LP_address_utxoadd(coin,coinaddr,txid,v,value,tx->height,-1);
-                //printf("v.%d numvouts.%d %.8f (%s)\n",jint(item,"tx_pos"),tx->numvouts,dstr(tx->outpoints[jint(item,"tx_pos")].value),jprint(item,0));
-            }
+                printf("v.%d numvouts.%d %.8f (%s)\n",v,tx->numvouts,dstr(tx->outpoints[jint(item,"tx_pos")].value),jprint(item,0));
+            } else printf("cant find tx\n");
         }
     }
     return(flag);
