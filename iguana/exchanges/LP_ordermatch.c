@@ -305,9 +305,9 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
         qprice = ((double)qp->destsatoshis / qp->satoshis);
     LP_txfees(&txfee,&desttxfee,qp->srccoin,qp->destcoin);
     if ( txfee < qp->txfee )
-        qp->txfee = txfee;
+        txfee = qp->txfee;
     if ( desttxfee < qp->desttxfee )
-        qp->desttxfee = desttxfee;
+        desttxfee = qp->desttxfee;
     printf("qprice %.8f <- %.8f/%.8f txfees.(%.8f %.8f) vs (%.8f %.8f)\n",qprice,dstr(qp->destsatoshis),dstr(qp->satoshis),dstr(qp->txfee),dstr(qp->desttxfee),dstr(txfee),dstr(desttxfee));
     if ( qp->txfee < LP_REQUIRED_TXFEE*txfee || qp->desttxfee < LP_REQUIRED_TXFEE*desttxfee )
         return(-14);
