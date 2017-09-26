@@ -469,6 +469,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
         if ( (m= LP_address_utxo_ptrs(utxos,max,ap,avoidflag)) > 1 )
         {
             targetval = LP_basesatoshis(volume,price,txfee,desttxfee);
+            if ( 0 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)
@@ -480,6 +481,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
                 up = utxos[mini];
                 utxos[mini] = 0;
                 targetval2 = (up->U.value / 8) * 9 + 2*txfee;
+                printf("targetval %.8f, found val %.8f  | targetval2 %.8f\n",dstr(targetval),dstr(up->U.value),dstr(targetval2));
                 if ( (mini= LP_nearest_utxovalue(utxos,m,targetval2)) >= 0 )
                 {
                     if ( up != 0 && (up2= utxos[mini]) != 0 )
