@@ -460,7 +460,7 @@ int32_t LP_nearest_utxovalue(struct LP_address_utxo **utxos,int32_t n,uint64_t t
 uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t desttxfee)
 {
     printf("basesatoshis %.8f (rel %.8f / price %.8f)\n",dstr(SATOSHIDEN * ((relvolume + dstr(desttxfee)) / price) + 2*txfee),relvolume,price);
-    if ( relvolume > dstr(desttxfee) )
+    if ( relvolume > dstr(desttxfee) && price > SMALLVAL )
         return(SATOSHIDEN * ((relvolume - dstr(desttxfee)) / price));
     else return(0);
 }
