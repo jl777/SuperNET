@@ -296,6 +296,8 @@ int32_t LP_isdisabled(char *base,char *rel)
 struct iguana_info *LP_coinfind(char *symbol)
 {
     struct iguana_info *coin,cdata; int32_t isinactive,isPoS,longestchain = 1; uint16_t port,busport; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*assetname;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
     if ( (coin= LP_coinsearch(symbol)) != 0 )
         return(coin);
     if ( (port= LP_rpcport(symbol)) == 0 )
