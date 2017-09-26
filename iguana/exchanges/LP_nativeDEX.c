@@ -361,12 +361,12 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         memset(&zero,0,sizeof(zero));
         if ( coin->inactive != 0 )
             continue;
-        if ( coin->updaterate != 0 || (coin->electrum == 0 && coin->rate == 0.) )
+        /*if ( coin->updaterate != 0 || (coin->electrum == 0 && coin->rate == 0.) )
         {
             LP_getestimatedrate(coin);
             if ( coin->rate != 0 )
                 coin->updaterate = 0;
-        }
+        }*/
         if ( (rand() % 1000) == 0 )
         {
             post = 0;
