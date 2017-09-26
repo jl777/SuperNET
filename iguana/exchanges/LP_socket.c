@@ -685,6 +685,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                     for (i=0; i<n; i++)
                         resultjson = jitem(paramsjson,i);
                 }
+                LP_getestimatedrate(LP_coinfind(ep->symbol));
             }
             /*else if ( strcmp(method,"blockchain.address.subscribe") == 0 ) never is called
             {

@@ -470,6 +470,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             continue;
         }
         coin->lastscanht++;
+        LP_getestimatedrate(coin);
         break;
     }
     if ( (counter % 6000) == 60 )

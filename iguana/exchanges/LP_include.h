@@ -312,6 +312,7 @@ uint16_t LP_randpeer(char *destip);
 int32_t LP_butxo_findeither(bits256 txid,int32_t vout);
 cJSON *LP_listunspent(char *symbol,char *coinaddr);
 int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid);
+double LP_getestimatedrate(struct iguana_info *coin);
 
 
 #endif
