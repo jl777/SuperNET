@@ -613,6 +613,8 @@ double LP_getestimatedrate(struct iguana_info *coin)
                     if ( rate < 0.00000020 )
                         rate = 0.00000020;
                     rate *= 1.25;
+                    if ( coin->electrum != 0 )
+                        rate *= 1.25;
                     coin->rate = rate;
                     coin->ratetime = (uint32_t)time(NULL);
                     //if ( (rand() % 10) == 0 )
