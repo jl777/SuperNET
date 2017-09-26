@@ -631,12 +631,10 @@ double LP_getestimatedrate(struct iguana_info *coin)
         return(0.0001);
     if ( strcmp(coin->symbol,"BTC") == 0 || coin->txfee == 0 || coin->rate == 0. || time(NULL) > coin->ratetime+60  )
     {
-        if ( coin->rate == 0. || (strcmp(coin->symbol,"BTC") == 0 && coin->txfee == 10000) )
-            rate = _LP_getestimatedrate(coin);
-        else rate = coin->rate;
+        rate = _LP_getestimatedrate(coin);
         if ( rate != 0. )
-            coin->txfee = (coin->rate * LP_AVETXSIZE);
-    } else return((double)coin->txfee / LP_AVETXSIZE);
+            coin->txfee = SATOSHIDEN * (coin->rate * LP_AVETXSIZE);
+    } else return((double)coin->txfee / (LP_AVETXSIZE * SATOSHIDEN));
     return(SATOSHIDEN * rate);
 }
 
