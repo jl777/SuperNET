@@ -368,7 +368,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( coin->rate != 0 )
                 coin->updaterate = 0;
         }*/
-        if ( (rand() % 100000) == 0 )
+        if ( (rand() % 10000) == 0 )
         {
             post = 0;
             LP_listunspent_both(coin->symbol,coin->smartaddr);
