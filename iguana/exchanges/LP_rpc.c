@@ -629,7 +629,7 @@ double LP_getestimatedrate(struct iguana_info *coin)
     double rate = 0.00000020;
     if ( coin == 0 )
         return(0.0001);
-    if ( strcmp(coin->symbol,"BTC") == 0 || coin->txfee == 0 || coin->rate == 0. || time(NULL) > coin->ratetime+60  )
+    if ( coin->txfee == 0 || coin->rate == 0. || time(NULL) > coin->ratetime+60  )
     {
         rate = _LP_getestimatedrate(coin);
         if ( rate != 0. )
