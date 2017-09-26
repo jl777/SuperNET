@@ -39,7 +39,7 @@ void LP_txfees(uint64_t *txfeep,uint64_t *desttxfeep,char *base,char *rel)
 {
     *txfeep = LP_txfeecalc(LP_coinfind(base),0);
     *desttxfeep = LP_txfeecalc(LP_coinfind(rel),0);
-    printf("LP_txfees(%.8f %.8f)\n",dstr(*txfeep),dstr(*desttxfeep));
+    //printf("LP_txfees(%.8f %.8f)\n",dstr(*txfeep),dstr(*desttxfeep));
 }
 
 double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
@@ -458,7 +458,9 @@ int32_t LP_nearest_utxovalue(struct LP_address_utxo **utxos,int32_t n,uint64_t t
 uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t desttxfee)
 {
     printf("basesatoshis %.8f (rel %.8f / price %.8f)\n",dstr(SATOSHIDEN * ((relvolume + dstr(desttxfee)) / price) + 2*txfee),relvolume,price);
-    return(SATOSHIDEN * ((relvolume + dstr(desttxfee)) / price) + 2*txfee);
+    if ( relvolume > dstr(desttxfee) )
+        return(SATOSHIDEN * ((relvolume - dstr(desttxfee)) / price));
+    else return(0);
 }
 
 struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double volume,double price,int32_t avoidflag,uint64_t desttxfee)
@@ -476,7 +478,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
                     printf("%.8f ",dstr(utxos[i]->U.value));
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f\n",dstr(targetval),volume,price,dstr(txfee));
             }
-            if ( (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 && (double)utxos[mini]->U.value/targetval < LP_MINVOL-1 )
+            if ( targetval != 0 && (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 && (double)utxos[mini]->U.value/targetval < LP_MINVOL-1 )
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
@@ -959,7 +961,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *space,double *ordermatchprice
                             if ( n > 1 )
                             {
                                 basesatoshis = LP_basesatoshis(dstr(autxo->S.satoshis),price,txfee,desttxfee);
-                                if ( (bestutxo= LP_address_utxopair(space,utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,0,desttxfee)) != 0 )
+                                if ( basesatoshis != 0 && (bestutxo= LP_address_utxopair(space,utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,0,desttxfee)) != 0 )
                                 {
                                     bestutxo->pubkey = pubp->pubkey;
                                     safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
