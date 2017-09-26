@@ -836,10 +836,11 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     butxo->T.lasttime = (uint32_t)time(NULL);
                     printf("set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
                     {
-                        bits256 zero;
-                        LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
+                        bits256 zero; char *msg2;
                         memset(&zero,0,sizeof(zero));
+                        msg2 = clonestr(msg);
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg);
+                        LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg2);
                         LP_butxo_swapfields_set(butxo);
                         printf("return after RESERVED\n");
                         return(2);
