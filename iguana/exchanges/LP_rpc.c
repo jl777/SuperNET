@@ -607,7 +607,7 @@ double LP_getestimatedrate(struct iguana_info *coin)
             sprintf(buf,"[%d]",6);
             if ( (retstr= LP_apicall(coin,coin->electrum==0?"estimatefee" : "blockchain.estimatefee",buf)) != 0 )
             {
-                if ( (errjson= cJSON_Parse(retstr)) != 0 )
+                if ( retstr[0] == '{' && (errjson= cJSON_Parse(retstr)) != 0 )
                 {
                     if ( jobj(errjson,"error") != 0 )
                         rate = 0.;
