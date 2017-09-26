@@ -481,7 +481,6 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
                 up = utxos[mini];
                 utxos[mini] = 0;
                 targetval2 = (up->U.value / 8) * 9 + 2*txfee;
-                printf("targetval %.8f, found val %.8f  | targetval2 %.8f\n",dstr(targetval),dstr(up->U.value),dstr(targetval2));
                 if ( (mini= LP_nearest_utxovalue(utxos,m,targetval2)) >= 0 )
                 {
                     if ( up != 0 && (up2= utxos[mini]) != 0 )
@@ -496,6 +495,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
                         utxo->deposit.vout = up2->U.vout;
                         utxo->deposit.value = up2->U.value;
                         utxo->S.satoshis = targetval;
+                        printf("targetval %.8f, found val %.8f  | targetval2 %.8f val2 %.8f\n",dstr(targetval),dstr(up->U.value),dstr(targetval2),dstr(up2->U.value));
                         return(utxo);
                     }
                 }
@@ -959,7 +959,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *space,double *ordermatchprice
                             if ( n > 1 )
                             {
                                 basesatoshis = LP_basesatoshis(dstr(autxo->S.satoshis),price,txfee,desttxfee);
-                                if ( (bestutxo= LP_address_utxopair(space,utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis),price,0,desttxfee)) != 0 )
+                                if ( (bestutxo= LP_address_utxopair(space,utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,0,desttxfee)) != 0 )
                                 {
                                     bestutxo->pubkey = pubp->pubkey;
                                     safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
