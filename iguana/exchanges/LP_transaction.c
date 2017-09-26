@@ -565,7 +565,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
             {
                 vin = jitem(vins,vout);
                 value = LP_value_extract(vin,1);
-                printf("value in vout.%d %.8f\n",vout,dstr(value));
+                printf("value in vout.%d %.8f (%S)\n",vout,dstr(value),jprint(txobj,0));
             } else value = 0;
             free_json(txobj);
         }

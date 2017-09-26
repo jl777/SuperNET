@@ -262,7 +262,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
         if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
             hexstr = jprint(retjson,1);
-            if ( strlen(hexstr) > 10000 )
+            if ( strlen(hexstr) > 20000 )
             {
                 static uint32_t counter;
                 if ( counter++ < 3 )
@@ -316,7 +316,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
         if ( (hexobj= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
         {
             hexstr = jprint(hexobj,1);
-            if ( strlen(hexstr) > 10000 )
+            if ( strlen(hexstr) > 20000 )
             {
                 static uint32_t counter;
                 if ( counter++ < 3 )
