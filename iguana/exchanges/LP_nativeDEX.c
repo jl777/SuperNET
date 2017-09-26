@@ -368,7 +368,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( coin->rate != 0 )
                 coin->updaterate = 0;
         }*/
-        if ( (rand() % 1000) == 0 )
+        if ( (rand() % 10000) == 0 )
         {
             post = 0;
             LP_listunspent_both(coin->symbol,coin->smartaddr);
@@ -700,7 +700,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
         if ( nonz == 0 )
-            usleep(1000000 / MAINLOOP_PERSEC);
+            usleep(100000);
+        else usleep(10000);
     }
 }
 
