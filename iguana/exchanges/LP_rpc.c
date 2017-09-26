@@ -604,7 +604,7 @@ double LP_getestimatedrate(struct iguana_info *coin)
     {
         if ( coin->rate == 0. || time(NULL) > coin->ratetime+60 )
         {
-            sprintf(buf,"[%d]",6);
+            sprintf(buf,"[%d]",3);
             if ( (retstr= LP_apicall(coin,coin->electrum==0?"estimatefee" : "blockchain.estimatefee",buf)) != 0 )
             {
                 if ( retstr[0] != '-' )
