@@ -685,8 +685,6 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                     for (i=0; i<n; i++)
                         resultjson = jitem(paramsjson,i);
                 }
-                if ( (coin= LP_coinfind(ep->symbol)) != 0 )
-                    coin->updaterate = (uint32_t)time(NULL);
             }
             /*else if ( strcmp(method,"blockchain.address.subscribe") == 0 ) never is called
             {
@@ -700,6 +698,8 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
             {
                 *(ep->heightp) = height;
                 *(ep->heighttimep) = (uint32_t)time(NULL);
+                if ( (coin= LP_coinfind(ep->symbol)) != 0 )
+                    coin->updaterate = (uint32_t)time(NULL);
                 printf("%s ELECTRUM >>>>>>>>> set height.%d\n",ep->symbol,height);
             }
         }
