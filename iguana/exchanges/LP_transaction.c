@@ -27,7 +27,7 @@ int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid)
         txid = jbits256(txobj,"txid");
         if ( jobj(txobj,"error") == 0 && bits256_cmp(txid,expectedtxid) == 0 )
         {
-            char str[65]; printf("%s already in gettx (%s)\n",bits256_str(str,txid),jprint(txobj,0));
+            //char str[65]; printf("%s already in gettx (%s)\n",bits256_str(str,txid),jprint(txobj,0));
             flag = 1;
         }
         free_json(txobj);
@@ -545,7 +545,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
 
 char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,void *ctx,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,char *destaddr,uint8_t *pubkey33,int32_t finalseqid,uint32_t expiration,int64_t *destamountp,uint64_t satoshis,char *changeaddr,char *vinaddr,int32_t suppress_pubkeys)
 {
-    char *rawtxbytes=0,*signedtx=0,tmpaddr[64],hexstr[999],wifstr[128],txdestaddr[64],_destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *txobj,*vins,*item,*privkeys; int32_t completed,spendlen,ignore_cltverr=1; struct vin_info V[2]; uint32_t timestamp,locktime = 0,sequenceid = 0xffffffff * finalseqid; bits256 txid; uint64_t value,change = 0; struct iguana_msgtx msgtx;
+    char *rawtxbytes=0,*signedtx=0,tmpaddr[64],hexstr[999],wifstr[128],_destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *txobj,*vins,*vin,*item,*privkeys; int32_t completed,spendlen,n,ignore_cltverr=1; struct vin_info V[2]; uint32_t timestamp,locktime = 0,sequenceid = 0xffffffff * finalseqid; bits256 txid; uint64_t value=0,change = 0; struct iguana_msgtx msgtx;
     *destamountp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     if ( finalseqid == 0 )
@@ -554,12 +554,24 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     if ( redeemlen < 0 )
         return(0);
 #ifndef BASILISK_DISABLESENDTX
-    if ( (value= LP_txvalue(txdestaddr,symbol,utxotxid,vout)) == 0 )
+    if ( (txobj= LP_gettx(symbol,utxotxid)) != 0 )
     {
-        char str[65];
-        printf("basilisk_swap_bobtxspend.%s %s utxo.(%s) already spent or doesnt exist\n",name,symbol,bits256_str(str,utxotxid));
-        return(0);
+        if ( (vins= jarray(&n,txobj,"vin")) != 0 && vout < n )
+        {
+            vin = jitem(vins,vout);
+            value = LP_value_extract(vin,1);
+        }
+        free_json(txobj);
     }
+    /*if ( coin->electrum == 0 )
+     {
+     if ( (value= LP_txvalue(txdestaddr,symbol,utxotxid,vout)) == 0 )
+     {
+     char str[65];
+     printf("basilisk_swap_bobtxspend.%s %s utxo.(%s) already spent or doesnt exist\n",name,symbol,bits256_str(str,utxotxid));
+     return(0);
+     }
+     }*/
 #else
     value = satoshis;
 #endif
