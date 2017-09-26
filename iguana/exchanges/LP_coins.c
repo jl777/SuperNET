@@ -261,6 +261,7 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
     sprintf(coin->serverport,"127.0.0.1:%u",port);
+    coin->updaterate = (uint32_t)time(NULL);
     coin->isPoS = isPoS;
     coin->taddr = taddr;
     coin->wiftaddr = wiftaddr;
