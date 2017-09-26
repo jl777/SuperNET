@@ -669,7 +669,7 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
 
 int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 {
-    cJSON *strjson,*errjson,*resultjson,*paramsjson; char *method; int32_t i,n,height; uint32_t idnum=0; struct stritem *stritem; struct queueitem *tmp,*item = 0;
+    cJSON *strjson,*errjson,*resultjson,*paramsjson; char *method; int32_t i,n,height; uint32_t idnum=0; struct stritem *stritem; struct iguana_info *coin; struct queueitem *tmp,*item = 0;
     ep->lasttime = (uint32_t)time(NULL);
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
@@ -685,7 +685,8 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                     for (i=0; i<n; i++)
                         resultjson = jitem(paramsjson,i);
                 }
-                LP_getestimatedrate(LP_coinfind(ep->symbol));
+                if ( (coin= LP_coinfind(ep->symbol)) != 0 )
+                    coin->updaterate = (uint32_t)time(NULL);
             }
             /*else if ( strcmp(method,"blockchain.address.subscribe") == 0 ) never is called
             {
