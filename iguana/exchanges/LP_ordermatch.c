@@ -260,6 +260,7 @@ int32_t LP_quote_checkmempool(struct LP_quoteinfo *qp,struct LP_utxoinfo *autxo,
 double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP_quoteinfo *qp,int32_t iambob)
 {
     double qprice=0.; uint64_t txfee,desttxfee,srcvalue=0,srcvalue2=0,destvalue=0,destvalue2=0;
+    printf("quote %s %.8f -> %s %.8f\n",qp->srccoin,dstr(qp->satoshis),qp->destcoin,dstr(qp->destsatoshis));
     if ( butxo != 0 )
     {
         if (LP_iseligible(&srcvalue,&srcvalue2,1,qp->srccoin,qp->txid,qp->vout,qp->satoshis,qp->txid2,qp->vout2) == 0 )
@@ -456,6 +457,7 @@ int32_t LP_nearest_utxovalue(struct LP_address_utxo **utxos,int32_t n,uint64_t t
 
 uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t desttxfee)
 {
+    printf("basesatoshis %.8f (rel %.8f / price %.8f)\n",dstr(SATOSHIDEN * ((relvolume + dstr(desttxfee)) / price) + 2*txfee),relvolume,price);
     return(SATOSHIDEN * ((relvolume + dstr(desttxfee)) / price) + 2*txfee);
 }
 
@@ -1024,6 +1026,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         if ( (qprice= LP_quote_validate(autxo,0,&Q,0)) <= SMALLVAL )
         {
             printf("quote validate error %.0f\n",qprice);
+exit(-1);
             continue;
             //return(clonestr("{\"error\":\"quote validation error\"}"));
         }
