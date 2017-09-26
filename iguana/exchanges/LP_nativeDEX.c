@@ -700,8 +700,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
         if ( nonz == 0 )
-            usleep(100000);
-        else usleep(10000);
+            usleep(500000);
+        else usleep(50000);
     }
 }
 
