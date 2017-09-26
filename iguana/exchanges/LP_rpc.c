@@ -598,28 +598,31 @@ int32_t LP_importaddress(char *symbol,char *address)
 double _LP_getestimatedrate(struct iguana_info *coin)
 {
     char buf[512],*retstr; cJSON *errjson; double rate = 0.00000020;
-    sprintf(buf,"[%d]",strcmp(coin->symbol,"BTC") == 0 ? 6 : 2);
-    if ( (retstr= LP_apicall(coin,coin->electrum==0?"estimatefee" : "blockchain.estimatefee",buf)) != 0 )
+    if ( coin->rate == 0. || time(NULL) > time(NULL) > coin->ratetime+6 )
     {
-        if ( retstr[0] == '{' && (errjson= cJSON_Parse(retstr)) != 0 )
+        sprintf(buf,"[%d]",strcmp(coin->symbol,"BTC") == 0 ? 6 : 2);
+        if ( (retstr= LP_apicall(coin,coin->electrum==0?"estimatefee" : "blockchain.estimatefee",buf)) != 0 )
         {
-            if ( jobj(errjson,"error") != 0 )
-                rate = 0.;
-            free_json(errjson);
-        }
-        else if ( retstr[0] != '-' )
-        {
-            rate = atof(retstr) / 1024.;
-            if ( rate < 0.00000020 )
-                rate = 0.00000020;
-            rate *= 1.25;
-            if ( coin->electrum != 0 )
+            if ( retstr[0] == '{' && (errjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( jobj(errjson,"error") != 0 )
+                    rate = 0.;
+                free_json(errjson);
+            }
+            else if ( retstr[0] != '-' )
+            {
+                rate = atof(retstr) / 1024.;
+                if ( rate < 0.00000020 )
+                    rate = 0.00000020;
                 rate *= 1.25;
-            coin->rate = rate;
-            printf("t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",coin->ratetime,coin->symbol,retstr,rate,coin->rate);
-            coin->ratetime = (uint32_t)time(NULL);
+                if ( coin->electrum != 0 )
+                    rate *= 1.25;
+                coin->rate = rate;
+                printf("t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",coin->ratetime,coin->symbol,retstr,rate,coin->rate);
+                coin->ratetime = (uint32_t)time(NULL);
+            }
+            free(retstr);
         }
-        free(retstr);
     }
     return(rate);
 }
