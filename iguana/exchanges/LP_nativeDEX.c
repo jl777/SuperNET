@@ -331,7 +331,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
+        if ( now > peer->lastpeers+300 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 50000) == 0) )
         {
             peer->lastpeers = now;
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
