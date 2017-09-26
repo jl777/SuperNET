@@ -720,7 +720,7 @@ void LP_bobloop(void *_swap)
                 printf("error waiting for alicefee\n");
             else if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 )
                 printf("error sending bobdeposit\n");
-            else if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_alicepayment) < 0 )
+            else if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_alicepayment) < 0 )
                 printf("error waiting for alicepayment\n");
             else
             {
@@ -775,7 +775,7 @@ void LP_aliceloop(void *_swap)
             LP_swapsfp_update(&swap->I.req);
             if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
                 printf("error sending alicefee\n");
-            else if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_bobdeposit) < 0 )
+            else if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_bobdeposit) < 0 )
                 printf("error waiting for bobdeposit\n");
             else if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x1000,data,maxlen,&swap->alicepayment,0x800,0) == 0 )
                 printf("error sending alicepayment\n");
@@ -790,7 +790,7 @@ void LP_aliceloop(void *_swap)
                     sleep(10);
                 }
                 swap->sentflag = 1;
-                if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_bobpayment) < 0 )
+                if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_bobpayment) < 0 )
                     printf("error waiting for bobpayment\n");
                 else
                 {
