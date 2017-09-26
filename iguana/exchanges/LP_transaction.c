@@ -19,13 +19,31 @@
 //  marketmaker
 //
 
+int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid)
+{
+    cJSON *txobj; bits256 txid; int32_t flag = 0;
+    if ( (txobj= LP_gettx(symbol,expectedtxid)) != 0 )
+    {
+        txid = jbits256(txobj,"txid");
+        if ( jobj(txobj,"error") == 0 && bits256_cmp(txid,expectedtxid) == 0 )
+        {
+            char str[65]; printf("%s already in gettx (%s)\n",bits256_str(str,txid),jprint(txobj,0));
+            flag = 1;
+        }
+        free_json(txobj);
+    }
+    return(flag);
+}
+
 bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxid)
 {
     char *retstr; bits256 txid; cJSON *retjson,*errorobj; int32_t i,sentflag = 0;
     memset(&txid,0,sizeof(txid));
-    for (i=0; i<1; i++)
+    for (i=0; i<2; i++)
     {
-        if ( (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
+        if ( sentflag == 0 && LP_gettx_presence(symbol,expectedtxid) != 0 )
+            sentflag = 1;
+        if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
         {
             if ( is_hexstr(retstr,0) == 64 )
             {
@@ -50,6 +68,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
         }
         if ( sentflag != 0 )
             break;
+        sleep(3);
     }
     return(txid);
 }

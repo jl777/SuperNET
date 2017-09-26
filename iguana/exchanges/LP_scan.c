@@ -452,46 +452,53 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
     expiration = (uint32_t)time(NULL) + duration;
     while ( 1 )
     {
-        if ( coin->electrum == 0 )
-        {
-            if ( LP_mempoolscan(symbol,txid) >= 0 )
-                return(0);
-        }
+        if ( LP_gettx_presence(symbol,txid) != 0 )
+            numconfirms = 0;
         else
         {
-            if ( (array= electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr)) != 0 )
+            if ( coin->electrum == 0 )
             {
-                char str[65]; printf("check %s mempool.(%s)\n",bits256_str(str,txid),jprint(array,0));
-                if ( (n= cJSON_GetArraySize(array)) > 0 )
+                if ( LP_mempoolscan(symbol,txid) >= 0 )
+                    numconfirms = 0;
+            }
+            else
+            {
+                if ( (array= electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr)) != 0 )
                 {
-                    for (i=0; i<n; i++)
+                    char str[65]; printf("check %s mempool.(%s)\n",bits256_str(str,txid),jprint(array,0));
+                    if ( (n= cJSON_GetArraySize(array)) > 0 )
                     {
-                        item = jitem(array,i);
-                        if ( bits256_cmp(txid,jbits256(item,"tx_hash")) == 0 )
+                        for (i=0; i<n; i++)
                         {
-                            char str[65]; printf("found %s %s in mempool\n",symbol,bits256_str(str,txid));
-                            numconfirms = 0;
-                            break;
+                            item = jitem(array,i);
+                            if ( bits256_cmp(txid,jbits256(item,"tx_hash")) == 0 )
+                            {
+                                char str[65]; printf("found %s %s in mempool\n",symbol,bits256_str(str,txid));
+                                numconfirms = 0;
+                                break;
+                            }
                         }
                     }
+                    free(array);
                 }
-                free(array);
-            }
-            LP_listunspent_issue(coin->symbol,coinaddr);
-            struct LP_address_utxo *up;
-            if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
-            {
-                char str[65]; printf("address_utxofind found confirmed %s %s %s ht.%d vs %d\n",symbol,coinaddr,bits256_str(str,txid),up->U.height,coin->height);
-                if ( coin->electrum != 0 && (array= electrum_address_gethistory(symbol,coin->electrum,&array,coinaddr)) != 0 )
-                    free_json(array);
-                if ( coin->height >= up->U.height )
-                    numconfirms = (coin->height - up->U.height + 1);
+                LP_listunspent_issue(coin->symbol,coinaddr);
+                struct LP_address_utxo *up;
+                if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
+                {
+                    char str[65]; printf("address_utxofind found confirmed %s %s %s ht.%d vs %d\n",symbol,coinaddr,bits256_str(str,txid),up->U.height,coin->height);
+                    if ( coin->electrum != 0 && (array= electrum_address_gethistory(symbol,coin->electrum,&array,coinaddr)) != 0 )
+                        free_json(array);
+                    if ( coin->height >= up->U.height )
+                        numconfirms = (coin->height - up->U.height + 1);
+                }
             }
         }
         if ( time(NULL) > expiration || numconfirms >= 0 )
             break;
         usleep(500000);
     }
+    if ( numconfirms <= 0 )
+        numconfirms = LP_numconfirms(symbol,coinaddr,txid,vout,1);
     return(numconfirms);
 }
 

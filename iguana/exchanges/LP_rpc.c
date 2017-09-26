@@ -626,7 +626,7 @@ double LP_getestimatedrate(struct iguana_info *coin)
 
 char *LP_sendrawtransaction(char *symbol,char *signedtx)
 {
-    cJSON *array; char *paramstr,*tmpstr,*retstr=0; int32_t n; cJSON *retjson; struct iguana_info *coin;
+    cJSON *array,*errobj; char *paramstr,*tmpstr,*retstr=0; int32_t n,alreadyflag = 0; cJSON *retjson; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     coin = LP_coinfind(symbol);
@@ -646,14 +646,27 @@ char *LP_sendrawtransaction(char *symbol,char *signedtx)
         if ( (retjson= electrum_sendrawtransaction(symbol,coin->electrum,&retjson,signedtx)) != 0 )
         {
             retstr = jprint(retjson,1);
-            printf("electrum sendrawtx.(%s) -> %s\n",signedtx,retstr);
-            n = (int32_t)strlen(retstr);
-            if ( retstr[0] == '"' && retstr[n-1] == '"' )
+            //electrum sendrawtx (the transaction was rejected by network rules.\n\ntransaction already in block chain)
+            if ( strstr(retstr,"already in block") != 0 )
+                alreadyflag = 1;
+            printf("electrum sendrawtx.(%s) -> %s already.%d\n",signedtx,retstr,alreadyflag);
+            if ( alreadyflag != 0 )
             {
-                retstr[n-1] = 0;
-                tmpstr = clonestr(retstr+1);
-                free(retstr);
-                retstr = tmpstr;
+                errobj = cJSON_CreateObject();
+                jaddstr(errobj,"error","rejected");
+                jaddnum(errobj,"code",-27);
+                retstr = jprint(errobj,1);
+            }
+            else
+            {
+                n = (int32_t)strlen(retstr);
+                if ( retstr[0] == '"' && retstr[n-1] == '"' )
+                {
+                    retstr[n-1] = 0;
+                    tmpstr = clonestr(retstr+1);
+                    free(retstr);
+                    retstr = tmpstr;
+                }
             }
         }
     }
