@@ -237,7 +237,7 @@ dividends(coin, height, <args>)\n\
             {
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume")*price,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume")/price,jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
