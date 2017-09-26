@@ -553,6 +553,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     //printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
     if ( redeemlen < 0 )
         return(0);
+    value = satoshis;
 #ifndef BASILISK_DISABLESENDTX
     if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum == 0 )
     {
@@ -572,8 +573,6 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
             free_json(txobj);
         }*/
      }
-#else
-    value = satoshis;
 #endif
     if ( satoshis != 0 )
     {
