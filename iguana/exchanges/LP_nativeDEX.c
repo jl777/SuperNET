@@ -363,6 +363,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             continue;
         if ( coin->updaterate != 0 || (coin->electrum == 0 && coin->rate == 0.) )
         {
+            printf("issue LP_getestimatedrate(%s)\n",coin->symbol);
             LP_getestimatedrate(coin);
             if ( coin->rate != 0 )
                 coin->updaterate = 0;
