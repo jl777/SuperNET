@@ -598,7 +598,7 @@ int32_t LP_importaddress(char *symbol,char *address)
 double _LP_getestimatedrate(struct iguana_info *coin)
 {
     char buf[512],*retstr; cJSON *errjson; double rate = 0.00000020;
-    if ( coin->rate == 0. || time(NULL) > time(NULL) > coin->ratetime+30 )
+    if ( coin->rate == 0. || time(NULL) > coin->ratetime+30 )
     {
         sprintf(buf,"[%d]",strcmp(coin->symbol,"BTC") == 0 ? 6 : 2);
         if ( (retstr= LP_apicall(coin,coin->electrum==0?"estimatefee" : "blockchain.estimatefee",buf)) != 0 )
