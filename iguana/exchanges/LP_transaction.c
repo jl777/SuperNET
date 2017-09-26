@@ -545,7 +545,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
 
 char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,void *ctx,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,char *destaddr,uint8_t *pubkey33,int32_t finalseqid,uint32_t expiration,int64_t *destamountp,uint64_t satoshis,char *changeaddr,char *vinaddr,int32_t suppress_pubkeys)
 {
-    char *rawtxbytes=0,*signedtx=0,str[65],tmpaddr[64],txdestaddr[64],hexstr[999],wifstr[128],_destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *txobj,*vins,*vin,*item,*privkeys; int32_t completed,spendlen,n,ignore_cltverr=1; struct vin_info V[2]; uint32_t timestamp,locktime = 0,sequenceid = 0xffffffff * finalseqid; bits256 txid; uint64_t value=0,change = 0; struct iguana_msgtx msgtx; struct iguana_info *coin;
+    char *rawtxbytes=0,*signedtx=0,str[65],tmpaddr[64],txdestaddr[64],hexstr[999],wifstr[128],_destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *txobj,*vins,*obj,*vouts,*item,*privkeys; int32_t completed,spendlen,n,ignore_cltverr=1; struct vin_info V[2]; uint32_t timestamp,locktime = 0,sequenceid = 0xffffffff * finalseqid; bits256 txid; uint64_t value=0,change = 0; struct iguana_msgtx msgtx; struct iguana_info *coin;
     *destamountp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     if ( finalseqid == 0 )
@@ -553,20 +553,18 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     //printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
     if ( redeemlen < 0 )
         return(0);
-    value = satoshis;
+    value = 0;
 #ifndef BASILISK_DISABLESENDTX
     if ( (coin= LP_coinfind(symbol)) != 0 )
     {
-        if ( coin->electrum == 0 )
-            value = LP_txvalue(txdestaddr,symbol,utxotxid,vout);
-        else if ( (txobj= LP_gettx(symbol,utxotxid)) != 0 )
+        if ( (txobj= LP_gettx(symbol,utxotxid)) != 0 )
         {
-            if ( (vins= jarray(&n,txobj,"vin")) != 0 && vout < n )
+            if ( (vouts= jarray(&n,txobj,"vout")) != 0 && vout < n )
             {
-                vin = jitem(vins,vout);
-                value = LP_value_extract(vin,1);
-                printf("value in vout.%d %.8f (%s)\n",vout,dstr(value),jprint(txobj,0));
-            } else value = 0;
+                obj = jitem(vouts,vout);
+                value = LP_value_extract(obj,1);
+                //printf("value in vout.%d %.8f (%s)\n",vout,dstr(value),jprint(txobj,0));
+            }
             free_json(txobj);
         }
         if ( value == 0 )
