@@ -241,7 +241,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-printf("RECV.(%s)\n",(char *)ptr);
+//printf("RECV.(%s)\n",(char *)ptr);
                 nonz++;
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
