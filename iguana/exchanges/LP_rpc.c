@@ -612,10 +612,11 @@ double LP_getestimatedrate(struct iguana_info *coin)
                     rate = atof(retstr) / 1024.;
                     if ( rate < 0.00000020 )
                         rate = 0.00000020;
-                    coin->rate = rate * 1.25;
+                    rate *= 1.25;
+                    coin->rate = rate;
                     coin->ratetime = (uint32_t)time(NULL);
                     //if ( (rand() % 10) == 0 )
-                        printf("estimated rate.(%s) %s -> %.8f\n",coin->symbol,retstr,rate);
+                        printf("estimated rate.(%s) (%s) -> %.8f\n",coin->symbol,retstr,rate);
                 }
                 free(retstr);
             }
