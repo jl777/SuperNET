@@ -25,7 +25,7 @@ uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee)
     {
         if ( strcmp(coin->symbol,"BTC") == 0 )
         {
-            if ( coin->rate == 0. )
+            //if ( coin->rate == 0. )
                 coin->rate = LP_getestimatedrate(coin);
             if ( txfee == 0 && (txfee= coin->rate * LP_AVETXSIZE) < LP_MIN_TXFEE )
                 txfee = LP_MIN_TXFEE;
@@ -41,7 +41,7 @@ void LP_txfees(uint64_t *txfeep,uint64_t *desttxfeep,char *base,char *rel)
 {
     *txfeep = LP_txfeecalc(LP_coinfind(base),0);
     *desttxfeep = LP_txfeecalc(LP_coinfind(rel),0);
-    //printf("LP_txfees(%.8f %.8f)\n",dstr(*txfeep),dstr(*desttxfeep));
+    printf("LP_txfees(%.8f %.8f)\n",dstr(*txfeep),dstr(*desttxfeep));
 }
 
 double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
