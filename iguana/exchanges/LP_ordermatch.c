@@ -365,27 +365,22 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
     msg = jprint(reqjson,1);
     printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
-    if ( 0 && strcmp(method,"connect") == 0 )
+    if ( 1 && strcmp(method,"request") == 0 )
     {
         sleep(3);
         LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg);
-    }
-    else
+    } else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
+    for (i=0; i<30; i++)
     {
-        memset(&zero,0,sizeof(zero));
-        LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
-        for (i=0; i<30; i++)
+        if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )
         {
-            if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )
+            if ( flag == 0 || bits256_nonz(qp->desthash) != 0 )
             {
-                if ( flag == 0 || bits256_nonz(qp->desthash) != 0 )
-                {
-                    printf("break out of loop.%d price %.8f %s/%s\n",i,price,qp->srccoin,qp->destcoin);
-                    break;
-                }
+                printf("break out of loop.%d price %.8f %s/%s\n",i,price,qp->srccoin,qp->destcoin);
+                break;
             }
-            usleep(1000000);
         }
+        usleep(1000000);
     }
     return(price);
 }
