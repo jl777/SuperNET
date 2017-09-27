@@ -326,30 +326,31 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( (rand() % 10000) == 0 )
             {
                 peer->errors--;
-                peer->diduquery = 0;
+                if ( peer->errors < LP_MAXPEER_ERRORS )
+                    peer->diduquery = 0;
             }
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 10000) == 0) )
+        if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 1000) == 0) )
         {
             peer->lastpeers = now;
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
-                LP_peer_pricesquery(peer);
-                if ( peer->needping != 0 )
-                {
-                    if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
-                        free(retstr);
-                    peer->needping = 0;
-                }
+                peer->diduquery = 0;
             }
         }
         if ( peer->diduquery == 0 )
         {
             LP_peer_pricesquery(peer);
             peer->diduquery = now;
+        }
+        if ( peer->needping != 0 )
+        {
+            if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
+                free(retstr);
+            peer->needping = 0;
         }
     }
     if ( (counter % 6000) == 10 )
@@ -368,8 +369,9 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( coin->rate != 0 )
                 coin->updaterate = 0;
         }*/
-        if ( (rand() % 10000) == 0 )
+        if ( now > coin->lastutxos+60 || (rand() % 10000) == 0 )
         {
+            coin->lastutxos = now;
             post = 0;
             LP_listunspent_both(coin->symbol,coin->smartaddr);
             if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )

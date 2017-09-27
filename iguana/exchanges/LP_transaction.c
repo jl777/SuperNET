@@ -566,6 +566,8 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
                 //printf("value in vout.%d %.8f (%s)\n",vout,dstr(value),jprint(txobj,0));
             }
             free_json(txobj);
+            //if ( value != 0 )
+            //    gettxout
         }
         if ( value == 0 )
         {
