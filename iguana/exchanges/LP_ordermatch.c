@@ -132,7 +132,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
         jadd64bits(retjson,"destsatoshis",qp->destsatoshis);
         if ( qp->satoshis != 0 )
         {
-            price = (double)(qp->destsatoshis-qp->desttxfee) / (qp->satoshis - qp->txfee);
+            price = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
             jaddnum(retjson,"price",price);
         }
     }
@@ -208,7 +208,7 @@ char *LP_quotereceived(cJSON *argjson)
 {
     struct LP_cacheinfo *ptr; double price; struct LP_quoteinfo Q;
     LP_quoteparse(&Q,argjson);
-    price = (double)(Q.destsatoshis-Q.desttxfee) / (Q.satoshis - Q.txfee);
+    price = (double)Q.destsatoshis / (Q.satoshis - Q.txfee);
     if ( (ptr= LP_cacheadd(Q.srccoin,Q.destcoin,Q.txid,Q.vout,price,&Q)) != 0 )
     {
         ptr->Q = Q;
@@ -308,7 +308,7 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
         return(-33);
     }
     if ( qp->satoshis != 0 )
-        qprice = ((double)(qp->destsatoshis-qp->desttxfee) / (qp->satoshis-qp->txfee));
+        qprice = ((double)qp->destsatoshis / (qp->satoshis-qp->txfee));
     LP_txfees(&txfee,&desttxfee,qp->srccoin,qp->destcoin);
     if ( txfee < qp->txfee )
         txfee = qp->txfee;
