@@ -297,7 +297,7 @@ void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
                 {
                     if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
                     {
-                        char str[65]; printf("gotprice %s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
+                        //char str[65]; printf("gotprice %s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
                         pubp->matrix[basepp->ind][relid] = askprice;
                         if ( (relpp= LP_priceinfofind(rel)) != 0 )
                         {

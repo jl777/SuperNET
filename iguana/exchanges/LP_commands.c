@@ -474,13 +474,13 @@ dividends(coin, height, <args>)\n\
             }
             else if ( strcmp(method,"notify") == 0 )
             {
-                char *rmd160str,str[65]; bits256 pub; struct LP_pubkeyinfo *pubp;
+                char *rmd160str; bits256 pub; struct LP_pubkeyinfo *pubp;
                 pub = jbits256(argjson,"pub");
                 if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
                 {
                     if ( (pubp= LP_pubkeyadd(pub)) != 0 )
                         decode_hex(pubp->rmd160,20,rmd160str);
-                    printf("NOTIFIED pub %s rmd160 %s\n",bits256_str(str,pub),rmd160str);
+                    //printf("NOTIFIED pub %s rmd160 %s\n",bits256_str(str,pub),rmd160str);
                 }
                 retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
             }
