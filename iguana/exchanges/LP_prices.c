@@ -238,7 +238,7 @@ cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
                     jaddstr(obj,"rmd160",hexstr);
                     init_hexbytes_noT(hexstr2,pubp->pubsecp,sizeof(pubp->pubsecp));
                     jaddstr(obj,"pubsecp",hexstr2);
-                    printf("nonz rmd160 (%s %s)\n",hexstr,hexstr2);
+                    //printf("nonz rmd160 (%s %s)\n",hexstr,hexstr2);
                 }
             }
         }
