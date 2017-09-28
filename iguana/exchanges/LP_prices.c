@@ -269,13 +269,16 @@ void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
             else mismatch = 0;
             if ( bits256_cmp(pubkey,G.LP_mypub25519) == 0 && mismatch == 0 )
                 peer->needping = 0;
-            if ( mismatch != 0 && memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 && (pubsecpstr= jstr(obj,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
+            if ( mismatch != 0 && memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 )
             {
                 for (i=0; i<20; i++)
                     printf("%02x",pubp->rmd160[i]);
-                char str[65]; printf(" -> rmd160.(%s) for %s (%s)\n",hexstr,bits256_str(str,pubkey),pubsecpstr);
                 memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
-                decode_hex(pubp->pubsecp,sizeof(pubp->pubsecp),pubsecpstr);
+                if ( (pubsecpstr= jstr(obj,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
+                {
+                    decode_hex(pubp->pubsecp,sizeof(pubp->pubsecp),pubsecpstr);
+                    char str[65]; printf(" -> rmd160.(%s) for %s (%s)\n",hexstr,bits256_str(str,pubkey),pubsecpstr);
+                }
             }
         }
         timestamp = juint(obj,"timestamp");
