@@ -354,10 +354,7 @@ char *LP_postedutxos(cJSON *argjson)
         if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )
         {
             if ( (array= jarray(&n,argjson,"utxos")) != 0 )
-            {
                 LP_unspents_array(coin,coinaddr,array);
-                free_json(array);
-            }
         }
         else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr)) != 0 )
             free_json(array);
