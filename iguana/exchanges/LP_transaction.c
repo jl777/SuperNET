@@ -70,6 +70,8 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
             break;
         sleep(3);
     }
+    if ( sentflag != 0 )
+        return(expectedtxid);
     return(txid);
 }
 

@@ -613,8 +613,11 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
             rawtx->I.actualtxid = LP_broadcast_tx(rawtx->name,rawtx->coin->symbol,rawtx->txbytes,rawtx->I.datalen);
             if ( bits256_cmp(rawtx->I.actualtxid,rawtx->I.signedtxid) != 0 )
             {
-                //printf("%s rawtxsend.[%d] %s vs %s\n",rawtx->name,rawtx->I.datalen,bits256_str(str,rawtx->I.signedtxid),bits256_str(str2,rawtx->I.actualtxid));
-                rawtx->I.actualtxid = rawtx->I.signedtxid;
+                char str[65],str2[65];
+                printf("%s rawtxsend.[%d] %s vs %s\n",rawtx->name,rawtx->I.datalen,bits256_str(str,rawtx->I.signedtxid),bits256_str(str2,rawtx->I.actualtxid));
+                if ( bits256_nonz(rawtx->I.signedtxid) != 0 )
+                    rawtx->I.actualtxid = rawtx->I.signedtxid;
+                else rawtx->I.signedtxid = rawtx->I.actualtxid;
             }
             if ( bits256_nonz(rawtx->I.actualtxid) != 0 && msgbits != 0 )
             {
@@ -662,6 +665,7 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
     sleep(10);
     if ( sleeptime < divisor*60 )
         sleeptime = divisor * 60;
+    //check for completed one being spent, prevent autxo reuse, add extra hash to keypair25519, sign, spv check
     while ( time(NULL) < expiration )
     {
         if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
