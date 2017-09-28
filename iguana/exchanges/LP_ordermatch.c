@@ -679,11 +679,16 @@ char *LP_connectedalice(cJSON *argjson) // alice
         clonestr("{\"error\":\"cant parse quote\"}");
     if ( bits256_cmp(Q.desthash,G.LP_mypub25519) != 0 )
         return(clonestr("{\"result\",\"update stats\"}"));
-    printf("CONNECTED.(%s)\n",jprint(argjson,0));
+    printf("CONNECTED.(%s) numpending.%d\n",jprint(argjson,0),G.LP_pendingswaps);
+    if ( G.LP_pendingswaps > 0 )
+    {
+        printf("swap already pending\n");
+        return(clonestr("{\"error\":\"swap already pending\"}"));
+    }
     autxo = &A;
     butxo = &B;
     LP_abutxo_set(autxo,butxo,&Q);
-    if ( (autxo= LP_utxopairfind(0,Q.txid,Q.vout,Q.txid2,Q.vout2)) != 0 && autxo->S.swap != 0 )
+    /*if ( (autxo= LP_utxopairfind(0,Q.txid,Q.vout,Q.txid2,Q.vout2)) != 0 && autxo->S.swap != 0 )
     {
         printf("swap already pending\n");
         return(clonestr("{\"error\":\"swap already pending\"}"));
@@ -693,11 +698,11 @@ char *LP_connectedalice(cJSON *argjson) // alice
     {
         printf("couldnt create autxo\n");
         return(clonestr("{\"error\":\"couldnt create autxo\"}"));
-    }
+    }*/
     if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
     {
         LP_availableset(autxo);
-        G.LP_pendingswaps--;
+        //G.LP_pendingswaps--;
         printf("quote validate error %.0f\n",qprice);
         return(clonestr("{\"error\":\"quote validation error\"}"));
     }
@@ -705,7 +710,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     {
         printf("this node has no price for %s/%s (%.8f %.8f)\n",Q.destcoin,Q.srccoin,bid,ask);
         LP_availableset(autxo);
-        G.LP_pendingswaps--;
+        //G.LP_pendingswaps--;
         return(clonestr("{\"error\":\"no price set\"}"));
     }
     // SPV validate bobs
@@ -713,7 +718,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     price = bid;
     if ( (coin= LP_coinfind(Q.destcoin)) == 0 )
     {
-        G.LP_pendingswaps--;
+        //G.LP_pendingswaps--;
         return(clonestr("{\"error\":\"cant get alicecoin\"}"));
     }
     Q.privkey = LP_privkey(Q.destaddr,coin->taddr);
