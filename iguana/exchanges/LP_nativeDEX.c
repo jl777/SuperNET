@@ -381,7 +381,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                         if ( (coinaddr= jfieldname(item)) != 0 )
                         {
                             metric = j64bits(item,"coinaddr");
-                            printf("(%s) -> %.8f n.%d\n",coinaddr,dstr(metric>>16),(uint16_t)metric);
+                            //printf("(%s) -> %.8f n.%d\n",coinaddr,dstr(metric>>16),(uint16_t)metric);
                             if ( (ap= LP_addressfind(coin,coinaddr)) == 0 || _LP_unspents_metric(ap->total,ap->n) != metric )
                             {
                                 if ( ap == 0 || ap->n < (metric & 0xffff) )
@@ -391,18 +391,19 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                                         if ( (array3= cJSON_Parse(retstr2)) != 0 )
                                         {
                                             LP_unspents_array(coin,coinaddr,array3);
-                                            printf("pulled.(%s)\n",retstr2);
+                                            //printf("pulled.(%s)\n",retstr2);
                                             free_json(array3);
                                         }
                                         free(retstr2);
                                     }
-                                } else printf("wait for %s to pull %d vs %d\n",peer->ipaddr,ap!=0?ap->n:-1,(uint16_t)metric);
+                                } //else printf("wait for %s to pull %d vs %d\n",peer->ipaddr,ap!=0?ap->n:-1,(uint16_t)metric);
                             }
                         }
                     }
                 }
                 free_json(array2);
             }
+            printf("processed.(%s)\n",retstr);
             free(retstr);
         }
     }
