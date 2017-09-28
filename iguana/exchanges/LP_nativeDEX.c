@@ -457,9 +457,9 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             peer->needping = 0;
         }
     }
-    if ( needpings != 0 )
+    if ( needpings != 0 || (counter % 6000) == 5 )
     {
-        printf("needpings.%d send notify\n",needpings);
+        //printf("needpings.%d send notify\n",needpings);
         LP_notify_pubkeys(ctx,pubsock);
     }
     if ( (counter % 6000) == 10 )
