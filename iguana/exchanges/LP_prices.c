@@ -221,12 +221,12 @@ cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
     {
         if ( pubp->rmd160[i] != 0 )
         {
+            init_hexbytes_noT(hexstr,pubp->rmd160,sizeof(pubp->rmd160));
+            jaddstr(obj,"rmd160",hexstr);
             for (j=0; i<sizeof(pubp->pubsecp); i++)
             {
                 if ( pubp->pubsecp[i] != 0 )
                 {
-                    init_hexbytes_noT(hexstr,pubp->rmd160,sizeof(pubp->rmd160));
-                    jaddstr(obj,"rmd160",hexstr);
                     init_hexbytes_noT(hexstr2,pubp->pubsecp,sizeof(pubp->pubsecp));
                     jaddstr(obj,"pubsecp",hexstr2);
                     //printf("nonz rmd160 (%s %s)\n",hexstr,hexstr2);
@@ -618,12 +618,8 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
         jaddstr(item,"address",op->coinaddr);
         jaddnum(item,"price",op->price);
         jaddnum(item,"numutxos",op->numutxos);
-        //if ( op->minsatoshis != 0 )
-            jaddnum(item,"minvolume",dstr(op->minsatoshis));
-        //if ( op->maxsatoshis != 0 )
-            jaddnum(item,"maxvolume",dstr(op->maxsatoshis));
-        //jaddbits256(item,"txid",op->txid);
-        //jaddnum(item,"vout",op->vout);
+        jaddnum(item,"minvolume",dstr(op->minsatoshis));
+        jaddnum(item,"maxvolume",dstr(op->maxsatoshis));
         jaddbits256(item,"pubkey",op->pubkey);
         jaddnum(item,"age",time(NULL)-op->timestamp);
     }
@@ -635,10 +631,6 @@ struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,d
     struct LP_orderbookentry *op;
     if ( (op= calloc(1,sizeof(*op))) != 0 )
     {
-        //op->txid = txid;
-        //op->vout = vout;
-        //op->txid2 = txid2;
-        //op->vout2 = vout2;
         safecopy(op->coinaddr,address,sizeof(op->coinaddr));
         op->price = price;
         op->numutxos = numutxos;
@@ -649,15 +641,6 @@ struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,d
     }
     return(op);
 }
-
-/*int32_t LP_orderbookfind(struct LP_orderbookentry **array,int32_t num,bits256 txid,int32_t vout)
-{
-    int32_t i;
-    for (i=0; i<num; i++)
-        if ( (array[i]->vout == vout && bits256_cmp(array[i]->txid,txid) == 0) || (array[i]->vout2 == vout && bits256_cmp(array[i]->txid2,txid) == 0) )
-            return(i);
-    return(-1);
-}*/
 
 int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum,int32_t duration)
 {
@@ -672,18 +655,14 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
     memset(zeroes,0,sizeof(zeroes));
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
     {
-        //if ( pubp->timestamp < oldest )
-        //    continue;
         if ( memcmp(zeroes,pubp->rmd160,sizeof(pubp->rmd160)) == 0 )
+        {
+            printf("skip pubp since no rmd160\n");
             continue;
+        }
         bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
         minsatoshis = maxsatoshis = n = 0;
         ap = 0;
-        //char str[65],str2[65]; printf("check utxo.%s/v%d from %s\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,utxo->pubkey));
-        //if ( strcmp(base,utxo->coin) == 0 && LP_isavailable(utxo) > 0 && pubp != 0 && (price= pubp->matrix[baseid][relid]) > SMALLVAL )
-        //if ( polarity > 0 )
-        //    minsatoshis = utxo->S.satoshis;
-        //else minsatoshis = utxo->S.satoshis * price;
         if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL )
         {
             if ( (ap= LP_addressfind(basecoin,coinaddr)) != 0 )
@@ -694,29 +673,13 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
                     minsatoshis *= price;
                     maxsatoshis *= price;
                 }
-                printf("%s/%s %s n.%d ap->n.%d %.8f\n",base,rel,coinaddr,n,ap->n,dstr(ap->total));
+                //printf("%s/%s %s n.%d ap->n.%d %.8f\n",base,rel,coinaddr,n,ap->n,dstr(ap->total));
             }
             if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,minsatoshis,maxsatoshis,pubp->pubkey,pubp->timestamp)) != 0 )
             {
                 *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                 (*arrayp)[num++] = op;
             }
-            /*if ( LP_orderbookfind(*arrayp,cachednum,utxo->payment.txid,utxo->payment.vout) < 0 )
-            {
-                if ( LP_iseligible(&val,&val2,utxo->iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->deposit.txid,utxo->deposit.vout) == 0 )
-                    continue;
-                if ( polarity > 0 )
-                    basesatoshis = utxo->S.satoshis;
-                else basesatoshis = utxo->S.satoshis * price;
-                //char str[65]; printf("found utxo not in orderbook %s/v%d %.8f %.8f\n",bits256_str(str,utxo->payment.txid),utxo->payment.vout,dstr(basesatoshis),polarity > 0 ? price : 1./price);
-                if ( (op= LP_orderbookentry(base,rel,utxo->payment.txid,utxo->payment.vout,utxo->deposit.txid,utxo->deposit.vout,polarity > 0 ? price : 1./price,basesatoshis,utxo->pubkey,now - pubp->timestamp)) != 0 )
-                {
-                    *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
-                    (*arrayp)[num++] = op;
-                    if ( LP_ismine(utxo) > 0 && utxo->T.lasttime == 0 )
-                        LP_utxo_clientpublish(utxo);
-                }
-            }*/
         }
         //printf("pubp.(%s) %.8f %p\n",coinaddr,price,ap);
     }
