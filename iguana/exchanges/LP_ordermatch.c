@@ -670,6 +670,16 @@ char *LP_connectedalice(cJSON *argjson) // alice
     autxo = &A;
     butxo = &B;
     LP_abutxo_set(autxo,butxo,&Q);
+    if ( (autxo= LP_utxopairfind(0,Q.txid,Q.vout,Q.txid2,Q.vout2)) == 0 )
+    {
+        printf("cant find autxo in quote\n");
+        return(clonestr("{\"error\":\"quote autxo find error\"}"));
+    }
+    if ( autxo->S.swap != 0 )
+    {
+        printf("swap already pending\n");
+        return(clonestr("{\"error\":\"swap already pending\"}"));
+    }
     if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
     {
         LP_availableset(autxo);
