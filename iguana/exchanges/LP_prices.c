@@ -197,10 +197,9 @@ uint64_t LP_unspents_metric(struct iguana_info *coin,char *coinaddr)
 
 cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
 {
-    int32_t baseid,relid,i,j; uint64_t metric; char *base,coinaddr[64],hexstr[67],hexstr2[67]; double price; cJSON *item,*array,*obj,*unspents; struct iguana_info *coin;
+    int32_t baseid,relid,i,j; char *base,hexstr[67],hexstr2[67]; double price; cJSON *item,*array,*obj;
     obj = cJSON_CreateObject();
     array = cJSON_CreateArray();
-    unspents = cJSON_CreateArray();
     for (baseid=0; baseid<LP_numpriceinfos; baseid++)
     {
         base = LP_priceinfos[baseid].symbol;
@@ -216,14 +215,6 @@ cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
                 jaddi(array,item);
             }
         }
-        item = cJSON_CreateObject();
-        if ( IAMLP != 0 && (coin= LP_coinfind(base)) != 0 )
-        {
-            bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
-            if ((metric= LP_unspents_metric(coin,coinaddr)) != 0 )
-                jadd64bits(item,base,metric);
-        }
-        jaddi(unspents,item);
     }
     jaddbits256(obj,"pubkey",pubp->pubkey);
     for (i=0; i<sizeof(pubp->rmd160); i++)
@@ -239,13 +230,14 @@ cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
                     init_hexbytes_noT(hexstr2,pubp->pubsecp,sizeof(pubp->pubsecp));
                     jaddstr(obj,"pubsecp",hexstr2);
                     //printf("nonz rmd160 (%s %s)\n",hexstr,hexstr2);
+                    break;
                 }
             }
+            break;
         }
     }
     jaddnum(obj,"timestamp",pubp->timestamp);
     jadd(obj,"asks",array);
-    jadd(obj,"unspents",unspents);
     if ( pubp->istrusted != 0 )
         jaddnum(obj,"istrusted",pubp->istrusted);
     return(obj);
