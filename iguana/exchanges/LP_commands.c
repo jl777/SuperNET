@@ -440,7 +440,7 @@ dividends(coin, height, <args>)\n\
                     if ( (secpstr= jstr(argjson,"pubsecp")) != 0 )
                     {
                         decode_hex(pubp->pubsecp,sizeof(pubp->pubsecp),secpstr);
-                        printf("got pubkey.(%s)\n",secpstr);
+                        //printf("got pubkey.(%s)\n",secpstr);
                     }
                 }
                 //printf("NOTIFIED pub %s rmd160 %s\n",bits256_str(str,pub),rmd160str);
