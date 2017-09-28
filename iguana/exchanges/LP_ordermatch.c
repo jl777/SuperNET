@@ -231,6 +231,19 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
     return(clonestr("{\"result\":\"success\"}"));
 }
 
+void LP_notify_pubkeys(void *ctx,int32_t pubsock)
+{
+    bits256 zero; char *msg,secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
+    memset(zero.bytes,0,sizeof(zero));
+    jaddstr(reqjson,"method","notify");
+    jaddstr(reqjson,"rmd160",G.LP_myrmd160str);
+    jaddbits256(reqjson,"pub",G.LP_mypub25519);
+    init_hexbytes_noT(secpstr,G.LP_pubsecp,33);
+    jaddstr(reqjson,"pubsecp",secpstr);
+    msg = jprint(reqjson,1);
+    LP_broadcast_message(pubsock,"","",zero,msg);
+}
+
 char *LP_postedprice(cJSON *argjson)
 {
     bits256 pubkey; double price; char *base,*rel;
