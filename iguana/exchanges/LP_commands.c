@@ -428,6 +428,25 @@ dividends(coin, height, <args>)\n\
                 firsttime = (uint32_t)(time(NULL)-30*24*3600);
             return(jprint(LP_pricearray(base,rel,firsttime,juint(argjson,"lasttime"),jint(argjson,"timescale")),1));
         }
+        else if ( strcmp(method,"notify") == 0 )
+        {
+            char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp;
+            pub = jbits256(argjson,"pub");
+            if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
+            {
+                if ( (pubp= LP_pubkeyadd(pub)) != 0 )
+                {
+                    decode_hex(pubp->rmd160,20,rmd160str);
+                    if ( (secpstr= jstr(argjson,"pubsecp")) != 0 )
+                    {
+                        decode_hex(pubp->pubsecp,sizeof(pubp->pubsecp),secpstr);
+                        printf("got pubkey.(%s)\n",secpstr);
+                    }
+                }
+                //printf("NOTIFIED pub %s rmd160 %s\n",bits256_str(str,pub),rmd160str);
+            }
+            retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
+        }
         if ( IAMLP != 0 )
         {
             if ( strcmp(method,"register") == 0 )
@@ -471,25 +490,6 @@ dividends(coin, height, <args>)\n\
                 if ( jint(argjson,"ispaired") != 0 )
                     return(LP_psock(myipaddr,jint(argjson,"ispaired")));
                 else return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-            }
-            else if ( strcmp(method,"notify") == 0 )
-            {
-                char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp;
-                pub = jbits256(argjson,"pub");
-                if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
-                {
-                    if ( (pubp= LP_pubkeyadd(pub)) != 0 )
-                    {
-                        decode_hex(pubp->rmd160,20,rmd160str);
-                        if ( (secpstr= jstr(argjson,"pubsecp")) != 0 )
-                        {
-                            decode_hex(pubp->pubsecp,sizeof(pubp->pubsecp),secpstr);
-                            printf("got pubkey.(%s)\n",secpstr);
-                        }
-                    }
-                    //printf("NOTIFIED pub %s rmd160 %s\n",bits256_str(str,pub),rmd160str);
-                }
-                retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
             }
         }
         else
