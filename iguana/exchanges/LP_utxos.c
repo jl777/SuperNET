@@ -709,6 +709,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     if ( coin->counter == 0 )
     {
         coin->counter++;
+        memcpy(G.LP_pubsecp,coin->pubkey33,33);
         bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,coin->wiftype);
         bitcoin_addr2rmd160(coin->taddr,&tmptype,G.LP_myrmd160,coin->smartaddr);
         LP_privkeyadd(privkey,G.LP_myrmd160);

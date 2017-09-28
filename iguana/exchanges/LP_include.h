@@ -226,8 +226,8 @@ struct LP_address
 {
     UT_hash_handle hh;
     struct LP_address_utxo *utxos;
-    int64_t balance;
-    uint32_t monitor;
+    int64_t balance,total;
+    uint32_t timestamp,n;
     char coinaddr[40];
 };
 

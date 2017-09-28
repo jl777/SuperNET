@@ -52,7 +52,7 @@ struct LP_pubkeyinfo
     bits256 pubkey;
     double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
     uint32_t timestamp,istrusted,numerrors;
-    uint8_t rmd160[20];
+    uint8_t rmd160[20],pubsecp[33];
 } *LP_pubkeyinfos;
 
 int32_t LP_pricevalid(double price)
@@ -144,7 +144,10 @@ struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
         pubp = calloc(1,sizeof(*pubp));
         pubp->pubkey = pubkey;
         if ( bits256_cmp(G.LP_mypub25519,pubkey) == 0 )
+        {
             memcpy(pubp->rmd160,G.LP_myrmd160,sizeof(pubp->rmd160));
+            memcpy(pubp->pubsecp,G.LP_pubsecp,sizeof(pubp->pubsecp));
+        }
         HASH_ADD_KEYPTR(hh,LP_pubkeyinfos,&pubp->pubkey,sizeof(pubp->pubkey),pubp);
         portable_mutex_unlock(&LP_pubkeymutex);
         if ( (pubp= LP_pubkeyfind(pubkey)) == 0 )
@@ -172,11 +175,32 @@ char *LP_pubkey_trustset(bits256 pubkey,uint32_t trustval)
     return(clonestr("{\"error\":\"pubkey not found\"}"));
 }
 
+uint64_t LP_unspents_metric(struct iguana_info *coin,char *coinaddr)
+{
+    cJSON *array,*item; int32_t i,n; uint64_t metric=0,total;
+    LP_listunspent_both(coin->symbol,coinaddr);
+    if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
+    {
+        total = 0;
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                total += j64bits(item,"value");
+            }
+        }
+        metric = _LP_unspents_metric(total,n);
+    }
+    return(metric);
+}
+
 cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
 {
-    int32_t baseid,relid; char *base,hexstr[41]; double price; cJSON *item,*array,*obj;
+    int32_t baseid,relid; uint64_t metric; char *base,coinaddr[64],hexstr[41]; double price; cJSON *item,*array,*obj,*unspents; struct iguana_info *coin;
     obj = cJSON_CreateObject();
     array = cJSON_CreateArray();
+    unspents = cJSON_CreateArray();
     for (baseid=0; baseid<LP_numpriceinfos; baseid++)
     {
         base = LP_priceinfos[baseid].symbol;
@@ -192,12 +216,23 @@ cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
                 jaddi(array,item);
             }
         }
+        item = cJSON_CreateObject();
+        if ( IAMLP != 0 && (coin= LP_coinfind(base)) != 0 )
+        {
+            bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
+            if ((metric= LP_unspents_metric(coin,coinaddr)) != 0 )
+                jadd64bits(item,base,metric);
+        }
+        jaddi(unspents,item);
     }
     jaddbits256(obj,"pubkey",pubp->pubkey);
     init_hexbytes_noT(hexstr,pubp->rmd160,sizeof(pubp->rmd160));
     jaddstr(obj,"rmd160",hexstr);
+    init_hexbytes_noT(hexstr,pubp->pubsecp,sizeof(pubp->pubsecp));
+    jaddstr(obj,"pubsecp",hexstr);
     jaddnum(obj,"timestamp",pubp->timestamp);
     jadd(obj,"asks",array);
+    jadd(obj,"unspents",unspents);
     if ( pubp->istrusted != 0 )
         jaddnum(obj,"istrusted",pubp->istrusted);
     return(obj);
@@ -216,7 +251,7 @@ char *LP_prices()
 void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
 {
     static uint8_t zeroes[20];
-    struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid,mismatch; char *base,*rel,*hexstr; double askprice; uint32_t now;
+    struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid,mismatch; char *base,*rel,*hexstr,*pubsecpstr; double askprice; uint32_t now;
     now = (uint32_t)time(NULL);
     pubkey = jbits256(obj,"pubkey");
     if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
@@ -229,13 +264,13 @@ void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
             else mismatch = 0;
             if ( bits256_cmp(pubkey,G.LP_mypub25519) == 0 && mismatch == 0 )
                 peer->needping = 0;
-            if ( mismatch != 0 && memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 )
+            if ( mismatch != 0 && memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 && (pubsecpstr= jstr(obj,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
             {
                 for (i=0; i<20; i++)
                     printf("%02x",pubp->rmd160[i]);
-                char str[65]; printf(" -> rmd160.(%s) for %s\n",hexstr,bits256_str(str,pubkey));
+                char str[65]; printf(" -> rmd160.(%s) for %s (%s)\n",hexstr,bits256_str(str,pubkey),pubsecpstr);
                 memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
-                //LP_address_monitor(pubp);
+                decode_hex(pubp->pubsecp,sizeof(pubp->pubsecp),pubsecpstr);
             }
         }
         timestamp = juint(obj,"timestamp");

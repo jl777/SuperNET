@@ -239,26 +239,45 @@ cJSON *LP_address_item(struct iguana_info *coin,struct LP_address_utxo *up,int32
     return(item);
 }
 
+uint64_t _LP_unspents_metric(uint64_t total,int32_t n) { return((total<<16) | (n & 0xffff)); }
+
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
-    cJSON *array; struct LP_address *ap=0; struct LP_address_utxo *up,*tmp;
+    cJSON *array,*item; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp;
     array = cJSON_CreateArray();
     if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
         //portable_mutex_lock(&coin->addrmutex);
         if ( (ap= _LP_addressfind(coin,coinaddr)) != 0 )
         {
+            total = n = 0;
             DL_FOREACH_SAFE(ap->utxos,up,tmp)
             {
                 //char str[65]; printf("LP_address_utxos %s/v%d %.8f ht.%d spend.%d\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),up->U.height,up->spendheight);
                 if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
                     jaddi(array,LP_address_item(coin,up,electrumret));
+                    n++;
+                    total += up->U.value;
                     //printf("new array %s\n",jprint(array,0));
                 }
             }
+            ap->total = total;
+            ap->n = n;
         }
         //portable_mutex_unlock(&coin->addrmutex);
+    }
+    else
+    {
+        HASH_ITER(hh,coin->addresses,ap,atmp)
+        {
+            if ( ap->total > 0 && ap->n > 0 )
+            {
+                item = cJSON_CreateObject();
+                jadd64bits(item,ap->coinaddr,_LP_unspents_metric(ap->total,ap->n));
+                jaddi(array,item);
+            }
+        }
     }
     //printf("%s %s utxos.(%s) ap.%p\n",coin->symbol,coinaddr,jprint(array,0),ap);
     return(array);
@@ -286,9 +305,49 @@ void LP_postutxos(char *symbol,char *coinaddr)
     }
 }
 
+int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
+{
+    int32_t i,n,v,ht,errs,height,count=0; uint64_t value,val; cJSON *item,*txobj; bits256 txid;
+    if ( (n= cJSON_GetArraySize(array)) <= 0 )
+        return(0);
+    for (i=0; i<n; i++)
+    {
+        errs = 0;
+        item = jitem(array,i);
+        txid = jbits256(item,"tx_hash");
+        v = jint(item,"tx_pos");
+        height = jint(item,"height");
+        val = j64bits(item,"value");
+        if ( coin->electrum == 0 && (txobj= LP_gettxout(coin->symbol,txid,v)) != 0 )
+        {
+            value = LP_value_extract(txobj,0);
+            if ( value != 0 && value != val )
+            {
+                char str[65]; printf("REJECT %s %s/v%d value.%llu vs %llu (%s)\n",coin->symbol,bits256_str(str,txid),v,(long long)value,(long long)val,jprint(txobj,0));
+                errs++;
+            }
+            if ( coin->height != 0 )
+                ht = LP_getheight(coin) - jint(txobj,"confirmations");
+            else ht = 0;
+            /*if  ( ht != 0 && ht < height-2 )
+             {
+             printf("REJECT %s %s/v%d ht.%d vs %d confs.%d (%s)\n",symbol,bits256_str(str,txid),v,ht,height,jint(txobj,"confirmations"),jprint(item,0));
+             errs++;
+             }*/
+            free_json(txobj);
+        }
+        if ( errs == 0 )
+        {
+            LP_address_utxoadd(coin,coinaddr,txid,v,val,height,-1);
+            count++;
+        }
+    }
+    return(count);
+}
+
 char *LP_postedutxos(cJSON *argjson)
 {
-    int32_t i,n,v,ht,errs,height; uint64_t value,val; cJSON *array,*item,*txobj; bits256 txid; char str[65],*symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin;
+    int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
     //printf("posted.(%s)\n",jprint(argjson,0));
     if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
     {
@@ -296,35 +355,8 @@ char *LP_postedutxos(cJSON *argjson)
         {
             if ( (array= jarray(&n,argjson,"utxos")) != 0 )
             {
-                for (i=0; i<n; i++)
-                {
-                    errs = 0;
-                    item = jitem(array,i);
-                    txid = jbits256(item,"tx_hash");
-                    v = jint(item,"tx_pos");
-                    height = jint(item,"height");
-                    val = j64bits(item,"value");
-                    if ( coin->electrum == 0 && (txobj= LP_gettxout(symbol,txid,v)) != 0 )
-                    {
-                        value = LP_value_extract(txobj,0);
-                        if ( value != 0 && value != val )
-                        {
-                            printf("REJECT %s %s/v%d value.%llu vs %llu (%s)\n",symbol,bits256_str(str,txid),v,(long long)value,(long long)val,jprint(txobj,0));
-                            errs++;
-                        }
-                        if ( coin->height != 0 )
-                            ht = LP_getheight(coin) - jint(txobj,"confirmations");
-                        else ht = 0;
-                        /*if  ( ht != 0 && ht < height-2 )
-                        {
-                            printf("REJECT %s %s/v%d ht.%d vs %d confs.%d (%s)\n",symbol,bits256_str(str,txid),v,ht,height,jint(txobj,"confirmations"),jprint(item,0));
-                            errs++;
-                        }*/
-                        free_json(txobj);
-                    }
-                    if ( errs == 0 )
-                        LP_address_utxoadd(coin,coinaddr,txid,v,val,height,-1);
-                }
+                LP_unspents_array(coin,coinaddr,array);
+                free_json(array);
             }
         }
         else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr)) != 0 )
