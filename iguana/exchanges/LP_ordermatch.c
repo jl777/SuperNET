@@ -674,7 +674,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
 
 char *LP_connectedalice(cJSON *argjson) // alice
 {
-    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo A,B,*autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin;
+    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin;
     if ( LP_quoteparse(&Q,argjson) < 0 )
         clonestr("{\"error\":\"cant parse quote\"}");
     if ( bits256_cmp(Q.desthash,G.LP_mypub25519) != 0 )
@@ -685,8 +685,8 @@ char *LP_connectedalice(cJSON *argjson) // alice
         printf("swap already pending\n");
         return(clonestr("{\"error\":\"swap already pending\"}"));
     }
-    autxo = &A;
-    butxo = &B;
+    autxo = calloc(1,sizeof(*autxo));//&A;
+    butxo = calloc(1,sizeof(*butxo));//&B;
     LP_abutxo_set(autxo,butxo,&Q);
     /*if ( (autxo= LP_utxopairfind(0,Q.txid,Q.vout,Q.txid2,Q.vout2)) != 0 && autxo->S.swap != 0 )
     {
@@ -798,7 +798,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr)
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
-    char *method,*msg; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
+    char *method,*msg; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo *autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
         printf("LP_tradecommand: check received %s\n",method);
@@ -811,8 +811,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 return(-3);
             }
             price = ask;
-            autxo = &A;
-            butxo = &B;
+            autxo = calloc(1,sizeof(*autxo));//&A;
+            butxo = calloc(1,sizeof(*butxo));//&B;
             LP_abutxo_set(autxo,butxo,&Q);
             LP_butxo_swapfields(butxo);
             if ( strcmp(method,"request") == 0 )
