@@ -1070,7 +1070,7 @@ exit(-1);
             continue;
             //return(clonestr("{\"error\":\"quote validation error\"}"));
         }
-        break;
+        //break;
     }
     //printf("do quote.(%s)\n",jprint(LP_quotejson(&Q),1));
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration));
