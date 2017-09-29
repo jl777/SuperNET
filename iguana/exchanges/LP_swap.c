@@ -665,7 +665,6 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
     sleep(10);
     if ( sleeptime < divisor*60 )
         sleeptime = divisor * 60;
-    //check for completed one being spent, prevent autxo reuse, add extra hash to keypair25519, sign, spv check
     while ( time(NULL) < expiration )
     {
         if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )

@@ -713,7 +713,6 @@ char *LP_connectedalice(cJSON *argjson) // alice
         //G.LP_pendingswaps--;
         return(clonestr("{\"error\":\"no price set\"}"));
     }
-    // SPV validate bobs
     printf("%s/%s bid %.8f ask %.8f\n",Q.srccoin,Q.destcoin,bid,ask);
     price = bid;
     if ( (coin= LP_coinfind(Q.destcoin)) == 0 )
@@ -1066,7 +1065,6 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         if ( (qprice= LP_quote_validate(autxo,0,&Q,0)) <= SMALLVAL )
         {
             printf("quote validate error %.0f\n",qprice);
-exit(-1);
             continue;
             //return(clonestr("{\"error\":\"quote validation error\"}"));
         }
