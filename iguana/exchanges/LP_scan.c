@@ -495,7 +495,7 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
         }
         if ( time(NULL) > expiration || numconfirms >= 0 )
             break;
-        usleep(500000);
+        sleep(10);
     }
     if ( numconfirms <= 0 )
         numconfirms = LP_numconfirms(symbol,coinaddr,txid,vout,1);
