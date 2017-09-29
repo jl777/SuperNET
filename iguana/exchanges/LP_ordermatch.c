@@ -1068,7 +1068,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
             continue;
             //return(clonestr("{\"error\":\"quote validation error\"}"));
         }
-        //break;
+        break;
     }
     //printf("do quote.(%s)\n",jprint(LP_quotejson(&Q),1));
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration));
