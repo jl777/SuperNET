@@ -26,7 +26,8 @@
 
 // unduplicated bugs:
 // swap cancel should cleanly cancel
-// check for completed one being spent, prevent autxo reuse, add extra hash to keypair25519, sign, spv check
+// check for completed one being spent
+// prevent autxo reuse, add extra hash to keypair25519, sign, spv check
 
 #include <stdio.h>
 #include "LP_include.h"

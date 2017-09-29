@@ -121,7 +121,10 @@ void basilisk_swap_finished(struct basilisk_swap *swap)
 {
     int32_t i;
     if ( swap->utxo != 0 && swap->sentflag == 0 )
+    {
         LP_availableset(swap->utxo);
+        LP_butxo_swapfields_set(swap->utxo);
+    }
     swap->I.finished = (uint32_t)time(NULL);
     // save to permanent storage
     basilisk_rawtx_purge(&swap->bobdeposit);
@@ -815,8 +818,6 @@ void LP_aliceloop(void *_swap)
                 }
             }
         }
-        basilisk_swap_finished(swap);
-        free(swap);
     }
     free(data);
     if ( swap->N.pair >= 0 )
@@ -824,6 +825,8 @@ void LP_aliceloop(void *_swap)
         nn_close(swap->N.pair);
         swap->N.pair = -1;
     }
+    basilisk_swap_finished(swap);
+    free(swap);
     G.LP_pendingswaps--;
 }
 

@@ -298,6 +298,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee);
 struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr);
 int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson);
+void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo);
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration);
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid);
 cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJSON *txobj);
