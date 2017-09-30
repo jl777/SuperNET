@@ -144,7 +144,7 @@ struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
 {
     uint8_t rmd160[20],addrtype; struct LP_address *ap; struct LP_pubkeyinfo *pubp;
     HASH_FIND(hh,coin->addresses,coinaddr,strlen(coinaddr),ap);
-    if ( bits256_nonz(ap->pubkey) == 0 )
+    if ( ap != 0 && bits256_nonz(ap->pubkey) == 0 )
     {
         bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,coinaddr);
         if ( (pubp= LP_pubkey_rmd160find(rmd160)) != 0 )
