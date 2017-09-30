@@ -283,7 +283,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
     uint64_t val,val2=0,tmpsatoshis,txfee; int32_t spendvini,numconfirms,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )//|| sessionid == 0 )
     {
-        char str[65],str2[65]; printf("%s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
+        char str[65],str2[65]; printf("REJECT %s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
         printf("session.%u addutxo %d %d %d %d %d %d %d %d\n",sessionid,symbol == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
@@ -372,7 +372,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
             //else if ( profitmargin > SMALLVAL )
             //    utxo->S.profitmargin = profitmargin;
             utxo->T.lasttime = (uint32_t)time(NULL);
-            printf("return existing utxo\n");
+            printf("return existing utxo %s %s\n",bits256_str(str,utxo->payment.txid),bits256_str(str2,utxo->deposit.txid));
             return(utxo);
         }
     }
@@ -409,7 +409,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         printf("utxoadd selector.%d spent in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
         utxo->T.spentflag = (uint32_t)time(NULL);
     }
-    printf(" %s %.8f %.8f addutxo.%d pubkey.%s session.%u\n",symbol,dstr(value),dstr(value2),LP_ismine(utxo) > 0,bits256_str(str,utxo->pubkey),utxo->T.sessionid);
+    printf(" %s %.8f %.8f %p addutxo.%d pubkey.%s session.%u\n",symbol,dstr(value),dstr(value2),utxo,LP_ismine(utxo) > 0,bits256_str(str,utxo->pubkey),utxo->T.sessionid);
     portable_mutex_lock(&LP_utxomutex);
     HASH_ADD_KEYPTR(hh,G.LP_utxoinfos,utxo->key,sizeof(utxo->key),utxo);
     if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )

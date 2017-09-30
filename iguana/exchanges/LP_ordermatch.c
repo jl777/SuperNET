@@ -509,7 +509,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                         if ( (utxo= LP_utxoadd(1,coin->symbol,up->U.txid,up->U.vout,up->U.value,up2->U.txid,up2->U.vout,up2->U.value,coinaddr,ap->pubkey,G.gui,0)) != 0 )
                         {
                             utxo->S.satoshis = targetval;
-                            char str[65],str2[65]; printf("butxo.%p targetval %.8f, found val %.8f %s | targetval2 %.8f val2 %.8f %s\n",utxo,dstr(targetval),dstr(up->U.value),bits256_str(str,up->U.txid),dstr(targetval2),dstr(up2->U.value),bits256_str(str2,up2->U.txid));
+                            char str[65],str2[65]; printf("butxo.%p targetval %.8f, found val %.8f %s | targetval2 %.8f val2 %.8f %s\n",utxo,dstr(targetval),dstr(up->U.value),bits256_str(str,utxo->payment.txid),dstr(targetval2),dstr(up2->U.value),bits256_str(str2,utxo->deposit.txid));
                             return(utxo);
                         }
                     }
@@ -824,6 +824,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             memset(autxo,0,sizeof(*autxo));
             memset(butxo,0,sizeof(*butxo));
             LP_abutxo_set(autxo,butxo,&Q);
+            printf("A %p, B %p\n",autxo,butxo);
             //LP_butxo_swapfields(butxo);
             if ( strcmp(method,"request") == 0 )
             {
