@@ -212,13 +212,13 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 
 struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
 {
-    uint64_t srcvalue,srcvalue2; struct LP_utxoinfo *utxo,*tmp,*bestutxo = 0;
+    uint64_t srcvalue,srcvalue2; struct LP_utxoinfo *utxo,*tmp,*bestutxo = 0; int32_t iambob = 0;
     if ( symbol == 0 || destsatoshis == 0 )
     {
         printf("LP_utxo_bestfit error symbol.%p %.8f\n",symbol,dstr(destsatoshis));
         return(0);
     }
-    HASH_ITER(hh,G.LP_utxoinfos,utxo,tmp)
+    HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
     {
         //char str[65]; printf("s%u %d [%.8f vs %.8f] check %s.%s avail.%d ismine.%d >= %d\n",utxo->T.spentflag,LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout),dstr(destsatoshis),dstr(utxo->S.satoshis),utxo->coin,bits256_str(str,utxo->payment.txid),LP_isavailable(utxo) > 0,LP_ismine(utxo) > 0,utxo->S.satoshis >= destsatoshis);
         if ( strcmp(symbol,utxo->coin) != 0 )
@@ -411,9 +411,9 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
     }
     printf(" %s %.8f %.8f %p addutxo.%d (%s %s) session.%u iambob.%d <<<<<<<<<<<<<<<\n",symbol,dstr(value),dstr(value2),utxo,LP_ismine(utxo) > 0,bits256_str(str,utxo->payment.txid),bits256_str(str2,iambob != 0 ? utxo->deposit.txid : utxo->fee.txid),utxo->T.sessionid,iambob);
     portable_mutex_lock(&LP_utxomutex);
-    HASH_ADD_KEYPTR(hh,G.LP_utxoinfos,utxo->key,sizeof(utxo->key),utxo);
+    HASH_ADD_KEYPTR(hh,G.LP_utxoinfos[iambob],utxo->key,sizeof(utxo->key),utxo);
     if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
-        HASH_ADD_KEYPTR(hh2,G.LP_utxoinfos2,utxo->key2,sizeof(utxo->key2),utxo);
+        HASH_ADD_KEYPTR(hh2,G.LP_utxoinfos2[iambob],utxo->key2,sizeof(utxo->key2),utxo);
     portable_mutex_unlock(&LP_utxomutex);
     if ( iambob != 0 )
     {
@@ -436,7 +436,7 @@ cJSON *LP_inventory(char *symbol)
     else myipaddr = "127.0.0.1";
     if ( (coin= LP_coinfind(symbol)) != 0 )
         LP_listunspent_both(symbol,coin->smartaddr);
-    HASH_ITER(hh,G.LP_utxoinfos,utxo,tmp)
+    HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
     {
         char str[65];
         //printf("iambob.%d iterate %s\n",iambob,bits256_str(str,LP_mypub25519));
@@ -767,7 +767,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
 
 int32_t LP_passphrase_init(char *passphrase,char *gui)
 {
-    static void *ctx; struct LP_utxoinfo *utxo,*tmp;
+    static void *ctx; int32_t iambob; struct LP_utxoinfo *utxo,*tmp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( G.LP_pendingswaps != 0 )
@@ -780,20 +780,23 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
         printf("waiting for G.waiting\n");
         sleep(5);
     }
-    if ( G.LP_utxoinfos != 0 )
+    for (iambob=0; iambob<2; iambob++)
     {
-        HASH_ITER(hh,G.LP_utxoinfos,utxo,tmp)
+        if ( G.LP_utxoinfos[iambob] != 0 )
         {
-            HASH_DELETE(hh,G.LP_utxoinfos,utxo);
-            free(utxo);
+            HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
+            {
+                HASH_DELETE(hh,G.LP_utxoinfos[iambob],utxo);
+                free(utxo);
+            }
         }
-    }
-    if ( G.LP_utxoinfos2 != 0 )
-    {
-        HASH_ITER(hh,G.LP_utxoinfos2,utxo,tmp)
+        if ( G.LP_utxoinfos2[iambob] != 0 )
         {
-            HASH_DELETE(hh,G.LP_utxoinfos2,utxo);
-            free(utxo);
+            HASH_ITER(hh,G.LP_utxoinfos2[iambob],utxo,tmp)
+            {
+                HASH_DELETE(hh,G.LP_utxoinfos2[iambob],utxo);
+                free(utxo);
+            }
         }
     }
     memset(&G,0,sizeof(G));

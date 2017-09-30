@@ -393,7 +393,7 @@ struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
         return(0);
     }*/
     LP_utxosetkey(key,txid,vout);
-    HASH_FIND(hh,G.LP_utxoinfos,key,sizeof(key),utxo);
+    HASH_FIND(hh,G.LP_utxoinfos[iambob],key,sizeof(key),utxo);
     return(utxo);
 }
 
@@ -406,7 +406,7 @@ struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)
         return(0);
     }*/
     LP_utxosetkey(key2,txid2,vout2);
-    HASH_FIND(hh2,G.LP_utxoinfos2,key2,sizeof(key2),utxo);
+    HASH_FIND(hh2,G.LP_utxoinfos2[iambob],key2,sizeof(key2),utxo);
     return(utxo);
 }
 
