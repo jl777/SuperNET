@@ -514,8 +514,8 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_address_utxo **utxos,int32_t m
                     }
                 } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
             }
-        }
-    }
+        } else printf("no utxos pass LP_address_utxo_ptrs filter\n");
+    } else printf("couldnt find %s %s\n",coin->symbol,coinaddr);
     return(0);
 }
 
