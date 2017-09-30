@@ -1067,7 +1067,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"invalid parameter\"}"));
     memset(pubkeys,0,sizeof(pubkeys));
     LP_txfees(&txfee,&desttxfee,base,rel);
-    destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
+    destsatoshis = SATOSHIDEN * relvolume + 3*desttxfee;
     if ( (autxo= LP_utxo_bestfit(rel,destsatoshis)) == 0 )
         return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
     if ( destsatoshis < autxo->S.satoshis )
