@@ -681,7 +681,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
         printf("swap already pending\n");
         return(clonestr("{\"error\":\"swap already pending\"}"));
     }*/
-    if ( (autxo= LP_utxopairfind(1,Q.desttxid,Q.destvout,Q.feetxid,Q.feevout)) == 0 )
+    if ( (autxo= LP_utxopairfind(0,Q.desttxid,Q.destvout,Q.feetxid,Q.feevout)) == 0 )
     {
         printf("cant find autxo\n");
         return(clonestr("{\"error\":\"cant find autxo\"}"));
