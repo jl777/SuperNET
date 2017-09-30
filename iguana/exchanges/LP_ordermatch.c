@@ -489,7 +489,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_address_utxo **utxos,int32_t m
         if ( (m= LP_address_utxo_ptrs(utxos,max,ap)) > 1 )
         {
             targetval = LP_basesatoshis(volume,price,txfee,desttxfee);
-            if ( 0 )
+            if ( 1 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)
@@ -512,7 +512,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_address_utxo **utxos,int32_t m
                             return(utxo);
                         }
                     }
-                }
+                } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
             }
         }
     }
