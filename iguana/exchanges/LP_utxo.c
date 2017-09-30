@@ -596,14 +596,14 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
             numconfirms = jint(txobj,"confirmations");
             free_json(txobj);
         }
-        if ( mempool != 0 && LP_mempoolscan(symbol,txid) >= 0 )
+        else if ( mempool != 0 && LP_mempoolscan(symbol,txid) >= 0 )
             numconfirms = 0;
     }
     else
     {
         if ( (ht= LP_txheight(coin,txid)) > 0 && ht <= coin->height )
             numconfirms = (LP_getheight(coin) - ht + 1);
-        if ( mempool != 0 )
+        else if ( mempool != 0 )
         {
             if ( LP_waitmempool(symbol,coinaddr,txid,vout,30) >= 0 )
                 numconfirms = 0;
