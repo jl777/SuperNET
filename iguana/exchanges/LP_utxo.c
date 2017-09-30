@@ -69,23 +69,6 @@ int32_t LP_txdestaddr(char *destaddr,bits256 txid,int32_t vout,cJSON *txobj)
     return(retval);
 }
 
-struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
-{
-    struct LP_address *ap;
-    HASH_FIND(hh,coin->addresses,coinaddr,strlen(coinaddr),ap);
-    return(ap);
-}
-
-struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
-{
-    struct LP_address *ap;
-    ap = calloc(1,sizeof(*ap));
-    safecopy(ap->coinaddr,coinaddr,sizeof(ap->coinaddr));
-    //printf("LP_ADDRESS %s ADD.(%s)\n",coin->symbol,coinaddr);
-    HASH_ADD_KEYPTR(hh,coin->addresses,ap->coinaddr,strlen(ap->coinaddr),ap);
-    return(ap);
-}
-
 struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
 {
     struct LP_address *ap = 0;
@@ -138,14 +121,29 @@ int32_t LP_address_minmax(uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
     return(n);
 }
 
-int32_t LP_address_utxo_ptrs(struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,int32_t avoidflag)
+struct LP_utxoinfo *LP_unallocated(bits256 txid,int32_t vout)
+{
+    struct LP_utxoinfo *utxo;
+    if ( (utxo= _LP_utxofind(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+        return(0);
+    if ( (utxo= _LP_utxo2find(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+        return(0);
+    if ( (utxo= _LP_utxofind(1,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+        return(0);
+    if ( (utxo= _LP_utxo2find(1,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+        return(0);
+    return(utxo);
+}
+
+int32_t LP_address_utxo_ptrs(struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap)
 {
     struct LP_address_utxo *up,*tmp; int32_t n = 0;
+    portable_mutex_lock(&LP_utxomutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
         if ( up->spendheight <= 0 )
         {
-            if ( avoidflag == 0 || LP_butxo_findeither(up->U.txid,up->U.vout) == 0 )
+            if ( LP_unallocated(up->U.txid,up->U.vout) != 0 )
             {
                 utxos[n++] = up;
                 if ( n >= max )
@@ -153,6 +151,7 @@ int32_t LP_address_utxo_ptrs(struct LP_address_utxo **utxos,int32_t max,struct L
             }
         }
     }
+    portable_mutex_unlock(&LP_utxomutex);
     return(n);
 }
 

@@ -126,6 +126,52 @@ struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout
     return(ptr);
 }
 
+struct LP_pubkeyinfo *LP_pubkey_rmd160find(uint8_t rmd160[20])
+{
+    struct LP_pubkeyinfo *pubp=0,*tmp;
+    portable_mutex_lock(&LP_pubkeymutex);
+    HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
+    {
+        if ( memcmp(rmd160,pubp->rmd160,sizeof(pubp->rmd160)) == 0 )
+            break;
+        pubp = 0;
+    }
+    portable_mutex_unlock(&LP_pubkeymutex);
+    return(pubp);
+}
+
+struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
+{
+    uint8_t rmd160[20],addrtype; struct LP_address *ap; struct LP_pubkeyinfo *pubp;
+    HASH_FIND(hh,coin->addresses,coinaddr,strlen(coinaddr),ap);
+    if ( bits256_nonz(ap->pubkey) == 0 )
+    {
+        bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,coinaddr);
+        if ( (pubp= LP_pubkey_rmd160find(rmd160)) != 0 )
+        {
+            ap->pubkey = pubp->pubkey;
+            memcpy(ap->pubsecp,pubp->pubsecp,sizeof(ap->pubsecp));
+        }
+    }
+    return(ap);
+}
+
+struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
+{
+    uint8_t rmd160[20],addrtype; struct LP_address *ap; struct LP_pubkeyinfo *pubp;
+    ap = calloc(1,sizeof(*ap));
+    safecopy(ap->coinaddr,coinaddr,sizeof(ap->coinaddr));
+    bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,coinaddr);
+    if ( (pubp= LP_pubkey_rmd160find(rmd160)) != 0 )
+    {
+        ap->pubkey = pubp->pubkey;
+        memcpy(ap->pubsecp,pubp->pubsecp,sizeof(ap->pubsecp));
+    }
+    //printf("LP_ADDRESS %s ADD.(%s)\n",coin->symbol,coinaddr);
+    HASH_ADD_KEYPTR(hh,coin->addresses,ap->coinaddr,strlen(ap->coinaddr),ap);
+    return(ap);
+}
+
 struct LP_pubkeyinfo *LP_pubkeyfind(bits256 pubkey)
 {
     struct LP_pubkeyinfo *pubp=0;

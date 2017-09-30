@@ -123,7 +123,8 @@ void basilisk_swap_finished(struct basilisk_swap *swap)
     if ( swap->utxo != 0 && swap->sentflag == 0 )
     {
         LP_availableset(swap->utxo);
-        LP_butxo_swapfields_set(swap->utxo);
+        swap->utxo = 0;
+        //LP_butxo_swapfields_set(swap->utxo);
     }
     swap->I.finished = (uint32_t)time(NULL);
     // save to permanent storage

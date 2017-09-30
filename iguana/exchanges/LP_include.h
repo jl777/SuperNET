@@ -212,7 +212,7 @@ struct LP_utxoinfo
     int32_t iambob,iamlp;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
-    char coin[16],coinaddr[64],spendscript[256],gui[16];
+    char coin[16],coinaddr[64],gui[16];//spendscript[256];
 };
 
 struct LP_address_utxo
@@ -226,9 +226,11 @@ struct LP_address
 {
     UT_hash_handle hh;
     struct LP_address_utxo *utxos;
+    bits256 pubkey;
     int64_t balance,total;
     uint32_t timestamp,n;
     char coinaddr[40];
+    uint8_t pubsecp[33],pad;
 };
 
 struct LP_peerinfo
@@ -297,8 +299,10 @@ int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
 uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee);
 struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr);
+struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr);
+struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr);
 int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson);
-void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo);
+//void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo);
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration);
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid);
 cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJSON *txobj);
@@ -310,10 +314,12 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout);
 void LP_postutxos(char *symbol,char *coinaddr);
 int32_t LP_listunspent_both(char *symbol,char *coinaddr);
 uint16_t LP_randpeer(char *destip);
-int32_t LP_butxo_findeither(bits256 txid,int32_t vout);
+//int32_t LP_butxo_findeither(bits256 txid,int32_t vout);
 cJSON *LP_listunspent(char *symbol,char *coinaddr);
 int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid);
 double LP_getestimatedrate(struct iguana_info *coin);
+struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout);
+struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid,int32_t vout);
 
 
 #endif

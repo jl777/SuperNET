@@ -201,6 +201,19 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     return(item);
 }
 
+struct iguana_info *LP_conflicts_find(struct iguana_info *refcoin)
+{
+    struct iguana_info *coin=0,*tmp;
+    HASH_ITER(hh,LP_coins,coin,tmp)
+    {
+        if ( coin->inactive != 0 || coin->electrum != 0 || coin == refcoin )
+            continue;
+        if ( strcmp(coin->serverport,refcoin->serverport) == 0 )
+            break;
+    }
+    return(coin);
+}
+
 cJSON *LP_coinsjson(int32_t showwif)
 {
     struct iguana_info *coin,*tmp; cJSON *array = cJSON_CreateArray();

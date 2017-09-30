@@ -112,7 +112,7 @@ getcoins()\n\
 getcoin(coin)\n\
 portfolio()\n\
 getpeers()\n\
-passphrase(passphrase)\n\
+passphrase(passphrase, gui)\n\
 listunspent(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
@@ -166,7 +166,7 @@ dividends(coin, height, <args>)\n\
         }
         else if ( strcmp(method,"passphrase") == 0 )
         {
-            if ( LP_passphrase_init(jstr(argjson,"passphrase")) < 0 )
+            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
                 return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
             {
                 retjson = cJSON_CreateObject();
@@ -253,7 +253,11 @@ dividends(coin, height, <args>)\n\
             if ( strcmp(method,"enable") == 0 )
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
-                    ptr->inactive = 0;
+                {
+                    if ( LP_conflicts_find(ptr) == 0 )
+                        ptr->inactive = 0;
+                    else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
+                }
                 return(jprint(LP_coinsjson(0),1));
             }
             else if ( strcmp(method,"disable") == 0 )

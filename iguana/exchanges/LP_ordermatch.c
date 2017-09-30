@@ -435,7 +435,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
     return(pairsock);
 }
 
-struct LP_utxoinfo BUTXOS[100];
+/*struct LP_utxoinfo BUTXOS[100];
 
 int32_t LP_butxo_findeither(bits256 txid,int32_t vout)
 {
@@ -452,7 +452,7 @@ int32_t LP_butxo_findeither(bits256 txid,int32_t vout)
     }
     portable_mutex_unlock(&LP_butxomutex);
     return(retval);
-}
+}*/
 
 int32_t LP_nearest_utxovalue(struct LP_address_utxo **utxos,int32_t n,uint64_t targetval)
 {
@@ -481,12 +481,12 @@ uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t d
     else return(0);
 }
 
-struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double volume,double price,int32_t avoidflag,uint64_t desttxfee)
+struct LP_utxoinfo *LP_address_utxopair(struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double volume,double price,uint64_t desttxfee)
 {
-    struct LP_address *ap; uint64_t targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2;
+    struct LP_address *ap; uint64_t targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2; struct LP_utxoinfo *utxo = 0;
     if ( coin != 0 && (ap= LP_addressfind(coin,coinaddr)) != 0 )
     {
-        if ( (m= LP_address_utxo_ptrs(utxos,max,ap,avoidflag)) > 1 )
+        if ( (m= LP_address_utxo_ptrs(utxos,max,ap)) > 1 )
         {
             targetval = LP_basesatoshis(volume,price,txfee,desttxfee);
             if ( 0 )
@@ -505,18 +505,12 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
                 {
                     if ( up != 0 && (up2= utxos[mini]) != 0 )
                     {
-                        safecopy(utxo->coin,coin->symbol,sizeof(utxo->coin));
-                        safecopy(utxo->coinaddr,coinaddr,sizeof(utxo->coinaddr));
-                        utxo->payment.txid = up->U.txid;
-                        utxo->payment.vout = up->U.vout;
-                        utxo->payment.value = up->U.value;
-                        utxo->iambob = 1;
-                        utxo->deposit.txid = up2->U.txid;
-                        utxo->deposit.vout = up2->U.vout;
-                        utxo->deposit.value = up2->U.value;
-                        utxo->S.satoshis = targetval;
-                        printf("targetval %.8f, found val %.8f  | targetval2 %.8f val2 %.8f\n",dstr(targetval),dstr(up->U.value),dstr(targetval2),dstr(up2->U.value));
-                        return(utxo);
+                        if ( (utxo= LP_utxoadd(1,coin->symbol,up->U.txid,up->U.vout,up->U.value,up2->U.txid,up2->U.vout,up2->U.value,coinaddr,ap->pubkey,G.gui,0)) != 0 )
+                        {
+                            utxo->S.satoshis = targetval;
+                            printf("targetval %.8f, found val %.8f  | targetval2 %.8f val2 %.8f\n",dstr(targetval),dstr(up->U.value),dstr(targetval2),dstr(up2->U.value));
+                            return(utxo);
+                        }
                     }
                 }
             }
@@ -525,7 +519,7 @@ struct LP_utxoinfo *LP_address_utxopair(struct LP_utxoinfo *utxo,struct LP_addre
     return(0);
 }
 
-struct LP_utxoinfo *_LP_butxo_find(struct LP_utxoinfo *butxo)
+/*struct LP_utxoinfo *_LP_butxo_find(struct LP_utxoinfo *butxo)
 {
     int32_t i; struct LP_utxoinfo *utxo=0; uint32_t now = (uint32_t)time(NULL);
     //portable_mutex_lock(&LP_butxomutex);
@@ -586,7 +580,7 @@ void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo)
     {
         LP_butxo_swapfields_copy(setutxo,butxo);
     }
-}
+}*/
 
 void LP_abutxo_set(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP_quoteinfo *qp)
 {
@@ -668,37 +662,49 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
             nn_close(pair);
         LP_availableset(utxo);
     } else LP_unavailableset(utxo,utxo->S.otherpubkey);
-    LP_butxo_swapfields(utxo);
+    //LP_butxo_swapfields(utxo);
     return(retval);
 }
 
 char *LP_connectedalice(cJSON *argjson) // alice
 {
-    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo A,B,*autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin;
+    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin; uint64_t value,value2;
     if ( LP_quoteparse(&Q,argjson) < 0 )
         clonestr("{\"error\":\"cant parse quote\"}");
     if ( bits256_cmp(Q.desthash,G.LP_mypub25519) != 0 )
         return(clonestr("{\"result\",\"update stats\"}"));
     printf("CONNECTED.(%s) numpending.%d\n",jprint(argjson,0),G.LP_pendingswaps);
-    if ( G.LP_pendingswaps > 0 )
+    /*if ( G.LP_pendingswaps > 0 )
     {
         printf("swap already pending\n");
         return(clonestr("{\"error\":\"swap already pending\"}"));
-    }
-    autxo = &A;
-    butxo = &B;
-    LP_abutxo_set(autxo,butxo,&Q);
-    /*if ( (autxo= LP_utxopairfind(0,Q.txid,Q.vout,Q.txid2,Q.vout2)) != 0 && autxo->S.swap != 0 )
-    {
-        printf("swap already pending\n");
-        return(clonestr("{\"error\":\"swap already pending\"}"));
-    }
-    autxo = LP_utxoadd(0,LP_mypubsock,Q.destcoin,Q.desttxid,Q.destvout,Q.destsatoshis,Q.feetxid,Q.feevout,0,"",Q.destaddr,Q.desthash,LP_gui,G.LP_sessionid);
-    if ( autxo == 0 )
-    {
-        printf("couldnt create autxo\n");
-        return(clonestr("{\"error\":\"couldnt create autxo\"}"));
     }*/
+    if ( (autxo= LP_utxopairfind(1,Q.desttxid,Q.destvout,Q.feetxid,Q.feevout)) == 0 )
+    {
+        printf("cant find autxo\n");
+        return(clonestr("{\"error\":\"cant find autxo\"}"));
+    }
+    LP_abutxo_set(autxo,0,&Q);
+    if ( (butxo= LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2)) == 0 )
+    {
+        value = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid,Q.vout);
+        value2 = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid2,Q.vout2);
+        if ( value == 0 || value2 == 0 )
+        {
+            printf("zero value %.8f or value2 %.8f\n",dstr(value),dstr(value2));
+            return(clonestr("{\"error\":\"spent txid or txid2 for bob?\"}"));
+        }
+        if ( (butxo= LP_utxoadd(1,Q.srccoin,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,LP_gui,0)) == 0 )
+        {
+            printf("cant find or create butxo\n");
+            return(clonestr("{\"error\":\"cant find or create butxo\"}"));
+        }
+        if ( value < Q.satoshis )
+        {
+            printf("butxo value %.8f less satoshis %.8f\n",dstr(value),dstr(Q.satoshis));
+            return(clonestr("{\"error\":\"butxo value less than satoshis\"}"));
+        }
+    }
     if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
     {
         LP_availableset(autxo);
@@ -713,7 +719,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
         //G.LP_pendingswaps--;
         return(clonestr("{\"error\":\"no price set\"}"));
     }
-    printf("%s/%s bid %.8f ask %.8f\n",Q.srccoin,Q.destcoin,bid,ask);
+    printf("%s/%s bid %.8f ask %.8f values %.8f %.8f\n",Q.srccoin,Q.destcoin,bid,ask,dstr(butxo->payment.value),dstr(butxo->deposit.value));
     price = bid;
     if ( (coin= LP_coinfind(Q.destcoin)) == 0 )
     {
@@ -813,22 +819,26 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             price = ask;
             autxo = &A;
             butxo = &B;
+            memset(autxo,0,sizeof(*autxo));
+            memset(butxo,0,sizeof(*butxo));
             LP_abutxo_set(autxo,butxo,&Q);
-            LP_butxo_swapfields(butxo);
+            //LP_butxo_swapfields(butxo);
             if ( strcmp(method,"request") == 0 )
             {
-                if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
+                if ( LP_unallocated(butxo->payment.txid,butxo->payment.vout) != 0 || LP_unallocated(butxo->deposit.txid,butxo->deposit.vout) != 0 || (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
                 {
                     LP_listunspent_both(Q.srccoin,Q.coinaddr);
-                    butxo = LP_address_utxopair(butxo,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,1,Q.desttxfee);
-                    Q.txid = butxo->payment.txid;
-                    Q.vout = butxo->payment.vout;
-                    Q.txid2 = butxo->deposit.txid;
-                    Q.vout2 = butxo->deposit.vout;
-                    LP_abutxo_set(0,butxo,&Q);
-                    LP_butxo_swapfields(butxo);
-                }
-            }
+                    if ( (butxo= LP_address_utxopair(utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,Q.desttxfee)) != 0 )
+                    {
+                        Q.txid = butxo->payment.txid;
+                        Q.vout = butxo->payment.vout;
+                        Q.txid2 = butxo->deposit.txid;
+                        Q.vout2 = butxo->deposit.vout;
+                    }
+                    //LP_abutxo_set(0,butxo,&Q);
+                    //LP_butxo_swapfields(butxo);
+                } else butxo = LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2);
+            } else butxo = LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2);
             if ( butxo == 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 || butxo->payment.vout < 0 || butxo->deposit.vout < 0 )
             {
                 char str[65]; printf("couldnt find bob utxos for autxo %s/v%d %.8f\n",bits256_str(str,autxo->payment.txid),autxo->payment.vout,dstr(autxo->S.satoshis));
@@ -869,7 +879,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         msg2 = clonestr(msg);
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg);
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg2);
-                        LP_butxo_swapfields_set(butxo);
+                        //LP_butxo_swapfields_set(butxo);
                         printf("return after RESERVED\n");
                         return(2);
                     }
@@ -882,12 +892,12 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 {
                     // validate SPV alice
                     LP_connectstartbob(ctx,pubsock,butxo,argjson,Q.srccoin,Q.destcoin,qprice,&Q);
-                    LP_butxo_swapfields_set(butxo);
+                    //LP_butxo_swapfields_set(butxo);
                     return(3);
                 }
                 else printf("pend.%u swap %p when connect came in (%s)\n",butxo->T.swappending,butxo->S.swap,jprint(argjson,0));
             }
-            LP_butxo_swapfields_set(butxo);
+            //LP_butxo_swapfields_set(butxo);
         }
     }
     return(retval);
@@ -925,8 +935,6 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
                 if ( aliceutxo->S.swap != 0 )
                     break;
                 sleep(3);
-                //price = LP_query(ctx,myipaddr,mypubsock,"connect",qp);
-                //LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
             }
             if ( aliceutxo->S.swap == 0 )
             {
@@ -957,7 +965,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     return(jprint(bestitem,0));
 }
 
-struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *space,double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,char *gui,bits256 *avoids,int32_t numavoids)
+struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,char *gui,bits256 *avoids,int32_t numavoids)
 {
     bits256 pubkey; char *obookstr,coinaddr[64],str[65]; cJSON *orderbook,*asks,*item; int32_t i,j,n,numasks,max = 10000; struct LP_address_utxo **utxos; double price; struct LP_pubkeyinfo *pubp; struct iguana_info *basecoin; uint64_t basesatoshis; struct LP_utxoinfo *bestutxo = 0;
     *ordermatchpricep = 0.;
@@ -996,7 +1004,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *space,double *ordermatchprice
                             if ( n > 1 )
                             {
                                 basesatoshis = LP_basesatoshis(dstr(autxo->S.satoshis),price,txfee,desttxfee);
-                                if ( basesatoshis != 0 && (bestutxo= LP_address_utxopair(space,utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,0,desttxfee)) != 0 )
+                                if ( basesatoshis != 0 && (bestutxo= LP_address_utxopair(utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,desttxfee)) != 0 )
                                 {
                                     bestutxo->pubkey = pubp->pubkey;
                                     safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
@@ -1031,7 +1039,7 @@ struct LP_utxoinfo *LP_buyutxo(struct LP_utxoinfo *space,double *ordermatchprice
 
 char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui)
 {
-    uint64_t desttxfee,txfee; int32_t numpubs = 0; int64_t bestsatoshis=0,destsatoshis,bestdestsatoshis=0; struct LP_utxoinfo *autxo,_bestB,_bestA,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q; bits256 pubkeys[100];
+    uint64_t desttxfee,txfee; int32_t numpubs = 0; int64_t bestsatoshis=0,destsatoshis,bestdestsatoshis=0; struct LP_utxoinfo *autxo,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q; bits256 pubkeys[100];
     printf("LP_autobuy %s/%s price %.8f vol %.8f\n",base,rel,maxprice,relvolume);
     if ( duration <= 0 )
         duration = LP_ORDERBOOK_DURATION;
@@ -1041,18 +1049,14 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"invalid parameter\"}"));
     memset(pubkeys,0,sizeof(pubkeys));
     LP_txfees(&txfee,&desttxfee,base,rel);
-    memset(&_bestA,0,sizeof(_bestA));
-    memset(&_bestB,0,sizeof(_bestB));
     destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
     if ( (autxo= LP_utxo_bestfit(rel,destsatoshis)) == 0 )
         return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
-    _bestA = *autxo;
-    autxo = &_bestA;
     if ( destsatoshis < autxo->S.satoshis )
         autxo->S.satoshis = destsatoshis;
     while ( 1 )
     {
-        if ( (bestutxo= LP_buyutxo(&_bestB,&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,gui,pubkeys,numpubs)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
+        if ( (bestutxo= LP_buyutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,gui,pubkeys,numpubs)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
         {
             printf("bestutxo.%p ordermatchprice %.8f bestdestsatoshis %.8f\n",bestutxo,ordermatchprice,dstr(bestdestsatoshis));
             return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
@@ -1064,9 +1068,8 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
             return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
         if ( (qprice= LP_quote_validate(autxo,0,&Q,0)) <= SMALLVAL )
         {
-            printf("quote validate error %.0f\n",qprice);
+            printf("continue searching, quote validate error %.0f\n",qprice);
             continue;
-            //return(clonestr("{\"error\":\"quote validation error\"}"));
         }
         break;
     }

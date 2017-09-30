@@ -1608,6 +1608,26 @@ int32_t LP_utxopurge(int32_t allutxos)
     portable_mutex_unlock(&LP_utxomutex);
     return(n);
 }
+struct LP_utxoinfo *LP_utxoaddjson(int32_t iambob,int32_t pubsock,cJSON *argjson)
+{
+    struct LP_utxoinfo *utxo;
+    if ( jobj(argjson,"iambob") == 0 || iambob != jint(argjson,"iambob") )
+    {
+        printf("LP_utxoaddjson: iambob.%d != arg.%d obj.%p (%s)\n",iambob,jint(argjson,"iambob"),jobj(argjson,"iambob"),jprint(argjson,0));
+        return(0);
+    }
+    portable_mutex_lock(&LP_UTXOmutex);
+    utxo = LP_utxoadd(iambob,pubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),j64bits(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jbits256(argjson,"pubkey"),jstr(argjson,"gui"),juint(argjson,"session"));
+    if ( LP_ismine(utxo) > 0 && utxo->T.lasttime == 0 )
+    {
+        utxo->T.lasttime = (uint32_t)time(NULL);
+        printf("set lasttime!\n");
+    }
+    portable_mutex_unlock(&LP_UTXOmutex);
+    return(utxo);
+}
+
+
 int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {
     struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;

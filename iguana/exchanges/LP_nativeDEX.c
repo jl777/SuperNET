@@ -20,14 +20,17 @@
 //  marketmaker
 //
 // new features:
+// sign, spv check
 // bittrex balancing
-// detect port conflicts on enable
 // stats
+
+// -detect port conflicts on enable
+// -check for completed one being spent
+// -prevent autxo reuse
+// -add extra hash to keypair25519
 
 // unduplicated bugs:
 // swap cancel should cleanly cancel
-// check for completed one being spent
-// prevent autxo reuse, add extra hash to keypair25519, sign, spv check
 
 #include <stdio.h>
 #include "LP_include.h"
@@ -64,7 +67,7 @@ struct LP_globals
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
     uint32_t LP_sessionid,counter;
     int32_t LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting;
-    char USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41];
+    char USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[16];
     struct LP_privkey LP_privkeys[100];
 } G;
 
@@ -693,7 +696,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     printf("initcoins\n");
     LP_initcoins(ctx,pubsock,jobj(argjson,"coins"));
     G.waiting = 1;
-    LP_passphrase_init(passphrase);
+    LP_passphrase_init(passphrase,jstr(argjson,"gui"));
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)&myipaddr) != 0 )
     {
         printf("error launching LP_psockloop for (%s)\n",myipaddr);
