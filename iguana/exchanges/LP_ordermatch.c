@@ -398,7 +398,7 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
                 break;
             }
         }
-        usleep(1000000);
+        usleep(250000);
     }
     return(price);
 }
