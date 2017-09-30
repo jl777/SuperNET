@@ -703,7 +703,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
     {
         if ( memcmp(zeroes,pubp->rmd160,sizeof(pubp->rmd160)) == 0 )
         {
-            printf("skip pubp since no rmd160\n");
+            //printf("skip pubp since no rmd160\n");
             continue;
         }
         bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
