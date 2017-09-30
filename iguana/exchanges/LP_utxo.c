@@ -121,7 +121,7 @@ int32_t LP_address_minmax(uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
     return(n);
 }
 
-struct LP_utxoinfo *LP_unallocated(bits256 txid,int32_t vout)
+struct LP_utxoinfo *LP_allocated(bits256 txid,int32_t vout)
 {
     struct LP_utxoinfo *utxo;
     if ( (utxo= _LP_utxofind(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
@@ -155,7 +155,7 @@ int32_t LP_address_utxo_ptrs(int32_t iambob,struct LP_address_utxo **utxos,int32
     {
         if ( up->spendheight <= 0 )
         {
-            if ( LP_unallocated(up->U.txid,up->U.vout) == 0 )
+            if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
             {
                 utxos[n++] = up;
                 if ( n >= max )

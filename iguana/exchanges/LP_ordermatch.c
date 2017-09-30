@@ -481,21 +481,22 @@ uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t d
     else return(0);
 }
 
-struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double volume,double price,uint64_t desttxfee)
+struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double relvolume,double price,uint64_t desttxfee)
 {
     struct LP_address *ap; uint64_t targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2; struct LP_utxoinfo *utxo = 0;
     if ( coin != 0 && (ap= LP_addressfind(coin,coinaddr)) != 0 )
     {
         if ( (m= LP_address_utxo_ptrs(iambob,utxos,max,ap)) > 1 )
         {
-            targetval = LP_basesatoshis(volume,price,txfee,desttxfee);
+            targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee);
             if ( 1 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)
                     printf("%.8f ",dstr(utxos[i]->U.value));
-                printf("targetval %.8f vol %.8f price %.8f txfee %.8f\n",dstr(targetval),volume,price,dstr(txfee));
+                printf("targetval %.8f vol %.8f price %.8f txfee %.8f\n",dstr(targetval),relvolume,price,dstr(txfee));
             }
+            mini = -1;
             if ( targetval != 0 && (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 && (double)utxos[mini]->U.value/targetval < LP_MINVOL-1 )
             {
                 up = utxos[mini];
@@ -513,7 +514,8 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                         }
                     }
                 } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
-            }
+            } else if ( targetval != 0 && mini >= 0 )
+                printf("targetval %.8f mini.%d ratio %.8f\n",dstr(targetval),mini,(double)utxos[mini]->U.value/targetval);
         } else printf("no utxos pass LP_address_utxo_ptrs filter\n");
     } else printf("couldnt find %s %s\n",coin->symbol,coinaddr);
     return(0);
@@ -825,7 +827,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             //LP_butxo_swapfields(butxo);
             if ( strcmp(method,"request") == 0 )
             {
-                if ( LP_unallocated(butxo->payment.txid,butxo->payment.vout) != 0 || LP_unallocated(butxo->deposit.txid,butxo->deposit.vout) != 0 || (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
+                if ( LP_allocated(butxo->payment.txid,butxo->payment.vout) != 0 || LP_allocated(butxo->deposit.txid,butxo->deposit.vout) != 0 || (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
                 {
                     LP_listunspent_both(Q.srccoin,Q.coinaddr);
                     if ( (butxo= LP_address_utxopair(1,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,Q.desttxfee)) != 0 )
@@ -996,12 +998,12 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                                 break;
                         if ( j != numavoids )
                             continue;
-                        printf("%s pubcmp %d\n",jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519));
+                        //printf("%s pubcmp %d\n",jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519));
                         if ( bits256_cmp(pubkey,G.LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
                         {
                             bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
                             n = LP_listunspent_both(base,coinaddr);
-                            printf("unspent.(%s) n.%d\n",coinaddr,n);
+                            //printf("unspent.(%s) n.%d\n",coinaddr,n);
                             if ( n > 1 )
                             {
                                 basesatoshis = LP_basesatoshis(dstr(autxo->S.satoshis),price,txfee,desttxfee);
