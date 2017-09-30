@@ -1608,6 +1608,87 @@ int32_t LP_utxopurge(int32_t allutxos)
     portable_mutex_unlock(&LP_utxomutex);
     return(n);
 }
+/*struct LP_utxoinfo *_LP_butxo_find(struct LP_utxoinfo *butxo)
+ {
+ int32_t i; struct LP_utxoinfo *utxo=0; uint32_t now = (uint32_t)time(NULL);
+ //portable_mutex_lock(&LP_butxomutex);
+ for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
+ {
+ utxo = &BUTXOS[i];
+ if ( butxo->payment.vout == utxo->payment.vout && butxo->deposit.vout == utxo->deposit.vout && bits256_nonz(butxo->payment.txid) != 0 && bits256_nonz(butxo->deposit.txid) != 0 && bits256_cmp(butxo->payment.txid,utxo->payment.txid) == 0 && bits256_cmp(butxo->deposit.txid,utxo->deposit.txid) == 0 )
+ break;
+ if ( utxo->S.swap == 0 && now > utxo->T.swappending )
+ memset(utxo,0,sizeof(*utxo));
+ utxo = 0;
+ }
+ //portable_mutex_unlock(&LP_butxomutex);
+ return(utxo);
+ }
+ 
+ struct LP_utxoinfo *LP_butxo_add(struct LP_utxoinfo *butxo)
+ {
+ static struct LP_utxoinfo zeroes;
+ int32_t i; struct LP_utxoinfo *utxo=0;
+ portable_mutex_lock(&LP_butxomutex);
+ if ( (utxo= _LP_butxo_find(butxo)) == 0 )
+ {
+ for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
+ {
+ utxo = &BUTXOS[i];
+ if ( memcmp(&zeroes,utxo,sizeof(*utxo)) == 0 )
+ {
+ *utxo = *butxo;
+ break;
+ }
+ utxo = 0;
+ }
+ }
+ portable_mutex_unlock(&LP_butxomutex);
+ return(utxo);
+ }
+ 
+ void LP_butxo_swapfields_copy(struct LP_utxoinfo *destutxo,struct LP_utxoinfo *srcutxo)
+ {
+ destutxo->S = srcutxo->S;
+ destutxo->T = srcutxo->T;
+ }
+ 
+ void LP_butxo_swapfields(struct LP_utxoinfo *butxo)
+ {
+ struct LP_utxoinfo *getutxo=0;
+ portable_mutex_lock(&LP_butxomutex);
+ if ( (getutxo= _LP_butxo_find(butxo)) != 0 )
+ LP_butxo_swapfields_copy(butxo,getutxo);
+ portable_mutex_unlock(&LP_butxomutex);
+ }
+ 
+ void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo)
+ {
+ struct LP_utxoinfo *setutxo;
+ if ( (setutxo= LP_butxo_add(butxo)) != 0 )
+ {
+ LP_butxo_swapfields_copy(setutxo,butxo);
+ }
+ }*/
+/*struct LP_utxoinfo BUTXOS[100];
+ 
+ int32_t LP_butxo_findeither(bits256 txid,int32_t vout)
+ {
+ struct LP_utxoinfo *utxo; int32_t i,retval = 0;
+ portable_mutex_lock(&LP_butxomutex);
+ for (i=0; i<sizeof(BUTXOS)/sizeof(*BUTXOS); i++)
+ {
+ utxo = &BUTXOS[i];
+ if ( (vout == utxo->payment.vout && bits256_cmp(txid,utxo->payment.txid)) == 0 || (vout == utxo->deposit.vout && bits256_cmp(txid,utxo->deposit.txid) == 0) )
+ {
+ retval = 1;
+ break;
+ }
+ }
+ portable_mutex_unlock(&LP_butxomutex);
+ return(retval);
+ }*/
+
 struct LP_utxoinfo *LP_utxoaddjson(int32_t iambob,int32_t pubsock,cJSON *argjson)
 {
     struct LP_utxoinfo *utxo;
