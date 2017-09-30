@@ -836,7 +836,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         Q.vout = butxo->payment.vout;
                         Q.txid2 = butxo->deposit.txid;
                         Q.vout2 = butxo->deposit.vout;
-                        char str[65],str2[65]; printf("set utxo %s/v%d %s/v%d %.8f\n",bits256_str(str,butxo->payment.txid),butxo->payment.vout,bits256_str(str2,butxo->deposit.txid),butxo->deposit.vout,dstr(autxo->S.satoshis));
+                        char str[65],str2[65]; printf("set utxo %s/v%d %s/v%d %.8f %.8f -> bsat %.8f asat %.8f\n",bits256_str(str,butxo->payment.txid),butxo->payment.vout,bits256_str(str2,butxo->deposit.txid),butxo->deposit.vout,dstr(butxo->payment.value),dstr(butxo->deposit.value),dstr(butxo->S.satoshis),dstr(autxo->S.satoshis));
                     } else printf("cant find utxopair\n");
                     //LP_abutxo_set(0,butxo,&Q);
                     //LP_butxo_swapfields(butxo);
