@@ -806,7 +806,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr)
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
-    char *method,*msg; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
+    char *method,*msg; uint64_t value,value2; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
         printf("LP_tradecommand: check received %s\n",method);
@@ -850,6 +850,12 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     butxo = LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2);
                 }
             } else butxo = LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2);
+            if ( butxo == 0 )
+            {
+                value = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid,Q.vout);
+                value2 = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid2,Q.vout2);
+                butxo = LP_utxoadd(1,Q.srccoin,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,LP_gui,0);
+            }
             printf("butxo.%p TRADECOMMAND.(%s)\n",butxo,jprint(argjson,0));
             if ( butxo == 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 || butxo->payment.vout < 0 || butxo->deposit.vout < 0 )
             {
