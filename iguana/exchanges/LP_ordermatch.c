@@ -686,7 +686,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
         printf("cant find autxo\n");
         return(clonestr("{\"error\":\"cant find autxo\"}"));
     }
-    LP_abutxo_set(autxo,0,&Q);
+    //LP_abutxo_set(autxo,0,&Q);
     if ( (butxo= LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2)) == 0 )
     {
         value = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid,Q.vout);

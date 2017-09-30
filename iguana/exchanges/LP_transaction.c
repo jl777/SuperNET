@@ -1329,12 +1329,12 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
         strcpy(swap->bobdeposit.I.destaddr,swap->bobdeposit.p2shaddr);
         basilisk_dontforget_update(swap,&swap->bobdeposit);
         //LP_importaddress(swap->bobcoin.symbol,swap->bobdeposit.I.destaddr);
-        /*for (i=0; i<swap->bobdeposit.I.datalen; i++)
+        int32_t i; char str[65]; for (i=0; i<swap->bobdeposit.I.datalen; i++)
             printf("%02x",swap->bobdeposit.txbytes[i]);
         printf(" <- bobdeposit.%d %s\n",swap->bobdeposit.I.datalen,bits256_str(str,swap->bobdeposit.I.signedtxid));
         for (i=0; i<swap->bobdeposit.I.redeemlen; i++)
             printf("%02x",swap->bobdeposit.redeemscript[i]);
-        printf(" <- bobdeposit redeem %d %s suppress.%d\n",i,swap->bobdeposit.I.destaddr,swap->aliceclaim.I.suppress_pubkeys);*/
+        printf(" <- bobdeposit redeem %d %s suppress.%d\n",i,swap->bobdeposit.I.destaddr,swap->aliceclaim.I.suppress_pubkeys);
         memcpy(swap->aliceclaim.redeemscript,swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
         swap->aliceclaim.I.redeemlen = swap->bobdeposit.I.redeemlen;
         memcpy(swap->aliceclaim.I.pubkey33,swap->persistent_pubkey33,33);
