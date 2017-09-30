@@ -218,6 +218,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
         printf("LP_utxo_bestfit error symbol.%p %.8f\n",symbol,dstr(destsatoshis));
         return(0);
     }
+    // jl777 remove mempool
     HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
     {
         //char str[65]; printf("s%u %d [%.8f vs %.8f] check %s.%s avail.%d ismine.%d >= %d\n",utxo->T.spentflag,LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout),dstr(destsatoshis),dstr(utxo->S.satoshis),utxo->coin,bits256_str(str,utxo->payment.txid),LP_isavailable(utxo) > 0,LP_ismine(utxo) > 0,utxo->S.satoshis >= destsatoshis);
@@ -323,12 +324,12 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
                 printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f:%.8f, value2 %.8f:%.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(val),dstr(value2),dstr(val2),dstr(tmpsatoshis));
             return(0);
         }
-        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,vout,1)) <= 0 )
+        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,vout,0)) <= 0 )
         {
             printf("LP_utxoadd reject numconfirms.%d %s.%s\n",numconfirms,symbol,bits256_str(str,txid));
             return(0);
         }
-        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,vout2,1)) <= 0 )
+        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,vout2,0)) <= 0 )
         {
             printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
             return(0);

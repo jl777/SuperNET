@@ -324,7 +324,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                     free_json(retjson);
                 else
                 {
-                    printf("external unspent has no gettxout\n");
+                    //printf("external unspent has no gettxout\n");
                     flag += LP_address_utxoadd(coin,coinaddr,txid,v,value,0,1);
                 }
             }
