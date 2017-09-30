@@ -481,12 +481,12 @@ uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t d
     else return(0);
 }
 
-struct LP_utxoinfo *LP_address_utxopair(struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double volume,double price,uint64_t desttxfee)
+struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double volume,double price,uint64_t desttxfee)
 {
     struct LP_address *ap; uint64_t targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2; struct LP_utxoinfo *utxo = 0;
     if ( coin != 0 && (ap= LP_addressfind(coin,coinaddr)) != 0 )
     {
-        if ( (m= LP_address_utxo_ptrs(utxos,max,ap)) > 1 )
+        if ( (m= LP_address_utxo_ptrs(iambob,utxos,max,ap)) > 1 )
         {
             targetval = LP_basesatoshis(volume,price,txfee,desttxfee);
             if ( 1 )
@@ -828,7 +828,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 if ( LP_unallocated(butxo->payment.txid,butxo->payment.vout) != 0 || LP_unallocated(butxo->deposit.txid,butxo->deposit.vout) != 0 || (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
                 {
                     LP_listunspent_both(Q.srccoin,Q.coinaddr);
-                    if ( (butxo= LP_address_utxopair(utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,Q.desttxfee)) != 0 )
+                    if ( (butxo= LP_address_utxopair(1,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,Q.desttxfee)) != 0 )
                     {
                         Q.txid = butxo->payment.txid;
                         Q.vout = butxo->payment.vout;
@@ -1005,7 +1005,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                             if ( n > 1 )
                             {
                                 basesatoshis = LP_basesatoshis(dstr(autxo->S.satoshis),price,txfee,desttxfee);
-                                if ( basesatoshis != 0 && (bestutxo= LP_address_utxopair(utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,desttxfee)) != 0 )
+                                if ( basesatoshis != 0 && (bestutxo= LP_address_utxopair(0,utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,desttxfee)) != 0 )
                                 {
                                     bestutxo->pubkey = pubp->pubkey;
                                     safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));

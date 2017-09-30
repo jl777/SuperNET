@@ -121,21 +121,23 @@ int32_t LP_address_minmax(uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
     return(n);
 }
 
-struct LP_utxoinfo *LP_unallocated(bits256 txid,int32_t vout)
+struct LP_utxoinfo *LP_unallocated(int32_t iambob,bits256 txid,int32_t vout)
 {
     struct LP_utxoinfo *utxo;
-    if ( (utxo= _LP_utxofind(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    if ( (utxo= _LP_utxofind(iambob,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    {
+        char str[65]; printf("%s/v%d not available\n",bits256_str(str,txid),vout);
         return(0);
-    if ( (utxo= _LP_utxo2find(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    }
+    if ( (utxo= _LP_utxo2find(iambob,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    {
+        char str[65]; printf("%s/v%d not available2\n",bits256_str(str,txid),vout);
         return(0);
-    if ( (utxo= _LP_utxofind(1,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
-        return(0);
-    if ( (utxo= _LP_utxo2find(1,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
-        return(0);
+    }
     return(utxo);
 }
 
-int32_t LP_address_utxo_ptrs(struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap)
+int32_t LP_address_utxo_ptrs(int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap)
 {
     struct LP_address_utxo *up,*tmp; int32_t n = 0;
     portable_mutex_lock(&LP_utxomutex);
@@ -143,7 +145,7 @@ int32_t LP_address_utxo_ptrs(struct LP_address_utxo **utxos,int32_t max,struct L
     {
         if ( up->spendheight <= 0 )
         {
-            if ( LP_unallocated(up->U.txid,up->U.vout) != 0 )
+            if ( LP_unallocated(iambob,up->U.txid,up->U.vout) != 0 )
             {
                 utxos[n++] = up;
                 if ( n >= max )
