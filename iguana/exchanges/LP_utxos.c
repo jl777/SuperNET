@@ -420,11 +420,13 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
 
 cJSON *LP_inventory(char *symbol)
 {
-    struct LP_utxoinfo *utxo,*tmp; struct _LP_utxoinfo u; char *myipaddr; cJSON *array; uint64_t val,val2; int32_t iambob = 0;
+    struct LP_utxoinfo *utxo,*tmp; struct _LP_utxoinfo u; char *myipaddr; cJSON *array; uint64_t val,val2; int32_t iambob = 0; struct iguana_info *coin;
     array = cJSON_CreateArray();
     if ( LP_mypeer != 0 )
         myipaddr = LP_mypeer->ipaddr;
     else myipaddr = "127.0.0.1";
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+        LP_listunspent_both(symbol,coin->smartaddr);
     HASH_ITER(hh,G.LP_utxoinfos,utxo,tmp)
     {
         char str[65];
