@@ -287,11 +287,11 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         printf("session.%u addutxo %d %d %d %d %d %d %d %d\n",sessionid,symbol == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
-    if ( iambob != 0 )
+    /*if ( iambob != 0 )
     {
         printf("deprecated bob utxos\n");
         return(0);
-    }
+    }*/
     if ( (coin= LP_coinfind(symbol)) == 0 || (IAMLP == 0 && coin->inactive != 0) )
     {
         printf("LP_utxoadd reject inactive %s\n",symbol);
