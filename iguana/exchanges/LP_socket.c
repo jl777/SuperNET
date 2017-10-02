@@ -582,7 +582,7 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
             printf("DATA.(%s) from (%s)\n",hexstr+1,jprint(hexjson,0));
             if ( (tx= LP_transactionfind(coin,txid)) == 0 || tx->serialized == 0 )
             {
-                txobj = LP_transactioninit(coin,txid,0,0);
+                txobj = LP_transactioninit(coin,txid,0,LP_transaction_fromdata(coin,txid,serialized,len));
                 LP_transactioninit(coin,txid,1,txobj);
                 if ( (tx= LP_transactionfind(coin,txid)) != 0 )
                 {
