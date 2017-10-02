@@ -500,7 +500,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         printf("coin not active\n");
         return(0);
     }
-    printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
+    //printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
     if ( coin->inactive == 0 )
         LP_listunspent_issue(coin->symbol,coin->smartaddr);
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
@@ -508,7 +508,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         txfee = LP_txfeecalc(coin,0);
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
-            printf("LP_privkey_init %s %s\n",coin->symbol,jprint(array,0));
+            //printf("LP_privkey_init %s %s\n",coin->symbol,jprint(array,0));
             for (iambob=0; iambob<=1; iambob++)
             {
                 if ( iambob == 0 )
