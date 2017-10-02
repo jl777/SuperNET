@@ -284,13 +284,19 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
     {
         if (LP_iseligible(&srcvalue,&srcvalue2,1,qp->srccoin,qp->txid,qp->vout,qp->satoshis,qp->txid2,qp->vout2) == 0 )
         {
-            printf("bob not eligible\n");
+            printf("bob not eligible %s\n",jprint(LP_quotejson(qp),1));
             return(-2);
         }
         if ( bits256_cmp(butxo->deposit.txid,qp->txid2) != 0 || butxo->deposit.vout != qp->vout2 )
+        {
+            char str[65],str2[65]; printf("%s != %s v%d != %d\n",bits256_str(str,butxo->deposit.txid),bits256_str(str2,qp->txid2),butxo->deposit.vout,qp->vout2);
             return(-6);
+        }
         if ( strcmp(butxo->coinaddr,qp->coinaddr) != 0 )
+        {
+            printf("(%s) != (%s)\n",butxo->coinaddr,qp->coinaddr);
             return(-7);
+        }
     }
     if ( autxo != 0 && LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) == 0 )
     {
