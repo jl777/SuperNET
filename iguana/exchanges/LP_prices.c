@@ -746,6 +746,8 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     baseid = basepp->ind;
     relid = relpp->ind;
     now = (uint32_t)time(NULL);
+    basecoin->obooktime = now;
+    relcoin->obooktime = now;
     cachenumbids = numbids, cachenumasks = numasks;
     //printf("start cache.(%d %d) numbids.%d numasks.%d\n",cachenumbids,cachenumasks,numbids,numasks);
     numasks = LP_orderbook_utxoentries(now,1,base,rel,&asks,numasks,cachenumasks,duration);

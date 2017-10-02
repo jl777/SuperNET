@@ -478,6 +478,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             continue;
         if ( coin->electrum != 0 )
             continue;
+        if ( coin->obooktime == 0 )
+            continue;
         if ( time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {
             if ( (height= LP_getheight(coin)) > coin->longestchain )
