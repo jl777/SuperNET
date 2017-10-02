@@ -594,7 +594,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
 
 char *LP_connectedalice(cJSON *argjson) // alice
 {
-    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin; uint64_t value,value2;
+    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,B,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin; uint64_t value,value2;
     if ( LP_quoteparse(&Q,argjson) < 0 )
         clonestr("{\"error\":\"cant parse quote\"}");
     if ( bits256_cmp(Q.desthash,G.LP_mypub25519) != 0 )
@@ -610,8 +610,12 @@ char *LP_connectedalice(cJSON *argjson) // alice
         printf("cant find autxo\n");
         return(clonestr("{\"error\":\"cant find autxo\"}"));
     }
-    //LP_abutxo_set(autxo,0,&Q);
-    if ( (butxo= LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2)) == 0 )
+    if ( autxo->S.swap != 0 )
+        return(clonestr("{\"error\":\"ignore duplicate swap\"}"));
+    butxo = &B;
+    memset(butxo,0,sizeof(*butxo));
+    LP_abutxo_set(0,butxo,&Q);
+    /*if ( (butxo= LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2)) == 0 )
     {
         value = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid,Q.vout);
         value2 = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid2,Q.vout2);
@@ -630,7 +634,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
             printf("butxo value %.8f less satoshis %.8f\n",dstr(value),dstr(Q.satoshis));
             return(clonestr("{\"error\":\"butxo value less than satoshis\"}"));
         }
-    }
+    }*/
     if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
     {
         LP_availableset(autxo);

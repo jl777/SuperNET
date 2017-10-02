@@ -385,7 +385,7 @@ dividends(coin, height, <args>)\n\
     }
     else if ( strcmp(method,"connected") == 0 )
     {
-        printf("CONNECTED.(%s)\n",jprint(argjson,0));
+        //printf("CONNECTED.(%s)\n",jprint(argjson,0));
         retstr = LP_connectedalice(argjson);
     }
     else if ( strcmp(method,"checktxid") == 0 )
