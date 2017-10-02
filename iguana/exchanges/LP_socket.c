@@ -529,7 +529,7 @@ cJSON *electrum_getchunk(char *symbol,struct electrum_info *ep,cJSON **retjsonp,
 
 cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
 {
-    char str[65]; printf("%s TRANSACTION.(%s)\n",symbol,bits256_str(str,txid));
+    char str[65]; printf("%s add cache here -> TRANSACTION.(%s)\n",symbol,bits256_str(str,txid));
     if ( bits256_nonz(txid) != 0 )
         return(electrum_hasharg(symbol,ep,retjsonp,"blockchain.transaction.get",txid,ELECTRUM_TIMEOUT));
     else return(cJSON_Parse("{\"error\":\"null txid\"}"));
