@@ -243,7 +243,7 @@ cJSON *LP_paxprice(char *fiat)
 
 cJSON *LP_gettx(char *symbol,bits256 txid)
 {
-    char buf[128],str[65],*hexstr; int32_t len; bits256 checktxid; cJSON *retjson; struct iguana_info *coin; struct iguana_msgtx msgtx; uint8_t *extraspace,*serialized;
+    struct iguana_info *coin; char buf[512],str[65]; cJSON *retjson;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -258,49 +258,38 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     }
     else
     {
-        sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
         if ( (retjson= electrum_transaction(symbol,coin->electrum,&retjson,txid)) != 0 )
-        {
-            hexstr = jprint(retjson,1);
-            if ( strlen(hexstr) > 20000 )
-            {
-                static uint32_t counter;
-                if ( counter++ < 3 )
-                    printf("rawtransaction too big %d\n",(int32_t)strlen(hexstr));
-                free(hexstr);
-                return(cJSON_Parse("{\"error\":\"transaction too big\"}"));
-            }
-            if ( hexstr[0] == '"' && hexstr[strlen(hexstr)-1] == '"' )
-                hexstr[strlen(hexstr)-1] = 0;
-            if ( (len= is_hexstr(hexstr+1,0)) > 2 )
-            {
-                memset(&msgtx,0,sizeof(msgtx));
-                len = (int32_t)strlen(hexstr+1) >> 1;
-                serialized = malloc(len);
-                decode_hex(serialized,len,hexstr+1);
-                free(hexstr);
-                //printf("DATA.(%s)\n",hexstr+1);
-                extraspace = calloc(1,1000000);
-                retjson = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,1000000,serialized,len,0,0);
-                free(serialized);
-                free(extraspace);
-                //printf("TX.(%s) match.%d\n",jprint(retjson,0),bits256_cmp(txid,checktxid));
-                return(retjson);
-            } else printf("non-hex tx.(%s)\n",hexstr);
-            free(hexstr);
-            return(cJSON_Parse("{\"error\":\"non hex transaction\"}"));
-        } else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,buf);
+            return(retjson);
+        else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,buf);
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
     }
 }
 
-cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
+cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,uint64_t value)
 {
-    char buf[128],str[65],coinaddr[64],*hexstr; uint64_t value; uint8_t *serialized; cJSON *sobj,*addresses,*item,*array,*hexobj,*retjson=0; int32_t i,n,v,len; bits256 t; struct iguana_info *coin;
+    cJSON *retjson,*addresses,*sobj;
+    retjson = cJSON_CreateObject();
+    jaddnum(retjson,"value",dstr(value));
+    jaddnum(retjson,"height",height);
+    jaddbits256(retjson,"txid",txid);
+    jaddnum(retjson,"vout",vout);
+    addresses = cJSON_CreateArray();
+    jaddistr(addresses,coinaddr);
+    sobj = cJSON_CreateObject();
+    jaddnum(sobj,"reqSigs",1);
+    jaddstr(sobj,"type","pubkey");
+    jadd(sobj,"addresses",addresses);
+    jadd(retjson,"scriptPubKey",sobj);
+    printf("GETTXOUT.(%s)\n",jprint(retjson,0));
+    return(retjson);
+}
+
+cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
+{
+    char buf[128],str[65]; cJSON *item,*array,*vouts,*txobj,*retjson=0; int32_t i,v,n; bits256 t; struct iguana_info *coin; struct LP_transaction *tx; struct LP_address_utxo *up;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
-    coin = LP_coinfind(symbol);
-    if ( coin == 0 )
+    if ( (coin= LP_coinfind(symbol)) == 0 )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( bits256_nonz(txid) == 0 )
         return(cJSON_Parse("{\"error\":\"null txid\"}"));
@@ -311,84 +300,52 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
     }
     else
     {
-        printf("gettxout v%d\n",vout);
-        sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
-        if ( (hexobj= electrum_transaction(symbol,coin->electrum,&hexobj,txid)) != 0 )
+        if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts )
         {
-            hexstr = jprint(hexobj,1);
-            if ( strlen(hexstr) > 20000 )
+            if ( tx->outpoints[vout].spendheight > 0 )
+                return(0);
+            return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
+        }
+        if ( coinaddr[0] == 0 )
+        {
+            if ( (txobj= electrum_transaction(symbol,coin->electrum,&txobj,txid)) != 0 )
             {
-                static uint32_t counter;
-                if ( counter++ < 3 )
-                    printf("rawtransaction too big %d\n",(int32_t)strlen(hexstr));
-                free(hexstr);
-                return(cJSON_Parse("{\"error\":\"transaction too big\"}"));
+                if ( (vouts= jarray(&n,txobj,"vout")) != 0 && n > 0 )
+                    LP_destaddr(coinaddr,jitem(vouts,vout));
+                free_json(txobj);
             }
-            if ( hexstr[0] == '"' && hexstr[strlen(hexstr)-1] == '"' )
-                hexstr[strlen(hexstr)-1] = 0;
-            if ( (len= is_hexstr(hexstr+1,0)) > 2 )
+        }
+        if ( coinaddr[0] != 0 )
+        {
+            if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
             {
-                len = (int32_t)strlen(hexstr+1) >> 1;
-                serialized = malloc(len);
-                decode_hex(serialized,len,hexstr+1);
-                LP_swap_coinaddr(coin,coinaddr,&value,serialized,len,vout);
-                //printf("HEX.(%s) len.%d %s %.8f\n",hexstr+1,len,coinaddr,dstr(value));
-                free(hexstr);
-                if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr)) != 0 )
+                if ( up->spendheight > 0 )
+                    return(0);
+                return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
+            }
+            if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr)) != 0 )
+            {
+                //printf("array.(%s)\n",jprint(array,0));
+                if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
                 {
-                    //printf("array.(%s)\n",jprint(array,0));
-                    if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+                    for (i=0; i<n; i++)
                     {
-                        for (i=0; i<n; i++)
+                        item = jitem(array,i);
+                        t = jbits256(item,"tx_hash");
+                        v = jint(item,"tx_pos");
+                        if ( v == vout && bits256_cmp(t,txid) == 0 )
                         {
-                            item = jitem(array,i);
-                            t = jbits256(item,"tx_hash");
-                            v = jint(item,"tx_pos");
-                            if ( v == vout && bits256_cmp(t,txid) == 0 )
-                            {
-                                retjson = cJSON_CreateObject();
-                                /*{
-                                    "bestblock": "002f7bbe3973b735f535d472501962e86ce8dbc76c73ac5a310a905931b907fa",
-                                    "confirmations": 7,
-                                    "value": 2013.10431750,
-                                    "scriptPubKey": {
-                                        "asm": "03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828 OP_CHECKSIG",
-                                        "hex": "2103b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828ac",
-                                        "reqSigs": 1,
-                                        "type": "pubkey",
-                                        "addresses": [
-                                                      "RNJmgYaFF5DbnrNUX6pMYz9rcnDKC2tuAc"
-                                                      ]
-                                    },
-                                    "version": 1,
-                                    "coinbase": false
-                                }*/
-                                if ( value != j64bits(item,"value") )
-                                    printf("LP_gettxout: value %llu != %llu\n",(long long)value,(long long)j64bits(item,"value"));
-                                jaddnum(retjson,"value",dstr(value));
-                                jaddbits256(retjson,"txid",t);
-                                jaddnum(retjson,"vout",v);
-                                addresses = cJSON_CreateArray();
-                                jaddistr(addresses,coinaddr);
-                                sobj = cJSON_CreateObject();
-                                jaddnum(sobj,"reqSigs",1);
-                                jaddstr(sobj,"type","pubkey");
-                                jadd(sobj,"addresses",addresses);
-                                jadd(retjson,"scriptPubKey",sobj);
-                                printf("GETTXOUT.(%s)\n",jprint(retjson,0));
-                                break;
-                            }
+                            retjson = LP_gettxout_json(txid,vout,jint(item,"height"),coinaddr,j64bits(item,"value"));
+                            break;
                         }
                     }
-                    free_json(array);
                 }
-            } else free(hexstr);
-            if ( retjson == 0 )
-            {
-                
+                free_json(array);
+                if ( retjson != 0 )
+                    return(retjson);
             }
-            return(retjson);
         }
+        printf("couldnt find %s/v%d\n",bits256_str(str,txid),vout);
         return(cJSON_Parse("{\"error\":\"couldnt get tx\"}"));
     }
 }

@@ -332,7 +332,7 @@ int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
         val = j64bits(item,"value");
         //if ( strcmp(coin->symbol,"LBC") == 0 )
         //    printf("(%s)\n",jprint(item,0));
-        if ( coin->electrum == 0 && (txobj= LP_gettxout(coin->symbol,txid,v)) != 0 )
+        if ( coin->electrum == 0 && (txobj= LP_gettxout(coin->symbol,coinaddr,txid,v)) != 0 )
         {
             value = LP_value_extract(txobj,0);
             if ( value != 0 && value != val )
@@ -475,7 +475,7 @@ uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_inf
     uint64_t interest,value = 0; cJSON *txobj;
     *interestp = 0;
     destaddr[0] = 0;
-    if ( (txobj= LP_gettxout(coin->symbol,txid,vout)) != 0 )
+    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid,vout)) != 0 )
     {
         if ( (value= LP_value_extract(txobj,0)) == 0 )
         {
@@ -591,7 +591,7 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
     if ( coin->electrum == 0 )
     {
         numconfirms = -1;
-        if ( (txobj= LP_gettxout(symbol,txid,vout)) != 0 )
+        if ( (txobj= LP_gettxout(symbol,coinaddr,txid,vout)) != 0 )
         {
             numconfirms = jint(txobj,"confirmations");
             free_json(txobj);
@@ -663,7 +663,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
     }
     else
     {
-        if ( (txobj= LP_gettxout(coin->symbol,txid,vout)) != 0 )
+        if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) != 0 )
         {
             value = LP_value_extract(txobj,0);//SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
             if ( coinaddr == 0 )

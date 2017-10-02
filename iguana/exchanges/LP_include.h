@@ -172,7 +172,8 @@ struct LP_outpoint { bits256 spendtxid; uint64_t value,interest; int32_t spendvi
 struct LP_transaction
 {
     UT_hash_handle hh;
-    bits256 txid; int32_t height,numvouts,numvins; //uint32_t timestamp;
+    bits256 txid; int32_t height,numvouts,numvins,len; //uint32_t timestamp;
+    uint8_t *serialized;
     struct LP_outpoint outpoints[];
 };
 
@@ -303,6 +304,8 @@ struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr);
 struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr);
 int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson);
 //void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo);
+struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout);
+int32_t LP_destaddr(char *destaddr,cJSON *item);
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration);
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid);
 cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJSON *txobj);
@@ -310,10 +313,11 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);
-cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout);
+cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 void LP_postutxos(char *symbol,char *coinaddr);
 int32_t LP_listunspent_both(char *symbol,char *coinaddr);
 uint16_t LP_randpeer(char *destip);
+cJSON *bitcoin_data2json(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,bits256 *txidp,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,uint8_t *serialized,int32_t len,cJSON *vins,int32_t suppress_pubkeys);
 //int32_t LP_butxo_findeither(bits256 txid,int32_t vout);
 cJSON *LP_listunspent(char *symbol,char *coinaddr);
 int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid);
