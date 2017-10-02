@@ -488,7 +488,10 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
         if ( coin->electrum != 0 )
         {
             if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr)) != 0 )
+            {
                 n = cJSON_GetArraySize(retjson);
+                printf("LP_listunspent_issue %s.%d %s\n",coinaddr,n,jprint(retjson,0));
+            }
         }
         else
         {
