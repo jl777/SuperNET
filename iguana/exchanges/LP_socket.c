@@ -547,7 +547,7 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
 cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
 {
     char *hexstr,str[65]; int32_t len; cJSON *hexjson,*txobj=0; struct iguana_info *coin; uint8_t *serialized; struct LP_transaction *tx;
-    printf("electrum_transaction %s %s\n",symbol,bits256_str(str,txid));
+    //printf("electrum_transaction %s %s\n",symbol,bits256_str(str,txid));
     if ( bits256_nonz(txid) != 0 && (coin= LP_coinfind(symbol)) != 0 )
     {
         if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 )
@@ -579,21 +579,23 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
             serialized = malloc(len);
             decode_hex(serialized,len,hexstr+1);
             free(hexstr);
-            printf("DATA.(%s) from (%s)\n",hexstr+1,jprint(hexjson,0));
+            //printf("DATA.(%s) from (%s)\n",hexstr+1,jprint(hexjson,0));
+            txobj = LP_transaction_fromdata(coin,txid,serialized,len);
             if ( (tx= LP_transactionfind(coin,txid)) == 0 || tx->serialized == 0 )
             {
-                txobj = LP_transactioninit(coin,txid,0,LP_transaction_fromdata(coin,txid,serialized,len));
+                txobj = LP_transactioninit(coin,txid,0,txobj);
                 LP_transactioninit(coin,txid,1,txobj);
-                if ( (tx= LP_transactionfind(coin,txid)) != 0 )
-                {
-                    tx->serialized = serialized;
-                    tx->len = len;
-                }
-                else
-                {
-                    printf("unexpected couldnt find tx %s %s\n",coin->symbol,bits256_str(str,txid));
-                    free(serialized);
-                }
+                tx = LP_transactionfind(coin,txid);
+            }
+            if ( tx != 0 )
+            {
+                tx->serialized = serialized;
+                tx->len = len;
+            }
+            else
+            {
+                printf("unexpected couldnt find tx %s %s\n",coin->symbol,bits256_str(str,txid));
+                free(serialized);
             }
             *retjsonp = txobj;
             free_json(hexjson);
