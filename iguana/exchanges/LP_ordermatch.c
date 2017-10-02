@@ -748,6 +748,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             memset(autxo,0,sizeof(*autxo));
             memset(butxo,0,sizeof(*butxo));
             LP_abutxo_set(autxo,butxo,&Q);
+            if ( (butxo= LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2)) == 0 )
+                butxo = &B;
             //LP_butxo_swapfields(butxo);
             if ( strcmp(method,"request") == 0 )
             {
@@ -770,9 +772,10 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 else
                 {
                     printf("other path %p %p %.8f\n",LP_allocated(butxo->payment.txid,butxo->payment.vout),LP_allocated(butxo->deposit.txid,butxo->deposit.vout), LP_quote_validate(autxo,butxo,&Q,1));
-                    butxo = LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2);
                 }
-            } else butxo = LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2);
+            }
+            if ( butxo == 0 || butxo == &B )
+                butxo = LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2);
             if ( butxo == 0 )
             {
                 value = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid,Q.vout);
