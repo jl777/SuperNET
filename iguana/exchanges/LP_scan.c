@@ -481,7 +481,6 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
                     }
                     free(array);
                 }
-                printf("from waitmempool\n");
                 LP_listunspent_issue(coin->symbol,coinaddr);
                 struct LP_address_utxo *up;
                 if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
