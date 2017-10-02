@@ -495,7 +495,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
 {
     int32_t enable_utxos = 0;
     char *script,destaddr[64]; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,flag=0,height,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,value,total = 0; int64_t targetval;
-    if ( coin == 0 )
+    if ( coin == 0 || coin->inactive != 0 )
     {
         printf("coin not active\n");
         return(0);
