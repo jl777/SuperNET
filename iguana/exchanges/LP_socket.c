@@ -547,7 +547,7 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
 cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
 {
     char *hexstr,str[65]; int32_t len; cJSON *hexjson,*txobj=0; struct iguana_info *coin; uint8_t *serialized; struct LP_transaction *tx;
-    printf("electrum_transaction %s\n",bits256_str(str,txid));
+    printf("electrum_transaction %s %s\n",symbol,bits256_str(str,txid));
     if ( bits256_nonz(txid) != 0 && (coin= LP_coinfind(symbol)) != 0 )
     {
         if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 )
@@ -560,13 +560,14 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
             }
         }
         hexjson = electrum_hasharg(symbol,ep,&hexjson,"blockchain.transaction.get",txid,ELECTRUM_TIMEOUT);
-        hexstr = jprint(hexjson,1);
+        hexstr = jprint(hexjson,0);
         if ( strlen(hexstr) > 60000 )
         {
             static uint32_t counter;
             if ( counter++ < 3 )
                 printf("rawtransaction too big %d\n",(int32_t)strlen(hexstr));
             free(hexstr);
+            free_json(hexjson);
             *retjsonp = cJSON_Parse("{\"error\":\"transaction too big\"}");
             return(*retjsonp);
         }
@@ -578,7 +579,7 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
             serialized = malloc(len);
             decode_hex(serialized,len,hexstr+1);
             free(hexstr);
-            printf("DATA.(%s)\n",hexstr+1);
+            printf("DATA.(%s) from (%s)\n",hexstr+1,jprint(hexjson,0));
             if ( (tx= LP_transactionfind(coin,txid)) == 0 || tx->serialized == 0 )
             {
                 txobj = LP_transactioninit(coin,txid,0,0);
@@ -595,10 +596,12 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
                 }
             }
             *retjsonp = txobj;
+            free_json(hexjson);
             printf("return from electrum_transaction\n");
             return(*retjsonp);
-        } else printf("non-hex tx.(%s)\n",hexstr);
+        } else printf("non-hex tx.(%s)\n",jprint(hexjson,0));
         free(hexstr);
+        free_json(hexjson);
     }
     *retjsonp = cJSON_Parse("{\"error\":\"null txid\"}");
     return(*retjsonp);
