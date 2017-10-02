@@ -89,7 +89,7 @@ char *LP_portfolio()
     {
         HASH_ITER(hh,LP_coins,coin,tmp)
         {
-            if ( coin->inactive != 0 || coin->obooktime == 0 )
+            if ( coin->inactive != 0 || (coin->electrum != 0 && coin->obooktime == 0) )
                 continue;
             if ( iter == 0 )
             {
