@@ -779,7 +779,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 value2 = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid2,Q.vout2);
                 butxo = LP_utxoadd(1,Q.srccoin,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,LP_gui,0);
             }
-            printf("butxo.%p TRADECOMMAND.(%s)\n",butxo,jprint(argjson,0));
+            char str[65],str2[65]; printf("butxo.%p (%s %s) TRADECOMMAND.(%s)\n",butxo,butxo!=0?bits256_str(str,butxo->payment.txid):"",butxo!=0?bits256_str(str2,butxo->deposit.txid):"",jprint(argjson,0));
             if ( butxo == 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 || butxo->payment.vout < 0 || butxo->deposit.vout < 0 )
             {
                 char str[65],str2[65]; printf("couldnt find bob utxos for autxo %s/v%d %s/v%d %.8f -> %.8f\n",bits256_str(str,Q.txid),Q.vout,bits256_str(str2,Q.txid2),Q.vout2,dstr(Q.satoshis),dstr(Q.destsatoshis));
@@ -855,7 +855,7 @@ char *LP_bestfit(char *rel,double relvolume)
 
 char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration)
 {
-    struct LP_utxoinfo *aliceutxo; cJSON *bestitem=0; int32_t DEXselector=0; uint32_t expiration; double price; struct LP_pubkeyinfo *pubp;
+    struct LP_utxoinfo *aliceutxo; cJSON *bestitem=0; int32_t DEXselector=0; uint32_t expiration; double price; struct LP_pubkeyinfo *pubp; struct basilisk_swap *swap;
     if ( (aliceutxo= LP_utxopairfind(0,qp->desttxid,qp->destvout,qp->feetxid,qp->feevout)) == 0 )
     {
         char str[65],str2[65]; printf("dest.(%s)/v%d fee.(%s)/v%d\n",bits256_str(str,qp->desttxid),qp->destvout,bits256_str(str2,qp->feetxid),qp->feevout);
@@ -876,17 +876,21 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
                     break;
                 sleep(3);
             }
-            if ( aliceutxo->S.swap == 0 )
+            jaddnum(bestitem,"quotedprice",price);
+            jaddnum(bestitem,"maxprice",maxprice);
+            if ( (swap= aliceutxo->S.swap) == 0 )
             {
                 if ( (pubp= LP_pubkeyadd(qp->srchash)) != 0 )
                     pubp->numerrors++;
                 jaddstr(bestitem,"status","couldnt establish connection");
-            } else jaddstr(bestitem,"status","connected");
-            jaddnum(bestitem,"quotedprice",price);
-            jaddnum(bestitem,"maxprice",maxprice);
-            jaddnum(bestitem,"requestid",qp->R.requestid);
-            jaddnum(bestitem,"quoteid",qp->R.quoteid);
-            printf("Alice r.%u qp->%u\n",qp->R.requestid,qp->R.quoteid);
+            }
+            else
+            {
+                jaddstr(bestitem,"status","connected");
+                jaddnum(bestitem,"requestid",swap->I.req.requestid);
+                jaddnum(bestitem,"quoteid",swap->I.req.quoteid);
+                printf("Alice r.%u qp->%u\n",swap->I.req.requestid,swap->I.req.quoteid);
+            }
         }
         else
         {
