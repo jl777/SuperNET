@@ -577,7 +577,7 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
             serialized = malloc(len);
             decode_hex(serialized,len,hexstr+1);
             free(hexstr);
-            //printf("DATA.(%s)\n",hexstr+1);
+            printf("DATA.(%s)\n",hexstr+1);
             if ( (tx= LP_transactionfind(coin,txid)) == 0 || tx->serialized == 0 )
             {
                 txobj = LP_transactioninit(coin,txid,0,0);
@@ -594,6 +594,7 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
                 }
             }
             *retjsonp = txobj;
+            printf("return from electrum_transaction\n");
             return(*retjsonp);
         } else printf("non-hex tx.(%s)\n",hexstr);
         free(hexstr);
