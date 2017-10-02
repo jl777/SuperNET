@@ -89,7 +89,7 @@ char *LP_portfolio()
     {
         HASH_ITER(hh,LP_coins,coin,tmp)
         {
-            if ( coin->inactive != 0 )
+            if ( coin->inactive != 0 || coin->obooktime == 0 )
                 continue;
             if ( iter == 0 )
             {
@@ -184,12 +184,16 @@ char *LP_portfolio_goal(char *symbol,double goal)
             coin->goal = kmdbtc * 0.5;
         if ( (coin= LP_coinfind("BTC")) != 0 && coin->inactive == 0 )
             coin->goal = kmdbtc * 0.5;
+        if ( coin->goal != 0 )
+            coin->obooktime = (uint32_t)time(NULL);
         return(LP_portfolio());
     }
     else if ( (coin= LP_coinfind(symbol)) != 0 && coin->inactive == 0 )
     {
         coin->goal = goal;
         printf("set %s goal %f\n",coin->symbol,goal);
+        if ( coin->goal != 0 )
+            coin->obooktime = (uint32_t)time(NULL);
         return(LP_portfolio());
     } else return(clonestr("{\"error\":\"cant set goal for inactive coin\"}"));
 }

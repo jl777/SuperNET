@@ -322,7 +322,6 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
         if ( coin->inactive != 0 || coin->obooktime == 0 )
             continue;
         total = 0;
-        printf("from utxos_sync\n");
         LP_listunspent_both(coin->symbol,coin->smartaddr);
         if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
         {
