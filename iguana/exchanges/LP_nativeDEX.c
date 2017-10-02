@@ -20,14 +20,15 @@
 //  marketmaker
 //
 // new features:
+// -check for completed one being spent
+// make remember remember
 // sign, spv check
 // bittrex balancing
 // stats
-
-// -detect port conflicts on enable
-// -check for completed one being spent
-// -prevent autxo reuse
-// -add extra hash to keypair25519
+// so alice doesnt detect swap complete and electrum doesnt get .finished after swapstatus. ok, seems like an electrum tx construction/detection issue in the swapstatus path and some wonkiness with SWAP complete detection in general. I need to cleanup that logic a lot
+// gettxout mempool a few other local network calls
+// electrum cache for blockchain.transaction.get
+// scan history for electrum after swap
 
 // unduplicated bugs:
 // swap cancel should cleanly cancel
