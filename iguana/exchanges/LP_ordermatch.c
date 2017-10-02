@@ -923,15 +923,15 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                 {
                     item = jitem(asks,i);
                     price = jdouble(item,"price");
+                    pubkey = jbits256(item,"pubkey");
+                    printf("%s pubcmp %d price %.8f vs maxprice %.8f\n",jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519),price,maxprice);
                     if ( LP_pricevalid(price) > 0 && price <= maxprice )
                     {
-                        pubkey = jbits256(item,"pubkey");
                         for (j=0; j<numavoids; j++)
                             if ( bits256_cmp(pubkey,avoids[j]) == 0 )
                                 break;
                         if ( j != numavoids )
                             continue;
-                        //printf("%s pubcmp %d\n",jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519));
                         if ( bits256_cmp(pubkey,G.LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
                         {
                             bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
