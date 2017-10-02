@@ -505,7 +505,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            //printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
+            printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
             if ( electrum_process_array(coin,ep,addr,retjson) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
