@@ -605,7 +605,7 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
         free(hexstr);
         free_json(hexjson);
     }
-    *retjsonp = cJSON_Parse("{\"error\":\"null txid\"}");
+    *retjsonp = 0;
     return(*retjsonp);
 }
 
