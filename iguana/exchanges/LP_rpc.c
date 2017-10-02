@@ -259,7 +259,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     else
     {
         sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
-        if ( (retjson= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
+        if ( (retjson= electrum_transaction(symbol,coin->electrum,&retjson,txid)) != 0 )
         {
             hexstr = jprint(retjson,1);
             if ( strlen(hexstr) > 20000 )
@@ -313,7 +313,7 @@ cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
     {
         printf("gettxout v%d\n",vout);
         sprintf(buf,"[\"%s\"]",bits256_str(str,txid));
-        if ( (hexobj= bitcoin_json(coin,"blockchain.transaction.get",buf)) != 0 )
+        if ( (hexobj= electrum_transaction(symbol,coin->electrum,&hexobj,txid)) != 0 )
         {
             hexstr = jprint(hexobj,1);
             if ( strlen(hexstr) > 20000 )
