@@ -533,7 +533,7 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
     extraspace = calloc(1,1000000);
     memset(&msgtx,0,sizeof(msgtx));
     txobj = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,1000000,serialized,len,0,0);
-    printf("TX.(%s) match.%d\n",jprint(txobj,0),bits256_cmp(txid,checktxid));
+    //printf("TX.(%s) match.%d\n",jprint(txobj,0),bits256_cmp(txid,checktxid));
     free(extraspace);
     if ( bits256_cmp(txid,checktxid) != 0 )
     {
@@ -599,7 +599,7 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
             }
             *retjsonp = txobj;
             free_json(hexjson);
-            printf("return from electrum_transaction\n");
+            //printf("return from electrum_transaction\n");
             return(*retjsonp);
         } else printf("non-hex tx.(%s)\n",jprint(hexjson,0));
         free(hexstr);
