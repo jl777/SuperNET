@@ -1,3 +1,4 @@
+#!/bin/bash
 cp electrum snapshot_balance snapshot_loop secretaddresses dividends snapshot goals goal portfolio autoprice deletemessages getmessages debug register registerall buy sell bestfit orderbook client run_osx client_osx run coins disable enable myprice myprices getcoins getpeers getpeersIP getprices getutxos help inv setprice status utxos ../dexscripts
 cd ../dexscripts
 #cp ../exchanges/passphrase ../exchanges/userpass .
