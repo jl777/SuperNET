@@ -303,6 +303,7 @@ dividends(coin, height, <args>)\n\
                     //LP_utxopurge(0);
                     if ( bits256_nonz(G.LP_mypriv25519) != 0 )
                         LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
+                    else printf("no LP_mypriv25519\n");
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
                     jaddstr(retjson,"coin",coin);
