@@ -491,7 +491,9 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
             {
                 n = cJSON_GetArraySize(retjson);
                 printf("LP_listunspent_issue.%s %s.%d %s\n",symbol,coinaddr,n,jprint(retjson,0));
-            }
+          if ( strcmp(symbol,"ARG") == 0 )
+              assert(0);
+        }
         }
         else
         {
