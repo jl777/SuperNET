@@ -594,7 +594,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
 
 char *LP_connectedalice(cJSON *argjson) // alice
 {
-    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,B,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin; uint64_t value,value2;
+    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; char *pairstr; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,B,*butxo; struct LP_quoteinfo Q; struct basilisk_swap *swap; struct iguana_info *coin; //uint64_t value,value2;
     if ( LP_quoteparse(&Q,argjson) < 0 )
         clonestr("{\"error\":\"cant parse quote\"}");
     if ( bits256_cmp(Q.desthash,G.LP_mypub25519) != 0 )
