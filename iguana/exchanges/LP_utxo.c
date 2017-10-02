@@ -296,16 +296,20 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
 
 cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
-    cJSON *array,*retjson; double balance = 0.;
+    cJSON *array,*retjson; int32_t i,n; uint64_t balance = 0;
     if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
     {
-        
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+                balance += j64bits(jitem(array,i),"value");
+        }
     }
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"coin",coin->symbol);
     jaddstr(retjson,"address",coinaddr);
-    jaddnum(retjson,"balance",balance);
+    jaddnum(retjson,"balance",dstr(balance));
     return(retjson);
 }
 
