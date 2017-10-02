@@ -475,7 +475,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 int32_t i;
                 for (i=0; i<m; i++)
                     printf("%.8f ",dstr(utxos[i]->U.value));
-                printf("targetval %.8f vol %.8f price %.8f txfee %.8f\n",dstr(targetval),relvolume,price,dstr(txfee));
+                printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s\n",dstr(targetval),relvolume,price,dstr(txfee),coinaddr);
             }
             mini = -1;
             if ( targetval != 0 && (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 && (double)utxos[mini]->U.value/targetval < LP_MINVOL-1 )
