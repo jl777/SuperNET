@@ -294,6 +294,21 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
     return(array);
 }
 
+cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
+{
+    cJSON *array,*retjson; double balance = 0.;
+    if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
+    {
+        
+    }
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jaddstr(retjson,"coin",coin->symbol);
+    jaddstr(retjson,"address",coinaddr);
+    jaddnum(retjson,"balance",balance);
+    return(retjson);
+}
+
 void LP_postutxos(char *symbol,char *coinaddr)
 {
     bits256 zero; char *msg; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();

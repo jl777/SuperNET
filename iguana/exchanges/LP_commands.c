@@ -114,6 +114,7 @@ portfolio()\n\
 getpeers()\n\
 passphrase(passphrase, gui)\n\
 listunspent(coin, address)\n\
+balance(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
 sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
@@ -372,6 +373,12 @@ dividends(coin, height, <args>)\n\
     {
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
             return(jprint(LP_address_utxos(ptr,jstr(argjson,"address"),1),1));
+        else return(clonestr("{\"error\":\"cant find coind\"}"));
+    }
+    else if ( strcmp(method,"balance") == 0 )
+    {
+        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+            return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
         else return(clonestr("{\"error\":\"cant find coind\"}"));
     }
     else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
