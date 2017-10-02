@@ -253,16 +253,6 @@ struct electrum_info
 } *Electrums[8192];
 int32_t Num_electrums;
 
-// purge timedout
-/*
-if ( (retjson= electrum_address_listunspent(symbol,ep,&retjson,addr)) != 0 )
-you can call it like the above, where symbol is the coin, ep is the electrum server info pointer, the 0 is a callback ptr where 0 means to block till it is done
-all the API calls have the same three args
-if the callback ptr is &retjson, then on completion it will put the cJSON *ptr into it, so to spawn a bunch of calls you need to call with symbol,ep,&retjsons[i],...
-default timeout is set to 2 seconds, not sure if that is enough, on each receive from any server, requests that are timeout are purged (and if a callback set, will just return and "error" timeout JSON
-a null value for ep will make it choose a random server for that coin
- */
-
 struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
 {
     struct electrum_info *rbuf[128],*recent_ep; uint32_t recent,mostrecent = 0; int32_t i,n = 0;
@@ -442,8 +432,6 @@ cJSON *electrum_hasharg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,c
     return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
 }
 
-//" "--blockchain.numblocks.subscribe", "--blockchain.address.get_proof", "--blockchain.utxo.get_address",
-
 cJSON *electrum_version(char *symbol,struct electrum_info *ep,cJSON **retjsonp) { return(electrum_noargs(symbol,ep,retjsonp,"server.version",ELECTRUM_TIMEOUT)); }
 cJSON *electrum_banner(char *symbol,struct electrum_info *ep,cJSON **retjsonp) { return(electrum_noargs(symbol,ep,retjsonp,"server.banner",ELECTRUM_TIMEOUT)); }
 cJSON *electrum_donation(char *symbol,struct electrum_info *ep,cJSON **retjsonp) { return(electrum_noargs(symbol,ep,retjsonp,"server.donation_address",ELECTRUM_TIMEOUT)); }
@@ -517,7 +505,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            //printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
+            printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
             if ( electrum_process_array(coin,ep,addr,retjson) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
@@ -700,7 +688,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 *(ep->heighttimep) = (uint32_t)time(NULL);
                 if ( (coin= LP_coinfind(ep->symbol)) != 0 )
                     coin->updaterate = (uint32_t)time(NULL);
-                printf("%s ELECTRUM >>>>>>>>> set height.%d\n",ep->symbol,height);
+                //printf("%s ELECTRUM >>>>>>>>> set height.%d\n",ep->symbol,height);
             }
         }
         idnum = juint(strjson,"id");
