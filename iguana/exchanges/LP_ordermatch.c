@@ -464,7 +464,7 @@ uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t d
 {
     printf("basesatoshis %.8f (rel %.8f / price %.8f)\n",dstr(SATOSHIDEN * ((relvolume) / price) + 2*txfee),relvolume,price);
     if ( relvolume > dstr(desttxfee) && price > SMALLVAL )
-        return(SATOSHIDEN * (relvolume / price) + txfee);
+        return(SATOSHIDEN * (relvolume / price) + 2*txfee);
     else return(0);
 }
 
