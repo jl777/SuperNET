@@ -21,14 +21,12 @@
 //
 // new features:
 // -check for completed one being spent
-// make remember remember
+// make remember remember or maybe to just fix?
 // sign, spv check
 // bittrex balancing
-// stats
+// withdraw
+// stats, fix pricearray
 // so alice doesnt detect swap complete and electrum doesnt get .finished after swapstatus. ok, seems like an electrum tx construction/detection issue in the swapstatus path and some wonkiness with SWAP complete detection in general. I need to cleanup that logic a lot
-// gettxout mempool a few other local network calls
-// electrum cache for blockchain.transaction.get
-// scan history for electrum after swap
 
 // unduplicated bugs:
 // swap cancel should cleanly cancel
@@ -655,9 +653,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_messagemutex);
     portable_mutex_init(&LP_portfoliomutex);
     portable_mutex_init(&LP_butxomutex);
-    if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
+    if ( system("curl -s4 checkip.amazonaws.com > DB/myipaddr") == 0 )
     {
-        if ( (myipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && myipaddr[0] != 0 )
+        if ( (myipaddr= OS_filestr(&filesize,"DB/myipaddr")) != 0 && myipaddr[0] != 0 )
         {
             n = strlen(myipaddr);
             if ( myipaddr[n-1] == '\n' )
