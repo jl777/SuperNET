@@ -921,6 +921,13 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     finishedflag = basilisk_swap_isfinished(iambob,txids,sentflags,paymentspent,Apaymentspent,depositspent);
     jaddnum(item,"requestid",requestid);
     jaddnum(item,"quoteid",quoteid);
+    jaddnum(item,"iambob",iambob);
+    jaddstr(item,"bob",bob->symbol);
+    jaddnum(item,"bobamount",dstr(values[BASILISK_BOBPAYMENT]));
+    jaddnum(item,"bobtxfee",dstr(Btxfee));
+    jaddstr(item,"alice",alice->symbol);
+    jaddnum(item,"aliceamount",dstr(values[BASILISK_ALICEPAYMENT]));
+    jaddnum(item,"alicetxfee",dstr(Atxfee));
     jadd(item,"txs",array);
     array = cJSON_CreateArray();
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
