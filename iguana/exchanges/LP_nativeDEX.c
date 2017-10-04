@@ -516,7 +516,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         LP_getestimatedrate(coin);
         break;
     }
-    if ( 0 && (counter % 6000) == 60 )
+    if ( (counter % 6000) == 60 )
     {
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
         {
