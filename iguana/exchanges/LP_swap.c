@@ -756,7 +756,7 @@ void LP_bobloop(void *_swap)
             }
         }
         basilisk_swap_finished(swap);
-        free(swap);
+        //free(swap);
     } else printf("swap timed out\n");
 }
 
