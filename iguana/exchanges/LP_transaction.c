@@ -49,7 +49,10 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
             {
                 decode_hex(txid.bytes,32,retstr);
                 if ( bits256_cmp(txid,expectedtxid) == 0 || (bits256_nonz(expectedtxid) == 0 && bits256_nonz(txid) != 0) )
+                {
                     sentflag = 1;
+                    expectedtxid = txid;
+                }
             }
             else if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {

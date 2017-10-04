@@ -957,9 +957,12 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             Apaymentspent = txids[BASILISK_BOBSPEND];
         else Apaymentspent = txids[BASILISK_ALICERECLAIM];
     }
-    bits256_str(str,paymentspent), jaddbits256(item,"paymentspent",paymentspent);
-    bits256_str(str,Apaymentspent), jaddbits256(item,"Apaymentspent",Apaymentspent);
-    bits256_str(str,depositspent), jaddbits256(item,"depositspent",depositspent);
+    jaddbits256(item,"bobdeposit",txids[BASILISK_BOBDEPOSIT]);
+    jaddbits256(item,"alicepayment",txids[BASILISK_ALICEPAYMENT]);
+    jaddbits256(item,"bobpayment",txids[BASILISK_BOBPAYMENT]);
+    jaddbits256(item,"paymentspent",paymentspent);
+    jaddbits256(item,"Apaymentspent",Apaymentspent);
+    jaddbits256(item,"depositspent",depositspent);
     if ( origfinishedflag == 0 && finishedflag != 0 )
     {
         //printf("SWAP %u-%u finished!\n",requestid,quoteid);
@@ -1014,7 +1017,7 @@ char *basilisk_swaplist()
     }
     jaddstr(retjson,"result","success");
     jadd(retjson,"swaps",array);
-    if ( cJSON_GetArraySize(array) > 0 )
+    if ( 0 && cJSON_GetArraySize(array) > 0 )
     {
         totalsobj = cJSON_CreateObject();
         for (Btotal=i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
@@ -1033,8 +1036,8 @@ char *basilisk_swaplist()
         else if ( Ktotal < 0 && Btotal > 0 )
             jaddnum(retjson,"avesell",(double)-Btotal/Ktotal);
     }
-    array = cJSON_CreateArray();
-    /*for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
+    /*array = cJSON_CreateArray();
+    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
     {
         if ( myinfo->linfos[i].base[0] != 0 && myinfo->linfos[i].rel[0] != 0 )
             jaddi(array,linfo_json(&myinfo->linfos[i]));

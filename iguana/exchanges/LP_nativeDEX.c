@@ -26,7 +26,9 @@
 // bittrex balancing
 // withdraw
 // stats, fix pricearray
-// so alice doesnt detect swap complete and electrum doesnt get .finished after swapstatus. ok, seems like an electrum tx construction/detection issue in the swapstatus path and some wonkiness with SWAP complete detection in general. I need to cleanup that logic a lot
+// better error message in ordermatch
+// verify portfolio
+// alice doesnt detect swap complete and electrum doesnt get .finished after swapstatus. ok, seems like an electrum tx construction/detection issue in the swapstatus path and some wonkiness with SWAP complete detection in general. I need to cleanup that logic a lot
 
 // unduplicated bugs:
 // swap cancel should cleanly cancel
