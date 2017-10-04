@@ -713,6 +713,24 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
     }
 }*/
 
+int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi)
+{
+    cJSON *sentobj; char str[65];
+    if ( rswap->sentflags[txi] == 0 && bits256_nonz(rswap->txids[txi]) != 0 )
+    {
+        printf("[%s] txbytes.%p Apayment.%s\n",txnames[txi],rswap->txbytes[txi],bits256_str(str,rswap->txids[txi]));
+        if ( rswap->txbytes[txi] != 0 )
+            rswap->sentflags[txi] = 1;
+        else if ( (sentobj= LP_gettx(symbol,rswap->txids[txi])) != 0 )
+        {
+            rswap->sentflags[txi] = 1;
+            free_json(sentobj);
+            return(1);
+        }
+    }
+    return(0);
+}
+
 cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requestid,uint32_t quoteid)
 {
     static void *ctx;
@@ -771,6 +789,10 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             printf("Alice.%s inactive.%u or Bob.%s inactive.%u\n",rswap.alicecoin,alice->inactive,rswap.bobcoin,bob->inactive);
             return(0);
         }
+        LP_rswap_checktx(&rswap,rswap.alicecoin,BASILISK_ALICEPAYMENT);
+        LP_rswap_checktx(&rswap,rswap.bobcoin,BASILISK_BOBPAYMENT);
+        LP_rswap_checktx(&rswap,rswap.bobcoin,BASILISK_BOBDEPOSIT);
+/*
         if ( rswap.sentflags[BASILISK_ALICEPAYMENT] == 0 && bits256_nonz(rswap.txids[BASILISK_ALICEPAYMENT]) != 0 )
         {
             printf("txbytes.%p Apayment.%s\n",rswap.txbytes[BASILISK_ALICEPAYMENT],bits256_str(str,rswap.txids[BASILISK_ALICEPAYMENT]));
@@ -781,7 +803,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 rswap.sentflags[BASILISK_ALICEPAYMENT] = 1;
                 free_json(sentobj);
             }
-        }
+        }*/
         rswap.paymentspent = basilisk_swap_spendupdate(rswap.bobcoin,rswap.sentflags,rswap.txids,BASILISK_BOBPAYMENT,BASILISK_ALICESPEND,BASILISK_BOBRECLAIM,0,Adest,Bdest);
         rswap.Apaymentspent = basilisk_swap_spendupdate(rswap.alicecoin,rswap.sentflags,rswap.txids,BASILISK_ALICEPAYMENT,BASILISK_ALICERECLAIM,BASILISK_BOBSPEND,0,AAdest,ABdest);
         rswap.depositspent = basilisk_swap_spendupdate(rswap.bobcoin,rswap.sentflags,rswap.txids,BASILISK_BOBDEPOSIT,BASILISK_ALICECLAIM,BASILISK_BOBREFUND,0,Adest,Bdest);

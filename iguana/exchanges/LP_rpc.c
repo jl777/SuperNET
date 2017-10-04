@@ -623,7 +623,7 @@ char *LP_sendrawtransaction(char *symbol,char *signedtx)
             //electrum sendrawtx (the transaction was rejected by network rules.\n\ntransaction already in block chain)
             if ( strstr(retstr,"already in block") != 0 )
                 alreadyflag = 1;
-            printf("electrum sendrawtx.(%s) -> %s already.%d\n",signedtx,retstr,alreadyflag);
+            //printf("electrum sendrawtx.(%s) -> %s already.%d\n",signedtx,retstr,alreadyflag);
             if ( alreadyflag != 0 )
             {
                 errobj = cJSON_CreateObject();
