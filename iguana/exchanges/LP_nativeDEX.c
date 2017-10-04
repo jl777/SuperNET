@@ -511,7 +511,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 coin->lastscanht = coin->firstscanht;
             continue;
         }
-        //printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
+        printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
         if ( LP_blockinit(coin,coin->lastscanht) < 0 )
         {
             printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
