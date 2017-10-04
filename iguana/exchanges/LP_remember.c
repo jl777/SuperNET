@@ -1037,7 +1037,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
 
 char *basilisk_swaplist()
 {
-    char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i;
+    char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i;
     portable_mutex_lock(&LP_swaplistmutex);
     memset(KMDtotals,0,sizeof(KMDtotals));
     memset(BTCtotals,0,sizeof(BTCtotals));
@@ -1052,13 +1052,21 @@ char *basilisk_swaplist()
         while ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
         {
             flag = 0;
-            /*for (i=0; i<myinfo->numswaps; i++)
-                if ( (swap= myinfo->swaps[i]) != 0 && swap->I.req.requestid == requestid && swap->I.req.quoteid == quoteid )
+            for (i=0; i<G.LP_numskips; i++)
+            {
+                r = (uint32_t)(G.LP_skipstatus[i] >> 32);
+                q = (uint32_t)G.LP_skipstatus[i];
+                if ( r == requestid && q == quoteid )
                 {
-                    jaddi(array,basilisk_swapjson(swap));
+                    item = cJSON_CreateObject();
+                    jaddstr(item,"status","realtime");
+                    jaddnum(item,"requestid",r);
+                    jaddnum(item,"quoteid",q);
+                    jaddi(array,item);
                     flag = 1;
                     break;
-                }*/
+                }
+            }
             if ( flag == 0 )
             {
                 if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )

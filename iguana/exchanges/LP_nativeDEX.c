@@ -21,11 +21,11 @@
 //
 // new features:
 // -check for completed one being spent
+// better error message in ordermatch
+// withdraw
 // sign, spv check
 // bittrex balancing
-// withdraw
 // stats, fix pricearray
-// better error message in ordermatch
 // verify portfolio
 
 #include <stdio.h>
@@ -53,16 +53,16 @@ int32_t LP_mypullsock = -1;
 int32_t LP_showwif,IAMLP = 0;
 double LP_profitratio = 1.;
 
-
 struct LP_privkey { bits256 privkey; uint8_t rmd160[20]; };
 
 struct LP_globals
 {
     struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
     bits256 LP_mypub25519,LP_mypriv25519;
+    uint64_t LP_skipstatus[10000];
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
     uint32_t LP_sessionid,counter;
-    int32_t LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting;
+    int32_t LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
     char USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[16];
     struct LP_privkey LP_privkeys[100];
 } G;
