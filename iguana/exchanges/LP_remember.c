@@ -251,7 +251,7 @@ bits256 basilisk_swap_spendupdate(char *symbol,char *spentaddr,int32_t *sentflag
     {
         if ( (histobj= electrum_address_gethistory(symbol,coin->electrum,&histobj,spentaddr)) != 0 )
         {
-            printf("processed history.(%s)\n",jprint(histobj,0));
+            //printf("processed history.(%s)\n",jprint(histobj,0));
             free_json(histobj);
         }
     }
