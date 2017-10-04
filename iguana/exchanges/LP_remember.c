@@ -840,9 +840,14 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         else redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,rswap.dlocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rswap.privAm,zero,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
                         if ( redeemlen > 0 )
                         {
-                            len = basilisk_swapuserdata(userdata,zero,1,rswap.myprivs[0],redeemscript,redeemlen);
-                            if ( (rswap.txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"aliceclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,0,rswap.expiration,&rswap.values[BASILISK_ALICECLAIM],0,0,rswap.bobdepositaddr,1)) != 0 )
-                                printf("privBn.(%s) aliceclaim.(%s)\n",bits256_str(str,rswap.privBn),rswap.txbytes[BASILISK_ALICECLAIM]);
+                            if ( bits256_nonz(rswap.privBn) == 0 )
+                                rswap.privBn = basilisk_swap_privBn_extract(&rswap.txids[BASILISK_BOBREFUND],rswap.bobcoin,rswap.txids[BASILISK_BOBDEPOSIT],rswap.privBn);
+                            if ( bits256_nonz(rswap.privBn) != 0 )
+                            {
+                                len = basilisk_swapuserdata(userdata,zero,1,rswap.myprivs[0],redeemscript,redeemlen);
+                                if ( (rswap.txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"aliceclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,0,rswap.expiration,&rswap.values[BASILISK_ALICECLAIM],0,0,rswap.bobdepositaddr,1)) != 0 )
+                                    printf("privBn.(%s) aliceclaim.(%s)\n",bits256_str(str,rswap.privBn),rswap.txbytes[BASILISK_ALICECLAIM]);
+                            }
                         }
                     }
                     if ( rswap.txbytes[BASILISK_ALICECLAIM] != 0 )
