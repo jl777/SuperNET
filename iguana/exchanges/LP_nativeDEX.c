@@ -20,13 +20,14 @@
 //  marketmaker
 //
 // new features:
-// -check for completed one being spent
 // better error message in ordermatch
 // withdraw
-// sign, spv check
-// bittrex balancing
+// sign packets
+// spv check
 // stats, fix pricearray
 // verify portfolio
+// bittrex balancing
+// -check for completed one being spent
 
 #include <stdio.h>
 #include "LP_include.h"
@@ -513,7 +514,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             continue;
         }
         coin->lastscanht++;
-        LP_getestimatedrate(coin);
+        //LP_getestimatedrate(coin);
         break;
     }
     if ( (counter % 6000) == 60 )
