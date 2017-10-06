@@ -46,7 +46,7 @@ int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
     }
     if ( (sentbytes= nn_send(sock,msg,sendlen,0)) != sendlen )
         printf("LP_send sent %d instead of %d\n",sentbytes,sendlen);
-    //else printf("SENT.(%s)\n",msg);
+    else printf("SENT.(%s)\n",(char *)msg);
     if ( freeflag != 0 )
         free(msg);
     return(sentbytes);
@@ -157,12 +157,12 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                    // else printf("%d %p qsent %u msglen.%d peerind.%d\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind);
+                    //else printf("%d %p qsent %u msglen.%d peerind.%d (%s)\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind,ptr->msg);
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
                     else flag = 1;
-                }
+                } //else printf("sock not ready to send.%d\n",ptr->msglen);
             }
             else if ( time(NULL) > ptr->starttime+13 )
             {
@@ -199,7 +199,7 @@ void queue_loop(void *ignore)
         //if ( n != 0 )
         //    printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
-            usleep(500000);
+            usleep(50000);
     }
 }
 
@@ -214,7 +214,7 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
                 printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
             else
             {
-                //printf("Q sent %u\n",crc32);
+                //printf("Q sent %u msglen.%d (%s)\n",crc32,msglen,msg);
                 sock0 = -1;
             }
         }
@@ -232,17 +232,16 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
         peerind = 1;
         sock0 = LP_peerindsock(&peerind);
     }
-    portable_mutex_lock(&LP_networkmutex);
     if ( sock0 >= 0 )
         _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
     if ( sock1 >= 0 )
         _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
-    portable_mutex_unlock(&LP_networkmutex);
 }
 
 void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
 {
     //struct iguana_info *coin; int32_t flag=0,socks[2];
+    portable_mutex_lock(&LP_networkmutex);
     if ( pubsock >= 0 )
     {
         //socks[0] = socks[1] = -1;
@@ -254,6 +253,7 @@ void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *m
             _LP_queuesend(crc32,pubsock,-1,msg,msglen,0);
         //else _LP_queuesend(socks[0],socks[1],msg,msglen,0);
     } else _LP_queuesend(crc32,-1,-1,msg,msglen,1);
+    portable_mutex_unlock(&LP_networkmutex);
 }
 
 // first 2 bytes == (crc32 & 0xffff) if encrypted, then nonce is next crypto_box_NONCEBYTES
@@ -311,8 +311,11 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                     jdelete(argjson,"method2");
                 jaddstr(argjson,"method2",method);
                 jaddstr(argjson,"method",method);
-                //printf("CRC32.%u (%s)\n",crc32,(char *)msg);
+                //if ( strncmp(method,"connect",7) == 0 || strcmp(method,"reserved") == 0 )
+                //    printf("CRC32.%u (%s)\n",crc32,msgstr);
                 LP_broadcast_finish(pubsock,base,rel,msg,argjson,0);
+                //if ( strncmp(method,"connect",7) == 0 || strcmp(method,"reserved") == 0 )
+                //    printf("finished %u\n",crc32);
             } // else printf("no valid method in (%s)\n",msgstr);
             free_json(argjson);
         } else printf("couldnt parse (%s)\n",msgstr);

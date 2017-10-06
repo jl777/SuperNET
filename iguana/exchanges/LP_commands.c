@@ -25,18 +25,19 @@ char *LP_numutxos()
     {
         jaddstr(retjson,"ipaddr",LP_mypeer->ipaddr);
         jaddnum(retjson,"port",LP_mypeer->port);
-        jaddnum(retjson,"numutxos",LP_mypeer->numutxos);
+        //jaddnum(retjson,"numutxos",LP_mypeer->numutxos);
         jaddnum(retjson,"numpeers",LP_mypeer->numpeers);
-        jaddnum(retjson,"session",LP_sessionid);
+        jaddnum(retjson,"session",G.LP_sessionid);
     } else jaddstr(retjson,"error","client node");
     return(jprint(retjson,1));
 }
 
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t changed,otherpeers,othernumutxos,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
+    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t changed,otherpeers,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
 //printf("stats_JSON(%s)\n",jprint(argjson,0));
-    if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
+    method = jstr(argjson,"method");
+    if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (method == 0 || strcmp(method,"electrum") != 0) )
     {
         if ( strcmp(ipaddr,"127.0.0.1") != 0 && argport >= 1000 )
         {
@@ -49,18 +50,18 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
             {
                 if ( 0 && (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
                     peer->numpeers = otherpeers;
-                if ( 0 && (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
+                /*if ( 0 && (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
                 {
                     printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
                     peer->numutxos = othernumutxos;
-                }
+                }*/
                 if ( peer->sessionid == 0 )
                     peer->sessionid = juint(argjson,"session");
                 //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
             } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jint(argjson,"numpeers"),jint(argjson,"numutxos"),juint(argjson,"session"));
         }
     }
-    if ( (method= jstr(argjson,"method")) == 0 )
+    if ( method == 0 )
     {
         if ( flag == 0 || jobj(argjson,"result") != 0 )
             printf("stats_JSON no method: (%s) (%s:%u)\n",jprint(argjson,0),ipaddr,argport);
@@ -75,7 +76,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
     {
         static char *laststr;
         char *newstr; bits256 pubkey = jbits256(argjson,"pubkey");
-        if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,LP_mypub25519) == 0 )
+        if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,G.LP_mypub25519) == 0 )
         {
             newstr = jprint(argjson,0);
             if ( laststr == 0 || strcmp(laststr,newstr) != 0 )
@@ -103,9 +104,7 @@ enable(coin)\n\
 disable(coin)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
-ordermatch(base, txfee=0, rel, desttxfee=0, price, relvolume=0, txid, vout, feetxid, feevout, duration=3600)\n\
-trade(price, timeout=10, duration=3600, <quotejson returned from ordermatch>)\n\
-autotrade(base, rel, price, relvolume, timeout=10, duration=3600)\n\
+buy(base, rel, price, relvolume, timeout=10, duration=3600)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
@@ -113,8 +112,9 @@ getcoins()\n\
 getcoin(coin)\n\
 portfolio()\n\
 getpeers()\n\
-getutxos()\n\
-getutxos(coin, lastn)\n\
+passphrase(passphrase, gui)\n\
+listunspent(coin, address)\n\
+balance(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
 sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
@@ -126,22 +126,24 @@ snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
 \"}"));
-    
+    //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
+
     base = jstr(argjson,"base");
     rel = jstr(argjson,"rel");
-    if ( USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
+    coin = jstr(argjson,"coin");
+    if ( G.USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 )
     {
-        if ( USERPASS_COUNTER == 0 )
+        if ( G.USERPASS_COUNTER == 0 )
         {
-            USERPASS_COUNTER = 1;
+            G.USERPASS_COUNTER = 1;
             retjson = cJSON_CreateObject();
-            jaddstr(retjson,"userpass",USERPASS);
-            jaddbits256(retjson,"mypubkey",LP_mypub25519);
+            jaddstr(retjson,"userpass",G.USERPASS);
+            jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
             jadd(retjson,"coins",LP_coinsjson(LP_showwif));
             return(jprint(retjson,1));
         }
-        if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,USERPASS) != 0 )
-            return(clonestr("{\"error\":\"authentication error\"}"));
+        if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0 )
+            return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         jdelete(argjson,"userpass");
         if ( strcmp(method,"sendmessage") == 0 )
         {
@@ -162,6 +164,18 @@ dividends(coin, height, <args>)\n\
         {
             LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
+        }
+        else if ( strcmp(method,"passphrase") == 0 )
+        {
+            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
+                return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
+            {
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"userpass",G.USERPASS);
+                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+                return(jprint(retjson,1));
+            }
         }
         else if ( strcmp(method,"portfolio") == 0 )
         {
@@ -213,26 +227,18 @@ dividends(coin, height, <args>)\n\
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
-            else if ( strcmp(method,"ordermatch") == 0 )
-            {
-                if ( price > SMALLVAL )
-                return(LP_ordermatch(base,j64bits(argjson,"txfee"),price,jdouble(argjson,"relvolume"),rel,jbits256(argjson,"txid"),jint(argjson,"vout"),jbits256(argjson,"feetxid"),jint(argjson,"feevout"),j64bits(argjson,"desttxfee"),jint(argjson,"duration")));
-                else return(clonestr("{\"error\":\"no price set\"}"));
-            }
-            else if ( strcmp(method,"trade") == 0 )
-            {
-                struct LP_quoteinfo Q;
-                if ( price > SMALLVAL || jobj(argjson,"quote") != 0 )
-                {
-                    LP_quoteparse(&Q,jobj(argjson,"quote"));
-                    return(LP_trade(ctx,myipaddr,pubsock,&Q,price,jint(argjson,"timeout"),jint(argjson,"duration")));
-                } else return(clonestr("{\"error\":\"no price set or no quote object\"}"));
-            }
-            else if ( strcmp(method,"autotrade") == 0 )
+            else if ( strcmp(method,"buy") == 0 )
             {
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autotrade(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui")));
+                } else return(clonestr("{\"error\":\"no price set\"}"));
+            }
+            else if ( strcmp(method,"sell") == 0 )
+            {
+                if ( price > SMALLVAL )
+                {
+                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
@@ -248,7 +254,11 @@ dividends(coin, height, <args>)\n\
             if ( strcmp(method,"enable") == 0 )
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
-                    ptr->inactive = 0;
+                {
+                    if ( LP_conflicts_find(ptr) == 0 )
+                        ptr->inactive = 0;
+                    else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
+                }
                 return(jprint(LP_coinsjson(0),1));
             }
             else if ( strcmp(method,"disable") == 0 )
@@ -292,14 +302,15 @@ dividends(coin, height, <args>)\n\
                 {
                     //privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
                     //LP_utxopurge(0);
-                    if ( bits256_nonz(LP_mypriv25519) != 0 )
-                        LP_privkey_init(-1,ptr,LP_mypriv25519,LP_mypub25519);
+                    if ( bits256_nonz(G.LP_mypriv25519) != 0 )
+                        LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
+                    else printf("no LP_mypriv25519\n");
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
                     jaddstr(retjson,"coin",coin);
                     jaddnum(retjson,"timestamp",time(NULL));
-                    jadd(retjson,"alice",LP_inventory(coin,0));
-                    jadd(retjson,"bob",LP_inventory(coin,1));
+                    jadd(retjson,"alice",LP_inventory(coin));
+                    //jadd(retjson,"bob",LP_inventory(coin,1));
                     return(jprint(retjson,1));
                 }
             }
@@ -335,28 +346,67 @@ dividends(coin, height, <args>)\n\
             argjson = reqjson;
         }
     }
-    if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
+    if ( strcmp(method,"postprice") == 0 )
+        retstr = LP_postedprice(argjson);
+    else if ( strcmp(method,"postutxos") == 0 )
+        retstr = LP_postedutxos(argjson);
+    else if ( strcmp(method,"getprices") == 0 )
+        return(LP_prices());
+    else if ( strcmp(method,"uitem") == 0 )
+    {
+        bits256 txid; int32_t vout,height; uint64_t value; char *coinaddr;
+        txid = jbits256(argjson,"txid");
+        vout = jint(argjson,"vout");
+        height = jint(argjson,"ht");
+        value = j64bits(argjson,"value");
+        coinaddr = jstr(argjson,"coinaddr");
+        if ( coin != 0 && coinaddr != 0 )
+        {
+            //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
+            LP_address_utxoadd(LP_coinfind(coin),coinaddr,txid,vout,value,height,-1);
+        }
+        return(clonestr("{\"result\":\"success\"}"));
+    }
+    else if ( strcmp(method,"orderbook") == 0 )
+        return(LP_orderbook(base,rel,jint(argjson,"duration")));
+    else if ( strcmp(method,"listunspent") == 0 )
+    {
+        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+            return(jprint(LP_address_utxos(ptr,jstr(argjson,"address"),1),1));
+        else return(clonestr("{\"error\":\"cant find coind\"}"));
+    }
+    else if ( strcmp(method,"balance") == 0 )
+    {
+        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+            return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
+        else return(clonestr("{\"error\":\"cant find coind\"}"));
+    }
+    else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
         return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
     else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
         retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"reserved") == 0 )
+    {
+        //printf("RESERVED.(%s)\n",jprint(argjson,0));
         retstr = LP_quotereceived(argjson);
+    }
     else if ( strcmp(method,"connected") == 0 )
+    {
+        //printf("CONNECTED.(%s)\n",jprint(argjson,0));
         retstr = LP_connectedalice(argjson);
+    }
     else if ( strcmp(method,"checktxid") == 0 )
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"getcoins") == 0 )
         return(jprint(LP_coinsjson(0),1));
     else if ( strcmp(method,"numutxos") == 0 )
-        return(LP_numutxos());
-    else if ( strcmp(method,"postprice") == 0 )
-        retstr = LP_postedprice(argjson);
+    {
+        printf("deprecated numutxos received\n");
+        retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
+        //return(LP_numutxos());
+    }
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
-    else if ( strcmp(method,"getprices") == 0 )
-        return(LP_prices());
-    else if ( strcmp(method,"orderbook") == 0 )
-        return(LP_orderbook(base,rel,jint(argjson,"duration")));
     else if ( strcmp(method,"registerall") == 0 )
         return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
     else if ( strcmp(method,"forward") == 0 )
@@ -366,12 +416,20 @@ dividends(coin, height, <args>)\n\
     else if ( strcmp(method,"getpeers") == 0 )
         return(LP_peers());
     else if ( strcmp(method,"getutxos") == 0 )
-        return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
+    {
+        printf("deprecated getutxos received\n");
+        retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
+        //return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
+    }
     else if ( strcmp(method,"utxo") == 0 )
     {
-        if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
-            retstr = clonestr("{\"result\":\"success\",\"utxo\":\"received\"}");
-        else retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
+        static uint32_t counter;
+        if ( counter++ < 3 )
+            printf("deprecated utxo received\n");
+        //if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
+         //   retstr = clonestr("{\"result\":\"success\",\"utxo\":\"received\"}");
+        //else
+        retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
     }
     else
     {
@@ -381,6 +439,25 @@ dividends(coin, height, <args>)\n\
             if ( (firsttime= juint(argjson,"firsttime")) < time(NULL)-30*24*3600 )
                 firsttime = (uint32_t)(time(NULL)-30*24*3600);
             return(jprint(LP_pricearray(base,rel,firsttime,juint(argjson,"lasttime"),jint(argjson,"timescale")),1));
+        }
+        else if ( strcmp(method,"notify") == 0 )
+        {
+            char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp;
+            pub = jbits256(argjson,"pub");
+            if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
+            {
+                if ( (pubp= LP_pubkeyadd(pub)) != 0 )
+                {
+                    decode_hex(pubp->rmd160,20,rmd160str);
+                    if ( (secpstr= jstr(argjson,"pubsecp")) != 0 )
+                    {
+                        decode_hex(pubp->pubsecp,sizeof(pubp->pubsecp),secpstr);
+                        //printf("got pubkey.(%s)\n",secpstr);
+                    }
+                }
+                //printf("NOTIFIED pub %s rmd160 %s\n",bits256_str(str,pub),rmd160str);
+            }
+            retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
         }
         if ( IAMLP != 0 )
         {
@@ -393,6 +470,7 @@ dividends(coin, height, <args>)\n\
                 bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
                 if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
                 {
+                    Broadcaststr = jprint(reqjson,0);
                     if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
                     {
                         cipherlen = (int32_t)strlen(cipherstr) >> 1;
@@ -404,8 +482,11 @@ dividends(coin, height, <args>)\n\
                     }
                     else
                     {
+                        char *msg;
                         memset(zero.bytes,0,sizeof(zero));
-                        LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
+                        msg = jprint(reqjson,0);
+                        //printf("broadcast.(%s)\n",msg);
+                        LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,zero,msg);
                     }
                     retstr = clonestr("{\"result\":\"success\"}");
                 } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
@@ -422,8 +503,6 @@ dividends(coin, height, <args>)\n\
                     return(LP_psock(myipaddr,jint(argjson,"ispaired")));
                 else return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
             }
-            else if ( strcmp(method,"notify") == 0 )
-                retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
         }
         else
         {

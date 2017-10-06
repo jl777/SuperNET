@@ -325,14 +325,12 @@ enum opcodetype
     OP_INVALIDOPCODE = 0xff,
 };
 
-struct { bits256 privkey; uint8_t rmd160[20]; } LP_privkeys[100]; int32_t LP_numprivkeys;
-
 bits256 LP_privkeyfind(uint8_t rmd160[20])
 {
     int32_t i; static bits256 zero;
-    for (i=0; i<LP_numprivkeys; i++)
-        if ( memcmp(rmd160,LP_privkeys[i].rmd160,20) == 0 )
-            return(LP_privkeys[i].privkey);
+    for (i=0; i<G.LP_numprivkeys; i++)
+        if ( memcmp(rmd160,G.LP_privkeys[i].rmd160,20) == 0 )
+            return(G.LP_privkeys[i].privkey);
     //for (i=0; i<20; i++)
     //    printf("%02x",rmd160[i]);
     //printf(" -> no privkey\n");
@@ -345,13 +343,13 @@ int32_t LP_privkeyadd(bits256 privkey,uint8_t rmd160[20])
     tmpkey = LP_privkeyfind(rmd160);
     if ( bits256_nonz(tmpkey) != 0 )
         return(-bits256_cmp(privkey,tmpkey));
-    LP_privkeys[LP_numprivkeys].privkey = privkey;
-    memcpy(LP_privkeys[LP_numprivkeys].rmd160,rmd160,20);
+    G.LP_privkeys[G.LP_numprivkeys].privkey = privkey;
+    memcpy(G.LP_privkeys[G.LP_numprivkeys].rmd160,rmd160,20);
     //int32_t i; for (i=0; i<20; i++)
     //    printf("%02x",rmd160[i]);
     //char str[65]; printf(" -> add privkey.(%s)\n",bits256_str(str,privkey));
-    LP_numprivkeys++;
-    return(LP_numprivkeys);
+    G.LP_numprivkeys++;
+    return(G.LP_numprivkeys);
 }
 
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp)
@@ -2619,7 +2617,8 @@ cJSON *bitcoin_txscript(char *asmstr,char **vardata,int32_t numvars)
 {
     int32_t i; cJSON *scriptjson,*array;
     scriptjson = cJSON_CreateObject();
-    jaddstr(scriptjson,"asm",asmstr);
+    if ( asmstr != 0 )
+        jaddstr(scriptjson,"asm",asmstr);
     jaddnum(scriptjson,"numvars",numvars);
     if ( numvars > 0 )
     {
@@ -3186,7 +3185,7 @@ int32_t iguana_parsevoutobj(uint8_t *serialized,int32_t maxsize,struct iguana_ms
 cJSON *iguana_voutjson(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,struct iguana_msgvout *vout,int32_t txi,bits256 txid)
 {
     // 035f1321ed17d387e4433b2fa229c53616057964af065f98bfcae2233c5108055e OP_CHECKSIG
-    char scriptstr[IGUANA_MAXSCRIPTSIZE+1],asmstr[2*IGUANA_MAXSCRIPTSIZE+1]; int32_t i,m,n,scriptlen,asmtype; struct vin_info *vp;
+    char scriptstr[IGUANA_MAXSCRIPTSIZE+1]; int32_t i,m,n,scriptlen,asmtype; struct vin_info *vp;
     uint8_t space[8192]; cJSON *addrs,*skey,*json = cJSON_CreateObject();
     vp = calloc(1,sizeof(*vp));
     jadd64bits(json,"satoshis",vout->value);
@@ -3196,12 +3195,12 @@ cJSON *iguana_voutjson(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,struct igu
     if ( vout->pk_script != 0 && vout->pk_scriptlen*2+1 < sizeof(scriptstr) )
     {
         memset(vp,0,sizeof(*vp));
-        if ( (asmtype= iguana_calcrmd160(taddr,pubtype,p2shtype,asmstr,vp,vout->pk_script,vout->pk_scriptlen,txid,txi,0xffffffff)) >= 0 )
+        if ( (asmtype= iguana_calcrmd160(taddr,pubtype,p2shtype,0,vp,vout->pk_script,vout->pk_scriptlen,txid,txi,0xffffffff)) >= 0 )
         {
             skey = cJSON_CreateObject();
-            scriptlen = iguana_scriptgen(taddr,pubtype,p2shtype,&m,&n,vp->coinaddr,space,asmstr,vp->rmd160,asmtype,vp,txi);
-            if ( asmstr[0] != 0 )
-                jaddstr(skey,"asm",asmstr);
+            scriptlen = iguana_scriptgen(taddr,pubtype,p2shtype,&m,&n,vp->coinaddr,space,0,vp->rmd160,asmtype,vp,txi);
+            //if ( asmstr[0] != 0 )
+            //    jaddstr(skey,"asm",asmstr);
             addrs = cJSON_CreateArray();
             if ( vp->N == 1 )
             {

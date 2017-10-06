@@ -1,3 +1,4 @@
+#!/bin/bash
 curl --url "http://5.9.253.195:7783" --data "{\"method\":\"getpeers\"}"
 curl --url "http://5.9.253.196:7783" --data "{\"method\":\"getpeers\"}"
 curl --url "http://5.9.253.197:7783" --data "{\"method\":\"getpeers\"}"
