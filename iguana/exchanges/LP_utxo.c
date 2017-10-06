@@ -295,7 +295,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                 //char str[65]; printf("LP_address_utxos %s/v%d %.8f ht.%d spend.%d\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),up->U.height,up->spendheight);
                 if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
-                    if ( up->SPV == 0 && up->U.height > 0 )
+                    if ( 0 && up->SPV == 0 && up->U.height > 0 )
                     {
                         if ( (merkobj= electrum_getmerkle(coin->symbol,backupep,&merkobj,up->U.txid,up->U.height)) != 0 )
                         {
