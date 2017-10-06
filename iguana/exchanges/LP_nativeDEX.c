@@ -20,16 +20,13 @@
 //  marketmaker
 //
 // new features:
-// better error message in ordermatch
-// withdraw
 // sign packets
-// require spv validated for using in trades
 // dPoW security
+// withdraw
 // stats, fix pricearray
 // verify portfolio
 // bittrex balancing
 
-// -check for completed one being spent
 
 #include <stdio.h>
 #include "LP_include.h"
