@@ -817,7 +817,7 @@ bits256 validate_merkle(int32_t pos,bits256 txid,bits256 *proof,int32_t proofsiz
     hash = txid;
     for (i=0; i<proofsize; i++)
     {
-        if ( (pos & 1) != 0 )
+        if ( (pos & 1) == 0 )
         {
             iguana_rwbignum(1,&serialized[0],sizeof(hash),hash.bytes);
             iguana_rwbignum(1,&serialized[sizeof(hash)],sizeof(proof[i]),proof[i].bytes);
