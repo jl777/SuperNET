@@ -791,9 +791,51 @@ d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
 c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
 fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501*/
 
+/*0: 526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8
+1: d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
+2: c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
+3: fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501
+4: 8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7
+5: f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd
+6: a87ee259560f20b20182760c0e7cc7896d44381f0ad58a2e755a2b6b895b01ec*/
+
+/*
+0 1 2 3
+ 4   5
+   6
+
+1 -> [0, 5]
+2 -> [3, 4]
+
+if odd -> right, else left
+then /= 2
+*/
+
+bits256 validate_merkle(int32_t pos,bits256 txid,bits256 *proof,int32_t proofsize)
+{
+    int32_t i; uint8_t serialized[sizeof(bits256) * 2]; bits256 hash;
+    hash = txid;
+    for (i=0; i<proofsize; i++)
+    {
+        if ( (pos & 1) != 0 )
+        {
+            iguana_rwbignum(1,&serialized[0],sizeof(hash),hash.bytes);
+            iguana_rwbignum(1,&serialized[sizeof(hash)],sizeof(proof[i]),proof[i].bytes);
+        }
+        else
+        {
+            iguana_rwbignum(1,&serialized[0],sizeof(proof[i]),proof[i].bytes);
+            iguana_rwbignum(1,&serialized[sizeof(hash)],sizeof(hash),hash.bytes);
+        }
+        hash = bits256_doublesha256(0,serialized,sizeof(serialized));
+        pos >>= 1;
+    }
+    return(hash);
+}
+
 void testmerk()
 {
-    bits256 tree[256],roothash; int32_t i;
+    bits256 tree[256],roothash,txid; int32_t i; char str[65];
     memset(tree,0,sizeof(tree));
     decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
     decode_hex(tree[1].bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
@@ -804,8 +846,20 @@ void testmerk()
     {
         if ( bits256_nonz(tree[i]) == 0 )
             break;
-        char str[65]; printf("%d: %s\n",i,bits256_str(str,tree[i]));
+        printf("%d: %s\n",i,bits256_str(str,tree[i]));
     }
+    memset(tree,0,sizeof(tree));
+    decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
+    decode_hex(tree[1].bytes,32,"f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd");
+    decode_hex(txid.bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
+    roothash = validate_merkle(1,txid,tree,2);
+    printf("validate 1: %s\n",bits256_str(str,roothash));
+    memset(tree,0,sizeof(tree));
+    decode_hex(tree[0].bytes,32,"fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501");
+    decode_hex(tree[1].bytes,32,"8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7");
+    decode_hex(txid.bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
+    roothash = validate_merkle(2,txid,tree,2);
+    printf("validate 2: %s\n",bits256_str(str,roothash));
 }
 
 void LP_main(void *ptr)
