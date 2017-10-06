@@ -23,7 +23,7 @@
 // better error message in ordermatch
 // withdraw
 // sign packets
-// spv check
+// require spv validated for using in trades
 // dPoW security
 // stats, fix pricearray
 // verify portfolio
