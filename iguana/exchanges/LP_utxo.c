@@ -292,15 +292,12 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
             total = n = 0;
             DL_FOREACH_SAFE(ap->utxos,up,tmp)
             {
-                //char str[65]; printf("LP_address_utxos %s/v%d %.8f ht.%d spend.%d\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),up->U.height,up->spendheight);
                 if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
                     if ( 0 && up->SPV == 0 && up->U.height > 0 )
                     {
                         if ( (merkobj= electrum_getmerkle(coin->symbol,backupep,&merkobj,up->U.txid,up->U.height)) != 0 )
                         {
-                            //MERK 746738d4fba8b2dd1f47ceb8c363ca6d06472460fb97f84ff6dd2a9ff306f3c3 -> {"pos":1,"merkle":["641f8f00ba9b4f392d0cd74166569e3fa78cfdf0b15e0dc7d92693b2fd49b072", "33c9b7dd243fba0529b48e009354cf740a5e153bba81067d1addd266b9ee405b"],"block_height":521774}
-                            // 2a15d9873ab12b27bde5571521be1bf0e187916d177ad436096a9f5b79b00fd8
                             char str[65],str2[65]; bits256 tree[256],roothash;
                             memset(roothash.bytes,0,sizeof(roothash));
                             if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 && n > 0 && n < 15 )

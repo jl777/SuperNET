@@ -784,9 +784,34 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
 
 #include "LP_nativeDEX.c"
 
+/*MERK d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a ht.518777 -> {"pos":1,"merkle":["526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8", "f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd"],"block_height":518777} root.(0000000000000000000000000000000000000000000000000000000000000000)
+ MERK c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543 ht.518777 -> {"pos":2,"merkle":["fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501", "8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7"],"block_height":518777} root.(0000000000000000000000000000000000000000000000000000000000000000)*/
+/*526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8
+d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
+c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
+fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501*/
+
+void testmerk()
+{
+    bits256 tree[256],roothash; int32_t i;
+    memset(tree,0,sizeof(tree));
+    decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
+    decode_hex(tree[1].bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
+    decode_hex(tree[2].bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
+    decode_hex(tree[3].bytes,32,"fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501");
+    roothash = iguana_merkle(tree,4);
+    for (i=0; i<256; i++)
+    {
+        if ( bits256_nonz(tree[i]) == 0 )
+            break;
+        char str[65]; printf("%d: %s\n",i,bits256_str(str,tree[i]));
+    }
+}
+
 void LP_main(void *ptr)
 {
     char *passphrase; double profitmargin; uint16_t port; cJSON *argjson = ptr;
+    testmerk();
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
