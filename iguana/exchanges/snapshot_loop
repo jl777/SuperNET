@@ -1,8 +1,9 @@
+#!/bin/bash
 source userpass
 ht=$1
 while true
 do
-curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"snapshot\",\"coin\":\"KMD\",\"height\":$ht}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"snapshot\",\"coin\":\"KMD\",\"height\":$ht}"
 #ht=`komodo-cli getinfo | jq .blocks`
 ht=$(( $ht + 1000 ))
 echo next height $ht

@@ -1,2 +1,3 @@
+#!/bin/bash
 source userpass
-curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"setprice\",\"base\":\"REVS\",\"rel\":\"KMD\",\"price\":9999999.99}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"setprice\",\"base\":\"REVS\",\"rel\":\"KMD\",\"price\":9999999.99}"

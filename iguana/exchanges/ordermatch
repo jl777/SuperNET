@@ -1,3 +1,4 @@
+#!/bin/bash
 source userpass
 #ordermatch(base, txfee=0, rel, desttxfee=0, price, txid, vout, feetxid, feevout, duration=3600)\n\
-curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"ordermatch\",\"base\":\"REVS\",\"rel\":\"KMD\",\"price\":1.234,\"duration\":600,\"txfee\":0,\"desttxfee\":0,\"txid\":\"$1\",\"vout\":$2,\"feetxid\":\"$3\",\"feevout\":$4}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"ordermatch\",\"base\":\"REVS\",\"rel\":\"KMD\",\"price\":1.234,\"duration\":600,\"txfee\":0,\"desttxfee\":0,\"txid\":\"$1\",\"vout\":$2,\"feetxid\":\"$3\",\"feevout\":$4}"

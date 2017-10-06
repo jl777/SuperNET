@@ -1,9 +1,10 @@
+#!/bin/bash
 source userpass
 ht=$1
 while true
 do
-#curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"snapshot\",\"coin\":\"KMD\",\"height\":$ht}"
-ht=`curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"snapshot\",\"coin\":\"KMD\"}" | jq .blocks`
+#curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"snapshot\",\"coin\":\"KMD\",\"height\":$ht}"
+ht=`curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"snapshot\",\"coin\":\"KMD\"}" | jq .blocks`
 
 echo next height $ht
 sleep 600

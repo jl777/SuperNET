@@ -1,4 +1,5 @@
-cp snapshot_balance snapshot_loop secretaddresses dividends snapshot goals goal portfolio autoprice deletemessages getmessages debug register registerall trade ordermatch bestfit orderbook autotrade client run_osx client_osx run coins disable enable myprice myprices getcoins getpeers getpeersIP getprices getutxos help inv setprice status utxos ../dexscripts
+#!/bin/bash
+cp balance listunspent electrum snapshot_balance snapshot_loop secretaddresses dividends snapshot goals goal portfolio autoprice deletemessages getmessages debug register registerall buy sell bestfit orderbook client run_osx client_osx run coins disable enable myprice myprices getcoins getpeers getpeersIP getprices getutxos help inv setprice status utxos ../dexscripts
 cd ../dexscripts
 #cp ../exchanges/passphrase ../exchanges/userpass .
-echo you will need to have a passphrase file with your passphrase and userpass file with userpass value in dexscripts dir
+#echo you will need to have a passphrase file with your passphrase and userpass file with userpass value in dexscripts dir

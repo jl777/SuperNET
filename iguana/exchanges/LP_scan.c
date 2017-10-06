@@ -19,240 +19,33 @@
 //
 
 
-struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
-{
-    struct LP_address *ap;
-    HASH_FIND(hh,coin->addresses,coinaddr,strlen(coinaddr),ap);
-    return(ap);
-}
-
-struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
-{
-    struct LP_address *ap;
-    ap = calloc(1,sizeof(*ap));
-    safecopy(ap->coinaddr,coinaddr,sizeof(ap->coinaddr));
-    HASH_ADD_KEYPTR(hh,coin->addresses,ap->coinaddr,strlen(ap->coinaddr),ap);
-    return(ap);
-}
-
-struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
-{
-    struct LP_address *ap;
-    if ( (ap= _LP_addressfind(coin,coinaddr)) == 0 )
-        ap = _LP_addressadd(coin,coinaddr);
-    return(ap);
-}
-
-struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid)
-{
-    struct LP_transaction *tx;
-    portable_mutex_lock(&coin->txmutex);
-    HASH_FIND(hh,coin->transactions,txid.bytes,sizeof(txid),tx);
-    portable_mutex_unlock(&coin->txmutex);
-    return(tx);
-}
-
-struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,int32_t height,int32_t numvouts,int32_t numvins,uint32_t timestamp)
-{
-    struct LP_transaction *tx; int32_t i;
-    if ( (tx= LP_transactionfind(coin,txid)) == 0 )
-    {
-        //char str[65]; printf("%s ht.%d u.%u NEW TXID.(%s) vouts.[%d]\n",coin->symbol,height,timestamp,bits256_str(str,txid),numvouts);
-        //if ( bits256_nonz(txid) == 0 && tx->height == 0 )
-        //    getchar();
-        tx = calloc(1,sizeof(*tx) + (sizeof(*tx->outpoints) * numvouts));
-        for (i=0; i<numvouts; i++)
-            tx->outpoints[i].spendvini = -1;
-        tx->height = height;
-        tx->numvouts = numvouts;
-        tx->numvins = numvins;
-        tx->timestamp = timestamp;
-        tx->txid = txid;
-        portable_mutex_lock(&coin->txmutex);
-        HASH_ADD_KEYPTR(hh,coin->transactions,tx->txid.bytes,sizeof(tx->txid),tx);
-        portable_mutex_unlock(&coin->txmutex);
-    } // else printf("warning adding already existing txid %s\n",bits256_str(str,tx->txid));
-    return(tx);
-}
-
-int32_t LP_txheight(uint32_t *timestampp,uint32_t *blocktimep,struct iguana_info *coin,bits256 txid)
-{
-    bits256 blockhash; cJSON *blockobj,*txobj; int32_t height = 0;
-    if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
-    {
-        *timestampp = juint(txobj,"locktime");
-        *blocktimep = juint(txobj,"blocktime");
-        blockhash = jbits256(txobj,"blockhash");
-        if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
-        {
-            height = jint(blockobj,"height");
-            //printf("%s LP_txheight.%d\n",coin->symbol,height);
-            free_json(blockobj);
-        } //else printf("%s LP_txheight error (%s)\n",coin->symbol,jprint(txobj,0));
-        free_json(txobj);
-    }
-    return(height);
-}
-
-int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
-{
-    int32_t i,ht,num = 0; uint32_t timestamp,blocktime; struct LP_transaction *tx,*tmp;
-    HASH_ITER(hh,coin->transactions,tx,tmp)
-    {
-        for (i=0; i<tx->numvouts; i++)
-        {
-            if ( bits256_nonz(tx->outpoints[i].spendtxid) == 0 )
-                continue;
-            if ( (ht= tx->outpoints[i].spendheight) == 0 )
-            {
-                tx->outpoints[i].spendheight = LP_txheight(&timestamp,&blocktime,coin,tx->outpoints[i].spendtxid);
-            }
-            if ( (ht= tx->outpoints[i].spendheight) != 0 && ht > lastheight )
-            {
-                char str[65]; printf("clear spend %s/v%d at ht.%d > lastheight.%d\n",bits256_str(str,tx->txid),i,ht,lastheight);
-                tx->outpoints[i].spendheight = 0;
-                tx->outpoints[i].spendvini = -1;
-                memset(tx->outpoints[i].spendtxid.bytes,0,sizeof(bits256));
-            }
-        }
-    }
-    return(num);
-}
-
-uint64_t LP_txinterestvalue(uint64_t *interestp,char *destaddr,struct iguana_info *coin,bits256 txid,int32_t vout)
-{
-    uint64_t interest,value = 0; cJSON *txobj,*sobj,*array; int32_t n=0;
-    *interestp = 0;
-    destaddr[0] = 0;
-    if ( (txobj= LP_gettxout(coin->symbol,txid,vout)) != 0 )
-    {
-        if ( (value= jdouble(txobj,"amount")*SATOSHIDEN) == 0 && (value= jdouble(txobj,"value")*SATOSHIDEN) == 0 )
-        {
-            char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d\n",coin->symbol,bits256_str(str,txid),jprint(txobj,0),vout);
-        }
-        else if ( strcmp(coin->symbol,"KMD") == 0 )
-        {
-            if ( (interest= jdouble(txobj,"interest")) != 0. )
-            {
-                //printf("add interest of %.8f to %.8f\n",interest,dstr(value));
-                *interestp = SATOSHIDEN * interest;
-            }
-        }
-        if ( (sobj= jobj(txobj,"scriptPubKey")) != 0 && (array= jarray(&n,sobj,"addresses")) != 0 )
-        {
-            strcpy(destaddr,jstri(array,0));
-            if ( n > 1 )
-                printf("LP_txinterestvalue warning: violation of 1 output assumption n.%d\n",n);
-        } else printf("LP_txinterestvalue no addresses found?\n");
-        //char str[65]; printf("%s %.8f <- %s.(%s) txobj.(%s)\n",destaddr,dstr(value),coin->symbol,bits256_str(str,txid),jprint(txobj,0));
-        free_json(txobj);
-    } //else { char str[65]; printf("null gettxout return %s/v%d\n",bits256_str(str,txid),vout); }
-    return(value);
-}
-
-int32_t LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter)
-{
-    struct LP_transaction *tx; char *address; int32_t i,n,height,numvouts,numvins,spentvout; uint32_t timestamp,blocktime; cJSON *txobj,*vins,*vouts,*vout,*vin,*sobj,*addresses; bits256 spenttxid; char str[65];
-    if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
-    {
-        //printf("TX.(%s)\n",jprint(txobj,0));
-        height = LP_txheight(&timestamp,&blocktime,coin,txid);
-        if ( timestamp == 0 && height > 0 )
-            timestamp = blocktime;
-        vins = jarray(&numvins,txobj,"vin");
-        vouts = jarray(&numvouts,txobj,"vout");
-        if ( iter == 0 && vouts != 0 && (tx= LP_transactionadd(coin,txid,height,numvouts,numvins,timestamp)) != 0 )
-        {
-            for (i=0; i<numvouts; i++)
-            {
-                vout = jitem(vouts,i);
-                if ( (tx->outpoints[i].value= SATOSHIDEN * jdouble(vout,"value")) == 0 )
-                    tx->outpoints[i].value = SATOSHIDEN * jdouble(vout,"amount");
-                tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
-                if ( (sobj= jobj(vout,"scriptPubKey")) != 0 )
-                {
-                    if ( (addresses= jarray(&n,sobj,"addresses")) != 0 && n > 0 )
-                    {
-                        if ( n > 1 )
-                            printf("LP_transactioninit: txid.(%s) multiple addresses.[%s]\n",bits256_str(str,txid),jprint(addresses,0));
-                        if ( (address= jstri(addresses,0)) != 0 && strlen(address) < sizeof(tx->outpoints[i].coinaddr) )
-                        {
-                            strcpy(tx->outpoints[i].coinaddr,address);
-                        } else if ( tx->outpoints[i].value != 0 )
-                            printf("LP_transactioninit: unexpected address.(%s)\n",jprint(addresses,0));
-                    }
-                    //else if ( tx->outpoints[i].value != 0 )
-                    //    printf("LP_transactioninit: pax tx ht.%d i.%d (%s) n.%d\n",height,i,jprint(vout,0),n);
-                }
-            }
-        }
-        if ( iter == 1 && vins != 0 )
-        {
-            for (i=0; i<numvins; i++)
-            {
-                vin = jitem(vins,i);
-                spenttxid = jbits256(vin,"txid");
-                spentvout = jint(vin,"vout");
-                if ( i == 0 && bits256_nonz(spenttxid) == 0 )
-                    continue;
-                if ( (tx= LP_transactionfind(coin,spenttxid)) != 0 )
-                {
-                    if ( spentvout < tx->numvouts )
-                    {
-                        tx->outpoints[spentvout].spendtxid = txid;
-                        tx->outpoints[spentvout].spendvini = i;
-                        tx->outpoints[spentvout].spendheight = height;
-                        //printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
-                    } else printf("LP_transactioninit: %s spentvout.%d < numvouts.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts);
-                } //else printf("LP_transactioninit: couldnt find (%s) ht.%d %s\n",bits256_str(str,spenttxid),height,jprint(vin,0));
-                if ( bits256_cmp(spenttxid,txid) == 0 )
-                    printf("spending same tx's %p vout ht.%d %s.[%d] s%d\n",tx,height,bits256_str(str,txid),tx!=0?tx->numvouts:0,spentvout);
-            }
-        }
-        free_json(txobj);
-        return(0);
-    } //else printf("LP_transactioninit error for %s %s\n",coin->symbol,bits256_str(str,txid));
-    return(-1);
-}
-
 int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
 {
-    int32_t i,j,iter,numtx,checkht=-1; cJSON *blockobj,*txs; bits256 txid; struct LP_transaction *tx;
+    int32_t i,iter,numtx,checkht=-1; cJSON *blockobj,*txs,*txobj; bits256 txid; struct LP_transaction *tx;
     if ( (blockobj= LP_blockjson(&checkht,coin->symbol,0,height)) != 0 && checkht == height )
     {
         if ( (txs= jarray(&numtx,blockobj,"tx")) != 0 )
         {
             for (iter=0; iter<2; iter++)
-            for (i=0; i<numtx; i++)
             {
-                txid = jbits256i(txs,i);
-                if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+                txobj = 0;
+                for (i=0; i<numtx; i++)
                 {
-                    if ( tx->height == 0 )
-                        tx->height = height;
-                    else if ( tx->height != height )
+                    txid = jbits256i(txs,i);
+                    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
                     {
-                        printf("LP_blockinit: tx->height %d != %d\n",tx->height,height);
-                        tx->height = height;
-                    }
-                    if ( iter == 1 )
-                        for (j=0; j<10; j++)
+                        if ( tx->height == 0 )
+                            tx->height = height;
+                        else if ( tx->height != height )
                         {
-                            if (LP_transactioninit(coin,txid,iter) == 0 )
-                                break;
-                            printf("transaction ht.%d init error.%d, pause\n",height,j);
-                            sleep(1);
+                            printf("LP_blockinit: tx->height %d != %d\n",tx->height,height);
+                            tx->height = height;
                         }
-                }
-                else
-                {
-                    for (j=0; j<10; j++)
-                    {
-                        if (LP_transactioninit(coin,txid,iter) == 0 )
-                            break;
-                        printf("transaction ht.%d init error.%d, pause\n",height,j);
-                        sleep(1);
-                    }
+                        if ( iter == 1 )
+                            txobj = LP_transactioninit(coin,txid,iter,0);
+                    } else txobj = LP_transactioninit(coin,txid,iter,0);
+                    if ( txobj != 0 )
+                        free_json(txobj), txobj = 0;
                 }
             }
         }
@@ -380,6 +173,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
         }
     }
     portable_mutex_lock(&coin->txmutex);
+    portable_mutex_lock(&coin->addrmutex);
     HASH_ITER(hh,coin->addresses,ap,atmp)
     {
         ap->balance = 0;
@@ -416,6 +210,7 @@ cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
         }
     }
     HASH_SORT(coin->addresses,sort_balance);
+    portable_mutex_unlock(&coin->addrmutex);
     portable_mutex_unlock(&coin->txmutex);
     printf("%s balance %.8f at height.%d\n",coin->symbol,dstr(balance),height);
     array = cJSON_CreateArray();
@@ -596,53 +391,6 @@ char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
     return(clonestr("{\"error\":\"symbol not found\"}"));
 }
 
-int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
-{
-    char destaddr[64]; uint64_t value,interest = 0; struct iguana_info *coin;
-    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
-        return(0);
-    //char str[65]; printf("%s txvalue.(%s)\n",symbol,bits256_str(str,txid));
-    value = LP_txinterestvalue(&interest,destaddr,coin,txid,vout);
-    return(value + interest);
-}
-    
-uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
-{
-    struct LP_transaction *tx; char _coinaddr[64]; uint64_t interest = 0,value = 0; struct iguana_info *coin;
-    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
-        return(0);
-    if ( coinaddr != 0 )
-        coinaddr[0] = 0;
-    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
-    {
-        if ( vout < tx->numvouts )
-        {
-            if ( bits256_nonz(tx->outpoints[vout].spendtxid) != 0 )
-            {
-                //char str[65]; printf("%s/v%d is spent\n",bits256_str(str,txid),vout);
-                return(0);
-            }
-            else
-            {
-                if ( coinaddr != 0 )
-                    value = LP_txinterestvalue(&tx->outpoints[vout].interest,coinaddr,coin,txid,vout);
-                //printf("return value %.8f + interest %.8f\n",dstr(tx->outpoints[vout].value),dstr(tx->outpoints[vout].interest));
-                return(tx->outpoints[vout].value + tx->outpoints[vout].interest);
-            }
-        } else printf("vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
-    }
-    if ( tx == 0 )
-    {
-        LP_transactioninit(coin,txid,0);
-        LP_transactioninit(coin,txid,1);
-    }
-    if ( coinaddr == 0 )
-        coinaddr = _coinaddr;
-    value = LP_txinterestvalue(&interest,coinaddr,coin,txid,vout);
-    //printf("coinaddr.(%s) value %.8f interest %.8f\n",coinaddr,dstr(value),dstr(interest));
-    return(value + interest);
-}
-
 int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 searchtxid,int32_t searchvout)
 {
     struct LP_transaction *tx; struct iguana_info *coin;
@@ -664,10 +412,10 @@ int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 se
 
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
 {
-    int32_t i,n; cJSON *array; bits256 txid; struct iguana_info *coin; struct LP_transaction *tx;
-    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
+    int32_t i,n; cJSON *array,*txobj; bits256 txid; struct iguana_info *coin; struct LP_transaction *tx;
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 || coin->electrum != 0 )
         return(-1);
-    if ( (array= LP_getmempool(symbol)) != 0 )
+    if ( (array= LP_getmempool(symbol,0)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -676,8 +424,10 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
                 txid = jbits256i(array,i);
                 if ( (tx= LP_transactionfind(coin,txid)) == 0 )
                 {
-                    LP_transactioninit(coin,txid,0);
-                    LP_transactioninit(coin,txid,1);
+                    txobj = LP_transactioninit(coin,txid,0,0);
+                    txobj = LP_transactioninit(coin,txid,1,txobj);
+                    if ( txobj != 0 )
+                        free_json(txobj);
                 }
                 if ( bits256_cmp(txid,searchtxid) == 0 )
                 {
@@ -691,38 +441,68 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid)
     return(-1);
 }
 
-int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t mempool)
+int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration)
 {
-    struct iguana_info *coin; int32_t numconfirms = 100;
-//#ifndef BASILISK_DISABLEWAITTX
-    cJSON *txobj;
-    if ( (coin= LP_coinfind(rawtx->coin->symbol)) == 0 || coin->inactive != 0 )
-        return(-1);
-    numconfirms = -1;
-    if ( (txobj= LP_gettx(rawtx->coin->symbol,rawtx->I.signedtxid)) != 0 )
+    struct iguana_info *coin; cJSON *array,*item; uint32_t expiration,i,n; int32_t numconfirms = -1;
+    if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
     {
-        numconfirms = jint(txobj,"confirmations");
-        free_json(txobj);
+        printf("LP_waitmempool missing coin.%p or inactive\n",coin);
+        return(-1);
     }
-    else if ( mempool != 0 && LP_mempoolscan(rawtx->coin->symbol,rawtx->I.signedtxid) >= 0 )
-        numconfirms = 0;
-//#endif
+    expiration = (uint32_t)time(NULL) + duration;
+    while ( 1 )
+    {
+        if ( LP_gettx_presence(symbol,txid) != 0 )
+            numconfirms = 0;
+        else
+        {
+            if ( coin->electrum == 0 )
+            {
+                if ( LP_mempoolscan(symbol,txid) >= 0 )
+                    numconfirms = 0;
+            }
+            else
+            {
+                if ( (array= electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr)) != 0 )
+                {
+                    char str[65]; printf("check %s mempool.(%s)\n",bits256_str(str,txid),jprint(array,0));
+                    if ( (n= cJSON_GetArraySize(array)) > 0 )
+                    {
+                        for (i=0; i<n; i++)
+                        {
+                            item = jitem(array,i);
+                            if ( bits256_cmp(txid,jbits256(item,"tx_hash")) == 0 )
+                            {
+                                char str[65]; printf("found %s %s in mempool\n",symbol,bits256_str(str,txid));
+                                numconfirms = 0;
+                                break;
+                            }
+                        }
+                    }
+                    free(array);
+                }
+                LP_listunspent_issue(coin->symbol,coinaddr);
+                struct LP_address_utxo *up;
+                if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
+                {
+                    char str[65]; printf("address_utxofind found confirmed %s %s %s ht.%d vs %d\n",symbol,coinaddr,bits256_str(str,txid),up->U.height,coin->height);
+                    if ( coin->electrum != 0 && (array= electrum_address_gethistory(symbol,coin->electrum,&array,coinaddr)) != 0 )
+                        free_json(array);
+                    if ( coin->height >= up->U.height )
+                        numconfirms = (coin->height - up->U.height + 1);
+                }
+            }
+        }
+        if ( time(NULL) > expiration || numconfirms >= 0 )
+            break;
+        sleep(10);
+    }
+    //if ( numconfirms <= 0 )
+    //    numconfirms = LP_numconfirms(symbol,coinaddr,txid,vout,1); // no, no recursion occurs!
     return(numconfirms);
 }
 
-int32_t LP_waitmempool(char *symbol,bits256 txid,int32_t duration)
-{
-    uint32_t expiration = (uint32_t)time(NULL) + duration;
-    while ( time(NULL) < expiration )
-    {
-        if ( LP_mempoolscan(symbol,txid) >= 0 )
-            return(0);
-        usleep(500000);
-    }
-    return(-1);
-}
-
-int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
+int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,char *coinaddr,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
 {
     struct iguana_info *coin; int32_t selector; cJSON *array;
     if ( symbol == 0 || symbol[0] == 0 || bits256_nonz(searchtxid) == 0 || bits256_nonz(searchtxid2) == 0 )
@@ -731,7 +511,7 @@ int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,b
         return(-1);
     if ( time(NULL) > coin->lastmempool+LP_MEMPOOL_TIMEINCR )
     {
-        if ( (array= LP_getmempool(symbol)) != 0 )
+        if ( (array= LP_getmempool(symbol,coinaddr)) != 0 )
         {
             free_json(array);
             coin->lastmempool = (uint32_t)time(NULL);

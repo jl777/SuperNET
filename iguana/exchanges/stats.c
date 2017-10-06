@@ -1022,7 +1022,7 @@ char *stats_update(FILE *logfp,char *destdir,char *statefname,char *komodofname)
 
 int main(int argc, const char * argv[])
 {
-    struct tai T; uint32_t timestamp; struct DEXstats_disp prices[365]; int32_t i,n,seconds,leftdatenum; FILE *fp,*logfp; char *filestr,*retstr,*statefname,logfname[512],komodofile[512]; uint16_t port = 7779;
+    struct tai T; uint32_t timestamp; struct DEXstats_disp prices[365]; int32_t i,n,seconds,leftdatenum; FILE *fp,*logfp; char *filestr,*retstr,*statefname,logfname[512],komodofile[512]; uint16_t port = LP_RPCPORT;
     if ( argc < 2 )
     {
         statefname = "/root/.komodo/KV/komodostate";

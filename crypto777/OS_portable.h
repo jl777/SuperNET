@@ -134,7 +134,7 @@ int32_t hseek(HUFF *hp,int32_t offset,int32_t mode);
 
 struct allocitem { uint32_t allocsize,type; } PACKED;
 struct queueitem { struct queueitem *next,*prev; uint32_t allocsize,type;  } PACKED;
-struct stritem { struct queueitem DL; char str[]; };
+struct stritem { struct queueitem DL; void **retptrp; uint32_t expiration; char str[]; };
 
 typedef struct queue
 {

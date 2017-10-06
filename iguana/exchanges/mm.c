@@ -792,17 +792,27 @@ void LP_main(void *ptr)
         profitmargin = jdouble(argjson,"profitmargin");
         LP_profitratio += profitmargin;
         if ( (port= juint(argjson,"rpcport")) < 1000 )
-            port = 7779;
-        LPinit(port,7780,7781,7782,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+            port = LP_RPCPORT;
+        LPinit(port,LP_RPCPORT+1,LP_RPCPORT+2,LP_RPCPORT+3,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 
 int main(int argc, const char * argv[])
 {
-    char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
+    char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase; struct electrum_info *ep;
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
-    cJSON *retjson,*loginjson; int32_t i;
+    cJSON *retjson,*loginjson; int32_t i,already;
     OS_init();
+    if ( (0) )
+    {
+        ep = LP_electrum_info(&already,"BTC","88.198.241.196",50001,IGUANA_MAXPACKETSIZE * 10); 
+        if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
+        {
+            printf("error launching LP_dedicatedloop (%s:%u)\n",ep->ipaddr,ep->port);
+            exit(-1);
+        } else printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
+        electrum_test();
+    }
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
@@ -816,7 +826,7 @@ int main(int argc, const char * argv[])
             exit(-1);
         } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
-        while ( 1 )
+        while ( (1) )
             sleep(1);
         profitmargin = jdouble(retjson,"profitmargin");
         minask = jdouble(retjson,"minask");

@@ -1,4 +1,5 @@
+#!/bin/bash
 source userpass
 ht=$1
-curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"snapshot_balance\",\"coin\":\"KMD\",\"height\":$ht,\"addresses\":[\"RSAzPFzgTZHNcxLNLdGyVPbjbMA8PRY7Ss\", \"RBgD5eMGwZppid4x7PTEC2Wg1AzvxbsQqB\"]}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"snapshot_balance\",\"coin\":\"KMD\",\"height\":$ht,\"addresses\":[\"RSAzPFzgTZHNcxLNLdGyVPbjbMA8PRY7Ss\", \"RBgD5eMGwZppid4x7PTEC2Wg1AzvxbsQqB\"]}"
 

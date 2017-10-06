@@ -57,15 +57,13 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                value = SATOSHIDEN * jdouble(item,"amount");
-                if ( value == 0 )
-                    value = SATOSHIDEN * jdouble(item,"value");
+                value = LP_value_extract(item,1);
                 valuesum += value;
             }
         }
         free_json(array);
     }
-    if ( (array= LP_inventory(symbol,iambob)) != 0 )
+    if ( (array= LP_inventory(symbol)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 && is_cJSON_Array(array) != 0 )
         {
@@ -91,11 +89,11 @@ char *LP_portfolio()
     {
         HASH_ITER(hh,LP_coins,coin,tmp)
         {
-            if ( coin->inactive != 0 )
+            if ( coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )
                 continue;
             if ( iter == 0 )
             {
-                LP_privkey_init(-1,coin,LP_mypriv25519,LP_mypub25519);
+                LP_privkey_init(-1,coin,G.LP_mypriv25519,G.LP_mypub25519);
                 coin->balanceA = LP_balance(&coin->valuesumA,0,coin->symbol,coin->smartaddr);
                 coin->balanceB = LP_balance(&coin->valuesumB,1,coin->symbol,coin->smartaddr);
                 if ( strcmp(coin->symbol,"KMD") != 0 )
@@ -186,12 +184,16 @@ char *LP_portfolio_goal(char *symbol,double goal)
             coin->goal = kmdbtc * 0.5;
         if ( (coin= LP_coinfind("BTC")) != 0 && coin->inactive == 0 )
             coin->goal = kmdbtc * 0.5;
+        if ( coin->goal != 0 )
+            coin->obooktime = (uint32_t)time(NULL);
         return(LP_portfolio());
     }
     else if ( (coin= LP_coinfind(symbol)) != 0 && coin->inactive == 0 )
     {
         coin->goal = goal;
         printf("set %s goal %f\n",coin->symbol,goal);
+        if ( coin->goal != 0 )
+            coin->obooktime = (uint32_t)time(NULL);
         return(LP_portfolio());
     } else return(clonestr("{\"error\":\"cant set goal for inactive coin\"}"));
 }
@@ -417,7 +419,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
     }
 }
 
-int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel)
+int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui)
 {
     char *retstr2; double bid,ask,maxprice; uint32_t requestid,quoteid,iter,i; cJSON *retjson2;
     requestid = quoteid = 0;
@@ -429,7 +431,7 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
         strcpy(LP_portfolio_rel,"");
         LP_portfolio_relvolume = 0.;
     }
-    printf("pending.%d base buy.%s, rel sell.%s relvolume %f maxprice %.8f (%.8f %.8f)\n",LP_pendingswaps,buy->symbol,sell->symbol,sell->relvolume,maxprice,bid,ask);
+    printf("pending.%d base buy.%s, rel sell.%s relvolume %f maxprice %.8f (%.8f %.8f)\n",G.LP_pendingswaps,buy->symbol,sell->symbol,sell->relvolume,maxprice,bid,ask);
     if ( LP_pricevalid(maxprice) > 0 )
     {
         relvolume = sell->relvolume;
@@ -439,7 +441,7 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
                 break;
             if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
             {
-                if ( (retstr2= LP_autotrade(ctx,"127.0.0.1",-1,buy->symbol,sell->symbol,maxprice,relvolume,60,24*3600)) != 0 )
+                if ( (retstr2= LP_autobuy(ctx,"127.0.0.1",-1,buy->symbol,sell->symbol,maxprice,relvolume,60,24*3600,gui)) != 0 )
                 {
                     if ( (retjson2= cJSON_Parse(retstr2)) != 0 )
                     {
@@ -548,7 +550,7 @@ void prices_loop(void *ignore)
             {
                 if ( (buycoin= jstr(retjson,"buycoin")) != 0 && (buy= LP_coinfind(buycoin)) != 0 && (sellcoin= jstr(retjson,"sellcoin")) != 0 && (sell= LP_coinfind(sellcoin)) != 0 && buy->inactive == 0 && sell->inactive == 0 )
                 {
-                    if ( LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,1) < 0 )
+                    if ( LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,1,"portfolio") < 0 )
                     {
                         array = jarray(&m,retjson,"portfolio");
                         if ( array != 0 && (n= LP_portfolio_order(trades,(int32_t)(sizeof(trades)/sizeof(*trades)),array)) > 0 )
@@ -559,7 +561,7 @@ void prices_loop(void *ignore)
                                 {
                                     buy = LP_coinfind(trades[i].buycoin);
                                     sell = LP_coinfind(trades[i].sellcoin);
-                                    if ( buy != 0 && sell != 0 && LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,0) == 0 )
+                                    if ( buy != 0 && sell != 0 && LP_portfolio_trade(ctx,&requestid,&quoteid,buy,sell,sell->relvolume,0,"portfolio") == 0 )
                                         break;
                                 }
                             }
