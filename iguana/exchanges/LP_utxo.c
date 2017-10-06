@@ -275,6 +275,29 @@ bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
     return(tree[n]);
 }
 
+bits256 validate_merkle(int32_t pos,bits256 txid,cJSON *proofarray,int32_t proofsize)
+{
+    int32_t i; uint8_t serialized[sizeof(bits256) * 2]; bits256 hash,proof;
+    hash = txid;
+    for (i=0; i<proofsize; i++)
+    {
+        proof = jbits256i(proofarray,i);
+        if ( (pos & 1) == 0 )
+        {
+            iguana_rwbignum(1,&serialized[0],sizeof(hash),hash.bytes);
+            iguana_rwbignum(1,&serialized[sizeof(hash)],sizeof(proof),proof.bytes);
+        }
+        else
+        {
+            iguana_rwbignum(1,&serialized[0],sizeof(proof),proof.bytes);
+            iguana_rwbignum(1,&serialized[sizeof(hash)],sizeof(hash),hash.bytes);
+        }
+        hash = bits256_doublesha256(0,serialized,sizeof(serialized));
+        pos >>= 1;
+    }
+    return(hash);
+}
+
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
     cJSON *array,*item,*merkobj,*merkles; int32_t n,i,m; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct electrum_info *ep,*backupep=0;
@@ -294,19 +317,14 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
             {
                 if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
-                    if ( 0 && up->SPV == 0 && up->U.height > 0 )
+                    if ( 1 && up->SPV == 0 && up->U.height > 0 )
                     {
                         if ( (merkobj= electrum_getmerkle(coin->symbol,backupep,&merkobj,up->U.txid,up->U.height)) != 0 )
                         {
-                            char str[65],str2[65]; bits256 tree[256],roothash;
+                            char str[65],str2[65]; bits256 roothash;
                             memset(roothash.bytes,0,sizeof(roothash));
-                            if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 && n > 0 && n < 15 )
-                            {
-                                tree[0] = up->U.txid;
-                                for (i=0; i<m; i++)
-                                    tree[i+1] = jbits256i(merkles,i);
-                                roothash = iguana_merkle(tree,m);
-                            }
+                            if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 )
+                                roothash = validate_merkle(jint(merkobj,"pos"),up->U.txid,merkles,m);
                             printf("MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
                             free_json(merkobj);
                         }

@@ -811,29 +811,7 @@ if odd -> right, else left
 then /= 2
 */
 
-bits256 validate_merkle(int32_t pos,bits256 txid,bits256 *proof,int32_t proofsize)
-{
-    int32_t i; uint8_t serialized[sizeof(bits256) * 2]; bits256 hash;
-    hash = txid;
-    for (i=0; i<proofsize; i++)
-    {
-        if ( (pos & 1) == 0 )
-        {
-            iguana_rwbignum(1,&serialized[0],sizeof(hash),hash.bytes);
-            iguana_rwbignum(1,&serialized[sizeof(hash)],sizeof(proof[i]),proof[i].bytes);
-        }
-        else
-        {
-            iguana_rwbignum(1,&serialized[0],sizeof(proof[i]),proof[i].bytes);
-            iguana_rwbignum(1,&serialized[sizeof(hash)],sizeof(hash),hash.bytes);
-        }
-        hash = bits256_doublesha256(0,serialized,sizeof(serialized));
-        pos >>= 1;
-    }
-    return(hash);
-}
-
-void testmerk()
+/*void testmerk()
 {
     bits256 tree[256],roothash,txid; int32_t i; char str[65];
     memset(tree,0,sizeof(tree));
@@ -860,12 +838,11 @@ void testmerk()
     decode_hex(txid.bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
     roothash = validate_merkle(2,txid,tree,2);
     printf("validate 2: %s\n",bits256_str(str,roothash));
-}
+}*/
 
 void LP_main(void *ptr)
 {
     char *passphrase; double profitmargin; uint16_t port; cJSON *argjson = ptr;
-    testmerk();
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
