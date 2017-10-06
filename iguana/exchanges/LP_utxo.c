@@ -277,7 +277,7 @@ bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
 
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
-    cJSON *array,*item,*merkobj; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct electrum_info *ep,*backupep=0;
+    cJSON *array,*item,*merkobj,*merkles; int32_t n,i,m; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct electrum_info *ep,*backupep=0;
     array = cJSON_CreateArray();
     if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
@@ -299,7 +299,18 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                     {
                         if ( (merkobj= electrum_getmerkle(coin->symbol,backupep,&merkobj,up->U.txid,up->U.height)) != 0 )
                         {
-                            char str[65]; printf("MERK %s -> %s\n",bits256_str(str,up->U.txid),jprint(merkobj,0));
+                            //MERK 746738d4fba8b2dd1f47ceb8c363ca6d06472460fb97f84ff6dd2a9ff306f3c3 -> {"pos":1,"merkle":["641f8f00ba9b4f392d0cd74166569e3fa78cfdf0b15e0dc7d92693b2fd49b072", "33c9b7dd243fba0529b48e009354cf740a5e153bba81067d1addd266b9ee405b"],"block_height":521774}
+                            // 2a15d9873ab12b27bde5571521be1bf0e187916d177ad436096a9f5b79b00fd8
+                            char str[65],str2[65]; bits256 tree[256],roothash;
+                            memset(roothash.bytes,0,sizeof(roothash));
+                            if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 && n > 0 && n < 15 )
+                            {
+                                tree[0] = up->U.txid;
+                                for (i=0; i<m; i++)
+                                    tree[i+1] = jbits256i(merkles,i);
+                                roothash = iguana_merkle(tree,m);
+                            }
+                            printf("MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
                             free_json(merkobj);
                         }
                     }
