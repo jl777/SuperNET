@@ -446,7 +446,7 @@ int32_t LP_nearest_utxovalue(struct LP_address_utxo **utxos,int32_t n,uint64_t t
     int32_t i,mini = -1; int64_t dist; uint64_t mindist = (1LL << 60);
     for (i=0; i<n; i++)
     {
-        if ( utxos[i] != 0 )
+        if ( utxos[i] != 0 && utxos[i]->spendheight == 0 && utxos[i]->SPV > 0 )
         {
             dist = (utxos[i]->U.value - targetval);
             if ( dist >= 0 && dist < mindist )
