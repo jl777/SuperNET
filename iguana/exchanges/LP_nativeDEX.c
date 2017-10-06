@@ -24,9 +24,11 @@
 // withdraw
 // sign packets
 // spv check
+// dPoW security
 // stats, fix pricearray
 // verify portfolio
 // bittrex balancing
+
 // -check for completed one being spent
 
 #include <stdio.h>
