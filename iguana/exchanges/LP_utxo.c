@@ -252,12 +252,40 @@ cJSON *LP_address_item(struct iguana_info *coin,struct LP_address_utxo *up,int32
 
 uint64_t _LP_unspents_metric(uint64_t total,int32_t n) { return((total<<16) | (n & 0xffff)); }
 
+bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
+{
+    int32_t i,n=0,prev; uint8_t serialized[sizeof(bits256) * 2];
+    if ( txn_count == 1 )
+        return(tree[0]);
+    prev = 0;
+    while ( txn_count > 1 )
+    {
+        if ( (txn_count & 1) != 0 )
+            tree[prev + txn_count] = tree[prev + txn_count-1], txn_count++;
+        n += txn_count;
+        for (i=0; i<txn_count; i+=2)
+        {
+            iguana_rwbignum(1,serialized,sizeof(*tree),tree[prev + i].bytes);
+            iguana_rwbignum(1,&serialized[sizeof(*tree)],sizeof(*tree),tree[prev + i + 1].bytes);
+            tree[n + (i >> 1)] = bits256_doublesha256(0,serialized,sizeof(serialized));
+        }
+        prev = n;
+        txn_count >>= 1;
+    }
+    return(tree[n]);
+}
+
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
-    cJSON *array,*item; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp;
+    cJSON *array,*item,*merkobj; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct electrum_info *ep,*backupep=0;
     array = cJSON_CreateArray();
     if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
+        if ( (ep= coin->electrum) != 0 )
+        {
+            if ( (backupep= ep->prev) == 0 )
+                backupep = ep;
+        }
         //portable_mutex_lock(&coin->addrmutex);
         if ( (ap= _LP_addressfind(coin,coinaddr)) != 0 )
         {
@@ -267,6 +295,14 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                 //char str[65]; printf("LP_address_utxos %s/v%d %.8f ht.%d spend.%d\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),up->U.height,up->spendheight);
                 if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
+                    if ( up->SPV == 0 && up->U.height > 0 )
+                    {
+                        if ( (merkobj= electrum_getmerkle(coin->symbol,backupep,&merkobj,up->U.txid,up->U.height)) != 0 )
+                        {
+                            char str[65]; printf("MERK %s -> %s\n",bits256_str(str,up->U.txid),jprint(merkobj,0));
+                            free_json(merkobj);
+                        }
+                    }
                     jaddi(array,LP_address_item(coin,up,electrumret));
                     n++;
                     total += up->U.value;
