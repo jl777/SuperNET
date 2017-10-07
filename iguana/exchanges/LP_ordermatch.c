@@ -394,7 +394,7 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
         sleep(3);
         LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg);
     } else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
-    for (i=0; i<30; i++)
+    for (i=0; i<20; i++)
     {
         if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )
         {
@@ -404,7 +404,7 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
                 break;
             }
         }
-        usleep(250000);
+        sleep(1);
     }
     return(price);
 }

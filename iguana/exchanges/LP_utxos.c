@@ -619,7 +619,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                                 }
                                 portable_mutex_unlock(&LP_UTXOmutex);
                                 total += value;
-                            } else printf("scriptmismatch.(%s) vs %s\n",script,jprint(item,0));
+                            } // else printf("scriptmismatch.(%s) vs %s\n",script,jprint(item,0));
                         } //else printf("nothing near i.%d\n",i);
                     } else break;
                 }

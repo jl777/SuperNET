@@ -19,6 +19,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// SPV at tx level
 // new features:
 // stats, fix pricearray
 // sign packets
