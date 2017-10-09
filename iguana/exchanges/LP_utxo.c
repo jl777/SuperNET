@@ -321,7 +321,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
             {
                 if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
-                    if ( up->SPV == 0 && up->U.height > 0 )
+                    if ( ep != 0 && up->SPV == 0 && up->U.height > 0 )
                     {
                         if ( (merkobj= electrum_getmerkle(coin->symbol,backupep,&merkobj,up->U.txid,up->U.height)) != 0 )
                         {
