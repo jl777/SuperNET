@@ -26,10 +26,10 @@
  *			  not from the mingw header, so we need to include the windows header
  *			  if we are compiling in windows 64bit
  */
-#if defined(_M_X64)
-#define WIN32_LEAN_AND_MEAN
-#include <WinSock2.h>
-#endif
+//#if defined(_M_X64)
+//#define WIN32_LEAN_AND_MEAN
+//#include <WinSock2.h>
+//#endif
 
 #include "OS_portable.h"
 
