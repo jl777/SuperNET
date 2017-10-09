@@ -33,10 +33,14 @@
 
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
 {
-    double val = 0.; uint64_t value = 0;
-    if ( (val= jdouble(obj,"amount")) < SMALLVAL )
-        val = jdouble(obj,"value");
-    value = (val + 0.0000000049) * SATOSHIDEN;
+    double val = 0.; uint64_t value = 0; int32_t electrumflag;
+    electrumflag = (jobj(obj,"tx_hash") != 0);
+    if ( electrumflag == 0 )
+    {
+        if ( (val= jdouble(obj,"amount")) < SMALLVAL )
+            val = jdouble(obj,"value");
+        value = (val + 0.0000000049) * SATOSHIDEN;
+    } else value = j64bits(obj,"value");
     if ( value != 0 )
     {
         if ( addinterest != 0 && jobj(obj,"interest") != 0 )
@@ -317,7 +321,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
             {
                 if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
-                    if ( up->SPV == 0 && up->U.height > 0 )
+                    if ( ep != 0 && up->SPV == 0 && up->U.height > 0 )
                     {
                         if ( (merkobj= electrum_getmerkle(coin->symbol,backupep,&merkobj,up->U.txid,up->U.height)) != 0 )
                         {
