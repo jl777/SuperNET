@@ -316,12 +316,12 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
         if ( strcmp(autxo->coinaddr,qp->destaddr) != 0 )
             return(-10);
     }
-    if ( autxo != 0 && destvalue < qp->desttxfee+qp->destsatoshis )
+    if ( autxo != 0 && destvalue < 2*qp->desttxfee+qp->destsatoshis )
     {
         printf("destvalue %.8f  destsatoshis %.8f is too small txfee %.8f?\n",dstr(destvalue),dstr(qp->destsatoshis),dstr(qp->desttxfee));
         return(-11);
     }
-    if ( butxo != 0 && srcvalue < qp->txfee+qp->satoshis )
+    if ( butxo != 0 && srcvalue < 2*qp->txfee+qp->satoshis )
     {
         printf("srcvalue %.8f [%.8f] satoshis %.8f is too small txfee %.8f?\n",dstr(srcvalue),dstr(srcvalue) - dstr(qp->txfee+qp->satoshis),dstr(qp->satoshis),dstr(qp->txfee));
         return(-33);
