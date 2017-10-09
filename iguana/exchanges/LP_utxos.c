@@ -436,7 +436,10 @@ cJSON *LP_inventory(char *symbol)
         myipaddr = LP_mypeer->ipaddr;
     else myipaddr = "127.0.0.1";
     if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        coin->unspenttime = (uint32_t)time(NULL) - 777;
         LP_listunspent_both(symbol,coin->smartaddr);
+    }
     HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
     {
         char str[65];
