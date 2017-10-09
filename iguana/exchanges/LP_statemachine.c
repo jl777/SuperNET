@@ -17,6 +17,25 @@
 //  LP_statemachine.c
 //  marketmaker
 //
+
+else
+{
+    CTransaction tx; uint256 hashBlock; int32_t numvouts,len; uint8_t *ptr;
+    if ( GetTransaction(NOTARIZED_DESTTXID,tx,hashBlock,true) == 0 )
+    {
+        fprintf(stderr,"error finding")
+        return(-1);
+    }
+    if ( (numvouts= tx.vout.size()) > 0 )
+    {
+        ptr = (uint8_t *)tx.vout[numvouts - 1].scriptPubKey.data();
+        len = tx.vout[numvouts - 1].scriptPubKey.size();
+        retval = komodo_verifynotarizedscript(height,ptr,len,NOTARIZED_HASH);
+        printf("direct verify ht.%d -> %d\n",height,retval);
+        return(retval);
+    }
+}
+
 /*struct LP_cacheinfo *ptr,*tmp;
  HASH_ITER(hh,LP_cacheinfos,ptr,tmp)
  {

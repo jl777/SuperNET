@@ -326,7 +326,7 @@ dividends(coin, height, <args>)\n\
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
                 return(basilisk_swapentry(requestid,quoteid));
-            else return(basilisk_swaplist());
+            else return(basilisk_swaplist(0,0));
         }
         else if ( strcmp(method,"myprices") == 0 )
             return(LP_myprices());
