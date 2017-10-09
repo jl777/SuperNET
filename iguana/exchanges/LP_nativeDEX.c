@@ -23,7 +23,7 @@
 // when i remove funds from my smart addresses, the first time i do ./inv, it shows up empty, but after that, the old values come back
 //[12:23] a restart of client fixes it though
 
-// SPV at tx level
+// SPV at tx level and limit SPV proofing
 // stats, fix pricearray
 // sign packets
 // dPoW security
