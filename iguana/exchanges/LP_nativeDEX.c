@@ -19,6 +19,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// n41r0j [12:21 AM]
+// when i remove funds from my smart addresses, the first time i do ./inv, it shows up empty, but after that, the old values come back
+//[12:23] a restart of client fixes it though
+
 // SPV at tx level
 // stats, fix pricearray
 // sign packets
