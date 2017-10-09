@@ -21,10 +21,12 @@
  * @remarks - #if (defined(_M_X64) || defined(__amd64__)) && defined(WIN32)
  *     is equivalent to #if defined(_M_X64) as _M_X64 is defined for MSVC only
  */
-#if defined(_M_X64)
-#define WIN32_LEAN_AND_MEAN
-#include <WinSock2.h>
-#endif
+
+//#if defined(_M_X64)
+//#define WIN32_LEAN_AND_MEAN
+//#define _WINSOCKAPI_ 
+//#include <WinSock2.h>
+//#endif
 
 #define ELECTRUM_TIMEOUT 5
 
@@ -42,6 +44,20 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
      * @author - fadedreamz@gmail.com
      */
 #if defined(_M_X64)
+
+	typedef struct addrinfo
+	{
+		int                 ai_flags;       // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
+		int                 ai_family;      // PF_xxx
+		int                 ai_socktype;    // SOCK_xxx
+		int                 ai_protocol;    // 0 or IPPROTO_xxx for IPv4 and IPv6
+		size_t              ai_addrlen;     // Length of ai_addr
+		char *              ai_canonname;   // Canonical name for nodename
+		_Field_size_bytes_(ai_addrlen) struct sockaddr *   ai_addr;        // Binary address
+		struct addrinfo *   ai_next;        // Next structure in linked list
+	}
+	ADDRINFOA, *PADDRINFOA;
+
     struct addrinfo *addrresult = NULL;
     struct addrinfo *returnptr = NULL;
     struct addrinfo hints;
@@ -805,7 +821,18 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 
 void LP_dedicatedloop(void *arg)
 {
-    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct electrum_info *ep = arg;
+#if defined(_M_X64)
+	typedef struct pollfd {
+
+		SOCKET  fd;
+		SHORT   events;
+		SHORT   revents;
+
+	} WSAPOLLFD, *PWSAPOLLFD, FAR *LPWSAPOLLFD;
+#endif
+
+    struct pollfd fds; 
+	int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct electrum_info *ep = arg;
     if ( (coin= LP_coinfind(ep->symbol)) != 0 )
         ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
     if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,0)) != 0 )

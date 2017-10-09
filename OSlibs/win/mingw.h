@@ -5,6 +5,8 @@
 #include <io.h>
 
 #define _USE_W32_SOCKETS 1
+//#define WIN32_LEAN_AND_MEAN
+//#define _WINSOCKAPI_ 
 #include <windows.h>
 #define PTW32_STATIC_LIB
 #include "pthread.h"
@@ -40,6 +42,7 @@
 //TODO: need to update other values to match with WSAPoll() function 
 #define POLLRDNORM  0x0100
 #define POLLRDBAND  0x0200
+#define POLLWRNORM  0x0010
 #define POLLIN      POLLRDNORM | POLLRDBAND     /* There is data to read */
 #define POLLOUT     POLLWRNORM    /* Writing now will not block */
 #else
