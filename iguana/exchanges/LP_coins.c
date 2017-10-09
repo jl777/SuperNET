@@ -96,7 +96,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
 #endif
     if ( strcmp(symbol,"BTC") == 0 )
     {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(NATIVE_WINDOWS)
         strcat(fname,"Bitcoin");
 #else
         strcat(fname,".bitcoin");
@@ -120,7 +120,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
     }
     else
     {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(NATIVE_WINDOWS)
         strcat(fname,"Komodo");
 #else
         strcat(fname,".komodo");

@@ -22,7 +22,13 @@
 #define FROM_MARKETMAKER
 #include <stdio.h>
 #include <stdint.h>
-#include "OS_portable.h"
+#ifndef NATIVE_WINDOWS
+	#include "OS_portable.h"
+#else
+	#include "../../crypto777/OS_portable.h"
+#endif // !_WIN_32
+
+
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"

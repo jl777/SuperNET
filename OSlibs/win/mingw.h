@@ -38,6 +38,8 @@
  * @author - fadedreamz@gmail.com
  */
 //TODO: need to update other values to match with WSAPoll() function 
+#define POLLRDNORM  0x0100
+#define POLLRDBAND  0x0200
 #define POLLIN      POLLRDNORM | POLLRDBAND     /* There is data to read */
 #define POLLOUT     POLLWRNORM    /* Writing now will not block */
 #else
