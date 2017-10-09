@@ -1035,7 +1035,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     return(item);
 }
 
-char *basilisk_swaplist()
+char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
 {
     char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i;
     portable_mutex_lock(&LP_swaplistmutex);
@@ -1058,12 +1058,15 @@ char *basilisk_swaplist()
                 q = (uint32_t)G.LP_skipstatus[i];
                 if ( r == requestid && q == quoteid )
                 {
-                    item = cJSON_CreateObject();
-                    jaddstr(item,"status","realtime");
-                    jaddnum(item,"requestid",r);
-                    jaddnum(item,"quoteid",q);
-                    jaddi(array,item);
-                    flag = 1;
+                    if ( r != origrequestid || q != origquoteid )
+                    {
+                        item = cJSON_CreateObject();
+                        jaddstr(item,"status","realtime");
+                        jaddnum(item,"requestid",r);
+                        jaddnum(item,"quoteid",q);
+                        jaddi(array,item);
+                        flag = 1;
+                    }
                     break;
                 }
             }
@@ -1114,7 +1117,7 @@ char *basilisk_swaplist()
 char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
 {
     char *liststr,*retstr = 0; cJSON *retjson,*array,*item; int32_t i,n;
-    if ( (liststr= basilisk_swaplist()) != 0 )
+    if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
     {
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
         {

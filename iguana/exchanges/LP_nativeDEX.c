@@ -19,17 +19,15 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// new features:
-// better error message in ordermatch
-// withdraw
-// sign packets
-// spv check
-// dPoW security
+// SPV at tx level
 // stats, fix pricearray
+// sign packets
+// dPoW security
+// electrum peers
+// withdraw
 // verify portfolio
 // bittrex balancing
 
-// -check for completed one being spent
 
 #include <stdio.h>
 #include "LP_include.h"
@@ -509,7 +507,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 coin->lastscanht = coin->firstscanht;
             continue;
         }
-        //printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
+        printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
         if ( LP_blockinit(coin,coin->lastscanht) < 0 )
         {
             printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
@@ -655,7 +653,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_butxomutex);
     if ( system("curl -s4 checkip.amazonaws.com > DB/myipaddr") == 0 )
     {
-        if ( (myipaddr= OS_filestr(&filesize,"DB/myipaddr")) != 0 && myipaddr[0] != 0 )
+        char ipfname[64];
+        strcpy(ipfname,"DB/myipaddr");
+        if ( (myipaddr= OS_filestr(&filesize,ipfname)) != 0 && myipaddr[0] != 0 )
         {
             n = strlen(myipaddr);
             if ( myipaddr[n-1] == '\n' )

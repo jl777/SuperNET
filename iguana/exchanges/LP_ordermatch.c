@@ -394,7 +394,7 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
         sleep(3);
         LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg);
     } else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
-    for (i=0; i<30; i++)
+    for (i=0; i<20; i++)
     {
         if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )
         {
@@ -404,7 +404,7 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
                 break;
             }
         }
-        usleep(250000);
+        sleep(1);
     }
     return(price);
 }
@@ -441,12 +441,12 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
     return(pairsock);
 }
 
-int32_t LP_nearest_utxovalue(struct LP_address_utxo **utxos,int32_t n,uint64_t targetval)
+int32_t LP_nearest_utxovalue(int32_t noSPV,struct LP_address_utxo **utxos,int32_t n,uint64_t targetval)
 {
     int32_t i,mini = -1; int64_t dist; uint64_t mindist = (1LL << 60);
     for (i=0; i<n; i++)
     {
-        if ( utxos[i] != 0 )
+        if ( utxos[i] != 0 && (noSPV != 0 || (utxos[i]->spendheight == 0 && utxos[i]->SPV > 0)) )
         {
             dist = (utxos[i]->U.value - targetval);
             if ( dist >= 0 && dist < mindist )
@@ -484,12 +484,12 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s\n",dstr(targetval),relvolume,price,dstr(txfee),coinaddr);
             }
             mini = -1;
-            if ( targetval != 0 && (mini= LP_nearest_utxovalue(utxos,m,targetval)) >= 0 && (double)utxos[mini]->U.value/targetval < LP_MINVOL-1 )
+            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin->electrum == 0,utxos,m,targetval)) >= 0 && (double)utxos[mini]->U.value/targetval < LP_MINVOL-1 )
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
-                targetval2 = (up->U.value / 8) * 9 + 2*txfee;
-                if ( (mini= LP_nearest_utxovalue(utxos,m,targetval2)) >= 0 )
+                targetval2 = (targetval / 8) * 9 + 2*txfee;
+                if ( (mini= LP_nearest_utxovalue(coin->electrum == 0,utxos,m,targetval2)) >= 0 )
                 {
                     if ( up != 0 && (up2= utxos[mini]) != 0 )
                     {
