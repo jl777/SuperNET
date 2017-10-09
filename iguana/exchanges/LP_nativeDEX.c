@@ -20,10 +20,10 @@
 //  marketmaker
 //
 // SPV at tx level
-// new features:
 // stats, fix pricearray
 // sign packets
 // dPoW security
+// electrum peers
 // withdraw
 // verify portfolio
 // bittrex balancing
@@ -653,7 +653,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_butxomutex);
     if ( system("curl -s4 checkip.amazonaws.com > DB/myipaddr") == 0 )
     {
-        if ( (myipaddr= OS_filestr(&filesize,"DB/myipaddr")) != 0 && myipaddr[0] != 0 )
+        char ipfname[64];
+        strcpy(ipfname,"DB/myipaddr");
+        if ( (myipaddr= OS_filestr(&filesize,ipfname)) != 0 && myipaddr[0] != 0 )
         {
             n = strlen(myipaddr);
             if ( myipaddr[n-1] == '\n' )
