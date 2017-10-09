@@ -593,6 +593,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
+	char *myip_path = "";
     char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128]; void *ctx = bitcoin_ctx();
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
@@ -653,7 +654,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_butxomutex);
     if ( system("curl -s4 checkip.amazonaws.com > DB/myipaddr") == 0 )
     {
-        if ( (myipaddr= OS_filestr(&filesize,"DB/myipaddr")) != 0 && myipaddr[0] != 0 )
+		char ipfname[64];
+		strcpy(ipfname, "DB/myipaddr");
+		if ((myipaddr = OS_filestr(&filesize, ipfname)) != 0 && myipaddr[0] != 0)
         {
             n = strlen(myipaddr);
             if ( myipaddr[n-1] == '\n' )
