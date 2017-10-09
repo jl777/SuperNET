@@ -489,7 +489,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 up = utxos[mini];
                 utxos[mini] = 0;
                 targetval2 = (targetval / 8) * 9 + 2*txfee;
-                if ( (mini= LP_nearest_utxovalue(coin->electrum == 0,utxos,m,targetval2)) >= 0 )
+                if ( (mini= LP_nearest_utxovalue(coin->electrum == 0,utxos,m,targetval2 * 1.01)) >= 0 )
                 {
                     if ( up != 0 && (up2= utxos[mini]) != 0 )
                     {
