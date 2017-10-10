@@ -742,12 +742,12 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( (rswap.iambob= LP_rswap_init(&rswap,requestid,quoteid)) < 0 )
-        return(0);
+        return(cJSON_Parse("{\"error\":\"couldnt initialize rswap, are all coins active?\"}"));
     LP_swap_load(&rswap);
     memset(zero.bytes,0,sizeof(zero));
     Adest = Bdest = AAdest = ABdest = 0;
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,rswap.src) != 0 || strcmp(rswap.alicecoin,rswap.dest) != 0 )
-        return(0);
+        return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
     alice = LP_coinfind(rswap.alicecoin);
     bob = LP_coinfind(rswap.bobcoin);
     rswap.Atxfee = LP_txfeecalc(alice,rswap.Atxfee);
