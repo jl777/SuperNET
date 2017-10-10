@@ -624,6 +624,7 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
 int32_t LP_swap_load(struct LP_swap_remember *rswap)
 {
     int32_t i,needflag,addflag; long fsize; char fname[1024],str[65],*fstr,*symbol,*rstr; cJSON *txobj,*sentobj; bits256 txid,checktxid; uint64_t value;
+    rswap->iambob = -1;
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
         needflag = addflag = 0;
@@ -636,7 +637,8 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
             if ( (txobj= cJSON_Parse(fstr)) != 0 )
             {
                 //printf("TXOBJ.(%s)\n",jprint(txobj,0));
-                rswap->iambob = jint(txobj,"iambob");
+                if ( jobj(txobj,"iambob") != 0 )
+                    rswap->iambob = jint(txobj,"iambob");
                 txid = jbits256(txobj,"txid");
                 if ( bits256_nonz(txid) == 0 )
                     continue;
@@ -663,6 +665,26 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                     decode_hex(rswap->Dredeemscript,rswap->Dredeemlen,rstr);
                 }
                 rswap->values[i] = value = LP_value_extract(txobj,1);
+                if ( (symbol= jstr(txobj,"src")) != 0 )
+                {
+                    safecopy(rswap->src,symbol,sizeof(rswap->src));
+                    if ( rswap->iambob >= 0 )
+                    {
+                        if ( rswap->iambob > 0 )
+                            safecopy(rswap->bobcoin,symbol,sizeof(rswap->bobcoin));
+                        else safecopy(rswap->alicecoin,symbol,sizeof(rswap->alicecoin));
+                    }
+                }
+                if ( (symbol= jstr(txobj,"dest")) != 0 )
+                {
+                    safecopy(rswap->dest,symbol,sizeof(rswap->dest));
+                    if ( rswap->iambob >= 0 )
+                    {
+                        if ( rswap->iambob == 0 )
+                            safecopy(rswap->bobcoin,symbol,sizeof(rswap->bobcoin));
+                        else safecopy(rswap->alicecoin,symbol,sizeof(rswap->alicecoin));
+                    }
+                }
                 if ( (symbol= jstr(txobj,"coin")) != 0 )
                 {
                     if ( i == BASILISK_ALICESPEND || i == BASILISK_BOBPAYMENT || i == BASILISK_BOBDEPOSIT || i == BASILISK_BOBREFUND || i == BASILISK_BOBRECLAIM || i == BASILISK_ALICECLAIM )
