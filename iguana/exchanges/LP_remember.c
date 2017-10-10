@@ -735,63 +735,21 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
     return(rswap->finishedflag);
 }
 
-/*
-if ( rswap.txbytes[BASILISK_ALICESPEND] != 0 )
+void LP_txbytes_update(char *symbol,char *name,char *txbytes,bits256 *txidp,bits256 *ptr,int32_t *flagp)
 {
-    rswap.txids[BASILISK_ALICESPEND] = LP_broadcast("alicespend",rswap.bobcoin,rswap.txbytes[BASILISK_ALICESPEND],zero);
-    if ( bits256_nonz(rswap.txids[BASILISK_ALICESPEND]) != 0 ) // tested
+    bits256 zero;
+    memset(zero.bytes,0,sizeof(zero));
+    if ( txbytes != 0 )
     {
-        rswap.sentflags[BASILISK_ALICESPEND] = 1;
-        rswap.paymentspent = rswap.txids[BASILISK_ALICESPEND];
-    }
-}
-if ( rswap.txbytes[BASILISK_ALICECLAIM] != 0 )
-{
-    rswap.txids[BASILISK_ALICECLAIM] = LP_broadcast("aliceclaim",rswap.bobcoin,rswap.txbytes[BASILISK_ALICECLAIM],zero);
-    if ( bits256_nonz(rswap.txids[BASILISK_ALICECLAIM]) != 0 ) // tested
-    {
-        rswap.sentflags[BASILISK_ALICECLAIM] = 1;
-        rswap.depositspent = rswap.txids[BASILISK_ALICECLAIM];
-    }
-}
-if ( rswap.txbytes[BASILISK_ALICERECLAIM] != 0 )
-{
-    rswap.txids[BASILISK_ALICERECLAIM] = LP_broadcast("alicereclaim",rswap.alicecoin,rswap.txbytes[BASILISK_ALICERECLAIM],zero);
-    if ( bits256_nonz(rswap.txids[BASILISK_ALICERECLAIM]) != 0 ) // tested
-    {
-        rswap.sentflags[BASILISK_ALICERECLAIM] = 1;
-        rswap.Apaymentspent = rswap.txids[BASILISK_ALICERECLAIM];
-    }
-}
-if ( rswap.txbytes[BASILISK_BOBSPEND] != 0 )
-{
-    rswap.txids[BASILISK_BOBSPEND] = LP_broadcast("bobspend",rswap.alicecoin,rswap.txbytes[BASILISK_BOBSPEND],zero);
-    if ( bits256_nonz(rswap.txids[BASILISK_BOBSPEND]) != 0 ) // tested
-    {
-        rswap.sentflags[BASILISK_BOBSPEND] = 1;
-        rswap.Apaymentspent = rswap.txids[BASILISK_BOBSPEND];
-    }
-}
-if ( rswap.txbytes[BASILISK_BOBRECLAIM] != 0 )
-{
-    rswap.txids[BASILISK_BOBRECLAIM] = LP_broadcast("bobreclaim",rswap.bobcoin,rswap.txbytes[BASILISK_BOBRECLAIM],zero);
-    if ( bits256_nonz(rswap.txids[BASILISK_BOBRECLAIM]) != 0 ) // tested
-    {
-        rswap.sentflags[BASILISK_BOBRECLAIM] = 1;
-        rswap.paymentspent = rswap.txids[BASILISK_BOBRECLAIM];
-    }
-}
-{
-    if ( txbytes[BASILISK_BOBREFUND] != 0 )
-    {
-        txids[BASILISK_BOBREFUND] = LP_broadcast("bobrefund",bobcoin,txbytes[BASILISK_BOBREFUND],zero);
-        if ( bits256_nonz(txids[BASILISK_BOBREFUND]) != 0 ) // tested
+        *txidp = LP_broadcast(name,symbol,txbytes,zero);
+        if ( bits256_nonz(*txidp) != 0 )
         {
-            sentflags[BASILISK_BOBREFUND] = 1;
-            depositspent = txids[BASILISK_BOBREFUND];
+            *flagp = 1;
+            if ( ptr != 0 )
+                *ptr = *txidp;
         }
     }
-}*/
+}
 
 int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi)
 {
@@ -911,7 +869,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                 printf("alicespend.(%s)\n",rswap.txbytes[BASILISK_ALICESPEND]);
                         }
                     }
-                    if ( rswap.txbytes[BASILISK_ALICESPEND] != 0 )
+                    LP_txbytes_update("alicespend",rswap.bobcoin,rswap.txbytes[BASILISK_ALICESPEND],&rswap.txids[BASILISK_ALICESPEND],&rswap.paymentspent,&rswap.sentflags[BASILISK_ALICESPEND]);
+                    /*if ( rswap.txbytes[BASILISK_ALICESPEND] != 0 )
                     {
                         rswap.txids[BASILISK_ALICESPEND] = LP_broadcast("alicespend",rswap.bobcoin,rswap.txbytes[BASILISK_ALICESPEND],zero);
                         if ( bits256_nonz(rswap.txids[BASILISK_ALICESPEND]) != 0 ) // tested
@@ -919,7 +878,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             rswap.sentflags[BASILISK_ALICESPEND] = 1;
                             rswap.paymentspent = rswap.txids[BASILISK_ALICESPEND];
                         }
-                    }
+                    }*/
                 }
             }
             if ( rswap.sentflags[BASILISK_ALICECLAIM] == 0 && rswap.sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(rswap.txids[BASILISK_BOBDEPOSIT]) != 0 && bits256_nonz(rswap.depositspent) == 0 )
@@ -943,7 +902,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             }
                         }
                     }
-                    if ( rswap.txbytes[BASILISK_ALICECLAIM] != 0 )
+                    LP_txbytes_update("aliceclaim",rswap.bobcoin,rswap.txbytes[BASILISK_ALICECLAIM],&rswap.txids[BASILISK_ALICECLAIM],&rswap.depositspent,&rswap.sentflags[BASILISK_ALICECLAIM]);
+                    /*if ( rswap.txbytes[BASILISK_ALICECLAIM] != 0 )
                     {
                         rswap.txids[BASILISK_ALICECLAIM] = LP_broadcast("aliceclaim",rswap.bobcoin,rswap.txbytes[BASILISK_ALICECLAIM],zero);
                         if ( bits256_nonz(rswap.txids[BASILISK_ALICECLAIM]) != 0 ) // tested
@@ -951,7 +911,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             rswap.sentflags[BASILISK_ALICECLAIM] = 1;
                             rswap.depositspent = rswap.txids[BASILISK_ALICECLAIM];
                         }
-                    }
+                    }*/
                 } else printf("now %u before expiration %u\n",(uint32_t)time(NULL),rswap.expiration);
             }
             if ( rswap.sentflags[BASILISK_ALICEPAYMENT] != 0 && bits256_nonz(rswap.Apaymentspent) == 0 && rswap.sentflags[BASILISK_ALICECLAIM] == 0 )
@@ -965,7 +925,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             printf("privBn.(%s) alicereclaim.(%s)\n",bits256_str(str,rswap.privBn),rswap.txbytes[BASILISK_ALICERECLAIM]);
                     }
                 }
-                if ( rswap.txbytes[BASILISK_ALICERECLAIM] != 0 )
+                LP_txbytes_update("alicereclaim",rswap.alicecoin,rswap.txbytes[BASILISK_ALICERECLAIM],&rswap.txids[BASILISK_ALICERECLAIM],&rswap.Apaymentspent,&rswap.sentflags[BASILISK_ALICERECLAIM]);
+                /*if ( rswap.txbytes[BASILISK_ALICERECLAIM] != 0 )
                 {
                     rswap.txids[BASILISK_ALICERECLAIM] = LP_broadcast("alicereclaim",rswap.alicecoin,rswap.txbytes[BASILISK_ALICERECLAIM],zero);
                     if ( bits256_nonz(rswap.txids[BASILISK_ALICERECLAIM]) != 0 ) // tested
@@ -973,7 +934,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         rswap.sentflags[BASILISK_ALICERECLAIM] = 1;
                         rswap.Apaymentspent = rswap.txids[BASILISK_ALICERECLAIM];
                     }
-                }
+                }*/
             }
         }
         else if ( rswap.iambob == 1 )
@@ -995,7 +956,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                 printf("bobspend.(%s)\n",rswap.txbytes[BASILISK_BOBSPEND]);
                         }
                     }
-                    if ( rswap.txbytes[BASILISK_BOBSPEND] != 0 )
+                    LP_txbytes_update("bobspend",rswap.alicecoin,rswap.txbytes[BASILISK_BOBSPEND],&rswap.txids[BASILISK_BOBSPEND],&rswap.Apaymentspent,&rswap.sentflags[BASILISK_BOBSPEND]);
+                    /*if ( rswap.txbytes[BASILISK_BOBSPEND] != 0 )
                     {
                         rswap.txids[BASILISK_BOBSPEND] = LP_broadcast("bobspend",rswap.alicecoin,rswap.txbytes[BASILISK_BOBSPEND],zero);
                         if ( bits256_nonz(rswap.txids[BASILISK_BOBSPEND]) != 0 ) // tested
@@ -1003,7 +965,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             rswap.sentflags[BASILISK_BOBSPEND] = 1;
                             rswap.Apaymentspent = rswap.txids[BASILISK_BOBSPEND];
                         }
-                    }
+                    }*/
                 }
             }
             if ( rswap.sentflags[BASILISK_BOBRECLAIM] == 0 && rswap.sentflags[BASILISK_BOBPAYMENT] != 0 && bits256_nonz(rswap.txids[BASILISK_BOBPAYMENT]) != 0 && time(NULL) > rswap.expiration && bits256_nonz(rswap.paymentspent) == 0 )
@@ -1024,7 +986,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         }
                     }
                 }
-                if ( rswap.txbytes[BASILISK_BOBRECLAIM] != 0 )
+                LP_txbytes_update("bobreclaim",rswap.bobcoin,rswap.txbytes[BASILISK_BOBRECLAIM],&rswap.txids[BASILISK_BOBRECLAIM],&rswap.paymentspent,&rswap.sentflags[BASILISK_BOBRECLAIM]);
+                /*if ( rswap.txbytes[BASILISK_BOBRECLAIM] != 0 )
                 {
                     rswap.txids[BASILISK_BOBRECLAIM] = LP_broadcast("bobreclaim",rswap.bobcoin,rswap.txbytes[BASILISK_BOBRECLAIM],zero);
                     if ( bits256_nonz(rswap.txids[BASILISK_BOBRECLAIM]) != 0 ) // tested
@@ -1032,7 +995,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         rswap.sentflags[BASILISK_BOBRECLAIM] = 1;
                         rswap.paymentspent = rswap.txids[BASILISK_BOBRECLAIM];
                     }
-                }
+                }*/
             }
             if ( rswap.sentflags[BASILISK_BOBREFUND] == 0 && rswap.sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(rswap.txids[BASILISK_BOBDEPOSIT]) != 0 && bits256_nonz(rswap.depositspent) == 0 )
             {
@@ -1048,7 +1011,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         if ( (rswap.txbytes[BASILISK_BOBREFUND]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"bobrefund",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,1,rswap.expiration,&rswap.values[BASILISK_BOBREFUND],0,0,rswap.bobdepositaddr,1)) != 0 )
                             printf("pubB1.(%s) bobrefund.(%s)\n",bits256_str(str,rswap.pubB1),rswap.txbytes[BASILISK_BOBREFUND]);
                     }
-                    if ( rswap.txbytes[BASILISK_BOBREFUND] != 0 )
+                    LP_txbytes_update("bobrefund",rswap.bobcoin,rswap.txbytes[BASILISK_BOBREFUND],&rswap.txids[BASILISK_BOBREFUND],&rswap.depositspent,&rswap.sentflags[BASILISK_BOBREFUND]);
+                    /*if ( rswap.txbytes[BASILISK_BOBREFUND] != 0 )
                     {
                         rswap.txids[BASILISK_BOBREFUND] = LP_broadcast("bobrefund",rswap.bobcoin,rswap.txbytes[BASILISK_BOBREFUND],zero);
                         if ( bits256_nonz(rswap.txids[BASILISK_BOBREFUND]) != 0 ) // tested
@@ -1056,7 +1020,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             rswap.sentflags[BASILISK_BOBREFUND] = 1;
                             rswap.depositspent = rswap.txids[BASILISK_BOBREFUND];
                         }
-                    }
+                    }*/
                 } else printf("bobrefund's time %u vs expiration %u\n",(uint32_t)time(NULL),rswap.expiration);
             }
         }
