@@ -1046,8 +1046,10 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
     array = cJSON_CreateArray();
     if ( origrequestid != 0 && origquoteid != 0 )
     {
+        printf("orig req.%u q.%u\n",origrequestid,origquoteid);
         if ( (item= basilisk_remember(KMDtotals,BTCtotals,origrequestid,origquoteid)) != 0 )
             jaddi(array,item);
+        printf("got.(%s)\n",jprint(item,0));
     }
     else
     {
@@ -1120,6 +1122,7 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
     char *liststr,*retstr = 0; cJSON *retjson,*array,*item; int32_t i,n;
     if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
     {
+        printf("swapentry.(%s)\n",liststr);
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
         {
             if ( (array= jarray(&n,retjson,"swaps")) != 0 )
