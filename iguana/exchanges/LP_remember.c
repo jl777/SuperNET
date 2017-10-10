@@ -724,6 +724,14 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
         } else if ( 0 && rswap->finishedflag == 0 )
             printf("%s not finished\n",fname);
     }
+    if ( rswap->bobcoin[0] == 0 )
+        strcpy(rswap->bobcoin,rswap->src);
+    if ( rswap->alicecoin[0] == 0 )
+        strcpy(rswap->alicecoin,rswap->dest);
+    if ( rswap->src[0] == 0 )
+        strcpy(rswap->src,rswap->bobcoin);
+    if ( rswap->dest[0] == 0 )
+        strcpy(rswap->dest,rswap->alicecoin);
     return(rswap->finishedflag);
 }
 
