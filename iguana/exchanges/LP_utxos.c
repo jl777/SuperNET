@@ -36,6 +36,20 @@ int32_t LP_isavailable(struct LP_utxoinfo *utxo)
 
 int32_t LP_isunspent(struct LP_utxoinfo *utxo)
 {
+    struct LP_address_utxo *up; struct _LP_utxoinfo u; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(utxo->coin)) == 0 )
+        return(0);
+    if ( (up= LP_address_utxofind(coin,utxo->coinaddr,utxo->payment.txid,utxo->payment.vout)) != 0 && up->spendheight > 0 )
+    {
+        utxo->T.spentflag = up->spendheight;
+        return(0);
+    }
+    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+    if ( (up= LP_address_utxofind(coin,utxo->coinaddr,u.txid,u.vout)) != 0 && up->spendheight > 0 )
+    {
+        utxo->T.spentflag = up->spendheight;
+        return(0);
+    }
     if ( utxo != 0 && utxo->T.spentflag == 0 && LP_isavailable(utxo) > 0 )
         return(1);
     else return(0);
