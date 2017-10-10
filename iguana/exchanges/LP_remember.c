@@ -1044,21 +1044,26 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
     //,statebits; int32_t optionduration; struct basilisk_request R; bits256 privkey;
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
-    sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
-    if ( (fp= fopen(fname,"rb")) != 0 )
+    if ( origrequestid != 0 && origquoteid != 0 )
     {
-        //struct basilisk_swap *swap;
-        int32_t flag = 0;
-        while ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
+        if ( (item= basilisk_remember(KMDtotals,BTCtotals,origrequestid,origquoteid)) != 0 )
+            jaddi(array,item);
+    }
+    else
+    {
+        sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
+        if ( (fp= fopen(fname,"rb")) != 0 )
         {
-            flag = 0;
-            for (i=0; i<G.LP_numskips; i++)
+            //struct basilisk_swap *swap;
+            int32_t flag = 0;
+            while ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
             {
-                r = (uint32_t)(G.LP_skipstatus[i] >> 32);
-                q = (uint32_t)G.LP_skipstatus[i];
-                if ( r == requestid && q == quoteid )
+                flag = 0;
+                for (i=0; i<G.LP_numskips; i++)
                 {
-                    if ( r != origrequestid || q != origquoteid )
+                    r = (uint32_t)(G.LP_skipstatus[i] >> 32);
+                    q = (uint32_t)G.LP_skipstatus[i];
+                    if ( r == requestid && q == quoteid )
                     {
                         item = cJSON_CreateObject();
                         jaddstr(item,"status","realtime");
@@ -1066,21 +1071,17 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
                         jaddnum(item,"quoteid",q);
                         jaddi(array,item);
                         flag = 1;
+                        break;
                     }
-                    break;
                 }
-            }
-            if ( flag == 0 )
-            {
-                if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+                if ( flag == 0 )
                 {
-                    jaddi(array,item);
-                    //if ( (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
-                    //    break;
+                    if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+                        jaddi(array,item);
                 }
             }
+            fclose(fp);
         }
-        fclose(fp);
     }
     jaddstr(retjson,"result","success");
     jadd(retjson,"swaps",array);
