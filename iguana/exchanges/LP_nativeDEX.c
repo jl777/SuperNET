@@ -21,6 +21,7 @@
 //
 
 // SPV at tx level and limit SPV proofing
+
 // stats, fix pricearray
 // sign packets
 // dPoW security

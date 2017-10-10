@@ -302,9 +302,37 @@ bits256 validate_merkle(int32_t pos,bits256 txid,cJSON *proofarray,int32_t proof
     return(hash);
 }
 
+int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256 txid,int32_t height)
+{
+    cJSON *merkobj,*merkles,*hdrobj; bits256 roothash,merkleroot; int32_t m,SPV = 0;
+    if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
+    {
+        char str[65],str2[65],str3[65];
+        SPV = -1;
+        memset(roothash.bytes,0,sizeof(roothash));
+        if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 )
+        {
+            roothash = validate_merkle(jint(merkobj,"pos"),txid,merkles,m);
+            if ( (hdrobj= electrum_getheader(coin->symbol,ep,&hdrobj,height)) != 0 )
+            {
+                merkleroot = jbits256(hdrobj,"merkle_root");
+                if ( bits256_cmp(merkleroot,roothash) == 0 )
+                {
+                    SPV = height;
+                    //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
+                }
+                else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
+                free_json(hdrobj);
+            }
+        }
+        free_json(merkobj);
+    }
+    return(SPV);
+}
+
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
-    cJSON *array,*item,*merkobj,*merkles,*hdrobj; int32_t n,m; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; bits256 merkleroot,roothash; struct electrum_info *ep,*backupep=0;
+    cJSON *array,*item; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct electrum_info *ep,*backupep=0;
     array = cJSON_CreateArray();
     if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
@@ -321,30 +349,8 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
             {
                 if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
-                    if ( ep != 0 && up->SPV == 0 && up->U.height > 0 )
-                    {
-                        if ( (merkobj= electrum_getmerkle(coin->symbol,backupep,&merkobj,up->U.txid,up->U.height)) != 0 )
-                        {
-                            char str[65],str2[65],str3[65];
-                            memset(roothash.bytes,0,sizeof(roothash));
-                            if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 )
-                            {
-                                roothash = validate_merkle(jint(merkobj,"pos"),up->U.txid,merkles,m);
-                                if ( (hdrobj= electrum_getheader(coin->symbol,backupep,&hdrobj,up->U.height)) != 0 )
-                                {
-                                    merkleroot = jbits256(hdrobj,"merkle_root");
-                                    if ( bits256_cmp(merkleroot,roothash) == 0 )
-                                    {
-                                        up->SPV = up->U.height;
-                                        //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
-                                    }
-                                    else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
-                                    free_json(hdrobj);
-                                }
-                            }
-                            free_json(merkobj);
-                        }
-                    }
+                    if ( backupep != 0 && up->SPV == 0 )
+                        up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
                     jaddi(array,LP_address_item(coin,up,electrumret));
                     n++;
                     total += up->U.value;
