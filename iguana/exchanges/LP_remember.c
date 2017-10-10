@@ -334,7 +334,6 @@ int32_t basilisk_isbobcoin(int32_t iambob,int32_t ind)
     }
 }
 
-// add blocktrail presence requirement for BTC
 int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
 {
     int32_t i,n = 0;
@@ -615,7 +614,8 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
                 }
             }
         }
-        rswap->origfinishedflag = rswap->finishedflag = 1;
+        rswap->origfinishedflag = basilisk_swap_isfinished(rswap->iambob,rswap->txids,rswap->sentflags,rswap->paymentspent,rswap->Apaymentspent,rswap->depositspent);
+        rswap->finishedflag = rswap->origfinishedflag;
         free(fstr);
     }
     return(rswap->iambob);
@@ -752,42 +752,42 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     bob = LP_coinfind(rswap.bobcoin);
     rswap.Atxfee = LP_txfeecalc(alice,rswap.Atxfee);
     rswap.Btxfee = LP_txfeecalc(bob,rswap.Btxfee);
-    //printf("%s %.8f txfee, %s %.8f txfee\n",alicecoin,dstr(Atxfee),bobcoin,dstr(Btxfee));
-    //printf("privAm.(%s) %p/%p\n",bits256_str(str,privAm),Adest,AAdest);
-    //printf("privBn.(%s) %p/%p\n",bits256_str(str,privBn),Bdest,ABdest);
+    if ( rswap.iambob == 0 )
+    {
+        if ( alice != 0 )
+        {
+            bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
+            AAdest = rswap.Adestaddr;
+        }
+        if ( (bob= LP_coinfind(rswap.bobcoin)) != 0 )
+        {
+            bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
+            Adest = rswap.destaddr;
+        }
+    }
+    else
+    {
+        if ( bob != 0 )
+        {
+            bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
+            Bdest = rswap.destaddr;
+        }
+        if ( (alice= LP_coinfind(rswap.alicecoin)) != 0 )
+        {
+            bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
+            ABdest = rswap.Adestaddr;
+        }
+    }
+    if ( bob == 0 || alice == 0 )
+    {
+        printf("Bob.%p is null or Alice.%p is null\n",bob,alice);
+        return(cJSON_Parse("{\"error\":\"null bob or alice coin\"}"));
+    }
+    printf("iambob.%d finishedflag.%d %s %.8f txfee, %s %.8f txfee\n",rswap.iambob,rswap.finishedflag,rswap.alicecoin,dstr(rswap.Atxfee),rswap.bobcoin,dstr(rswap.Btxfee));
+    printf("privAm.(%s) %p/%p\n",bits256_str(str,rswap.privAm),Adest,AAdest);
+    printf("privBn.(%s) %p/%p\n",bits256_str(str,rswap.privBn),Bdest,ABdest);
     if ( rswap.finishedflag == 0 && rswap.bobcoin[0] != 0 && rswap.alicecoin[0] != 0 )
     {
-        if ( rswap.iambob == 0 )
-        {
-            if ( alice != 0 )
-            {
-                bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
-                AAdest = rswap.Adestaddr;
-            }
-            if ( (bob= LP_coinfind(rswap.bobcoin)) != 0 )
-            {
-                bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
-                Adest = rswap.destaddr;
-            }
-        }
-        else
-        {
-            if ( bob != 0 )
-            {
-                bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
-                Bdest = rswap.destaddr;
-            }
-            if ( (alice= LP_coinfind(rswap.alicecoin)) != 0 )
-            {
-                bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
-                ABdest = rswap.Adestaddr;
-            }
-        }
-        if ( bob == 0 || alice == 0 )
-        {
-            printf("Bob.%p is null or Alice.%p is null\n",bob,alice);
-            return(0);
-        }
         if ( alice->inactive != 0 || bob->inactive != 0 )
         {
             printf("Alice.%s inactive.%u or Bob.%s inactive.%u\n",rswap.alicecoin,alice->inactive,rswap.bobcoin,bob->inactive);
