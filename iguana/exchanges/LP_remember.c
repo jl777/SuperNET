@@ -1126,7 +1126,7 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    //printf("(%s) check r%u/q%u\n",jprint(item,0),juint(item,"requestid"),juint(item,"quoteid"));
+                    printf("(%s) check r%u/q%u\n",jprint(item,0),juint(item,"requestid"),juint(item,"quoteid"));
                     if ( juint(item,"requestid") == requestid && juint(item,"quoteid") == quoteid )
                     {
                         retstr = jprint(item,0);
