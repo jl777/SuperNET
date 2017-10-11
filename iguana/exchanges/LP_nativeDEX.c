@@ -21,7 +21,7 @@
 //
 
 // SPV at tx level and limit SPV proofing
-
+// coins file
 // stats, fix pricearray
 // sign packets
 // dPoW security
@@ -653,6 +653,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_messagemutex);
     portable_mutex_init(&LP_portfoliomutex);
     portable_mutex_init(&LP_butxomutex);
+#ifndef _WIN32
     if ( system("curl -s4 checkip.amazonaws.com > DB/myipaddr") == 0 )
     {
         char ipfname[64];
@@ -665,6 +666,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             strcpy(LP_myipaddr,myipaddr);
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
+#else
+    myipaddr = clonestr("127.0.0.1");
+#endif
     if ( IAMLP != 0 )
     {
         pubsock = -1;
