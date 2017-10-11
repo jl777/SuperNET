@@ -700,7 +700,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     LP_mybussock = LP_coinbus(mybusport);
     //LP_deadman_switch = (uint32_t)time(NULL);
     printf("canbind.%d my command address is (%s) pullsock.%d pullport.%u\n",LP_canbind,pushaddr,LP_mypullsock,mypullport);
-    printf("initcoins\n");
     if ( (coinsjson= jobj(argjson,"coins")) == 0 )
     {
         if ( (coins_str= OS_filestr(&filesize,"coins.json")) != 0 )
