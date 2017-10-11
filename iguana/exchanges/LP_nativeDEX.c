@@ -703,7 +703,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     printf("initcoins\n");
     if ( (coinsjson= jobj(argjson,"coins")) == 0 )
     {
-        if ( (coins_str= OS_filestr(&filesize,"coins")) != 0 )
+        if ( (coins_str= OS_filestr(&filesize,"coins.json")) != 0 )
         {
             unstringify(coins_str);
             printf("UNSTRINGIFIED.(%s)\n",coins_str);
