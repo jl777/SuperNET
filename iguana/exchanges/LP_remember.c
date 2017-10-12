@@ -264,6 +264,7 @@ bits256 basilisk_swap_spendupdate(char *symbol,char *spentaddr,int32_t *sentflag
         if ( bits256_nonz(spendtxid) != 0 )
         {
             sentflags[utxoind] = 1;
+            printf("utxoind.%d Alice.(%s) Bob.(%s)\n",utxoind,aliceaddr,bobaddr);
             if ( aliceaddr != 0 && strcmp(destaddr,aliceaddr) == 0 )
             {
                 printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
@@ -1089,10 +1090,10 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
     array = cJSON_CreateArray();
     if ( origrequestid != 0 && origquoteid != 0 )
     {
-        printf("orig req.%u q.%u\n",origrequestid,origquoteid);
+        //printf("orig req.%u q.%u\n",origrequestid,origquoteid);
         if ( (item= basilisk_remember(KMDtotals,BTCtotals,origrequestid,origquoteid)) != 0 )
             jaddi(array,item);
-        printf("got.(%s)\n",jprint(item,0));
+        //printf("got.(%s)\n",jprint(item,0));
     }
     else
     {
