@@ -449,6 +449,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **u
         if ( (backupep= ep->prev) == 0 )
             backupep = ep;
     }
+    printf("LP_nearest_utxovalue %s utxos[%d]\n",coin->symbol,n);
     for (i=0; i<n; i++)
     {
         if ( (up= utxos[i]) != 0 )
@@ -477,6 +478,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **u
             }
         }
     }
+    printf("return mini.%d\n",mini);
     return(mini);
 }
 
