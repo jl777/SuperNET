@@ -1089,10 +1089,10 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
     array = cJSON_CreateArray();
     if ( origrequestid != 0 && origquoteid != 0 )
     {
-        //printf("orig req.%u q.%u\n",origrequestid,origquoteid);
+        printf("orig req.%u q.%u\n",origrequestid,origquoteid);
         if ( (item= basilisk_remember(KMDtotals,BTCtotals,origrequestid,origquoteid)) != 0 )
             jaddi(array,item);
-        //printf("got.(%s)\n",jprint(item,0));
+        printf("got.(%s)\n",jprint(item,0));
     }
     else
     {
