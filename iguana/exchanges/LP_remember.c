@@ -735,7 +735,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
     return(rswap->finishedflag);
 }
 
-void LP_txbytes_update(char *symbol,char *name,char *txbytes,bits256 *txidp,bits256 *ptr,int32_t *flagp)
+void LP_txbytes_update(char *name,char *symbol,char *txbytes,bits256 *txidp,bits256 *ptr,int32_t *flagp)
 {
     bits256 zero;
     memset(zero.bytes,0,sizeof(zero));
