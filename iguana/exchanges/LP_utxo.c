@@ -157,6 +157,7 @@ int32_t LP_address_utxo_ptrs(int32_t iambob,struct LP_address_utxo **utxos,int32
     portable_mutex_lock(&LP_utxomutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
+        char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout);
         if ( up->spendheight <= 0 )
         {
             if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
