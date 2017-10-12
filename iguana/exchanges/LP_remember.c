@@ -634,7 +634,7 @@ void LP_refht_update(char *symbol,bits256 txid)
                 if ( coin->firstscanht == 0 || ht < coin->firstscanht )
                     coin->firstscanht = coin->lastscanht = ht;
                 coin->firstrefht = ht;
-                printf(">>>>>>>>. 1st refht %s <- %d, scan %d %d\n",coin->symbol,ht,coin->firstscanht,coin->lastscanht);
+                char str[65]; printf(">>>>>>>>. 1st refht %s %s <- %d, scan %d %d\n",coin->symbol,bits256_str(str,txid),ht,coin->firstscanht,coin->lastscanht);
             }
         }
     }
