@@ -771,11 +771,12 @@ int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi
     if ( rswap->sentflags[txi] == 0 && bits256_nonz(rswap->txids[txi]) != 0 )
     {
         printf("[%s] txbytes.%p Apayment.%s\n",txnames[txi],rswap->txbytes[txi],bits256_str(str,rswap->txids[txi]));
-        if ( rswap->txbytes[txi] != 0 )
+        /*if ( rswap->txbytes[txi] != 0 )
             rswap->sentflags[txi] = 1;
-        else if ( (sentobj= LP_gettx(symbol,rswap->txids[txi])) != 0 )
+        else*/ if ( (sentobj= LP_gettx(symbol,rswap->txids[txi])) != 0 )
         {
             rswap->sentflags[txi] = 1;
+            printf("CHECKTX.(%s)\n",jprint(sentobj,0));
             free_json(sentobj);
             LP_refht_update(symbol,rswap->txids[txi]);
             return(1);
