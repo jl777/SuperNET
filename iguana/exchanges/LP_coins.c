@@ -74,7 +74,7 @@ uint16_t LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
             if ( str != 0 )
             {
                 port = atoi(str);
-                printf("RPCPORT.%u\n",port);
+                //printf("RPCPORT.%u\n",port);
                 free(str);
             }
         }

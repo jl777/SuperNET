@@ -131,7 +131,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             if ( coin->electrum == 0 )
             {
                 retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
-                if ( strcmp("KMD",coin->symbol) == 0 )
+                if ( 0 && strcmp("KMD",coin->symbol) == 0 )
                     printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,params,retstr);
                 if ( retstr != 0 && retstr[0] != 0 )
                 {
@@ -256,11 +256,6 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     {
         sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
         retjson = bitcoin_json(coin,"getrawtransaction",buf);
-        if ( strcmp(symbol,"CHIPS") != 0 && strcmp(symbol,"BTC") != 0 )
-        {
-        //if ( jobj(retjson,"vin") == 0 )
-            printf("%s getrawtransaction %s -> %s\n",symbol,buf,jprint(retjson,0));
-        }
         return(retjson);
     }
     else
