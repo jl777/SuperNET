@@ -37,8 +37,18 @@ int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid)
 
 bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxid)
 {
-    char *retstr; bits256 txid; cJSON *retjson,*errorobj; int32_t i,sentflag = 0;
+    char *retstr; bits256 txid; uint8_t *ptr; cJSON *retjson,*errorobj; int32_t i,len,sentflag = 0;
     memset(&txid,0,sizeof(txid));
+    if ( txbytes == 0 || txbytes[0] == 0 )
+        return(txid);
+    if ( bits256_nonz(expectedtxid) == 0 )
+    {
+        len = (int32_t)strlen(txbytes) >> 1;
+        ptr = malloc(len);
+        decode_hex(ptr,len,txbytes);
+        expectedtxid = bits256_doublesha256(0,ptr,len);
+        free(ptr);
+    }
     for (i=0; i<2; i++)
     {
         char str[65]; printf("LP_broadcast.%d %s %s i.%d sentflag.%d\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag);
@@ -46,6 +56,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
             sentflag = 1;
         if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
         {
+            printf("retstr.(%s)\n",retstr);
             if ( is_hexstr(retstr,0) == 64 )
             {
                 decode_hex(txid.bytes,32,retstr);
