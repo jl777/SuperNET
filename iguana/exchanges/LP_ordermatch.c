@@ -851,7 +851,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         memset(&zero,0,sizeof(zero));
                         msg2 = clonestr(msg);
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg);
-                        LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg2);
+                        //LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg2);
                         //LP_butxo_swapfields_set(butxo);
                         printf("return after RESERVED\n");
                         return(2);
