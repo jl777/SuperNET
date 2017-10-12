@@ -726,7 +726,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,coin->wiftype);
         bitcoin_addr2rmd160(coin->taddr,&tmptype,G.LP_myrmd160,coin->smartaddr);
         LP_privkeyadd(privkey,G.LP_myrmd160);
-        if ( 1 && (coin->pubtype != 60 || strcmp(coin->symbol,"KMD") == 0) )
+        if ( 0 && (coin->pubtype != 60 || strcmp(coin->symbol,"KMD") == 0) )
             printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
         if ( G.counter++ == 0 )
         {
