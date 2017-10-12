@@ -660,7 +660,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         jaddstr(item,"userdata",hexstr);
     }
     jaddbits256(item,"txid",utxotxid);
-    jaddnum(item,"vout",vout);
+    jaddnum(item,"vout",utxovout);
     bitcoin_address(tmpaddr,taddr,pubtype,pubkey33,33);
     bitcoin_addr2rmd160(taddr,&addrtype,rmd160,tmpaddr);
     if ( redeemlen != 0 )
