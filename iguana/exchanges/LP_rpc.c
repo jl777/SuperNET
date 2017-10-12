@@ -254,7 +254,9 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     if ( coin->electrum == 0 )
     {
         sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
-        return(bitcoin_json(coin,"getrawtransaction",buf));
+        retjson = bitcoin_json(coin,"getrawtransaction",buf);
+        printf("%s getrawtransaction %s -> %s\n",symbol,buf,jprint(retjson,0));
+        return(retjson);
     }
     else
     {
