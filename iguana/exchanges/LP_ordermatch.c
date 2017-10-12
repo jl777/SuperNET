@@ -500,24 +500,27 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s\n",dstr(targetval),relvolume,price,dstr(txfee),coinaddr);
             }
             mini = -1;
-            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,utxos,m,targetval)) >= 0 && (double)utxos[mini]->U.value/targetval < LP_MINVOL-1 )
+            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,utxos,m,targetval)) >= 0 )
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
                 targetval2 = (targetval / 8) * 9 + 2*txfee;
                 printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(utxos[mini]->U.value),dstr(targetval),dstr(targetval2),(double)utxos[mini]->U.value/targetval);
-                if ( (mini= LP_nearest_utxovalue(coin,utxos,m,targetval2 * 1.01)) >= 0 )
+                if ( (double)utxos[mini]->U.value/targetval < LP_MINVOL-1 )
                 {
-                    if ( up != 0 && (up2= utxos[mini]) != 0 )
+                    if ( (mini= LP_nearest_utxovalue(coin,utxos,m,targetval2 * 1.01)) >= 0 )
                     {
-                        if ( (utxo= LP_utxoadd(1,coin->symbol,up->U.txid,up->U.vout,up->U.value,up2->U.txid,up2->U.vout,up2->U.value,coinaddr,ap->pubkey,G.gui,0)) != 0 )
+                        if ( up != 0 && (up2= utxos[mini]) != 0 )
                         {
-                            utxo->S.satoshis = targetval;
-                            char str[65],str2[65]; printf("butxo.%p targetval %.8f, found val %.8f %s | targetval2 %.8f val2 %.8f %s\n",utxo,dstr(targetval),dstr(up->U.value),bits256_str(str,utxo->payment.txid),dstr(targetval2),dstr(up2->U.value),bits256_str(str2,utxo->deposit.txid));
-                            return(utxo);
+                            if ( (utxo= LP_utxoadd(1,coin->symbol,up->U.txid,up->U.vout,up->U.value,up2->U.txid,up2->U.vout,up2->U.value,coinaddr,ap->pubkey,G.gui,0)) != 0 )
+                            {
+                                utxo->S.satoshis = targetval;
+                                char str[65],str2[65]; printf("butxo.%p targetval %.8f, found val %.8f %s | targetval2 %.8f val2 %.8f %s\n",utxo,dstr(targetval),dstr(up->U.value),bits256_str(str,utxo->payment.txid),dstr(targetval2),dstr(up2->U.value),bits256_str(str2,utxo->deposit.txid));
+                                return(utxo);
+                            }
                         }
-                    }
-                } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
+                    } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
+                } else printf("failed ratio test %.8f\n",(double)utxos[mini]->U.value/targetval);
             } else if ( targetval != 0 && mini >= 0 )
                 printf("targetval %.8f mini.%d ratio %.8f\n",dstr(targetval),mini,(double)utxos[mini]->U.value/targetval);
         } else printf("no utxos pass LP_address_utxo_ptrs filter\n");
