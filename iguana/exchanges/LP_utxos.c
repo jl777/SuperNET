@@ -768,8 +768,11 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
     initonly = (passphrase != 0);
     memset(privkey.bytes,0,sizeof(privkey));
     memset(pubkey.bytes,0,sizeof(pubkey));
+	printf("Total coins: %d\n", HASH_COUNT(LP_coins));
+	int num_iter = 0;
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
+		printf("LP_privkey_updates [%02d / %02d]\n", num_iter++, HASH_COUNT(LP_coins));
         if ( initonly != 0 )
         {
             coin->counter = 0;
