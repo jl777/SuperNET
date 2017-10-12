@@ -308,7 +308,7 @@ void command_rpcloop(void *myipaddr)
         //if ( LP_mybussock >= 0 )
         //    nonz += LP_sock_check("BUS",ctx,origipaddr,-1,LP_mybussock);
         if ( nonz == 0 )
-            usleep(10000);
+            usleep(10);
     }
 }
 
