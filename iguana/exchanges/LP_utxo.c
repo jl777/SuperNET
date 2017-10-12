@@ -157,6 +157,7 @@ int32_t LP_address_utxo_ptrs(int32_t iambob,struct LP_address_utxo **utxos,int32
     portable_mutex_lock(&LP_utxomutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
+        char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout);
         if ( up->spendheight <= 0 )
         {
             if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
@@ -433,8 +434,6 @@ int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
         v = jint(item,"tx_pos");
         height = jint(item,"height");
         val = j64bits(item,"value");
-        //if ( strcmp(coin->symbol,"LBC") == 0 )
-        //    printf("(%s)\n",jprint(item,0));
         if ( coin->electrum == 0 && (txobj= LP_gettxout(coin->symbol,coinaddr,txid,v)) != 0 )
         {
             value = LP_value_extract(txobj,0);
@@ -671,7 +670,9 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
             if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
             {
                 height = jint(blockobj,"height");
-                char str[65]; printf("%s %s LP_txheight.%d\n",coin->symbol,bits256_str(str,txid),height);
+                //char str[65];
+                //if ( strcmp(coin->symbol,"CHIPS") != 0 && strcmp(coin->symbol,"BTC") != 0 )
+                //    printf("%s %s LP_txheight.%d\n",coin->symbol,bits256_str(str,txid),height);
                 free_json(blockobj);
             } // else printf("%s LP_txheight error (%s)\n",coin->symbol,jprint(txobj,0)); likely just unconfirmed
             free_json(txobj);

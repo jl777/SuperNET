@@ -416,7 +416,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport)
 {
     static uint32_t counter,numpeers;
-    struct iguana_info *coin,*ctmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp; uint32_t now; bits256 zero; int32_t needpings,height,nonz = 0;
+    struct iguana_info *coin,*ctmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp; uint32_t now; bits256 zero; int32_t needpings,j,height,nonz = 0;
     now = (uint32_t)time(NULL);
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
@@ -450,6 +450,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         if ( peer->diduquery == 0 )
         {
             LP_peer_pricesquery(peer);
+            LP_utxos_sync(peer);
             peer->diduquery = now;
         }
         if ( peer->needping != 0 )
@@ -511,12 +512,17 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( (coin->lastscanht % 1000) == 0 )
             printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
-        if ( LP_blockinit(coin,coin->lastscanht) < 0 )
+        for (j=0; j<100; j++)
         {
-            printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
-            continue;
+            if ( LP_blockinit(coin,coin->lastscanht) < 0 )
+            {
+                printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
+                break;
+            }
+            coin->lastscanht++;
         }
-        coin->lastscanht++;
+        if ( j < 100 )
+            continue;
         //LP_getestimatedrate(coin);
         break;
     }

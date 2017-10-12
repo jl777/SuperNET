@@ -742,7 +742,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             userpub = curve25519(userpass,curve25519_basepoint9());
             printf("userpass.(%s)\n",bits256_str(G.USERPASS,userpub));
         }
-        if ( coin->electrum == 0 )
+        if ( coin->electrum == 0 && coin->userpass[0] != 0 )
         {
             LP_listunspent_issue(coin->symbol,coin->smartaddr);
             if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )

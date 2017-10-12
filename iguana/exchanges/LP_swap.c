@@ -177,6 +177,8 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
 int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t i,datalen = 0;
+    for (i=0; i<33; i++)
+        data[datalen++] = swap->persistent_pubkey33[i];
     for (i=0; i<sizeof(swap->deck)/sizeof(swap->deck[0][0]); i++)
         datalen += iguana_rwnum(1,&data[datalen],sizeof(swap->deck[i>>1][i&1]),&swap->deck[i>>1][i&1]);
     return(datalen);
@@ -184,9 +186,14 @@ int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 
 int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    int32_t i,len = 0;
-    if ( datalen == sizeof(swap->otherdeck) )
+    int32_t i,nonz=0,len = 0; uint8_t other33[33];
+    if ( datalen == sizeof(swap->otherdeck)+33 )
     {
+        for (i=0; i<33; i++)
+            if ( (other33[i]= data[len++]) != 0 )
+                nonz++;
+        if ( nonz > 8 )
+            memcpy(swap->persistent_other33,other33,33);
         for (i=0; i<sizeof(swap->otherdeck)/sizeof(swap->otherdeck[0][0]); i++)
             len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
         return(0);
