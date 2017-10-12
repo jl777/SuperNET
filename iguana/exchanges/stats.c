@@ -337,7 +337,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             return(clonestr("{\"error\":\"cant find index7779\"}"));
         else return(filestr);
     }
-    else if ( (filestr= OS_filestr(&filesize,furl)) != 0 )
+    /*else if ( (filestr= OS_filestr(&filesize,furl)) != 0 )
     {
         *jsonflagp = 1;
         for (i=(int32_t)strlen(url)-1; i>0; i--)
@@ -347,7 +347,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             strcpy(filetype,url+i+1);
         //printf("return filetype.(%s) size.%ld\n",filetype,filesize);
         return(filestr);
-    }
+    }*/
     if ( strncmp(&url[i],"/api",strlen("/api")) == 0 )
     {
         *jsonflagp = 1;
