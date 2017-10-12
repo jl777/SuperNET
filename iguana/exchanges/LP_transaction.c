@@ -41,6 +41,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
     memset(&txid,0,sizeof(txid));
     for (i=0; i<2; i++)
     {
+        char str[65]; printf("LP_broadcast.%d %s %s i.%d sentflag.%d\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag);
         if ( sentflag == 0 && LP_gettx_presence(symbol,expectedtxid) != 0 )
             sentflag = 1;
         if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
@@ -63,6 +64,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
                         txid = expectedtxid;
                         sentflag = 1;
                     }
+                    else printf("broadcast error.(%s)\n",retstr);
                 }
                 free_json(retjson);
             }
