@@ -512,7 +512,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 utxos[mini] = 0;
                 targetval2 = (targetval / 8) * 9 + 2*txfee;
                 //printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(utxos[mini]->U.value),dstr(targetval),dstr(targetval2),(double)utxos[mini]->U.value/targetval);
-                if ( (double)utxos[mini]->U.value/targetval < LP_MINVOL-1 )
+                if ( (double)up->U.value/targetval < LP_MINVOL-1 )
                 {
                     if ( (mini= LP_nearest_utxovalue(coin,utxos,m,targetval2 * 1.01)) >= 0 )
                     {
@@ -526,9 +526,9 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                             }
                         }
                     } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
-                } else printf("failed ratio test %.8f\n",(double)utxos[mini]->U.value/targetval);
+                } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
             } else if ( targetval != 0 && mini >= 0 )
-                printf("targetval %.8f mini.%d ratio %.8f\n",dstr(targetval),mini,(double)utxos[mini]->U.value/targetval);
+                printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
         } else printf("no utxos pass LP_address_utxo_ptrs filter\n");
     } else printf("couldnt find %s %s\n",coin->symbol,coinaddr);
     return(0);
