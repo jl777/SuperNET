@@ -51,12 +51,11 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
     }
     for (i=0; i<2; i++)
     {
-        char str[65]; printf("LP_broadcast.%d (%s) %s i.%d sentflag.%d\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag);
+        //char str[65]; printf("LP_broadcast.%d (%s) %s i.%d sentflag.%d\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag);
         if ( sentflag == 0 && LP_gettx_presence(symbol,expectedtxid) != 0 )
             sentflag = 1;
         if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
         {
-            printf("retstr.(%s)\n",retstr);
             if ( is_hexstr(retstr,0) == 64 )
             {
                 decode_hex(txid.bytes,32,retstr);
@@ -79,10 +78,9 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
                 }
                 free_json(retjson);
             }
-            char str[65]; printf("sentflag.%d [%s] %s RETSTR.(%s) %s.%s\n",sentflag,txname,txbytes,retstr,symbol,bits256_str(str,txid));
+            //char str[65]; printf("sentflag.%d [%s] %s RETSTR.(%s) %s.%s\n",sentflag,txname,txbytes,retstr,symbol,bits256_str(str,txid));
             free(retstr);
-        } else if ( sentflag == 0 )
-            printf("null retstr\n");
+        }
         if ( sentflag != 0 )
             break;
         sleep(3);
