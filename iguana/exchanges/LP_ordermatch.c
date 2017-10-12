@@ -451,25 +451,29 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **u
     }
     for (i=0; i<n; i++)
     {
-        if ( (up= utxos[i]) != 0 && up->spendheight == 0 )
+        if ( (up= utxos[i]) != 0 )
         {
-            if ( coin->electrum != 0 )
-            {
-                if (up->SPV == 0 )
-                    up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
-                printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
-                if ( up->SPV < 0 )
-                {
-                    printf("SPV failure for %s %s\n",coin->symbol,bits256_str(str,up->U.txid));
-                    continue;
-                }
-            }
             dist = (up->U.value - targetval);
-            if ( dist >= 0 && dist < mindist )
+            printf("nearest i.%d target %.8f val %.8f dist %.8f mindist %.8f mini.%d spent.%d\n",i,dstr(targetval),dstr(up->U.value),dstr(dist),dstr(mindist),mini,up->spendheight);
+            if (up->spendheight == 0 )
             {
-                printf("(%.8f %.8f %.8f).%d ",dstr(up->U.value),dstr(dist),dstr(mindist),mini);
-                mini = i;
-                mindist = dist;
+                if ( coin->electrum != 0 )
+                {
+                    if (up->SPV == 0 )
+                        up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                    printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
+                    if ( up->SPV < 0 )
+                    {
+                        printf("SPV failure for %s %s\n",coin->symbol,bits256_str(str,up->U.txid));
+                        continue;
+                    }
+                }
+                if ( dist >= 0 && dist < mindist )
+                {
+                    printf("(%.8f %.8f %.8f).%d ",dstr(up->U.value),dstr(dist),dstr(mindist),mini);
+                    mini = i;
+                    mindist = dist;
+                }
             }
         }
     }
