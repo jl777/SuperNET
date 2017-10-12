@@ -152,7 +152,10 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"otherfee\":\"%s\"",bits256_str(str,swap->otherfee.I.actualtxid));
         if ( bits256_nonz(swap->myfee.I.actualtxid) != 0 )
             fprintf(fp,",\"myfee\":\"%s\"",bits256_str(str,swap->myfee.I.actualtxid));
-        fprintf(fp,",\"dest33\":\"");
+        fprintf(fp,",\"other33\":\"");
+        for (i=0; i<33; i++)
+            fprintf(fp,"%02x",swap->persistent_other33[i]);
+        fprintf(fp,"\",\"dest33\":\"");
         for (i=0; i<33; i++)
             fprintf(fp,"%02x",swap->persistent_pubkey33[i]);
         fprintf(fp,"\"}\n");
@@ -463,7 +466,7 @@ struct LP_swap_remember
     uint64_t Atxfee,Btxfee,srcamount,destamount; int64_t values[sizeof(txnames)/sizeof(*txnames)];
     uint32_t requestid,quoteid,plocktime,dlocktime,expiration,state,otherstate;
     int32_t iambob,finishedflag,origfinishedflag,Predeemlen,Dredeemlen,sentflags[sizeof(txnames)/sizeof(*txnames)];
-    uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],pubkey33[33],Predeemscript[1024],Dredeemscript[1024];
+    uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],Predeemscript[1024],Dredeemscript[1024],pubkey33[33],other33[33];
     char src[64],dest[64],destaddr[64],Adestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[64],bobcoin[64],*txbytes[sizeof(txnames)/sizeof(*txnames)];
 };
 
@@ -508,7 +511,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
 
 int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t quoteid)
 {
-    char fname[1024],*fstr,*secretstr,*srcstr,*deststr,*dest33,*txname; long fsize; cJSON *item,*txobj,*array; bits256 privkey; uint32_t r,q; int32_t i,j,n;
+    char fname[1024],*fstr,*secretstr,*srcstr,*deststr,*dest33,*txname; long fsize; cJSON *item,*txobj,*array; bits256 privkey; uint32_t r,q; int32_t i,j,n; uint8_t other33[33];
     memset(rswap,0,sizeof(*rswap));
     rswap->requestid = requestid;
     rswap->quoteid = quoteid;
@@ -535,6 +538,16 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
                 decode_hex(rswap->pubkey33,33,dest33);
                 //for (i=0; i<33; i++)
                 //    printf("%02x",pubkey33[i]);
+                //printf(" <- %s dest33\n",dest33);
+            }
+            if ( (dest33= jstr(item,"other33")) != 0 && strlen(dest33) == 66 )
+            {
+                decode_hex(other33,33,dest33);
+                for (i=0; i<33; i++)
+                    if ( other33[i] != 0 )
+                        break;
+                if ( i < 33 )
+                    memcpy(rswap->other33,other33,33);
                 //printf(" <- %s dest33\n",dest33);
             }
             if ( (rswap->plocktime= juint(item,"plocktime")) == 0 )
