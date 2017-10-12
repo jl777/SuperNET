@@ -81,7 +81,8 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
             }
             char str[65]; printf("sentflag.%d [%s] %s RETSTR.(%s) %s.%s\n",sentflag,txname,txbytes,retstr,symbol,bits256_str(str,txid));
             free(retstr);
-        }
+        } else if ( sentflag == 0 )
+            printf("null retstr\n");
         if ( sentflag != 0 )
             break;
         sleep(3);
