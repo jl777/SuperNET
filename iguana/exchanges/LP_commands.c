@@ -372,8 +372,15 @@ dividends(coin, height, <args>)\n\
     else if ( strcmp(method,"listunspent") == 0 )
     {
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
-            return(jprint(LP_address_utxos(ptr,jstr(argjson,"address"),1),1));
-        else return(clonestr("{\"error\":\"cant find coind\"}"));
+        {
+            char *coinaddr;
+            if ( (coinaddr= jstr(argjson,"address")) != 0 )
+            {
+                if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
+                    LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
+                return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
+            } else return(clonestr("{\"error\":\"no address specified\"}"));
+        } else return(clonestr("{\"error\":\"cant find coind\"}"));
     }
     else if ( strcmp(method,"balance") == 0 )
     {

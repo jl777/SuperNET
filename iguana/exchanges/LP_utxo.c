@@ -433,8 +433,6 @@ int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
         v = jint(item,"tx_pos");
         height = jint(item,"height");
         val = j64bits(item,"value");
-        //if ( strcmp(coin->symbol,"LBC") == 0 )
-        //    printf("(%s)\n",jprint(item,0));
         if ( coin->electrum == 0 && (txobj= LP_gettxout(coin->symbol,coinaddr,txid,v)) != 0 )
         {
             value = LP_value_extract(txobj,0);
