@@ -132,7 +132,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             {
                 retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
                 if ( strcmp("KMD",coin->symbol) == 0 )
-                    printf("%s: %s.%s -> (%s)\n",coin->symbol,method,params,retstr);
+                    printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,params,retstr);
                 if ( retstr != 0 && retstr[0] != 0 )
                 {
                     retjson = cJSON_Parse(retstr);
