@@ -266,21 +266,21 @@ bits256 basilisk_swap_spendupdate(char *symbol,char *spentaddr,int32_t *sentflag
             sentflags[utxoind] = 1;
             if ( aliceaddr != 0 && strcmp(destaddr,aliceaddr) == 0 )
             {
-                //printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[alicespent] = 1;
                 sentflags[bobspent] = 0;
                 txids[alicespent] = spendtxid;
             }
             else if ( bobaddr != 0 && strcmp(destaddr,bobaddr) == 0 )
             {
-                //printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[bobspent] = 1;
                 sentflags[alicespent] = 0;
                 txids[bobspent] = spendtxid;
             }
             else
             {
-                //printf("OTHER dest spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("OTHER dest spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 if ( aliceaddr != 0 )
                 {
                     sentflags[bobspent] = 1;
