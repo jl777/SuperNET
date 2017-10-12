@@ -622,22 +622,30 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
     return(rswap->iambob);
 }
 
-void LP_refht_update(char *symbol,bits256 txid)
+int32_t _LP_refht_update(struct iguana_info *coin,int32_t refht)
 {
-    int32_t ht; struct iguana_info *coin;
+    if ( refht > 0 && (coin->firstrefht == 0 || refht < coin->firstrefht) )
+    {
+        if ( coin->firstscanht == 0 || refht < coin->firstscanht )
+            coin->firstscanht = coin->lastscanht = refht;
+        coin->firstrefht = refht;
+        return(1);
+    }
+    return(0);
+}
+
+int32_t LP_refht_update(char *symbol,bits256 txid)
+{
+    int32_t refht; struct iguana_info *coin;
     if ( (coin= LP_coinfind(symbol)) != 0 ) // && coin->electrum == 0
     {
-        if ( (ht= LP_txheight(coin,txid)) > 0 && ht > 0 )
+        if ( (refht= LP_txheight(coin,txid)) > 0 && refht > 0 )
         {
-            if ( coin->firstrefht == 0 || ht < coin->firstrefht )
-            {
-                if ( coin->firstscanht == 0 || ht < coin->firstscanht )
-                    coin->firstscanht = coin->lastscanht = ht;
-                coin->firstrefht = ht;
-                char str[65]; printf(">>>>>>>>. 1st refht %s %s <- %d, scan %d %d\n",coin->symbol,bits256_str(str,txid),ht,coin->firstscanht,coin->lastscanht);
-            }
+            char str[65]; printf(">>>>>>>>. 1st refht %s %s <- %d, scan %d %d\n",coin->symbol,bits256_str(str,txid),refht,coin->firstscanht,coin->lastscanht);
+            return(_LP_refht_update(coin,refht));
         }
     }
+    return(0);
 }
 
 int32_t LP_swap_load(struct LP_swap_remember *rswap)
@@ -712,7 +720,6 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                         safecopy(rswap->alicecoin,symbol,sizeof(rswap->alicecoin));
                     if ( rswap->finishedflag == 0 )
                     {
-                        LP_refht_update(symbol,txid);
                         if ( (sentobj= LP_gettx(symbol,txid)) == 0 )
                         {
                             char str2[65]; printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
@@ -722,6 +729,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                             checktxid = jbits256(sentobj,"txid");
                             if ( bits256_nonz(checktxid) == 0 )
                                 checktxid = jbits256(sentobj,"hash");
+                            LP_refht_update(symbol,txid);
                             if ( bits256_cmp(checktxid,txid) == 0 )
                             {
                                 //printf(">>>>>> %s txid %s\n",jprint(sentobj,0),bits256_str(str,txid));
@@ -767,20 +775,16 @@ void LP_txbytes_update(char *name,char *symbol,char *txbytes,bits256 *txidp,bits
 
 int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi)
 {
-    cJSON *sentobj; char str[65];
+    struct LP_transaction *tx; struct iguana_info *coin; char str[65];
     if ( rswap->sentflags[txi] == 0 && bits256_nonz(rswap->txids[txi]) != 0 )
     {
-        printf("[%s] txbytes.%p Apayment.%s\n",txnames[txi],rswap->txbytes[txi],bits256_str(str,rswap->txids[txi]));
-        /*if ( rswap->txbytes[txi] != 0 )
-            rswap->sentflags[txi] = 1;
-        else*/ if ( (sentobj= LP_gettx(symbol,rswap->txids[txi])) != 0 )
+        coin = LP_coinfind(symbol);
+        printf("[%s] %s txbytes.%p %s\n",txnames[txi],txnames[txi],rswap->txbytes[txi],bits256_str(str,rswap->txids[txi]));
+        if ( coin != 0 && (tx= LP_transactionfind(coin,rswap->txids[txi])) != 0 && tx->height > 0 )
         {
             rswap->sentflags[txi] = 1;
-            printf("CHECKTX.(%s)\n",jprint(sentobj,0));
-            free_json(sentobj);
-            LP_refht_update(symbol,rswap->txids[txi]);
-            return(1);
-        }
+            _LP_refht_update(coin,tx->height);
+        } else LP_refht_update(symbol,rswap->txids[txi]);
     }
     return(0);
 }
