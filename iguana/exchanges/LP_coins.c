@@ -286,7 +286,6 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     char *name2;
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
-    sprintf(coin->serverport,"127.0.0.1:%u",port);
     coin->updaterate = (uint32_t)time(NULL);
     coin->isPoS = isPoS;
     coin->taddr = taddr;
@@ -308,7 +307,9 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
         coin->noimportprivkey_flag = 1;
         printf("truncate importprivkey for %s\n",symbol);
     }
-    return(LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath,port));
+    port = LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath,port);
+    sprintf(coin->serverport,"127.0.0.1:%u",port);
+    return(port);
 }
 
 int32_t LP_isdisabled(char *base,char *rel)
