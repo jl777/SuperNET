@@ -450,6 +450,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         if ( peer->diduquery == 0 )
         {
             LP_peer_pricesquery(peer);
+            LP_utxos_sync(peer);
             peer->diduquery = now;
         }
         if ( peer->needping != 0 )
