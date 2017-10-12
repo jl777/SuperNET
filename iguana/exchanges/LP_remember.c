@@ -264,23 +264,24 @@ bits256 basilisk_swap_spendupdate(char *symbol,char *spentaddr,int32_t *sentflag
         if ( bits256_nonz(spendtxid) != 0 )
         {
             sentflags[utxoind] = 1;
+            printf("utxoind.%d Alice.(%s) Bob.(%s)\n",utxoind,aliceaddr,bobaddr);
             if ( aliceaddr != 0 && strcmp(destaddr,aliceaddr) == 0 )
             {
-                //printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[alicespent] = 1;
                 sentflags[bobspent] = 0;
                 txids[alicespent] = spendtxid;
             }
             else if ( bobaddr != 0 && strcmp(destaddr,bobaddr) == 0 )
             {
-                //printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[bobspent] = 1;
                 sentflags[alicespent] = 0;
                 txids[bobspent] = spendtxid;
             }
             else
             {
-                //printf("OTHER dest spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("OTHER dest spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 if ( aliceaddr != 0 )
                 {
                     sentflags[bobspent] = 1;
@@ -334,7 +335,6 @@ int32_t basilisk_isbobcoin(int32_t iambob,int32_t ind)
     }
 }
 
-// add blocktrail presence requirement for BTC
 int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
 {
     int32_t i,n = 0;
@@ -615,15 +615,35 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
                 }
             }
         }
-        rswap->origfinishedflag = rswap->finishedflag = 1;
+        rswap->origfinishedflag = basilisk_swap_isfinished(rswap->iambob,rswap->txids,rswap->sentflags,rswap->paymentspent,rswap->Apaymentspent,rswap->depositspent);
+        rswap->finishedflag = rswap->origfinishedflag;
         free(fstr);
     }
     return(rswap->iambob);
 }
 
+void LP_refht_update(char *symbol,bits256 txid)
+{
+    int32_t ht; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(symbol)) != 0 ) // && coin->electrum == 0
+    {
+        if ( (ht= LP_txheight(coin,txid)) > 0 && ht > 0 )
+        {
+            if ( coin->firstrefht == 0 || ht < coin->firstrefht )
+            {
+                if ( coin->firstscanht == 0 || ht < coin->firstscanht )
+                    coin->firstscanht = coin->lastscanht = ht;
+                coin->firstrefht = ht;
+                char str[65]; printf(">>>>>>>>. 1st refht %s %s <- %d, scan %d %d\n",coin->symbol,bits256_str(str,txid),ht,coin->firstscanht,coin->lastscanht);
+            }
+        }
+    }
+}
+
 int32_t LP_swap_load(struct LP_swap_remember *rswap)
 {
     int32_t i,needflag,addflag; long fsize; char fname[1024],str[65],*fstr,*symbol,*rstr; cJSON *txobj,*sentobj; bits256 txid,checktxid; uint64_t value;
+    rswap->iambob = -1;
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
         needflag = addflag = 0;
@@ -636,7 +656,8 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
             if ( (txobj= cJSON_Parse(fstr)) != 0 )
             {
                 //printf("TXOBJ.(%s)\n",jprint(txobj,0));
-                rswap->iambob = jint(txobj,"iambob");
+                if ( jobj(txobj,"iambob") != 0 )
+                    rswap->iambob = jint(txobj,"iambob");
                 txid = jbits256(txobj,"txid");
                 if ( bits256_nonz(txid) == 0 )
                     continue;
@@ -663,6 +684,26 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                     decode_hex(rswap->Dredeemscript,rswap->Dredeemlen,rstr);
                 }
                 rswap->values[i] = value = LP_value_extract(txobj,1);
+                if ( (symbol= jstr(txobj,"src")) != 0 )
+                {
+                    safecopy(rswap->src,symbol,sizeof(rswap->src));
+                    if ( rswap->iambob >= 0 )
+                    {
+                        if ( rswap->iambob > 0 )
+                            safecopy(rswap->bobcoin,symbol,sizeof(rswap->bobcoin));
+                        else safecopy(rswap->alicecoin,symbol,sizeof(rswap->alicecoin));
+                    }
+                }
+                if ( (symbol= jstr(txobj,"dest")) != 0 )
+                {
+                    safecopy(rswap->dest,symbol,sizeof(rswap->dest));
+                    if ( rswap->iambob >= 0 )
+                    {
+                        if ( rswap->iambob == 0 )
+                            safecopy(rswap->bobcoin,symbol,sizeof(rswap->bobcoin));
+                        else safecopy(rswap->alicecoin,symbol,sizeof(rswap->alicecoin));
+                    }
+                }
                 if ( (symbol= jstr(txobj,"coin")) != 0 )
                 {
                     if ( i == BASILISK_ALICESPEND || i == BASILISK_BOBPAYMENT || i == BASILISK_BOBDEPOSIT || i == BASILISK_BOBREFUND || i == BASILISK_BOBRECLAIM || i == BASILISK_ALICECLAIM )
@@ -671,19 +712,14 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                         safecopy(rswap->alicecoin,symbol,sizeof(rswap->alicecoin));
                     if ( rswap->finishedflag == 0 )
                     {
+                        LP_refht_update(symbol,txid);
                         if ( (sentobj= LP_gettx(symbol,txid)) == 0 )
                         {
                             char str2[65]; printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
                         }
                         else
                         {
-                            struct iguana_info *coin; int32_t ht = -1;
                             checktxid = jbits256(sentobj,"txid");
-                            if ( (coin= LP_coinfind(symbol)) != 0 && (ht= LP_txheight(coin,txid)) > 0 && ht > 0 )
-                            {
-                                if ( coin->firstrefht == 0 || ht < coin->firstrefht )
-                                    coin->firstrefht = ht;
-                            }
                             if ( bits256_nonz(checktxid) == 0 )
                                 checktxid = jbits256(sentobj,"hash");
                             if ( bits256_cmp(checktxid,txid) == 0 )
@@ -702,20 +738,32 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
         } else if ( 0 && rswap->finishedflag == 0 )
             printf("%s not finished\n",fname);
     }
+    if ( rswap->bobcoin[0] == 0 )
+        strcpy(rswap->bobcoin,rswap->src);
+    if ( rswap->alicecoin[0] == 0 )
+        strcpy(rswap->alicecoin,rswap->dest);
+    if ( rswap->src[0] == 0 )
+        strcpy(rswap->src,rswap->bobcoin);
+    if ( rswap->dest[0] == 0 )
+        strcpy(rswap->dest,rswap->alicecoin);
     return(rswap->finishedflag);
 }
 
-/*{
-    if ( txbytes[BASILISK_BOBREFUND] != 0 )
+void LP_txbytes_update(char *name,char *symbol,char *txbytes,bits256 *txidp,bits256 *ptr,int32_t *flagp)
+{
+    bits256 zero;
+    memset(zero.bytes,0,sizeof(zero));
+    if ( txbytes != 0 )
     {
-        txids[BASILISK_BOBREFUND] = LP_broadcast("bobrefund",bobcoin,txbytes[BASILISK_BOBREFUND],zero);
-        if ( bits256_nonz(txids[BASILISK_BOBREFUND]) != 0 ) // tested
+        *txidp = LP_broadcast(name,symbol,txbytes,zero);
+        if ( bits256_nonz(*txidp) != 0 )
         {
-            sentflags[BASILISK_BOBREFUND] = 1;
-            depositspent = txids[BASILISK_BOBREFUND];
+            *flagp = 1;
+            if ( ptr != 0 )
+                *ptr = *txidp;
         }
     }
-}*/
+}
 
 int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi)
 {
@@ -729,6 +777,7 @@ int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi
         {
             rswap->sentflags[txi] = 1;
             free_json(sentobj);
+            LP_refht_update(symbol,rswap->txids[txi]);
             return(1);
         }
     }
@@ -742,56 +791,61 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( (rswap.iambob= LP_rswap_init(&rswap,requestid,quoteid)) < 0 )
-        return(0);
+        return(cJSON_Parse("{\"error\":\"couldnt initialize rswap, are all coins active?\"}"));
     LP_swap_load(&rswap);
     memset(zero.bytes,0,sizeof(zero));
     Adest = Bdest = AAdest = ABdest = 0;
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,rswap.src) != 0 || strcmp(rswap.alicecoin,rswap.dest) != 0 )
-        return(0);
+    {
+        printf("BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
+        return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
+    }
     alice = LP_coinfind(rswap.alicecoin);
     bob = LP_coinfind(rswap.bobcoin);
     rswap.Atxfee = LP_txfeecalc(alice,rswap.Atxfee);
     rswap.Btxfee = LP_txfeecalc(bob,rswap.Btxfee);
-    //printf("%s %.8f txfee, %s %.8f txfee\n",alicecoin,dstr(Atxfee),bobcoin,dstr(Btxfee));
-    //printf("privAm.(%s) %p/%p\n",bits256_str(str,privAm),Adest,AAdest);
-    //printf("privBn.(%s) %p/%p\n",bits256_str(str,privBn),Bdest,ABdest);
+    if ( rswap.iambob == 0 )
+    {
+        if ( alice != 0 )
+        {
+            bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
+            AAdest = rswap.Adestaddr;
+        }
+        if ( (bob= LP_coinfind(rswap.bobcoin)) != 0 )
+        {
+            bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
+            Adest = rswap.destaddr;
+        }
+    }
+    else
+    {
+        if ( bob != 0 )
+        {
+            bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
+            Bdest = rswap.destaddr;
+        }
+        if ( (alice= LP_coinfind(rswap.alicecoin)) != 0 )
+        {
+            bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
+            ABdest = rswap.Adestaddr;
+        }
+    }
+    if ( bob == 0 || alice == 0 )
+    {
+        printf("Bob.%p is null or Alice.%p is null\n",bob,alice);
+        return(cJSON_Parse("{\"error\":\"null bob or alice coin\"}"));
+    }
+    printf("ALICE 1st refht %s <- %d, scan %d %d\n",alice->symbol,alice->firstrefht,alice->firstscanht,alice->lastscanht);
+    printf("BOB 1st refht %s <- %d, scan %d %d\n",bob->symbol,bob->firstrefht,bob->firstscanht,bob->lastscanht);
+    //printf("iambob.%d finishedflag.%d %s %.8f txfee, %s %.8f txfee\n",rswap.iambob,rswap.finishedflag,rswap.alicecoin,dstr(rswap.Atxfee),rswap.bobcoin,dstr(rswap.Btxfee));
+    //printf("privAm.(%s) %p/%p\n",bits256_str(str,rswap.privAm),Adest,AAdest);
+    //printf("privBn.(%s) %p/%p\n",bits256_str(str,rswap.privBn),Bdest,ABdest);
     if ( rswap.finishedflag == 0 && rswap.bobcoin[0] != 0 && rswap.alicecoin[0] != 0 )
     {
-        if ( rswap.iambob == 0 )
-        {
-            if ( alice != 0 )
-            {
-                bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
-                AAdest = rswap.Adestaddr;
-            }
-            if ( (bob= LP_coinfind(rswap.bobcoin)) != 0 )
-            {
-                bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
-                Adest = rswap.destaddr;
-            }
-        }
-        else
-        {
-            if ( bob != 0 )
-            {
-                bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
-                Bdest = rswap.destaddr;
-            }
-            if ( (alice= LP_coinfind(rswap.alicecoin)) != 0 )
-            {
-                bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
-                ABdest = rswap.Adestaddr;
-            }
-        }
-        if ( bob == 0 || alice == 0 )
-        {
-            printf("Bob.%p is null or Alice.%p is null\n",bob,alice);
-            return(0);
-        }
         if ( alice->inactive != 0 || bob->inactive != 0 )
         {
             printf("Alice.%s inactive.%u or Bob.%s inactive.%u\n",rswap.alicecoin,alice->inactive,rswap.bobcoin,bob->inactive);
-            return(0);
+            return(cJSON_Parse("{\"error\":\"inactive bob or alice coin\"}"));
         }
         LP_rswap_checktx(&rswap,rswap.alicecoin,BASILISK_ALICEPAYMENT);
         LP_rswap_checktx(&rswap,rswap.bobcoin,BASILISK_BOBPAYMENT);
@@ -832,7 +886,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                 printf("alicespend.(%s)\n",rswap.txbytes[BASILISK_ALICESPEND]);
                         }
                     }
-                    if ( rswap.txbytes[BASILISK_ALICESPEND] != 0 )
+                    LP_txbytes_update("alicespend",rswap.bobcoin,rswap.txbytes[BASILISK_ALICESPEND],&rswap.txids[BASILISK_ALICESPEND],&rswap.paymentspent,&rswap.sentflags[BASILISK_ALICESPEND]);
+                    /*if ( rswap.txbytes[BASILISK_ALICESPEND] != 0 )
                     {
                         rswap.txids[BASILISK_ALICESPEND] = LP_broadcast("alicespend",rswap.bobcoin,rswap.txbytes[BASILISK_ALICESPEND],zero);
                         if ( bits256_nonz(rswap.txids[BASILISK_ALICESPEND]) != 0 ) // tested
@@ -840,7 +895,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             rswap.sentflags[BASILISK_ALICESPEND] = 1;
                             rswap.paymentspent = rswap.txids[BASILISK_ALICESPEND];
                         }
-                    }
+                    }*/
                 }
             }
             if ( rswap.sentflags[BASILISK_ALICECLAIM] == 0 && rswap.sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(rswap.txids[BASILISK_BOBDEPOSIT]) != 0 && bits256_nonz(rswap.depositspent) == 0 )
@@ -864,7 +919,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             }
                         }
                     }
-                    if ( rswap.txbytes[BASILISK_ALICECLAIM] != 0 )
+                    LP_txbytes_update("aliceclaim",rswap.bobcoin,rswap.txbytes[BASILISK_ALICECLAIM],&rswap.txids[BASILISK_ALICECLAIM],&rswap.depositspent,&rswap.sentflags[BASILISK_ALICECLAIM]);
+                    /*if ( rswap.txbytes[BASILISK_ALICECLAIM] != 0 )
                     {
                         rswap.txids[BASILISK_ALICECLAIM] = LP_broadcast("aliceclaim",rswap.bobcoin,rswap.txbytes[BASILISK_ALICECLAIM],zero);
                         if ( bits256_nonz(rswap.txids[BASILISK_ALICECLAIM]) != 0 ) // tested
@@ -872,7 +928,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             rswap.sentflags[BASILISK_ALICECLAIM] = 1;
                             rswap.depositspent = rswap.txids[BASILISK_ALICECLAIM];
                         }
-                    }
+                    }*/
                 } else printf("now %u before expiration %u\n",(uint32_t)time(NULL),rswap.expiration);
             }
             if ( rswap.sentflags[BASILISK_ALICEPAYMENT] != 0 && bits256_nonz(rswap.Apaymentspent) == 0 && rswap.sentflags[BASILISK_ALICECLAIM] == 0 )
@@ -886,7 +942,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             printf("privBn.(%s) alicereclaim.(%s)\n",bits256_str(str,rswap.privBn),rswap.txbytes[BASILISK_ALICERECLAIM]);
                     }
                 }
-                if ( rswap.txbytes[BASILISK_ALICERECLAIM] != 0 )
+                LP_txbytes_update("alicereclaim",rswap.alicecoin,rswap.txbytes[BASILISK_ALICERECLAIM],&rswap.txids[BASILISK_ALICERECLAIM],&rswap.Apaymentspent,&rswap.sentflags[BASILISK_ALICERECLAIM]);
+                /*if ( rswap.txbytes[BASILISK_ALICERECLAIM] != 0 )
                 {
                     rswap.txids[BASILISK_ALICERECLAIM] = LP_broadcast("alicereclaim",rswap.alicecoin,rswap.txbytes[BASILISK_ALICERECLAIM],zero);
                     if ( bits256_nonz(rswap.txids[BASILISK_ALICERECLAIM]) != 0 ) // tested
@@ -894,7 +951,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         rswap.sentflags[BASILISK_ALICERECLAIM] = 1;
                         rswap.Apaymentspent = rswap.txids[BASILISK_ALICERECLAIM];
                     }
-                }
+                }*/
             }
         }
         else if ( rswap.iambob == 1 )
@@ -916,7 +973,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                 printf("bobspend.(%s)\n",rswap.txbytes[BASILISK_BOBSPEND]);
                         }
                     }
-                    if ( rswap.txbytes[BASILISK_BOBSPEND] != 0 )
+                    LP_txbytes_update("bobspend",rswap.alicecoin,rswap.txbytes[BASILISK_BOBSPEND],&rswap.txids[BASILISK_BOBSPEND],&rswap.Apaymentspent,&rswap.sentflags[BASILISK_BOBSPEND]);
+                    /*if ( rswap.txbytes[BASILISK_BOBSPEND] != 0 )
                     {
                         rswap.txids[BASILISK_BOBSPEND] = LP_broadcast("bobspend",rswap.alicecoin,rswap.txbytes[BASILISK_BOBSPEND],zero);
                         if ( bits256_nonz(rswap.txids[BASILISK_BOBSPEND]) != 0 ) // tested
@@ -924,7 +982,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             rswap.sentflags[BASILISK_BOBSPEND] = 1;
                             rswap.Apaymentspent = rswap.txids[BASILISK_BOBSPEND];
                         }
-                    }
+                    }*/
                 }
             }
             if ( rswap.sentflags[BASILISK_BOBRECLAIM] == 0 && rswap.sentflags[BASILISK_BOBPAYMENT] != 0 && bits256_nonz(rswap.txids[BASILISK_BOBPAYMENT]) != 0 && time(NULL) > rswap.expiration && bits256_nonz(rswap.paymentspent) == 0 )
@@ -945,7 +1003,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         }
                     }
                 }
-                if ( rswap.txbytes[BASILISK_BOBRECLAIM] != 0 )
+                LP_txbytes_update("bobreclaim",rswap.bobcoin,rswap.txbytes[BASILISK_BOBRECLAIM],&rswap.txids[BASILISK_BOBRECLAIM],&rswap.paymentspent,&rswap.sentflags[BASILISK_BOBRECLAIM]);
+                /*if ( rswap.txbytes[BASILISK_BOBRECLAIM] != 0 )
                 {
                     rswap.txids[BASILISK_BOBRECLAIM] = LP_broadcast("bobreclaim",rswap.bobcoin,rswap.txbytes[BASILISK_BOBRECLAIM],zero);
                     if ( bits256_nonz(rswap.txids[BASILISK_BOBRECLAIM]) != 0 ) // tested
@@ -953,7 +1012,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         rswap.sentflags[BASILISK_BOBRECLAIM] = 1;
                         rswap.paymentspent = rswap.txids[BASILISK_BOBRECLAIM];
                     }
-                }
+                }*/
             }
             if ( rswap.sentflags[BASILISK_BOBREFUND] == 0 && rswap.sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(rswap.txids[BASILISK_BOBDEPOSIT]) != 0 && bits256_nonz(rswap.depositspent) == 0 )
             {
@@ -969,7 +1028,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         if ( (rswap.txbytes[BASILISK_BOBREFUND]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"bobrefund",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,1,rswap.expiration,&rswap.values[BASILISK_BOBREFUND],0,0,rswap.bobdepositaddr,1)) != 0 )
                             printf("pubB1.(%s) bobrefund.(%s)\n",bits256_str(str,rswap.pubB1),rswap.txbytes[BASILISK_BOBREFUND]);
                     }
-                    if ( rswap.txbytes[BASILISK_BOBREFUND] != 0 )
+                    LP_txbytes_update("bobrefund",rswap.bobcoin,rswap.txbytes[BASILISK_BOBREFUND],&rswap.txids[BASILISK_BOBREFUND],&rswap.depositspent,&rswap.sentflags[BASILISK_BOBREFUND]);
+                    /*if ( rswap.txbytes[BASILISK_BOBREFUND] != 0 )
                     {
                         rswap.txids[BASILISK_BOBREFUND] = LP_broadcast("bobrefund",rswap.bobcoin,rswap.txbytes[BASILISK_BOBREFUND],zero);
                         if ( bits256_nonz(rswap.txids[BASILISK_BOBREFUND]) != 0 ) // tested
@@ -977,7 +1037,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             rswap.sentflags[BASILISK_BOBREFUND] = 1;
                             rswap.depositspent = rswap.txids[BASILISK_BOBREFUND];
                         }
-                    }
+                    }*/
                 } else printf("bobrefund's time %u vs expiration %u\n",(uint32_t)time(NULL),rswap.expiration);
             }
         }
@@ -1044,21 +1104,28 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
     //,statebits; int32_t optionduration; struct basilisk_request R; bits256 privkey;
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
-    sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
-    if ( (fp= fopen(fname,"rb")) != 0 )
+    if ( origrequestid != 0 && origquoteid != 0 )
     {
-        //struct basilisk_swap *swap;
-        int32_t flag = 0;
-        while ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
+        //printf("orig req.%u q.%u\n",origrequestid,origquoteid);
+        if ( (item= basilisk_remember(KMDtotals,BTCtotals,origrequestid,origquoteid)) != 0 )
+            jaddi(array,item);
+        //printf("got.(%s)\n",jprint(item,0));
+    }
+    else
+    {
+        sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
+        if ( (fp= fopen(fname,"rb")) != 0 )
         {
-            flag = 0;
-            for (i=0; i<G.LP_numskips; i++)
+            //struct basilisk_swap *swap;
+            int32_t flag = 0;
+            while ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
             {
-                r = (uint32_t)(G.LP_skipstatus[i] >> 32);
-                q = (uint32_t)G.LP_skipstatus[i];
-                if ( r == requestid && q == quoteid )
+                flag = 0;
+                for (i=0; i<G.LP_numskips; i++)
                 {
-                    if ( r != origrequestid || q != origquoteid )
+                    r = (uint32_t)(G.LP_skipstatus[i] >> 32);
+                    q = (uint32_t)G.LP_skipstatus[i];
+                    if ( r == requestid && q == quoteid )
                     {
                         item = cJSON_CreateObject();
                         jaddstr(item,"status","realtime");
@@ -1066,21 +1133,17 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
                         jaddnum(item,"quoteid",q);
                         jaddi(array,item);
                         flag = 1;
+                        break;
                     }
-                    break;
                 }
-            }
-            if ( flag == 0 )
-            {
-                if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+                if ( flag == 0 )
                 {
-                    jaddi(array,item);
-                    //if ( (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
-                    //    break;
+                    if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+                        jaddi(array,item);
                 }
             }
+            fclose(fp);
         }
-        fclose(fp);
     }
     jaddstr(retjson,"result","success");
     jadd(retjson,"swaps",array);
@@ -1119,6 +1182,7 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
     char *liststr,*retstr = 0; cJSON *retjson,*array,*item; int32_t i,n;
     if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
     {
+        //printf("swapentry.(%s)\n",liststr);
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
         {
             if ( (array= jarray(&n,retjson,"swaps")) != 0 )

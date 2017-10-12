@@ -280,7 +280,8 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
     coin->taddr = taddr;
     coin->wiftaddr = wiftaddr;
     coin->longestchain = longestchain;
-    coin->txfee = txfee;
+    if ( (coin->txfee= txfee) > 0 && txfee < LP_MIN_TXFEE )
+        coin->txfee = LP_MIN_TXFEE;
     coin->pubtype = pubtype;
     coin->p2shtype = p2shtype;
     coin->wiftype = wiftype;

@@ -19,11 +19,13 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// SPV at tx level
-// new features:
+
+// SPV at tx level and limit SPV proofing
+// coins file
 // stats, fix pricearray
 // sign packets
 // dPoW security
+// electrum peers
 // withdraw
 // verify portfolio
 // bittrex balancing
@@ -507,7 +509,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 coin->lastscanht = coin->firstscanht;
             continue;
         }
-        printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
+        if ( (coin->lastscanht % 1000) == 0 )
+            printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
         if ( LP_blockinit(coin,coin->lastscanht) < 0 )
         {
             printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
@@ -593,7 +596,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-	char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128]; void *ctx = bitcoin_ctx();
+    char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
@@ -651,11 +654,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_messagemutex);
     portable_mutex_init(&LP_portfoliomutex);
     portable_mutex_init(&LP_butxomutex);
+#ifndef _WIN32
     if ( system("curl -s4 checkip.amazonaws.com > DB/myipaddr") == 0 )
     {
-		char ipfname[64];
-		strcpy(ipfname, "DB/myipaddr");
-		if ((myipaddr = OS_filestr(&filesize, ipfname)) != 0 && myipaddr[0] != 0)
+        char ipfname[64];
+        strcpy(ipfname,"DB/myipaddr");
+        if ( (myipaddr= OS_filestr(&filesize,ipfname)) != 0 && myipaddr[0] != 0 )
         {
             n = strlen(myipaddr);
             if ( myipaddr[n-1] == '\n' )
@@ -663,6 +667,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             strcpy(LP_myipaddr,myipaddr);
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
+#else
+    myipaddr = clonestr("127.0.0.1");
+#endif
     if ( IAMLP != 0 )
     {
         pubsock = -1;
@@ -694,8 +701,23 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     LP_mybussock = LP_coinbus(mybusport);
     //LP_deadman_switch = (uint32_t)time(NULL);
     printf("canbind.%d my command address is (%s) pullsock.%d pullport.%u\n",LP_canbind,pushaddr,LP_mypullsock,mypullport);
-    printf("initcoins\n");
-    LP_initcoins(ctx,pubsock,jobj(argjson,"coins"));
+    if ( (coinsjson= jobj(argjson,"coins")) == 0 )
+    {
+        if ( (coins_str= OS_filestr(&filesize,"coins.json")) != 0 )
+        {
+            unstringify(coins_str);
+            printf("UNSTRINGIFIED.(%s)\n",coins_str);
+            coinsjson = cJSON_Parse(coins_str);
+            free(coins_str);
+            // yes I know this coinsjson is not freed, not sure about if it is referenced
+        }
+    }
+    if ( coinsjson == 0 )
+    {
+        printf("no coins object or coins file, must abort\n");
+        exit(-1);
+    }
+    LP_initcoins(ctx,pubsock,coinsjson);
     G.waiting = 1;
     LP_passphrase_init(passphrase,jstr(argjson,"gui"));
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)&myipaddr) != 0 )

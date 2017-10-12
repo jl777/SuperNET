@@ -33,10 +33,14 @@
 
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
 {
-    double val = 0.; uint64_t value = 0;
-    if ( (val= jdouble(obj,"amount")) < SMALLVAL )
-        val = jdouble(obj,"value");
-    value = (val + 0.0000000049) * SATOSHIDEN;
+    double val = 0.; uint64_t value = 0; int32_t electrumflag;
+    electrumflag = (jobj(obj,"tx_hash") != 0);
+    if ( electrumflag == 0 )
+    {
+        if ( (val= jdouble(obj,"amount")) < SMALLVAL )
+            val = jdouble(obj,"value");
+        value = (val + 0.0000000049) * SATOSHIDEN;
+    } else value = j64bits(obj,"value");
     if ( value != 0 )
     {
         if ( addinterest != 0 && jobj(obj,"interest") != 0 )
@@ -298,9 +302,37 @@ bits256 validate_merkle(int32_t pos,bits256 txid,cJSON *proofarray,int32_t proof
     return(hash);
 }
 
+int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256 txid,int32_t height)
+{
+    cJSON *merkobj,*merkles,*hdrobj; bits256 roothash,merkleroot; int32_t m,SPV = 0;
+    if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
+    {
+        char str[65],str2[65],str3[65];
+        SPV = -1;
+        memset(roothash.bytes,0,sizeof(roothash));
+        if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 )
+        {
+            roothash = validate_merkle(jint(merkobj,"pos"),txid,merkles,m);
+            if ( (hdrobj= electrum_getheader(coin->symbol,ep,&hdrobj,height)) != 0 )
+            {
+                merkleroot = jbits256(hdrobj,"merkle_root");
+                if ( bits256_cmp(merkleroot,roothash) == 0 )
+                {
+                    SPV = height;
+                    //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
+                }
+                else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
+                free_json(hdrobj);
+            }
+        }
+        free_json(merkobj);
+    }
+    return(SPV);
+}
+
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
-    cJSON *array,*item,*merkobj,*merkles,*hdrobj; int32_t n,m; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; bits256 merkleroot,roothash; struct electrum_info *ep,*backupep=0;
+    cJSON *array,*item; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct electrum_info *ep,*backupep=0;
     array = cJSON_CreateArray();
     if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
@@ -317,30 +349,8 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
             {
                 if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
-                    if ( up->SPV == 0 && up->U.height > 0 )
-                    {
-                        if ( (merkobj= electrum_getmerkle(coin->symbol,backupep,&merkobj,up->U.txid,up->U.height)) != 0 )
-                        {
-                            char str[65],str2[65],str3[65];
-                            memset(roothash.bytes,0,sizeof(roothash));
-                            if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 )
-                            {
-                                roothash = validate_merkle(jint(merkobj,"pos"),up->U.txid,merkles,m);
-                                if ( (hdrobj= electrum_getheader(coin->symbol,backupep,&hdrobj,up->U.height)) != 0 )
-                                {
-                                    merkleroot = jbits256(hdrobj,"merkle_root");
-                                    if ( bits256_cmp(merkleroot,roothash) == 0 )
-                                    {
-                                        up->SPV = up->U.height;
-                                        //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
-                                    }
-                                    else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
-                                    free_json(hdrobj);
-                                }
-                            }
-                            free_json(merkobj);
-                        }
-                    }
+                    if ( backupep != 0 && up->SPV == 0 )
+                        up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
                     jaddi(array,LP_address_item(coin,up,electrumret));
                     n++;
                     total += up->U.value;
@@ -661,9 +671,9 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
             if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
             {
                 height = jint(blockobj,"height");
-                //printf("%s LP_txheight.%d\n",coin->symbol,height);
+                char str[65]; printf("%s %s LP_txheight.%d\n",coin->symbol,bits256_str(str,txid),height);
                 free_json(blockobj);
-            } //else printf("%s LP_txheight error (%s)\n",coin->symbol,jprint(txobj,0));
+            } // else printf("%s LP_txheight error (%s)\n",coin->symbol,jprint(txobj,0)); likely just unconfirmed
             free_json(txobj);
         }
     }

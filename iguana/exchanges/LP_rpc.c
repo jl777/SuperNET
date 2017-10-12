@@ -254,7 +254,9 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     if ( coin->electrum == 0 )
     {
         sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
-        return(bitcoin_json(coin,"getrawtransaction",buf));
+        retjson = bitcoin_json(coin,"getrawtransaction",buf);
+        printf("%s getrawtransaction %s -> %s\n",symbol,buf,jprint(retjson,0));
+        return(retjson);
     }
     else
     {
@@ -602,17 +604,23 @@ char *LP_sendrawtransaction(char *symbol,char *signedtx)
 {
     cJSON *array,*errobj; char *paramstr,*tmpstr,*retstr=0; int32_t n,alreadyflag = 0; cJSON *retjson; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
+    {
+        printf("LP_sendrawtransaction null symbol\n");
         return(0);
+    }
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
+    {
+        printf("LP_sendrawtransaction null coin\n");
         return(0);
+    }
     if ( coin->electrum == 0 )
     {
         array = cJSON_CreateArray();
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"sendrawtransaction",paramstr);
-        //printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
+        printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
         free(paramstr);
     }
     else

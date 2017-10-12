@@ -37,10 +37,21 @@ int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid)
 
 bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxid)
 {
-    char *retstr; bits256 txid; cJSON *retjson,*errorobj; int32_t i,sentflag = 0;
+    char *retstr; bits256 txid; uint8_t *ptr; cJSON *retjson,*errorobj; int32_t i,len,sentflag = 0;
     memset(&txid,0,sizeof(txid));
+    if ( txbytes == 0 || txbytes[0] == 0 )
+        return(txid);
+    if ( bits256_nonz(expectedtxid) == 0 )
+    {
+        len = (int32_t)strlen(txbytes) >> 1;
+        ptr = malloc(len);
+        decode_hex(ptr,len,txbytes);
+        expectedtxid = bits256_doublesha256(0,ptr,len);
+        free(ptr);
+    }
     for (i=0; i<2; i++)
     {
+        //char str[65]; printf("LP_broadcast.%d (%s) %s i.%d sentflag.%d\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag);
         if ( sentflag == 0 && LP_gettx_presence(symbol,expectedtxid) != 0 )
             sentflag = 1;
         if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
@@ -63,10 +74,11 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
                         txid = expectedtxid;
                         sentflag = 1;
                     }
+                    else printf("broadcast error.(%s)\n",retstr);
                 }
                 free_json(retjson);
             }
-            char str[65]; printf("sentflag.%d [%s] %s RETSTR.(%s) %s.%s\n",sentflag,txname,txbytes,retstr,symbol,bits256_str(str,txid));
+            //char str[65]; printf("sentflag.%d [%s] %s RETSTR.(%s) %s.%s\n",sentflag,txname,txbytes,retstr,symbol,bits256_str(str,txid));
             free(retstr);
         }
         if ( sentflag != 0 )
@@ -548,9 +560,11 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
     return(complete);
 }
 
-char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,void *ctx,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,char *destaddr,uint8_t *pubkey33,int32_t finalseqid,uint32_t expiration,int64_t *destamountp,uint64_t satoshis,char *changeaddr,char *vinaddr,int32_t suppress_pubkeys)
+char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,void *ctx,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t utxovout,char *destaddr,uint8_t *pubkey33,int32_t finalseqid,uint32_t expiration,int64_t *destamountp,uint64_t satoshis,char *changeaddr,char *vinaddr,int32_t suppress_pubkeys)
 {
     char *rawtxbytes=0,*signedtx=0,str[65],tmpaddr[64],hexstr[999],wifstr[128],_destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *txobj,*vins,*obj,*vouts,*item,*privkeys; int32_t completed,spendlen,n,ignore_cltverr=1; struct vin_info V[2]; uint32_t timestamp,locktime = 0,sequenceid = 0xffffffff * finalseqid; bits256 txid; uint64_t value=0,change = 0; struct iguana_msgtx msgtx; struct iguana_info *coin;
+    if ( txfee > 0 && txfee < 10000 )
+        txfee = 10000;
     *destamountp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     if ( finalseqid == 0 )
@@ -564,19 +578,19 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     {
         if ( (txobj= LP_gettx(symbol,utxotxid)) != 0 )
         {
-            if ( (vouts= jarray(&n,txobj,"vout")) != 0 && vout < n )
+            if ( (vouts= jarray(&n,txobj,"vout")) != 0 && utxovout < n )
             {
-                obj = jitem(vouts,vout);
+                obj = jitem(vouts,utxovout);
                 value = LP_value_extract(obj,1);
                 //printf("value in vout.%d %.8f (%s)\n",vout,dstr(value),jprint(txobj,0));
             }
             free_json(txobj);
             //if ( value != 0 )
             //    gettxout
-        }
+        } else printf("cant gettx\n");
         if ( value == 0 )
         {
-            printf("basilisk_swap_bobtxspend.%s %s utxo.(%s) already spent or doesnt exist\n",name,symbol,bits256_str(str,utxotxid));
+            printf("basilisk_swap_bobtxspend.%s %s utxo.(%s).v%d already spent or doesnt exist\n",name,symbol,bits256_str(str,utxotxid),utxovout);
             return(0);
         }
     }
@@ -646,7 +660,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         jaddstr(item,"userdata",hexstr);
     }
     jaddbits256(item,"txid",utxotxid);
-    jaddnum(item,"vout",vout);
+    jaddnum(item,"vout",utxovout);
     bitcoin_address(tmpaddr,taddr,pubtype,pubkey33,33);
     bitcoin_addr2rmd160(taddr,&addrtype,rmd160,tmpaddr);
     if ( redeemlen != 0 )
