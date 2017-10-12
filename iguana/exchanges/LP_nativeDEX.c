@@ -524,6 +524,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 break;
             }
             coin->lastscanht++;
+            if ( coin->lastscanht == coin->longestchain+1 )
+                break;
         }
         if ( j < 100 )
             continue;
