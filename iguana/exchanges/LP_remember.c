@@ -622,10 +622,11 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
     return(rswap->iambob);
 }
 
-int32_t _LP_refht_update(struct iguana_info *coin,int32_t refht)
+int32_t _LP_refht_update(struct iguana_info *coin,bits256 txid,int32_t refht)
 {
     if ( refht > 0 && (coin->firstrefht == 0 || refht < coin->firstrefht) )
     {
+        char str[65]; printf(">>>>>>>>. 1st refht %s %s <- %d, scan %d %d\n",coin->symbol,bits256_str(str,txid),refht,coin->firstscanht,coin->lastscanht);
         if ( coin->firstscanht == 0 || refht < coin->firstscanht )
             coin->firstscanht = coin->lastscanht = refht;
         coin->firstrefht = refht;
@@ -637,13 +638,10 @@ int32_t _LP_refht_update(struct iguana_info *coin,int32_t refht)
 int32_t LP_refht_update(char *symbol,bits256 txid)
 {
     int32_t refht; struct iguana_info *coin;
-    if ( (coin= LP_coinfind(symbol)) != 0 ) // && coin->electrum == 0
+    if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum == 0 )
     {
         if ( (refht= LP_txheight(coin,txid)) > 0 && refht > 0 )
-        {
-            char str[65]; printf(">>>>>>>>. 1st refht %s %s <- %d, scan %d %d\n",coin->symbol,bits256_str(str,txid),refht,coin->firstscanht,coin->lastscanht);
-            return(_LP_refht_update(coin,refht));
-        }
+            return(_LP_refht_update(coin,txid,refht));
     }
     return(0);
 }
@@ -783,7 +781,7 @@ int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi
         if ( coin != 0 && (tx= LP_transactionfind(coin,rswap->txids[txi])) != 0 && tx->height > 0 )
         {
             rswap->sentflags[txi] = 1;
-            _LP_refht_update(coin,tx->height);
+            _LP_refht_update(coin,rswap->txids[txi],tx->height);
         } else LP_refht_update(symbol,rswap->txids[txi]);
     }
     return(0);

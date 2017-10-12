@@ -671,9 +671,9 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
             if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
             {
                 height = jint(blockobj,"height");
-                char str[65];
-                if ( strcmp(coin->symbol,"CHIPS") != 0 && strcmp(coin->symbol,"BTC") != 0 )
-                    printf("%s %s LP_txheight.%d\n",coin->symbol,bits256_str(str,txid),height);
+                //char str[65];
+                //if ( strcmp(coin->symbol,"CHIPS") != 0 && strcmp(coin->symbol,"BTC") != 0 )
+                //    printf("%s %s LP_txheight.%d\n",coin->symbol,bits256_str(str,txid),height);
                 free_json(blockobj);
             } // else printf("%s LP_txheight error (%s)\n",coin->symbol,jprint(txobj,0)); likely just unconfirmed
             free_json(txobj);
