@@ -449,30 +449,36 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **u
         if ( (backupep= ep->prev) == 0 )
             backupep = ep;
     }
+    //printf("LP_nearest_utxovalue %s utxos[%d]\n",coin->symbol,n);
     for (i=0; i<n; i++)
     {
-        if ( (up= utxos[i]) != 0 && up->spendheight == 0 )
+        if ( (up= utxos[i]) != 0 )
         {
-            if ( coin->electrum != 0 )
-            {
-                if (up->SPV == 0 )
-                    up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
-                printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
-                if ( up->SPV < 0 )
-                {
-                    printf("SPV failure for %s %s\n",coin->symbol,bits256_str(str,up->U.txid));
-                    continue;
-                }
-            }
             dist = (up->U.value - targetval);
-            if ( dist >= 0 && dist < mindist )
+            //printf("nearest i.%d target %.8f val %.8f dist %.8f mindist %.8f mini.%d spent.%d\n",i,dstr(targetval),dstr(up->U.value),dstr(dist),dstr(mindist),mini,up->spendheight);
+            if ( up->spendheight <= 0 )
             {
-                printf("(%.8f %.8f %.8f).%d ",dstr(up->U.value),dstr(dist),dstr(mindist),mini);
-                mini = i;
-                mindist = dist;
+                if ( coin->electrum != 0 )
+                {
+                    if (up->SPV == 0 )
+                        up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                    printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
+                    if ( up->SPV < 0 )
+                    {
+                        printf("SPV failure for %s %s\n",coin->symbol,bits256_str(str,up->U.txid));
+                        continue;
+                    }
+                }
+                if ( dist >= 0 && dist < mindist )
+                {
+                    printf("(%.8f %.8f %.8f).%d ",dstr(up->U.value),dstr(dist),dstr(mindist),mini);
+                    mini = i;
+                    mindist = dist;
+                }
             }
         }
     }
+    //printf("return mini.%d\n",mini);
     return(mini);
 }
 
@@ -500,25 +506,29 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s\n",dstr(targetval),relvolume,price,dstr(txfee),coinaddr);
             }
             mini = -1;
-            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,utxos,m,targetval)) >= 0 && (double)utxos[mini]->U.value/targetval < LP_MINVOL-1 )
+            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,utxos,m,targetval)) >= 0 )
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
                 targetval2 = (targetval / 8) * 9 + 2*txfee;
-                if ( (mini= LP_nearest_utxovalue(coin,utxos,m,targetval2 * 1.01)) >= 0 )
+                //printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(utxos[mini]->U.value),dstr(targetval),dstr(targetval2),(double)utxos[mini]->U.value/targetval);
+                if ( (double)up->U.value/targetval < LP_MINVOL-1 )
                 {
-                    if ( up != 0 && (up2= utxos[mini]) != 0 )
+                    if ( (mini= LP_nearest_utxovalue(coin,utxos,m,targetval2 * 1.01)) >= 0 )
                     {
-                        if ( (utxo= LP_utxoadd(1,coin->symbol,up->U.txid,up->U.vout,up->U.value,up2->U.txid,up2->U.vout,up2->U.value,coinaddr,ap->pubkey,G.gui,0)) != 0 )
+                        if ( up != 0 && (up2= utxos[mini]) != 0 )
                         {
-                            utxo->S.satoshis = targetval;
-                            char str[65],str2[65]; printf("butxo.%p targetval %.8f, found val %.8f %s | targetval2 %.8f val2 %.8f %s\n",utxo,dstr(targetval),dstr(up->U.value),bits256_str(str,utxo->payment.txid),dstr(targetval2),dstr(up2->U.value),bits256_str(str2,utxo->deposit.txid));
-                            return(utxo);
+                            if ( (utxo= LP_utxoadd(1,coin->symbol,up->U.txid,up->U.vout,up->U.value,up2->U.txid,up2->U.vout,up2->U.value,coinaddr,ap->pubkey,G.gui,0)) != 0 )
+                            {
+                                utxo->S.satoshis = targetval;
+                                char str[65],str2[65]; printf("butxo.%p targetval %.8f, found val %.8f %s | targetval2 %.8f val2 %.8f %s\n",utxo,dstr(targetval),dstr(up->U.value),bits256_str(str,utxo->payment.txid),dstr(targetval2),dstr(up2->U.value),bits256_str(str2,utxo->deposit.txid));
+                                return(utxo);
+                            }
                         }
-                    }
-                } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
+                    } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
+                } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
             } else if ( targetval != 0 && mini >= 0 )
-                printf("targetval %.8f mini.%d ratio %.8f\n",dstr(targetval),mini,(double)utxos[mini]->U.value/targetval);
+                printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
         } else printf("no utxos pass LP_address_utxo_ptrs filter\n");
     } else printf("couldnt find %s %s\n",coin->symbol,coinaddr);
     return(0);
@@ -841,7 +851,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         memset(&zero,0,sizeof(zero));
                         msg2 = clonestr(msg);
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg);
-                        LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg2);
+                        //LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg2);
                         //LP_butxo_swapfields_set(butxo);
                         printf("return after RESERVED\n");
                         return(2);
