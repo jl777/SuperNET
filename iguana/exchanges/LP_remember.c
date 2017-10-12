@@ -622,6 +622,24 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
     return(rswap->iambob);
 }
 
+void LP_refht_update(char *symbol,bits256 txid)
+{
+    int32_t ht; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(symbol)) != 0 ) // && coin->electrum == 0
+    {
+        if ( (ht= LP_txheight(coin,txid)) > 0 && ht > 0 )
+        {
+            if ( coin->firstrefht == 0 || ht < coin->firstrefht )
+            {
+                if ( coin->firstscanht == 0 || ht < coin->firstscanht )
+                    coin->firstscanht = coin->lastscanht = ht;
+                coin->firstrefht = ht;
+                printf(">>>>>>>>. 1st refht %s <- %d, scan %d %d\n",coin->symbol,ht,coin->firstscanht,coin->lastscanht);
+            }
+        }
+    }
+}
+
 int32_t LP_swap_load(struct LP_swap_remember *rswap)
 {
     int32_t i,needflag,addflag; long fsize; char fname[1024],str[65],*fstr,*symbol,*rstr; cJSON *txobj,*sentobj; bits256 txid,checktxid; uint64_t value;
@@ -694,24 +712,14 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                         safecopy(rswap->alicecoin,symbol,sizeof(rswap->alicecoin));
                     if ( rswap->finishedflag == 0 )
                     {
+                        LP_refht_update(symbol,txid);
                         if ( (sentobj= LP_gettx(symbol,txid)) == 0 )
                         {
                             char str2[65]; printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
                         }
                         else
                         {
-                            struct iguana_info *coin; int32_t ht = -1;
                             checktxid = jbits256(sentobj,"txid");
-                            if ( (coin= LP_coinfind(symbol)) != 0 && (ht= LP_txheight(coin,txid)) > 0 && ht > 0 )
-                            {
-                                if ( coin->firstrefht == 0 || ht < coin->firstrefht )
-                                {
-                                    if ( coin->firstscanht == 0 || ht < coin->firstscanht )
-                                        coin->firstscanht = coin->lastscanht = ht;
-                                    coin->firstrefht = ht;
-                                    printf(">>>>>>>>. 1st refht %s <- %d, scan %d %d\n",coin->symbol,ht,coin->firstscanht,coin->lastscanht);
-                                }
-                            }
                             if ( bits256_nonz(checktxid) == 0 )
                                 checktxid = jbits256(sentobj,"hash");
                             if ( bits256_cmp(checktxid,txid) == 0 )
@@ -769,6 +777,7 @@ int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi
         {
             rswap->sentflags[txi] = 1;
             free_json(sentobj);
+            LP_refht_update(symbol,rswap->txids[txi]);
             return(1);
         }
     }
