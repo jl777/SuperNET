@@ -587,10 +587,10 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
             free_json(txobj);
             //if ( value != 0 )
             //    gettxout
-        }
+        } else printf("cant gettx\n");
         if ( value == 0 )
         {
-            printf("basilisk_swap_bobtxspend.%s %s utxo.(%s) already spent or doesnt exist\n",name,symbol,bits256_str(str,utxotxid));
+            printf("basilisk_swap_bobtxspend.%s %s utxo.(%s).v%d already spent or doesnt exist\n",name,symbol,bits256_str(str,utxotxid),utxovout);
             return(0);
         }
     }

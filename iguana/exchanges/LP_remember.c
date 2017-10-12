@@ -705,7 +705,12 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                             if ( (coin= LP_coinfind(symbol)) != 0 && (ht= LP_txheight(coin,txid)) > 0 && ht > 0 )
                             {
                                 if ( coin->firstrefht == 0 || ht < coin->firstrefht )
+                                {
+                                    if ( coin->firstscanht == 0 || ht < coin->firstscanht )
+                                        coin->firstscanht = coin->lastscanht = ht;
                                     coin->firstrefht = ht;
+                                    printf(">>>>>>>>. 1st refht %s <- %d, scan %d %d\n",coin->symbol,ht,coin->firstscanht,coin->lastscanht);
+                                }
                             }
                             if ( bits256_nonz(checktxid) == 0 )
                                 checktxid = jbits256(sentobj,"hash");
