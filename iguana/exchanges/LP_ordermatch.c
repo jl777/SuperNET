@@ -990,9 +990,10 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                         if ( bits256_cmp(pubkey,G.LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
                         {
                             bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
+                            LP_listunspent_query(base,coinaddr);
                             n = LP_listunspent_both(base,coinaddr);
                             //printf("unspent.(%s) n.%d\n",coinaddr,n);
-                            if ( n > 1 )
+                            //if ( n > 1 )
                             {
                                 basesatoshis = LP_basesatoshis(dstr(autxo->S.satoshis),price,txfee,desttxfee);
                                 if ( basesatoshis != 0 && (bestutxo= LP_address_utxopair(0,utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,desttxfee)) != 0 )
@@ -1005,7 +1006,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                                     printf("ordermatch %.8f %.8f %.8f txfees (%.8f %.8f)\n",price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp),dstr(txfee),dstr(desttxfee));
                                     break;
                                 }
-                            } else printf("no unspents %s %s %s\n",base,coinaddr,bits256_str(str,pubkey));
+                            } //else printf("no unspents %s %s %s\n",base,coinaddr,bits256_str(str,pubkey));
                         } else printf("self trading or blacklisted peer\n");
                     }
                     else
