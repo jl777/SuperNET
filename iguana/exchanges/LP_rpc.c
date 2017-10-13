@@ -440,7 +440,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
 
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
 {
-    struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0,destip[64]; uint16_t destport;
+    struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0;// uint16_t destport;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     if ( (coin= LP_coinfind(symbol)) != 0 )

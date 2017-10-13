@@ -421,7 +421,7 @@ dividends(coin, height, <args>)\n\
         printf("GOT ADDR_UNSPENTS\n");
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
         {
-            char *coinaddr; cJSON *array,*item,*req; int32_t i,n,vout,height; bits256 zero,txid; uint64_t value;
+            char *coinaddr; //cJSON *array,*item,*req; int32_t i,n,vout,height; bits256 zero,txid; uint64_t value;
             if ( (coinaddr= jstr(argjson,"address")) != 0 )
             {
                 if ( coinaddr[0] != 0 )
@@ -429,32 +429,7 @@ dividends(coin, height, <args>)\n\
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
                     {
                         printf("%s %s is my address being asked for!\n",ptr->symbol,coinaddr);
-                        if ( (array= LP_address_utxos(ptr,coinaddr,1)) != 0 )
-                        {
-                            memset(zero.bytes,0,sizeof(zero));
-                            if ( (n= cJSON_GetArraySize(array)) > 0 )
-                            {
-                                for (i=0; i<n; i++)
-                                {
-                                    item = jitem(array,i);
-                                    txid = jbits256(item,"tx_hash");
-                                    vout = jint(item,"tx_pos");
-                                    height = jint(item,"height");
-                                    value = j64bits(item,"value");
-                                    req = cJSON_CreateObject();
-                                    jaddstr(req,"method","uitem");
-                                    jaddstr(req,"coin",ptr->symbol);
-                                    jaddstr(req,"coinaddr",coinaddr);
-                                    jaddbits256(req,"txid",txid);
-                                    jaddnum(req,"vout",vout);
-                                    jaddnum(req,"ht",height);
-                                    jadd64bits(req,"value",value);
-                                    printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
-                                    LP_broadcast_message(pubsock,"","",zero,jprint(req,1));
-                                }
-                            }
-                            free_json(array);
-                        }
+                        ptr->addr_listunspent_requested = (uint32_t)time(NULL);
                     }
                 }
             }

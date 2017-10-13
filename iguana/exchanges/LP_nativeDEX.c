@@ -320,11 +320,12 @@ void command_rpcloop(void *myipaddr)
 
 void LP_smartutxos_push(struct iguana_info *coin)
 {
-    struct LP_peerinfo *peer,*tmp; uint64_t value; bits256 txid; int32_t i,vout,height,n; char *retstr; cJSON *array,*item;
+    struct LP_peerinfo *peer,*tmp; uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; char *retstr; cJSON *array,*item,*req;
     if ( coin->smartaddr[0] == 0 )
         return;
     if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
     {
+        memset(zero.bytes,0,sizeof(zero));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             printf("PUSH %s %s\n",coin->symbol,coin->smartaddr);
@@ -335,10 +336,26 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 vout = jint(item,"tx_pos");
                 value = j64bits(item,"value");
                 height = jint(item,"height");
+                if ( 0 )
+                {
                 HASH_ITER(hh,LP_peerinfos,peer,tmp)
                 {
                     if ( (retstr= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,vout,height,value)) != 0 )
                         free(retstr);
+                }
+                }
+                else
+                {
+                    req = cJSON_CreateObject();
+                    jaddstr(req,"method","uitem");
+                    jaddstr(req,"coin",coin->symbol);
+                    jaddstr(req,"coinaddr",coin->smartaddr);
+                    jaddbits256(req,"txid",txid);
+                    jaddnum(req,"vout",vout);
+                    jaddnum(req,"ht",height);
+                    jadd64bits(req,"value",value);
+                    printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
+                    LP_broadcast_message(LP_mypubsock,"","",zero,jprint(req,1));
                 }
             }
         }
@@ -532,13 +549,14 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         memset(&zero,0,sizeof(zero));
+        if ( coin->addr_listunspent_requested != 0 )
+        {
+            printf("addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
+            LP_smartutxos_push(coin);
+            coin->addr_listunspent_requested = 0;
+        }
         if ( coin->inactive != 0 )
             continue;
-        /*if ( (counter % 6000) == 100 )
-        {
-            LP_smartutxos_push(coin);
-            nonz++;
-        }*/
         if ( coin->electrum != 0 )
             continue;
         //if ( coin->obooktime == 0 )
