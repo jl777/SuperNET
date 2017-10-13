@@ -554,6 +554,7 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
 }
 
 uint16_t RPC_port;
+extern portable_mutex_t LP_commandmutex;
 
 void LP_rpc_processreq(void *_ptr)
 {
@@ -626,7 +627,9 @@ void LP_rpc_processreq(void *_ptr)
     if ( recvlen > 0 )
     {
         jsonflag = postflag = 0;
+        portable_mutex_lock(&LP_commandmutex);
         retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,RPC_port);
+        portable_mutex_unlock(&LP_commandmutex);
         if ( filetype[0] != 0 )
         {
             static cJSON *mimejson; char *tmp,*typestr=0; long tmpsize;
@@ -693,7 +696,7 @@ void LP_rpc_processreq(void *_ptr)
 
 void stats_rpcloop(void *args)
 {
-    uint16_t port; int32_t sock,bindsock; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint64_t arg64;
+    uint16_t port; int32_t sock,bindsock; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint64_t arg64; void *arg64ptr;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
@@ -717,11 +720,21 @@ void stats_rpcloop(void *args)
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         //printf("remote RPC request from (%s) %x\n",remoteaddr,ipbits);
         arg64 = ((uint64_t)ipbits << 32) | (sock & 0xffffffff);
-        LP_rpc_processreq((void *)&arg64);
+        arg64ptr = malloc(sizeof(arg64));
+        memcpy(arg64ptr,&arg64,sizeof(arg64));
+        //LP_rpc_processreq((void *)&arg64);
+        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_rpc_processreq,arg64ptr) != 0 )
+        {
+            printf("error launching rpc handler on port %d\n",port);
+        }
+        // yes, small leak per command
     }
 }
 
 #ifndef FROM_MARKETMAKER
+
+portable_mutex_t LP_commandmutex;
+
 void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
     struct tai T; int32_t seconds,datenum,n;
