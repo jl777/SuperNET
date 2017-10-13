@@ -345,7 +345,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         }
         if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,vout2,0)) <= 0 )
         {
-            printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
+            printf("LP_utxoadd reject2 numconfirms.%d %s %s/v%d\n",numconfirms,symbol,bits256_str(str,txid2),vout2);
             return(0);
         }
     }
