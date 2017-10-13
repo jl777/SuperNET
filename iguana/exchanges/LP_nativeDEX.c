@@ -332,7 +332,6 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
         total = 0;
         if ( (j= LP_listunspent_both(coin->symbol,coin->smartaddr)) == 0 )
             continue;
-        printf("UTXO sync.%d %s -> %s\n",j,coin->symbol,peer->ipaddr);
         if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -343,9 +342,9 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                     total += j64bits(item,"value");
                 }
             }
-            printf("n.%d total %.8f\n",n,dstr(total));
             if ( n > 0 && total > 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
             {
+                printf("UTXO sync.%d %s n.%d total %.8f -> %s\n",j,coin->symbol,n,dstr(total),peer->ipaddr);
                 total2 = 0;
                 if ( (array2= cJSON_Parse(retstr)) != 0 )
                 {
