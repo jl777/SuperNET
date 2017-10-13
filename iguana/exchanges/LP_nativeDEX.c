@@ -318,6 +318,31 @@ void command_rpcloop(void *myipaddr)
     }
 }
 
+void LP_smartutxos_push(struct iguana_info *coin)
+{
+    struct LP_peerinfo *peer,*tmp; uint64_t value; bits256 txid; int32_t i,vout,height,n; char *retstr; cJSON *array,*item;
+    if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                txid = jbits256(item,"tx_hash");
+                vout = jint(item,"tx_pos");
+                value = j64bits(item,"value");
+                height = jint(item,"height");
+                HASH_ITER(hh,LP_peerinfos,peer,tmp)
+                {
+                    if ( (retstr= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,vout,height,value)) != 0 )
+                        free(retstr);
+                }
+            }
+        }
+        free_json(array);
+    }
+}
+
 int32_t LP_utxos_sync(struct LP_peerinfo *peer)
 {
     int32_t i,j,n=0,m,v,posted=0; bits256 txid; cJSON *array,*item,*item2,*array2,*array3; uint64_t total,total2,metric; struct iguana_info *coin,*ctmp; struct LP_address *ap; char *retstr,*retstr2,*coinaddr;
@@ -463,6 +488,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( peer->diduquery == 0 )
         {
+            needpings++;
             LP_peer_pricesquery(peer);
             LP_utxos_sync(peer);
             peer->diduquery = now;
@@ -479,6 +505,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     {
         //printf("needpings.%d send notify\n",needpings);
         LP_notify_pubkeys(ctx,pubsock);
+        HASH_ITER(hh,LP_coins,coin,ctmp)
+        {
+            LP_smartutxos_push(coin);
+        }
     }
     if ( (counter % 6000) == 10 )
     {
