@@ -478,7 +478,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **u
             }
         }
     }
-    //printf("return mini.%d\n",mini);
+    printf("return mini.%d\n",mini);
     return(mini);
 }
 
@@ -511,7 +511,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 up = utxos[mini];
                 utxos[mini] = 0;
                 targetval2 = (targetval / 8) * 9 + 2*txfee;
-                printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(utxos[mini]->U.value),dstr(targetval),dstr(targetval2),(double)utxos[mini]->U.value/targetval);
+                printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
                 if ( (double)up->U.value/targetval < LP_MINVOL-1 )
                 {
                     if ( (mini= LP_nearest_utxovalue(coin,utxos,m,targetval2 * 1.01)) >= 0 )
