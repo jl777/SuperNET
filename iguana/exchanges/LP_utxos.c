@@ -472,7 +472,7 @@ cJSON *LP_inventory(char *symbol)
             //    LP_utxo_clientpublish(utxo);
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
         }
-        else if ( LP_ismine(utxo) > 0 && strcmp(symbol,utxo->coin) == 0 )
+        else if ( 0 && LP_ismine(utxo) > 0 && strcmp(symbol,utxo->coin) == 0 )
             printf("skip %s %s %d %d %d %d\n",utxo->coin,bits256_str(str,utxo->payment.txid),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
     }
     return(array);
