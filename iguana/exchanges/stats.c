@@ -629,7 +629,7 @@ void LP_rpc_processreq(void *_ptr)
         jsonflag = postflag = 0;
         portable_mutex_lock(&LP_commandmutex);
         retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,RPC_port);
-        printf("RPC.(%s)%s\n",jsonbuf,retstr);
+        //printf("RPC.(%s)%s\n",jsonbuf,retstr);
         portable_mutex_unlock(&LP_commandmutex);
         if ( filetype[0] != 0 )
         {
