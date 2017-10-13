@@ -362,15 +362,15 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                             }
                             if ( j == m )
                             {
-                                //printf("%s missing %s\n",peer->ipaddr,jprint(item,0));
+                                printf("%s missing %s\n",peer->ipaddr,jprint(item,0));
                                 if ( (retstr2= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"))) != 0 )
                                     free(retstr2);
                                 posted++;
                             }
                         }
-                        if ( 0 && posted != 0 )
+                        if ( 1 && posted != 0 )
                             printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
-                    } //else printf("%s matches\n",peer->ipaddr);
+                    } else printf("%s matches\n",peer->ipaddr);
                     free_json(array2);
                 }
                 free(retstr);

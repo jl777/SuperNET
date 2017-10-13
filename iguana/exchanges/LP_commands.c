@@ -362,7 +362,7 @@ dividends(coin, height, <args>)\n\
         coinaddr = jstr(argjson,"coinaddr");
         if ( coin != 0 && coinaddr != 0 )
         {
-            //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
+            char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
             LP_address_utxoadd(LP_coinfind(coin),coinaddr,txid,vout,value,height,-1);
         }
         return(clonestr("{\"result\":\"success\"}"));

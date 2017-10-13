@@ -189,7 +189,7 @@ struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coina
 
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
-    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; char str[65];
+    struct LP_address *ap; cJSON *txobj; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; char str[65];
  //printf("%s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
     if ( coin == 0 )
         return(0);
@@ -216,6 +216,16 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
         }
         if ( flag == 0 )
         {
+            if ( coin->electrum == 0 )
+            {
+                if ( (txobj= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) == 0 )
+                {
+                    if ( up->spendheight <= 0 )
+                        up->spendheight = 1;
+                    printf("prevent utxoadd since gettxout %s/v%d missing\n",bits256_str(str,up->U.txid),up->U.vout);
+                    return(0);
+                } else free_json(txobj);
+            }
             up = calloc(1,sizeof(*up));
             up->U.txid = txid;
             up->U.vout = vout;
@@ -226,7 +236,7 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             DL_APPEND(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);
             retval = 1;
-            if ( 0 && height > 0 )
+            if ( 1 && height > 0 )
                 printf("ADDRESS_UTXO >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
     } // else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
