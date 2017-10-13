@@ -773,9 +773,9 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         jaddi(array,LP_orderbookjson(rel,bids[i]));
         if ( bids[i]->numutxos == 0 )//|| relcoin->electrum == 0 )
         {
+            LP_address(relcoin,bids[i]->coinaddr);
             if ( relcoin->electrum == 0 )
                 LP_listunspent_issue(rel,bids[i]->coinaddr);
-            else LP_address(relcoin,bids[i]->coinaddr);
             n++;
         }
         free(bids[i]);
@@ -791,9 +791,9 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         jaddi(array,LP_orderbookjson(base,asks[i]));
         if ( asks[i]->numutxos == 0 )//|| basecoin->electrum == 0 )
         {
+            LP_address(basecoin,asks[i]->coinaddr);
             if ( basecoin->electrum == 0 )
                 LP_listunspent_issue(base,asks[i]->coinaddr);
-            else LP_address(basecoin,asks[i]->coinaddr);
             n++;
         }
         free(asks[i]);
