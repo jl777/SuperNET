@@ -323,9 +323,10 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
     {
         if ( IAMLP == 0 && coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )
             continue;
-        printf("UTXO sync %s -> %s\n",coin->symbol,peer->ipaddr);
+        //printf("UTXO sync %s -> %s\n",coin->symbol,peer->ipaddr);
         total = 0;
-        LP_listunspent_both(coin->symbol,coin->smartaddr);
+        if ( LP_listunspent_both(coin->symbol,coin->smartaddr) == 0 )
+            continue;
         if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -371,7 +372,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                         }
                         if ( 1 && posted != 0 )
                             printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
-                    } else printf("%s matches\n",peer->ipaddr);
+                    } else printf("%s matches %s\n",peer->ipaddr,coin->symbol);
                     free_json(array2);
                 }
                 free(retstr);
