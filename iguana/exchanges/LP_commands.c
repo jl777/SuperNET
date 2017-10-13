@@ -379,9 +379,12 @@ dividends(coin, height, <args>)\n\
             {
                 if ( coinaddr[0] != 0 )
                 {
-                    if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
-                        LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
                     LP_listunspent_issue(coin,coinaddr);
+                    if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
+                    {
+                        LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
+                        LP_smartutxos_push(ptr);
+                    }
                 }
                 return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
             } else return(clonestr("{\"error\":\"no address specified\"}"));
