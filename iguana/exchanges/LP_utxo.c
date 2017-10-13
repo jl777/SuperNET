@@ -698,10 +698,12 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
         if ( (txobj= LP_gettxout(symbol,coinaddr,txid,vout)) != 0 )
         {
             numconfirms = jint(txobj,"confirmations");
+            printf("LP_numconfirms.%d (%s)\n",numconfirms,jprint(txobj,0));
             free_json(txobj);
         }
         else if ( mempool != 0 && LP_mempoolscan(symbol,txid) >= 0 )
             numconfirms = 0;
+        else printf("LP_numconfirms cant gettxout and ignoring mempool\n");
     }
     else
     {
