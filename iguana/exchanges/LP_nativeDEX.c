@@ -425,7 +425,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
             }
             free_json(array);
         }
-        if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
+        if ( 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
         {
             if ( (array2= cJSON_Parse(retstr)) != 0 )
             {
