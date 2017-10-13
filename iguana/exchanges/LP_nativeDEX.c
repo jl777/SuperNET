@@ -483,6 +483,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
+                nonz++;
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
                 LP_utxos_sync(peer);
@@ -491,6 +492,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( peer->diduquery == 0 )
         {
+            nonz++;
             needpings++;
             LP_peer_pricesquery(peer);
             LP_utxos_sync(peer);
@@ -498,6 +500,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( peer->needping != 0 )
         {
+            nonz++;
             needpings++;
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
@@ -506,15 +509,13 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     if ( needpings != 0 || (counter % 6000) == 5 )
     {
-        //printf("needpings.%d send notify\n",needpings);
+        nonz++;
+        printf("needpings.%d send notify\n",needpings);
         LP_notify_pubkeys(ctx,pubsock);
-        HASH_ITER(hh,LP_coins,coin,ctmp)
-        {
-            LP_smartutxos_push(coin);
-        }
     }
     if ( (counter % 6000) == 10 )
     {
+        nonz++;
         LP_privkey_updates(ctx,pubsock,0);
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
@@ -522,12 +523,18 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         memset(&zero,0,sizeof(zero));
         if ( coin->inactive != 0 )
             continue;
+        if ( (counter % 6000) == 100 )
+        {
+            LP_smartutxos_push(coin);
+            nonz++;
+        }
         if ( coin->electrum != 0 )
             continue;
         //if ( coin->obooktime == 0 )
         //    continue;
         if ( time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {
+            nonz++;
             if ( (height= LP_getheight(coin)) > coin->longestchain )
             {
                 coin->longestchain = height;
@@ -572,6 +579,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( j < 100 )
             continue;
+        nonz++;
         //LP_getestimatedrate(coin);
         break;
     }
@@ -580,6 +588,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
         {
             //printf("SWAPS.(%s)\n",retstr);
+            nonz++;
             free(retstr);
         }
     }
@@ -816,8 +825,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
         if ( nonz == 0 )
-            usleep(50000);
-        else usleep(5000);
+            usleep(1000);
+        else if ( IAMLP == 0 )
+            usleep(10000);
     }
 }
 
