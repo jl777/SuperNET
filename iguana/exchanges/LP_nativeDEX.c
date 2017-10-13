@@ -372,7 +372,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
             }
             if ( n > 0 && total > 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
             {
-                printf("UTXO sync.%d %s n.%d total %.8f -> %s\n",j,coin->symbol,n,dstr(total),peer->ipaddr);
+                printf("UTXO sync.%d %s n.%d total %.8f -> %s (%s)\n",j,coin->symbol,n,dstr(total),peer->ipaddr,retstr);
                 total2 = 0;
                 if ( (array2= cJSON_Parse(retstr)) != 0 )
                 {
@@ -412,7 +412,18 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                 free(retstr);
             }
             else if ( n != 0 && total != 0 )
-                printf("no response from %s for %s\n",peer->ipaddr,coin->symbol);
+            {
+                printf("no response from %s for %s %s\n",peer->ipaddr,coin->symbol,coin->smartaddr);
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    txid = jbits256(item,"tx_hash");
+                    v = jint(item,"tx_pos");
+                    if ( (retstr2= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"))) != 0 )
+                        free(retstr2);
+                }
+            }
+            free_json(array);
         }
         if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
         {
