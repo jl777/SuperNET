@@ -321,10 +321,13 @@ void command_rpcloop(void *myipaddr)
 void LP_smartutxos_push(struct iguana_info *coin)
 {
     struct LP_peerinfo *peer,*tmp; uint64_t value; bits256 txid; int32_t i,vout,height,n; char *retstr; cJSON *array,*item;
+    if ( coin->smartaddr[0] == 0 )
+        return;
     if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
+            printf("PUSH %s %s\n",coin->symbol,coin->smartaddr);
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
