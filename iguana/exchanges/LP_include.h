@@ -37,7 +37,7 @@
 #define LP_GETINFO_INCR 30
 #define LP_ORDERBOOK_DURATION 3600
 
-#define LP_HTTP_TIMEOUT 2 // 1 is too small due to edge cases of time(NULL)
+#define LP_HTTP_TIMEOUT 5 // 1 is too small due to edge cases of time(NULL)
 #define LP_MAXPEER_ERRORS 3
 #define LP_MINPEER_GOOD 20
 #define LP_PEERGOOD_ERRORDECAY 0.9
