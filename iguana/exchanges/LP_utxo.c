@@ -218,11 +218,11 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
         {
             if ( coin->electrum == 0 )
             {
-                if ( (txobj= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) == 0 )
+                if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) == 0 )
                 {
                     if ( up->spendheight <= 0 )
                         up->spendheight = 1;
-                    printf("prevent utxoadd since gettxout %s/v%d missing\n",bits256_str(str,up->U.txid),up->U.vout);
+                    printf("prevent utxoadd since gettxout %s/v%d missing\n",bits256_str(str,txid),vout);
                     return(0);
                 } else free_json(txobj);
             }
