@@ -333,7 +333,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
 
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
-    cJSON *array,*item; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct electrum_info *ep,*backupep=0;
+    cJSON *array,*item; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; cJSON *txobj; struct electrum_info *ep,*backupep=0;
     array = cJSON_CreateArray();
     if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
@@ -350,11 +350,20 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
             {
                 if ( up->spendheight <= 0 && up->U.height > 0 )
                 {
-                    if ( backupep != 0 && up->SPV == 0 )
-                        up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
-                    jaddi(array,LP_address_item(coin,up,electrumret));
-                    n++;
-                    total += up->U.value;
+                    if ( coin->electrum == 0 )
+                    {
+                        if ( (txobj= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) == 0 )
+                            up->spendheight = 1;
+                        else free_json(txobj);
+                    }
+                    if ( up->spendheight <= 0 )
+                    {
+                        if ( backupep != 0 && up->SPV == 0 )
+                            up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                        jaddi(array,LP_address_item(coin,up,electrumret));
+                        n++;
+                        total += up->U.value;
+                    }
                     //printf("new array %s\n",jprint(array,0));
                 }
             }
@@ -698,12 +707,10 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
         if ( (txobj= LP_gettxout(symbol,coinaddr,txid,vout)) != 0 )
         {
             numconfirms = jint(txobj,"confirmations");
-            printf("LP_numconfirms.%d (%s)\n",numconfirms,jprint(txobj,0));
             free_json(txobj);
         }
         else if ( mempool != 0 && LP_mempoolscan(symbol,txid) >= 0 )
             numconfirms = 0;
-        else printf("LP_numconfirms cant gettxout and ignoring mempool\n");
     }
     else
     {
