@@ -94,10 +94,11 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
 
 char *issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
 {
-    char url[512];
+    char url[512],*retstr;
     sprintf(url,"http://%s:%u/api/stats/listunspent?coin=%s&address=%s",destip,destport,symbol,coinaddr);
-    //printf("listunspent.(%s)\n",url);
-    return(LP_issue_curl("listunspent",destip,destport,url));
+    retstr = LP_issue_curl("listunspent",destip,destport,url);
+    printf("listunspent.(%s) -> (%s)\n",url,retstr);
+    return(retstr);
 }
 
 char *LP_apicall(struct iguana_info *coin,char *method,char *params)

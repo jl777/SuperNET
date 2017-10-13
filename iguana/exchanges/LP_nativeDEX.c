@@ -344,7 +344,6 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
             printf("n.%d total %.8f\n",n,dstr(total));
             if ( n > 0 && total > 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
             {
-                printf("%s -> (%s)\n",peer->ipaddr,retstr);
                 total2 = 0;
                 if ( (array2= cJSON_Parse(retstr)) != 0 )
                 {
@@ -383,7 +382,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                 } else printf("parse error (%s)\n",retstr);
                 free(retstr);
             }
-            else if ( n == 0 && total == 0 )
+            else if ( n != 0 && total != 0 )
                 printf("no response from %s for %s\n",peer->ipaddr,coin->symbol);
         }
         if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
