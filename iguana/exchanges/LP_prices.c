@@ -776,6 +776,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
             LP_address(relcoin,bids[i]->coinaddr);
             if ( relcoin->electrum == 0 )
                 LP_listunspent_issue(rel,bids[i]->coinaddr);
+            LP_listunspent_query(rel,bids[i]->coinaddr);
             n++;
         }
         free(bids[i]);
@@ -794,6 +795,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
             LP_address(basecoin,asks[i]->coinaddr);
             if ( basecoin->electrum == 0 )
                 LP_listunspent_issue(base,asks[i]->coinaddr);
+            LP_listunspent_query(base,asks[i]->coinaddr);
             n++;
         }
         free(asks[i]);

@@ -244,6 +244,17 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     LP_broadcast_message(pubsock,"","",zero,msg);
 }
 
+void LP_listunspent_query(char *symbol,char *coinaddr)
+{
+    bits256 zero; char *msg; cJSON *reqjson = cJSON_CreateObject();
+    memset(zero.bytes,0,sizeof(zero));
+    jaddstr(reqjson,"method","addr_unspents");
+    jaddstr(reqjson,"coin",symbol);
+    jaddstr(reqjson,"address",coinaddr);
+    msg = jprint(reqjson,1);
+    LP_broadcast_message(LP_mypubsock,"","",zero,msg);
+}
+
 char *LP_postedprice(cJSON *argjson)
 {
     bits256 pubkey; double price; char *base,*rel;

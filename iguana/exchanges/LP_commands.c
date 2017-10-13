@@ -363,7 +363,7 @@ dividends(coin, height, <args>)\n\
         coinaddr = jstr(argjson,"coinaddr");
         if ( coin != 0 && coinaddr != 0 )
         {
-            //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
+            char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
             LP_address_utxoadd(LP_coinfind(coin),coinaddr,txid,vout,value,height,-1);
         }
         return(clonestr("{\"result\":\"success\"}"));
@@ -416,6 +416,47 @@ dividends(coin, height, <args>)\n\
     }
     else if ( strcmp(method,"checktxid") == 0 )
         retstr = LP_spentcheck(argjson);
+    else if ( strcmp(method,"addr_unspents") == 0 )
+    {
+        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        {
+            char *coinaddr; cJSON *array,*item,*req; int32_t i,n,vout,height; bits256 zero,txid; uint64_t value;
+            if ( (coinaddr= jstr(argjson,"address")) != 0 )
+            {
+                if ( coinaddr[0] != 0 )
+                {
+                    if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
+                    {
+                        printf("%s %s is my address being asked for!\n",ptr->symbol,coinaddr);
+                        if ( (array= LP_address_utxos(ptr,coinaddr,1)) != 0 )
+                        {
+                            memset(zero.bytes,0,sizeof(zero));
+                            if ( (n= cJSON_GetArraySize(array)) > 0 )
+                            {
+                                for (i=0; i<n; i++)
+                                {
+                                    item = jitem(array,i);
+                                    txid = jbits256(item,"txid");
+                                    vout = jint(item,"vout");
+                                    height = jint(item,"height");
+                                    value = j64bits(item,"value");
+                                    req = cJSON_CreateObject();
+                                    jaddstr(req,"method","uitem");
+                                    jaddstr(req,"coinaddr",coinaddr);
+                                    jaddbits256(req,"txid",txid);
+                                    jaddnum(req,"vout",vout);
+                                    jaddnum(req,"ht",height);
+                                    jadd64bits(req,"value",value);
+                                    LP_broadcast_message(pubsock,"","",zero,jprint(reqjson,1));
+                                }
+                            }
+                            free_json(array);
+                        }
+                    }
+                }
+            }
+        }
+    }
     else if ( strcmp(method,"getcoins") == 0 )
         return(jprint(LP_coinsjson(0),1));
     else if ( strcmp(method,"numutxos") == 0 )

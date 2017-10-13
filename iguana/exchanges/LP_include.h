@@ -326,5 +326,6 @@ double LP_getestimatedrate(struct iguana_info *coin);
 struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout);
 struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid,int32_t vout);
 
+void LP_listunspent_query(char *symbol,char *coinaddr);
 
 #endif
