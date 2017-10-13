@@ -220,7 +220,7 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             {
                 if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) == 0 )
                 {
-                    printf("prevent utxoadd since gettxout %s/v%d missing\n",bits256_str(str,txid),vout);
+                    //printf("prevent utxoadd since gettxout %s/v%d missing\n",bits256_str(str,txid),vout);
                     return(0);
                 } else free_json(txobj);
             }
