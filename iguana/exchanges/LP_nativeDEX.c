@@ -337,8 +337,10 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                     total += j64bits(item,"value");
                 }
             }
+            printf("n.%d total %.8f\n",n,dstr(total));
             if ( n > 0 && total > 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
             {
+                printf("%s -> (%s)\n",peer->ipaddr,retstr);
                 total2 = 0;
                 if ( (array2= cJSON_Parse(retstr)) != 0 )
                 {
@@ -374,9 +376,9 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                             printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
                     } else printf("%s matches %s\n",peer->ipaddr,coin->symbol);
                     free_json(array2);
-                }
+                } else printf("parse error (%s)\n",retstr);
                 free(retstr);
-            }
+            } else printf("no response from %s\n",peer->ipaddr);
         }
         if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
         {
