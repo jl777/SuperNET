@@ -319,6 +319,8 @@ void command_rpcloop(void *myipaddr)
 int32_t LP_utxos_sync(struct LP_peerinfo *peer)
 {
     int32_t i,j,n=0,m,v,posted=0; bits256 txid; cJSON *array,*item,*item2,*array2,*array3; uint64_t total,total2,metric; struct iguana_info *coin,*ctmp; struct LP_address *ap; char *retstr,*retstr2,*coinaddr;
+    if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+        return(0);
     HASH_ITER(hh,LP_coins,coin,ctmp)
     {
         if ( IAMLP == 0 && coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )

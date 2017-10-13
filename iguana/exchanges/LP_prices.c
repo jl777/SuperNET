@@ -360,6 +360,8 @@ void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
 void LP_peer_pricesquery(struct LP_peerinfo *peer)
 {
     char *retstr; cJSON *array; int32_t i,n;
+    if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+        return;
     peer->needping = (uint32_t)time(NULL);
     if ( (retstr= issue_LP_getprices(peer->ipaddr,peer->port)) != 0 )
     {
