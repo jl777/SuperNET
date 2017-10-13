@@ -553,17 +553,150 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
     return(recvlen);
 }
 
+uint16_t RPC_port;
+
+void LP_rpc_processreq(void *_ptr)
+{
+    uint64_t arg64 = *(uint64_t *)_ptr;
+    char filetype[128],content_type[128];
+    int32_t recvlen,flag,postflag=0,contentlen,remains,sock,numsent,jsonflag=0,hdrsize,len;
+    char helpname[512],remoteaddr[64],*buf,*retstr,*space,*jsonbuf;
+    uint32_t ipbits,i,size = 32*IGUANA_MAXPACKETSIZE + 512;
+    ipbits = (arg64 >> 32);
+    expand_ipbits(remoteaddr,ipbits);
+    sock = (arg64 & 0xffffffff);
+    recvlen = flag = 0;
+    retstr = 0;
+    space = calloc(1,size);
+    jsonbuf = calloc(1,size);
+    remains = size-1;
+    buf = jsonbuf;
+    while ( remains > 0 )
+    {
+        //printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
+        if ( (len= (int32_t)recv(sock,buf,remains,0)) < 0 )
+        {
+            if ( errno == EAGAIN )
+            {
+                printf("EAGAIN for len %d, remains.%d\n",len,remains);
+                usleep(10000);
+            }
+            break;
+        }
+        else
+        {
+            if ( len > 0 )
+            {
+                buf[len] = 0;
+                if ( recvlen == 0 )
+                {
+                    if ( (contentlen= iguana_getcontentlen(buf,recvlen)) > 0 )
+                    {
+                        hdrsize = iguana_getheadersize(buf,recvlen);
+                        if ( hdrsize > 0 )
+                        {
+                            if ( len < (hdrsize + contentlen) )
+                            {
+                                remains = (hdrsize + contentlen) - len;
+                                buf = &buf[len];
+                                flag = 1;
+                                //printf("got.(%s) %d remains.%d of len.%d contentlen.%d hdrsize.%d remains.%d\n",buf,recvlen,remains,len,contentlen,hdrsize,(hdrsize+contentlen)-len);
+                                continue;
+                            }
+                        }
+                    }
+                }
+                recvlen += len;
+                remains -= len;
+                buf = &buf[len];
+                if ( flag == 0 || remains <= 0 )
+                    break;
+            }
+            else
+            {
+                usleep(10000);
+                //printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
+                //retstr = iguana_rpcparse(space,size,&postflag,jsonbuf);
+                if ( flag == 0 )
+                    break;
+            }
+        }
+    }
+    content_type[0] = 0;
+    if ( recvlen > 0 )
+    {
+        jsonflag = postflag = 0;
+        retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,RPC_port);
+        if ( filetype[0] != 0 )
+        {
+            static cJSON *mimejson; char *tmp,*typestr=0; long tmpsize;
+            sprintf(helpname,"%s/mime.json",GLOBAL_HELPDIR);
+            if ( (tmp= OS_filestr(&tmpsize,helpname)) != 0 )
+            {
+                mimejson = cJSON_Parse(tmp);
+                free(tmp);
+            }
+            if ( mimejson != 0 )
+            {
+                if ( (typestr= jstr(mimejson,filetype)) != 0 )
+                    sprintf(content_type,"Content-Type: %s\r\n",typestr);
+            } else printf("parse error.(%s)\n",tmp);
+            //printf("filetype.(%s) json.%p type.%p tmp.%p [%s]\n",filetype,mimejson,typestr,tmp,content_type);
+        }
+    }
+    if ( retstr != 0 )
+    {
+        char *response,hdrs[1024];
+        //printf("RETURN.(%s) jsonflag.%d postflag.%d\n",retstr,jsonflag,postflag);
+        if ( jsonflag != 0 || postflag != 0 )
+        {
+            if ( retstr == 0 )
+                retstr = clonestr("{}");
+            response = malloc(strlen(retstr)+1024+1+1);
+            sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr));
+            response[0] = '\0';
+            strcat(response,hdrs);
+            strcat(response,retstr);
+            strcat(response,"\n");
+            if ( retstr != space )
+                free(retstr);
+            retstr = response;
+            //printf("RET.(%s)\n",retstr);
+        }
+        remains = (int32_t)strlen(retstr);
+        i = 0;
+        while ( remains > 0 )
+        {
+            if ( (numsent= (int32_t)send(sock,&retstr[i],remains,MSG_NOSIGNAL)) < 0 )
+            {
+                if ( errno != EAGAIN && errno != EWOULDBLOCK )
+                {
+                    //printf("%s: %s numsent.%d vs remains.%d len.%d errno.%d (%s) usock.%d\n",retstr,ipaddr,numsent,remains,recvlen,errno,strerror(errno),sock);
+                    break;
+                }
+            }
+            else if ( remains > 0 )
+            {
+                remains -= numsent;
+                i += numsent;
+                if ( remains > 0 )
+                    printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
+            }
+        }
+        if ( retstr != space)
+            free(retstr);
+    }
+    free(space);
+    free(jsonbuf);
+    closesocket(sock);
+}
+
 void stats_rpcloop(void *args)
 {
-    static char *jsonbuf;
-    uint16_t port; char filetype[128],content_type[128];
-    int32_t recvlen,flag,bindsock,postflag=0,contentlen,sock,remains,numsent,jsonflag=0,hdrsize,len;
-    socklen_t clilen; char helpname[512],remoteaddr[64],*buf,*retstr,*space;
-    struct sockaddr_in cli_addr; uint32_t ipbits,i,size = 32*IGUANA_MAXPACKETSIZE + 512;
+    uint16_t port; int32_t sock,bindsock; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint64_t arg64;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
-    if ( jsonbuf == 0 )
-        jsonbuf = calloc(1,IGUANA_MAXPACKETSIZE);
+    RPC_port = port;
     while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
     {
         //if ( coin->MAXPEERS == 1 )
@@ -572,7 +705,6 @@ void stats_rpcloop(void *args)
         sleep(3);
     }
     printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
-    space = calloc(1,size);
     while ( bindsock >= 0 )
     {
         clilen = sizeof(cli_addr);
@@ -583,129 +715,9 @@ void stats_rpcloop(void *args)
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
-        expand_ipbits(remoteaddr,ipbits);
         //printf("remote RPC request from (%s) %x\n",remoteaddr,ipbits);
-        
-        memset(jsonbuf,0,IGUANA_MAXPACKETSIZE);
-        remains = (int32_t)(IGUANA_MAXPACKETSIZE - 1);
-        buf = jsonbuf;
-        recvlen = flag = 0;
-        retstr = 0;
-        while ( remains > 0 )
-        {
-            //printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
-            if ( (len= (int32_t)recv(sock,buf,remains,0)) < 0 )
-            {
-                if ( errno == EAGAIN )
-                {
-                    printf("EAGAIN for len %d, remains.%d\n",len,remains);
-                    usleep(10000);
-                }
-                break;
-            }
-            else
-            {
-                if ( len > 0 )
-                {
-                    buf[len] = 0;
-                    if ( recvlen == 0 )
-                    {
-                        if ( (contentlen= iguana_getcontentlen(buf,recvlen)) > 0 )
-                        {
-                            hdrsize = iguana_getheadersize(buf,recvlen);
-                            if ( hdrsize > 0 )
-                            {
-                                if ( len < (hdrsize + contentlen) )
-                                {
-                                    remains = (hdrsize + contentlen) - len;
-                                    buf = &buf[len];
-                                    flag = 1;
-                                    //printf("got.(%s) %d remains.%d of len.%d contentlen.%d hdrsize.%d remains.%d\n",buf,recvlen,remains,len,contentlen,hdrsize,(hdrsize+contentlen)-len);
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                    recvlen += len;
-                    remains -= len;
-                    buf = &buf[len];
-                    if ( flag == 0 || remains <= 0 )
-                        break;
-                }
-                else
-                {
-                    usleep(10000);
-                    //printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
-                    //retstr = iguana_rpcparse(space,size,&postflag,jsonbuf);
-                    if ( flag == 0 )
-                        break;
-                }
-            }
-        }
-        content_type[0] = 0;
-        if ( recvlen > 0 )
-        {
-            retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,port);
-            if ( filetype[0] != 0 )
-            {
-                static cJSON *mimejson; char *tmp,*typestr=0; long tmpsize;
-                sprintf(helpname,"%s/mime.json",GLOBAL_HELPDIR);
-                if ( (tmp= OS_filestr(&tmpsize,helpname)) != 0 )
-                {
-                    mimejson = cJSON_Parse(tmp);
-                    free(tmp);
-                }
-                if ( mimejson != 0 )
-                {
-                    if ( (typestr= jstr(mimejson,filetype)) != 0 )
-                        sprintf(content_type,"Content-Type: %s\r\n",typestr);
-                } else printf("parse error.(%s)\n",tmp);
-                //printf("filetype.(%s) json.%p type.%p tmp.%p [%s]\n",filetype,mimejson,typestr,tmp,content_type);
-            }
-        }
-        if ( retstr != 0 )
-        {
-            char *response,hdrs[1024];
-            //printf("RETURN.(%s) jsonflag.%d postflag.%d\n",retstr,jsonflag,postflag);
-            if ( jsonflag != 0 || postflag != 0 )
-            {
-                if ( retstr == 0 )
-                    retstr = clonestr("{}");
-                response = malloc(strlen(retstr)+1024+1+1);
-                sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr));
-                response[0] = '\0';
-                strcat(response,hdrs);
-                strcat(response,retstr);
-                strcat(response,"\n");
-                if ( retstr != space )
-                    free(retstr);
-                retstr = response;
-                //printf("RET.(%s)\n",retstr);
-            }
-            remains = (int32_t)strlen(retstr);
-            i = 0;
-            while ( remains > 0 )
-            {
-                if ( (numsent= (int32_t)send(sock,&retstr[i],remains,MSG_NOSIGNAL)) < 0 )
-                {
-                    if ( errno != EAGAIN && errno != EWOULDBLOCK )
-                    {
-                        //printf("%s: %s numsent.%d vs remains.%d len.%d errno.%d (%s) usock.%d\n",retstr,ipaddr,numsent,remains,recvlen,errno,strerror(errno),sock);
-                        break;
-                    }
-                }
-                else if ( remains > 0 )
-                {
-                    remains -= numsent;
-                    i += numsent;
-                    if ( remains > 0 )
-                        printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
-                }
-            }
-            if ( retstr != space)
-                free(retstr);
-        }
-        closesocket(sock);
+        arg64 = ((uint64_t)ipbits << 32) | (sock & 0xffffffff);
+        LP_rpc_processreq((void *)&arg64);
     }
 }
 
