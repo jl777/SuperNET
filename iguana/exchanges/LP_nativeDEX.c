@@ -323,10 +323,10 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
     {
         if ( IAMLP == 0 && coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )
             continue;
-        //printf("UTXO sync %s -> %s\n",coin->symbol,peer->ipaddr);
         total = 0;
-        if ( LP_listunspent_both(coin->symbol,coin->smartaddr) == 0 )
+        if ( (j= LP_listunspent_both(coin->symbol,coin->smartaddr)) == 0 )
             continue;
+        printf("UTXO sync.%d %s -> %s\n",j,coin->symbol,peer->ipaddr);
         if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
