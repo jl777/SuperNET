@@ -674,8 +674,8 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
     char *retstr; cJSON *retjson=0; uint32_t divisor=8,expiration = (uint32_t)(time(NULL) + duration);
     printf("wait %d:%d for SWAP.(r%u/q%u) to complete\n",duration,sleeptime,requestid,quoteid);
     sleep(10);
-    if ( sleeptime < divisor*60 )
-        sleeptime = divisor * 60;
+    //if ( sleeptime < divisor*60 )
+    //    sleeptime = divisor * 60;
     while ( time(NULL) < expiration )
     {
         if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
@@ -690,9 +690,10 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
             }
             free(retstr);
         }
-        sleep(sleeptime/divisor);
-        if ( divisor > 1 )
-            divisor--;
+        sleep(sleeptime);
+        //sleep(sleeptime/divisor);
+        //if ( divisor > 1 )
+        //    divisor--;
     }
     if ( retjson != 0 )
     {
@@ -759,7 +760,7 @@ void LP_bobloop(void *_swap)
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,300);
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,30);
                 }
             }
         }
@@ -823,7 +824,7 @@ void LP_aliceloop(void *_swap)
                     }
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,300);
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,30);
                 }
             }
         }
