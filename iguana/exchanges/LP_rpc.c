@@ -425,7 +425,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
     //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
-    if ( coin == 0 || coin->inactive != 0 )
+    if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
     {
