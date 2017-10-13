@@ -406,7 +406,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                         }
                         if ( 0 && posted != 0 )
                             printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
-                    } else printf("%s matches %s\n",peer->ipaddr,coin->symbol);
+                    } //else printf("%s matches %s\n",peer->ipaddr,coin->symbol);
                     free_json(array2);
                 } else printf("parse error (%s)\n",retstr);
                 free(retstr);
@@ -521,7 +521,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     if ( needpings != 0 || (counter % 6000) == 5 )
     {
         nonz++;
-        printf("needpings.%d send notify\n",needpings);
+        //printf("needpings.%d send notify\n",needpings);
         LP_notify_pubkeys(ctx,pubsock);
     }
     if ( (counter % 6000) == 10 )

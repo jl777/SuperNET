@@ -311,6 +311,7 @@ dividends(coin, height, <args>)\n\
                     jaddnum(retjson,"timestamp",time(NULL));
                     jadd(retjson,"alice",LP_inventory(coin));
                     //jadd(retjson,"bob",LP_inventory(coin,1));
+                    LP_smartutxos_push(ptr);
                     return(jprint(retjson,1));
                 }
             }
