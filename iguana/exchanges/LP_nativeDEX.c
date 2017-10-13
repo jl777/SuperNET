@@ -380,7 +380,9 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                     free_json(array2);
                 } else printf("parse error (%s)\n",retstr);
                 free(retstr);
-            } else printf("no response from %s\n",peer->ipaddr);
+            }
+            else if ( n == 0 && total == 0 )
+                printf("no response from %s for %s\n",peer->ipaddr,coin->symbol);
         }
         if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
         {
