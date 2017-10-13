@@ -418,7 +418,7 @@ dividends(coin, height, <args>)\n\
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"addr_unspents") == 0 )
     {
-        //printf("GOT ADDR_UNSPENTS\n");
+        printf("GOT ADDR_UNSPENTS\n");
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
         {
             char *coinaddr; cJSON *array,*item,*req; int32_t i,n,vout,height; bits256 zero,txid; uint64_t value;
@@ -428,7 +428,7 @@ dividends(coin, height, <args>)\n\
                 {
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
                     {
-                        //printf("%s %s is my address being asked for!\n",ptr->symbol,coinaddr);
+                        printf("%s %s is my address being asked for!\n",ptr->symbol,coinaddr);
                         if ( (array= LP_address_utxos(ptr,coinaddr,1)) != 0 )
                         {
                             memset(zero.bytes,0,sizeof(zero));
@@ -449,7 +449,7 @@ dividends(coin, height, <args>)\n\
                                     jaddnum(req,"vout",vout);
                                     jaddnum(req,"ht",height);
                                     jadd64bits(req,"value",value);
-                                    //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
+                                    printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
                                     LP_broadcast_message(pubsock,"","",zero,jprint(req,1));
                                 }
                             }
