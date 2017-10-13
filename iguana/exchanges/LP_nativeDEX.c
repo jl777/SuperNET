@@ -327,6 +327,8 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
     {
         if ( IAMLP == 0 && coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )
             continue;
+        if ( coin->smartaddr[0] == 0 )
+            continue;
         total = 0;
         if ( (j= LP_listunspent_both(coin->symbol,coin->smartaddr)) == 0 )
             continue;
@@ -396,7 +398,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                         item = jitem(array2,j);
                         if ( (coinaddr= jfieldname(item)) != 0 )
                         {
-                            metric = j64bits(item,"coinaddr");
+                            metric = j64bits(item,coinaddr);
                             //printf("(%s) -> %.8f n.%d\n",coinaddr,dstr(metric>>16),(uint16_t)metric);
                             if ( (ap= LP_addressfind(coin,coinaddr)) == 0 || _LP_unspents_metric(ap->total,ap->n) != metric )
                             {
