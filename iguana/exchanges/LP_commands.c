@@ -443,6 +443,7 @@ dividends(coin, height, <args>)\n\
                                     value = j64bits(item,"value");
                                     req = cJSON_CreateObject();
                                     jaddstr(req,"method","uitem");
+                                    jaddstr(req,"coin",ptr->symbol);
                                     jaddstr(req,"coinaddr",coinaddr);
                                     jaddbits256(req,"txid",txid);
                                     jaddnum(req,"vout",vout);
