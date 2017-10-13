@@ -460,12 +460,12 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
                 retjson = LP_listunspent(symbol,coinaddr);
                 //printf("SELF_LISTUNSPENT.(%s %s)\n",symbol,coinaddr);
             }
-            else if ( (destport= LP_randpeer(destip)) > 0 )
+            /*else if ( (destport= LP_randpeer(destip)) > 0 )
             {
                 retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
                 printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
                 retjson = cJSON_Parse(retstr);
-            } else printf("LP_listunspent_issue couldnt get a random peer?\n");
+            } else printf("LP_listunspent_issue couldnt get a random peer?\n");*/
             if ( retjson != 0 )
             {
                 n = cJSON_GetArraySize(retjson);

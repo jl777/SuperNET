@@ -418,6 +418,7 @@ dividends(coin, height, <args>)\n\
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"addr_unspents") == 0 )
     {
+        printf("GOT ADDR_UNSPENTS\n");
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
         {
             char *coinaddr; cJSON *array,*item,*req; int32_t i,n,vout,height; bits256 zero,txid; uint64_t value;
