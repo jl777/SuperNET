@@ -448,7 +448,8 @@ dividends(coin, height, <args>)\n\
                                     jaddnum(req,"vout",vout);
                                     jaddnum(req,"ht",height);
                                     jadd64bits(req,"value",value);
-                                    LP_broadcast_message(pubsock,"","",zero,jprint(reqjson,1));
+                                    //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
+                                    LP_broadcast_message(pubsock,"","",zero,jprint(req,1));
                                 }
                             }
                             free_json(array);
@@ -457,6 +458,7 @@ dividends(coin, height, <args>)\n\
                 }
             }
         }
+        retstr = clonestr("{\"result\":\"success\"}");
     }
     else if ( strcmp(method,"getcoins") == 0 )
         return(jprint(LP_coinsjson(0),1));
