@@ -323,6 +323,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
     {
         if ( IAMLP == 0 && coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )
             continue;
+        printf("UTXO sync %s -> %s\n",coin->symbol,peer->ipaddr);
         total = 0;
         LP_listunspent_both(coin->symbol,coin->smartaddr);
         if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
@@ -362,7 +363,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                             }
                             if ( j == m )
                             {
-                                printf("%s missing %s\n",peer->ipaddr,jprint(item,0));
+                                printf("%s missing %s %s\n",peer->ipaddr,coin->symbol,jprint(item,0));
                                 if ( (retstr2= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"))) != 0 )
                                     free(retstr2);
                                 posted++;
@@ -441,15 +442,15 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 1000) == 0) )
+        if ( now > peer->lastpeers+60 || (rand() % 10000) == 0 )
         {
-            peer->lastpeers = now;
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
                 LP_utxos_sync(peer);
             }
+            peer->lastpeers = now;
         }
         if ( peer->diduquery == 0 )
         {
