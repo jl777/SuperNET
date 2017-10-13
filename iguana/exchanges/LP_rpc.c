@@ -463,6 +463,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
             else if ( (destport= LP_randpeer(destip)) > 0 )
             {
                 retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
+                printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
                 retjson = cJSON_Parse(retstr);
             } else printf("LP_listunspent_issue couldnt get a random peer?\n");
             if ( retjson != 0 )

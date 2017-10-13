@@ -385,6 +385,10 @@ dividends(coin, height, <args>)\n\
                         LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
                         //LP_smartutxos_push(ptr);
                     }
+                    else
+                    {
+                        
+                    }
                 }
                 return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
             } else return(clonestr("{\"error\":\"no address specified\"}"));
