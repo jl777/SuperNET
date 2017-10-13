@@ -372,7 +372,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
             }
             if ( n > 0 && total > 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
             {
-                printf("UTXO sync.%d %s n.%d total %.8f -> %s (%s)\n",j,coin->symbol,n,dstr(total),peer->ipaddr,retstr);
+                //printf("UTXO sync.%d %s n.%d total %.8f -> %s (%s)\n",j,coin->symbol,n,dstr(total),peer->ipaddr,retstr);
                 total2 = 0;
                 if ( (array2= cJSON_Parse(retstr)) != 0 )
                 {
@@ -398,13 +398,13 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                             }
                             if ( j == m )
                             {
-                                printf("%s missing %s %s\n",peer->ipaddr,coin->symbol,jprint(item,0));
+                                //printf("%s missing %s %s\n",peer->ipaddr,coin->symbol,jprint(item,0));
                                 if ( (retstr2= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"))) != 0 )
                                     free(retstr2);
                                 posted++;
                             }
                         }
-                        if ( 1 && posted != 0 )
+                        if ( 0 && posted != 0 )
                             printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
                     } else printf("%s matches %s\n",peer->ipaddr,coin->symbol);
                     free_json(array2);
@@ -413,7 +413,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
             }
             else if ( n != 0 && total != 0 )
             {
-                printf("no response from %s for %s %s\n",peer->ipaddr,coin->symbol,coin->smartaddr);
+                //printf("no response from %s for %s %s\n",peer->ipaddr,coin->symbol,coin->smartaddr);
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
@@ -534,11 +534,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         memset(&zero,0,sizeof(zero));
         if ( coin->inactive != 0 )
             continue;
-        if ( (counter % 6000) == 100 )
+        /*if ( (counter % 6000) == 100 )
         {
             LP_smartutxos_push(coin);
             nonz++;
-        }
+        }*/
         if ( coin->electrum != 0 )
             continue;
         //if ( coin->obooktime == 0 )
