@@ -312,8 +312,8 @@ void command_rpcloop(void *myipaddr)
         if ( nonz == 0 )
         {
             if ( IAMLP != 0 )
-                usleep(10);
-            else usleep(1000);
+                usleep(1000);
+            else usleep(10000);
         }
     }
 }
