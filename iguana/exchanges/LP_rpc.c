@@ -97,7 +97,7 @@ char *issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coi
     char url[512],*retstr;
     sprintf(url,"http://%s:%u/api/stats/listunspent?coin=%s&address=%s",destip,destport,symbol,coinaddr);
     retstr = LP_issue_curl("listunspent",destip,destport,url);
-    printf("listunspent.(%s) -> (%s)\n",url,retstr);
+    //printf("listunspent.(%s) -> (%s)\n",url,retstr);
     return(retstr);
 }
 
