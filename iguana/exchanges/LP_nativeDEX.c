@@ -551,7 +551,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         memset(&zero,0,sizeof(zero));
         if ( coin->addr_listunspent_requested != 0 )
         {
-            printf("addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
+            //printf("addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
         }
@@ -687,9 +687,26 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
     }
 }
 
+int32_t LP_reserved_msgs()
+{
+    bits256 zero; int32_t n = 0;
+    memset(zero.bytes,0,sizeof(zero));
+    portable_mutex_lock(&LP_reservedmutex);
+    while ( num_Reserved_msgs > 0 )
+    {
+        num_Reserved_msgs--;
+        printf("BROADCASTING RESERVED.(%s)\n",Reserved_msgs[num_Reserved_msgs]);
+        LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
+        Reserved_msgs[num_Reserved_msgs] = 0;
+        n++;
+    }
+    portable_mutex_unlock(&LP_reservedmutex);
+    return(n);
+}
+
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; bits256 zero; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
+    char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
@@ -854,16 +871,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         }
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
-        memset(zero.bytes,0,sizeof(zero));
-        portable_mutex_lock(&LP_reservedmutex);
-        while ( num_Reserved_msgs > 0 )
-        {
-            num_Reserved_msgs--;
-            printf("BROADCASTING RESERVED.(%s)\n",Reserved_msgs[num_Reserved_msgs]);
-            LP_broadcast_message(pubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
-            Reserved_msgs[num_Reserved_msgs] = 0;
-        }
-        portable_mutex_unlock(&LP_reservedmutex);
         if ( nonz == 0 )
             usleep(10000);
         else if ( IAMLP != 0 )
