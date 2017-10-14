@@ -21,11 +21,11 @@
 //
 
 // -SPV at tx level and limit SPV proofing
+// withdraw
 // stats, fix pricearray
 // sign packets
-// dPoW security
 // electrum peers
-// withdraw
+// dPoW security and zeroconf
 // verify portfolio
 // bittrex balancing
 
