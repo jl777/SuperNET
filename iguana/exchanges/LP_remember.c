@@ -748,7 +748,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                             }
                             free_json(sentobj);
                         }
-                        if ( rswap->finishedflag == 0 )
+                        if ( 0 && rswap->finishedflag == 0 )
                             printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
                     }
                 }
@@ -770,7 +770,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
     {
         if ( (fileobj= cJSON_Parse(fstr)) != 0 )
         {
-            rswap->finishedflag = 1;
+            rswap->origfinishedflag = rswap->finishedflag = 1;
             free_json(fileobj);
         }
         free(fstr);
