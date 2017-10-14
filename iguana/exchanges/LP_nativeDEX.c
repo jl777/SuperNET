@@ -21,7 +21,6 @@
 //
 
 // SPV at tx level and limit SPV proofing
-// coins file
 // stats, fix pricearray
 // sign packets
 // dPoW security
@@ -33,9 +32,10 @@
 
 #include <stdio.h>
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex;
 int32_t LP_canbind;
-char *Broadcaststr;
+char *Broadcaststr,*Reserved_msgs[1000];
+int32_t num_Reserved_msgs;
 struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
@@ -689,7 +689,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
+    char *myipaddr=0; bits256 zero; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
@@ -747,6 +747,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_messagemutex);
     portable_mutex_init(&LP_portfoliomutex);
     portable_mutex_init(&LP_butxomutex);
+    portable_mutex_init(&LP_reservedmutex);
 #ifndef _WIN32
     if ( system("curl -s4 checkip.amazonaws.com > DB/myipaddr") == 0 )
     {
@@ -853,6 +854,16 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         }
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
+        memset(zero.bytes,0,sizeof(zero));
+        portable_mutex_lock(&LP_reservedmutex);
+        while ( num_Reserved_msgs > 0 )
+        {
+            num_Reserved_msgs--;
+            printf("BROADCASTING RESERVED.(%s)\n",Reserved_msgs[num_Reserved_msgs]);
+            LP_broadcast_message(pubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
+            Reserved_msgs[num_Reserved_msgs] = 0;
+        }
+        portable_mutex_unlock(&LP_reservedmutex);
         if ( nonz == 0 )
             usleep(10000);
         else if ( IAMLP != 0 )

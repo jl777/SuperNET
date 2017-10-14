@@ -474,12 +474,11 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **u
                 {
                     if (up->SPV == 0 )
                         up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
-                    printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
                     if ( up->SPV < 0 )
                     {
                         printf("SPV failure for %s %s\n",coin->symbol,bits256_str(str,up->U.txid));
                         continue;
-                    }
+                    } else printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
                 }
                 if ( dist >= 0 && dist < mindist )
                 {
@@ -859,14 +858,12 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     butxo->T.lasttime = (uint32_t)time(NULL);
                     printf("set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
                     {
-                        bits256 zero; char *msg2;
-                        memset(&zero,0,sizeof(zero));
-                        msg2 = clonestr(msg);
-                        LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg);
-                        sleep(1);
-                        LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg2);
-                        //LP_butxo_swapfields_set(butxo);
-                        printf("return after RESERVED\n");
+                        portable_mutex_lock(&LP_reservedmutex);
+                        if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs) )
+                            Reserved_msgs[num_Reserved_msgs++] = msg;
+                        else LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
+                        portable_mutex_unlock(&LP_reservedmutex);
+                        printf("return after queued RESERVED\n");
                         return(2);
                     }
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
