@@ -252,7 +252,7 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
     jaddstr(reqjson,"coin",symbol);
     jaddstr(reqjson,"address",coinaddr);
     msg = jprint(reqjson,1);
-    //printf("BROADCAST.(%s)\n",msg);
+    printf("BROADCAST.(%s)\n",msg);
     LP_broadcast_message(LP_mypubsock,"","",zero,msg);
 }
 
