@@ -460,6 +460,8 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
                 retjson = LP_listunspent(symbol,coinaddr);
                 //printf("SELF_LISTUNSPENT.(%s %s)\n",symbol,coinaddr);
             }
+            else if ( IAMLP == 0 )
+                LP_listunspent_query(coin->symbol,coin->smartaddr);
             /*else if ( (destport= LP_randpeer(destip)) > 0 )
             {
                 retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
