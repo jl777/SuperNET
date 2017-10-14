@@ -663,6 +663,16 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
 {
     int32_t i,needflag,addflag; long fsize; char fname[1024],str[65],*fstr,*symbol,*rstr; cJSON *txobj,*sentobj,*fileobj; bits256 txid,checktxid; uint64_t value;
     rswap->iambob = -1;
+    sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,rswap->requestid,rswap->quoteid), OS_compatible_path(fname);
+    if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
+    {
+        if ( (fileobj= cJSON_Parse(fstr)) != 0 )
+        {
+            rswap->origfinishedflag = rswap->finishedflag = 1;
+            free_json(fileobj);
+        }
+        free(fstr);
+    }
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
         needflag = addflag = 0;
@@ -748,8 +758,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                             }
                             free_json(sentobj);
                         }
-                        if ( 0 && rswap->finishedflag == 0 )
-                            printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
+                        printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
                     }
                 }
             } //else printf("no symbol\n");
@@ -765,16 +774,6 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
         strcpy(rswap->src,rswap->bobcoin);
     if ( rswap->dest[0] == 0 )
         strcpy(rswap->dest,rswap->alicecoin);
-    sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,rswap->requestid,rswap->quoteid), OS_compatible_path(fname);
-    if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
-    {
-        if ( (fileobj= cJSON_Parse(fstr)) != 0 )
-        {
-            rswap->origfinishedflag = rswap->finishedflag = 1;
-            free_json(fileobj);
-        }
-        free(fstr);
-    }
     return(rswap->finishedflag);
 }
 

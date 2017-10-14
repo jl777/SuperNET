@@ -880,7 +880,7 @@ int main(int argc, const char * argv[])
         {
             printf("error launching LP_main (%s)\n",jprint(retjson,0));
             exit(-1);
-        } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
+        } //else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
         while ( (1) )
             sleep(1);

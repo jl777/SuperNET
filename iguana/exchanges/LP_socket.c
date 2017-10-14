@@ -909,7 +909,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
         }
         else
         {
-            printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
+            printf("launched electrum.(%s:%u)\n",ep->ipaddr,ep->port);
             jaddstr(retjson,"result","success");
             ep->prev = coin->electrum;
             coin->electrum = ep;
