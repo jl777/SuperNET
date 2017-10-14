@@ -666,8 +666,8 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
         jaddstr(item,"address",op->coinaddr);
         jaddnum(item,"price",op->price);
         jaddnum(item,"numutxos",op->numutxos);
-        jaddnum(item,"minvolume",dstr(op->minsatoshis));
-        jaddnum(item,"maxvolume",dstr(op->maxsatoshis));
+        jaddnum(item,"minvolume",dstr(op->minsatoshis)*0.8);
+        jaddnum(item,"maxvolume",dstr(op->maxsatoshis)*0.8);
         jaddbits256(item,"pubkey",op->pubkey);
         jaddnum(item,"age",time(NULL)-op->timestamp);
     }
