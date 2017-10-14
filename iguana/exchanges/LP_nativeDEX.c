@@ -276,10 +276,14 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
 
 int32_t LP_nanomsg_recvs(void *ctx)
 {
-    int32_t nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp;
+    static double lastmilli;
+    int32_t nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp; double milli;
     if ( (origipaddr= LP_myipaddr) == 0 )
         origipaddr = "127.0.0.1";
-    fprintf(stderr,".");
+    milli = OS_milliseconds();
+    if ( milli > lastmilli+100 )
+        fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f\n",milli-lastmilli);
+    lastmilli = milli;
     //portable_mutex_lock(&LP_nanorecvsmutex);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
