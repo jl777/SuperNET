@@ -30,7 +30,7 @@
 
 char *OS_mvstr()
 {
-#ifdef __WIN32
+#ifdef _WIN32
     return("rename");
 #else
     return("mv");
