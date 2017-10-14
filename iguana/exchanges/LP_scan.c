@@ -402,9 +402,9 @@ int32_t LP_spendsearch(char *coinaddr,bits256 *spendtxidp,int32_t *indp,char *sy
     {
         if ( searchvout < tx->numvouts && tx->outpoints[searchvout].spendvini >= 0 )
         {
-            LP_swap_getcoinaddr(symbol,coinaddr,*spendtxidp,*indp);
             *spendtxidp = tx->outpoints[searchvout].spendtxid;
             *indp = tx->outpoints[searchvout].spendvini;
+            LP_swap_getcoinaddr(symbol,coinaddr,*spendtxidp,*indp);
             return(tx->outpoints[searchvout].spendheight);
         }
     }
