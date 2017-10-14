@@ -679,7 +679,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
         return(clonestr("{\"error\":\"cant get alicecoin\"}"));
     }
     Q.privkey = LP_privkey(Q.destaddr,coin->taddr);
-    if ( bits256_nonz(Q.privkey) != 0 && Q.quotetime >= Q.timestamp-3 )
+    if ( bits256_nonz(Q.privkey) != 0 )//&& Q.quotetime >= Q.timestamp-3 )
     {
         retjson = cJSON_CreateObject();
         if ( (pairstr= jstr(argjson,"pair")) == 0 || (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
@@ -712,7 +712,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     else
     {
         LP_availableset(autxo);
-        printf("no privkey found\n");
+        printf("no privkey found coin.%s %s taddr.%u\n",Q.destcoin,Q.destaddr,coin->taddr);
         return(clonestr("{\"error\",\"no privkey\"}"));
     }
 }
