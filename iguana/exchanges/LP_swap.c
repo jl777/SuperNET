@@ -419,10 +419,10 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
         pfd.events = NN_POLLIN;
         if ( nn_poll(&pfd,1,1) > 0 )
         {
-            printf("start wait\n");
+            //printf("start wait\n");
             if ( (datalen= nn_recv(pairsock,&data,NN_MSG,0)) >= 0 )
             {
-                printf("wait for got.%d\n",datalen);
+                //printf("wait for got.%d\n",datalen);
                 retval = (*verify)(swap,data,datalen);
                 nn_freemsg(data);
                 //printf("retval.%d\n",retval);
@@ -754,6 +754,8 @@ void LP_bobloop(void *_swap)
                     }
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
                         printf("error sending bobpayment\n");
+                    //if ( LP_waitfor(swap->N.pair,swap,10,LP_verify_alicespend) < 0 )
+                    //    printf("error waiting for alicespend\n");
                     swap->sentflag = 1;
                     swap->bobreclaim.utxovout = 0;
                     swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
@@ -815,13 +817,13 @@ void LP_aliceloop(void *_swap)
                         char str[65];printf("%d waiting for bobpayment %s to be confirmed.%d %s %s\n",n,swap->bobpayment.I.destaddr,swap->I.bobconfirms,swap->bobcoin.symbol,bits256_str(str,swap->bobpayment.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
                     }
-                    if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x20000,data,maxlen,&swap->alicespend,0x40000,0) == 0 )
+                    /*if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x20000,data,maxlen,&swap->alicespend,0x40000,0) == 0 )
                         printf("error sending alicespend\n");
                     while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicespend.I.destaddr,swap->alicespend.I.signedtxid,0,1)) < swap->I.aliceconfirms )
                     {
                         char str[65];printf("%d waiting for alicespend %s to be confirmed.%d %s %s\n",n,swap->alicespend.I.destaddr,swap->I.aliceconfirms,swap->bobcoin.symbol,bits256_str(str,swap->alicespend.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
-                    }
+                    }*/
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
                     LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,30);

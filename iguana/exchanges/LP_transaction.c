@@ -1329,6 +1329,20 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
     return(-1);
 }
 
+int32_t LP_verify_alicespend(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
+{
+    if ( LP_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->alicespend,0,data,datalen,0) == 0 )
+    {
+        printf("alicespend amount %.8f -> %s vs %s\n",dstr(swap->alicespend.I.amount),swap->alicespend.p2shaddr,swap->alicespend.I.destaddr);
+        if ( strcmp(swap->alicespend.I.destaddr,swap->alicespend.p2shaddr) == 0 )
+        {
+            printf("alicespend verified\n");
+            return(0);
+        }
+    }
+    return(-1);
+}
+
 /*    Bob deposit:
  OP_IF
  <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
