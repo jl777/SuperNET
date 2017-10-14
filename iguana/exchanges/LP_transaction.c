@@ -944,12 +944,11 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t v
         printf("spend of %s/v%d detected\n",bits256_str(str,utxotxid),vout);
     else if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum == 0 )
     {
-        if ( (retjson= LP_gettxout(symbol,coinaddr,utxotxid,vout)) != 0 )
+        if ( (retjson= LP_gettxout(symbol,coinaddr,utxotxid,vout)) == 0 )
         {
-            free_json(retjson);
             decode_hex(spendtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeef");
             printf("couldnt find spend of %s/v%d, but no gettxout\n",bits256_str(str,utxotxid),vout);
-        }
+        } else free_json(retjson);
     }
     return(spendtxid);
     //char str[65]; printf("swap %s spendtxid.(%s)\n",symbol,bits256_str(str,utxotxid));
