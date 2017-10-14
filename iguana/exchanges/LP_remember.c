@@ -511,7 +511,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
 
 int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t quoteid)
 {
-    char fname[1024],*fstr,*secretstr,*srcstr,*deststr,*dest33,*txname; long fsize; cJSON *item,*txobj,*array; bits256 privkey; uint32_t r,q; int32_t i,j,n; uint8_t other33[33];
+    char fname[1024],*fstr,*secretstr,*srcstr,*deststr,*dest33,*txname; long fsize; cJSON *item,*txobj,*array; bits256 privkey; struct iguana_info *coin; uint32_t r,q; int32_t i,j,n; uint8_t other33[33];
     memset(rswap,0,sizeof(*rswap));
     rswap->requestid = requestid;
     rswap->quoteid = quoteid;
@@ -548,7 +548,11 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
                         break;
                 if ( i < 33 )
                     memcpy(rswap->other33,other33,33);
-                printf(" <- %s other33\n",dest33);
+                if ( rswap->iambob != 0 && (coin= LP_coinfind(rswap->dest)) != 0 )
+                    bitcoin_address(rswap->Adestaddr,coin->taddr,coin->pubtype,rswap->other33,33);
+                else if ( (coin= LP_coinfind(rswap->src)) != 0 )
+                    bitcoin_address(rswap->destaddr,coin->taddr,coin->pubtype,rswap->other33,33);
+                printf("(%s %s) <- %s other33\n",rswap->destaddr,rswap->Adestaddr,dest33);
             }
             if ( (rswap->plocktime= juint(item,"plocktime")) == 0 )
                 rswap->plocktime = LP_extract(requestid,quoteid,fname,"plocktime");
@@ -860,10 +864,6 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         printf("Bob.%p is null or Alice.%p is null\n",bob,alice);
         return(cJSON_Parse("{\"error\":\"null bob or alice coin\"}"));
     }
-    if ( rswap.iambob != 0 && rswap.Adestaddr[0] == 0 )
-        bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.other33,33);
-    if ( rswap.iambob == 0 && rswap.destaddr[0] == 0 )
-        bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.other33,33);
 
     //printf("iambob.%d finishedflag.%d %s %.8f txfee, %s %.8f txfee\n",rswap.iambob,rswap.finishedflag,rswap.alicecoin,dstr(rswap.Atxfee),rswap.bobcoin,dstr(rswap.Btxfee));
     //printf("privAm.(%s) %p/%p\n",bits256_str(str,rswap.privAm),Adest,AAdest);
