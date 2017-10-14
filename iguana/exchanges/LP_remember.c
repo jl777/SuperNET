@@ -556,7 +556,7 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
                     bitcoin_address(rswap->Adestaddr,coin->taddr,coin->pubtype,rswap->other33,33);
                 else if ( rswap->iambob == 0 && (coin= LP_coinfind(rswap->src)) != 0 )
                     bitcoin_address(rswap->destaddr,coin->taddr,coin->pubtype,rswap->other33,33);
-                printf("(%s, %s) <- %s other33\n",rswap->destaddr,rswap->Adestaddr,dest33);
+                //printf("(%s, %s) <- %s other33\n",rswap->destaddr,rswap->Adestaddr,dest33);
             }
             if ( (rswap->plocktime= juint(item,"plocktime")) == 0 )
                 rswap->plocktime = LP_extract(requestid,quoteid,fname,"plocktime");
