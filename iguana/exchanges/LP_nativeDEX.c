@@ -375,7 +375,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
         if ( coin->smartaddr[0] == 0 )
             continue;
         total = 0;
-        if ( (j= LP_listunspent_both(coin->symbol,coin->smartaddr)) == 0 )
+        if ( (j= LP_listunspent_both(coin->symbol,coin->smartaddr,0)) == 0 )
             continue;
         if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
         {

@@ -224,7 +224,7 @@ char *LP_pubkey_trustset(bits256 pubkey,uint32_t trustval)
 uint64_t LP_unspents_metric(struct iguana_info *coin,char *coinaddr)
 {
     cJSON *array,*item; int32_t i,n; uint64_t metric=0,total;
-    LP_listunspent_both(coin->symbol,coinaddr);
+    LP_listunspent_both(coin->symbol,coinaddr,0);
     if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
     {
         total = 0;
@@ -775,7 +775,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         {
             LP_address(relcoin,bids[i]->coinaddr);
             if ( relcoin->electrum == 0 )
-                LP_listunspent_issue(rel,bids[i]->coinaddr);
+                LP_listunspent_issue(rel,bids[i]->coinaddr,0);
             LP_listunspent_query(rel,bids[i]->coinaddr);
             n++;
         }
@@ -794,7 +794,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         {
             LP_address(basecoin,asks[i]->coinaddr);
             if ( basecoin->electrum == 0 )
-                LP_listunspent_issue(base,asks[i]->coinaddr);
+                LP_listunspent_issue(base,asks[i]->coinaddr,0);
             LP_listunspent_query(base,asks[i]->coinaddr);
             n++;
         }

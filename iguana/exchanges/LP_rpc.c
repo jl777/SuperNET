@@ -438,7 +438,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
     } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
 }
 
-int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
+int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
 {
     struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0,destip[64]; uint16_t destport;
     if ( symbol == 0 || symbol[0] == 0 )
@@ -463,12 +463,15 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
             else if ( IAMLP == 0 )
             {
                 LP_listunspent_query(coin->symbol,coin->smartaddr);
-                if ( (destport= LP_randpeer(destip)) > 0 )
+                if ( fullflag != 0 )
                 {
-                    retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
-                    printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
-                    retjson = cJSON_Parse(retstr);
-                } else printf("LP_listunspent_issue couldnt get a random peer?\n");
+                    if ( (destport= LP_randpeer(destip)) > 0 )
+                    {
+                        retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
+                        printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
+                        retjson = cJSON_Parse(retstr);
+                    } else printf("LP_listunspent_issue couldnt get a random peer?\n");
+                }
             }
             if ( retjson != 0 )
             {

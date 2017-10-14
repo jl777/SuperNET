@@ -252,7 +252,7 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
     jaddstr(reqjson,"coin",symbol);
     jaddstr(reqjson,"address",coinaddr);
     msg = jprint(reqjson,1);
-    printf("BROADCAST.(%s)\n",msg);
+    //printf("BROADCAST.(%s)\n",msg);
     LP_broadcast_message(LP_mypubsock,"","",zero,msg);
 }
 
@@ -733,7 +733,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     }
 }
 
-int32_t LP_listunspent_both(char *symbol,char *coinaddr)
+int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag)
 {
     int32_t i,v,height,n=0; uint64_t value; bits256 txid; char buf[512]; cJSON *array,*item; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin != 0 )//&& (IAMLP != 0 || coin->inactive == 0) )
@@ -743,7 +743,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr)
             //printf("issue path electrum.%p\n",coin->electrum);
             //if ( coin->electrum != 0 && (array= electrum_address_gethistory(symbol,coin->electrum,&array,coinaddr)) != 0 )
             //    free_json(array);
-            n = LP_listunspent_issue(symbol,coinaddr);
+            n = LP_listunspent_issue(symbol,coinaddr,fullflag);
         }
         else
         {
@@ -799,7 +799,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 if ( LP_allocated(butxo->payment.txid,butxo->payment.vout) != 0 || LP_allocated(butxo->deposit.txid,butxo->deposit.vout) != 0 || (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
                 {
                     printf("butxo.%p replace path %p %s, %p %s, %.8f\n",butxo,LP_allocated(butxo->payment.txid,butxo->payment.vout),bits256_str(str,butxo->payment.txid),LP_allocated(butxo->deposit.txid,butxo->deposit.vout),bits256_str(str2,butxo->deposit.txid),LP_quote_validate(autxo,butxo,&Q,1));
-                    LP_listunspent_both(Q.srccoin,Q.coinaddr);
+                    LP_listunspent_both(Q.srccoin,Q.coinaddr,0);
                     if ( (butxo= LP_address_utxopair(1,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,Q.desttxfee)) != 0 )
                     {
                         Q.txid = butxo->payment.txid;
@@ -1009,7 +1009,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                         {
                             bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
                             LP_listunspent_query(base,coinaddr);
-                            LP_listunspent_both(base,coinaddr);
+                            LP_listunspent_both(base,coinaddr,1);
                             asatoshis = autxo->S.satoshis;
                             for (j=0; j<maxiters; j++)
                             {

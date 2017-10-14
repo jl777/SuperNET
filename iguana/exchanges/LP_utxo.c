@@ -722,7 +722,7 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
     }
     else
     {
-        LP_listunspent_issue(symbol,coinaddr);
+        LP_listunspent_issue(symbol,coinaddr,1);
         if ( (ht= LP_txheight(coin,txid)) > 0 && ht <= coin->height )
             numconfirms = (LP_getheight(coin) - ht + 1);
         else if ( mempool != 0 )
