@@ -332,8 +332,10 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
                 }
                 else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
                 free_json(hdrobj);
-            }
+            } else printf("couldnt get header for ht.%d\n",height);
         }
+        if ( SPV < 0 )
+            printf("MERKLE DIDNT VERIFY.(%s)\n",jprint(merkobj,0));
         free_json(merkobj);
     }
     return(SPV);
@@ -366,7 +368,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                     }
                     if ( up->spendheight <= 0 )
                     {
-                        if ( backupep != 0 && up->SPV == 0 )
+                        if ( backupep != 0 && up->SPV <= 0 )
                             up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
                         jaddi(array,LP_address_item(coin,up,electrumret));
                         n++;

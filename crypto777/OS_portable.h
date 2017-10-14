@@ -40,7 +40,7 @@
 #include <sys/types.h>
 #include <time.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define sleep(x) Sleep(1000*(x))
 #include "../OSlibs/win/mingw.h"
 #include "../OSlibs/win/mman.h"

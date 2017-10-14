@@ -86,7 +86,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 #endif
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(port);
-    //#ifdef WIN32
+    //#ifdef _WIN32
     //   saddr.sin_addr.s_addr = (uint32_t)calc_ipbits("127.0.0.1");
     //#else
     
@@ -111,7 +111,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
     opt = 1;
     slen = sizeof(opt);
     //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
-#ifndef WIN32
+#ifndef _WIN32
     if ( 1 )//&& bindflag != 0 )
     {
         opt = 0;

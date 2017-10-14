@@ -28,7 +28,7 @@
 #include "DEXstats.h"
 char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 
-#ifndef WIN32
+#ifndef _WIN32
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL	0x4000	// Do not generate SIGPIPE
 #endif
@@ -115,7 +115,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 #endif
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(port);
-    //#ifdef WIN32
+    //#ifdef _WIN32
     //   saddr.sin_addr.s_addr = (uint32_t)calc_ipbits("127.0.0.1");
     //#else
     
@@ -140,7 +140,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     opt = 1;
     slen = sizeof(opt);
     //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
-#ifndef WIN32
+#ifndef _WIN32
     if ( 1 )//&& bindflag != 0 )
     {
         opt = 0;

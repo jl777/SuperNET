@@ -460,7 +460,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **u
             {
                 if ( coin->electrum != 0 )
                 {
-                    if (up->SPV == 0 )
+                    if (up->SPV <= 0 )
                         up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
                     if ( up->SPV < 0 )
                     {

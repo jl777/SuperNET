@@ -19,14 +19,12 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-
-// -verify SPV checking is working
 // withdraw
+// verify portfolio
 // stats, fix pricearray
 // sign packets
 // electrum peers
 // dPoW security and zeroconf
-// verify portfolio
 // bittrex balancing
 
 

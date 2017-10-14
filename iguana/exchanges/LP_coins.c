@@ -100,7 +100,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
         return;
     }
     sprintf(fname,"%s",LP_getdatadir());
-#ifdef WIN32
+#ifdef _WIN32
     strcat(fname,"\\");
 #else
     strcat(fname,"/");
@@ -138,7 +138,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
 #endif
         if ( strcmp(symbol,"KMD") != 0 )
         {
-#ifdef WIN32
+#ifdef _WIN32
             strcat(fname,"\\");
 #else
             strcat(fname,"/");
@@ -146,7 +146,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
             strcat(fname,assetname);
         }
     }
-#ifdef WIN32
+#ifdef _WIN32
     strcat(fname,"\\");
 #else
     strcat(fname,"/");
