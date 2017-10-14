@@ -363,7 +363,7 @@ dividends(coin, height, <args>)\n\
         coinaddr = jstr(argjson,"coinaddr");
         if ( coin != 0 && coinaddr != 0 )
         {
-            char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
+            //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
             LP_address_utxoadd(LP_coinfind(coin),coinaddr,txid,vout,value,height,-1);
         }
         return(clonestr("{\"result\":\"success\"}"));
@@ -418,7 +418,7 @@ dividends(coin, height, <args>)\n\
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"addr_unspents") == 0 )
     {
-        printf("GOT ADDR_UNSPENTS\n");
+        //printf("GOT ADDR_UNSPENTS\n");
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
         {
             char *coinaddr; //cJSON *array,*item,*req; int32_t i,n,vout,height; bits256 zero,txid; uint64_t value;
@@ -428,7 +428,7 @@ dividends(coin, height, <args>)\n\
                 {
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
                     {
-                        printf("%s %s is my address being asked for!\n",ptr->symbol,coinaddr);
+                        //printf("%s %s is my address being asked for!\n",ptr->symbol,coinaddr);
                         ptr->addr_listunspent_requested = (uint32_t)time(NULL);
                     }
                 }
