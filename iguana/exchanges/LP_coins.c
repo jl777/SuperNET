@@ -84,7 +84,7 @@ uint16_t LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
         strcpy(username,rpcuser);
         strcpy(password,rpcpassword);
     }
-    printf("%s rpcuser.(%s) rpcpassword.(%s)\n",symbol,rpcuser,rpcpassword);
+    //printf("%s rpcuser.(%s) rpcpassword.(%s)\n",symbol,rpcuser,rpcpassword);
     if ( rpcuser != 0 )
         free(rpcuser);
     if ( rpcpassword != 0 )
