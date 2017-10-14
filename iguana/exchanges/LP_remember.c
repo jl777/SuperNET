@@ -846,7 +846,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         }
         if ( (bob= LP_coinfind(rswap.bobcoin)) != 0 )
         {
-            bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.other33,33);
+            bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
             Adest = rswap.destaddr;
         }
     }
@@ -859,7 +859,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         }
         if ( (alice= LP_coinfind(rswap.alicecoin)) != 0 )
         {
-            bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.other33,33);
+            bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
             ABdest = rswap.Adestaddr;
         }
     }
