@@ -257,14 +257,14 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     {
                         if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
                             printf("self.(%s)\n",str);
-                        portable_mutex_lock(&LP_commandmutex);
                         if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                         {
+                            portable_mutex_lock(&LP_commandmutex);
                             if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
                             free(retstr);
+                            portable_mutex_unlock(&LP_commandmutex);
                         }
                         free_json(argjson);
-                        portable_mutex_unlock(&LP_commandmutex);
                     }
                     free(str);
                 }
