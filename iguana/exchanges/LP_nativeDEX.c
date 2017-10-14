@@ -282,7 +282,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
         origipaddr = "127.0.0.1";
     milli = OS_milliseconds();
     if ( milli > lastmilli+100 )
-        fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f\n",milli-lastmilli);
+        fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds\n",milli-lastmilli);
     lastmilli = milli;
     //portable_mutex_lock(&LP_nanorecvsmutex);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
