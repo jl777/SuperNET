@@ -94,10 +94,11 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
 
 char *issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
 {
-    char url[512];
+    char url[512],*retstr;
     sprintf(url,"http://%s:%u/api/stats/listunspent?coin=%s&address=%s",destip,destport,symbol,coinaddr);
-    //printf("listunspent.(%s)\n",url);
-    return(LP_issue_curl("listunspent",destip,destport,url));
+    retstr = LP_issue_curl("listunspent",destip,destport,url);
+    //printf("listunspent.(%s) -> (%s)\n",url,retstr);
+    return(retstr);
 }
 
 char *LP_apicall(struct iguana_info *coin,char *method,char *params)
@@ -425,7 +426,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
     //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
-    if ( coin == 0 || coin->inactive != 0 )
+    if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
     {
@@ -439,7 +440,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
 
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
 {
-    struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0,destip[64]; uint16_t destport;
+    struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0;// uint16_t destport;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     if ( (coin= LP_coinfind(symbol)) != 0 )
@@ -459,11 +460,14 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
                 retjson = LP_listunspent(symbol,coinaddr);
                 //printf("SELF_LISTUNSPENT.(%s %s)\n",symbol,coinaddr);
             }
-            else if ( (destport= LP_randpeer(destip)) > 0 )
+            else if ( IAMLP == 0 )
+                LP_listunspent_query(coin->symbol,coin->smartaddr);
+            /*else if ( (destport= LP_randpeer(destip)) > 0 )
             {
                 retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
+                printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
                 retjson = cJSON_Parse(retstr);
-            } else printf("LP_listunspent_issue couldnt get a random peer?\n");
+            } else printf("LP_listunspent_issue couldnt get a random peer?\n");*/
             if ( retjson != 0 )
             {
                 n = cJSON_GetArraySize(retjson);

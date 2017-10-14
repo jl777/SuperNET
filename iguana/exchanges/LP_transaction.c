@@ -935,13 +935,21 @@ bits256 _LP_swap_spendtxid(char *symbol,char *destaddr,char *coinaddr,bits256 ut
 
 bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t vout)
 {
-    bits256 spendtxid; int32_t spendvin; char coinaddr[64],str[65];
+    bits256 spendtxid; int32_t spendvin; char coinaddr[64],str[65]; cJSON *retjson; struct iguana_info *coin;
     // listtransactions or listspents
     destaddr[0] = 0;
     coinaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
     if ( LP_spendsearch(&spendtxid,&spendvin,symbol,utxotxid,vout) > 0 )
         printf("spend of %s/v%d detected\n",bits256_str(str,utxotxid),vout);
+    else if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum == 0 )
+    {
+        if ( (retjson= LP_gettxout(symbol,coinaddr,utxotxid,vout)) == 0 )
+        {
+            decode_hex(spendtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+            printf("couldnt find spend of %s/v%d, but no gettxout\n",bits256_str(str,utxotxid),vout);
+        } else free_json(retjson);
+    }
     return(spendtxid);
     //char str[65]; printf("swap %s spendtxid.(%s)\n",symbol,bits256_str(str,utxotxid));
 }

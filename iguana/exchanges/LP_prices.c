@@ -360,6 +360,8 @@ void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
 void LP_peer_pricesquery(struct LP_peerinfo *peer)
 {
     char *retstr; cJSON *array; int32_t i,n;
+    if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+        return;
     peer->needping = (uint32_t)time(NULL);
     if ( (retstr= issue_LP_getprices(peer->ipaddr,peer->port)) != 0 )
     {
@@ -771,9 +773,10 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         jaddi(array,LP_orderbookjson(rel,bids[i]));
         if ( bids[i]->numutxos == 0 )//|| relcoin->electrum == 0 )
         {
+            LP_address(relcoin,bids[i]->coinaddr);
             if ( relcoin->electrum == 0 )
                 LP_listunspent_issue(rel,bids[i]->coinaddr);
-            else LP_address(relcoin,bids[i]->coinaddr);
+            LP_listunspent_query(rel,bids[i]->coinaddr);
             n++;
         }
         free(bids[i]);
@@ -789,9 +792,10 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         jaddi(array,LP_orderbookjson(base,asks[i]));
         if ( asks[i]->numutxos == 0 )//|| basecoin->electrum == 0 )
         {
+            LP_address(basecoin,asks[i]->coinaddr);
             if ( basecoin->electrum == 0 )
                 LP_listunspent_issue(base,asks[i]->coinaddr);
-            else LP_address(basecoin,asks[i]->coinaddr);
+            LP_listunspent_query(base,asks[i]->coinaddr);
             n++;
         }
         free(asks[i]);

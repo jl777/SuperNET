@@ -346,7 +346,7 @@ int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflag
             n++;
     if ( n == 0 )
     {
-        printf("if nothing sent, it is finished\n");
+        //printf("if nothing sent, it is finished\n");
         return(1);
     }
     if ( iambob != 0 )
@@ -661,8 +661,18 @@ int32_t LP_refht_update(char *symbol,bits256 txid)
 
 int32_t LP_swap_load(struct LP_swap_remember *rswap)
 {
-    int32_t i,needflag,addflag; long fsize; char fname[1024],str[65],*fstr,*symbol,*rstr; cJSON *txobj,*sentobj; bits256 txid,checktxid; uint64_t value;
+    int32_t i,needflag,addflag; long fsize; char fname[1024],str[65],*fstr,*symbol,*rstr; cJSON *txobj,*sentobj,*fileobj; bits256 txid,checktxid; uint64_t value;
     rswap->iambob = -1;
+    sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,rswap->requestid,rswap->quoteid), OS_compatible_path(fname);
+    if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
+    {
+        if ( (fileobj= cJSON_Parse(fstr)) != 0 )
+        {
+            rswap->origfinishedflag = rswap->finishedflag = 1;
+            free_json(fileobj);
+        }
+        free(fstr);
+    }
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
         needflag = addflag = 0;
@@ -748,8 +758,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                             }
                             free_json(sentobj);
                         }
-                        if ( rswap->finishedflag == 0 )
-                            printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
+                        printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
                     }
                 }
             } //else printf("no symbol\n");
@@ -851,13 +860,13 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         printf("Bob.%p is null or Alice.%p is null\n",bob,alice);
         return(cJSON_Parse("{\"error\":\"null bob or alice coin\"}"));
     }
-    printf("ALICE.(%s) 1st refht %s <- %d, scan %d %d\n",rswap.Adestaddr,alice->symbol,alice->firstrefht,alice->firstscanht,alice->lastscanht);
-    printf("BOB.(%s) 1st refht %s <- %d, scan %d %d\n",rswap.destaddr,bob->symbol,bob->firstrefht,bob->firstscanht,bob->lastscanht);
     //printf("iambob.%d finishedflag.%d %s %.8f txfee, %s %.8f txfee\n",rswap.iambob,rswap.finishedflag,rswap.alicecoin,dstr(rswap.Atxfee),rswap.bobcoin,dstr(rswap.Btxfee));
     //printf("privAm.(%s) %p/%p\n",bits256_str(str,rswap.privAm),Adest,AAdest);
     //printf("privBn.(%s) %p/%p\n",bits256_str(str,rswap.privBn),Bdest,ABdest);
     if ( rswap.finishedflag == 0 && rswap.bobcoin[0] != 0 && rswap.alicecoin[0] != 0 )
     {
+        //printf("ALICE.(%s) 1st refht %s <- %d, scan %d %d\n",rswap.Adestaddr,alice->symbol,alice->firstrefht,alice->firstscanht,alice->lastscanht);
+        //printf("BOB.(%s) 1st refht %s <- %d, scan %d %d\n",rswap.destaddr,bob->symbol,bob->firstrefht,bob->firstscanht,bob->lastscanht);
         if ( alice->inactive != 0 || bob->inactive != 0 )
         {
             printf("Alice.%s inactive.%u or Bob.%s inactive.%u\n",rswap.alicecoin,alice->inactive,rswap.bobcoin,bob->inactive);
@@ -1075,30 +1084,33 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         printf("depositspent.(%s) alice.%d bob.%d %s %.8f\n",bits256_str(str,rswap.depositspent),rswap.sentflags[BASILISK_ALICECLAIM],rswap.sentflags[BASILISK_BOBREFUND],rswap.bobcoin,dstr(rswap.values[BASILISK_BOBDEPOSIT]));
     }
     LP_totals_update(rswap.iambob,rswap.alicecoin,rswap.bobcoin,KMDtotals,BTCtotals,rswap.sentflags,rswap.values);
+    int32_t numspent = 0;
     if ( bits256_nonz(rswap.paymentspent) == 0 )
     {
         if ( bits256_nonz(rswap.txids[BASILISK_ALICESPEND]) != 0 )
             rswap.paymentspent = rswap.txids[BASILISK_ALICESPEND];
         else rswap.paymentspent = rswap.txids[BASILISK_BOBRECLAIM];
-    }
+    } else numspent++;
     if ( bits256_nonz(rswap.depositspent) == 0 )
     {
         if ( bits256_nonz(rswap.txids[BASILISK_BOBREFUND]) != 0 )
             rswap.depositspent = rswap.txids[BASILISK_BOBREFUND];
         else rswap.depositspent = rswap.txids[BASILISK_ALICECLAIM];
-    }
+    } else numspent++;
     if ( bits256_nonz(rswap.Apaymentspent) == 0 )
     {
         if ( bits256_nonz(rswap.txids[BASILISK_BOBSPEND]) != 0 )
             rswap.Apaymentspent = rswap.txids[BASILISK_BOBSPEND];
         else rswap.Apaymentspent = rswap.txids[BASILISK_ALICERECLAIM];
-    }
-    rswap.finishedflag = basilisk_swap_isfinished(rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
+    } else numspent++;
+    if ( numspent == 3 )
+        rswap.finishedflag = 1;
+    else rswap.finishedflag = basilisk_swap_isfinished(rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
     item = LP_swap_json(&rswap);
     if ( rswap.origfinishedflag == 0 && rswap.finishedflag != 0 )
     {
         char fname[1024],*itemstr; FILE *fp;
-        //printf("SWAP %u-%u finished!\n",requestid,quoteid);
+        printf("SWAP %u-%u finished!\n",requestid,quoteid);
         sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,rswap.requestid,rswap.quoteid), OS_compatible_path(fname);
         if ( (fp= fopen(fname,"wb")) != 0 )
         {

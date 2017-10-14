@@ -120,7 +120,7 @@ getprices(base, rel)\n\
 sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 getmessages(firsti=0, num=100)\n\
 clearmessages(firsti=0, num=100)\n\
-secretaddresses(passphrase, num=10, pubtype=60, taddr=0)\n\
+secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)\n\
 electrum(coin, ipaddr, port)\n\
 snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
@@ -186,7 +186,7 @@ dividends(coin, height, <args>)\n\
             uint8_t taddr,pubtype;
             pubtype = (jobj(argjson,"pubtype") == 0) ? 60 : juint(argjson,"pubtype");
             taddr = (jobj(argjson,"taddr") == 0) ? 0 : juint(argjson,"taddr");
-            return(LP_secretaddresses(ctx,jstr(argjson,"passphrase"),juint(argjson,"num"),taddr,pubtype));
+            return(LP_secretaddresses(ctx,jstr(argjson,"prefix"),jstr(argjson,"passphrase"),juint(argjson,"num"),taddr,pubtype));
         }
         if ( base != 0 && rel != 0 )
         {
@@ -311,6 +311,7 @@ dividends(coin, height, <args>)\n\
                     jaddnum(retjson,"timestamp",time(NULL));
                     jadd(retjson,"alice",LP_inventory(coin));
                     //jadd(retjson,"bob",LP_inventory(coin,1));
+                    LP_smartutxos_push(ptr);
                     return(jprint(retjson,1));
                 }
             }
@@ -376,9 +377,19 @@ dividends(coin, height, <args>)\n\
             char *coinaddr;
             if ( (coinaddr= jstr(argjson,"address")) != 0 )
             {
-                if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
-                    LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
-                LP_listunspent_issue(coin,coinaddr);
+                if ( coinaddr[0] != 0 )
+                {
+                    LP_listunspent_issue(coin,coinaddr);
+                    if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
+                    {
+                        LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
+                        //LP_smartutxos_push(ptr);
+                    }
+                    else
+                    {
+                        
+                    }
+                }
                 return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
             } else return(clonestr("{\"error\":\"no address specified\"}"));
         } else return(clonestr("{\"error\":\"cant find coind\"}"));
@@ -405,6 +416,26 @@ dividends(coin, height, <args>)\n\
     }
     else if ( strcmp(method,"checktxid") == 0 )
         retstr = LP_spentcheck(argjson);
+    else if ( strcmp(method,"addr_unspents") == 0 )
+    {
+        //printf("GOT ADDR_UNSPENTS\n");
+        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        {
+            char *coinaddr; //cJSON *array,*item,*req; int32_t i,n,vout,height; bits256 zero,txid; uint64_t value;
+            if ( (coinaddr= jstr(argjson,"address")) != 0 )
+            {
+                if ( coinaddr[0] != 0 )
+                {
+                    if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
+                    {
+                        //printf("%s %s is my address being asked for!\n",ptr->symbol,coinaddr);
+                        ptr->addr_listunspent_requested = (uint32_t)time(NULL);
+                    }
+                }
+            }
+        }
+        retstr = clonestr("{\"result\":\"success\"}");
+    }
     else if ( strcmp(method,"getcoins") == 0 )
         return(jprint(LP_coinsjson(0),1));
     else if ( strcmp(method,"numutxos") == 0 )

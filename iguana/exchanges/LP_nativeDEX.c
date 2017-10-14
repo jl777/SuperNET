@@ -257,12 +257,14 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     {
                         if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
                             printf("self.(%s)\n",str);
+                        portable_mutex_lock(&LP_commandmutex);
                         if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                         {
                             if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
                             free(retstr);
                         }
                         free_json(argjson);
+                        portable_mutex_unlock(&LP_commandmutex);
                     }
                     free(str);
                 }
@@ -310,21 +312,71 @@ void command_rpcloop(void *myipaddr)
         if ( nonz == 0 )
         {
             if ( IAMLP != 0 )
-                usleep(10);
-            else usleep(1000);
+                usleep(1000);
+            else usleep(10000);
         }
+    }
+}
+
+void LP_smartutxos_push(struct iguana_info *coin)
+{
+    struct LP_peerinfo *peer,*tmp; uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; char *retstr; cJSON *array,*item,*req;
+    if ( coin->smartaddr[0] == 0 )
+        return;
+    if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
+    {
+        memset(zero.bytes,0,sizeof(zero));
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            printf("PUSH %s %s\n",coin->symbol,coin->smartaddr);
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                txid = jbits256(item,"tx_hash");
+                vout = jint(item,"tx_pos");
+                value = j64bits(item,"value");
+                height = jint(item,"height");
+                if ( 0 )
+                {
+                HASH_ITER(hh,LP_peerinfos,peer,tmp)
+                {
+                    if ( (retstr= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,vout,height,value)) != 0 )
+                        free(retstr);
+                }
+                }
+                else
+                {
+                    req = cJSON_CreateObject();
+                    jaddstr(req,"method","uitem");
+                    jaddstr(req,"coin",coin->symbol);
+                    jaddstr(req,"coinaddr",coin->smartaddr);
+                    jaddbits256(req,"txid",txid);
+                    jaddnum(req,"vout",vout);
+                    jaddnum(req,"ht",height);
+                    jadd64bits(req,"value",value);
+                    //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
+                    LP_broadcast_message(LP_mypubsock,"","",zero,jprint(req,1));
+                }
+            }
+        }
+        free_json(array);
     }
 }
 
 int32_t LP_utxos_sync(struct LP_peerinfo *peer)
 {
     int32_t i,j,n=0,m,v,posted=0; bits256 txid; cJSON *array,*item,*item2,*array2,*array3; uint64_t total,total2,metric; struct iguana_info *coin,*ctmp; struct LP_address *ap; char *retstr,*retstr2,*coinaddr;
+    if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+        return(0);
     HASH_ITER(hh,LP_coins,coin,ctmp)
     {
-        if ( coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )
+        if ( IAMLP == 0 && coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )
+            continue;
+        if ( coin->smartaddr[0] == 0 )
             continue;
         total = 0;
-        LP_listunspent_both(coin->symbol,coin->smartaddr);
+        if ( (j= LP_listunspent_both(coin->symbol,coin->smartaddr)) == 0 )
+            continue;
         if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -337,6 +389,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
             }
             if ( n > 0 && total > 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
             {
+                //printf("UTXO sync.%d %s n.%d total %.8f -> %s (%s)\n",j,coin->symbol,n,dstr(total),peer->ipaddr,retstr);
                 total2 = 0;
                 if ( (array2= cJSON_Parse(retstr)) != 0 )
                 {
@@ -362,7 +415,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                             }
                             if ( j == m )
                             {
-                                //printf("%s missing %s\n",peer->ipaddr,jprint(item,0));
+                                //printf("%s missing %s %s\n",peer->ipaddr,coin->symbol,jprint(item,0));
                                 if ( (retstr2= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"))) != 0 )
                                     free(retstr2);
                                 posted++;
@@ -370,13 +423,26 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                         }
                         if ( 0 && posted != 0 )
                             printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
-                    } //else printf("%s matches\n",peer->ipaddr);
+                    } //else printf("%s matches %s\n",peer->ipaddr,coin->symbol);
                     free_json(array2);
-                }
+                } else printf("parse error (%s)\n",retstr);
                 free(retstr);
             }
+            else if ( n != 0 && total != 0 )
+            {
+                //printf("no response from %s for %s %s\n",peer->ipaddr,coin->symbol,coin->smartaddr);
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    txid = jbits256(item,"tx_hash");
+                    v = jint(item,"tx_pos");
+                    if ( (retstr2= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"))) != 0 )
+                        free(retstr2);
+                }
+            }
+            free_json(array);
         }
-        if ( (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
+        if ( 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
         {
             if ( (array2= cJSON_Parse(retstr)) != 0 )
             {
@@ -387,7 +453,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                         item = jitem(array2,j);
                         if ( (coinaddr= jfieldname(item)) != 0 )
                         {
-                            metric = j64bits(item,"coinaddr");
+                            metric = j64bits(item,coinaddr);
                             //printf("(%s) -> %.8f n.%d\n",coinaddr,dstr(metric>>16),(uint16_t)metric);
                             if ( (ap= LP_addressfind(coin,coinaddr)) == 0 || _LP_unspents_metric(ap->total,ap->n) != metric )
                             {
@@ -441,24 +507,28 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( now > peer->lastpeers+60 && peer->numpeers > 0 && (peer->numpeers != numpeers || (rand() % 1000) == 0) )
+        if ( now > peer->lastpeers+60 || (rand() % 10000) == 0 )
         {
-            peer->lastpeers = now;
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
+                nonz++;
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
                 LP_utxos_sync(peer);
             }
+            peer->lastpeers = now;
         }
         if ( peer->diduquery == 0 )
         {
+            nonz++;
+            needpings++;
             LP_peer_pricesquery(peer);
             LP_utxos_sync(peer);
             peer->diduquery = now;
         }
         if ( peer->needping != 0 )
         {
+            nonz++;
             needpings++;
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
@@ -467,16 +537,24 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     if ( needpings != 0 || (counter % 6000) == 5 )
     {
+        nonz++;
         //printf("needpings.%d send notify\n",needpings);
         LP_notify_pubkeys(ctx,pubsock);
     }
     if ( (counter % 6000) == 10 )
     {
+        nonz++;
         LP_privkey_updates(ctx,pubsock,0);
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         memset(&zero,0,sizeof(zero));
+        if ( coin->addr_listunspent_requested != 0 )
+        {
+            printf("addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
+            LP_smartutxos_push(coin);
+            coin->addr_listunspent_requested = 0;
+        }
         if ( coin->inactive != 0 )
             continue;
         if ( coin->electrum != 0 )
@@ -485,6 +563,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         //    continue;
         if ( time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {
+            nonz++;
             if ( (height= LP_getheight(coin)) > coin->longestchain )
             {
                 coin->longestchain = height;
@@ -529,6 +608,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( j < 100 )
             continue;
+        nonz++;
         //LP_getestimatedrate(coin);
         break;
     }
@@ -537,6 +617,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
         {
             //printf("SWAPS.(%s)\n",retstr);
+            nonz++;
             free(retstr);
         }
     }
@@ -773,8 +854,10 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
         if ( nonz == 0 )
-            usleep(50000);
-        else usleep(5000);
+            usleep(10000);
+        else if ( IAMLP != 0 )
+            usleep(1000);
+        else usleep(10000);
     }
 }
 

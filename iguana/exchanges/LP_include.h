@@ -183,7 +183,7 @@ struct iguana_info
     portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,unspenttime,obooktime;
+    uint32_t addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,unspenttime,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128],lastunspent[64];
     // portfolio
@@ -312,6 +312,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
+void LP_smartutxos_push(struct iguana_info *coin);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);
 cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 void LP_postutxos(char *symbol,char *coinaddr);
@@ -325,5 +326,6 @@ double LP_getestimatedrate(struct iguana_info *coin);
 struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout);
 struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid,int32_t vout);
 
+void LP_listunspent_query(char *symbol,char *coinaddr);
 
 #endif
