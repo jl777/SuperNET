@@ -326,7 +326,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
                     return(0);
                 return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
             }
-            if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr)) != 0 )
+            if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr,1)) != 0 )
             {
                 //printf("array.(%s)\n",jprint(array,0));
                 if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
@@ -435,7 +435,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
             sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
             return(bitcoin_json(coin,"listunspent",buf));
         } else return(LP_address_utxos(coin,coinaddr,0));
-    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr));
+    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
 }
 
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
@@ -447,7 +447,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
     {
         if ( coin->electrum != 0 )
         {
-            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr)) != 0 )
+            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1)) != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
                 //printf("LP_listunspent_issue.%s %s.%d %s\n",symbol,coinaddr,n,jprint(retjson,0));
@@ -473,7 +473,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
             if ( retjson != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
-                if ( electrum_process_array(coin,0,coinaddr,retjson) != 0 )
+                if ( electrum_process_array(coin,0,coinaddr,retjson,1) != 0 )
                 {
                     //LP_postutxos(symbol,coinaddr); // might be good to not saturate
                 }
