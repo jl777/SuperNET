@@ -946,7 +946,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t v
     {
         if ( (retjson= LP_gettxout(symbol,coinaddr,utxotxid,vout)) == 0 )
         {
-            decode_hex(spendtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeef");
+            decode_hex(spendtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
             printf("couldnt find spend of %s/v%d, but no gettxout\n",bits256_str(str,utxotxid),vout);
         } else free_json(retjson);
     }
