@@ -120,7 +120,7 @@ getprices(base, rel)\n\
 sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 getmessages(firsti=0, num=100)\n\
 clearmessages(firsti=0, num=100)\n\
-secretaddresses(passphrase, num=10, pubtype=60, taddr=0)\n\
+secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)\n\
 electrum(coin, ipaddr, port)\n\
 snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
@@ -186,7 +186,7 @@ dividends(coin, height, <args>)\n\
             uint8_t taddr,pubtype;
             pubtype = (jobj(argjson,"pubtype") == 0) ? 60 : juint(argjson,"pubtype");
             taddr = (jobj(argjson,"taddr") == 0) ? 0 : juint(argjson,"taddr");
-            return(LP_secretaddresses(ctx,jstr(argjson,"passphrase"),juint(argjson,"num"),taddr,pubtype));
+            return(LP_secretaddresses(ctx,jstr(argjson,"prefix"),jstr(argjson,"passphrase"),juint(argjson,"num"),taddr,pubtype));
         }
         if ( base != 0 && rel != 0 )
         {

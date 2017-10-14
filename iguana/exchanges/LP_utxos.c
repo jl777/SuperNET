@@ -654,10 +654,12 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     return(flag);
 }
 
-char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint8_t pubtype)
+char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8_t taddr,uint8_t pubtype)
 {
     int32_t i; uint8_t tmptype,pubkey33[33],rmd160[20]; char output[777*45],str[65],str2[65],buf[8192],wifstr[128],coinaddr[64]; bits256 checkprivkey,privkey,pubkey; cJSON *retjson;
     retjson = cJSON_CreateObject();
+    if ( prefix == 0 || prefix[0] == 0 )
+        prefix = "secretaddress";
     if ( passphrase == 0 || passphrase[0] == 0 )
         passphrase = "password";
     if ( n <= 0 )
@@ -670,7 +672,7 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
     sprintf(output,"\"addresses\":[");
     for (i=0; i<n; i++)
     {
-        sprintf(buf,"secretaddress %s %03d",passphrase,i);
+        sprintf(buf,"%s %s %03d",prefix,passphrase,i);
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)buf,(int32_t)strlen(buf));
         bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
         bitcoin_priv2wif(0,wifstr,privkey,188);
