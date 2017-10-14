@@ -645,7 +645,8 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
 
 int32_t _LP_refht_update(struct iguana_info *coin,bits256 txid,int32_t refht)
 {
-    if ( refht > 0 && (coin->firstrefht == 0 || refht < coin->firstrefht) )
+    refht -= 9;
+    if ( refht > 10 && (coin->firstrefht == 0 || refht < coin->firstrefht) )
     {
         char str[65]; printf(">>>>>>>>. 1st refht %s %s <- %d, scan %d %d\n",coin->symbol,bits256_str(str,txid),refht,coin->firstscanht,coin->lastscanht);
         if ( coin->firstscanht == 0 || refht < coin->firstscanht )
