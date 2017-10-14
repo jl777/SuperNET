@@ -461,13 +461,13 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **u
         if ( (backupep= ep->prev) == 0 )
             backupep = ep;
     }
-    printf("LP_nearest_utxovalue %s utxos[%d] target %.8f\n",coin->symbol,n,dstr(targetval));
+    //printf("LP_nearest_utxovalue %s utxos[%d] target %.8f\n",coin->symbol,n,dstr(targetval));
     for (i=0; i<n; i++)
     {
         if ( (up= utxos[i]) != 0 )
         {
             dist = (up->U.value - targetval);
-            printf("nearest i.%d target %.8f val %.8f dist %.8f mindist %.8f mini.%d spent.%d\n",i,dstr(targetval),dstr(up->U.value),dstr(dist),dstr(mindist),mini,up->spendheight);
+            //printf("nearest i.%d target %.8f val %.8f dist %.8f mindist %.8f mini.%d spent.%d\n",i,dstr(targetval),dstr(up->U.value),dstr(dist),dstr(mindist),mini,up->spendheight);
             if ( up->spendheight <= 0 )
             {
                 if ( coin->electrum != 0 )
@@ -483,20 +483,20 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **u
                 }
                 if ( dist >= 0 && dist < mindist )
                 {
-                    printf("(%.8f %.8f %.8f).%d ",dstr(up->U.value),dstr(dist),dstr(mindist),mini);
+                    //printf("(%.8f %.8f %.8f).%d ",dstr(up->U.value),dstr(dist),dstr(mindist),mini);
                     mini = i;
                     mindist = dist;
                 }
             }
         }
     }
-    printf("return mini.%d\n",mini);
+    //printf("return mini.%d\n",mini);
     return(mini);
 }
 
 uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t desttxfee)
 {
-    printf("basesatoshis %.8f (rel %.8f / price %.8f)\n",dstr(SATOSHIDEN * ((relvolume) / price) + 2*txfee),relvolume,price);
+    //printf("basesatoshis %.8f (rel %.8f / price %.8f)\n",dstr(SATOSHIDEN * ((relvolume) / price) + 2*txfee),relvolume,price);
     if ( relvolume > dstr(desttxfee) && price > SMALLVAL )
         return(SATOSHIDEN * (relvolume / price) + 2*txfee);
     else return(0);
@@ -510,7 +510,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
         if ( (m= LP_address_utxo_ptrs(iambob,utxos,max,ap)) > 1 )
         {
             targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee);
-            if ( 1 )
+            if ( 0 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)
@@ -523,7 +523,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 up = utxos[mini];
                 utxos[mini] = 0;
                 targetval2 = (targetval / 8) * 9 + 2*txfee;
-                printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
+                //printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
                 if ( (double)up->U.value/targetval < LP_MINVOL-1 )
                 {
                     if ( (mini= LP_nearest_utxovalue(coin,utxos,m,targetval2 * 1.01)) >= 0 )
@@ -537,7 +537,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                                 return(utxo);
                             }
                         }
-                    } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
+                    } //else printf("cant find targetval2 %.8f\n",dstr(targetval2));
                 } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
             } else if ( targetval != 0 && mini >= 0 )
                 printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
@@ -863,7 +863,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         memset(&zero,0,sizeof(zero));
                         msg2 = clonestr(msg);
                         LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,zero,msg);
-                        //LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg2);
+                        sleep(1);
+                        LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg2);
                         //LP_butxo_swapfields_set(butxo);
                         printf("return after RESERVED\n");
                         return(2);
@@ -984,7 +985,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
         return(0);
     utxos = calloc(max,sizeof(*utxos));
     LP_txfees(&txfee,&desttxfee,base,autxo->coin);
-    printf("LP_buyutxo maxprice %.8f relvol %.8f %s/%s %.8f %.8f\n",maxprice,dstr(autxo->S.satoshis),base,autxo->coin,dstr(txfee),dstr(desttxfee));
+    //printf("LP_buyutxo maxprice %.8f relvol %.8f %s/%s %.8f %.8f\n",maxprice,dstr(autxo->S.satoshis),base,autxo->coin,dstr(txfee),dstr(desttxfee));
     if ( (obookstr= LP_orderbook(base,autxo->coin,duration)) != 0 )
     {
         if ( (orderbook= cJSON_Parse(obookstr)) != 0 )
@@ -996,7 +997,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                     item = jitem(asks,i);
                     price = jdouble(item,"price");
                     pubkey = jbits256(item,"pubkey");
-                    printf("[%d/%d] %s pubcmp %d price %.8f vs maxprice %.8f\n",i,numasks,jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519),price,maxprice);
+                    //printf("[%d/%d] %s pubcmp %d price %.8f vs maxprice %.8f\n",i,numasks,jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519),price,maxprice);
                     if ( LP_pricevalid(price) > 0 && price <= maxprice )
                     {
                         for (j=0; j<numavoids; j++)
