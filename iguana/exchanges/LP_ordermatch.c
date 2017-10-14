@@ -596,9 +596,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
         if ( (pair= LP_nanobind(ctx,pairstr)) >= 0 )
         {
             LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis-2*qp->txfee,rel,qp->destsatoshis-2*qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
-            printf("call swapinit\n");
             swap = LP_swapinit(1,0,privkey,&qp->R,qp);
-            printf("swapinit.%p\n",swap);
             swap->N.pair = pair;
             utxo->S.swap = swap;
             swap->utxo = utxo;
