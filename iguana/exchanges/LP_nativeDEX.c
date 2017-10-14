@@ -19,13 +19,12 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// sign packets
 // withdraw
 // verify portfolio
 // stats, fix pricearray
-// sign packets
-// electrum peers
 // dPoW security and zeroconf
-// bittrex balancing
+// electrum peers
 
 
 #include <stdio.h>
