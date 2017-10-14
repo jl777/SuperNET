@@ -295,6 +295,7 @@ int32_t LP_pullsock_check(void *ctx,char **retstrp,char *myipaddr,int32_t pubsoc
 uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 int32_t LP_coinbus(uint16_t coin_busport);
+int32_t LP_nanomsg_recvs(void *ctx);
 int32_t LP_reserved_msgs();
 int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg);
 struct iguana_info *LP_coinfind(char *symbol);

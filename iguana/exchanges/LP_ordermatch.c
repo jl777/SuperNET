@@ -417,6 +417,9 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
                 break;
             }
         }
+        while ( 1 )
+            if ( LP_nanomsg_recvs(ctx) <= 0 )
+                break;
         sleep(1);
     }
     return(price);

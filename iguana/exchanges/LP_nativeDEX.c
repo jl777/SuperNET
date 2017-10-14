@@ -32,7 +32,7 @@
 
 #include <stdio.h>
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[1000];
 int32_t num_Reserved_msgs,max_Reserved_msgs;
@@ -274,40 +274,48 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
     return(nonz);
 }
 
+int32_t LP_nanomsg_recvs(void *ctx)
+{
+    int32_t nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp;
+    if ( (origipaddr= LP_myipaddr) == 0 )
+        origipaddr = "127.0.0.1";
+    fprintf(stderr,".");
+    portable_mutex_lock(&LP_nanorecvsmutex);
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        if ( peer->errors >= LP_MAXPEER_ERRORS )
+        {
+            if ( (rand() % 10000) == 0 )
+                peer->errors--;
+            else
+            {
+                //printf("skip %s\n",peer->ipaddr);
+                continue;
+            }
+        }
+        //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
+        nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr);
+    }
+    /*HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
+     {
+     if ( coin->inactive != 0 )
+     continue;
+     if ( coin->bussock >= 0 )
+     nonz += LP_sock_check(coin->symbol,ctx,origipaddr,-1,coin->bussock,LP_profitratio - 1.);
+     }*/
+    if ( LP_mypullsock >= 0 )
+        nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1");
+    portable_mutex_unlock(&LP_nanorecvsmutex);
+    return(nonz);
+}
+
 void command_rpcloop(void *myipaddr)
 {
-    int32_t nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp; void *ctx;
+    int32_t nonz = 0; void *ctx;
     ctx = bitcoin_ctx();
-    if ( (origipaddr= myipaddr) == 0 )
-        origipaddr = "127.0.0.1";
     while ( 1 )
     {
-        fprintf(stderr,".");
-        nonz = 0;
-        HASH_ITER(hh,LP_peerinfos,peer,tmp)
-        {
-            if ( peer->errors >= LP_MAXPEER_ERRORS )
-            {
-                if ( (rand() % 10000) == 0 )
-                    peer->errors--;
-                else
-                {
-                    //printf("skip %s\n",peer->ipaddr);
-                    continue;
-                }
-            }
-            //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
-            nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr);
-        }
-        /*HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
-        {
-            if ( coin->inactive != 0 )
-                continue;
-            if ( coin->bussock >= 0 )
-                nonz += LP_sock_check(coin->symbol,ctx,origipaddr,-1,coin->bussock,LP_profitratio - 1.);
-        }*/
-        if ( LP_mypullsock >= 0 )
-            nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1");
+        nonz = LP_nanomsg_recvs(ctx);
         //if ( LP_mybussock >= 0 )
         //    nonz += LP_sock_check("BUS",ctx,origipaddr,-1,LP_mybussock);
         if ( nonz == 0 )
@@ -784,6 +792,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_portfoliomutex);
     portable_mutex_init(&LP_butxomutex);
     portable_mutex_init(&LP_reservedmutex);
+    portable_mutex_init(&LP_nanorecvsmutex);
 #ifndef _WIN32
     if ( system("curl -s4 checkip.amazonaws.com > DB/myipaddr") == 0 )
     {
