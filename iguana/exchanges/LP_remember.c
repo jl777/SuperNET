@@ -467,7 +467,7 @@ struct LP_swap_remember
     uint32_t requestid,quoteid,plocktime,dlocktime,expiration,state,otherstate;
     int32_t iambob,finishedflag,origfinishedflag,Predeemlen,Dredeemlen,sentflags[sizeof(txnames)/sizeof(*txnames)];
     uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],Predeemscript[1024],Dredeemscript[1024],pubkey33[33],other33[33];
-    char src[64],dest[64],destaddr[64],Adestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[64],bobcoin[64],*txbytes[sizeof(txnames)/sizeof(*txnames)];
+    char src[64],dest[64],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[64],bobcoin[64],*txbytes[sizeof(txnames)/sizeof(*txnames)];
 };
 
 cJSON *LP_swap_json(struct LP_swap_remember *rswap)
@@ -841,26 +841,26 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     {
         if ( alice != 0 )
         {
-            bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
+            //bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
             AAdest = rswap.Adestaddr;
         }
         if ( (bob= LP_coinfind(rswap.bobcoin)) != 0 )
         {
-            bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
-            Adest = rswap.destaddr;
+            bitcoin_address(rswap.Sdestaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
+            ABdest = rswap.Sdestaddr;
         }
     }
     else
     {
         if ( bob != 0 )
         {
-            bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
+            //bitcoin_address(rswap.destaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
             Bdest = rswap.destaddr;
         }
         if ( (alice= LP_coinfind(rswap.alicecoin)) != 0 )
         {
-            bitcoin_address(rswap.Adestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
-            ABdest = rswap.Adestaddr;
+            bitcoin_address(rswap.Sdestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
+            ABdest = rswap.Sdestaddr;
         }
     }
     if ( bob == 0 || alice == 0 )
