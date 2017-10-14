@@ -282,6 +282,7 @@ void command_rpcloop(void *myipaddr)
         origipaddr = "127.0.0.1";
     while ( 1 )
     {
+        fprintf(stderr,".");
         nonz = 0;
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {

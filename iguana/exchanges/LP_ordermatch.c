@@ -402,9 +402,9 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
         Reserved_msgs[num_Reserved_msgs++] = msg;
     else
     {
-        if ( 1 && strcmp(method,"request") == 0 )
+        //if ( 1 && strcmp(method,"request") == 0 )
             LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg);
-        else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
+        //else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
     }
     portable_mutex_unlock(&LP_reservedmutex);
     for (i=0; i<20; i++)
@@ -772,7 +772,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     char *method,*msg; uint64_t value,value2; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"request") == 0 ||strcmp(method,"connect") == 0) )
     {
-        printf("LP_tradecommand: check received %s\n",method);
+        printf("LP_tradecommand: check received method %s\n",method);
         retval = 1;
         if ( LP_quoteparse(&Q,argjson) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0 )
         {
