@@ -1077,16 +1077,16 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,b
 
 int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay)
 {
-    uint8_t userdata[512]; int32_t retval,len = 0; static bits256 zero;
+    uint8_t userdata[512]; int32_t retval,i,len = 0; static bits256 zero;
     //printf("basilisk_bobpayment_reclaim\n");
     len = basilisk_swapuserdata(userdata,zero,1,swap->I.myprivs[1],swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
     memcpy(swap->I.userdata_bobreclaim,userdata,len);
     swap->I.userdata_bobreclaimlen = len;
     if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.wiftaddr,swap->bobcoin.taddr,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->bobreclaim,&swap->bobpayment,swap->I.myprivs[1],0,userdata,len,1,swap->changermd160,swap->bobpayment.I.destaddr)) == 0 )
     {
-        //for (i=0; i<swap->bobreclaim.I.datalen; i++)
-        //    printf("%02x",swap->bobreclaim.txbytes[i]);
-        //printf(" <- bobreclaim\n");
+        for (i=0; i<swap->bobreclaim.I.datalen; i++)
+            printf("%02x",swap->bobreclaim.txbytes[i]);
+        printf(" <- bobreclaim\n");
         //basilisk_txlog(swap,&swap->bobreclaim,delay);
         return(retval);
     }

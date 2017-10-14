@@ -1052,9 +1052,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             }
             if ( rswap.sentflags[BASILISK_BOBREFUND] == 0 && rswap.sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(rswap.txids[BASILISK_BOBDEPOSIT]) != 0 && bits256_nonz(rswap.depositspent) == 0 )
             {
-                if ( bits256_nonz(rswap.paymentspent) != 0 || time(NULL) > rswap.expiration )
+                if ( bits256_nonz(rswap.Apaymentspent) != 0 || time(NULL) > rswap.expiration )
                 {
-                    printf("do the refund!\n");
+                    printf("do the refund! paymentspent.%s now.%u vs expiration.%u\n",bits256_str(str,rswap.paymentspent),(uint32_t)time(NULL),rswap.expiration);
                     //if ( txbytes[BASILISK_BOBREFUND] == 0 )
                     {
                         revcalc_rmd160_sha256(rswap.secretBn,rswap.privBn);
