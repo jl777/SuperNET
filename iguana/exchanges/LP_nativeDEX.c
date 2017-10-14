@@ -20,7 +20,7 @@
 //  marketmaker
 //
 
-// -SPV at tx level and limit SPV proofing
+// -verify SPV checking is working
 // withdraw
 // stats, fix pricearray
 // sign packets
