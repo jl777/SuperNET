@@ -417,7 +417,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 
 void LP_postutxos(char *symbol,char *coinaddr)
 {
-    bits256 zero; char *msg; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
+    bits256 zero; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
     if ( (coin= LP_coinfind(symbol)) != 0 && (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
     {
         //printf("LP_postutxos pubsock.%d %s %s\n",pubsock,symbol,coin->smartaddr);
@@ -430,9 +430,8 @@ void LP_postutxos(char *symbol,char *coinaddr)
             jaddstr(reqjson,"coin",symbol);
             jaddstr(reqjson,"coinaddr",coinaddr);
             jadd(reqjson,"utxos",array);
-            msg = jprint(reqjson,1);
             //printf("post (%s) -> %d\n",msg,LP_mypubsock);
-            LP_broadcast_message(LP_mypubsock,symbol,symbol,zero,msg);
+            LP_reserved_msg(symbol,symbol,zero,jprint(reqjson,1));
         }
     }
 }

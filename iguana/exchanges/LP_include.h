@@ -43,7 +43,7 @@
 #define LP_PEERGOOD_ERRORDECAY 0.9
 
 #define LP_SWAPSTEP_TIMEOUT 30
-#define LP_AUTOTRADE_TIMEOUT 60
+#define LP_AUTOTRADE_TIMEOUT 10
 #define LP_MIN_TXFEE 10000
 #define LP_MINVOL 20
 #define LP_MINCLIENTVOL 50
@@ -296,6 +296,7 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_reserved_msgs();
+int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg);
 struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);

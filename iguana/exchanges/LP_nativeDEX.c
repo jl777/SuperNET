@@ -20,7 +20,7 @@
 //  marketmaker
 //
 
-// SPV at tx level and limit SPV proofing
+// -SPV at tx level and limit SPV proofing
 // stats, fix pricearray
 // sign packets
 // dPoW security
@@ -35,7 +35,7 @@
 portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[1000];
-int32_t num_Reserved_msgs;
+int32_t num_Reserved_msgs,max_Reserved_msgs;
 struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
@@ -355,7 +355,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
                     jaddnum(req,"ht",height);
                     jadd64bits(req,"value",value);
                     //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
-                    LP_broadcast_message(LP_mypubsock,"","",zero,jprint(req,1));
+                    LP_reserved_msg("","",zero,jprint(req,1));
                 }
             }
         }
@@ -701,6 +701,24 @@ int32_t LP_reserved_msgs()
         n++;
     }
     portable_mutex_unlock(&LP_reservedmutex);
+    return(n);
+}
+
+int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
+{
+    int32_t n = 0;
+    portable_mutex_lock(&LP_reservedmutex);
+    if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs) )
+    {
+        Reserved_msgs[num_Reserved_msgs++] = msg;
+        n = num_Reserved_msgs;
+    } else LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
+    portable_mutex_unlock(&LP_reservedmutex);
+    if ( num_Reserved_msgs > max_Reserved_msgs )
+    {
+        max_Reserved_msgs = num_Reserved_msgs;
+        printf("New max_Reserved_msgs.%d\n",max_Reserved_msgs);
+    }
     return(n);
 }
 

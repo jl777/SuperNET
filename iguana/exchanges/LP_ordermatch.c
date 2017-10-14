@@ -219,41 +219,37 @@ char *LP_quotereceived(cJSON *argjson)
 
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price)
 {
-    bits256 zero; char *msg; cJSON *reqjson = cJSON_CreateObject();
+    bits256 zero; cJSON *reqjson = cJSON_CreateObject();
     memset(zero.bytes,0,sizeof(zero));
     jaddbits256(reqjson,"pubkey",G.LP_mypub25519);
     jaddstr(reqjson,"base",base);
     jaddstr(reqjson,"rel",rel);
     jaddnum(reqjson,"price",price);
     jaddstr(reqjson,"method","postprice");
-    msg = jprint(reqjson,1);
-    LP_broadcast_message(pubsock,base,rel,zero,msg);
+    LP_reserved_msg(base,rel,zero,jprint(reqjson,1));
     return(clonestr("{\"result\":\"success\"}"));
 }
 
 void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 {
-    bits256 zero; char *msg,secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
+    bits256 zero; char secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
     memset(zero.bytes,0,sizeof(zero));
     jaddstr(reqjson,"method","notify");
     jaddstr(reqjson,"rmd160",G.LP_myrmd160str);
     jaddbits256(reqjson,"pub",G.LP_mypub25519);
     init_hexbytes_noT(secpstr,G.LP_pubsecp,33);
     jaddstr(reqjson,"pubsecp",secpstr);
-    msg = jprint(reqjson,1);
-    LP_broadcast_message(pubsock,"","",zero,msg);
+    LP_reserved_msg("","",zero,jprint(reqjson,1));
 }
 
 void LP_listunspent_query(char *symbol,char *coinaddr)
 {
-    bits256 zero; char *msg; cJSON *reqjson = cJSON_CreateObject();
+    bits256 zero; cJSON *reqjson = cJSON_CreateObject();
     memset(zero.bytes,0,sizeof(zero));
     jaddstr(reqjson,"method","addr_unspents");
     jaddstr(reqjson,"coin",symbol);
     jaddstr(reqjson,"address",coinaddr);
-    msg = jprint(reqjson,1);
-    //printf("BROADCAST.(%s)\n",msg);
-    LP_broadcast_message(LP_mypubsock,"","",zero,msg);
+    LP_reserved_msg("","",zero,jprint(reqjson,1));
 }
 
 char *LP_postedprice(cJSON *argjson)
@@ -401,11 +397,16 @@ double LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct L
     msg = jprint(reqjson,1);
     printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
-    if ( 1 && strcmp(method,"request") == 0 )
+    portable_mutex_lock(&LP_reservedmutex);
+    if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs) )
+        Reserved_msgs[num_Reserved_msgs++] = msg;
+    else
     {
-        sleep(3);
-        LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg);
-    } else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
+        if ( 1 && strcmp(method,"request") == 0 )
+            LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg);
+        else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
+    }
+    portable_mutex_unlock(&LP_reservedmutex);
     for (i=0; i<20; i++)
     {
         if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )
@@ -581,7 +582,7 @@ void LP_abutxo_set(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP
 
 int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJSON *argjson,char *base,char *rel,double price,struct LP_quoteinfo *qp)
 {
-    char pairstr[512],*msg; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
+    char pairstr[512]; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
     printf("LP_connectstartbob.(%s) with.(%s) %s\n",LP_myipaddr,jprint(argjson,0),LP_myipaddr);
     qp->quotetime = (uint32_t)time(NULL);
     if ( (coin= LP_coinfind(utxo->coin)) == 0 )
@@ -609,8 +610,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
                 jaddnum(retjson,"requestid",qp->R.requestid);
                 jaddnum(retjson,"quoteid",qp->R.quoteid);
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,utxo->S.otherpubkey));
-                msg = jprint(retjson,1);
-                LP_broadcast_message(pubsock,base,rel,utxo->S.otherpubkey,msg);
+                LP_reserved_msg(base,rel,utxo->S.otherpubkey,jprint(retjson,1));
                 retval = 0;
             } else printf("error launching swaploop\n");
         } else printf("couldnt bind to any port %s\n",pairstr);
@@ -856,16 +856,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     jaddstr(retjson,"method","reserved");
                     msg = jprint(retjson,1);
                     butxo->T.lasttime = (uint32_t)time(NULL);
-                    printf("set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
-                    {
-                        portable_mutex_lock(&LP_reservedmutex);
-                        if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs) )
-                            Reserved_msgs[num_Reserved_msgs++] = msg;
-                        else LP_broadcast_message(pubsock,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
-                        portable_mutex_unlock(&LP_reservedmutex);
-                        printf("return after queued RESERVED\n");
-                        return(2);
-                    }
+                    printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
+                    LP_reserved_msg(Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
+                    return(2);
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
             }
             else if ( strcmp(method,"connect") == 0 ) // bob
