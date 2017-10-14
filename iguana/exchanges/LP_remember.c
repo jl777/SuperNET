@@ -267,7 +267,7 @@ bits256 basilisk_swap_spendupdate(char *symbol,char *spentaddr,int32_t *sentflag
         if ( bits256_nonz(spendtxid) != 0 )
         {
             sentflags[utxoind] = 1;
-            printf("utxoind.%d Alice.(%s) Bob.(%s)\n",utxoind,aliceaddr,bobaddr);
+            printf("utxoind.%d Alice.(%s %s) Bob.(%s %s) vs destaddr.(%s)\n",utxoind,aliceaddr,Adest,bobaddr,dest,destaddr);
             if ( aliceaddr != 0 && (strcmp(destaddr,aliceaddr) == 0 || strcmp(Adest,destaddr) == 0) )
             {
                 printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
