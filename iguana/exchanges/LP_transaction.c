@@ -444,11 +444,12 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
         extraspace = malloc(extralen);
         memset(msgtx,0,sizeof(*msgtx));
         decode_hex(serialized,len,rawtx);
-        // printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
+        printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( (txobj= bitcoin_hex2json(taddr,pubtype,p2shtype,isPoS,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
             //printf("back from bitcoin_hex2json (%s)\n",jprint(vins,0));
         } else fprintf(stderr,"no txobj from bitcoin_hex2json\n");
+        printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
             printf("numinputs.%d (%s) msgtx.%d\n",numinputs,jprint(vins,0),msgtx->tx_in);
