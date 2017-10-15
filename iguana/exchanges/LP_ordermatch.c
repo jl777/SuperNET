@@ -1056,7 +1056,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
             return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
         if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,G.LP_mypub25519,autxo->coinaddr) < 0 )
             return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
-        maxiters = 25;
+        maxiters = 100;
         qprice = 1. / SMALLVAL;
         for (i=0; i<maxiters; i++)
         {
@@ -1068,7 +1068,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
             if ( qprice/ordermatchprice < 1.+SMALLVAL )
             {
                 printf("i.%d/%d qprice %.8f < ordermatchprice %.8f\n",i,maxiters,qprice,ordermatchprice);
-                Q.satoshis *= 0.999;
+                Q.satoshis *= 0.9999;
             } else break;
         }
         if ( i == maxiters || qprice > maxprice )

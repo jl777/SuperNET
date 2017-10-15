@@ -177,6 +177,9 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
 int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t i,datalen = 0;
+    data[datalen++] = swap->I.aliceconfirms;
+    data[datalen++] = swap->I.bobconfirms;
+    data[datalen++] = swap->I.otheristrusted;
     for (i=0; i<33; i++)
         data[datalen++] = swap->persistent_pubkey33[i];
     for (i=0; i<sizeof(swap->deck)/sizeof(swap->deck[0][0]); i++)
@@ -186,9 +189,28 @@ int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 
 int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    int32_t i,nonz=0,len = 0; uint8_t other33[33];
-    if ( datalen == sizeof(swap->otherdeck)+33 )
+    int32_t i,nonz=0,aliceconfirms,bobconfirms,len = 0; uint8_t other33[33];
+    if ( datalen == sizeof(swap->otherdeck)+34 )
     {
+        aliceconfirms = data[len++];
+        bobconfirms = data[len++];
+        if ( aliceconfirms != swap->I.aliceconfirms || bobconfirms != swap->I.bobconfirms )
+        {
+            printf("MISMATCHED required confirms me.(%d %d) vs (%d %d)\n",swap->I.aliceconfirms,swap->I.bobconfirms,aliceconfirms,bobconfirms);
+            if ( swap->I.aliceconfirms < aliceconfirms )
+                swap->I.aliceconfirms = aliceconfirms;
+            if ( swap->I.bobconfirms < bobconfirms )
+                swap->I.bobconfirms = bobconfirms;
+        }
+        if ( (swap->I.otherstrust= data[len++]) != 0 )
+        {
+            if ( swap->I.otheristrusted != 0 )
+            {
+                swap->I.aliceconfirms = swap->I.bobconfirms = 0;
+                printf("Otherside trusts us, adjust required confirms to: alice.%d bob.%d\n",swap->I.aliceconfirms,swap->I.bobconfirms);
+            }
+        }
+        printf("NUMCONFIRMS for SWAP alice.%d bob.%d, otheristrusted.%d othertrusts.%d\n",swap->I.aliceconfirms,swap->I.bobconfirms,swap->I.otheristrusted,swap->I.otherstrust);
         for (i=0; i<33; i++)
             if ( (other33[i]= data[len++]) != 0 )
                 nonz++;
@@ -746,7 +768,7 @@ void LP_bobloop(void *_swap)
                 {
                     if ( strcmp(swap->alicecoin.symbol,"BTC") == 0 )
                         m = 0;
-                    else m = 1;
+                    else m = swap->I.aliceconfirms;
                     while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m ) // sync with alice
                     {
                         char str[65];printf("%d waiting for alicepayment %s to be confirmed.%d %s %s\n",n,swap->alicepayment.I.destaddr,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
@@ -801,7 +823,7 @@ void LP_aliceloop(void *_swap)
             {
                 if ( strcmp(swap->alicecoin.symbol,"BTC") == 0 )
                     m = 0;
-                else m = 1;
+                else m = swap->I.aliceconfirms;
                 while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m )
                 {
                     char str[65];printf("%d waiting for alicepayment %s to be confirmed.%d %s %s\n",n,swap->alicepayment.I.destaddr,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
@@ -957,7 +979,7 @@ void basilisk_rawtx_setparms(char *name,uint32_t quoteid,struct basilisk_rawtx *
 struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits,struct LP_quoteinfo *qp)
 {
     //FILE *fp; char fname[512];
-    uint8_t *alicepub33=0,*bobpub33=0; int32_t bobistrusted,aliceistrusted,jumblrflag=-2,x = -1; struct iguana_info *coin;
+    uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag=-2,x = -1; struct iguana_info *coin;
     swap->I.Atxfee = qp->desttxfee;
     swap->I.Btxfee = qp->txfee;
     swap->I.putduration = swap->I.callduration = INSTANTDEX_LOCKTIME;
@@ -985,15 +1007,15 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     {
         swap->I.iambob = 0;
         swap->I.otherhash = swap->I.req.desthash;
-        aliceistrusted = 1;
-        bobistrusted = LP_pubkey_istrusted(swap->I.req.desthash);
+        swap->I.aliceistrusted = 1;
+        swap->I.otheristrusted = swap->I.bobistrusted = LP_pubkey_istrusted(swap->I.req.desthash);
     }
     else
     {
         swap->I.iambob = 1;
         swap->I.otherhash = swap->I.req.srchash;
-        bobistrusted = 1;
-        aliceistrusted = LP_pubkey_istrusted(swap->I.req.desthash);
+        swap->I.bobistrusted = 1;
+        swap->I.otheristrusted = swap->I.aliceistrusted = LP_pubkey_istrusted(swap->I.req.desthash);
     }
     if ( bits256_nonz(privkey) == 0 || (x= instantdex_pubkeyargs(swap,2 + INSTANTDEX_DECKSIZE,privkey,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
     {
@@ -1019,20 +1041,20 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     if ( strcmp("BTC",swap->bobcoin.symbol) == 0 )
     {
         swap->I.bobconfirms = (1 + sqrt(dstr(swap->I.bobsatoshis) * .1));
-        swap->I.aliceconfirms = MIN(BASILISK_DEFAULT_NUMCONFIRMS,swap->I.bobconfirms);
+        swap->I.aliceconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
     }
     else if ( strcmp("BTC",swap->alicecoin.symbol) == 0 )
     {
         swap->I.aliceconfirms = (1 + sqrt(dstr(swap->I.alicesatoshis) * .1));
-        swap->I.bobconfirms = MIN(BASILISK_DEFAULT_NUMCONFIRMS,swap->I.aliceconfirms);
+        swap->I.bobconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
     }
     else
     {
         swap->I.bobconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
         swap->I.aliceconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
     }
-    swap->I.bobconfirms *= !bobistrusted;
-    swap->I.aliceconfirms *= !aliceistrusted;
+    swap->I.bobconfirms *= !swap->I.bobistrusted;
+    swap->I.aliceconfirms *= !swap->I.aliceistrusted;
     printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< use smart address, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,swap->bobcoin.taddr,swap->alicecoin.taddr);
     if ( swap->I.iambob != 0 )
     {

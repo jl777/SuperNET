@@ -71,7 +71,7 @@
 #define LP_RESERVETIME 60
 #define LP_AVETXSIZE 256
 #define LP_CACHEDURATION 60
-#define BASILISK_DEFAULT_NUMCONFIRMS 1
+#define BASILISK_DEFAULT_NUMCONFIRMS 3
 #define DEX_SLEEP 3
 #define BASILISK_KEYSIZE ((int32_t)(2*sizeof(bits256)+sizeof(uint32_t)*2))
 
@@ -151,7 +151,7 @@ struct basilisk_swapinfo
     char bobstr[64],alicestr[64];
     bits256 myhash,otherhash,orderhash;
     uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,putduration,callduration;
-    int32_t bobconfirms,aliceconfirms,iambob,reclaimed,bobspent,alicespent,pad;
+    int32_t bobconfirms,aliceconfirms,iambob,reclaimed,bobspent,alicespent,pad,aliceistrusted,bobistrusted,otheristrusted,otherstrust;
     uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance,Atxfee,Btxfee;
     
     bits256 myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
