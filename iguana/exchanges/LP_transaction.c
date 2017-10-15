@@ -785,6 +785,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     bitcoin_priv2wif(coin->wiftaddr,wifstr,privkey,coin->wiftype);
     for (i=n=0; i<numunspents; i++)
     {
+        printf("vinselect.%d of %d: remain %.8f amount %.8f\n",i,numunspents,dstr(remains),dstr(amount));
         below = above = 0;
         abovei = belowi = -1;
         if ( LP_vin_select(&abovei,&above,&belowi,&below,utxos,numunspents,remains,maxmode) < 0 )
@@ -820,6 +821,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         vp->suppress_pubkeys = suppress_pubkeys;
         vp->ignore_cltverr = ignore_cltverr;
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
+        printf("i.%d privkeys.%s vins.%s\n",i,jprint(privkeys,0),jprint(vins,0));
         //printf("%s value %.8f -> remains %.8f\n",coinaddr,dstr(value),dstr(remains));
     }
     *totalp = total;
@@ -897,7 +899,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
         adjust = change / numvouts;
         change = 0;
     }
-    printf("vins.(%s) privkeys.(%s)\n",jprint(vins,0),jprint(privkeys,0));
+    printf("numvins.%d vins.(%s) privkeys.(%s)\n",numvins,jprint(vins,0),jprint(privkeys,0));
     for (i=0; i<numvouts; i++)
     {
         item = jitem(outputs,i);
