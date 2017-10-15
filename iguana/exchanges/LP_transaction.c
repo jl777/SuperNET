@@ -855,7 +855,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
                 printf("LP_createrawtransaction %s i.%d of %d is invalid\n",coinaddr,i,numvouts);
                 return(0);
             }
-            if ( (value= j64bits(item,coinaddr)) <= 0 )
+            if ( (value= SATOSHIDEN * jdouble(item,coinaddr)) <= 0 )
             {
                 printf("cant get value %s i.%d of %d %s\n",coinaddr,i,numvouts,jprint(outputs,0));
                 return(0);
@@ -902,7 +902,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
         item = jitem(outputs,i);
         if ( (coinaddr= jfieldname(item)) != 0 )
         {
-            if ( (value= j64bits(item,coinaddr)) <= 0 )
+            if ( (value= SATOSHIDEN * jdouble(item,coinaddr)) <= 0 )
             {
                 printf("cant get value i.%d of %d %s\n",i,numvouts,jprint(outputs,0));
                 return(0);
