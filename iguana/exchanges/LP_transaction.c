@@ -829,13 +829,14 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     return(n);
 }
 
-char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee)
+char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee)
 {
     static void *ctx;
     cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[64],spendscript[64]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp,locktime; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[256]; struct LP_address *ap;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     *numvinsp = 0;
+    *txobjp = 0;
     if ( sizeof(utxos)/sizeof(*utxos) != max )
     {
         printf("LP_createrawtransaction: internal error %ld != max.%d\n",sizeof(utxos)/sizeof(*utxos),max);
@@ -924,14 +925,14 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
     if ( (rawtxbytes= bitcoin_json2hex(coin->isPoS,&txid,txobj,V)) != 0 )
     {
     } else printf("error making rawtx suppress.%d\n",suppress_pubkeys);
-    free_json(txobj);
+    *txobjp = txobj;
     return(rawtxbytes);
 }
 
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t iter,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; cJSON *retjson,*outputs,*vins=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 signedtxid; uint64_t txfee,newtxfee=10000;
+    int32_t iter,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; cJSON *retjson,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 signedtxid; uint64_t txfee,newtxfee=10000;
     if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 )
     {
         printf("no outputs in argjson (%s)\n",jprint(argjson,0));
@@ -954,7 +955,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
-        if ( (rawtx= LP_createrawtransaction(&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee)) != 0 )
+        if ( (rawtx= LP_createrawtransaction(&txobj,&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee)) != 0 )
         {
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
@@ -977,6 +978,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
             } else break;
         } else break;
         free_json(vins), vins = 0;
+        free_json(txobj), txobj = 0;
         free_json(privkeys), privkeys = 0;
         if ( rawtx != 0 )
             free(rawtx), rawtx = 0;
@@ -991,6 +993,8 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         jaddstr(retjson,"rawtx",rawtx);
     if ( signedtx != 0 )
         jaddstr(retjson,"hex",signedtx);
+    if ( txobj != 0 )
+        jadd(retjson,"tx",txobj);
     jaddbits256(retjson,"txid",signedtxid);
     jadd(retjson,"complete",completed!=0?jtrue():jfalse());
     return(jprint(retjson,1));

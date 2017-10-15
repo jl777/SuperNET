@@ -19,7 +19,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// withdraw
 // stats
 // sign critical api calls
 // dPoW security -> 2: KMD notarized, 3: BTC notarized
