@@ -285,8 +285,9 @@ dividends(coin, height, <args>)\n\
                 {
                     if ( jobj(argjson,"outputs") == 0 )
                         return(clonestr("{\"error\":\"withdraw needs to have outputs\"}"));
-                    else return(LP_withdraw(ptr,argjson));
-                } else return(clonestr("{\"error\":\"cant find coind\"}"));
+                    //else return(LP_withdraw(ptr,argjson));
+                }
+                return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             else if ( strcmp(method,"setconfirms") == 0 )
             {
