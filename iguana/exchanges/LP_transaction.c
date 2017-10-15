@@ -774,6 +774,7 @@ cJSON *LP_inputjson(bits256 txid,int32_t vout,char *spendscriptstr)
     sobj = cJSON_CreateObject();
     jaddstr(sobj,"hex",spendscriptstr);
     jadd(item,"scriptPubKey",sobj);
+    printf("vin.%s\n",jprint(item,0));
     return(item);
 }
 
@@ -821,7 +822,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         vp->suppress_pubkeys = suppress_pubkeys;
         vp->ignore_cltverr = ignore_cltverr;
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
-        printf("i.%d privkeys.%s vins.%s\n",i,jprint(privkeys,0),jprint(vins,0));
+        printf("wif.%s i.%d privkeys.%s vins.%s %p %p\n",wifstr,i,jprint(privkeys,0),jprint(vins,0),privkeys,vins);
         //printf("%s value %.8f -> remains %.8f\n",coinaddr,dstr(value),dstr(remains));
     }
     *totalp = total;
@@ -899,7 +900,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
         adjust = change / numvouts;
         change = 0;
     }
-    printf("numvins.%d vins.(%s) privkeys.(%s)\n",numvins,jprint(vins,0),jprint(privkeys,0));
+    printf("numvins.%d vins.(%s) privkeys.(%s) %p %p\n",numvins,jprint(vins,0),jprint(privkeys,0),vins,privkeys);
     for (i=0; i<numvouts; i++)
     {
         item = jitem(outputs,i);
