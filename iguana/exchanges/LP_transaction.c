@@ -444,6 +444,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
         extraspace = malloc(extralen);
         memset(msgtx,0,sizeof(*msgtx));
         decode_hex(serialized,len,rawtx);
+        printf("vins.%p privkeys.%p\n",vins,privkeysjson);
         printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( (txobj= bitcoin_hex2json(taddr,pubtype,p2shtype,isPoS,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
