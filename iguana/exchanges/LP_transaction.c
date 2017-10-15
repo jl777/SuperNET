@@ -930,7 +930,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t iter,completed=0,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info V[256]; cJSON *retjson,*outputs,*vins,*privkeys; struct iguana_msgtx msgtx; bits256 signedtxid; uint64_t txfee,newtxfee=10000;
+    int32_t iter,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; cJSON *retjson,*outputs,*vins,*privkeys; struct iguana_msgtx msgtx; bits256 signedtxid; uint64_t txfee,newtxfee=10000;
     if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 )
     {
         printf("no outputs in argjson (%s)\n",jprint(argjson,0));
@@ -946,13 +946,15 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     safecopy(changeaddr,coin->smartaddr,sizeof(changeaddr));
     safecopy(vinaddr,coin->smartaddr,sizeof(vinaddr));
     privkey = LP_privkey(vinaddr,coin->taddr);
-    printf("LP_withdraw txfee %.8f\n",dstr(txfee));
+    maxV = 256;
+    V = malloc(maxV * sizeof(*V));
+    printf("LP_withdraw txfee %.8f sizeof V %ld\n",dstr(txfee),sizeof(*V)*maxV);
     for (iter=0; iter<2; iter++)
     {
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
-        memset(V,0,sizeof(V));
-        if ( (rawtx= LP_createrawtransaction(&numvins,coin,V,(int32_t)(sizeof(V)/sizeof(*V)),privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee)) != 0 )
+        memset(V,0,sizeof(*V)*maxV);
+        if ( (rawtx= LP_createrawtransaction(&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee)) != 0 )
         {
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
@@ -975,6 +977,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         free(rawtx);
         rawtx = 0;
     }
+    free(V);
     retjson = cJSON_CreateObject();
     if ( rawtx != 0 )
         jaddstr(retjson,"rawtx",rawtx);
