@@ -847,6 +847,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
     for (i=0; i<numvouts; i++)
     {
         item = jitem(outputs,i);
+        printf("i.%d of %d: %s\n",i,numvouts,jprint(item,0));
         if ( (coinaddr= jfieldname(item)) != 0 )
         {
             if ( LP_address_isvalid(coin->symbol,coinaddr) <= 0 )
