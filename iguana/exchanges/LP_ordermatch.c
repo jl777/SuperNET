@@ -1034,9 +1034,9 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         timeout = LP_AUTOTRADE_TIMEOUT;
     if ( maxprice <= 0. || relvolume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
-    if ( strcmp("BTC",rel) == 0 )
-        maxprice *= 1.01;
-    else maxprice *= 1.001;
+    //if ( strcmp("BTC",rel) == 0 )
+    //    maxprice *= 1.01;
+    //else maxprice *= 1.001;
     memset(pubkeys,0,sizeof(pubkeys));
     LP_txfees(&txfee,&desttxfee,base,rel);
     destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
@@ -1044,30 +1044,38 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
     if ( destsatoshis < autxo->S.satoshis )
         autxo->S.satoshis = destsatoshis;
-    if ( (bestutxo= LP_buyutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,gui,pubkeys,numpubs)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
+    while ( 1 )
     {
-        printf("bestutxo.%p ordermatchprice %.8f bestdestsatoshis %.8f\n",bestutxo,ordermatchprice,dstr(bestdestsatoshis));
-        return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
-    }
-    pubkeys[numpubs++] = bestutxo->pubkey;
-    if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestsatoshis,bestdestsatoshis) < 0 )
-        return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
-    if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,G.LP_mypub25519,autxo->coinaddr) < 0 )
-        return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
-    maxiters = 25;
-    for (i=0; i<maxiters; i++)
-    {
-        if ( (qprice= LP_quote_validate(autxo,0,&Q,0)) <= SMALLVAL )
+        if ( (bestutxo= LP_buyutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,gui,pubkeys,numpubs)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
         {
-            printf("quote validate error %.0f\n",qprice);
-            return(clonestr("{\"error\":\"quote validate error\"}"));
+            printf("bestutxo.%p ordermatchprice %.8f bestdestsatoshis %.8f\n",bestutxo,ordermatchprice,dstr(bestdestsatoshis));
+            return(clonestr("{\"error\":\"cant find ordermatch utxo\"}"));
         }
-        if ( qprice/ordermatchprice < 1.+SMALLVAL )
+        pubkeys[numpubs++] = bestutxo->pubkey;
+        if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestsatoshis,bestdestsatoshis) < 0 )
+            return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
+        if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,G.LP_mypub25519,autxo->coinaddr) < 0 )
+            return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
+        maxiters = 25;
+        qprice = 1. / SMALLVAL;
+        for (i=0; i<maxiters; i++)
         {
-            printf("i.%d/%d qprice %.8f < ordermatchprice %.8f\n",i,maxiters,qprice,ordermatchprice);
+            if ( (qprice= LP_quote_validate(autxo,0,&Q,0)) <= SMALLVAL )
+            {
+                printf("quote validate error %.0f\n",qprice);
+                return(clonestr("{\"error\":\"quote validate error\"}"));
+            }
+            if ( qprice/ordermatchprice < 1.+SMALLVAL )
+            {
+                printf("i.%d/%d qprice %.8f < ordermatchprice %.8f\n",i,maxiters,qprice,ordermatchprice);
+                Q.satoshis *= 0.999;
+            } else break;
+        }
+        if ( i == maxiters || qprice > maxprice )
+        {
+            printf("i.%d maxiters.%d qprice %.8f vs maxprice %.8f, no acceptable quote for this pubkey\n",i,maxiters,dstr(qprice),dstr(maxprice));
             continue;
         }
-        Q.satoshis *= 0.999;
         break;
     }
     //printf("do quote.(%s)\n",jprint(LP_quotejson(&Q),1));
