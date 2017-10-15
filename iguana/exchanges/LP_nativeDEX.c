@@ -278,7 +278,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
     if ( (origipaddr= LP_myipaddr) == 0 )
         origipaddr = "127.0.0.1";
     milli = OS_milliseconds();
-    if ( lastmilli > 0. && milli > lastmilli+100 )
+    if ( lastmilli > 0. && milli > lastmilli+1000 )
         fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds\n",milli-lastmilli);
     lastmilli = milli;
     //portable_mutex_lock(&LP_nanorecvsmutex);
