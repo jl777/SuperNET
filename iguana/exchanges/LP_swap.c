@@ -179,6 +179,8 @@ int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
     int32_t i,datalen = 0;
     data[datalen++] = swap->I.aliceconfirms;
     data[datalen++] = swap->I.bobconfirms;
+    data[datalen++] = swap->I.alicemaxconfirms;
+    data[datalen++] = swap->I.bobmaxconfirms;
     data[datalen++] = swap->I.otheristrusted;
     for (i=0; i<33; i++)
         data[datalen++] = swap->persistent_pubkey33[i];
@@ -189,18 +191,29 @@ int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 
 int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    int32_t i,nonz=0,aliceconfirms,bobconfirms,len = 0; uint8_t other33[33];
-    if ( datalen == sizeof(swap->otherdeck)+36 )
+    int32_t i,nonz=0,alicemaxconfirms,bobmaxconfirms,aliceconfirms,bobconfirms,len = 0; uint8_t other33[33];
+    if ( datalen == sizeof(swap->otherdeck)+38 )
     {
         aliceconfirms = data[len++];
         bobconfirms = data[len++];
+        alicemaxconfirms = data[len++];
+        bobmaxconfirms = data[len++];
         if ( aliceconfirms != swap->I.aliceconfirms || bobconfirms != swap->I.bobconfirms )
         {
-            printf("MISMATCHED required confirms me.(%d %d) vs (%d %d)\n",swap->I.aliceconfirms,swap->I.bobconfirms,aliceconfirms,bobconfirms);
+            printf("MISMATCHED required confirms me.(%d %d) vs (%d %d) max.(%d %d) othermax.(%d %d)\n",swap->I.aliceconfirms,swap->I.bobconfirms,aliceconfirms,bobconfirms,swap->I.alicemaxconfirms,swap->I.bobmaxconfirms,alicemaxconfirms,bobmaxconfirms);
+            if ( alicemaxconfirms > swap->I.alicemaxconfirms )
+                alicemaxconfirms = swap->I.alicemaxconfirms;
+            if ( bobmaxconfirms > swap->I.bobmaxconfirms )
+                bobmaxconfirms = swap->I.bobmaxconfirms;
             if ( swap->I.aliceconfirms < aliceconfirms )
                 swap->I.aliceconfirms = aliceconfirms;
             if ( swap->I.bobconfirms < bobconfirms )
                 swap->I.bobconfirms = bobconfirms;
+            if ( swap->I.aliceconfirms > swap->I.alicemaxconfirms || swap->I.bobconfirms > swap->I.bobmaxconfirms )
+            {
+                printf("numconfirms (%d %d) exceeds max (%d %d)\n",swap->I.aliceconfirms,swap->I.bobconfirms,swap->I.alicemaxconfirms,swap->I.bobmaxconfirms);
+                return(-1);
+            }
         }
         if ( (swap->I.otherstrust= data[len++]) != 0 )
         {
@@ -771,7 +784,7 @@ void LP_bobloop(void *_swap)
                     else m = swap->I.aliceconfirms;
                     while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m ) // sync with alice
                     {
-                        char str[65];printf("%d waiting for alicepayment %s to be confirmed.%d %s %s\n",n,swap->alicepayment.I.destaddr,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
+                        char str[65];printf("%d waiting for alicepayment %s to be confirmed.%d %s %s\n",n,swap->alicepayment.I.destaddr,m,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                         sleep(3);
                     }
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
@@ -826,7 +839,7 @@ void LP_aliceloop(void *_swap)
                 else m = swap->I.aliceconfirms;
                 while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m )
                 {
-                    char str[65];printf("%d waiting for alicepayment %s to be confirmed.%d %s %s\n",n,swap->alicepayment.I.destaddr,1,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
+                    char str[65];printf("%d waiting for alicepayment %s to be confirmed.%d %s %s\n",n,swap->alicepayment.I.destaddr,m,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                     sleep(10);
                 }
                 swap->sentflag = 1;
@@ -1053,6 +1066,22 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
         swap->I.aliceconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
     }
+    if ( swap->bobcoin.isassetchain != 0 )
+        swap->I.bobconfirms = 1;
+    if ( swap->alicecoin.isassetchain != 0 )
+        swap->I.aliceconfirms = 1;
+    if ( swap->bobcoin.userconfirms > 0 )
+        swap->I.bobconfirms = swap->bobcoin.userconfirms;
+    if ( swap->alicecoin.userconfirms > 0 )
+        swap->I.aliceconfirms = swap->alicecoin.userconfirms;
+    if ( (swap->I.bobmaxconfirms= swap->bobcoin.maxconfirms) == 0 )
+        swap->I.bobmaxconfirms = BASILISK_DEFAULT_MAXCONFIRMS;
+    if ( (swap->I.alicemaxconfirms= swap->alicecoin.maxconfirms) == 0 )
+        swap->I.alicemaxconfirms = BASILISK_DEFAULT_MAXCONFIRMS;
+    if ( swap->I.bobconfirms > swap->I.bobmaxconfirms )
+        swap->I.bobconfirms = swap->I.bobmaxconfirms;
+    if ( swap->I.aliceconfirms > swap->I.alicemaxconfirms )
+        swap->I.aliceconfirms = swap->I.alicemaxconfirms;
     swap->I.bobconfirms *= !swap->I.bobistrusted;
     swap->I.aliceconfirms *= !swap->I.aliceistrusted;
     printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< use smart address, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,swap->bobcoin.taddr,swap->alicecoin.taddr);

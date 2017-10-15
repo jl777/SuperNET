@@ -338,7 +338,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
         memset(zero.bytes,0,sizeof(zero));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
-            printf("PUSH %s %s\n",coin->symbol,coin->smartaddr);
+            //printf("PUSH %s %s\n",coin->symbol,coin->smartaddr);
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
