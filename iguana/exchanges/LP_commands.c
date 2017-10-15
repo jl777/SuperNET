@@ -104,9 +104,11 @@ enable(coin)\n\
 disable(coin)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
+lastnonce()\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
 withdraw(coin, outputs[])\n\
+sendrawtransaction(coin, signedtx)\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
@@ -279,13 +281,17 @@ dividends(coin, height, <args>)\n\
                     return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
+            else if ( strcmp(method,"sendrawtransaction") == 0 )
+            {
+                return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx")));
+            }
             else if ( strcmp(method,"withdraw") == 0 )
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     if ( jobj(argjson,"outputs") == 0 )
                         return(clonestr("{\"error\":\"withdraw needs to have outputs\"}"));
-                    //else return(LP_withdraw(ptr,argjson));
+                    else return(LP_withdraw(ptr,argjson));
                 }
                 return(clonestr("{\"error\":\"cant find coind\"}"));
             }
@@ -358,6 +364,13 @@ dividends(coin, height, <args>)\n\
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
                 return(basilisk_swapentry(requestid,quoteid));
             else return(basilisk_swaplist(0,0));
+        }
+        else if ( strcmp(method,"lastnonce") == 0 )
+        {
+            cJSON *retjson = cJSON_CreateObject();
+            jaddstr(retjson,"result","success");
+            jaddnum(retjson,"lastnonce",LP_lastnonce);
+            return(jprint(retjson,1));
         }
         else if ( strcmp(method,"myprices") == 0 )
             return(LP_myprices());

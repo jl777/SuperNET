@@ -171,7 +171,7 @@ void queue_loop(void *ignore)
                 if ( duplicate > 0 )
                 {
                     LP_Qfound++;
-                    if ( (LP_Qfound % 10) == 0 )
+                    if ( (LP_Qfound % 100) == 0 )
                         printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     flag = 1;
                 }

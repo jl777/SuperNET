@@ -419,6 +419,24 @@ int32_t LP_address_ismine(char *symbol,char *address)
     return(doneflag);
 }
 
+int32_t LP_address_isvalid(char *symbol,char *address)
+{
+    int32_t isvalid = 0; cJSON *retjson;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
+    if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
+    {
+        if ( jobj(retjson,"isvalid") != 0 && is_cJSON_True(jobj(retjson,"isvalid")) != 0 )
+        {
+            isvalid = 1;
+            //printf("%s ismine (%s)\n",address,jprint(retjson,0));
+        }
+        //printf("%s\n",jprint(retjson,0));
+        free_json(retjson);
+    }
+    return(isvalid);
+}
+
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
     char buf[128]; cJSON *retjson; struct iguana_info *coin;
@@ -612,9 +630,9 @@ double LP_getestimatedrate(struct iguana_info *coin)
 char *LP_sendrawtransaction(char *symbol,char *signedtx)
 {
     cJSON *array,*errobj; char *paramstr,*tmpstr,*retstr=0; int32_t n,alreadyflag = 0; cJSON *retjson; struct iguana_info *coin;
-    if ( symbol == 0 || symbol[0] == 0 )
+    if ( symbol == 0 || symbol[0] == 0 || signedtx == 0 || signedtx[0] == 0 )
     {
-        printf("LP_sendrawtransaction null symbol\n");
+        printf("LP_sendrawtransaction null symbol %p or signedtx.%p\n",symbol,signedtx);
         return(0);
     }
     coin = LP_coinfind(symbol);

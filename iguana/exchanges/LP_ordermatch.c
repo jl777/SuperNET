@@ -904,7 +904,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             {
                 if ( LP_isavailable(butxo) > 0 )
                 {
-                    butxo->T.swappending = Q.timestamp + LP_RESERVETIME;
+                    autxo->T.swappending = butxo->T.swappending = Q.timestamp + LP_RESERVETIME;
                     retjson = LP_quotejson(&Q);
                     butxo->S.otherpubkey = jbits256(argjson,"desthash");
                     LP_unavailableset(butxo,butxo->S.otherpubkey);
