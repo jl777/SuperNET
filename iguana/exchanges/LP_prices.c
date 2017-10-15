@@ -221,6 +221,17 @@ char *LP_pubkey_trustset(bits256 pubkey,uint32_t trustval)
     return(clonestr("{\"error\":\"pubkey not found\"}"));
 }
 
+char *LP_pubkey_trusted()
+{
+    struct LP_pubkeyinfo *pubp,*tmp; cJSON *array = cJSON_CreateArray();
+    HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
+    {
+        if ( pubp->istrusted != 0 )
+            jaddibits256(array,pubp->pubkey);
+    }
+    return(jprint(array,1));
+}
+
 uint64_t LP_unspents_metric(struct iguana_info *coin,char *coinaddr)
 {
     cJSON *array,*item; int32_t i,n; uint64_t metric=0,total;

@@ -376,6 +376,8 @@ dividends(coin, height, <args>)\n\
             return(LP_myprices());
         else if ( strcmp(method,"trust") == 0 )
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
+        else if ( strcmp(method,"trusted") == 0 )
+            return(LP_pubkey_trusted());
     }
     if ( IAMLP == 0 )
     {
