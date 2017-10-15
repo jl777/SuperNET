@@ -774,7 +774,7 @@ cJSON *LP_inputjson(bits256 txid,int32_t vout,char *spendscriptstr)
     sobj = cJSON_CreateObject();
     jaddstr(sobj,"hex",spendscriptstr);
     jadd(item,"scriptPubKey",sobj);
-    printf("vin.%s\n",jprint(item,0));
+    //printf("vin.%s\n",jprint(item,0));
     return(item);
 }
 
@@ -786,7 +786,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     bitcoin_priv2wif(coin->wiftaddr,wifstr,privkey,coin->wiftype);
     for (i=n=0; i<numunspents; i++)
     {
-        printf("vinselect.%d of %d: remain %.8f amount %.8f\n",i,numunspents,dstr(remains),dstr(amount));
+        //printf("vinselect.%d of %d: remain %.8f amount %.8f\n",i,numunspents,dstr(remains),dstr(amount));
         below = above = 0;
         abovei = belowi = -1;
         if ( LP_vin_select(&abovei,&above,&belowi,&below,utxos,numunspents,remains,maxmode) < 0 )
@@ -815,7 +815,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         vp->suppress_pubkeys = suppress_pubkeys;
         vp->ignore_cltverr = ignore_cltverr;
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
-        printf("wif.%s i.%d privkeys.%s vins.%s %p %p\n",wifstr,i,jprint(privkeys,0),jprint(vins,0),privkeys,vins);
+        //printf("wif.%s i.%d privkeys.%s vins.%s %p %p\n",wifstr,i,jprint(privkeys,0),jprint(vins,0),privkeys,vins);
         //printf("%s value %.8f -> remains %.8f\n",coinaddr,dstr(value),dstr(remains));
         if ( remains <= 0 )
             break;
@@ -850,7 +850,6 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
     for (i=0; i<numvouts; i++)
     {
         item = jitem(outputs,i);
-        printf("i.%d of %d: %s\n",i,numvouts,jprint(item,0));
         if ( (coinaddr= jfieldname(item)) != 0 )
         {
             if ( LP_address_isvalid(coin->symbol,coinaddr) <= 0 )
@@ -900,7 +899,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
         adjust = change / numvouts;
         change = 0;
     }
-    printf("numvins.%d vins.(%s) privkeys.(%s) %p %p\n",numvins,jprint(vins,0),jprint(privkeys,0),vins,privkeys);
+    printf("numvins.%d vins.(%s) privkeys.(%s)\n",numvins,jprint(vins,0),jprint(privkeys,0));
     for (i=0; i<numvouts; i++)
     {
         item = jitem(outputs,i);
@@ -927,7 +926,6 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
     if ( (rawtxbytes= bitcoin_json2hex(coin->isPoS,&txid,txobj,V)) != 0 )
     {
     } else printf("error making rawtx suppress.%d\n",suppress_pubkeys);
-    free_json(privkeys);
     free_json(txobj);
     return(rawtxbytes);
 }
@@ -953,12 +951,11 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     privkey = LP_privkey(vinaddr,coin->taddr);
     maxV = 256;
     V = malloc(maxV * sizeof(*V));
-    printf("LP_withdraw txfee %.8f sizeof V %ld\n",dstr(txfee),sizeof(*V)*maxV);
     for (iter=0; iter<2; iter++)
     {
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
-        memset(V,0,sizeof(*V)*maxV);
+        memset(V,0,sizeof(*V) * maxV);
         if ( (rawtx= LP_createrawtransaction(&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee)) != 0 )
         {
             completed = 0;
@@ -981,10 +978,13 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
                 printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
             } else break;
         } else break;
-        free(rawtx);
-        rawtx = 0;
+        free_json(privkeys), privkeys = 0;
+        if ( rawtx != 0 )
+            free(rawtx), rawtx = 0;
     }
     free(V);
+    if ( privkeys != 0 )
+        free_json(privkeys);
     retjson = cJSON_CreateObject();
     if ( rawtx != 0 )
         jaddstr(retjson,"rawtx",rawtx);
