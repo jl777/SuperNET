@@ -897,6 +897,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
         adjust = change / numvouts;
         change = 0;
     }
+    printf("vins.(%s) privkeys.(%s)\n",jprint(vins,0),jprint(privkeys,0));
     for (i=0; i<numvouts; i++)
     {
         item = jitem(outputs,i);
@@ -919,6 +920,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
     }
     if ( change != 0 )
         txobj = bitcoin_txoutput(txobj,script,scriptlen,change);
+    printf("call json2hex.(%s)\n",jprint(txobj,0));
     if ( (rawtxbytes= bitcoin_json2hex(coin->isPoS,&txid,txobj,V)) != 0 )
     {
     } else printf("error making rawtx suppress.%d\n",suppress_pubkeys);
@@ -967,6 +969,8 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
                 if ( signedtx != 0 )
                     free(signedtx), signedtx = 0;
             } else printf("LP_withdraw %s -> %s\n",jprint(argjson,0),bits256_str(str,signedtxid));
+            if ( signedtx == 0 )
+                break;
             datalen = (int32_t)strlen(signedtx) / 2;
             if ( strcmp(coin->symbol,"BTC") == 0 )
             {
