@@ -433,6 +433,8 @@ int64_t iguana_lockval(int32_t finalized,int64_t locktime)
 int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson)
 {
     uint8_t *serialized,*serialized2,*serialized3,*serialized4,*extraspace,pubkeys[64][33]; int32_t finalized,i,len,n,z,plen,maxsize,complete = 0,extralen = 100000; char *privkeystr,*signedtx = 0; bits256 privkeys[64],privkey,txid; cJSON *item; cJSON *txobj = 0;
+    printf("vins.%p privkeys.%p\n",vins,privkeysjson);
+    printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
     maxsize = 1000000;
     memset(privkey.bytes,0,sizeof(privkey));
     if ( rawtx != 0 && rawtx[0] != 0 && (len= (int32_t)strlen(rawtx)>>1) < maxsize )
@@ -444,8 +446,6 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
         extraspace = malloc(extralen);
         memset(msgtx,0,sizeof(*msgtx));
         decode_hex(serialized,len,rawtx);
-        printf("vins.%p privkeys.%p\n",vins,privkeysjson);
-        printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( (txobj= bitcoin_hex2json(taddr,pubtype,p2shtype,isPoS,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
             //printf("back from bitcoin_hex2json (%s)\n",jprint(vins,0));
@@ -895,7 +895,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
     else locktime = 0;
     txobj = bitcoin_txcreate(coin->symbol,coin->isPoS,locktime,1,timestamp);
     jdelete(txobj,"vin");
-    jadd(txobj,"vin",vins);
+    jadd(txobj,"vin",jduplicate(vins));
     if ( change < 6000 )
     {
         adjust = change / numvouts;
@@ -963,6 +963,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
             memset(signedtxid.bytes,0,sizeof(signedtxid));
+            printf("%p %p vins.(%s) privkeys.(%s)\n",vins,privkeys,jprint(vins,0),jprint(privkeys,0));
             if ( (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,V,numvins,rawtx,vins,privkeys)) < 0 )
                 printf("couldnt sign withdraw %s\n",bits256_str(str,signedtxid));
             else if ( completed == 0 )
