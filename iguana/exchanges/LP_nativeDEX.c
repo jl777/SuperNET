@@ -23,7 +23,7 @@
 // withdraw
 // verify portfolio
 // stats, fix pricearray
-// dPoW security and zeroconf
+// dPoW security -> 2: KMD notarized, 3: BTC notarized
 // electrum peers
 
 

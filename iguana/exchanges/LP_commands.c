@@ -278,6 +278,10 @@ dividends(coin, height, <args>)\n\
                     return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
+            else if ( strcmp(method,"withdraw") == 0 )
+            {
+                
+            }
             else if ( strcmp(method,"setconfirms") == 0 )
             {
                 int32_t n;
