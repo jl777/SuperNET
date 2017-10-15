@@ -428,38 +428,10 @@ dividends(coin, height, <args>)\n\
     }
     else if ( strcmp(method,"getcoins") == 0 )
         return(jprint(LP_coinsjson(0),1));
-    else if ( strcmp(method,"numutxos") == 0 )
-    {
-        printf("deprecated numutxos received\n");
-        retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
-        //return(LP_numutxos());
-    }
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
-    else if ( strcmp(method,"registerall") == 0 )
-        return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-    else if ( strcmp(method,"forward") == 0 )
-        return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-    else if ( strcmp(method,"keepalive") == 0 )
-        return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
     else if ( strcmp(method,"getpeers") == 0 )
         return(LP_peers());
-    else if ( strcmp(method,"getutxos") == 0 )
-    {
-        printf("deprecated getutxos received\n");
-        retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
-        //return(LP_utxos(1,LP_mypeer,jstr(argjson,"coin"),jint(argjson,"lastn")));
-    }
-    else if ( strcmp(method,"utxo") == 0 )
-    {
-        static uint32_t counter;
-        if ( counter++ < 3 )
-            printf("deprecated utxo received\n");
-        //if ( LP_utxoaddjson(1,LP_mypubsock,argjson) != 0 )
-         //   retstr = clonestr("{\"result\":\"success\",\"utxo\":\"received\"}");
-        //else
-        retstr = clonestr("{\"result\":\"couldnt add utxo\"}");
-    }
     else
     {
         if ( base != 0 && rel != 0 && strcmp(method,"pricearray") == 0 )
@@ -490,10 +462,6 @@ dividends(coin, height, <args>)\n\
         }
         if ( IAMLP != 0 )
         {
-            if ( strcmp(method,"register") == 0 )
-                return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-            else if ( strcmp(method,"lookup") == 0 )
-                return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
             if ( strcmp(method,"broadcast") == 0 )
             {
                 bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
