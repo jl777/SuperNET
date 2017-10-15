@@ -807,13 +807,6 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         utxos[numunspents] = 0;
         total += up->U.value;
         remains -= up->U.value;
-        if ( remains <= 0 )
-            break;
-        if ( numunspents == 0 )
-        {
-            printf("total %.8f not enough for amount %.8f\n",dstr(total),dstr(amount));
-            return(0);
-        }
         vp = &V[n++];
         vp->N = vp->M = 1;
         vp->signers[0].privkey = privkey;
@@ -824,6 +817,13 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
         printf("wif.%s i.%d privkeys.%s vins.%s %p %p\n",wifstr,i,jprint(privkeys,0),jprint(vins,0),privkeys,vins);
         //printf("%s value %.8f -> remains %.8f\n",coinaddr,dstr(value),dstr(remains));
+        if ( remains <= 0 )
+            break;
+        if ( numunspents == 0 )
+        {
+            printf("total %.8f not enough for amount %.8f\n",dstr(total),dstr(amount));
+            return(0);
+        }
     }
     *totalp = total;
     return(n);
