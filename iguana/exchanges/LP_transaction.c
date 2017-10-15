@@ -826,7 +826,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     return(n);
 }
 
-char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys)
+char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee)
 {
     static void *ctx;
     cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[64],spendscript[64]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp,locktime; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[256]; struct LP_address *ap;
@@ -843,6 +843,7 @@ char *LP_createrawtransaction(int32_t *numvinsp,struct iguana_info *coin,struct 
         printf("LP_createrawtransaction: illegal coin.%p outputs.%p or arraysize.%d, error\n",coin,outputs,numvouts);
         return(0);
     }
+    amount = txfee;
     for (i=0; i<numvouts; i++)
     {
         item = jitem(outputs,i);
@@ -944,12 +945,13 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     safecopy(changeaddr,coin->smartaddr,sizeof(changeaddr));
     safecopy(vinaddr,coin->smartaddr,sizeof(vinaddr));
     privkey = LP_privkey(vinaddr,coin->taddr);
+    printf("LP_withdraw txfee %.8f\n",dstr(txfee));
     for (iter=0; iter<2; iter++)
     {
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(V));
-        if ( (rawtx= LP_createrawtransaction(&numvins,coin,V,(int32_t)(sizeof(V)/sizeof(*V)),privkey,outputs,vins,privkeys)) != 0 )
+        if ( (rawtx= LP_createrawtransaction(&numvins,coin,V,(int32_t)(sizeof(V)/sizeof(*V)),privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee)) != 0 )
         {
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
