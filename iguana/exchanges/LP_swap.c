@@ -190,7 +190,7 @@ int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     int32_t i,nonz=0,aliceconfirms,bobconfirms,len = 0; uint8_t other33[33];
-    if ( datalen == sizeof(swap->otherdeck)+34 )
+    if ( datalen == sizeof(swap->otherdeck)+36 )
     {
         aliceconfirms = data[len++];
         bobconfirms = data[len++];
@@ -220,7 +220,7 @@ int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
             len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
         return(0);
     }
-    printf("pubkeys verify size mismatch %d != %d\n",datalen,(int32_t)sizeof(swap->otherdeck));
+    printf("pubkeys verify size mismatch %d != %d\n",datalen,(int32_t)sizeof(swap->otherdeck)+36);
     return(-1);
 }
 
