@@ -433,8 +433,6 @@ int64_t iguana_lockval(int32_t finalized,int64_t locktime)
 int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson)
 {
     uint8_t *serialized,*serialized2,*serialized3,*serialized4,*extraspace,pubkeys[64][33]; int32_t finalized,i,len,n,z,plen,maxsize,complete = 0,extralen = 100000; char *privkeystr,*signedtx = 0; bits256 privkeys[64],privkey,txid; cJSON *item; cJSON *txobj = 0;
-    printf("vins.%p privkeys.%p\n",vins,privkeysjson);
-    printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
     maxsize = 1000000;
     memset(privkey.bytes,0,sizeof(privkey));
     if ( rawtx != 0 && rawtx[0] != 0 && (len= (int32_t)strlen(rawtx)>>1) < maxsize )
@@ -450,10 +448,10 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
         {
             //printf("back from bitcoin_hex2json (%s)\n",jprint(vins,0));
         } else fprintf(stderr,"no txobj from bitcoin_hex2json\n");
-        printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
+        //printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
-            printf("numinputs.%d (%s) msgtx.%d\n",numinputs,jprint(vins,0),msgtx->tx_in);
+            //printf("numinputs.%d (%s) msgtx.%d\n",numinputs,jprint(vins,0),msgtx->tx_in);
             memset(msgtx,0,sizeof(*msgtx));
             if ( iguana_rwmsgtx(taddr,pubtype,p2shtype,isPoS,height,0,0,serialized,maxsize,msgtx,&txid,"",extraspace,extralen,vins,V->suppress_pubkeys) > 0 && numinputs == msgtx->tx_in )
             {
