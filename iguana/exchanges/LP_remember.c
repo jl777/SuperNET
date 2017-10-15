@@ -856,13 +856,13 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     srcAdest = srcBdest = destAdest = destBdest = 0;
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,rswap.src) != 0 || strcmp(rswap.alicecoin,rswap.dest) != 0 )
     {
-        printf("BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
+        printf("legacy DB SWAPS files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
         return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
     }
     alice = LP_coinfind(rswap.alicecoin);
     bob = LP_coinfind(rswap.bobcoin);
-    rswap.Atxfee = LP_txfeecalc(alice,rswap.Atxfee);
-    rswap.Btxfee = LP_txfeecalc(bob,rswap.Btxfee);
+    rswap.Atxfee = LP_txfeecalc(alice,rswap.Atxfee,0);
+    rswap.Btxfee = LP_txfeecalc(bob,rswap.Btxfee,0);
     if ( rswap.iambob == 0 )
     {
         if ( alice != 0 )

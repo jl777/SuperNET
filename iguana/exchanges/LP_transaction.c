@@ -724,9 +724,34 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     return(signedtx);
 }
 
+/*char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
+{
+    int32_t iter,i,datalen; char changeaddr[64],*signedtx=0; cJSON *retjson; bits256 signedtxid; uint64_t txfee,newtxfee=10000;
+    txfee = coin->txfee;
+    if ( txfee > 0 && txfee < 10000 )
+        txfee = 10000;
+    retjson = cJSON_CreateObject();
+    safecopy(changeaddr,coin->smartaddr,sizeof(changeaddr));
+    for (iter=0; iter<2; iter++)
+    {
+        if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,iter == 0 ? txfee : newtxfee,str,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,privkey,0,0,0,0,0,rawtx->utxotxid,rawtx->utxovout,rawtx->I.destaddr,pubkey33,1,0,&destamount,rawtx->I.amount,changeaddr,vinaddr,rawtx->I.suppress_pubkeys)) != 0 )
+        {
+            datalen = (int32_t)strlen(signedtx) / 2;
+            if ( strcmp(coin->symbol,"BTC") == 0 )
+            {
+                newtxfee = LP_txfeecalc(coin,0,datalen);
+                printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
+            } else break;
+        } else break;
+        if ( strcmp(str,"myfee") == 0 )
+            break;
+    }
+    return(jprint(retjson,1));
+}*/
+
 int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay,bits256 privkey,uint8_t *changermd160,char *vinaddr)
 {
-    int32_t retval=-1,len,iter; char *signedtx,*changeaddr = 0,_changeaddr[64]; struct iguana_info *coin; int64_t newtxfee=0,destamount;
+    int32_t retval=-1,iter; char *signedtx,*changeaddr = 0,_changeaddr[64]; struct iguana_info *coin; int64_t newtxfee=0,destamount;
     char str2[65]; printf("%s rawtxgen.(%s/v%d)\n",rawtx->name,bits256_str(str2,rawtx->utxotxid),rawtx->utxovout);
     if ( (coin= rawtx->coin) == 0 )
         return(-1);
@@ -753,8 +778,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
             free(signedtx);
             if ( strcmp(coin->symbol,"BTC") != 0 )
                 return(retval);
-            len = rawtx->I.datalen;
-            newtxfee = LP_txfeecalc(coin,0);
+            newtxfee = LP_txfeecalc(coin,0,rawtx->I.datalen);
             printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
         } else break;
         if ( strcmp(str,"myfee") == 0 )

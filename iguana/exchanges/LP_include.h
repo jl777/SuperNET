@@ -303,7 +303,7 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg);
 struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
-uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee);
+uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen);
 struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr);
 struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr);
 struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr);

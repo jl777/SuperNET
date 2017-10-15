@@ -19,12 +19,11 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// sign packets
 // withdraw
-// verify portfolio
-// stats, fix pricearray
+// stats
+// sign critical api calls
 // dPoW security -> 2: KMD notarized, 3: BTC notarized
-// electrum peers
+// verify portfolio and pricearray
 
 
 #include <stdio.h>

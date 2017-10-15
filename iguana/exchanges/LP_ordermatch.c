@@ -19,18 +19,20 @@
 //  marketmaker
 //
 
-uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee)
+uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen)
 {
     if ( coin != 0 )
     {
         if ( strcmp(coin->symbol,"BTC") == 0 )
         {
+            if ( txlen == 0 )
+                txlen = LP_AVETXSIZE;
             coin->rate = LP_getestimatedrate(coin);
-            if ( (txfee= SATOSHIDEN * coin->rate * LP_AVETXSIZE) <= LP_MIN_TXFEE )
+            if ( (txfee= SATOSHIDEN * coin->rate * txlen) <= LP_MIN_TXFEE )
             {
                 coin->rate = -1.;
                 coin->rate = _LP_getestimatedrate(coin);
-                if ( (txfee= SATOSHIDEN * coin->rate * LP_AVETXSIZE) <= LP_MIN_TXFEE )
+                if ( (txfee= SATOSHIDEN * coin->rate * txlen) <= LP_MIN_TXFEE )
                     txfee = LP_MIN_TXFEE;
             }
         } else txfee = coin->txfee;
@@ -42,8 +44,8 @@ uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee)
 
 void LP_txfees(uint64_t *txfeep,uint64_t *desttxfeep,char *base,char *rel)
 {
-    *txfeep = LP_txfeecalc(LP_coinfind(base),0);
-    *desttxfeep = LP_txfeecalc(LP_coinfind(rel),0);
+    *txfeep = LP_txfeecalc(LP_coinfind(base),0,0);
+    *desttxfeep = LP_txfeecalc(LP_coinfind(rel),0,0);
     printf("LP_txfees(%.8f %.8f)\n",dstr(*txfeep),dstr(*desttxfeep));
 }
 

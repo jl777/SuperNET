@@ -106,6 +106,7 @@ inventory(coin)\n\
 bestfit(rel, relvolume)\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
+withdraw(coin, outputs[])\n\
 swapstatus()\n\
 swapstatus(requestid, quoteid)\n\
 public API:\n \
@@ -280,7 +281,12 @@ dividends(coin, height, <args>)\n\
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {
-                
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                {
+                    if ( jobj(argjson,"outputs") == 0 )
+                        return(clonestr("{\"error\":\"withdraw needs to have outputs\"}"));
+                    else return(LP_withdraw(ptr,argjson));
+                } else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             else if ( strcmp(method,"setconfirms") == 0 )
             {

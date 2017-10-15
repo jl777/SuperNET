@@ -312,7 +312,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         //printf("LP_utxoadd reject inactive %s\n",symbol);
         return(0);
     }
-    txfee = LP_txfeecalc(coin,0);
+    txfee = LP_txfeecalc(coin,0,0);
     if ( iambob != 0 && value2 < 9 * (value >> 3) + 2*txfee ) // big txfee padding
     {
         if ( value2 > 2*txfee )
@@ -522,7 +522,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
-        txfee = LP_txfeecalc(coin,0);
+        txfee = LP_txfeecalc(coin,0,0);
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
             //printf("LP_privkey_init %s %s\n",coin->symbol,jprint(array,0));
