@@ -94,23 +94,23 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
     //    return(clonestr("{\"result\":\"success\"}"));
     else if ( strcmp(method,"help") == 0 )
         return(clonestr("{\"result\":\" \
-available localhost RPC commands:\n \
+available localhost RPC commands: * means it needs to be a signed request\n \
 pricearray(base, rel, firsttime=0, lasttime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
-setprice(base, rel, price)\n\
-autoprice(base, rel, price, margin, type)\n\
-goal(coin=*, val=<autocalc>)\n\
+setprice(base, rel, price)*\n\
+autoprice(base, rel, price, margin, type)*\n\
+goal(coin=*, val=<autocalc>)*\n\
 myprice(base, rel)\n\
-enable(coin)\n\
-disable(coin)\n\
+enable(coin)*\n\
+disable(coin)*\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
 lastnonce()\n\
-buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
-sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
-withdraw(coin, outputs[])\n\
+buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)*\n\
+sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)*\n\
+withdraw(coin, outputs[])*\n\
 sendrawtransaction(coin, signedtx)\n\
-swapstatus()\n\
-swapstatus(requestid, quoteid)\n\
+swapstatus()*\n\
+swapstatus(requestid, quoteid)*\n\
 public API:\n \
 getcoins()\n\
 getcoin(coin)\n\
@@ -118,16 +118,16 @@ portfolio()\n\
 getpeers()\n\
 passphrase(passphrase, gui)\n\
 listunspent(coin, address)\n\
-setconfirms(coin, numconfirms, maxconfirms=6)\n\
-trust(pubkey, trust)\n\
+setconfirms(coin, numconfirms, maxconfirms=6)*\n\
+trust(pubkey, trust)*\n\
 balance(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
-sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
-getmessages(firsti=0, num=100)\n\
-clearmessages(firsti=0, num=100)\n\
+sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)*\n\
+getmessages(firsti=0, num=100)*\n\
+deletemessages(firsti=0, num=100)*\n\
 secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)\n\
-electrum(coin, ipaddr, port)\n\
+electrum(coin, ipaddr, port)*\n\
 snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
@@ -153,6 +153,7 @@ dividends(coin, height, <args>)\n\
         jdelete(argjson,"userpass");
         if ( strcmp(method,"sendmessage") == 0 )
         {
+            //*
             if ( jobj(argjson,"method2") == 0 )
             {
                 printf("broadcast message\n");
@@ -162,12 +163,14 @@ dividends(coin, height, <args>)\n\
         }
         else if ( strcmp(method,"getmessages") == 0 )
         {
+            //*
             if ( (retjson= LP_getmessages(jint(argjson,"firsti"),jint(argjson,"num"))) != 0 )
                 return(jprint(retjson,1));
             else return(clonestr("{\"error\":\"null messages\"}"));
         }
         else if ( strcmp(method,"deletemessages") == 0 )
         {
+            //*
             LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
         }
@@ -202,6 +205,7 @@ dividends(coin, height, <args>)\n\
             price = jdouble(argjson,"price");
             if ( strcmp(method,"setprice") == 0 )
             {
+                //*
                 if ( price > SMALLVAL )
                 {
                     if ( LP_mypriceset(&changed,base,rel,price) < 0 )
@@ -213,6 +217,7 @@ dividends(coin, height, <args>)\n\
             }
             else if ( strcmp(method,"autoprice") == 0 )
             {
+                //*
                 if ( LP_autoprice(base,rel,price,jdouble(argjson,"margin"),jstr(argjson,"type")) < 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
@@ -235,6 +240,7 @@ dividends(coin, height, <args>)\n\
             }
             else if ( strcmp(method,"buy") == 0 )
             {
+                //*
                 if ( price > SMALLVAL )
                 {
                     return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce")));
@@ -242,6 +248,7 @@ dividends(coin, height, <args>)\n\
             }
             else if ( strcmp(method,"sell") == 0 )
             {
+                //*
                 if ( price > SMALLVAL )
                 {
                     return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce")));
@@ -259,6 +266,7 @@ dividends(coin, height, <args>)\n\
         {
             if ( strcmp(method,"enable") == 0 )
             {
+                //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     if ( LP_conflicts_find(ptr) == 0 )
@@ -269,12 +277,14 @@ dividends(coin, height, <args>)\n\
             }
             else if ( strcmp(method,"disable") == 0 )
             {
+                //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                     ptr->inactive = (uint32_t)time(NULL);
                 return(jprint(LP_coinsjson(0),1));
             }
             else if ( strcmp(method,"electrum") == 0 )
             {
+                //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     ptr->inactive = 0;
@@ -287,6 +297,7 @@ dividends(coin, height, <args>)\n\
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {
+                ///*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     if ( jobj(argjson,"outputs") == 0 )
@@ -298,6 +309,7 @@ dividends(coin, height, <args>)\n\
             else if ( strcmp(method,"setconfirms") == 0 )
             {
                 int32_t n;
+                //*
                 n = jint(argjson,"numconfirms");
                 if ( n < 0 )
                     return(clonestr("{\"error\":\"illegal numconfirms\"}"));
@@ -352,15 +364,22 @@ dividends(coin, height, <args>)\n\
                 }
             }
             else if ( strcmp(method,"goal") == 0 )
+            {
+                //*
                 return(LP_portfolio_goal(coin,jdouble(argjson,"val")));
+            }
             else if ( strcmp(method,"getcoin") == 0 )
                 return(LP_getcoin(coin));
         }
         else if ( strcmp(method,"goal") == 0 )
+        {
+            //*
             return(LP_portfolio_goal("*",100.));
+        }
         else if ( strcmp(method,"swapstatus") == 0 )
         {
             uint32_t requestid,quoteid;
+            //*
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
                 return(basilisk_swapentry(requestid,quoteid));
             else return(basilisk_swaplist(0,0));
@@ -375,7 +394,10 @@ dividends(coin, height, <args>)\n\
         else if ( strcmp(method,"myprices") == 0 )
             return(LP_myprices());
         else if ( strcmp(method,"trust") == 0 )
+        {
+            //*
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
+        }
         else if ( strcmp(method,"trusted") == 0 )
             return(LP_pubkey_trusted());
     }

@@ -1021,7 +1021,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.iambob = 0;
         swap->I.otherhash = swap->I.req.desthash;
         swap->I.aliceistrusted = 1;
-        swap->I.otheristrusted = swap->I.bobistrusted = LP_pubkey_istrusted(swap->I.req.desthash);
+        swap->I.otheristrusted = swap->I.bobistrusted = LP_pubkey_istrusted(swap->I.req.srchash);
     }
     else
     {
