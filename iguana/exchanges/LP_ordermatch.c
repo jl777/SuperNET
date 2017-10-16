@@ -443,9 +443,9 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
     return(pairsock);
 }
 
-int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **utxos,int32_t n,uint64_t targetval)
+int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_address_utxo **utxos,int32_t n,uint64_t targetval)
 {
-    int32_t i,mini = -1; struct LP_address_utxo *up; struct electrum_info *backupep=0,*ep; char str[65]; int64_t dist; uint64_t mindist = (1LL << 60);
+    int32_t i,oldht,mini = -1; struct LP_address_utxo *up; struct electrum_info *backupep=0,*ep; char str[65]; int64_t dist; uint64_t mindist = (1LL << 60);
     if ( (ep= coin->electrum) != 0 )
     {
         if ( (backupep= ep->prev) == 0 )
@@ -462,15 +462,24 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,struct LP_address_utxo **u
             {
                 if ( coin->electrum != 0 )
                 {
-                    if (up->SPV <= 0 )
+                    if ( up->SPV == 0 || up->SPV == -1 )
                         up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
-                    if ( up->SPV < 0 )
+                    if ( up->SPV == 0 || up->SPV == -1 )
                     {
                         printf("SPV failure for %s %s\n",coin->symbol,bits256_str(str,up->U.txid));
+                        if ( up->SPV == -1 )
+                        {
+                            oldht = up->U.height;
+                            LP_txheight_check(coin,coinaddr,up);
+                            if ( oldht != up->U.height )
+                                up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                            if ( up->SPV == -1 )
+                                up->SPV = -2;
+                        }
                         continue;
                     } else printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
                 }
-                if ( dist >= 0 && dist < mindist )
+                if ( up->SPV > 0 && dist >= 0 && dist < mindist )
                 {
                     //printf("(%.8f %.8f %.8f).%d ",dstr(up->U.value),dstr(dist),dstr(mindist),mini);
                     mini = i;
@@ -507,7 +516,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s\n",dstr(targetval),relvolume,price,dstr(txfee),coinaddr);
             }
             mini = -1;
-            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,utxos,m,targetval)) >= 0 )
+            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval)) >= 0 )
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
@@ -516,7 +525,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 if ( (double)up->U.value/targetval < LP_MINVOL-1 )
 
                 {
-                    if ( (mini= LP_nearest_utxovalue(coin,utxos,m,targetval2 * 1.01)) >= 0 )
+                    if ( (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval2 * 1.01)) >= 0 )
                     {
                         if ( up != 0 && (up2= utxos[mini]) != 0 )
                         {
