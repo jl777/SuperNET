@@ -19,7 +19,7 @@
 //  marketmaker
 //
 // sign critical api calls
-// SPV height errors, autodetect and fix
+// -SPV height errors, autodetect and fix
 // stats
 // deal with offline pubkeys, reputations, etc.
 // dPoW security -> 2: KMD notarized, 3: BTC notarized

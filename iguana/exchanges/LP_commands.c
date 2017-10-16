@@ -123,9 +123,9 @@ trust(pubkey, trust)*\n\
 balance(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
-sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)*\n\
-getmessages(firsti=0, num=100)*\n\
-deletemessages(firsti=0, num=100)*\n\
+sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
+getmessages(firsti=0, num=100)\n\
+deletemessages(firsti=0, num=100)\n\
 secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)\n\
 electrum(coin, ipaddr, port)*\n\
 snapshot(coin, height)\n\
@@ -155,21 +155,18 @@ dividends(coin, height, <args>)\n\
         {
             if ( jobj(argjson,"method2") == 0 )
             {
-                //LP_signature_add(argjson,jstr(argjson,"message"),jbits256(argjson,"pubkey"));
                 LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
             }
             return(clonestr("{\"result\":\"success\"}"));
         }
         else if ( strcmp(method,"getmessages") == 0 )
         {
-            //*
             if ( (retjson= LP_getmessages(jint(argjson,"firsti"),jint(argjson,"num"))) != 0 )
                 return(jprint(retjson,1));
             else return(clonestr("{\"error\":\"null messages\"}"));
         }
         else if ( strcmp(method,"deletemessages") == 0 )
         {
-            //*
             LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
         }
@@ -204,9 +201,9 @@ dividends(coin, height, <args>)\n\
             price = jdouble(argjson,"price");
             if ( strcmp(method,"setprice") == 0 )
             {
-                //*
                 if ( price > SMALLVAL )
                 {
+                    //LP_signature_add(argjson,base,rel,(uint64_t)price * SATOSHIDEN);
                     if ( LP_mypriceset(&changed,base,rel,price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
                     //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
@@ -216,7 +213,7 @@ dividends(coin, height, <args>)\n\
             }
             else if ( strcmp(method,"autoprice") == 0 )
             {
-                //*
+                //LP_signature_add(argjson,base,rel,(uint64_t)price * SATOSHIDEN);
                 if ( LP_autoprice(base,rel,price,jdouble(argjson,"margin"),jstr(argjson,"type")) < 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));

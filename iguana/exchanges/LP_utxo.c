@@ -382,7 +382,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                             LP_txheight_check(coin,coinaddr,up);
                             if ( oldht != up->U.height )
                                 up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
-                            if ( up->SPV == -1 )
+                            if ( up->SPV < 0 )
                                 up->SPV = -2;
                         }
                         if ( up->SPV > 0 )
