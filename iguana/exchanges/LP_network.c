@@ -144,6 +144,7 @@ void queue_loop(void *ignore)
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
     while ( 1 )
     {
+        LP_reserved_msgs();
         nonz = 0;
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = 0;
@@ -170,7 +171,7 @@ void queue_loop(void *ignore)
                 if ( duplicate > 0 )
                 {
                     LP_Qfound++;
-                    if ( (LP_Qfound % 10) == 0 )
+                    if ( (LP_Qfound % 100) == 0 )
                         printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     flag = 1;
                 }
@@ -199,7 +200,7 @@ void queue_loop(void *ignore)
         //if ( n != 0 )
         //    printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
-            usleep(50000);
+            usleep(5000);
     }
 }
 

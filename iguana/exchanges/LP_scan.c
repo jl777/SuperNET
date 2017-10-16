@@ -391,7 +391,7 @@ char *LP_dividends(struct iguana_info *coin,int32_t height,cJSON *argjson)
     return(clonestr("{\"error\":\"symbol not found\"}"));
 }
 
-int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 searchtxid,int32_t searchvout)
+int32_t LP_spendsearch(char *coinaddr,bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 searchtxid,int32_t searchvout)
 {
     struct LP_transaction *tx; struct iguana_info *coin;
     *indp = -1;
@@ -404,6 +404,7 @@ int32_t LP_spendsearch(bits256 *spendtxidp,int32_t *indp,char *symbol,bits256 se
         {
             *spendtxidp = tx->outpoints[searchvout].spendtxid;
             *indp = tx->outpoints[searchvout].spendvini;
+            LP_swap_getcoinaddr(symbol,coinaddr,*spendtxidp,*indp);
             return(tx->outpoints[searchvout].spendheight);
         }
     }
@@ -481,7 +482,7 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
                     }
                     free(array);
                 }
-                LP_listunspent_issue(coin->symbol,coinaddr);
+                LP_listunspent_issue(coin->symbol,coinaddr,1);
                 struct LP_address_utxo *up;
                 if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
                 {
@@ -504,7 +505,7 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
 
 int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,char *coinaddr,bits256 searchtxid,int32_t searchvout,bits256 searchtxid2,int32_t searchvout2)
 {
-    struct iguana_info *coin; int32_t selector; cJSON *array;
+    struct iguana_info *coin; int32_t selector; cJSON *array; char addr[64];
     if ( symbol == 0 || symbol[0] == 0 || bits256_nonz(searchtxid) == 0 || bits256_nonz(searchtxid2) == 0 )
         return(-1);
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
@@ -517,9 +518,9 @@ int32_t LP_mempool_vinscan(bits256 *spendtxidp,int32_t *spendvinp,char *symbol,c
             coin->lastmempool = (uint32_t)time(NULL);
         }
     }
-    if ( (selector= LP_spendsearch(spendtxidp,spendvinp,symbol,searchtxid,searchvout)) >= 0 )
+    if ( (selector= LP_spendsearch(addr,spendtxidp,spendvinp,symbol,searchtxid,searchvout)) >= 0 )
         return(selector);
-    else if ( (selector= LP_spendsearch(spendtxidp,spendvinp,symbol,searchtxid2,searchvout2)) >= 0 )
+    else if ( (selector= LP_spendsearch(addr,spendtxidp,spendvinp,symbol,searchtxid2,searchvout2)) >= 0 )
         return(selector);
     return(-1);
 }

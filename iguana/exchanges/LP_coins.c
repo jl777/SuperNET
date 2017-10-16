@@ -100,7 +100,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
         return;
     }
     sprintf(fname,"%s",LP_getdatadir());
-#ifdef WIN32
+#ifdef _WIN32
     strcat(fname,"\\");
 #else
     strcat(fname,"/");
@@ -138,7 +138,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
 #endif
         if ( strcmp(symbol,"KMD") != 0 )
         {
-#ifdef WIN32
+#ifdef _WIN32
             strcat(fname,"\\");
 #else
             strcat(fname,"/");
@@ -146,7 +146,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
             strcat(fname,assetname);
         }
     }
-#ifdef WIN32
+#ifdef _WIN32
     strcat(fname,"\\");
 #else
     strcat(fname,"/");
@@ -299,6 +299,11 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     coin->inactive = (uint32_t)time(NULL);
     coin->bussock = LP_coinbus(busport);
     coin->ctx = bitcoin_ctx();
+    if ( assetname != 0 && strcmp(name,assetname) == 0 )
+    {
+        printf("%s is assetchain\n",symbol);
+        coin->isassetchain = 1;
+    }
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;
     else name2 = name;

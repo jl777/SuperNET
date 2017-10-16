@@ -324,16 +324,21 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
             roothash = validate_merkle(jint(merkobj,"pos"),txid,merkles,m);
             if ( (hdrobj= electrum_getheader(coin->symbol,ep,&hdrobj,height)) != 0 )
             {
-                merkleroot = jbits256(hdrobj,"merkle_root");
-                if ( bits256_cmp(merkleroot,roothash) == 0 )
+                if ( jobj(hdrobj,"merkle_root") != 0 )
                 {
-                    SPV = height;
-                    //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
-                }
-                else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
+                    merkleroot = jbits256(hdrobj,"merkle_root");
+                    if ( bits256_cmp(merkleroot,roothash) == 0 )
+                    {
+                        SPV = height;
+                        //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
+                    }
+                    else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s (%s)\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot),jprint(hdrobj,0));
+                } else SPV = 0;
                 free_json(hdrobj);
-            }
+            } else printf("couldnt get header for ht.%d\n",height);
         }
+        if ( SPV < 0 )
+            printf("MERKLE DIDNT VERIFY.(%s)\n",jprint(merkobj,0));
         free_json(merkobj);
     }
     return(SPV);
@@ -366,7 +371,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                     }
                     if ( up->spendheight <= 0 )
                     {
-                        if ( backupep != 0 && up->SPV == 0 )
+                        if ( backupep != 0 && up->SPV <= 0 )
                             up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
                         jaddi(array,LP_address_item(coin,up,electrumret));
                         n++;
@@ -417,7 +422,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 
 void LP_postutxos(char *symbol,char *coinaddr)
 {
-    bits256 zero; char *msg; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
+    bits256 zero; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
     if ( (coin= LP_coinfind(symbol)) != 0 && (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
     {
         //printf("LP_postutxos pubsock.%d %s %s\n",pubsock,symbol,coin->smartaddr);
@@ -430,9 +435,8 @@ void LP_postutxos(char *symbol,char *coinaddr)
             jaddstr(reqjson,"coin",symbol);
             jaddstr(reqjson,"coinaddr",coinaddr);
             jadd(reqjson,"utxos",array);
-            msg = jprint(reqjson,1);
             //printf("post (%s) -> %d\n",msg,LP_mypubsock);
-            LP_broadcast_message(LP_mypubsock,symbol,symbol,zero,msg);
+            LP_reserved_msg(symbol,symbol,zero,jprint(reqjson,1));
         }
     }
 }
@@ -489,7 +493,7 @@ char *LP_postedutxos(cJSON *argjson)
             if ( (array= jarray(&n,argjson,"utxos")) != 0 )
                 LP_unspents_array(coin,coinaddr,array);
         }
-        else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr)) != 0 )
+        else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr,1)) != 0 )
             free_json(array);
     }
     return(clonestr("{\"result\":\"success\"}"));
@@ -722,7 +726,7 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
     }
     else
     {
-        LP_listunspent_issue(symbol,coinaddr);
+        LP_listunspent_issue(symbol,coinaddr,1);
         if ( (ht= LP_txheight(coin,txid)) > 0 && ht <= coin->height )
             numconfirms = (LP_getheight(coin) - ht + 1);
         else if ( mempool != 0 )
@@ -824,7 +828,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         return(-2);
     if ( (up= LP_address_utxofind(coin,destaddr,txid2,vout2)) != 0 && up->spendheight > 0 )
         return(-3);
-    txfee = LP_txfeecalc(LP_coinfind(symbol),0);
+    txfee = LP_txfeecalc(LP_coinfind(symbol),0,0);
     if ( val >= satoshis && val > (1+LP_MINSIZE_TXFEEMULT)*txfee )
     {
         threshold = (iambob != 0) ? LP_DEPOSITSATOSHIS(satoshis) : (LP_DEXFEE(satoshis) + txfee);

@@ -221,10 +221,21 @@ char *LP_pubkey_trustset(bits256 pubkey,uint32_t trustval)
     return(clonestr("{\"error\":\"pubkey not found\"}"));
 }
 
+char *LP_pubkey_trusted()
+{
+    struct LP_pubkeyinfo *pubp,*tmp; cJSON *array = cJSON_CreateArray();
+    HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
+    {
+        if ( pubp->istrusted != 0 )
+            jaddibits256(array,pubp->pubkey);
+    }
+    return(jprint(array,1));
+}
+
 uint64_t LP_unspents_metric(struct iguana_info *coin,char *coinaddr)
 {
     cJSON *array,*item; int32_t i,n; uint64_t metric=0,total;
-    LP_listunspent_both(coin->symbol,coinaddr);
+    LP_listunspent_both(coin->symbol,coinaddr,0);
     if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
     {
         total = 0;
@@ -666,8 +677,8 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
         jaddstr(item,"address",op->coinaddr);
         jaddnum(item,"price",op->price);
         jaddnum(item,"numutxos",op->numutxos);
-        jaddnum(item,"minvolume",dstr(op->minsatoshis));
-        jaddnum(item,"maxvolume",dstr(op->maxsatoshis));
+        jaddnum(item,"minvolume",dstr(op->minsatoshis)*0.8);
+        jaddnum(item,"maxvolume",dstr(op->maxsatoshis)*0.8);
         jaddbits256(item,"pubkey",op->pubkey);
         jaddnum(item,"age",time(NULL)-op->timestamp);
     }
@@ -771,11 +782,11 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=n=0; i<numbids; i++)
     {
         jaddi(array,LP_orderbookjson(rel,bids[i]));
-        if ( bids[i]->numutxos == 0 )//|| relcoin->electrum == 0 )
+        if ( n < 10 && bids[i]->numutxos == 0 )//|| relcoin->electrum == 0 )
         {
             LP_address(relcoin,bids[i]->coinaddr);
             if ( relcoin->electrum == 0 )
-                LP_listunspent_issue(rel,bids[i]->coinaddr);
+                LP_listunspent_issue(rel,bids[i]->coinaddr,0);
             LP_listunspent_query(rel,bids[i]->coinaddr);
             n++;
         }
@@ -790,11 +801,11 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=n=0; i<numasks; i++)
     {
         jaddi(array,LP_orderbookjson(base,asks[i]));
-        if ( asks[i]->numutxos == 0 )//|| basecoin->electrum == 0 )
+        if ( n < 10 && asks[i]->numutxos == 0 )//|| basecoin->electrum == 0 )
         {
             LP_address(basecoin,asks[i]->coinaddr);
             if ( basecoin->electrum == 0 )
-                LP_listunspent_issue(base,asks[i]->coinaddr);
+                LP_listunspent_issue(base,asks[i]->coinaddr,0);
             LP_listunspent_query(base,asks[i]->coinaddr);
             n++;
         }
@@ -1017,7 +1028,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             pubp->timestamp = (uint32_t)time(NULL);
         } else printf("error creating pubkey entry\n");
     }
-    else if ( (rand() % 100) == 0 )
-        printf("error finding %s/%s %.8f\n",base,rel,price);
+    //else if ( (rand() % 100) == 0 )
+    //    printf("error finding %s/%s %.8f\n",base,rel,price);
 }
 

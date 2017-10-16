@@ -309,10 +309,10 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
     }*/
     if ( (coin= LP_coinfind(symbol)) == 0 || (IAMLP == 0 && coin->inactive != 0) )
     {
-        printf("LP_utxoadd reject inactive %s\n",symbol);
+        //printf("LP_utxoadd reject inactive %s\n",symbol);
         return(0);
     }
-    txfee = LP_txfeecalc(coin,0);
+    txfee = LP_txfeecalc(coin,0,0);
     if ( iambob != 0 && value2 < 9 * (value >> 3) + 2*txfee ) // big txfee padding
     {
         if ( value2 > 2*txfee )
@@ -452,7 +452,7 @@ cJSON *LP_inventory(char *symbol)
     if ( (coin= LP_coinfind(symbol)) != 0 )
     {
         coin->unspenttime = (uint32_t)time(NULL) - 777;
-        LP_listunspent_both(symbol,coin->smartaddr);
+        LP_listunspent_both(symbol,coin->smartaddr,0);
     }
     HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
     {
@@ -519,10 +519,10 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     }
     //printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
     if ( coin->inactive == 0 )
-        LP_listunspent_issue(coin->symbol,coin->smartaddr);
+        LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
-        txfee = LP_txfeecalc(coin,0);
+        txfee = LP_txfeecalc(coin,0,0);
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
             //printf("LP_privkey_init %s %s\n",coin->symbol,jprint(array,0));
@@ -746,7 +746,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         }
         if ( coin->electrum == 0 && coin->userpass[0] != 0 )
         {
-            LP_listunspent_issue(coin->symbol,coin->smartaddr);
+            LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
             if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
             {
                 if ( jobj(retjson,"error") != 0 )
