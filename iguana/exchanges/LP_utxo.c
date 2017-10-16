@@ -207,7 +207,7 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
                 if ( height > 0 && up->U.height != height )
                 {
                     if ( up->U.height > 0 )
-                        printf("SPV.%d update %s/v%d up->U.height %d <- %d\n",up->SPV,bits256_str(str,up->U.txid),up->U.vout,up->U.height,height);
+                        printf("%s SPV.%d update %s/v%d up->U.height %d <- %d\n",coin->symbol,up->SPV,bits256_str(str,up->U.txid),up->U.vout,up->U.height,height);
                     up->U.height = height, flag |= 2;
                 }
                 if ( spendheight > 0 && up->spendheight != spendheight )
