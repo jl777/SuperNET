@@ -19,6 +19,7 @@
 //  marketmaker
 //
 // sign critical api calls
+// SPV height errors, autodetect and fix
 // stats
 // dPoW security -> 2: KMD notarized, 3: BTC notarized
 // add interest to KMD withdraw

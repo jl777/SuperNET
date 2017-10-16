@@ -35,7 +35,7 @@
 #define MIN_PSOCK_PORT 10000
 #define LP_MEMPOOL_TIMEINCR 10
 #define LP_GETINFO_INCR 30
-#define LP_ORDERBOOK_DURATION 3600
+#define LP_ORDERBOOK_DURATION 120
 
 #define LP_HTTP_TIMEOUT 2 // 1 is too small due to edge cases of time(NULL)
 #define LP_MAXPEER_ERRORS 3

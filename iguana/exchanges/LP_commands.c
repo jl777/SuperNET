@@ -153,10 +153,9 @@ dividends(coin, height, <args>)\n\
         jdelete(argjson,"userpass");
         if ( strcmp(method,"sendmessage") == 0 )
         {
-            //*
             if ( jobj(argjson,"method2") == 0 )
             {
-                printf("broadcast message\n");
+                //LP_signature_add(argjson,jstr(argjson,"message"),jbits256(argjson,"pubkey"));
                 LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
             }
             return(clonestr("{\"result\":\"success\"}"));
