@@ -477,7 +477,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
                                 up->SPV = -2;
                         }
                         continue;
-                    } else printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
+                    } //else printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
                 }
                 if ( up->SPV > 0 && dist >= 0 && dist < mindist )
                 {
