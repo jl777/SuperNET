@@ -283,7 +283,7 @@ cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,
     jaddstr(sobj,"type","pubkey");
     jadd(sobj,"addresses",addresses);
     jadd(retjson,"scriptPubKey",sobj);
-    printf("GETTXOUT.(%s)\n",jprint(retjson,0));
+    //printf("GETTXOUT.(%s)\n",jprint(retjson,0));
     return(retjson);
 }
 
