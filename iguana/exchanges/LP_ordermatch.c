@@ -1085,7 +1085,9 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
             if ( qprice/ordermatchprice < 1.+SMALLVAL )
             {
                 printf("i.%d/%d qprice %.8f < ordermatchprice %.8f\n",i,maxiters,qprice,ordermatchprice);
-                Q.satoshis *= 0.9999;
+                if ( strcmp("BTC",Q.destcoin) == 0 )
+                    Q.satoshis *= 0.999;
+                else Q.satoshis *= 0.9999;
             } else break;
         }
         if ( i == maxiters || qprice > maxprice )
