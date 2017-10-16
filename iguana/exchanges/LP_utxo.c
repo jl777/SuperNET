@@ -350,7 +350,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
 
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
-    cJSON *array,*item; int32_t oldht,n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; cJSON *txobj; struct electrum_info *ep,*backupep=0;
+    cJSON *array,*item; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; cJSON *txobj; struct electrum_info *ep,*backupep=0;
     array = cJSON_CreateArray();
     if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
@@ -375,17 +375,7 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                     }
                     if ( up->spendheight <= 0 )
                     {
-                        if ( backupep != 0 && (up->SPV == 0 || up->SPV == -1) )
-                        {
-                            up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
-                            oldht = up->U.height;
-                            LP_txheight_check(coin,coinaddr,up);
-                            if ( oldht != up->U.height )
-                                up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
-                            if ( up->SPV < 0 )
-                                up->SPV = -2;
-                        }
-                        if ( up->SPV > 0 )
+                        if ( up->SPV >= 0 )
                         {
                             jaddi(array,LP_address_item(coin,up,electrumret));
                             n++;
