@@ -348,10 +348,9 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
         return(-14);
     if ( butxo != 0 )
     {
-        //qprice 2259.01692494 <- 10.34279604/0.00457845 txfees.(0.00042631 0.00010000) vs (0.00042791 0.00010000)
         if ( qp->satoshis < (srcvalue / LP_MINVOL) || srcvalue < qp->txfee*LP_MINSIZE_TXFEEMULT )
         {
-            printf("utxo payment %.8f is less than %f covered by Q %.8f or <10x txfee %.8f\n",dstr(srcvalue),1./LP_MINVOL,dstr(qp->satoshis),dstr(qp->txfee));
+            printf("utxo payment %.8f is less than %f covered by Q %.8f or <10x txfee %.8f [%d %d]\n",dstr(srcvalue),1./LP_MINVOL,dstr(qp->satoshis),dstr(qp->txfee),qp->satoshis < (srcvalue / LP_MINVOL),srcvalue < qp->txfee*LP_MINSIZE_TXFEEMULT);
             return(-12);
         }
     }
@@ -1086,7 +1085,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
             {
                 printf("i.%d/%d qprice %.8f < ordermatchprice %.8f\n",i,maxiters,qprice,ordermatchprice);
                 if ( strcmp("BTC",Q.destcoin) == 0 || strcmp("BTC",Q.srccoin) == 0 )
-                    Q.satoshis *= 0.99;
+                    Q.satoshis *= 0.999;
                 else Q.satoshis *= 0.9999;
             } else break;
         }
