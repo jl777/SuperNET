@@ -540,7 +540,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                         txid = jbits256(item,"txid");
                         vout = juint(item,"vout");
                         value = LP_value_extract(item,0);
-                        height = LP_getheight(coin) - jint(item,"confirmations");
+                        height = LP_getheight(coin) - jint(item,"confirmations") + 1;
                     }
                     else
                     {
