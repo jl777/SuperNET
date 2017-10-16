@@ -468,9 +468,10 @@ int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
                 char str[65]; printf("REJECT %s %s/v%d value.%llu vs %llu (%s)\n",coin->symbol,bits256_str(str,txid),v,(long long)value,(long long)val,jprint(txobj,0));
                 errs++;
             }
-            if ( coin->height != 0 )
-                ht = LP_getheight(coin) - jint(txobj,"confirmations") + 1;
-            else ht = 0;
+            ht = LP_txheight(coin,txid);
+            //if ( coin->height != 0 )
+            //    ht = LP_getheight(coin) - jint(txobj,"confirmations") + 1;
+            //else ht = 0;
             /*if  ( ht != 0 && ht < height-2 )
              {
              printf("REJECT %s %s/v%d ht.%d vs %d confs.%d (%s)\n",symbol,bits256_str(str,txid),v,ht,height,jint(txobj,"confirmations"),jprint(item,0));
