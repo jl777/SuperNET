@@ -377,7 +377,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 jaddnum(req,"vout",vout);
                 jaddnum(req,"ht",height);
                 jadd64bits(req,"value",value);
-                printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
+                //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
                 LP_reserved_msg("","",zero,jprint(req,1));
             }
         }

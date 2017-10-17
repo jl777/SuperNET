@@ -178,7 +178,7 @@ int32_t LP_address_utxo_ptrs(int32_t iambob,struct LP_address_utxo **utxos,int32
 struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp;
-    printf("LP_address_utxofind %s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
+    printf("LP_address_utxofind %s add addr.%s\n",coin->symbol,coinaddr);
     if ( (ap= _LP_address(coin,coinaddr)) != 0 )
     {
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -651,6 +651,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                 tx->outpoints[i].value = LP_value_extract(vout,0);
                 tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
                 LP_destaddr(tx->outpoints[i].coinaddr,vout);
+                printf("from transaction init\n");
                 LP_address_utxoadd(coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
             }
             //printf("numvouts.%d\n",numvouts);
