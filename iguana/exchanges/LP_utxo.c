@@ -157,7 +157,7 @@ int32_t LP_address_utxo_ptrs(int32_t iambob,struct LP_address_utxo **utxos,int32
     portable_mutex_lock(&LP_utxomutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
-        //char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout);
+        char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d spendheight.%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout,up->spendheight);
         if ( up->spendheight <= 0 )
         {
             if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
@@ -832,12 +832,12 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
     else val = LP_txvalue(destaddr,symbol,txid,vout);
     if ( (up= LP_address_utxofind(coin,destaddr,txid,vout)) != 0 && up->spendheight > 0 )
     {
-        printf("%s/v%d spent %d\n",bits256_str(str,txid),vout,up->spendheight);
+        //printf("%s/v%d spent %d\n",bits256_str(str,txid),vout,up->spendheight);
         return(-2);
     }
     if ( (up= LP_address_utxofind(coin,destaddr,txid2,vout2)) != 0 && up->spendheight > 0 )
     {
-        printf("%s/v%d spent %d\n",bits256_str(str,txid2),vout2,up->spendheight);
+        //printf("%s/v%d spent %d\n",bits256_str(str,txid2),vout2,up->spendheight);
         return(-3);
     }
     txfee = LP_txfeecalc(LP_coinfind(symbol),0,0);

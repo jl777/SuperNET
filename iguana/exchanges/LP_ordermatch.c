@@ -776,7 +776,7 @@ char *LP_bestfit(char *rel,double relvolume)
 }
 
 struct LP_quoteinfo LP_Alicequery;
-double LP_Alicemaxprice;
+double LP_Alicemaxprice; int32_t Alice_timeout;
 char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration)
 {
     struct LP_utxoinfo *aliceutxo; double price; //cJSON *bestitem=0; int32_t DEXselector=0; uint32_t expiration; double price; struct LP_pubkeyinfo *pubp; struct basilisk_swap *swap;
@@ -787,7 +787,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     }
     price = 0.;
     LP_query(ctx,myipaddr,mypubsock,"request",qp);
-    LP_Alicequery = *qp, LP_Alicemaxprice = maxprice;
+    LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_timeout = timeout;
     return(clonestr("{\"result\":\"success\"}"));
 }
 
@@ -801,7 +801,14 @@ int32_t LP_quotecmp(struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2)
 void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp)
 {
     double price,maxprice = LP_Alicemaxprice;
-    if ( LP_quotecmp(qp,&LP_Alicequery) == 0 )
+    if ( time(NULL) > qp->timestamp+Alice_timeout )
+    {
+        printf("time expired for Alice_request\n");
+        memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
+        LP_Alicemaxprice = 0.;
+        Alice_timeout = 0;
+    }
+    else if ( LP_quotecmp(qp,&LP_Alicequery) == 0 )
     {
         price = LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout);
         if ( LP_pricevalid(price) > 0 && maxprice > SMALLVAL && price <= maxprice )
@@ -1058,7 +1065,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     LP_txfees(&txfee,&desttxfee,base,rel);
     destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
     if ( (autxo= LP_utxo_bestfit(rel,destsatoshis)) == 0 )
-        return(clonestr("{\"error\":\"cant find utxo that is big enough\"}"));
+        return(clonestr("{\"error\":\"cant find alice utxo that is big enough\"}"));
     if ( destsatoshis < autxo->S.satoshis )
         autxo->S.satoshis = destsatoshis;
     while ( 1 )
