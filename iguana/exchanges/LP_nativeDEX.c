@@ -244,7 +244,18 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-printf("%s RECV.(%s)\n",typestr,(char *)ptr);
+                {
+                    cJSON *recvjson; char *mstr,*cstr;
+                    if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
+                    {
+                        if ( (mstr= jstr(recvjson,"method")) != 0 && strcmp(mstr,"uitem") == 0 &&
+                            (mstr= jstr(recvjson,"coin")) != 0 && strcmp(cstr,"REVS") == 0 )
+                        {
+                            printf("%s RECV.(%s)\n",typestr,(char *)ptr);
+                        }
+                        free_json(recvjson);
+                    }
+                }
                 nonz++;
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
