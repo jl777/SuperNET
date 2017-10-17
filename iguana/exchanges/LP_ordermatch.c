@@ -478,7 +478,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
                         continue;
                     } //else printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
                 }
-                if ( up->SPV > 0 && dist >= 0 && dist < mindist )
+                if ( (coin->electrum == 0 || up->SPV > 0) && dist >= 0 && dist < mindist )
                 {
                     //printf("(%.8f %.8f %.8f).%d ",dstr(up->U.value),dstr(dist),dstr(mindist),mini);
                     mini = i;
@@ -507,7 +507,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
         if ( (m= LP_address_utxo_ptrs(iambob,utxos,max,ap,coinaddr)) > 1 )
         {
             targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee);
-            if ( 1 )
+            if ( 0 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)
@@ -520,7 +520,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 up = utxos[mini];
                 utxos[mini] = 0;
                 targetval2 = (targetval / 8) * 9 + 2*txfee;
-                printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
+                //printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
                 if ( (double)up->U.value/targetval < LP_MINVOL-1 )
 
                 {
