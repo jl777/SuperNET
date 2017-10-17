@@ -249,7 +249,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
                     {
                         if ( (mstr= jstr(recvjson,"method")) != 0 && strcmp(mstr,"uitem") == 0 &&
-                            (mstr= jstr(recvjson,"coin")) != 0 && strcmp(cstr,"REVS") == 0 )
+                            (cstr= jstr(recvjson,"coin")) != 0 && strcmp(cstr,"REVS") == 0 )
                         {
                             printf("%s RECV.(%s)\n",typestr,(char *)ptr);
                         }
