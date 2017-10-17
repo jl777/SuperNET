@@ -244,7 +244,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-//printf("RECV.(%s)\n",(char *)ptr);
+printf("%s RECV.(%s)\n",typestr,(char *)ptr);
                 nonz++;
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
@@ -349,7 +349,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 vout = jint(item,"tx_pos");
                 value = j64bits(item,"value");
                 height = jint(item,"height");
-                if ( IAMLP == 0 )
+                if ( 0 && IAMLP == 0 )
                 {
                     HASH_ITER(hh,LP_peerinfos,peer,tmp)
                     {
@@ -711,7 +711,7 @@ int32_t LP_reserved_msgs()
             break;*/
         num_Reserved_msgs--;
 #ifdef __APPLE__
-        printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
+//        printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
 #endif
         LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
         Reserved_msgs[num_Reserved_msgs] = 0;
