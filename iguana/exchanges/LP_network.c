@@ -203,6 +203,8 @@ void queue_loop(void *ignore)
         //    printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
             usleep(5000);
+        else if ( IAMLP == 0 )
+            usleep(1000);
     }
 }
 
