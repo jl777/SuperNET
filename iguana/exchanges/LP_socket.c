@@ -350,7 +350,10 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                     }
                 }
                 if ( value != 0 || tx->height > 0 )
+                {
+                    printf("from electrum_process_array\n");
                     flag += LP_address_utxoadd(coin,coinaddr,txid,v,value,tx->height,-1);
+                }
                 //printf("v.%d numvouts.%d %.8f (%s)\n",v,tx->numvouts,dstr(tx->outpoints[jint(item,"tx_pos")].value),jprint(item,0));
             } //else printf("cant find tx\n");
         }
@@ -481,6 +484,7 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
                         if ( tx->height > 0 && tx->height != height )
                             printf("update %s height.%d <- %d\n",bits256_str(str,txid),tx->height,height);
                         tx->height = height;
+                        printf("from history\n");
                         LP_address_utxoadd(coin,addr,txid,0,0,height,-1);
                     }
                 }

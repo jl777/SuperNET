@@ -167,7 +167,7 @@ struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
         ap->pubkey = pubp->pubkey;
         memcpy(ap->pubsecp,pubp->pubsecp,sizeof(ap->pubsecp));
     }
-    //printf("LP_ADDRESS %s ADD.(%s)\n",coin->symbol,coinaddr);
+    printf("LP_ADDRESS %s ADD.(%s)\n",coin->symbol,coinaddr);
     HASH_ADD_KEYPTR(hh,coin->addresses,ap->coinaddr,strlen(ap->coinaddr),ap);
     return(ap);
 }
