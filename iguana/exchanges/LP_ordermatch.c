@@ -801,7 +801,7 @@ int32_t LP_quotecmp(struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2)
 void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp)
 {
     double price,maxprice = LP_Alicemaxprice;
-    if ( time(NULL) > qp->timestamp+Alice_timeout )
+    if ( 0 && time(NULL) > qp->timestamp+Alice_timeout )
     {
         printf("time expired for Alice_request\n");
         memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
