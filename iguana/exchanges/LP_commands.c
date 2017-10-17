@@ -484,7 +484,7 @@ dividends(coin, height, <args>)\n\
                 {
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
                     {
-                        //printf("%s %s is my address being asked for!\n",ptr->symbol,coinaddr);
+                        printf("ADDR_UNSPENTS %s %s is my address being asked for!\n",ptr->symbol,coinaddr);
                         ptr->addr_listunspent_requested = (uint32_t)time(NULL);
                     }
                 }
