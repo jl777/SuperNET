@@ -275,7 +275,7 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
         if ( fabs(price) < SMALLVAL && refbase != 0 && refrel != 0 )
         {
             price = LP_myprice(&bid,&ask,refbase,refrel);
-            printf("USE ref %s/%s %.8f factor %.8f offset %.8f margin %.8f\n",refbase,refrel,price,factor,offset,margin);
+            printf("%s/%s USE ref %s/%s %.8f factor %.8f offset %.8f margin %.8f\n",basepp->symbol,relpp->symbol,refbase,refrel,price,factor,offset,margin);
         }
         if ( LP_pricevalid(price) > 0 )
         {
