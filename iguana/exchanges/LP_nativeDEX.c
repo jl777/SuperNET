@@ -708,7 +708,7 @@ int32_t LP_reserved_msgs()
     while ( num_Reserved_msgs > 0 )
     {
         num_Reserved_msgs--;
-        //printf("BROADCASTING RESERVED.(%s)\n",Reserved_msgs[num_Reserved_msgs]);
+        printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
         LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
         Reserved_msgs[num_Reserved_msgs] = 0;
         n++;

@@ -476,10 +476,11 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
             if ( strcmp(coin->smartaddr,coinaddr) == 0 )
             {
                 retjson = LP_listunspent(symbol,coinaddr);
-                //printf("SELF_LISTUNSPENT.(%s %s)\n",symbol,coinaddr);
+                printf("SELF_LISTUNSPENT.(%s %s)\n",symbol,coinaddr);
             }
             else if ( IAMLP == 0 )
             {
+                printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
                 LP_listunspent_query(coin->symbol,coin->smartaddr);
                 if ( fullflag != 0 )
                 {
