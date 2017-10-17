@@ -97,7 +97,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
 available localhost RPC commands: * means it needs to be a signed request\n \
 pricearray(base, rel, firsttime=0, lasttime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 setprice(base, rel, price)*\n\
-autoprice(base, rel, price, margin, type)*\n\
+autoprice(base, rel, minprice, margin, refbase, refrel, factor, offset)*\n\
 goal(coin=*, val=<autocalc>)*\n\
 myprice(base, rel)\n\
 enable(coin)*\n\
@@ -214,7 +214,7 @@ dividends(coin, height, <args>)\n\
             else if ( strcmp(method,"autoprice") == 0 )
             {
                 //LP_signature_add(argjson,base,rel,(uint64_t)price * SATOSHIDEN);
-                if ( LP_autoprice(base,rel,price,jdouble(argjson,"margin"),jstr(argjson,"type")) < 0 )
+                if ( LP_autoprice(base,rel,argjson) < 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
             }

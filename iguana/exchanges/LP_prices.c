@@ -31,6 +31,8 @@ struct LP_priceinfo
     double myprices[LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS]; // autoprice
     double margins[LP_MAXPRICEINFOS];
+    double offsets[LP_MAXPRICEINFOS];
+    double factors[LP_MAXPRICEINFOS];
     //double maxprices[LP_MAXPRICEINFOS]; // autofill of base/rel
     //double relvols[LP_MAXPRICEINFOS];
     FILE *fps[LP_MAXPRICEINFOS];
@@ -494,6 +496,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
     *changedp = 0;
     if ( base != 0 && rel != 0 && LP_pricevalid(price) > 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
+        
         if ( fabs(basepp->myprices[relpp->ind] - price) > SMALLVAL )
             *changedp = 1;
         basepp->myprices[relpp->ind] = price;          // ask

@@ -198,7 +198,12 @@ char *LP_portfolio_goal(char *symbol,double goal)
     } else return(clonestr("{\"error\":\"cant set goal for inactive coin\"}"));
 }
 
-int32_t LP_autoprices;
+int32_t LP_autoprices,num_LP_autorefs;
+
+struct LP_autoprice_ref
+{
+    char refbase[16],refrel[16],base[16],rel[16];
+} LP_autorefs[100];
 
 /*int32_t LP_autofill(char *base,char *rel,double maxprice,double totalrelvolume)
 {
@@ -213,26 +218,65 @@ int32_t LP_autoprices;
     return(-1);
 }*/
 
-int32_t LP_autoprice(char *base,char *rel,double minprice,double margin,char *type)
+int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
 {
-    struct LP_priceinfo *basepp,*relpp;
+    //curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"MNZ\",\"rel\":\"KMD\",\"offset\":0.1,\"refbase\":\"KMD\",\refrel\":\"BTC\",\"factor\":15000,\"margin\":0.01}"
+    struct LP_priceinfo *basepp,*relpp; int32_t i; char *refbase,*refrel; double minprice,margin,offset,factor;
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
+        if ( jobj(argjson,"minprice") != 0 )
+            minprice = jdouble(argjson,"minprice");
+        else minprice = 0.;
+        margin = jdouble(argjson,"margin");
+        offset = jdouble(argjson,"offset");
+        factor = jdouble(argjson,"factor");
         basepp->minprices[relpp->ind] = minprice;
         basepp->margins[relpp->ind] = margin;
+        basepp->offsets[relpp->ind] = offset;
+        basepp->factors[relpp->ind] = factor;
+        if ( (refbase= jstr(argjson,"refbase")) != 0 && (refrel= jstr(argjson,"refrel")) != 0 )
+        {
+            for (i=0; i<num_LP_autorefs; i++)
+            {
+                if ( strcmp(base,LP_autorefs[i].base) == 0 && strcmp(rel,LP_autorefs[i].rel) == 0 )
+                {
+                    safecopy(LP_autorefs[i].refbase,refbase,sizeof(LP_autorefs[i].refbase));
+                    safecopy(LP_autorefs[i].refrel,refrel,sizeof(LP_autorefs[i].refrel));
+                    printf("%d Update ref %s/%s for %s/%s\n",i,refbase,refrel,base,rel);
+                    break;
+                }
+            }
+            if ( i == num_LP_autorefs && num_LP_autorefs < sizeof(LP_autorefs)/sizeof(*LP_autorefs) )
+            {
+                safecopy(LP_autorefs[num_LP_autorefs].refbase,refbase,sizeof(LP_autorefs[num_LP_autorefs].refbase));
+                safecopy(LP_autorefs[num_LP_autorefs].refrel,refrel,sizeof(LP_autorefs[num_LP_autorefs].refrel));
+                safecopy(LP_autorefs[num_LP_autorefs].base,base,sizeof(LP_autorefs[num_LP_autorefs].base));
+                safecopy(LP_autorefs[num_LP_autorefs].rel,rel,sizeof(LP_autorefs[num_LP_autorefs].rel));
+                printf("%d Using ref %s/%s for %s/%s\n",num_LP_autorefs,refbase,refrel,base,rel);
+                num_LP_autorefs++;
+            }
+        }
         LP_autoprices++;
         return(0);
     }
     return(-1);
 }
 
-void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *relpp,struct LP_priceinfo *basepp,double price)
+void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *relpp,struct LP_priceinfo *basepp,double price,char *refbase,char *refrel)
 {
-    double margin,minprice,oppomargin; int32_t changed;
+    double margin,minprice,oppomargin,factor,offset; double bid,ask; int32_t changed;
     margin = basepp->margins[relpp->ind];
     oppomargin = relpp->margins[basepp->ind];
     if ( margin != 0. || oppomargin != 0. )
     {
+        if ( fabs(price) < SMALLVAL && refbase != 0 && refrel != 0 )
+        {
+            price = LP_myprice(&bid,&ask,refbase,refrel);
+            printf("USE ref %s/%s %.8f\n",refbase,refrel,price);
+        }
+        offset = basepp->offsets[relpp->ind];
+        if ( (factor= basepp->factors[relpp->ind]) > SMALLVAL )
+            price = (price * factor) + offset;
         if ( margin == 0. )
             margin = oppomargin;
         //printf("min %.8f %s/%s %.8f dir.%d margin %.8f (%.8f %.8f)\n",basepp->minprices[relpp->ind],relpp->symbol,basepp->symbol,price,dir,margin,1. / (price * (1. - margin)),(price * (1. + margin)));
@@ -325,8 +369,8 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
                                         //printf("have trex: iter.%d trexflag.%d %s %.8f %.8f\n",iter,trexflag,symbol,coinpp->bid[1],coinpp->ask[1]);
                                         continue;
                                     }
-                                    LP_autopriceset(ctx,1,refpp,coinpp,price);
-                                    LP_autopriceset(ctx,-1,coinpp,refpp,price);
+                                    LP_autopriceset(ctx,1,refpp,coinpp,price,0,0);
+                                    LP_autopriceset(ctx,-1,coinpp,refpp,price,0,0);
                                 }
                             }
                         }
@@ -358,7 +402,7 @@ static char *assetids[][3] =
 
 void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 {
-    char *retstr; cJSON *retjson,*bid,*ask; uint64_t bidsatoshis,asksatoshis; int32_t i; double nxtkmd,price; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp;
+    char *retstr; cJSON *retjson,*bid,*ask; uint64_t bidsatoshis,asksatoshis; int32_t i; double nxtkmd,price; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
     if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
     {
         printf("trex error getting marketsummaries\n");
@@ -385,8 +429,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 {
                     //printf("(%s %.8f %.8f) ",CURRENCIES[i],jdouble(retjson,"price"),jdouble(retjson,"invprice"));
                     price = jdouble(retjson,"price");
-                    LP_autopriceset(ctx,1,kmdpp,fiatpp,price);
-                    LP_autopriceset(ctx,-1,fiatpp,kmdpp,price);
+                    LP_autopriceset(ctx,1,kmdpp,fiatpp,price,0,0);
+                    LP_autopriceset(ctx,-1,fiatpp,kmdpp,price,0,0);
                     free_json(retjson);
                 }
             }
@@ -409,13 +453,20 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                         if ( bidsatoshis != 0 && asksatoshis != 0 )
                             price = 0.5 * dstr(bidsatoshis + asksatoshis) * nxtkmd;
                     }
-                    LP_autopriceset(ctx,1,kmdpp,nxtpp,price);
-                    LP_autopriceset(ctx,-1,nxtpp,kmdpp,price);
+                    LP_autopriceset(ctx,1,kmdpp,nxtpp,price,0,0);
+                    LP_autopriceset(ctx,-1,nxtpp,kmdpp,price,0,0);
                     //printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,0.5*dstr(bidsatoshis + asksatoshis),price);
                     free_json(retjson);
                 }
             }
         }
+    }
+    for (i=0; i<num_LP_autorefs; i++)
+    {
+        basepp = LP_priceinfofind(LP_autorefs[i].base);
+        relpp = LP_priceinfofind(LP_autorefs[i].rel);
+        if ( basepp != 0 && relpp != 0 )
+            LP_autopriceset(ctx,1,basepp,relpp,0,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
     }
 }
 
