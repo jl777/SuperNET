@@ -789,6 +789,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         jaddi(array,LP_orderbookjson(rel,bids[i]));
         if ( n < 10 && bids[i]->numutxos == 0 )//|| relcoin->electrum == 0 )
         {
+            printf("bid ping %s %s\n",rel,bids[i]->coinaddr);
             LP_address(relcoin,bids[i]->coinaddr);
             if ( relcoin->electrum == 0 )
                 LP_listunspent_issue(rel,bids[i]->coinaddr,0);
@@ -808,6 +809,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         jaddi(array,LP_orderbookjson(base,asks[i]));
         if ( n < 10 && asks[i]->numutxos == 0 )//|| basecoin->electrum == 0 )
         {
+            printf("ask ping %s %s\n",base,asks[i]->coinaddr);
             LP_address(basecoin,asks[i]->coinaddr);
             if ( basecoin->electrum == 0 )
                 LP_listunspent_issue(base,asks[i]->coinaddr,0);
