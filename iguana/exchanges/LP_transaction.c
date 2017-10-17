@@ -778,10 +778,38 @@ cJSON *LP_inputjson(bits256 txid,int32_t vout,char *spendscriptstr)
     return(item);
 }
 
+uint64_t _komodo_interestnew(uint64_t nValue,uint32_t nLockTime,uint32_t tiptime)
+{
+    int32_t minutes; uint64_t interest = 0;
+    if ( (minutes= (tiptime - nLockTime) / 60) >= 60 )
+    {
+        if ( minutes > 365 * 24 * 60 )
+            minutes = 365 * 24 * 60;
+        minutes -= 59;
+        interest = ((nValue / 10512000) * minutes);
+    }
+    return(interest);
+}
+
+int64_t LP_komodo_interest(bits256 txid,int64_t value)
+{
+    uint32_t nLockTime; uint32_t tiptime; int64_t interest = 0;
+    if ( value >= 10*SATOSHIDEN )
+    {
+        if ( (nLockTime= LP_locktime("KMD",txid)) >= 500000000 )
+        {
+            tiptime = (uint32_t)time(NULL) - 777;
+            interest = _komodo_interestnew(value,nLockTime,tiptime);
+        }
+    }
+    return(interest);
+}
+
 int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_t amount,struct vin_info *V,struct LP_address_utxo **utxos,int32_t numunspents,int32_t suppress_pubkeys,int32_t ignore_cltverr,bits256 privkey,cJSON *privkeys,cJSON *vins,uint8_t *script,int32_t scriptlen)
 {
-    char wifstr[128],spendscriptstr[128]; int32_t i,n,ind,abovei,belowi,maxmode=0; struct vin_info *vp; struct LP_address_utxo *up; int64_t above,below,remains = amount,total = 0;
+    char wifstr[128],spendscriptstr[128]; int32_t i,n,ind,abovei,belowi,maxmode=0; struct vin_info *vp; struct LP_address_utxo *up; int64_t interest,interestsum,above,below,remains = amount,total = 0;
     *totalp = 0;
+    interestsum = 0;
     init_hexbytes_noT(spendscriptstr,script,scriptlen);
     bitcoin_priv2wif(coin->wiftaddr,wifstr,privkey,coin->wiftype);
     for (i=n=0; i<numunspents; i++)
@@ -807,6 +835,14 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         utxos[numunspents] = 0;
         total += up->U.value;
         remains -= up->U.value;
+        //if ( coin->electrum == 0 && strcmp(coin->symbol,"KMD") == 0 )
+        {
+            if ( (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
+            {
+                interestsum += interest;
+                char str[65]; printf("%s/%d %.8f interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
+            }
+        }
         vp = &V[n++];
         vp->N = vp->M = 1;
         vp->signers[0].privkey = privkey;
@@ -825,7 +861,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
             return(0);
         }
     }
-    *totalp = total;
+    *totalp = total + interestsum;
     return(n);
 }
 

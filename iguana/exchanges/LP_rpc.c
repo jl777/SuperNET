@@ -268,6 +268,17 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     }
 }
 
+uint32_t LP_locktime(char *symbol,bits256 txid)
+{
+    cJSON *txobj; uint32_t locktime = 0;
+    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+    {
+        locktime = juint(txobj,"locktime");
+        free_json(txobj);
+    }
+    return(locktime);
+}
+
 cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,uint64_t value)
 {
     cJSON *retjson,*addresses,*sobj;
