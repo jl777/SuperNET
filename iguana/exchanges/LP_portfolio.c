@@ -222,7 +222,7 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
 {
     //curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"MNZ\",\"rel\":\"KMD\",\"offset\":0.1,\"refbase\":\"KMD\",\refrel\":\"BTC\",\"factor\":15000,\"margin\":0.01}"
     struct LP_priceinfo *basepp,*relpp; int32_t i; char *refbase,*refrel; double minprice,margin,offset,factor;
-    printf("autoprice.(%s %s) %s\n",base,rel,jprint(argjson,0));
+    //printf("autoprice.(%s %s) %s\n",base,rel,jprint(argjson,0));
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         if ( jobj(argjson,"minprice") != 0 )
@@ -270,14 +270,18 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *relpp,struct LP_
     oppomargin = relpp->margins[basepp->ind];
     if ( margin != 0. || oppomargin != 0. )
     {
+        offset = basepp->offsets[relpp->ind];
+        factor = basepp->factors[relpp->ind];
         if ( fabs(price) < SMALLVAL && refbase != 0 && refrel != 0 )
         {
             price = LP_myprice(&bid,&ask,refbase,refrel);
-            printf("USE ref %s/%s %.8f\n",refbase,refrel,price);
+            printf("USE ref %s/%s %.8f factor %.8f offset %.8f\n",refbase,refrel,price,factor,offset);
         }
-        offset = basepp->offsets[relpp->ind];
-        if ( (factor= basepp->factors[relpp->ind]) > SMALLVAL )
+        if ( factor > SMALLVAL )
+        {
+            printf("price %.8f -> %.8f\n",price,(price * factor) + offset);
             price = (price * factor) + offset;
+        }
         if ( margin == 0. )
             margin = oppomargin;
         //printf("min %.8f %s/%s %.8f dir.%d margin %.8f (%.8f %.8f)\n",basepp->minprices[relpp->ind],relpp->symbol,basepp->symbol,price,dir,margin,1. / (price * (1. - margin)),(price * (1. + margin)));
