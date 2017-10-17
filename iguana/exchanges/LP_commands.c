@@ -159,6 +159,11 @@ dividends(coin, height, <args>)\n\
             }
             return(clonestr("{\"result\":\"success\"}"));
         }
+        else if ( strcmp(method,"stop") == 0 )
+        {
+            printf("DEBUG stop\n");
+            exit(0);
+        }
         else if ( strcmp(method,"getmessages") == 0 )
         {
             if ( (retjson= LP_getmessages(jint(argjson,"firsti"),jint(argjson,"num"))) != 0 )
