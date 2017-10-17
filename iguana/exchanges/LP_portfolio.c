@@ -292,11 +292,11 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
             //    price = 1. / (price * (1. - margin));
             //else price = (price * (1. - margin));
             
-            newprice = (price * (1. - margin));
+            newprice = 1. / (price * (1. - margin));
             if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
             {
                 LP_mypriceset(&changed,relpp->symbol,basepp->symbol,newprice);
-                printf("changed.%d %s/%s <- %.8f\n",changed,basepp->symbol,relpp->symbol,newprice);
+                printf("changed.%d %s/%s <- %.8f\n",changed,relpp->symbol,basepp->symbol,newprice);
                 if ( changed != 0 )
                     LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,newprice);
             }
