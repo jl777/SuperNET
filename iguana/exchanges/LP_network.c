@@ -87,7 +87,7 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
 
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
 {
-    static uint32_t crcs[8192]; static unsigned long dup,total;
+    static uint32_t crcs[8]; static unsigned long dup,total;
     int32_t i;
     *duplicatep = 0;
     if ( ind < 0 )
