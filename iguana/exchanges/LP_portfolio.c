@@ -281,7 +281,8 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
         {
             if ( factor > SMALLVAL )
             {
-                printf("price %.8f -> %.8f factor %.8f offset %.8f\n",price,(price * factor) + offset,factor,offset);
+                double tmp = (price * factor) + offset;
+                printf("price %.8f -> %.8f factor %.8f offset %.8f [%.8f %.8f]\n",price,tmp,factor,offset,(tmp * (1. + margin)),1./(tmp * (1. + margin)));
                 price = (price * factor) + offset;
             }
             if ( margin == 0. )
