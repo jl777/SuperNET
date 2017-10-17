@@ -265,6 +265,8 @@ dividends(coin, height, <args>)\n\
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
+                    if ( ptr->userpass[0] == 0 )
+                        return(clonestr("{\"error\":\"no rpc credentials to enable\"}"));
                     if ( LP_conflicts_find(ptr) == 0 )
                         ptr->inactive = 0;
                     else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
