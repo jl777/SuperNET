@@ -474,7 +474,7 @@ dividends(coin, height, <args>)\n\
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"addr_unspents") == 0 )
     {
-        //printf("GOT ADDR_UNSPENTS\n");
+        printf("GOT ADDR_UNSPENTS %s %s\n",jstr(argjson,"coin"),jstr(argjson,"address"));
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
         {
             char *coinaddr; //cJSON *array,*item,*req; int32_t i,n,vout,height; bits256 zero,txid; uint64_t value;
@@ -550,7 +550,7 @@ dividends(coin, height, <args>)\n\
                     else
                     {
                         memset(zero.bytes,0,sizeof(zero));
-                        //printf("broadcast.(%s)\n",msg);
+printf("broadcast.(%s)\n",Broadcaststr);
                         LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
                     }
                     retstr = clonestr("{\"result\":\"success\"}");

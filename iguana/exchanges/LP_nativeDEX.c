@@ -710,7 +710,9 @@ int32_t LP_reserved_msgs()
         if ( nn_poll(&pfd,1,1) != 1 )
             break;*/
         num_Reserved_msgs--;
+#ifdef __APPLE__
         printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
+#endif
         LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
         Reserved_msgs[num_Reserved_msgs] = 0;
         n++;
