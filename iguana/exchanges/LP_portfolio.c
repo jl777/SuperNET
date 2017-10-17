@@ -263,7 +263,7 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
     return(-1);
 }
 
-void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *relpp,struct LP_priceinfo *basepp,double price,char *refbase,char *refrel)
+void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel)
 {
     double margin,minprice,oppomargin,factor,offset; double bid,ask; int32_t changed;
     margin = basepp->margins[relpp->ind];
