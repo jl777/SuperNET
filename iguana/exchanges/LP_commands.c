@@ -472,10 +472,6 @@ dividends(coin, height, <args>)\n\
             return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
         else return(clonestr("{\"error\":\"cant find coind\"}"));
     }
-    else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
-        return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
-    else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
-        retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"checktxid") == 0 )
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"addr_unspents") == 0 )
@@ -498,6 +494,10 @@ dividends(coin, height, <args>)\n\
         }
         retstr = clonestr("{\"result\":\"success\"}");
     }
+    //else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
+    //    return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
+    //else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
+    //    retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"getcoins") == 0 )
         return(jprint(LP_coinsjson(0),1));
     else if ( strcmp(method,"encrypted") == 0 )
