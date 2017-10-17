@@ -699,11 +699,16 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 int32_t LP_reserved_msgs()
 {
-    bits256 zero; int32_t n = 0;
+    bits256 zero; struct nn_pollfd pfd; int32_t n = 0;
     memset(zero.bytes,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
     while ( num_Reserved_msgs > 0 )
     {
+        memset(&pfd,0,sizeof(pfd));
+        pfd.fd = LP_mypubsock;
+        pfd.events = NN_POLLOUT;
+        if ( nn_poll(&pfd,1,1) != 1 )
+            break;
         num_Reserved_msgs--;
         printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
         LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
