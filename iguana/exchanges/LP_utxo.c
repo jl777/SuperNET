@@ -198,7 +198,7 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
     if ( spendheight > 0 ) // dont autocreate entries for spends we dont care about
         ap = LP_addressfind(coin,coinaddr);
     else ap = LP_address(coin,coinaddr);
-    printf("%s add addr.%s ht.%d ap.%p\n",coin->symbol,coinaddr,height,ap);
+    //printf("%s add addr.%s ht.%d ap.%p\n",coin->symbol,coinaddr,height,ap);
     if ( ap != 0 )
     {
         flag = 0;
@@ -217,7 +217,7 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
                     up->spendheight = spendheight, flag |= 4;
                 if ( up->U.value == 0 && up->U.value != value )
                     up->U.value = value, flag |= 8;
-printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
+//printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
                 break;
             }
         }
