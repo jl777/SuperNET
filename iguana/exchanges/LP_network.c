@@ -208,7 +208,7 @@ else printf("%d %p qsent %u msglen.%d peerind.%d (%s)\n",n,ptr,ptr->crc32,ptr->m
 
 void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
-    int32_t peerind = 0; //sentbytes,
+    int32_t maxind,peerind = 0; //sentbytes,
     if ( sock0 >= 0 || sock1 >= 0 )
     {
 /*        if ( sock0 >= 0 && LP_sockcheck(sock0) > 0 )
@@ -236,7 +236,9 @@ printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
     }
     else
     {
-        peerind = 1;
+        if ( (maxind= LP_numpeers()) > 0 )
+            peerind = (rand() % maxind);
+        else peerind = 0;
         sock0 = LP_peerindsock(&peerind);
     }
     if ( sock0 >= 0 )
