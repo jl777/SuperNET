@@ -1201,5 +1201,8 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
     return(retstr);
 }
 
-
+void LP_tradecommand_log(cJSON *argjson)
+{
+    
+}
 

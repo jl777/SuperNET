@@ -204,7 +204,7 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             if ( vout == up->U.vout && bits256_cmp(up->U.txid,txid) == 0 )
             {
                 flag = 1;
-                if ( height > 0 && up->U.height != height )
+                if ( height > 0 && up->U.height != height && up->SPV <= 0 )
                 {
                     if ( up->U.height > 0 )
                         printf("%s SPV.%d update %s/v%d up->U.height %d <- %d\n",coin->symbol,up->SPV,bits256_str(str,up->U.txid),up->U.vout,up->U.height,height);
@@ -818,7 +818,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
     //struct LP_utxoinfo *utxo;
-    struct LP_address_utxo *up; uint64_t val,val2=0,txfee,threshold=0; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct iguana_info *coin = LP_coinfind(symbol);
+    struct LP_address_utxo *up; uint64_t val,val2=0,txfee,threshold=0; int32_t bypass = 0; char destaddr[64],destaddr2[64],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 )
     {
         printf("null txid not eligible\n");
@@ -831,9 +831,15 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         val = satoshis;
     else val = LP_txvalue(destaddr,symbol,txid,vout);
     if ( (up= LP_address_utxofind(coin,destaddr,txid,vout)) != 0 && up->spendheight > 0 )
+    {
+        printf("%s/v%d spent %d\n",bits256_str(str,txid),vout,up->spendheight);
         return(-2);
+    }
     if ( (up= LP_address_utxofind(coin,destaddr,txid2,vout2)) != 0 && up->spendheight > 0 )
+    {
+        printf("%s/v%d spent %d\n",bits256_str(str,txid2),vout2,up->spendheight);
         return(-3);
+    }
     txfee = LP_txfeecalc(LP_coinfind(symbol),0,0);
     if ( val >= satoshis && val > (1+LP_MINSIZE_TXFEEMULT)*txfee )
     {
@@ -855,7 +861,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
             }
         } // else printf("no val2\n");
     }
-    char str[65],str2[65];
+    char str2[65];
     if ( val != 0 && val2 != 0 )
         printf("spent.%d %s txid or value %.8f < %.8f or val2 %.8f < %.8f, %s/v%d %s/v%d or < 10x txfee %.8f\n",iambob,symbol,dstr(val),dstr(satoshis),dstr(val2),dstr(threshold),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2,dstr(txfee));
     if ( val == 0 )

@@ -820,6 +820,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     {
         LP_quoteparse(&Q,argjson);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-2*Q.txfee,Q.destcoin,Q.destsatoshis-2*Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
+        LP_tradecommand_log(argjson);
         printf("LP_tradecommand: check received method %s\n",method);
         retval = 1;
         if ( strcmp(method,"reserved") == 0 )
