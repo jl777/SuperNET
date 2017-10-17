@@ -265,6 +265,8 @@ dividends(coin, height, <args>)\n\
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
+                    if ( ptr->userpass[0] == 0 )
+                        return(clonestr("{\"error\":\"couldnt find coin locally installed\"}"));
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
                         ptr->inactive = 0;

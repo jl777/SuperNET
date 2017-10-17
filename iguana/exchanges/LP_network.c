@@ -177,7 +177,7 @@ else printf("%d %p qsent %u msglen.%d peerind.%d (%s)\n",n,ptr,ptr->crc32,ptr->m
                         printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     flag = 1;
                 }
-                else
+                else if ( 0 ) // too much beyond duplicate filter when network is busy
                 {
                     printf("couldnt find.%u peerind.%d Q.%d err.%d match.%d\n",ptr->crc32,ptr->peerind,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     ptr->peerind++;
