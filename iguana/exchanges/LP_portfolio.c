@@ -289,8 +289,8 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
                 margin = oppomargin;
             //printf("min %.8f %s/%s %.8f dir.%d margin %.8f (%.8f %.8f)\n",basepp->minprices[relpp->ind],relpp->symbol,basepp->symbol,price,dir,margin,1. / (price * (1. - margin)),(price * (1. + margin)));
             if ( dir > 0 )
-                newprice = 1. / (price * (1. + margin));
-            else newprice = (price * (1. - margin));
+                newprice = 1. / (price * (1. - margin));
+            else newprice = (price * (1. + margin));
             
             //newprice = 1. / (price * (1. - margin));
             if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
@@ -380,8 +380,8 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
                                         //printf("have trex: iter.%d trexflag.%d %s %.8f %.8f\n",iter,trexflag,symbol,coinpp->bid[1],coinpp->ask[1]);
                                         continue;
                                     }
-                                    LP_autopriceset(ctx,1,coinpp,refpp,price,0,0);
-                                    LP_autopriceset(ctx,-1,refpp,coinpp,price,0,0);
+                                    LP_autopriceset(ctx,-1,coinpp,refpp,price,0,0);
+                                    LP_autopriceset(ctx,1,refpp,coinpp,price,0,0);
                                 }
                             }
                         }
@@ -440,8 +440,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 {
                     //printf("(%s %.8f %.8f) ",CURRENCIES[i],jdouble(retjson,"price"),jdouble(retjson,"invprice"));
                     price = jdouble(retjson,"price");
-                    LP_autopriceset(ctx,1,fiatpp,kmdpp,price,0,0);
-                    LP_autopriceset(ctx,-1,kmdpp,fiatpp,price,0,0);
+                    LP_autopriceset(ctx,-1,fiatpp,kmdpp,price,0,0);
+                    LP_autopriceset(ctx,1,kmdpp,fiatpp,price,0,0);
                     free_json(retjson);
                 }
             }
@@ -464,8 +464,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                         if ( bidsatoshis != 0 && asksatoshis != 0 )
                             price = 0.5 * dstr(bidsatoshis + asksatoshis) * nxtkmd;
                     }
-                    LP_autopriceset(ctx,1,nxtpp,kmdpp,price,0,0);
-                    LP_autopriceset(ctx,-1,kmdpp,nxtpp,price,0,0);
+                    LP_autopriceset(ctx,-1,nxtpp,kmdpp,price,0,0);
+                    LP_autopriceset(ctx,1,kmdpp,nxtpp,price,0,0);
                     //printf("%s %s -> (%s) nxtkmd %.8f %.8f %.8f\n",assetids[i][1],assetids[i][0],jprint(retjson,0),nxtkmd,0.5*dstr(bidsatoshis + asksatoshis),price);
                     free_json(retjson);
                 }
