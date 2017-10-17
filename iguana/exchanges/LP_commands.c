@@ -268,17 +268,24 @@ dividends(coin, height, <args>)\n\
                     if ( ptr->userpass[0] == 0 )
                         return(clonestr("{\"error\":\"no rpc credentials to enable\"}"));
                     if ( LP_conflicts_find(ptr) == 0 )
+                    {
                         ptr->inactive = 0;
-                    else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
-                }
-                return(jprint(LP_coinsjson(0),1));
+                        cJSON *array = cJSON_CreateArray();
+                        jaddi(array,LP_coinjson(ptr,0));
+                        return(jprint(array,1));
+                    } else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
+                } else return(clonestr("{\"error\":\"couldnt find coin\"}"));
             }
             else if ( strcmp(method,"disable") == 0 )
             {
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
+                {
                     ptr->inactive = (uint32_t)time(NULL);
-                return(jprint(LP_coinsjson(0),1));
+                    cJSON *array = cJSON_CreateArray();
+                    jaddi(array,LP_coinjson(ptr,0));
+                    return(jprint(array,1));
+                } else return(clonestr("{\"error\":\"couldnt find coin\"}"));
             }
             else if ( strcmp(method,"electrum") == 0 )
             {
