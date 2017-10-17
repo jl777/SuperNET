@@ -451,6 +451,7 @@ dividends(coin, height, <args>)\n\
             {
                 if ( coinaddr[0] != 0 )
                 {
+                    LP_address(ptr,coinaddr);
                     LP_listunspent_issue(coin,coinaddr,1);
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
                     {
@@ -484,6 +485,7 @@ dividends(coin, height, <args>)\n\
             {
                 if ( coinaddr[0] != 0 )
                 {
+                    LP_address(ptr,coinaddr);
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
                     {
                         //printf("ADDR_UNSPENTS %s %s is my address being asked for!\n",ptr->symbol,coinaddr);

@@ -241,7 +241,7 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             DL_APPEND(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);
             retval = 1;
-            if ( 1 && height > 0 && strcmp("REVS",coin->symbol) == 0 )
+            if ( 0 && height > 0 && strcmp("REVS",coin->symbol) == 0 )
                 printf("ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
     } // else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
@@ -484,7 +484,7 @@ int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
         }
         if ( errs == 0 )
         {
-            printf("from LP_unspents_array\n");
+            //printf("from LP_unspents_array\n");
             LP_address_utxoadd(coin,coinaddr,txid,v,val,height,-1);
             count++;
         }
