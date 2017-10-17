@@ -160,7 +160,7 @@ int32_t LP_address_utxo_ptrs(int32_t iambob,struct LP_address_utxo **utxos,int32
     portable_mutex_lock(&LP_utxomutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
-        //char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d spendheight.%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout,up->spendheight);
+        char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d spendheight.%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout,up->spendheight);
         if ( up->spendheight <= 0 )
         {
             if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
@@ -241,7 +241,7 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             DL_APPEND(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);
             retval = 1;
-            if ( 0 && height > 0 && strcmp("REVS",coin->symbol) == 0 )
+            if ( 1 && height > 0 && strcmp("REVS",coin->symbol) == 0 )
                 printf("ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
     } // else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
