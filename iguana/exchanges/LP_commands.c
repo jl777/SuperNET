@@ -551,7 +551,7 @@ dividends(coin, height, <args>)\n\
                     {
                         memset(zero.bytes,0,sizeof(zero));
 printf("broadcast.(%s)\n",Broadcaststr);
-                        //LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
+                        LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
                     }
                     retstr = clonestr("{\"result\":\"success\"}");
                 } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
