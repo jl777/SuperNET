@@ -243,7 +243,7 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
                 {
                     safecopy(LP_autorefs[i].refbase,refbase,sizeof(LP_autorefs[i].refbase));
                     safecopy(LP_autorefs[i].refrel,refrel,sizeof(LP_autorefs[i].refrel));
-                    printf("%d Update ref %s/%s for %s/%s\n",i,refbase,refrel,base,rel);
+                    printf("%d Update ref %s/%s for %s/%s factor %.8f offset %.8f\n",i,refbase,refrel,base,rel,factor,offset);
                     break;
                 }
             }
@@ -253,7 +253,7 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
                 safecopy(LP_autorefs[num_LP_autorefs].refrel,refrel,sizeof(LP_autorefs[num_LP_autorefs].refrel));
                 safecopy(LP_autorefs[num_LP_autorefs].base,base,sizeof(LP_autorefs[num_LP_autorefs].base));
                 safecopy(LP_autorefs[num_LP_autorefs].rel,rel,sizeof(LP_autorefs[num_LP_autorefs].rel));
-                printf("%d Using ref %s/%s for %s/%s\n",num_LP_autorefs,refbase,refrel,base,rel);
+                printf("%d Using ref %s/%s for %s/%s %.8f %.8f\n",num_LP_autorefs,refbase,refrel,base,rel,factor,offset);
                 num_LP_autorefs++;
             }
         }
@@ -277,23 +277,26 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *relpp,struct LP_
             price = LP_myprice(&bid,&ask,refbase,refrel);
             printf("USE ref %s/%s %.8f factor %.8f offset %.8f\n",refbase,refrel,price,factor,offset);
         }
-        if ( factor > SMALLVAL )
+        if ( LP_pricevalid(price) > 0 )
         {
-            printf("price %.8f -> %.8f\n",price,(price * factor) + offset);
-            price = (price * factor) + offset;
-        }
-        if ( margin == 0. )
-            margin = oppomargin;
-        //printf("min %.8f %s/%s %.8f dir.%d margin %.8f (%.8f %.8f)\n",basepp->minprices[relpp->ind],relpp->symbol,basepp->symbol,price,dir,margin,1. / (price * (1. - margin)),(price * (1. + margin)));
-        if ( dir > 0 )
-            price = 1. / (price * (1. - margin));
-        else price = (price * (1. + margin));
-        if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
-        {
-            LP_mypriceset(&changed,relpp->symbol,basepp->symbol,price);
-            //printf("changed.%d\n",changed);
-            if ( changed != 0 )
-                LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
+            if ( factor > SMALLVAL )
+            {
+                printf("price %.8f -> %.8f\n",price,(price * factor) + offset);
+                price = (price * factor) + offset;
+            }
+            if ( margin == 0. )
+                margin = oppomargin;
+            //printf("min %.8f %s/%s %.8f dir.%d margin %.8f (%.8f %.8f)\n",basepp->minprices[relpp->ind],relpp->symbol,basepp->symbol,price,dir,margin,1. / (price * (1. - margin)),(price * (1. + margin)));
+            if ( dir > 0 )
+                price = 1. / (price * (1. - margin));
+            else price = (price * (1. + margin));
+            if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
+            {
+                LP_mypriceset(&changed,relpp->symbol,basepp->symbol,price);
+                //printf("changed.%d\n",changed);
+                if ( changed != 0 )
+                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
+            }
         }
     }
 }
