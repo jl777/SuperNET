@@ -18,13 +18,12 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// autoprice based on formula
 // sign critical api calls (pubkey reg, listunspent, orders?)
-// stats using KV opreturn
+// stats using local files
 // deal with offline pubkeys, reputations, etc.
 // dPoW security -> 2: KMD notarized, 3: BTC notarized
 // add interest to KMD withdraw
-// verify portfolio, pricearray, withdraw
+// verify portfolio, pricearray
 // dICO allocation
 // alice only coins GAME UNO BTM ANC: GAME BTCD PPC RDD XZC POT EAC FTC BASH SPR WDC UNO XPM XCN BELA CHC DIME MEC NAUT MED AUR MAX DGC RIC EB3 DOT BTM GEO ANC CANN ICASH WBB SRC PTC ADZ TIPS EQT START EFL FST FJC NYC GCN
 
