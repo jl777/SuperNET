@@ -158,7 +158,7 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                    //else printf("%d %p qsent %u msglen.%d peerind.%d (%s)\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind,ptr->msg);
+else printf("%d %p qsent %u msglen.%d peerind.%d (%s)\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind,ptr->msg);
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
@@ -206,16 +206,16 @@ void queue_loop(void *ignore)
 
 void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
-    int32_t sentbytes,peerind = 0;
+    int32_t peerind = 0; //sentbytes,
     if ( sock0 >= 0 || sock1 >= 0 )
     {
-        if ( sock0 >= 0 && LP_sockcheck(sock0) > 0 )
+/*        if ( sock0 >= 0 && LP_sockcheck(sock0) > 0 )
         {
             if ( (sentbytes= nn_send(sock0,msg,msglen,0)) != msglen )
                 printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
             else
             {
-                //printf("Q sent %u msglen.%d (%s)\n",crc32,msglen,msg);
+printf("Q sent %u msglen.%d (%s)\n",crc32,msglen,msg);
                 sock0 = -1;
             }
         }
@@ -223,10 +223,14 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
         {
             if ( (sentbytes= nn_send(sock1,msg,msglen,0)) != msglen )
                 printf("_LP_queuesend1 sent %d instead of %d\n",sentbytes,msglen);
-            else sock1 = -1;
+            else
+            {
+printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
+                sock1 = -1;
+            }
         }
         if ( sock0 < 0 && sock1 < 0 )
-            return;
+            return;*/
     }
     else
     {
