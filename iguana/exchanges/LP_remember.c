@@ -1203,6 +1203,19 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
 
 void LP_tradecommand_log(cJSON *argjson)
 {
-    
+    static FILE *logfp; char *jsonstr;
+    if ( logfp == 0 )
+    {
+        if ( (logfp= fopen("stats.log","rb+")) != 0 )
+            fseek(logfp,0,SEEK_END);
+        else logfp = fopen("stats.log","wb");
+    }
+    if ( logfp != 0 )
+    {
+        jsonstr = jprint(argjson,0);
+        fprintf(logfp,"%s\n",jsonstr);
+        free(jsonstr);
+        fflush(logfp);
+    }
 }
 
