@@ -878,7 +878,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         return(0);
     }
     memset(utxos,0,sizeof(utxos));
-    if ( (numutxos= LP_address_utxo_ptrs(0,utxos,max,ap)) <= 0 )
+    if ( (numutxos= LP_address_utxo_ptrs(0,utxos,max,ap,coin->smartaddr)) <= 0 )
     {
         printf("LP_createrawtransaction: address_utxo_ptrs %d, error\n",numutxos);
         return(0);

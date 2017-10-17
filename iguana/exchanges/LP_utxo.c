@@ -151,10 +151,12 @@ struct LP_utxoinfo *LP_allocated(bits256 txid,int32_t vout)
     return(0);
 }
 
-int32_t LP_address_utxo_ptrs(int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap)
+int32_t LP_address_utxo_ptrs(int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,char *coinaddr)
 {
     struct LP_address_utxo *up,*tmp; int32_t n = 0;
-    printf("LP_address_utxo_ptrs for (%s)\n",ap->coinaddr);
+    printf("LP_address_utxo_ptrs for (%s).(%s)\n",ap->coinaddr,coinaddr);
+    if ( strcmp(ap->coinaddr,coinaddr) != 0 )
+        printf("UNEXPECTED coinaddr mismatch (%s) != (%s)\n",ap->coinaddr,coinaddr);
     portable_mutex_lock(&LP_utxomutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
