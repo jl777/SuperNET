@@ -280,6 +280,9 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
         free(msg);
         jdelete(argjson,"method");
         jaddstr(argjson,"method","broadcast");
+        if ( jobj(argjson,"timestamp") == 0 )
+            jaddnum(argjson,"timestamp",(uint32_t)time(NULL));
+        // add signature here
         msg = (void *)jprint(argjson,0);
         msglen = (int32_t)strlen((char *)msg) + 1;
         LP_queuesend(crc32,-1,base,rel,msg,msglen);
