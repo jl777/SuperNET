@@ -2168,13 +2168,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
                 if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
                 {
-                    signed_nn_send(myinfo,myinfo->ctx[1],myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
+                    signed_nn_send(myinfo,myinfo->ctx[3],myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
                     //printf("send back[%ld]\n",strlen(retstr)+1);
                     free(retstr);
                     if ( broadcastflag != 0 )
                     {
                         printf("BROADCAST dexp request.[%d]\n",size);
-                        signed_nn_send(myinfo,myinfo->ctx[1],myinfo->persistent_priv,myinfo->dexsock,dexp,size);
+                        signed_nn_send(myinfo,myinfo->ctx[4],myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                         //signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
                     }
                 }
@@ -2183,7 +2183,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     if ( (m= myinfo->numdpowipbits) > 0 )
                     {
                         r = myinfo->dpowipbits[rand() % m];
-                        signed_nn_send(myinfo,myinfo->ctx[1],myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
+                        signed_nn_send(myinfo,myinfo->ctx[5],myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
                         printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                     } else printf("illegal state without dpowipbits?\n");
                     if ( dex_packetcheck(myinfo,dexp,size) == 0 )
