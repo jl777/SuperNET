@@ -110,6 +110,7 @@ sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)*\n\
 withdraw(coin, outputs[])*\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus()*\n\
+recentswaps(limit=3)\n\
 swapstatus(requestid, quoteid)*\n\
 public API:\n \
 getcoins()\n\
@@ -158,6 +159,10 @@ dividends(coin, height, <args>)\n\
                 LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
             }
             return(clonestr("{\"result\":\"success\"}"));
+        }
+        else if ( strcmp(method,"recentswaps") == 0 )
+        {
+            return(LP_recent_swaps(jint(argjson,"limit")));
         }
         else if ( strcmp(method,"stop") == 0 )
         {

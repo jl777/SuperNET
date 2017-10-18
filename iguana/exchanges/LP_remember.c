@@ -1219,3 +1219,35 @@ void LP_tradecommand_log(cJSON *argjson)
     }
 }
 
+char *LP_recent_swaps(int32_t limit)
+{
+    char fname[512]; long fsize,offset; FILE *fp; int32_t i=0; uint32_t requestid,quoteid; cJSON *array,*item;
+    if ( limit <= 0 )
+        limit = 3;
+    sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
+    array = cJSON_CreateArray();
+    if ( (fp= fopen(fname,"rb")) != 0 )
+    {
+        fseek(fp,0,SEEK_END);
+        fsize = ftell(fp);
+        offset = (sizeof(requestid) + sizeof(quoteid));
+        while ( offset <= fsize )
+        {
+            i++;
+            offset = i * (sizeof(requestid) + sizeof(quoteid));
+            fseek(fp,fsize-offset,SEEK_SET);
+            if ( ftell(fp) == fsize-offset )
+            {
+                if ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
+                {
+                    item = cJSON_CreateArray();
+                    jaddinum(item,requestid);
+                    jaddinum(item,quoteid);
+                    jaddi(array,item);
+                } else break;
+            } else break;
+        }
+        fclose(fp);
+    }
+    return(jprint(array,1));
+}
