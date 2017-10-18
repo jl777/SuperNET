@@ -164,9 +164,9 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                         if ( height > 0 && blocktime > 0 )
                         {
                             dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
-                            printf("dynamic set %s <- height.%d\n",bits256_str(str,hash),height);
-                        }
-                        else return;
+                            printf("dynamic set %s/%s %s <- height.%d\n",dp->symbol,dp->dest,bits256_str(str,hash),height);
+                            checkpoint = dp->last;
+                        } else return;
                         if ( bits256_nonz(dp->activehash) != 0 && bits256_cmp(dp->activehash,checkpoint.blockhash.hash) == 0 )
                         {
                             printf("activehash.(%s) is current checkpoint, skip\n",bits256_str(str,dp->activehash));
