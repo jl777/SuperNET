@@ -60,14 +60,14 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
 {
-    cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
+    cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
     if ( (txobj= dpow_gettransaction(myinfo,coin,txid)) != 0 )
     {
         if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
         {
             if ( numvins >= DPOW_MIN_ASSETCHAIN_SIGS )
             {
-                numnotaries = 0;
+                notarymask = numnotaries = 0;
                 for (i=0; i<numvins; i++)
                 {
                     vin = jitem(vins,i);
@@ -90,9 +90,13 @@ int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *
                                         {
                                             if ( strncmp(Notaries_elected[j][1],hexstr+2,66) == 0 )
                                             {
-                                                printf("n%d ",j);
-                                                numnotaries++;
-                                                break;
+                                                if ( ((1LL << j) & notarymask) == 0 )
+                                                {
+                                                    printf("n%d ",j);
+                                                    numnotaries++;
+                                                    notarymask |= (1LL << j);
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
