@@ -26,7 +26,7 @@
 //#include <WinSock2.h>
 //#endif
 
-#define ELECTRUM_TIMEOUT 5
+#define ELECTRUM_TIMEOUT 10
 
 int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
@@ -86,7 +86,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 #endif
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(port);
-    //#ifdef WIN32
+    //#ifdef _WIN32
     //   saddr.sin_addr.s_addr = (uint32_t)calc_ipbits("127.0.0.1");
     //#else
     
@@ -111,7 +111,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
     opt = 1;
     slen = sizeof(opt);
     //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
-#ifndef WIN32
+#ifndef _WIN32
     if ( 1 )//&& bindflag != 0 )
     {
         opt = 0;
@@ -295,7 +295,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
     return(ep);
 }
 
-int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep,char *coinaddr,cJSON *array)
+int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep,char *coinaddr,cJSON *array,int32_t electrumflag)
 {
     int32_t i,v,n,ht,flag = 0; char str[65]; uint64_t value; bits256 txid; cJSON *item,*retjson,*txobj; struct LP_transaction *tx;
     if ( array != 0 && coin != 0 && (n= cJSON_GetArraySize(array)) > 0 )
@@ -304,7 +304,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
-            if ( coin->electrum == 0 )
+            if ( electrumflag == 0 )
             {
                 txid = jbits256(item,"txid");
                 v = jint(item,"vout");
@@ -350,7 +350,10 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                     }
                 }
                 if ( value != 0 || tx->height > 0 )
+                {
+                    //printf("from electrum_process_array\n");
                     flag += LP_address_utxoadd(coin,coinaddr,txid,v,value,tx->height,-1);
+                }
                 //printf("v.%d numvouts.%d %.8f (%s)\n",v,tx->numvouts,dstr(tx->outpoints[jint(item,"tx_pos")].value),jprint(item,0));
             } //else printf("cant find tx\n");
         }
@@ -457,7 +460,7 @@ cJSON *electrum_address_subscribe(char *symbol,struct electrum_info *ep,cJSON **
 
 cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
 {
-    struct LP_transaction *tx; cJSON *retjson,*txobj,*item; int32_t i,n,height; bits256 txid; struct iguana_info *coin = LP_coinfind(symbol);
+    char str[65]; struct LP_transaction *tx; cJSON *retjson,*txobj,*item; int32_t i,n,height; bits256 txid; struct iguana_info *coin = LP_coinfind(symbol);
     retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_history",addr,ELECTRUM_TIMEOUT);
     //printf("history.(%s)\n",jprint(retjson,0));
     if ( retjson != 0 && (n= cJSON_GetArraySize(retjson)) > 0 )
@@ -478,7 +481,10 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
                 {
                     if ( (tx= LP_transactionfind(coin,txid)) != 0 )
                     {
+                        if ( tx->height > 0 && tx->height != height )
+                            printf("update %s height.%d <- %d\n",bits256_str(str,txid),tx->height,height);
                         tx->height = height;
+                        //printf("from history\n");
                         LP_address_utxoadd(coin,addr,txid,0,0,height,-1);
                     }
                 }
@@ -488,25 +494,36 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
     return(retjson);
 }
 
+int32_t LP_txheight_check(struct iguana_info *coin,char *coinaddr,struct LP_address_utxo *up)
+{
+    cJSON *retjson;
+    if ( coin->electrum != 0 )
+    {
+        if ( (retjson= electrum_address_gethistory(coin->symbol,coin->electrum,&retjson,coinaddr)) != 0 )
+            free_json(retjson);
+    }
+    return(0);
+}
+
 cJSON *electrum_address_getmempool(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
 {
     cJSON *retjson; struct iguana_info *coin = LP_coinfind(symbol);
     retjson = electrum_strarg(symbol,ep,retjsonp,"blockchain.address.get_mempool",addr,ELECTRUM_TIMEOUT);
     //printf("MEMPOOL.(%s)\n",jprint(retjson,0));
-    electrum_process_array(coin,ep,addr,retjson);
+    electrum_process_array(coin,ep,addr,retjson,1);
     return(retjson);
 }
 
-cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr)
+cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr,int32_t electrumflag)
 {
     cJSON *retjson=0; struct iguana_info *coin = LP_coinfind(symbol);
     //printf("electrum.%s/%s listunspent last.(%s lag %d)\n",ep->symbol,coin->symbol,coin->lastunspent,(int32_t)(time(NULL) - coin->unspenttime));
-    if ( 1 || strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+30 )
+    if ( strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+30 )
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
             //printf("LISTUNSPENT.(%s)\n",jprint(retjson,0));
-            if ( electrum_process_array(coin,ep,addr,retjson) != 0 )
+            if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
             coin->unspenttime = (uint32_t)time(NULL);
@@ -530,9 +547,9 @@ cJSON *electrum_getchunk(char *symbol,struct electrum_info *ep,cJSON **retjsonp,
 cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len)
 {
     uint8_t *extraspace; cJSON *txobj; char str[65],str2[65]; struct iguana_msgtx msgtx; bits256 checktxid;
-    extraspace = calloc(1,1000000);
+    extraspace = calloc(1,4000000);
     memset(&msgtx,0,sizeof(msgtx));
-    txobj = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,1000000,serialized,len,0,0);
+    txobj = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,4000000,serialized,len,0,0);
     //printf("TX.(%s) match.%d\n",jprint(txobj,0),bits256_cmp(txid,checktxid));
     free(extraspace);
     if ( bits256_cmp(txid,checktxid) != 0 )
@@ -654,7 +671,7 @@ void electrum_test()
         printf("electrum_address_getmempool %s\n",jprint(retjson,1));
     if ( (retjson= electrum_address_getbalance(symbol,ep,0,addr)) != 0 )
         printf("electrum_address_getbalance %s\n",jprint(retjson,1));
-    if ( (retjson= electrum_address_listunspent(symbol,ep,0,addr)) != 0 )
+    if ( (retjson= electrum_address_listunspent(symbol,ep,0,addr,1)) != 0 )
         printf("electrum_address_listunspent %s\n",jprint(retjson,1));
     if ( (retjson= electrum_addpeer(symbol,ep,0,"electrum.be:50001")) != 0 )
         printf("electrum_addpeer %s\n",jprint(retjson,1));
@@ -909,7 +926,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
         }
         else
         {
-            printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
+            printf("launched electrum.(%s:%u)\n",ep->ipaddr,ep->port);
             jaddstr(retjson,"result","success");
             ep->prev = coin->electrum;
             coin->electrum = ep;

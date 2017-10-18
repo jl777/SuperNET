@@ -1871,6 +1871,64 @@ int32_t LP_peer_utxosquery(struct LP_peerinfo *mypeer,uint16_t myport,int32_t pu
     } //else printf("LP_peer_utxosquery skip.(%s) %u\n",peer->ipaddr,peer->lastutxos);
     return(n);
 }
+bestitem = LP_quotejson(qp);
+if ( LP_pricevalid(price) > 0 )
+{
+    if ( price <= maxprice )
+    {
+        LP_query(ctx,myipaddr,mypubsock,"connect",qp);
+        //price = LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout);
+        LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-2*qp->txfee,qp->destcoin,qp->destsatoshis-2*qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
+        while ( time(NULL) < expiration )
+        {
+            if ( aliceutxo->S.swap != 0 )
+                break;
+            sleep(3);
+        }
+        jaddnum(bestitem,"quotedprice",price);
+        jaddnum(bestitem,"maxprice",maxprice);
+        if ( (swap= aliceutxo->S.swap) == 0 )
+        {
+            if ( (pubp= LP_pubkeyadd(qp->srchash)) != 0 )
+                pubp->numerrors++;
+            jaddstr(bestitem,"status","couldnt establish connection");
+        }
+        else
+        {
+            jaddstr(bestitem,"status","connected");
+            jaddnum(bestitem,"requestid",swap->I.req.requestid);
+            jaddnum(bestitem,"quoteid",swap->I.req.quoteid);
+            printf("Alice r.%u qp->%u\n",swap->I.req.requestid,swap->I.req.quoteid);
+        }
+    }
+    else
+    {
+        jaddnum(bestitem,"quotedprice",price);
+        jaddnum(bestitem,"maxprice",maxprice);
+        jaddstr(bestitem,"status","too expensive");
+    }
+}
+else
+{
+    printf("invalid price %.8f\n",price);
+    jaddnum(bestitem,"maxprice",maxprice);
+    jaddstr(bestitem,"status","no response to request");
+}
+/*while ( time(NULL) < expiration )
+ {
+ if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )
+ {
+ printf("break out of price %.8f %s/%s\n",price,qp->srccoin,qp->destcoin);
+ break;
+ }
+ sleep(1);
+ }*/
+
+if ( aliceutxo->S.swap == 0 )
+LP_availableset(aliceutxo);
+return(jprint(bestitem,0));
+}
+
 /*if ( time(NULL) > coin->lastmonitor+60 )
  {
  //portable_mutex_lock(&coin->addrmutex);
