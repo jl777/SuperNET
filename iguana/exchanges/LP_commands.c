@@ -271,7 +271,12 @@ dividends(coin, height, <args>)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     if ( ptr->userpass[0] == 0 )
-                        return(clonestr("{\"error\":\"couldnt find coin locally installed\"}"));
+                    {
+                        cJSON *retjson = cJSON_CreateObject();
+                        jaddstr(retjson,"error","couldnt find coin locally installed");
+                        jaddstr(retjson,"coin",coin);
+                        return(jprint(retjson,1));
+                    }
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
                         ptr->inactive = 0;
