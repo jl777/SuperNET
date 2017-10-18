@@ -58,6 +58,77 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
     checkpoint->blockhash.height = height;
 }
 
+int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
+{
+    cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
+    if ( (txobj= dpow_gettransaction(myinfo,coin,txid)) != 0 )
+    {
+        if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
+        {
+            if ( numvins >= DPOW_MIN_ASSETCHAIN_SIGS )
+            {
+                numnotaries = 0;
+                for (i=0; i<numvins; i++)
+                {
+                    vin = jitem(vins,i);
+                    spenttxid = jbits256(vin,"txid");
+                    spentvout = jint(vin,"vout");
+                    if ( (spentobj= dpow_gettransaction(myinfo,coin,spenttxid)) != 0 )
+                    {
+                        if ( (vouts= jarray(&numvouts,spentobj,"vout")) != 0 )
+                        {
+                            if ( spentvout < numvouts )
+                            {
+                                vout = jitem(vouts,spentvout);
+                                if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) == sizeof(script)*2 )
+                                {
+                                    len >>= 1;
+                                    decode_hex(script,len,hexstr);
+                                    if ( script[0] == 33 && script[34] == 0xac )
+                                    {
+                                        for (j=0; j<sizeof(Notaries_elected)/sizeof(*Notaries_elected); j++)
+                                        {
+                                            if ( strncmp(Notaries_elected[j][1],hexstr+2,66) == 0 )
+                                            {
+                                                printf("n%d ",j);
+                                                numnotaries++;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        free_json(spentobj);
+                    }
+                }
+                if ( numnotaries > 0 )
+                {
+                    if ( numnotaries >= DPOW_MIN_ASSETCHAIN_SIGS )
+                        hasnotarization = 1;
+                    printf("numnotaries.%d hasnotarization.%d\n",numnotaries,hasnotarization);
+                }
+            }
+        }
+        free_json(txobj);
+    }
+    return(hasnotarization);
+}
+
+int32_t dpow_hasnotarization(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *blockjson)
+{
+    int32_t i,n,hasnotarization = 0; bits256 txid; cJSON *txarray;
+    if ( (txarray= jarray(&n,blockjson,"tx")) != 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            txid = jbits256i(txarray,i);
+            hasnotarization += dpow_txhasnotarization(myinfo,coin,txid);
+        }
+    }
+    return(hasnotarization);
+}
+
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs; //uint8_t pubkeys[64][33];
@@ -71,13 +142,13 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     else
     {
         freq = 1;
-        minsigs = 11;
+        minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
     }
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
-        if ( dp->SRCREALTIME == 0 )
-            return;
+        //if ( dp->SRCREALTIME == 0 )
+        //    return;
         if ( (coin= iguana_coinfind(dp->symbol)) != 0 )
         {
             hash = dpow_getbestblockhash(myinfo,coin);
@@ -85,22 +156,25 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             {
                 if ( (blockjson= dpow_getblock(myinfo,coin,hash)) != 0 )
                 {
-                    height = jint(blockjson,"height");
-                    blocktime = juint(blockjson,"time");
-                    if ( height > 0 && blocktime > 0 )
-                        dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
-                    free_json(blockjson);
-                    if ( bits256_cmp(dp->activehash,checkpoint.blockhash.hash) == 0 )
+                    if ( dpow_hasnotarization(myinfo,coin,blockjson) <= 0 )
                     {
-                        printf("activehash.(%s) is current checkpoint, skip\n",bits256_str(str,dp->activehash));
-                        return;
-                    }
-                    if ( bits256_nonz(dp->lastnotarized) != 0 && bits256_cmp(dp->lastnotarized,checkpoint.blockhash.hash) == 0 )
-                    {
-                        printf("lastnotarized.(%s) is current checkpoint, skip\n",bits256_str(str,dp->lastnotarized));
-                        return;
-                    }
-                    printf("checkpoint.(%s) is not active and not lastnotarized\n",bits256_str(str,checkpoint.blockhash.hash));
+                        height = jint(blockjson,"height");
+                        blocktime = juint(blockjson,"time");
+                        if ( height > 0 && blocktime > 0 )
+                            dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
+                        free_json(blockjson);
+                        if ( bits256_cmp(dp->activehash,checkpoint.blockhash.hash) == 0 )
+                        {
+                            printf("activehash.(%s) is current checkpoint, skip\n",bits256_str(str,dp->activehash));
+                            return;
+                        }
+                        if ( bits256_nonz(dp->lastnotarized) != 0 && bits256_cmp(dp->lastnotarized,checkpoint.blockhash.hash) == 0 )
+                        {
+                            printf("lastnotarized.(%s) is current checkpoint, skip\n",bits256_str(str,dp->lastnotarized));
+                            return;
+                        }
+                        printf("checkpoint.(%s) is not active and not lastnotarized\n",bits256_str(str,checkpoint.blockhash.hash));
+                    } else return;
                 } else return;
             } else return;
         } else return;
