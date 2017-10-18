@@ -1231,7 +1231,7 @@ char *LP_recent_swaps(int32_t limit)
         fseek(fp,0,SEEK_END);
         fsize = ftell(fp);
         offset = (sizeof(requestid) + sizeof(quoteid));
-        while ( offset <= fsize )
+        while ( offset <= fsize && i < limit )
         {
             i++;
             offset = i * (sizeof(requestid) + sizeof(quoteid));
