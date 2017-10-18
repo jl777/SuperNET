@@ -60,7 +60,7 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t freq,minsigs; //uint8_t pubkeys[64][33];
+    void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs; //uint8_t pubkeys[64][33];
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     if ( strcmp("BTC",dp->dest) == 0 )
@@ -73,26 +73,41 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         freq = 1;
         minsigs = 11;
     }
-    printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
     {
         if ( dp->SRCREALTIME == 0 )
             return;
-        if ( bits256_cmp(dp->activehash,checkpoint.blockhash.hash) == 0 )
+        if ( (coin= iguana_coinfind(dp->symbol)) != 0 )
         {
-            printf("activehash.(%s) is current checkpoint, skip\n",bits256_str(str,dp->activehash));
-            return;
-        }
-        if ( bits256_nonz(dp->lastnotarized) != 0 && bits256_cmp(dp->lastnotarized,checkpoint.blockhash.hash) == 0 )
-        {
-            printf("lastnotarized.(%s) is current checkpoint, skip\n",bits256_str(str,dp->lastnotarized));
-            return;
-        }
-        printf("checkpoint.(%s) is not active and not lastnotarized\n",bits256_str(str,checkpoint.blockhash.hash));
+            hash = dpow_getbestblockhash(myinfo,coin);
+            if ( bits256_nonz(hash) != 0 )
+            {
+                if ( (blockjson= dpow_getblock(myinfo,coin,hash)) != 0 )
+                {
+                    height = jint(blockjson,"height");
+                    blocktime = juint(blockjson,"time");
+                    if ( height > 0 && blocktime > 0 )
+                        dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
+                    free_json(blockjson);
+                    if ( bits256_cmp(dp->activehash,checkpoint.blockhash.hash) == 0 )
+                    {
+                        printf("activehash.(%s) is current checkpoint, skip\n",bits256_str(str,dp->activehash));
+                        return;
+                    }
+                    if ( bits256_nonz(dp->lastnotarized) != 0 && bits256_cmp(dp->lastnotarized,checkpoint.blockhash.hash) == 0 )
+                    {
+                        printf("lastnotarized.(%s) is current checkpoint, skip\n",bits256_str(str,dp->lastnotarized));
+                        return;
+                    }
+                    printf("checkpoint.(%s) is not active and not lastnotarized\n",bits256_str(str,checkpoint.blockhash.hash));
+                } else return;
+            } else return;
+        } else return;
     }
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
+        printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
         dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
         ptrs[0] = (void *)myinfo;
@@ -193,7 +208,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         }
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->srctx,&dp->numsrctx,src)) != dp->last.blockhash.height && height >= 0 )
         {
-            char str[65]; printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
+            //char str[65]; printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( dp->lastheight == 0 )
                 dp->lastheight = height-1;
             if ( height < dp->last.blockhash.height )
