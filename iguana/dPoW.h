@@ -132,7 +132,7 @@ struct dpow_info
     char symbol[16],dest[16]; uint8_t minerkey33[33],minerid; uint64_t lastrecvmask;
     struct dpow_checkpoint checkpoint,last,destchaintip,srcfifo[DPOW_FIFOSIZE],destfifo[DPOW_FIFOSIZE];
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
-    bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
+    bits256 activehash,lastnotarized,srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
     uint32_t SRCREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify;
     int32_t lastheight,maxblocks,SRCHEIGHT,SHORTFLAG,ratifying;
     struct pax_transaction *PAX;

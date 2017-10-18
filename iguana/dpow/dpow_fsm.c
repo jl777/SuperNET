@@ -447,6 +447,11 @@ void dpow_statemachinestart(void *ptr)
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             dpow_nanomsg_update(myinfo);
         }
+        else
+        {
+            dp->lastnotarized = bp->srctxid;
+            printf("notarized %s %s\n",dp->symbol,bits256_str(str,bp->srctxid));
+        }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
         {
             printf("abort pending ratify\n");
