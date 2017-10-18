@@ -160,15 +160,19 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                     {
                         height = jint(blockjson,"height");
                         blocktime = juint(blockjson,"time");
-                        if ( height > 0 && blocktime > 0 )
-                            dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
                         free_json(blockjson);
-                        if ( bits256_cmp(dp->activehash,checkpoint.blockhash.hash) == 0 )
+                        if ( height > 0 && blocktime > 0 )
+                        {
+                            dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
+                            printf("dynamic set %s <- height.%d\n",bits256_str(str,hash),height);
+                        }
+                        else return;
+                        if ( bits256_nonz(dp->activehash) != 0 && bits256_cmp(dp->activehash,checkpoint.blockhash.hash) == 0 )
                         {
                             printf("activehash.(%s) is current checkpoint, skip\n",bits256_str(str,dp->activehash));
                             return;
                         }
-                        if ( bits256_nonz(dp->lastnotarized) != 0 && bits256_cmp(dp->lastnotarized,checkpoint.blockhash.hash) == 0 )
+                        else if ( bits256_nonz(dp->lastnotarized) != 0 && bits256_cmp(dp->lastnotarized,checkpoint.blockhash.hash) == 0 )
                         {
                             printf("lastnotarized.(%s) is current checkpoint, skip\n",bits256_str(str,dp->lastnotarized));
                             return;
@@ -264,7 +268,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
             char str[65];
-            if ( strcmp(dp->symbol,"KMD") == 0 || height != dp->destchaintip.blockhash.height+1 )
+            if ( strcmp(dp->symbol,"KMD") == 0 )//|| height != dp->destchaintip.blockhash.height+1 )
                 printf("[%s].%d %s %s height.%d vs last.%d\n",dp->symbol,dp->SRCHEIGHT,dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
             if ( height <= dp->destchaintip.blockhash.height )
             {
