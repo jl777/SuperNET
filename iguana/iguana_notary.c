@@ -89,6 +89,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             printf("lastnotarized.(%s) is current checkpoint, skip\n",bits256_str(str,dp->lastnotarized));
             return;
         }
+        printf("checkpoint.(%s) is not active and not lastnotarized\n",bits256_str(str,checkpoint.blockhash.hash));
     }
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
