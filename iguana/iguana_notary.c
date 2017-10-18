@@ -110,7 +110,7 @@ int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *
                 {
                     if ( numnotaries >= DPOW_MIN_ASSETCHAIN_SIGS )
                         hasnotarization = 1;
-                    printf("numnotaries.%d hasnotarization.%d\n",numnotaries,hasnotarization);
+                    printf("numnotaries.%d %s hasnotarization.%d\n",numnotaries,coin->symbol,hasnotarization);
                 }
             }
         }
