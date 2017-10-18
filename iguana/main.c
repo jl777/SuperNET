@@ -71,7 +71,7 @@ int32_t SuperNET_str2hex(uint8_t *hex,char *str)
 
 void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len)
 {
-    init_hexbytes_noT(str,hex,len);
+     init_hexbytes_noT(str,hex,len);
 }
 
 void *bitcoin_ctx();
