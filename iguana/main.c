@@ -71,13 +71,17 @@ int32_t SuperNET_str2hex(uint8_t *hex,char *str)
 
 void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len)
 {
-    init_hexbytes_noT(str,hex,len);
+     init_hexbytes_noT(str,hex,len);
 }
 
+void *bitcoin_ctx();
 struct supernet_info *SuperNET_MYINFO(char *passphrase)
 {
-    if ( MYINFO.ctx == 0 )
+    int32_t i;
+    if ( MYINFO.ctx[0] == 0 )
     {
+        for (i=0; i<sizeof(MYINFO.ctx)/sizeof(*MYINFO.ctx); i++)
+            MYINFO.ctx[i] = bitcoin_ctx();
         OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
         MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
         printf("SuperNET_MYINFO: generate session keypair\n");

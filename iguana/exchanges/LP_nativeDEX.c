@@ -19,14 +19,14 @@
 //  marketmaker
 //
 // dPoW security -> 4: KMD notarized, 5: BTC notarized
-// dICO allocation script
 // sign critical api calls (pubkey reg, listunspent, orders?)
-
+//
 // process stats.log local file
-// verify portfolio, pricearray, interest to KMD withdraw
 // handles <-> pubkeys
 // deal with offline pubkeys, reputations, etc.
+//
 // alice only coins GAME UNO BTM ANC: GAME BTCD PPC RDD XZC POT EAC FTC BASH SPR WDC UNO XPM XCN BELA CHC DIME MEC NAUT MED AUR MAX DGC RIC EB3 DOT BTM GEO ANC CANN ICASH WBB SRC PTC ADZ TIPS EQT START EFL FST FJC NYC GCN
+// verify portfolio, pricearray, interest to KMD withdraw
 
 
 #include <stdio.h>
