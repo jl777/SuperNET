@@ -1219,9 +1219,12 @@ void LP_tradecommand_log(cJSON *argjson)
     }
 }
 
+extern struct LP_quoteinfo LP_Alicequery;
+extern uint32_t Alice_expiration;
+
 char *LP_recent_swaps(int32_t limit)
 {
-    char fname[512]; long fsize,offset; FILE *fp; int32_t i=0; uint32_t requestid,quoteid; cJSON *array,*item;
+    char fname[512]; long fsize,offset; FILE *fp; int32_t i=0; uint32_t requestid,quoteid; cJSON *array,*item,*retjson;
     if ( limit <= 0 )
         limit = 3;
     sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
@@ -1249,5 +1252,19 @@ char *LP_recent_swaps(int32_t limit)
         }
         fclose(fp);
     }
-    return(jprint(array,1));
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jadd(retjson,"swaps",array);
+    if ( time(NULL) < Alice_expiration )
+    {
+        item = cJSON_CreateObject();
+        jaddnum(item,"expiration",Alice_expiration);
+        jaddnum(item,"timeleft",Alice_expiration-time(NULL));
+        jaddstr(item,"base",LP_Alicequery.srccoin);
+        jaddnum(item,"basevalue",dstr(LP_Alicequery.satoshis));
+        jaddstr(item,"rel",LP_Alicequery.destcoin);
+        jaddnum(item,"relvalue",dstr(LP_Alicequery.destsatoshis));
+        jadd(retjson,"pending",item);
+    } else Alice_expiration = 0;
+    return(jprint(retjson,1));
 }

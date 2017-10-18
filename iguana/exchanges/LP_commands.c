@@ -132,6 +132,7 @@ electrum(coin, ipaddr, port)*\n\
 snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
+stop()\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
 
