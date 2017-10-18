@@ -31,6 +31,8 @@ struct LP_priceinfo
     double myprices[LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS]; // autoprice
     double margins[LP_MAXPRICEINFOS];
+    double offsets[LP_MAXPRICEINFOS];
+    double factors[LP_MAXPRICEINFOS];
     //double maxprices[LP_MAXPRICEINFOS]; // autofill of base/rel
     //double relvols[LP_MAXPRICEINFOS];
     FILE *fps[LP_MAXPRICEINFOS];
@@ -221,10 +223,21 @@ char *LP_pubkey_trustset(bits256 pubkey,uint32_t trustval)
     return(clonestr("{\"error\":\"pubkey not found\"}"));
 }
 
+char *LP_pubkey_trusted()
+{
+    struct LP_pubkeyinfo *pubp,*tmp; cJSON *array = cJSON_CreateArray();
+    HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
+    {
+        if ( pubp->istrusted != 0 )
+            jaddibits256(array,pubp->pubkey);
+    }
+    return(jprint(array,1));
+}
+
 uint64_t LP_unspents_metric(struct iguana_info *coin,char *coinaddr)
 {
     cJSON *array,*item; int32_t i,n; uint64_t metric=0,total;
-    LP_listunspent_both(coin->symbol,coinaddr);
+    LP_listunspent_both(coin->symbol,coinaddr,0);
     if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
     {
         total = 0;
@@ -360,6 +373,8 @@ void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
 void LP_peer_pricesquery(struct LP_peerinfo *peer)
 {
     char *retstr; cJSON *array; int32_t i,n;
+    if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+        return;
     peer->needping = (uint32_t)time(NULL);
     if ( (retstr= issue_LP_getprices(peer->ipaddr,peer->port)) != 0 )
     {
@@ -481,6 +496,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
     *changedp = 0;
     if ( base != 0 && rel != 0 && LP_pricevalid(price) > 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
+        
         if ( fabs(basepp->myprices[relpp->ind] - price) > SMALLVAL )
             *changedp = 1;
         basepp->myprices[relpp->ind] = price;          // ask
@@ -664,8 +680,8 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
         jaddstr(item,"address",op->coinaddr);
         jaddnum(item,"price",op->price);
         jaddnum(item,"numutxos",op->numutxos);
-        jaddnum(item,"minvolume",dstr(op->minsatoshis));
-        jaddnum(item,"maxvolume",dstr(op->maxsatoshis));
+        jaddnum(item,"minvolume",dstr(op->minsatoshis)*0.8);
+        jaddnum(item,"maxvolume",dstr(op->maxsatoshis)*0.8);
         jaddbits256(item,"pubkey",op->pubkey);
         jaddnum(item,"age",time(NULL)-op->timestamp);
     }
@@ -706,6 +722,8 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
             //printf("skip pubp since no rmd160\n");
             continue;
         }
+        if ( pubp->timestamp < oldest )
+            continue;
         bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
         minsatoshis = maxsatoshis = n = 0;
         ap = 0;
@@ -769,8 +787,15 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=n=0; i<numbids; i++)
     {
         jaddi(array,LP_orderbookjson(rel,bids[i]));
-        if ( bids[i]->numutxos == 0 )//|| relcoin->electrum == 0 )
-            LP_address(relcoin,bids[i]->coinaddr), n++;
+        if ( n < 10 && bids[i]->numutxos == 0 )//|| relcoin->electrum == 0 )
+        {
+            //printf("bid ping %s %s\n",rel,bids[i]->coinaddr);
+            LP_address(relcoin,bids[i]->coinaddr);
+            if ( relcoin->electrum == 0 )
+                LP_listunspent_issue(rel,bids[i]->coinaddr,0);
+            LP_listunspent_query(rel,bids[i]->coinaddr);
+            n++;
+        }
         free(bids[i]);
         bids[i] = 0;
     }
@@ -782,8 +807,15 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=n=0; i<numasks; i++)
     {
         jaddi(array,LP_orderbookjson(base,asks[i]));
-        if ( asks[i]->numutxos == 0 )//|| basecoin->electrum == 0 )
-            LP_address(basecoin,asks[i]->coinaddr), n++;
+        if ( n < 10 && asks[i]->numutxos == 0 )//|| basecoin->electrum == 0 )
+        {
+            //printf("ask ping %s %s\n",base,asks[i]->coinaddr);
+            LP_address(basecoin,asks[i]->coinaddr);
+            if ( basecoin->electrum == 0 )
+                LP_listunspent_issue(base,asks[i]->coinaddr,0);
+            LP_listunspent_query(base,asks[i]->coinaddr);
+            n++;
+        }
         free(asks[i]);
         asks[i] = 0;
     }

@@ -54,9 +54,9 @@ char *parse_conf_line(char *line,char *field)
     return(clonestr(line));
 }
 
-void LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
+uint16_t LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
 {
-    char *rpcuser,*rpcpassword,*str,line[8192];
+    char *rpcuser,*rpcpassword,*str,line[8192]; uint16_t port = 0;
     rpcuser = rpcpassword = 0;
     username[0] = password[0] = 0;
     while ( fgets(line,sizeof(line),fp) != 0 )
@@ -68,6 +68,16 @@ void LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
             rpcuser = parse_conf_line(str,(char *)"rpcuser");
         else if ( (str= strstr(line,(char *)"rpcpassword")) != 0 )
             rpcpassword = parse_conf_line(str,(char *)"rpcpassword");
+        else if ( (str= strstr(line,(char *)"rpcport")) != 0 )
+        {
+            str = parse_conf_line(str,(char *)"rpcport");
+            if ( str != 0 )
+            {
+                port = atoi(str);
+                //printf("RPCPORT.%u\n",port);
+                free(str);
+            }
+        }
     }
     if ( rpcuser != 0 && rpcpassword != 0 )
     {
@@ -79,6 +89,7 @@ void LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
         free(rpcuser);
     if ( rpcpassword != 0 )
         free(rpcpassword);
+    return(port);
 }
 
 void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name,char *confpath)
@@ -89,7 +100,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
         return;
     }
     sprintf(fname,"%s",LP_getdatadir());
-#ifdef WIN32
+#ifdef _WIN32
     strcat(fname,"\\");
 #else
     strcat(fname,"/");
@@ -127,7 +138,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
 #endif
         if ( strcmp(symbol,"KMD") != 0 )
         {
-#ifdef WIN32
+#ifdef _WIN32
             strcat(fname,"\\");
 #else
             strcat(fname,"/");
@@ -135,7 +146,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
             strcat(fname,assetname);
         }
     }
-#ifdef WIN32
+#ifdef _WIN32
     strcat(fname,"\\");
 #else
     strcat(fname,"/");
@@ -143,9 +154,9 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
     strcat(fname,str);
 }
 
-int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,char *name,char *confpath)
+uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,char *name,char *confpath,uint16_t origport)
 {
-    FILE *fp; char fname[512],username[512],password[512],confname[512];
+    FILE *fp; char fname[512],username[512],password[512],confname[512]; uint16_t port = 0;
     userpass[0] = 0;
     sprintf(confname,"%s.conf",confroot);
     if ( 0 )
@@ -160,14 +171,15 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,c
     LP_statefname(fname,symbol,assetname,confname,name,confpath);
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
-        LP_userpassfp(symbol,username,password,fp);
+        if ( (port= LP_userpassfp(symbol,username,password,fp)) == 0 )
+            port = origport;
         sprintf(userpass,"%s:%s",username,password);
         fclose(fp);
         if ( 0 )
             printf("LP_statefname.(%s) <- %s %s %s (%s) (%s)\n",fname,name,symbol,assetname,userpass,confpath);
-        return((int32_t)strlen(userpass));
+        return(port);
     } else printf("cant open.(%s)\n",fname);
-    return(-1);
+    return(0);
 }
 
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
@@ -269,24 +281,29 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     return(coin);
 }
 
-int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath)
+uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath)
 {
     char *name2;
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
-    sprintf(coin->serverport,"127.0.0.1:%u",port);
     coin->updaterate = (uint32_t)time(NULL);
     coin->isPoS = isPoS;
     coin->taddr = taddr;
     coin->wiftaddr = wiftaddr;
     coin->longestchain = longestchain;
-    coin->txfee = txfee;
+    if ( (coin->txfee= txfee) > 0 && txfee < LP_MIN_TXFEE )
+        coin->txfee = LP_MIN_TXFEE;
     coin->pubtype = pubtype;
     coin->p2shtype = p2shtype;
     coin->wiftype = wiftype;
     coin->inactive = (uint32_t)time(NULL);
     coin->bussock = LP_coinbus(busport);
     coin->ctx = bitcoin_ctx();
+    if ( assetname != 0 && strcmp(name,assetname) == 0 )
+    {
+        printf("%s is assetchain\n",symbol);
+        coin->isassetchain = 1;
+    }
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;
     else name2 = name;
@@ -295,7 +312,9 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
         coin->noimportprivkey_flag = 1;
         printf("truncate importprivkey for %s\n",symbol);
     }
-    return(LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath));
+    port = LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath,port);
+    sprintf(coin->serverport,"127.0.0.1:%u",port);
+    return(port);
 }
 
 int32_t LP_isdisabled(char *base,char *rel)
@@ -338,7 +357,10 @@ struct iguana_info *LP_coinfind(char *symbol)
     else if ( strcmp(symbol,"KMD") == 0 )
         name = "komodo";
     else return(0);
-    isinactive = LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,0,busport,0) < 0;
+    port = LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,0,busport,0);
+    if ( port == 0 )
+        isinactive = 1;
+    else isinactive = 0;
     if ( (coin= LP_coinadd(&cdata)) != 0 )
     {
         coin->inactive = isinactive * (uint32_t)time(NULL);

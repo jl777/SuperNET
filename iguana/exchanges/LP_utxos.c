@@ -36,6 +36,20 @@ int32_t LP_isavailable(struct LP_utxoinfo *utxo)
 
 int32_t LP_isunspent(struct LP_utxoinfo *utxo)
 {
+    struct LP_address_utxo *up; struct _LP_utxoinfo u; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(utxo->coin)) == 0 )
+        return(0);
+    if ( (up= LP_address_utxofind(coin,utxo->coinaddr,utxo->payment.txid,utxo->payment.vout)) != 0 && up->spendheight > 0 )
+    {
+        utxo->T.spentflag = up->spendheight;
+        return(0);
+    }
+    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+    if ( (up= LP_address_utxofind(coin,utxo->coinaddr,u.txid,u.vout)) != 0 && up->spendheight > 0 )
+    {
+        utxo->T.spentflag = up->spendheight;
+        return(0);
+    }
     if ( utxo != 0 && utxo->T.spentflag == 0 && LP_isavailable(utxo) > 0 )
         return(1);
     else return(0);
@@ -298,7 +312,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         //printf("LP_utxoadd reject inactive %s\n",symbol);
         return(0);
     }
-    txfee = LP_txfeecalc(coin,0);
+    txfee = LP_txfeecalc(coin,0,0);
     if ( iambob != 0 && value2 < 9 * (value >> 3) + 2*txfee ) // big txfee padding
     {
         if ( value2 > 2*txfee )
@@ -331,7 +345,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         }
         if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,vout2,0)) <= 0 )
         {
-            printf("LP_utxoadd reject2 numconfirms.%d\n",numconfirms);
+            printf("LP_utxoadd reject2 numconfirms.%d %s %s/v%d\n",numconfirms,symbol,bits256_str(str,txid2),vout2);
             return(0);
         }
     }
@@ -436,7 +450,10 @@ cJSON *LP_inventory(char *symbol)
         myipaddr = LP_mypeer->ipaddr;
     else myipaddr = "127.0.0.1";
     if ( (coin= LP_coinfind(symbol)) != 0 )
-        LP_listunspent_both(symbol,coin->smartaddr);
+    {
+        coin->unspenttime = (uint32_t)time(NULL) - 777;
+        LP_listunspent_both(symbol,coin->smartaddr,0);
+    }
     HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
     {
         char str[65];
@@ -455,7 +472,7 @@ cJSON *LP_inventory(char *symbol)
             //    LP_utxo_clientpublish(utxo);
             jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
         }
-        else if ( LP_ismine(utxo) > 0 && strcmp(symbol,utxo->coin) == 0 )
+        else if ( 0 && LP_ismine(utxo) > 0 && strcmp(symbol,utxo->coin) == 0 )
             printf("skip %s %s %d %d %d %d\n",utxo->coin,bits256_str(str,utxo->payment.txid),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
     }
     return(array);
@@ -495,17 +512,18 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
 {
     int32_t enable_utxos = 0;
     char *script,destaddr[64]; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,flag=0,height,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,depositval,value,total = 0; int64_t targetval;
-    if ( coin == 0 || coin->inactive != 0 )
+    if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
     {
-        printf("coin not active\n");
+        //printf("coin not active\n");
         return(0);
     }
     //printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
     if ( coin->inactive == 0 )
-        LP_listunspent_issue(coin->symbol,coin->smartaddr);
+        LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
+    LP_address(coin,coin->smartaddr);
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
-        txfee = LP_txfeecalc(coin,0);
+        txfee = LP_txfeecalc(coin,0,0);
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
             //printf("LP_privkey_init %s %s\n",coin->symbol,jprint(array,0));
@@ -523,7 +541,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                         txid = jbits256(item,"txid");
                         vout = juint(item,"vout");
                         value = LP_value_extract(item,0);
-                        height = LP_getheight(coin) - jint(item,"confirmations");
+                        height = LP_txheight(coin,txid);//LP_getheight(coin) - jint(item,"confirmations") + 1;
                     }
                     else
                     {
@@ -637,10 +655,12 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     return(flag);
 }
 
-char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint8_t pubtype)
+char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8_t taddr,uint8_t pubtype)
 {
     int32_t i; uint8_t tmptype,pubkey33[33],rmd160[20]; char output[777*45],str[65],str2[65],buf[8192],wifstr[128],coinaddr[64]; bits256 checkprivkey,privkey,pubkey; cJSON *retjson;
     retjson = cJSON_CreateObject();
+    if ( prefix == 0 || prefix[0] == 0 )
+        prefix = "secretaddress";
     if ( passphrase == 0 || passphrase[0] == 0 )
         passphrase = "password";
     if ( n <= 0 )
@@ -653,7 +673,7 @@ char *LP_secretaddresses(void *ctx,char *passphrase,int32_t n,uint8_t taddr,uint
     sprintf(output,"\"addresses\":[");
     for (i=0; i<n; i++)
     {
-        sprintf(buf,"secretaddress %s %03d",passphrase,i);
+        sprintf(buf,"%s %s %03d",prefix,passphrase,i);
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)buf,(int32_t)strlen(buf));
         bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
         bitcoin_priv2wif(0,wifstr,privkey,188);
@@ -725,9 +745,9 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             userpub = curve25519(userpass,curve25519_basepoint9());
             printf("userpass.(%s)\n",bits256_str(G.USERPASS,userpub));
         }
-        if ( coin->electrum == 0 )
+        if ( coin->electrum == 0 && coin->userpass[0] != 0 )
         {
-            LP_listunspent_issue(coin->symbol,coin->smartaddr);
+            LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
             if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
             {
                 if ( jobj(retjson,"error") != 0 )
@@ -761,7 +781,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
                 privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,coin,passphrase,"");
         }
         //printf("i.%d of %d\n",i,LP_numcoins);
-        else if ( coin->inactive == 0 )
+        else if ( IAMLP == 0 || coin->inactive == 0 )
         {
             if ( LP_privkey_init(pubsock,coin,G.LP_mypriv25519,G.LP_mypub25519) == 0 && (rand() % 10) == 0 )
                 LP_postutxos(coin->symbol,coin->smartaddr);

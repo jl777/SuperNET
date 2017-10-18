@@ -94,10 +94,11 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
 
 char *issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
 {
-    char url[512];
+    char url[512],*retstr;
     sprintf(url,"http://%s:%u/api/stats/listunspent?coin=%s&address=%s",destip,destport,symbol,coinaddr);
-    //printf("listunspent.(%s)\n",url);
-    return(LP_issue_curl("listunspent",destip,destport,url));
+    retstr = LP_issue_curl("listunspent",destip,destport,url);
+    //printf("listunspent.(%s) -> (%s)\n",url,retstr);
+    return(retstr);
 }
 
 char *LP_apicall(struct iguana_info *coin,char *method,char *params)
@@ -131,9 +132,10 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             if ( coin->electrum == 0 )
             {
                 retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
+                if ( 0 && strcmp("KMD",coin->symbol) == 0 )
+                    printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,params,retstr);
                 if ( retstr != 0 && retstr[0] != 0 )
                 {
-                    //printf("%s: %s.%s -> (%s)\n",coin->symbol,method,params,retstr);
                     retjson = cJSON_Parse(retstr);
                     free(retstr);
                 }
@@ -254,7 +256,8 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     if ( coin->electrum == 0 )
     {
         sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
-        return(bitcoin_json(coin,"getrawtransaction",buf));
+        retjson = bitcoin_json(coin,"getrawtransaction",buf);
+        return(retjson);
     }
     else
     {
@@ -263,6 +266,17 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
         else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,buf);
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
     }
+}
+
+uint32_t LP_locktime(char *symbol,bits256 txid)
+{
+    cJSON *txobj; uint32_t locktime = 0;
+    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+    {
+        locktime = juint(txobj,"locktime");
+        free_json(txobj);
+    }
+    return(locktime);
 }
 
 cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,uint64_t value)
@@ -280,7 +294,7 @@ cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,
     jaddstr(sobj,"type","pubkey");
     jadd(sobj,"addresses",addresses);
     jadd(retjson,"scriptPubKey",sobj);
-    printf("GETTXOUT.(%s)\n",jprint(retjson,0));
+    //printf("GETTXOUT.(%s)\n",jprint(retjson,0));
     return(retjson);
 }
 
@@ -323,7 +337,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
                     return(0);
                 return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
             }
-            if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr)) != 0 )
+            if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr,1)) != 0 )
             {
                 //printf("array.(%s)\n",jprint(array,0));
                 if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
@@ -416,6 +430,24 @@ int32_t LP_address_ismine(char *symbol,char *address)
     return(doneflag);
 }
 
+int32_t LP_address_isvalid(char *symbol,char *address)
+{
+    int32_t isvalid = 0; cJSON *retjson;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
+    if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
+    {
+        if ( jobj(retjson,"isvalid") != 0 && is_cJSON_True(jobj(retjson,"isvalid")) != 0 )
+        {
+            isvalid = 1;
+            //printf("%s ismine (%s)\n",address,jprint(retjson,0));
+        }
+        //printf("%s\n",jprint(retjson,0));
+        free_json(retjson);
+    }
+    return(isvalid);
+}
+
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
     char buf[128]; cJSON *retjson; struct iguana_info *coin;
@@ -423,7 +455,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
     //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
-    if ( coin == 0 || coin->inactive != 0 )
+    if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
     {
@@ -432,10 +464,10 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
             sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
             return(bitcoin_json(coin,"listunspent",buf));
         } else return(LP_address_utxos(coin,coinaddr,0));
-    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr));
+    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
 }
 
-int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
+int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
 {
     struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0,destip[64]; uint16_t destport;
     if ( symbol == 0 || symbol[0] == 0 )
@@ -444,7 +476,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
     {
         if ( coin->electrum != 0 )
         {
-            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr)) != 0 )
+            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1)) != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
                 //printf("LP_listunspent_issue.%s %s.%d %s\n",symbol,coinaddr,n,jprint(retjson,0));
@@ -457,15 +489,24 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr)
                 retjson = LP_listunspent(symbol,coinaddr);
                 //printf("SELF_LISTUNSPENT.(%s %s)\n",symbol,coinaddr);
             }
-            else if ( (destport= LP_randpeer(destip)) > 0 )
+            else if ( IAMLP == 0 )
             {
-                retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
-                retjson = cJSON_Parse(retstr);
-            } else printf("LP_listunspent_issue couldnt get a random peer?\n");
+                printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
+                LP_listunspent_query(coin->symbol,coin->smartaddr);
+                if ( fullflag != 0 )
+                {
+                    if ( (destport= LP_randpeer(destip)) > 0 )
+                    {
+                        retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
+                        //printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
+                        retjson = cJSON_Parse(retstr);
+                    } else printf("LP_listunspent_issue couldnt get a random peer?\n");
+                }
+            }
             if ( retjson != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
-                if ( electrum_process_array(coin,0,coinaddr,retjson) != 0 )
+                if ( electrum_process_array(coin,0,coinaddr,retjson,1) != 0 )
                 {
                     //LP_postutxos(symbol,coinaddr); // might be good to not saturate
                 }
@@ -601,18 +642,24 @@ double LP_getestimatedrate(struct iguana_info *coin)
 char *LP_sendrawtransaction(char *symbol,char *signedtx)
 {
     cJSON *array,*errobj; char *paramstr,*tmpstr,*retstr=0; int32_t n,alreadyflag = 0; cJSON *retjson; struct iguana_info *coin;
-    if ( symbol == 0 || symbol[0] == 0 )
+    if ( symbol == 0 || symbol[0] == 0 || signedtx == 0 || signedtx[0] == 0 )
+    {
+        printf("LP_sendrawtransaction null symbol %p or signedtx.%p\n",symbol,signedtx);
         return(0);
+    }
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
+    {
+        printf("LP_sendrawtransaction null coin\n");
         return(0);
+    }
     if ( coin->electrum == 0 )
     {
         array = cJSON_CreateArray();
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"sendrawtransaction",paramstr);
-        //printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
+        printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
         free(paramstr);
     }
     else

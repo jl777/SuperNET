@@ -55,17 +55,18 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     long i,j,len;
     char *retstr = 0;
     cJSON *json,*result,*error;
+    usleep(2500);
     //printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
     {
         if ( strcmp(command,"signrawtransaction") != 0 && strcmp(command,"getrawtransaction") != 0 )
-            printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
+            printf("<<<<<<<<<<< A bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,params);
         return(rpcstr);
     }
     json = cJSON_Parse(rpcstr);
     if ( json == 0 )
     {
-        printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s can't parse.(%s) params.(%s)\n",debugstr,command,rpcstr,params);
+        printf("<<<<<<<<<<< B bitcoind_RPC: %s post_process_bitcoind_RPC.%s can't parse.(%s) params.(%s)\n",debugstr,command,rpcstr,params);
         free(rpcstr);
         return(0);
     }
@@ -227,7 +228,7 @@ try_again:
         {
             count++;
             elapsedsum += (OS_milliseconds() - starttime);
-            if ( (count % 10000) == 0)
+            if ( (count % 100000) == 0)
                 printf("%d: ave %9.6f | elapsed %.3f millis | bitcoind_RPC.(%s) url.(%s)\n",count,elapsedsum/count,(OS_milliseconds() - starttime),command,url);
             if ( retstrp != 0 )
             {
