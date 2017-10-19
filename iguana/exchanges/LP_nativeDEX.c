@@ -18,7 +18,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// error if alice submits order too fast
 // dPoW security -> 4: KMD notarized, 5: BTC notarized
 // new testchain
 // sign critical api calls (pubkey reg, listunspent, orders?)

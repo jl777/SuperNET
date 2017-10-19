@@ -816,6 +816,7 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
         {
             memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
             LP_Alicemaxprice = 0.;
+            Alice_expiration = 0;
             LP_query(ctx,myipaddr,mypubsock,"connect",qp);
         }
     }
