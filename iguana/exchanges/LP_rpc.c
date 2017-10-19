@@ -1039,6 +1039,7 @@ int32_t LP_hasnotarization(struct iguana_info *coin,cJSON *blockjson)
 int32_t LP_notarization_latest(int32_t *bestheightp,struct iguana_info *coin)
 {
     cJSON *blockjson; bits256 blockhash; int32_t height=-1,hasnotarization;
+    *bestheightp = -1;
     memset(blockhash.bytes,0,sizeof(blockhash));
     while ( 1 )
     {
