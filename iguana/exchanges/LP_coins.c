@@ -186,7 +186,6 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 {
     struct electrum_info *ep; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
-    jaddnum(item,"height",coin->height);
     if ( showwif != 0 )
     {
         bitcoin_priv2wif(coin->wiftaddr,wifstr,G.LP_mypriv25519,coin->wiftype);
