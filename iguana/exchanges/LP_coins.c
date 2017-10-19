@@ -197,9 +197,15 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     }
     jadd(item,"installed",coin->userpass[0] == 0 ? jfalse() : jtrue());
     if ( coin->userpass[0] != 0 )
+    {
         jaddnum(item,"height",LP_getheight(coin));
-    else jaddnum(item,"height",-1);
-
+        jaddnum(item,"balance",dstr(LP_smartbalance(coin)));
+    }
+    else
+    {
+        jaddnum(item,"height",-1);
+        jaddnum(item,"balance",0);
+    }
     if ( coin->inactive != 0 )
     {
         jaddstr(item,"status","inactive");

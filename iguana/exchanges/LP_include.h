@@ -299,6 +299,7 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
 int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
 int32_t LP_reserved_msgs();
+uint64_t LP_smartbalance(struct iguana_info *coin);
 int32_t LP_getheight(struct iguana_info *coin);
 int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg);
 struct iguana_info *LP_coinfind(char *symbol);
