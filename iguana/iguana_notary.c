@@ -556,7 +556,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 
 char NOTARY_CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD",
     "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "LTC", "MNZ" };
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ" }; // "LTC", 
 
 ZERO_ARGS(dpow,notarychains)
 {

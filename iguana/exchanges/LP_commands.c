@@ -193,6 +193,20 @@ stop()\n\
                 return(jprint(retjson,1));
             }
         }
+        else if ( strcmp(method,"notarizations") == 0 )
+        {
+            int32_t height,bestheight;
+            if ( (ptr= LP_coinsearch(coin)) != 0 )
+            {
+                height = LP_notarization_latest(&bestheight,ptr);
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"coin",coin);
+                jaddnum(retjson,"lastnotarization",height);
+                jaddnum(retjson,"bestheight",bestheight);
+                return(jprint(retjson,1));
+            } else return(clonestr("{\"error\":\"cant find coin\"}"));
+        }
         else if ( strcmp(method,"portfolio") == 0 )
         {
             return(LP_portfolio());
