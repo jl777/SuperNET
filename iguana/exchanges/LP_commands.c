@@ -97,7 +97,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
 available localhost RPC commands: * means it needs to be a signed request\n \
 pricearray(base, rel, firsttime=0, lasttime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 setprice(base, rel, price)*\n\
-autoprice(base, rel, price, margin, type)*\n\
+autoprice(base, rel, minprice, margin, refbase, refrel, factor, offset)*\n\
 goal(coin=*, val=<autocalc>)*\n\
 myprice(base, rel)\n\
 enable(coin)*\n\
@@ -110,6 +110,7 @@ sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)*\n\
 withdraw(coin, outputs[])*\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus()*\n\
+recentswaps(limit=3)\n\
 swapstatus(requestid, quoteid)*\n\
 public API:\n \
 getcoins()\n\
@@ -123,14 +124,15 @@ trust(pubkey, trust)*\n\
 balance(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
-sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)*\n\
-getmessages(firsti=0, num=100)*\n\
-deletemessages(firsti=0, num=100)*\n\
+sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
+getmessages(firsti=0, num=100)\n\
+deletemessages(firsti=0, num=100)\n\
 secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)\n\
 electrum(coin, ipaddr, port)*\n\
 snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
+stop()\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
 
@@ -153,24 +155,29 @@ dividends(coin, height, <args>)\n\
         jdelete(argjson,"userpass");
         if ( strcmp(method,"sendmessage") == 0 )
         {
-            //*
             if ( jobj(argjson,"method2") == 0 )
             {
-                printf("broadcast message\n");
                 LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
             }
             return(clonestr("{\"result\":\"success\"}"));
         }
+        else if ( strcmp(method,"recentswaps") == 0 )
+        {
+            return(LP_recent_swaps(jint(argjson,"limit")));
+        }
+        else if ( strcmp(method,"stop") == 0 )
+        {
+            printf("DEBUG stop\n");
+            exit(0);
+        }
         else if ( strcmp(method,"getmessages") == 0 )
         {
-            //*
             if ( (retjson= LP_getmessages(jint(argjson,"firsti"),jint(argjson,"num"))) != 0 )
                 return(jprint(retjson,1));
             else return(clonestr("{\"error\":\"null messages\"}"));
         }
         else if ( strcmp(method,"deletemessages") == 0 )
         {
-            //*
             LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
         }
@@ -205,9 +212,9 @@ dividends(coin, height, <args>)\n\
             price = jdouble(argjson,"price");
             if ( strcmp(method,"setprice") == 0 )
             {
-                //*
                 if ( price > SMALLVAL )
                 {
+                    //LP_signature_add(argjson,base,rel,(uint64_t)price * SATOSHIDEN);
                     if ( LP_mypriceset(&changed,base,rel,price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
                     //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
@@ -217,8 +224,8 @@ dividends(coin, height, <args>)\n\
             }
             else if ( strcmp(method,"autoprice") == 0 )
             {
-                //*
-                if ( LP_autoprice(base,rel,price,jdouble(argjson,"margin"),jstr(argjson,"type")) < 0 )
+                //LP_signature_add(argjson,base,rel,(uint64_t)price * SATOSHIDEN);
+                if ( LP_autoprice(base,rel,argjson) < 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
@@ -269,18 +276,32 @@ dividends(coin, height, <args>)\n\
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
+                    if ( ptr->userpass[0] == 0 )
+                    {
+                        cJSON *retjson = cJSON_CreateObject();
+                        jaddstr(retjson,"error","couldnt find coin locally installed");
+                        jaddstr(retjson,"coin",coin);
+                        return(jprint(retjson,1));
+                    }
                     if ( LP_conflicts_find(ptr) == 0 )
+                    {
                         ptr->inactive = 0;
-                    else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
-                }
-                return(jprint(LP_coinsjson(0),1));
+                        cJSON *array = cJSON_CreateArray();
+                        jaddi(array,LP_coinjson(ptr,0));
+                        return(jprint(array,1));
+                    } else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
+                } else return(clonestr("{\"error\":\"couldnt find coin\"}"));
             }
             else if ( strcmp(method,"disable") == 0 )
             {
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
+                {
                     ptr->inactive = (uint32_t)time(NULL);
-                return(jprint(LP_coinsjson(0),1));
+                    cJSON *array = cJSON_CreateArray();
+                    jaddi(array,LP_coinjson(ptr,0));
+                    return(jprint(array,1));
+                } else return(clonestr("{\"error\":\"couldnt find coin\"}"));
             }
             else if ( strcmp(method,"electrum") == 0 )
             {
@@ -446,6 +467,7 @@ dividends(coin, height, <args>)\n\
             {
                 if ( coinaddr[0] != 0 )
                 {
+                    LP_address(ptr,coinaddr);
                     LP_listunspent_issue(coin,coinaddr,1);
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
                     {
@@ -467,15 +489,11 @@ dividends(coin, height, <args>)\n\
             return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
         else return(clonestr("{\"error\":\"cant find coind\"}"));
     }
-    else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
-        return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
-    else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
-        retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"checktxid") == 0 )
         retstr = LP_spentcheck(argjson);
     else if ( strcmp(method,"addr_unspents") == 0 )
     {
-        //printf("GOT ADDR_UNSPENTS\n");
+        //printf("GOT ADDR_UNSPENTS %s %s\n",jstr(argjson,"coin"),jstr(argjson,"address"));
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
         {
             char *coinaddr; //cJSON *array,*item,*req; int32_t i,n,vout,height; bits256 zero,txid; uint64_t value;
@@ -483,9 +501,10 @@ dividends(coin, height, <args>)\n\
             {
                 if ( coinaddr[0] != 0 )
                 {
+                    LP_address(ptr,coinaddr);
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
                     {
-                        //printf("%s %s is my address being asked for!\n",ptr->symbol,coinaddr);
+                        //printf("ADDR_UNSPENTS %s %s is my address being asked for!\n",ptr->symbol,coinaddr);
                         ptr->addr_listunspent_requested = (uint32_t)time(NULL);
                     }
                 }
@@ -493,6 +512,10 @@ dividends(coin, height, <args>)\n\
         }
         retstr = clonestr("{\"result\":\"success\"}");
     }
+    //else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
+    //    return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
+    //else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
+    //    retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"getcoins") == 0 )
         return(jprint(LP_coinsjson(0),1));
     else if ( strcmp(method,"encrypted") == 0 )
@@ -547,7 +570,7 @@ dividends(coin, height, <args>)\n\
                     else
                     {
                         memset(zero.bytes,0,sizeof(zero));
-                        //printf("broadcast.(%s)\n",msg);
+//printf("broadcast.(%s)\n",Broadcaststr);
                         LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
                     }
                     retstr = clonestr("{\"result\":\"success\"}");

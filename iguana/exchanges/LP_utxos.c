@@ -520,6 +520,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     //printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
     if ( coin->inactive == 0 )
         LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
+    LP_address(coin,coin->smartaddr);
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
         txfee = LP_txfeecalc(coin,0,0);
@@ -540,7 +541,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                         txid = jbits256(item,"txid");
                         vout = juint(item,"vout");
                         value = LP_value_extract(item,0);
-                        height = LP_getheight(coin) - jint(item,"confirmations");
+                        height = LP_txheight(coin,txid);//LP_getheight(coin) - jint(item,"confirmations") + 1;
                     }
                     else
                     {

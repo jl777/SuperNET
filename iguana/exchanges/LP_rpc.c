@@ -268,6 +268,17 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     }
 }
 
+uint32_t LP_locktime(char *symbol,bits256 txid)
+{
+    cJSON *txobj; uint32_t locktime = 0;
+    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+    {
+        locktime = juint(txobj,"locktime");
+        free_json(txobj);
+    }
+    return(locktime);
+}
+
 cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,uint64_t value)
 {
     cJSON *retjson,*addresses,*sobj;
@@ -283,7 +294,7 @@ cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,
     jaddstr(sobj,"type","pubkey");
     jadd(sobj,"addresses",addresses);
     jadd(retjson,"scriptPubKey",sobj);
-    printf("GETTXOUT.(%s)\n",jprint(retjson,0));
+    //printf("GETTXOUT.(%s)\n",jprint(retjson,0));
     return(retjson);
 }
 
@@ -480,13 +491,14 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
             }
             else if ( IAMLP == 0 )
             {
+                printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
                 LP_listunspent_query(coin->symbol,coin->smartaddr);
                 if ( fullflag != 0 )
                 {
                     if ( (destport= LP_randpeer(destip)) > 0 )
                     {
                         retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
-                        printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
+                        //printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
                         retjson = cJSON_Parse(retstr);
                     } else printf("LP_listunspent_issue couldnt get a random peer?\n");
                 }

@@ -247,7 +247,7 @@ bits256 basilisk_swap_privBn_extract(bits256 *bobrefundp,char *bobcoin,bits256 b
     return(privBn);
 }
 
-bits256 basilisk_swap_spendupdate(char *symbol,char *spentaddr,int32_t *sentflags,bits256 *txids,int32_t utxoind,int32_t alicespent,int32_t bobspent,int32_t vout,char *aliceaddr,char *bobaddr,char *Adest,char *dest)
+bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,int32_t *sentflags,bits256 *txids,int32_t utxoind,int32_t alicespent,int32_t bobspent,int32_t vout,char *aliceaddr,char *bobaddr,char *Adest,char *dest)
 {
     bits256 spendtxid,txid; char destaddr[64],str[65]; struct iguana_info *coin; cJSON *histobj;
     if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
@@ -285,13 +285,13 @@ bits256 basilisk_swap_spendupdate(char *symbol,char *spentaddr,int32_t *sentflag
             else
             {
                 printf("OTHER dest spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
-                if ( aliceaddr != 0 )
+                if ( iambob == 0 )
                 {
                     sentflags[bobspent] = 1;
                     sentflags[alicespent] = 0;
                     txids[bobspent] = spendtxid;
                 }
-                else if ( bobaddr != 0 )
+                else 
                 {
                     sentflags[alicespent] = 1;
                     sentflags[bobspent] = 0;
@@ -914,9 +914,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         LP_rswap_checktx(&rswap,rswap.alicecoin,BASILISK_ALICEPAYMENT);
         LP_rswap_checktx(&rswap,rswap.bobcoin,BASILISK_BOBPAYMENT);
         LP_rswap_checktx(&rswap,rswap.bobcoin,BASILISK_BOBDEPOSIT);
-        rswap.paymentspent = basilisk_swap_spendupdate(rswap.bobcoin,rswap.bobpaymentaddr,rswap.sentflags,rswap.txids,BASILISK_BOBPAYMENT,BASILISK_ALICESPEND,BASILISK_BOBRECLAIM,0,srcAdest,srcBdest,rswap.Adestaddr,rswap.destaddr);
-        rswap.Apaymentspent = basilisk_swap_spendupdate(rswap.alicecoin,rswap.alicepaymentaddr,rswap.sentflags,rswap.txids,BASILISK_ALICEPAYMENT,BASILISK_ALICERECLAIM,BASILISK_BOBSPEND,0,destAdest,destBdest,rswap.Adestaddr,rswap.destaddr);
-        rswap.depositspent = basilisk_swap_spendupdate(rswap.bobcoin,rswap.bobdepositaddr,rswap.sentflags,rswap.txids,BASILISK_BOBDEPOSIT,BASILISK_ALICECLAIM,BASILISK_BOBREFUND,0,srcAdest,srcBdest,rswap.Adestaddr,rswap.destaddr);
+        rswap.paymentspent = basilisk_swap_spendupdate(rswap.iambob,rswap.bobcoin,rswap.bobpaymentaddr,rswap.sentflags,rswap.txids,BASILISK_BOBPAYMENT,BASILISK_ALICESPEND,BASILISK_BOBRECLAIM,0,srcAdest,srcBdest,rswap.Adestaddr,rswap.destaddr);
+        rswap.Apaymentspent = basilisk_swap_spendupdate(rswap.iambob,rswap.alicecoin,rswap.alicepaymentaddr,rswap.sentflags,rswap.txids,BASILISK_ALICEPAYMENT,BASILISK_ALICERECLAIM,BASILISK_BOBSPEND,0,destAdest,destBdest,rswap.Adestaddr,rswap.destaddr);
+        rswap.depositspent = basilisk_swap_spendupdate(rswap.iambob,rswap.bobcoin,rswap.bobdepositaddr,rswap.sentflags,rswap.txids,BASILISK_BOBDEPOSIT,BASILISK_ALICECLAIM,BASILISK_BOBREFUND,0,srcAdest,srcBdest,rswap.Adestaddr,rswap.destaddr);
         rswap.finishedflag = basilisk_swap_isfinished(rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
         LP_spends_set(&rswap);
         if ( rswap.iambob == 0 )
@@ -1201,5 +1201,70 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
     return(retstr);
 }
 
+void LP_tradecommand_log(cJSON *argjson)
+{
+    static FILE *logfp; char *jsonstr;
+    if ( logfp == 0 )
+    {
+        if ( (logfp= fopen("stats.log","rb+")) != 0 )
+            fseek(logfp,0,SEEK_END);
+        else logfp = fopen("stats.log","wb");
+    }
+    if ( logfp != 0 )
+    {
+        jsonstr = jprint(argjson,0);
+        fprintf(logfp,"%s\n",jsonstr);
+        free(jsonstr);
+        fflush(logfp);
+    }
+}
 
+extern struct LP_quoteinfo LP_Alicequery;
+extern uint32_t Alice_expiration;
 
+char *LP_recent_swaps(int32_t limit)
+{
+    char fname[512]; long fsize,offset; FILE *fp; int32_t i=0; uint32_t requestid,quoteid; cJSON *array,*item,*retjson;
+    if ( limit <= 0 )
+        limit = 3;
+    sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
+    array = cJSON_CreateArray();
+    if ( (fp= fopen(fname,"rb")) != 0 )
+    {
+        fseek(fp,0,SEEK_END);
+        fsize = ftell(fp);
+        offset = (sizeof(requestid) + sizeof(quoteid));
+        while ( offset <= fsize && i < limit )
+        {
+            i++;
+            offset = i * (sizeof(requestid) + sizeof(quoteid));
+            fseek(fp,fsize-offset,SEEK_SET);
+            if ( ftell(fp) == fsize-offset )
+            {
+                if ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
+                {
+                    item = cJSON_CreateArray();
+                    jaddinum(item,requestid);
+                    jaddinum(item,quoteid);
+                    jaddi(array,item);
+                } else break;
+            } else break;
+        }
+        fclose(fp);
+    }
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jadd(retjson,"swaps",array);
+    if ( time(NULL) < Alice_expiration )
+    {
+        item = cJSON_CreateObject();
+        jaddnum(item,"expiration",Alice_expiration);
+        jaddnum(item,"timeleft",Alice_expiration-time(NULL));
+        jaddstr(item,"base",LP_Alicequery.srccoin);
+        jaddnum(item,"basevalue",dstr(LP_Alicequery.satoshis));
+        jaddstr(item,"rel",LP_Alicequery.destcoin);
+        jaddnum(item,"relvalue",dstr(LP_Alicequery.destsatoshis));
+        jadd(retjson,"pending",item);
+    } else Alice_expiration = 0;
+    return(jprint(retjson,1));
+}

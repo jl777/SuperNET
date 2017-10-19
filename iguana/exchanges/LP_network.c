@@ -87,7 +87,7 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
 
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
 {
-    static uint32_t crcs[8192]; static unsigned long dup,total;
+    static uint32_t crcs[64]; static unsigned long dup,total;
     int32_t i;
     *duplicatep = 0;
     if ( ind < 0 )
@@ -158,7 +158,9 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                    //else printf("%d %p qsent %u msglen.%d peerind.%d (%s)\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind,ptr->msg);
+#ifdef __APPLE__
+//else printf("%d %p qsent %u msglen.%d peerind.%d (%s)\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind,ptr->msg);
+#endif
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
@@ -175,7 +177,7 @@ void queue_loop(void *ignore)
                         printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     flag = 1;
                 }
-                else
+                else if ( 0 ) // too much beyond duplicate filter when network is busy
                 {
                     printf("couldnt find.%u peerind.%d Q.%d err.%d match.%d\n",ptr->crc32,ptr->peerind,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     ptr->peerind++;
@@ -201,21 +203,23 @@ void queue_loop(void *ignore)
         //    printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
             usleep(5000);
+        else if ( IAMLP == 0 )
+            usleep(1000);
     }
 }
 
 void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
-    int32_t sentbytes,peerind = 0;
+    int32_t maxind,peerind = 0; //sentbytes,
     if ( sock0 >= 0 || sock1 >= 0 )
     {
-        if ( sock0 >= 0 && LP_sockcheck(sock0) > 0 )
+/*        if ( sock0 >= 0 && LP_sockcheck(sock0) > 0 )
         {
             if ( (sentbytes= nn_send(sock0,msg,msglen,0)) != msglen )
                 printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
             else
             {
-                //printf("Q sent %u msglen.%d (%s)\n",crc32,msglen,msg);
+printf("Q sent %u msglen.%d (%s)\n",crc32,msglen,msg);
                 sock0 = -1;
             }
         }
@@ -223,14 +227,20 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
         {
             if ( (sentbytes= nn_send(sock1,msg,msglen,0)) != msglen )
                 printf("_LP_queuesend1 sent %d instead of %d\n",sentbytes,msglen);
-            else sock1 = -1;
+            else
+            {
+printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
+                sock1 = -1;
+            }
         }
         if ( sock0 < 0 && sock1 < 0 )
-            return;
+            return;*/
     }
     else
     {
-        peerind = 1;
+        if ( (maxind= LP_numpeers()) > 0 )
+            peerind = (rand() % maxind);
+        else peerind = 0;
         sock0 = LP_peerindsock(&peerind);
     }
     if ( sock0 >= 0 )
@@ -272,6 +282,9 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
         free(msg);
         jdelete(argjson,"method");
         jaddstr(argjson,"method","broadcast");
+        if ( jobj(argjson,"timestamp") == 0 )
+            jaddnum(argjson,"timestamp",(uint32_t)time(NULL));
+        // add signature here
         msg = (void *)jprint(argjson,0);
         msglen = (int32_t)strlen((char *)msg) + 1;
         LP_queuesend(crc32,-1,base,rel,msg,msglen);

@@ -31,6 +31,8 @@ struct LP_priceinfo
     double myprices[LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS]; // autoprice
     double margins[LP_MAXPRICEINFOS];
+    double offsets[LP_MAXPRICEINFOS];
+    double factors[LP_MAXPRICEINFOS];
     //double maxprices[LP_MAXPRICEINFOS]; // autofill of base/rel
     //double relvols[LP_MAXPRICEINFOS];
     FILE *fps[LP_MAXPRICEINFOS];
@@ -494,6 +496,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
     *changedp = 0;
     if ( base != 0 && rel != 0 && LP_pricevalid(price) > 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
+        
         if ( fabs(basepp->myprices[relpp->ind] - price) > SMALLVAL )
             *changedp = 1;
         basepp->myprices[relpp->ind] = price;          // ask
@@ -719,6 +722,8 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
             //printf("skip pubp since no rmd160\n");
             continue;
         }
+        if ( pubp->timestamp < oldest )
+            continue;
         bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
         minsatoshis = maxsatoshis = n = 0;
         ap = 0;
@@ -784,6 +789,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         jaddi(array,LP_orderbookjson(rel,bids[i]));
         if ( n < 10 && bids[i]->numutxos == 0 )//|| relcoin->electrum == 0 )
         {
+            //printf("bid ping %s %s\n",rel,bids[i]->coinaddr);
             LP_address(relcoin,bids[i]->coinaddr);
             if ( relcoin->electrum == 0 )
                 LP_listunspent_issue(rel,bids[i]->coinaddr,0);
@@ -803,6 +809,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         jaddi(array,LP_orderbookjson(base,asks[i]));
         if ( n < 10 && asks[i]->numutxos == 0 )//|| basecoin->electrum == 0 )
         {
+            //printf("ask ping %s %s\n",base,asks[i]->coinaddr);
             LP_address(basecoin,asks[i]->coinaddr);
             if ( basecoin->electrum == 0 )
                 LP_listunspent_issue(base,asks[i]->coinaddr,0);

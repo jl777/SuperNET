@@ -18,12 +18,15 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// sign critical api calls
-// stats
-// dPoW security -> 2: KMD notarized, 3: BTC notarized
-// add interest to KMD withdraw
-// verify portfolio, pricearray, withdraw
+// dPoW security -> 4: KMD notarized, 5: BTC notarized
+// sign critical api calls (pubkey reg, listunspent, orders?)
+//
+// process stats.log local file
+//
+// handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
+//
 // alice only coins GAME UNO BTM ANC: GAME BTCD PPC RDD XZC POT EAC FTC BASH SPR WDC UNO XPM XCN BELA CHC DIME MEC NAUT MED AUR MAX DGC RIC EB3 DOT BTM GEO ANC CANN ICASH WBB SRC PTC ADZ TIPS EQT START EFL FST FJC NYC GCN
+// verify portfolio, pricearray, interest to KMD withdraw
 
 
 #include <stdio.h>
@@ -241,7 +244,19 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-//printf("RECV.(%s)\n",(char *)ptr);
+                if ( 0 )
+                {
+                    cJSON *recvjson; char *mstr,*cstr;
+                    if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
+                    {
+                        if ( (mstr= jstr(recvjson,"method")) != 0 && strcmp(mstr,"uitem") == 0 &&
+                            (cstr= jstr(recvjson,"coin")) != 0 && strcmp(cstr,"REVS") == 0 )
+                        {
+                            printf("%s RECV.(%s)\n",typestr,(char *)ptr);
+                        }
+                        free_json(recvjson);
+                    }
+                }
                 nonz++;
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
@@ -278,7 +293,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
     if ( (origipaddr= LP_myipaddr) == 0 )
         origipaddr = "127.0.0.1";
     milli = OS_milliseconds();
-    if ( lastmilli > 0. && milli > lastmilli+1000 )
+    if ( lastmilli > 0. && milli > lastmilli+3000 )
         fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds\n",milli-lastmilli);
     lastmilli = milli;
     //portable_mutex_lock(&LP_nanorecvsmutex);
@@ -325,6 +340,8 @@ void command_rpcloop(void *myipaddr)
                 usleep(1000);
             else usleep(10000);
         }
+        else if ( IAMLP == 0 )
+            usleep(1000);
     }
 }
 
@@ -346,27 +363,24 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 vout = jint(item,"tx_pos");
                 value = j64bits(item,"value");
                 height = jint(item,"height");
-                if ( 0 )
+                if ( (rand() % 100) == 0 && IAMLP == 0 )
                 {
-                HASH_ITER(hh,LP_peerinfos,peer,tmp)
-                {
-                    if ( (retstr= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,vout,height,value)) != 0 )
-                        free(retstr);
+                    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+                    {
+                        if ( (retstr= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,vout,height,value)) != 0 )
+                            free(retstr);
+                    }
                 }
-                }
-                else
-                {
-                    req = cJSON_CreateObject();
-                    jaddstr(req,"method","uitem");
-                    jaddstr(req,"coin",coin->symbol);
-                    jaddstr(req,"coinaddr",coin->smartaddr);
-                    jaddbits256(req,"txid",txid);
-                    jaddnum(req,"vout",vout);
-                    jaddnum(req,"ht",height);
-                    jadd64bits(req,"value",value);
-                    //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
-                    LP_reserved_msg("","",zero,jprint(req,1));
-                }
+                req = cJSON_CreateObject();
+                jaddstr(req,"method","uitem");
+                jaddstr(req,"coin",coin->symbol);
+                jaddstr(req,"coinaddr",coin->smartaddr);
+                jaddbits256(req,"txid",txid);
+                jaddnum(req,"vout",vout);
+                jaddnum(req,"ht",height);
+                jadd64bits(req,"value",value);
+                //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
+                LP_reserved_msg("","",zero,jprint(req,1));
             }
         }
         free_json(array);
@@ -561,7 +575,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         memset(&zero,0,sizeof(zero));
         if ( coin->addr_listunspent_requested != 0 )
         {
-            //printf("addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
+            //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
         }
@@ -699,16 +713,28 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 int32_t LP_reserved_msgs()
 {
-    bits256 zero; int32_t n = 0;
+    bits256 zero; int32_t n = 0; //struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
-    while ( num_Reserved_msgs > 0 )
+    if ( num_Reserved_msgs > 0 )
     {
+        /*memset(&pfd,0,sizeof(pfd));
+        pfd.fd = LP_mypubsock;
+        pfd.events = NN_POLLOUT;
+        if ( nn_poll(&pfd,1,1) != 1 )
+            break;*/
         num_Reserved_msgs--;
-        //printf("BROADCASTING RESERVED.(%s)\n",Reserved_msgs[num_Reserved_msgs]);
+#ifdef __APPLE__
+//        printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
+#endif
         LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
         Reserved_msgs[num_Reserved_msgs] = 0;
         n++;
+#ifdef __APPLE__
+        usleep(5000);
+#else
+        usleep(100);
+#endif
     }
     portable_mutex_unlock(&LP_reservedmutex);
     return(n);
