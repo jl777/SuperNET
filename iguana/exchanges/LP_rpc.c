@@ -1036,7 +1036,7 @@ int32_t LP_hasnotarization(struct iguana_info *coin,cJSON *blockjson)
     return(hasnotarization);
 }
 
-int32_t LP_notarization_latest(struct iguana_info *coin)
+int32_t LP_notarization_latest(int32_t *bestheightp,struct iguana_info *coin)
 {
     cJSON *blockjson; bits256 blockhash; int32_t height=-1,hasnotarization;
     memset(blockhash.bytes,0,sizeof(blockhash));
@@ -1049,6 +1049,8 @@ int32_t LP_notarization_latest(struct iguana_info *coin)
             char str[65]; printf("check %s\n",bits256_str(str,blockhash));
             if ( (blockjson= LP_getblock(coin->symbol,blockhash)) != 0 )
             {
+                if ( *bestheightp < 0 )
+                    *bestheightp = jint(blockjson,"height");
                 if ( (hasnotarization= LP_hasnotarization(coin,blockjson)) > 0 )
                 {
                     height = jint(blockjson,"height");
