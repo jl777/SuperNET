@@ -21,10 +21,10 @@
  * @remarks - #if (defined(_M_X64) || defined(__amd64__)) && defined(WIN32)
  *     is equivalent to #if defined(_M_X64) as _M_X64 is defined for MSVC only
  */
-//#if defined(_M_X64)
-//#define WIN32_LEAN_AND_MEAN
-//#include <WinSock2.h>
-//#endif
+#if defined(_M_X64)
+#define WIN32_LEAN_AND_MEAN
+#include <WinSock2.h>
+#endif
 
 #define ELECTRUM_TIMEOUT 10
 

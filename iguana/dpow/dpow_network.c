@@ -170,7 +170,7 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
         vcalc_sha256(0,packethash.bytes,(void *)&sigpacket->nonce,(int32_t)(sigpacket->packetlen+sizeof(sigpacket->nonce)+sizeof(sigpacket->packetlen)));
         if ( bits256_cmp(packethash,sigpacket->packethash) == 0 && sigpacket->packethash.bytes[0] == 0 )
         {
-            if ( bitcoin_recoververify(myinfo->ctx[1],"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
+            if ( bitcoin_recoververify(myinfo->ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
             {
                 char *notary0 = "03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828";
                 // expand to official notaries
@@ -2020,7 +2020,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         pfd.events = NN_POLLOUT;
         if ( nn_poll(&pfd,1,100) > 0 )
         {
-            sentbytes = signed_nn_send(myinfo,myinfo->ctx[2],myinfo->persistent_priv,myinfo->dpowsock,np,size);
+            sentbytes = signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dpowsock,np,size);
             break;
         }
         usleep(1000);
@@ -2168,13 +2168,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
                 if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
                 {
-                    signed_nn_send(myinfo,myinfo->ctx[3],myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
+                    signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
                     //printf("send back[%ld]\n",strlen(retstr)+1);
                     free(retstr);
                     if ( broadcastflag != 0 )
                     {
                         printf("BROADCAST dexp request.[%d]\n",size);
-                        signed_nn_send(myinfo,myinfo->ctx[4],myinfo->persistent_priv,myinfo->dexsock,dexp,size);
+                        signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                         //signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
                     }
                 }
@@ -2183,7 +2183,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     if ( (m= myinfo->numdpowipbits) > 0 )
                     {
                         r = myinfo->dpowipbits[rand() % m];
-                        signed_nn_send(myinfo,myinfo->ctx[5],myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
+                        signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
                         printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                     } else printf("illegal state without dpowipbits?\n");
                     if ( dex_packetcheck(myinfo,dexp,size) == 0 )

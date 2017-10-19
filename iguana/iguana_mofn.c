@@ -249,24 +249,17 @@ void *bitcoin_ctx()
 
 void iguana_fixsecp(struct supernet_info *myinfo)
 {
-    int32_t i;
-    for (i=0; i<sizeof(myinfo->ctx)/sizeof(*myinfo->ctx); i++)
-    {
-        myinfo->ctx[i] = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-        secp256k1_pedersen_context_initialize(myinfo->ctx[i]);
-        secp256k1_rangeproof_context_initialize(myinfo->ctx[i]);
-    }
+    myinfo->ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+    secp256k1_pedersen_context_initialize(myinfo->ctx);
+    secp256k1_rangeproof_context_initialize(myinfo->ctx);
 }
 
 void libgfshare_init(struct supernet_info *myinfo,uint8_t _logs[256],uint8_t _exps[510])
 {
     uint32_t i,x = 1;
-    for (i=0; i<sizeof(myinfo->ctx)/sizeof(*myinfo->ctx); i++)
-    {
-        myinfo->ctx[i] = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-        secp256k1_pedersen_context_initialize(myinfo->ctx[i]);
-        secp256k1_rangeproof_context_initialize(myinfo->ctx[i]);
-    }
+    myinfo->ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+    secp256k1_pedersen_context_initialize(myinfo->ctx);
+    secp256k1_rangeproof_context_initialize(myinfo->ctx);
     for (i=0; i<255; i++)
     {
         _exps[i] = x;

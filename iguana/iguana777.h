@@ -150,7 +150,7 @@ struct supernet_info
     struct queueitem *DEX_quotes; cJSON *Cunspents,*Cspends;
     struct basilisk_swap *swaps[256]; int32_t numswaps;
     struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ,p2pQ;
-    void *ctx[8];
+    void *ctx;
     uint8_t *pingbuf;
     struct basilisk_request DEXaccept;
     FILE *dexfp;

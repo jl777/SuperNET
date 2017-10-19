@@ -1,0 +1,257 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{BE4A118A-115D-44B5-B9D9-AD17C1C1AAE8}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir)\includes;$(ProjectDir)\includes\curl;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)\OSlibs\win;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)/includes;$(SolutionDir)/includes/curl;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir)\includes;$(ProjectDir)\includes\curl;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)\OSlibs\win;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <EmbedManifest>false</EmbedManifest>
+    <IncludePath>$(ProjectDir)\includes;$(ProjectDir)\includes\curl;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level2</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NATIVE_WINDOWS;WIN32;_DEBUG;_CONSOLE;IGUANA_LOG2PACKETSIZE=20;IGUANA_MAXPACKETSIZE=1572864;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StructMemberAlignment>1Byte</StructMemberAlignment>
+      <AdditionalIncludeDirectories>.\iguana;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;pthreadVC2.lib;nanomsg.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\iguana;.\OSlibs\win;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;NATIVE_WINDOWS;WIN32;IGUANA_LOG2PACKETSIZE=20;IGUANA_MAXPACKETSIZE=1572864;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StructMemberAlignment>1Byte</StructMemberAlignment>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>.\OSlibs\win\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pthread_lib.lib;Ws2_32.lib;nanomsg.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NATIVE_WINDOWS;WIN32;_CONSOLE;NDEBUG;IGUANA_LOG2PACKETSIZE=20;IGUANA_MAXPACKETSIZE=1572864;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StructMemberAlignment>1Byte</StructMemberAlignment>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN64;_WIN64;_CRT_SECURE_NO_WARNINGS;NATIVE_WINDOWS;WIN32;WIN32_LEAN_AND_MEAN;_CONSOLE;NDEBUG;IGUANA_LOG2PACKETSIZE=20;IGUANA_MAXPACKETSIZE=1572864;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StructMemberAlignment>1Byte</StructMemberAlignment>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Ws2_32.lib;Advapi32.lib;$(SolutionDir)OSlibs\win\x64\pthread_lib.lib;libcurl.lib;nanomsg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\OSlibs\win\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="basilisk\basilisk.h" />
+    <ClInclude Include="crypto777\jpeg\cderror.h" />
+    <ClInclude Include="crypto777\jpeg\cdjpeg.h" />
+    <ClInclude Include="crypto777\jpeg\jconfig.h" />
+    <ClInclude Include="crypto777\jpeg\jdct.h" />
+    <ClInclude Include="crypto777\jpeg\jerror.h" />
+    <ClInclude Include="crypto777\jpeg\jinclude.h" />
+    <ClInclude Include="crypto777\jpeg\jmemsys.h" />
+    <ClInclude Include="crypto777\jpeg\jmorecfg.h" />
+    <ClInclude Include="crypto777\jpeg\jpegint.h" />
+    <ClInclude Include="crypto777\jpeg\jpeglib.h" />
+    <ClInclude Include="crypto777\jpeg\jversion.h" />
+    <ClInclude Include="crypto777\jpeg\transupp.h" />
+    <ClInclude Include="crypto777\OS_portable.h" />
+    <ClInclude Include="datachain\datachain.h" />
+    <ClInclude Include="gecko\gecko.h" />
+    <ClInclude Include="iguana\exchanges777.h" />
+    <ClInclude Include="iguana\iguana777.h" />
+    <ClInclude Include="iguana\mini-gmp.h" />
+    <ClInclude Include="includes\iguana_defines.h" />
+    <ClInclude Include="includes\iguana_funcs.h" />
+    <ClInclude Include="includes\iguana_structs.h" />
+    <ClInclude Include="OSlibs\win\mingw.h" />
+    <ClInclude Include="OSlibs\win\mman.h" />
+    <ClInclude Include="OSlibs\win\pthread.h" />
+    <ClInclude Include="targetver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="crypto777\bitcoind_RPC.c" />
+    <ClCompile Include="crypto777\cJSON.c" />
+    <ClCompile Include="crypto777\curve25519-donna.c" />
+    <ClCompile Include="crypto777\curve25519.c" />
+    <ClCompile Include="crypto777\hmac_sha512.c" />
+    <ClCompile Include="crypto777\iguana_OS.c" />
+    <ClCompile Include="crypto777\iguana_utils.c" />
+    <ClCompile Include="crypto777\inet.c" />
+    <ClCompile Include="crypto777\jpeg\jaricom.c" />
+    <ClCompile Include="crypto777\jpeg\jcapimin.c" />
+    <ClCompile Include="crypto777\jpeg\jcapistd.c" />
+    <ClCompile Include="crypto777\jpeg\jcarith.c" />
+    <ClCompile Include="crypto777\jpeg\jccoefct.c" />
+    <ClCompile Include="crypto777\jpeg\jccolor.c" />
+    <ClCompile Include="crypto777\jpeg\jcdctmgr.c" />
+    <ClCompile Include="crypto777\jpeg\jchuff.c" />
+    <ClCompile Include="crypto777\jpeg\jcinit.c" />
+    <ClCompile Include="crypto777\jpeg\jcmainct.c" />
+    <ClCompile Include="crypto777\jpeg\jcmarker.c" />
+    <ClCompile Include="crypto777\jpeg\jcmaster.c" />
+    <ClCompile Include="crypto777\jpeg\jcomapi.c" />
+    <ClCompile Include="crypto777\jpeg\jcparam.c" />
+    <ClCompile Include="crypto777\jpeg\jcprepct.c" />
+    <ClCompile Include="crypto777\jpeg\jcsample.c" />
+    <ClCompile Include="crypto777\jpeg\jctrans.c" />
+    <ClCompile Include="crypto777\jpeg\jdapimin.c" />
+    <ClCompile Include="crypto777\jpeg\jdapistd.c" />
+    <ClCompile Include="crypto777\jpeg\jdarith.c" />
+    <ClCompile Include="crypto777\jpeg\jdatadst.c" />
+    <ClCompile Include="crypto777\jpeg\jdatasrc.c" />
+    <ClCompile Include="crypto777\jpeg\jdcoefct.c" />
+    <ClCompile Include="crypto777\jpeg\jdcolor.c" />
+    <ClCompile Include="crypto777\jpeg\jddctmgr.c" />
+    <ClCompile Include="crypto777\jpeg\jdhuff.c" />
+    <ClCompile Include="crypto777\jpeg\jdinput.c" />
+    <ClCompile Include="crypto777\jpeg\jdmainct.c" />
+    <ClCompile Include="crypto777\jpeg\jdmarker.c" />
+    <ClCompile Include="crypto777\jpeg\jdmaster.c" />
+    <ClCompile Include="crypto777\jpeg\jdmerge.c" />
+    <ClCompile Include="crypto777\jpeg\jdpostct.c" />
+    <ClCompile Include="crypto777\jpeg\jdsample.c" />
+    <ClCompile Include="crypto777\jpeg\jdtrans.c" />
+    <ClCompile Include="crypto777\jpeg\jerror.c" />
+    <ClCompile Include="crypto777\jpeg\jfdctflt.c" />
+    <ClCompile Include="crypto777\jpeg\jfdctfst.c" />
+    <ClCompile Include="crypto777\jpeg\jfdctint.c" />
+    <ClCompile Include="crypto777\jpeg\jidctflt.c" />
+    <ClCompile Include="crypto777\jpeg\jidctfst.c" />
+    <ClCompile Include="crypto777\jpeg\jidctint.c" />
+    <ClCompile Include="crypto777\jpeg\jmemmgr.c" />
+    <ClCompile Include="crypto777\jpeg\jquant1.c" />
+    <ClCompile Include="crypto777\jpeg\jquant2.c" />
+    <ClCompile Include="crypto777\jpeg\jutils.c" />
+    <ClCompile Include="crypto777\jpeg\unix\jmemname.c" />
+    <ClCompile Include="crypto777\OS_nonportable.c" />
+    <ClCompile Include="crypto777\OS_portable.c" />
+    <ClCompile Include="crypto777\OS_time.c" />
+    <ClCompile Include="crypto777\ramcoder.c" />
+    <ClCompile Include="crypto777\SaM.c" />
+    <ClCompile Include="crypto777\scrypt.c" />
+    <ClCompile Include="crypto777\tweetnacl.c" />
+    <ClCompile Include="iguana\exchanges\mm.c" />
+    <ClCompile Include="iguana\mini-gmp.c" />
+    <ClCompile Include="iguana\secp256k1\src\secp256k1.c" />
+    <ClCompile Include="OSlibs\win\mingw.c" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

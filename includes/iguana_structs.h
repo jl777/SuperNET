@@ -252,7 +252,7 @@ struct iguana_counts
 
 struct iguana_blocks
 {
-    char coin[8];
+    char coin[16];
 	struct iguanakv *db;
     struct iguana_block *hash;
     int32_t maxblocks,initblocks,hashblocks,pending,issuedblocks,recvblocks,emitblocks,parsedblocks,dirty;
@@ -414,7 +414,7 @@ struct basilisk_spend { bits256 txid,spentfrom; uint64_t relaymask,value; uint32
 
 struct basilisk_unspent { bits256 txid; uint64_t value,relaymask; uint32_t unspentind,timestamp; int32_t RTheight,height,spentheight; int16_t status,hdrsi,vout,spendlen; char symbol[16]; uint8_t script[256]; };
 
-struct iguana_waddress { UT_hash_handle hh; uint64_t balance; uint16_t scriptlen; uint8_t rmd160[20],pubkey[33],wiftype,addrtype; bits256 privkey; char symbol[8],coinaddr[36],wifstr[54]; uint8_t redeemScript[]; };
+struct iguana_waddress { UT_hash_handle hh; uint64_t balance; uint16_t scriptlen; uint8_t rmd160[20],pubkey[33],wiftype,addrtype; bits256 privkey; char symbol[16],coinaddr[36],wifstr[54]; uint8_t redeemScript[]; };
 struct iguana_waccount { UT_hash_handle hh; struct iguana_waddress *waddr,*current; char account[]; };
 struct iguana_wallet { UT_hash_handle hh; struct iguana_waccount *wacct; };
 
