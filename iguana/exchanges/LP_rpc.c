@@ -1039,8 +1039,6 @@ int32_t LP_hasnotarization(struct iguana_info *coin,cJSON *blockjson)
 int32_t LP_notarization_latest(struct iguana_info *coin)
 {
     cJSON *blockjson; bits256 blockhash; int32_t height=-1,hasnotarization;
-    if ( coin->isassetchain == 0 )
-        return(-1);
     memset(blockhash.bytes,0,sizeof(blockhash));
     while ( 1 )
     {
