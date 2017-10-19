@@ -995,7 +995,7 @@ int32_t LP_txhasnotarization(struct iguana_info *coin,bits256 txid)
                                             {
                                                 if ( ((1LL << j) & notarymask) == 0 )
                                                 {
-                                                    printf("n%d ",j);
+                                                    //printf("n%d ",j);
                                                     numnotaries++;
                                                     notarymask |= (1LL << j);
                                                     break;
@@ -1013,7 +1013,7 @@ int32_t LP_txhasnotarization(struct iguana_info *coin,bits256 txid)
                 {
                     if ( numnotaries >= DPOW_MIN_ASSETCHAIN_SIGS )
                         hasnotarization = 1;
-                    printf("numnotaries.%d %s hasnotarization.%d\n",numnotaries,coin->symbol,hasnotarization);
+                    //printf("numnotaries.%d %s hasnotarization.%d\n",numnotaries,coin->symbol,hasnotarization);
                 }
             }
         }
@@ -1047,7 +1047,7 @@ int32_t LP_notarization_latest(int32_t *bestheightp,struct iguana_info *coin)
             blockhash = LP_getbestblockhash(coin);
         if ( bits256_nonz(blockhash) != 0 )
         {
-            char str[65]; printf("check %s\n",bits256_str(str,blockhash));
+            //char str[65]; printf("check %s\n",bits256_str(str,blockhash));
             if ( (blockjson= LP_getblock(coin->symbol,blockhash)) != 0 )
             {
                 if ( *bestheightp < 0 )
@@ -1055,7 +1055,7 @@ int32_t LP_notarization_latest(int32_t *bestheightp,struct iguana_info *coin)
                 if ( (hasnotarization= LP_hasnotarization(coin,blockjson)) > 0 )
                 {
                     height = jint(blockjson,"height");
-                    printf("height.%d\n",height);
+                    //printf("height.%d\n",height);
                 }
                 else
                 {

@@ -201,6 +201,7 @@ stop()\n\
                 height = LP_notarization_latest(&bestheight,ptr);
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"result","success");
+                jaddstr(retjson,"coin",coin);
                 jaddnum(retjson,"lastnotarization",height);
                 jaddnum(retjson,"bestheight",bestheight);
                 return(jprint(retjson,1));
