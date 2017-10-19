@@ -212,7 +212,6 @@ int32_t LP_getheight(struct iguana_info *coin)
         if ( strcmp(coin->symbol,"BTC") == 0 )
             method = "getblockchaininfo";
         retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,"[]");
-        printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,"[]",retstr);
         if ( retstr != 0 && retstr[0] != 0 )
         {
             retjson = cJSON_Parse(retstr);

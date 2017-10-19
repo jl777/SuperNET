@@ -196,7 +196,9 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
         else jaddstr(item,"wif","error creating wif");
     }
     jadd(item,"installed",coin->userpass[0] == 0 ? jfalse() : jtrue());
-    jaddnum(item,"height",LP_getheight(coin));
+    if ( coin->userpass[0] != 0 )
+        jaddnum(item,"height",LP_getheight(coin));
+    else jaddnum(item,"height",-1);
 
     if ( coin->inactive != 0 )
     {
