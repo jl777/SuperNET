@@ -1633,9 +1633,11 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
         printf("otherfee amount %.8f -> %s vs %s locktime %u vs %u\n",dstr(swap->otherfee.I.amount),swap->otherfee.p2shaddr,swap->otherfee.I.destaddr,swap->otherfee.I.locktime,swap->I.started+1);
         if ( strcmp(swap->otherfee.I.destaddr,swap->otherfee.p2shaddr) == 0 )
         {
-            printf("dexfee verified\n");
+            if ( swap->otherfee.I.locktime == swap->I.started+1 )
+                printf("dexfee verified\n");
+            else printf("locktime mismatch in otherfee, reject %u vs %u\n",swap->otherfee.I.locktime,swap->I.started+1);
             return(0);
-        }
+        } else printf("destaddress mismatch in other fee, reject (%s) vs (%s)\n",swap->otherfee.I.destaddr,swap->otherfee.p2shaddr);
     }
     return(-1);
 }
