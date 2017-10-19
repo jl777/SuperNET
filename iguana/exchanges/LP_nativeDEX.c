@@ -18,6 +18,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+//printf("other path %p %p %.8f\n",LP_allocated(butxo->payment.txid,butxo->payment.vout),LP_allocated(butxo->deposit.txid,butxo->deposit.vout), LP_quote_validate(autxo,butxo,&Q,1));
 // sign critical api calls (pubkey reg, listunspent, orders?)
 // dPoW security -> 4: KMD notarized, 5: BTC notarized
 // new testchain
