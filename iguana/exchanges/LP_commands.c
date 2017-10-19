@@ -222,6 +222,19 @@ stop()\n\
                     else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 } else return(clonestr("{\"error\":\"no price\"}"));
             }
+            else if ( strcmp(method,"notarizations") == 0 )
+            {
+                int32_t height;
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                {
+                    height = LP_notarization_latest(ptr);
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result","success");
+                    jaddnum(retjson,"lastnotarization",height);
+                    return(jprint(retjson,1));
+                } else return(clonestr("{\"error\":\"cant find coin\"}"));
+
+            }
             else if ( strcmp(method,"autoprice") == 0 )
             {
                 //LP_signature_add(argjson,base,rel,(uint64_t)price * SATOSHIDEN);
