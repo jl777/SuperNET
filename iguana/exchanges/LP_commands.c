@@ -225,6 +225,7 @@ stop()\n\
             else if ( strcmp(method,"notarizations") == 0 )
             {
                 int32_t height;
+                printf("notarizations (%s)\n",coin);
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     height = LP_notarization_latest(ptr);
@@ -233,7 +234,6 @@ stop()\n\
                     jaddnum(retjson,"lastnotarization",height);
                     return(jprint(retjson,1));
                 } else return(clonestr("{\"error\":\"cant find coin\"}"));
-
             }
             else if ( strcmp(method,"autoprice") == 0 )
             {
