@@ -195,8 +195,11 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
             jaddstr(item,"wif",wifstr);
         else jaddstr(item,"wif","error creating wif");
     }
+    jadd(item,"installed",coin->userpass[0] == 0 ? jfalse() : jtrue());
     if ( coin->inactive != 0 )
+    {
         jaddstr(item,"status","inactive");
+    }
     else jaddstr(item,"status","active");
     if ( coin->isPoS != 0 )
         jaddstr(item,"type","PoS");
