@@ -19,6 +19,7 @@
 //  marketmaker
 //
 // dPoW security -> 4: KMD notarized, 5: BTC notarized
+// locktime to fee
 // new testchain
 // sign critical api calls (pubkey reg, listunspent, orders?)
 // process stats.log local file -> map of realtime activity!
