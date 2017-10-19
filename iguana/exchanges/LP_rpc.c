@@ -1050,12 +1050,16 @@ int32_t LP_notarization_latest(struct iguana_info *coin)
             if ( (blockjson= LP_getblock(coin->symbol,blockhash)) != 0 )
             {
                 if ( (hasnotarization= LP_hasnotarization(coin,blockjson)) > 0 )
+                {
                     height = jint(blockjson,"height");
+                    printf("height.%d\n",height);
+                }
                 else
                 {
                     blockhash = jbits256(blockjson,"previousblockhash");
                     if ( bits256_nonz(blockhash) == 0 )
                     {
+                        printf("null prev.(%s)\n",jprint(blockjson,0));
                         free_json(blockjson);
                         break;
                     }
