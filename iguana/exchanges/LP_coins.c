@@ -107,7 +107,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
 #endif
     if ( strcmp(symbol,"BTC") == 0 )
     {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(NATIVE_WINDOWS)
         strcat(fname,"Bitcoin");
 #else
         strcat(fname,".bitcoin");
@@ -131,7 +131,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
     }
     else
     {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(NATIVE_WINDOWS)
         strcat(fname,"Komodo");
 #else
         strcat(fname,".komodo");
@@ -186,7 +186,6 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 {
     struct electrum_info *ep; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
-    jaddnum(item,"height",coin->height);
     if ( showwif != 0 )
     {
         bitcoin_priv2wif(coin->wiftaddr,wifstr,G.LP_mypriv25519,coin->wiftype);
@@ -195,8 +194,21 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
             jaddstr(item,"wif",wifstr);
         else jaddstr(item,"wif","error creating wif");
     }
+    jadd(item,"installed",coin->userpass[0] == 0 ? jfalse() : jtrue());
+    if ( coin->userpass[0] != 0 )
+    {
+        jaddnum(item,"height",LP_getheight(coin));
+        jaddnum(item,"balance",dstr(LP_smartbalance(coin)));
+    }
+    else
+    {
+        jaddnum(item,"height",-1);
+        jaddnum(item,"balance",0);
+    }
     if ( coin->inactive != 0 )
+    {
         jaddstr(item,"status","inactive");
+    }
     else jaddstr(item,"status","active");
     if ( coin->isPoS != 0 )
         jaddstr(item,"type","PoS");

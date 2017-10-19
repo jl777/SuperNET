@@ -19,6 +19,8 @@
 //  Copyright © 2017 SuperNET. All rights reserved.
 //
 
+
+
 #include <stdio.h>
 #include <stdint.h>
 #include "../../crypto777/OS_portable.h"
@@ -70,6 +72,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
      * it is standard posix function and is correctly supported in win32/win64/linux
      * @author - fadedreamz@gmail.com
      */
+
 #if defined(_M_X64)
     struct addrinfo *addrresult = NULL;
     struct addrinfo *returnptr = NULL;
@@ -82,7 +85,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 #endif
-    
+
     if ( parse_ipaddr(ipaddr,hostname) != 0 )
         port = parse_ipaddr(ipaddr,hostname);
     

@@ -318,8 +318,9 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
                     dpow_srcupdate(myinfo,dp,dp->lastheight++,blockhash,(uint32_t)time(NULL),blocktime);
                 }
             }
-            else
+            else if ( time(NULL) > dp->lastsrcupdate+60 || height != dp->lastheight )
             {
+                dp->lastsrcupdate = (uint32_t)time(NULL);
                 dp->lastheight = height;
                 blockhash = dpow_getblockhash(myinfo,src,dp->lastheight);
                 dpow_srcupdate(myinfo,dp,dp->lastheight,blockhash,(uint32_t)time(NULL),blocktime);

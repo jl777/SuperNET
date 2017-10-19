@@ -203,7 +203,7 @@ cJSON *LP_assethbla(char *assetid)
 
 int32_t LP_getheight(struct iguana_info *coin)
 {
-    cJSON *retjson; char *method = "getinfo"; int32_t height;
+    cJSON *retjson; char *retstr,*method = "getinfo"; int32_t height;
     if ( coin == 0 )
         return(-1);
     height = coin->height;
@@ -211,14 +211,41 @@ int32_t LP_getheight(struct iguana_info *coin)
     {
         if ( strcmp(coin->symbol,"BTC") == 0 )
             method = "getblockchaininfo";
-        if ( (retjson= bitcoin_json(coin,method,"[]")) != 0 )
+        retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,"[]");
+        if ( retstr != 0 && retstr[0] != 0 )
         {
+            retjson = cJSON_Parse(retstr);
             coin->height = height = jint(retjson,"blocks");
             free_json(retjson);
-            coin->heighttime = (uint32_t)time(NULL);
+            if ( coin->height > 0 )
+                coin->heighttime = (uint32_t)time(NULL);
+            free(retstr);
         }
     }
     return(height);
+}
+
+uint64_t LP_smartbalance(struct iguana_info *coin)
+{
+    cJSON *array,*item; char buf[512],*retstr; int32_t i,n; uint64_t valuesum,value;
+    valuesum = 0;
+    sprintf(buf,"[0, 99999999, [\"%s\"]]",coin->smartaddr);
+    retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"listunspent","[]");
+    if ( retstr != 0 && retstr[0] != 0 )
+    {
+        array = cJSON_Parse(retstr);
+        if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                value = LP_value_extract(item,1);
+                valuesum += value;
+            }
+        }
+        free_json(array);
+    }
+    return(valuesum);
 }
 
 cJSON *LP_getmempool(char *symbol,char *coinaddr)

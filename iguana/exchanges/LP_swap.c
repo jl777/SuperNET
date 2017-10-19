@@ -1097,6 +1097,8 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,&swap->alicecoin,0,0,LP_DEXFEE(swap->I.alicesatoshis) + swap->alicecoin.txfee,0,0,jumblrflag);
         alicepub33 = pubkey33;
     }
+    swap->myfee.I.locktime = swap->I.started + 1;
+    swap->otherfee.I.locktime = swap->I.started + 1;
     basilisk_rawtx_setparms("bobdeposit",swap->I.req.quoteid,&swap->bobdeposit,&swap->bobcoin,swap->I.bobconfirms,0,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis) + swap->bobcoin.txfee,4,0,jumblrflag);
     basilisk_rawtx_setparms("bobrefund",swap->I.req.quoteid,&swap->bobrefund,&swap->bobcoin,1,4,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis),1,bobpub33,jumblrflag);
     swap->bobrefund.I.suppress_pubkeys = 1;

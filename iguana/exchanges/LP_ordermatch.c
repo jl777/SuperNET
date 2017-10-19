@@ -816,6 +816,7 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
         {
             memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
             LP_Alicemaxprice = 0.;
+            Alice_expiration = 0;
             LP_query(ctx,myipaddr,mypubsock,"connect",qp);
         }
     }
@@ -1057,6 +1058,14 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         duration = LP_ORDERBOOK_DURATION;
     if ( timeout <= 0 )
         timeout = LP_AUTOTRADE_TIMEOUT;
+    if ( time(NULL) < Alice_expiration )
+        return(clonestr("{\"error\":\"only one pending request at a time\"}"));
+    else
+    {
+        Alice_expiration = 0;
+        memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
+        LP_Alicemaxprice = 0.;
+    }
     if ( maxprice <= 0. || relvolume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
     //if ( strcmp("BTC",rel) == 0 )
