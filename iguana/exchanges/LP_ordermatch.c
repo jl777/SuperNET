@@ -222,6 +222,7 @@ char *LP_quotereceived(cJSON *argjson)
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price)
 {
     bits256 zero; cJSON *reqjson = cJSON_CreateObject();
+    // LP_addsig
     memset(zero.bytes,0,sizeof(zero));
     jaddbits256(reqjson,"pubkey",G.LP_mypub25519);
     jaddstr(reqjson,"base",base);
@@ -235,6 +236,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 {
     bits256 zero; char secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
+    // LP_addsig
     memset(zero.bytes,0,sizeof(zero));
     jaddstr(reqjson,"method","notify");
     jaddstr(reqjson,"rmd160",G.LP_myrmd160str);
@@ -396,6 +398,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     jaddbits256(reqjson,"pubkey",qp->srchash);
     jaddstr(reqjson,"method",method);
     msg = jprint(reqjson,1);
+    // LP_addsig
     printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
@@ -605,6 +608,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
                 jaddstr(retjson,"pair",pairstr);
                 jaddnum(retjson,"requestid",qp->R.requestid);
                 jaddnum(retjson,"quoteid",qp->R.quoteid);
+                // LP_addsig
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,utxo->S.otherpubkey));
                 LP_reserved_msg(base,rel,utxo->S.otherpubkey,jprint(retjson,1));
                 retval = 0;
@@ -827,6 +831,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     char *method,*msg,*retstr,str[65]; int32_t DEXselector = 0; uint64_t value,value2; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"reserved") == 0 ||strcmp(method,"connected") == 0 || strcmp(method,"request") == 0 || strcmp(method,"connect") == 0) )
     {
+        // LP_checksig
         LP_quoteparse(&Q,argjson);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-2*Q.txfee,Q.destcoin,Q.destsatoshis-2*Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         LP_tradecommand_log(argjson);
@@ -934,6 +939,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     msg = jprint(retjson,1);
                     butxo->T.lasttime = (uint32_t)time(NULL);
                     printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
+                    // LP_addsig
                     LP_reserved_msg(Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
                     return(retval);
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);

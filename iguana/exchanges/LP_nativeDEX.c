@@ -18,10 +18,9 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// dPoW security -> 4: KMD notarized, 5: BTC notarized
-// locktime to fee
-// new testchain
 // sign critical api calls (pubkey reg, listunspent, orders?)
+// dPoW security -> 4: KMD notarized, 5: BTC notarized
+// new testchain
 // process stats.log local file -> map of realtime activity!
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
 //
