@@ -203,7 +203,7 @@ cJSON *LP_assethbla(char *assetid)
 
 int32_t LP_getheight(struct iguana_info *coin)
 {
-    cJSON *retjson; char *method = "getinfo"; int32_t height;
+    cJSON *retjson; char *retstr,*method = "getinfo"; int32_t height;
     if ( coin == 0 )
         return(-1);
     height = coin->height;
@@ -211,11 +211,16 @@ int32_t LP_getheight(struct iguana_info *coin)
     {
         if ( strcmp(coin->symbol,"BTC") == 0 )
             method = "getblockchaininfo";
-        if ( (retjson= bitcoin_json(coin,method,"[]")) != 0 )
+        retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,"[]");
+        printf("%s.(%s %s): %s.%s -> (%s)\n",coin->symbol,coin->serverport,coin->userpass,method,"[]",retstr);
+        if ( retstr != 0 && retstr[0] != 0 )
         {
+            retjson = cJSON_Parse(retstr);
             coin->height = height = jint(retjson,"blocks");
             free_json(retjson);
-            coin->heighttime = (uint32_t)time(NULL);
+            if ( coin->height > 0 )
+                coin->heighttime = (uint32_t)time(NULL);
+            free(retstr);
         }
     }
     return(height);
