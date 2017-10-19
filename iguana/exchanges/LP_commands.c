@@ -193,6 +193,18 @@ stop()\n\
                 return(jprint(retjson,1));
             }
         }
+        else if ( strcmp(method,"notarizations") == 0 )
+        {
+            int32_t height;
+            if ( (ptr= LP_coinsearch(coin)) != 0 )
+            {
+                height = LP_notarization_latest(ptr);
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddnum(retjson,"lastnotarization",height);
+                return(jprint(retjson,1));
+            } else return(clonestr("{\"error\":\"cant find coin\"}"));
+        }
         else if ( strcmp(method,"portfolio") == 0 )
         {
             return(LP_portfolio());
@@ -221,19 +233,6 @@ stop()\n\
                     //    return(clonestr("{\"error\":\"couldnt set price\"}"));
                     else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 } else return(clonestr("{\"error\":\"no price\"}"));
-            }
-            else if ( strcmp(method,"notarizations") == 0 )
-            {
-                int32_t height;
-                printf("notarizations (%s)\n",coin);
-                if ( (ptr= LP_coinsearch(coin)) != 0 )
-                {
-                    height = LP_notarization_latest(ptr);
-                    retjson = cJSON_CreateObject();
-                    jaddstr(retjson,"result","success");
-                    jaddnum(retjson,"lastnotarization",height);
-                    return(jprint(retjson,1));
-                } else return(clonestr("{\"error\":\"cant find coin\"}"));
             }
             else if ( strcmp(method,"autoprice") == 0 )
             {
