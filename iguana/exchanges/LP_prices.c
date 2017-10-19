@@ -845,6 +845,7 @@ char *LP_pricestr(char *base,char *rel,double origprice)
     if ( LP_pricevalid(price) > 0 )
     {
         retjson = cJSON_CreateObject();
+        // LP_addsig
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"method","postprice");
         jaddbits256(retjson,"pubkey",G.LP_mypub25519);
