@@ -436,7 +436,10 @@ stop()\n\
         }
     }
     if ( strcmp(method,"postprice") == 0 )
+    {
+        // LP_checksig
         retstr = LP_postedprice(argjson);
+    }
     else if ( strcmp(method,"postutxos") == 0 )
         retstr = LP_postedutxos(argjson);
     else if ( strcmp(method,"getprices") == 0 )
@@ -496,7 +499,7 @@ stop()\n\
         //printf("GOT ADDR_UNSPENTS %s %s\n",jstr(argjson,"coin"),jstr(argjson,"address"));
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
         {
-            char *coinaddr; //cJSON *array,*item,*req; int32_t i,n,vout,height; bits256 zero,txid; uint64_t value;
+            char *coinaddr;
             if ( (coinaddr= jstr(argjson,"address")) != 0 )
             {
                 if ( coinaddr[0] != 0 )
@@ -535,6 +538,7 @@ stop()\n\
         {
             char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp;
             pub = jbits256(argjson,"pub");
+            // LP_checksig
             if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
             {
                 if ( (pubp= LP_pubkeyadd(pub)) != 0 )
