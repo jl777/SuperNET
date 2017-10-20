@@ -198,7 +198,7 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     if ( coin->userpass[0] != 0 )
     {
         jaddnum(item,"height",LP_getheight(coin));
-        balance =LP_smartbalance(coin);
+        balance = LP_smartbalance(coin);
         jaddnum(item,"balance",dstr(balance));
         jaddnum(item,"KMDvalue",dstr(LP_KMDvalue(coin,balance)));
     }

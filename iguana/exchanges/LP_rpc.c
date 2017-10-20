@@ -230,7 +230,7 @@ uint64_t LP_smartbalance(struct iguana_info *coin)
     cJSON *array,*item; char buf[512],*retstr; int32_t i,n; uint64_t valuesum,value;
     valuesum = 0;
     sprintf(buf,"[0, 99999999, [\"%s\"]]",coin->smartaddr);
-    retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"listunspent","[]");
+    retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"listunspent",buf);
     if ( retstr != 0 && retstr[0] != 0 )
     {
         array = cJSON_Parse(retstr);
