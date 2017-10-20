@@ -833,6 +833,41 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     return(jprint(retjson,1));
 }
 
+uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance)
+{
+    cJSON *bids,*asks,*orderbook,*item; double bid=0,ask=0,price = 0.; int32_t numasks,numbids; char *retstr; uint64_t KMDvalue=0;
+    if ( balance != 0 )
+    {
+        if ( strcmp(coin->symbol,"KMD") == 0 )
+            KMDvalue = balance;
+        else if ( (retstr= LP_orderbook(coin->symbol,"KMD",0)) != 0 )
+        {
+            if ( (orderbook= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (asks= jarray(&numasks,orderbook,"asks")) != 0 && numasks > 0 )
+                {
+                    item = jitem(asks,0);
+                    price = ask = jdouble(item,"price");
+                    printf("%s/%s ask %.8f\n",coin->symbol,"KMD",ask);
+                }
+                if ( (bids= jarray(&numbids,orderbook,"bids")) != 0 && numbids > 0 )
+                {
+                    item = jitem(asks,0);
+                    bid = jdouble(item,"price");
+                    if ( price == 0. )
+                        price = bid;
+                    else price = (bid + ask) * 0.5;
+                    printf("%s/%s bid %.8f ask %.8f price %.8f\n",coin->symbol,"KMD",bid,ask,price);
+                }
+                KMDvalue = price * balance * SATOSHIDEN;
+                free_json(orderbook);
+            }
+            free(retstr);
+        }
+    }
+    return(KMDvalue);
+}
+
 char *LP_pricestr(char *base,char *rel,double origprice)
 {
     cJSON *retjson; double price = 0.;
