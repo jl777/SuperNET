@@ -819,10 +819,10 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_reservedmutex);
     portable_mutex_init(&LP_nanorecvsmutex);
 #ifndef _WIN32
-    if ( system("curl -s4 checkip.amazonaws.com > DB/myipaddr") == 0 )
+    if ( system("curl -s4 checkip.amazonaws.com > myipaddr") == 0 )
     {
         char ipfname[64];
-        strcpy(ipfname,"DB/myipaddr");
+        strcpy(ipfname,"myipaddr");
         if ( (myipaddr= OS_filestr(&filesize,ipfname)) != 0 && myipaddr[0] != 0 )
         {
             n = strlen(myipaddr);
