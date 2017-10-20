@@ -19,12 +19,12 @@
 //  marketmaker
 //
 // sign critical api calls (pubkey reg, listunspent, orders?)
-// dPoW security -> 4: KMD notarized, 5: BTC notarized
 // process stats.log local file -> map of realtime activity!
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
 //
 // alice only coins GAME UNO BTM ANC: GAME BTCD PPC RDD XZC POT EAC FTC BASH SPR WDC UNO XPM XCN BELA CHC DIME MEC NAUT MED AUR MAX DGC RIC EB3 DOT BTM GEO ANC CANN ICASH WBB SRC PTC ADZ TIPS EQT START EFL FST FJC NYC GCN
 // verify portfolio, pricearray, interest to KMD withdraw
+// dPoW security -> 4: KMD notarized, 5: BTC notarized
 
 
 #include <stdio.h>
