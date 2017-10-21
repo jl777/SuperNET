@@ -662,7 +662,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             }
             if ( butxo == 0 || butxo == &B )
                 butxo = LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2);
-            if ( butxo == 0 )
+            if ( butxo == 0 || bits256_cmp(Q.txid,butxo->payment.txid) != 0 || bits256_cmp(Q.txid2,butxo->deposit.txid) != 0 )
             {
                 printf("null butxo case\n");
                 value = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid,Q.vout);
