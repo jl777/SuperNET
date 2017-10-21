@@ -894,7 +894,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         if ( nonz == 0 )
             usleep(10000);
         else if ( IAMLP != 0 )
-            usleep(1000);
+            usleep(1);
         else usleep(10000);
     }
 }
