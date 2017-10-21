@@ -770,6 +770,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                 {
                     item = jitem(asks,i);
                     price = jdouble(item,"price");
+                    price *= 1.005;
                     pubkey = jbits256(item,"pubkey");
                     //printf("[%d/%d] %s pubcmp %d price %.8f vs maxprice %.8f\n",i,numasks,jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519),price,maxprice);
                     if ( LP_pricevalid(price) > 0 && price <= maxprice )
