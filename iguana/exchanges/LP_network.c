@@ -126,7 +126,6 @@ int32_t LP_peerindsock(int32_t *peerindp)
     struct LP_peerinfo *peer,*tmp; int32_t peerind = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        peerind++;
         if ( peer->errors < LP_MAXPEER_ERRORS && peer->pushsock >= 0 )
         {
             if ( peerind < *peerindp )
@@ -135,6 +134,7 @@ int32_t LP_peerindsock(int32_t *peerindp)
             //printf("peerind.%d -> sock %d\n",peerind,peer->pushsock);
             return(peer->pushsock);
         }
+        peerind++;
     }
     return(-1);
 }
