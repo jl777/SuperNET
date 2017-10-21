@@ -556,17 +556,22 @@ int32_t LP_quotecmp(struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2)
     else return(-1);
 }
 
-void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp)
+int32_t LP_alice_eligible()
 {
-    double price,maxprice = LP_Alicemaxprice;
     if ( time(NULL) > Alice_expiration )
     {
         printf("time expired for Alice_request\n");
         memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
         LP_Alicemaxprice = 0.;
         Alice_expiration = 0;
-    }
-    else if ( LP_quotecmp(qp,&LP_Alicequery) == 0 )
+        return(1);
+    } else return(0);
+}
+
+void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp)
+{
+    double price,maxprice = LP_Alicemaxprice;
+    if ( LP_alice_eligible() > 0 && LP_quotecmp(qp,&LP_Alicequery) == 0 )
     {
         price = LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout);
         if ( LP_pricevalid(price) > 0 && maxprice > SMALLVAL && price <= maxprice )
@@ -592,7 +597,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         retval = 1;
         if ( strcmp(method,"reserved") == 0 )
         {
-            if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
+            if ( LP_alice_eligible() > 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
                 printf("alice %s received RESERVED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
                 if ( (retstr= LP_quotereceived(argjson)) != 0 )
@@ -603,7 +608,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         else if ( strcmp(method,"connected") == 0 )
         {
-            if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
+            if ( LP_alice_eligible() > 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
                 printf("alice %s received CONNECTED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
                 if ( (retstr= LP_connectedalice(argjson)) != 0 )
