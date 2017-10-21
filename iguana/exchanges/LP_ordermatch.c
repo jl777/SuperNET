@@ -420,7 +420,7 @@ int32_t LP_alice_eligible()
 
 void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp)
 {
-    double price,maxprice = LP_Alicemaxprice;
+    double price=0.,maxprice = LP_Alicemaxprice;
     if ( LP_alice_eligible() > 0 && LP_quotecmp(qp,&LP_Alicequery) == 0 )
     {
         price = LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout);
@@ -432,7 +432,7 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
             LP_Alicequery = *qp;
             LP_query(ctx,myipaddr,mypubsock,"connect",qp);
         }
-    } else printf("reject reserved due to not eligible.%d or mismatched quote\n",LP_alice_eligible());
+    } else printf("reject reserved due to not eligible.%d or mismatched quote price %.8f vs maxprice %.8f\n",LP_alice_eligible(),price,maxprice);
 }
 
 char *LP_connectedalice(cJSON *argjson) // alice
@@ -451,11 +451,6 @@ char *LP_connectedalice(cJSON *argjson) // alice
     memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
     LP_Alicemaxprice = 0.;
     Alice_expiration = 0;
-    /*if ( G.LP_pendingswaps > 0 )
-    {
-        printf("swap already pending\n");
-        return(clonestr("{\"error\":\"swap already pending\"}"));
-    }*/
     if ( (autxo= LP_utxopairfind(0,Q.desttxid,Q.destvout,Q.feetxid,Q.feevout)) == 0 )
     {
         printf("cant find autxo\n");
@@ -849,9 +844,9 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     }
     if ( maxprice <= 0. || relvolume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
-    //if ( strcmp("BTC",rel) == 0 )
-    //    maxprice *= 1.01;
-    //else maxprice *= 1.001;
+    if ( strcmp("BTC",rel) == 0 )
+        maxprice *= 1.01;
+    else maxprice *= 1.001;
     memset(pubkeys,0,sizeof(pubkeys));
     LP_txfees(&txfee,&desttxfee,base,rel);
     destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
