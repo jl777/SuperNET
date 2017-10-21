@@ -682,7 +682,7 @@ int32_t LP_reserved_msgs()
     bits256 zero; int32_t n = 0; //struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
-    if ( num_Reserved_msgs > 0 )
+    while ( num_Reserved_msgs > 0 )
     {
         /*memset(&pfd,0,sizeof(pfd));
         pfd.fd = LP_mypubsock;
@@ -695,7 +695,8 @@ int32_t LP_reserved_msgs()
 #endif
         LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
         Reserved_msgs[num_Reserved_msgs] = 0;
-        n++;
+        if ( n++ > 10 )
+            break;
 #ifdef __APPLE__
         usleep(5000);
 #else
