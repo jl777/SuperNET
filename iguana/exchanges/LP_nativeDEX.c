@@ -356,6 +356,9 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
             continue;
         if ( coin->smartaddr[0] == 0 )
             continue;
+        if ( coin->lastutxosync != 0 && time(NULL) < coin->lastutxosync+60 )
+            continue;
+        coin->lastutxosync = (uint32_t)time(NULL);
         total = 0;
         if ( (j= LP_listunspent_both(coin->symbol,coin->smartaddr,0)) == 0 )
             continue;
@@ -495,8 +498,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             {
                 nonz++;
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+                needpings++;
                 peer->diduquery = 0;
-                LP_utxos_sync(peer);
             }
             peer->lastpeers = now;
         }
@@ -505,7 +508,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             nonz++;
             needpings++;
             LP_peer_pricesquery(peer);
-            LP_utxos_sync(peer);
             peer->diduquery = now;
         }
         if ( peer->needping != 0 )
@@ -522,6 +524,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         nonz++;
         //printf("needpings.%d send notify\n",needpings);
         LP_notify_pubkeys(ctx,pubsock);
+        LP_utxos_sync(peer);
     }
     if ( (counter % 6000) == 10 )
     {
