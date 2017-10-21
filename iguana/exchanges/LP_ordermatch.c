@@ -632,6 +632,11 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 printf("electrum can only be for alice\n");
                 return(retval);
             }
+            if ( strcmp(Q.srccoin,"GAME") == 0 )
+            {
+                printf("{\"error\":\"GAME can only be alice coin\"}\n");
+                return(retval);
+            }
             price = ask;
             autxo = &A;
             butxo = &B;
