@@ -558,14 +558,14 @@ int32_t LP_quotecmp(struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2)
 
 int32_t LP_alice_eligible()
 {
-    if ( time(NULL) > Alice_expiration )
+    if ( Alice_expiration != 0 && time(NULL) > Alice_expiration )
     {
         printf("time expired for Alice_request\n");
         memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
         LP_Alicemaxprice = 0.;
         Alice_expiration = 0;
-        return(1);
-    } else return(0);
+        return(0);
+    } else return(1);
 }
 
 void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp)
