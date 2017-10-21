@@ -261,6 +261,22 @@ void LP_smartutxos_push(struct iguana_info *coin)
     }
 }
 
+char *LP_uitem_recv(cJSON *argjson)
+{
+    bits256 txid; int32_t vout,height; uint64_t value; char *coinaddr,*symbol;
+    txid = jbits256(argjson,"txid");
+    vout = jint(argjson,"vout");
+    height = jint(argjson,"ht");
+    value = j64bits(argjson,"value");
+    coinaddr = jstr(argjson,"coinaddr");
+    if ( (symbol= jstr(argjson,"coin")) != 0 && coinaddr != 0 )
+    {
+        //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
+        LP_address_utxoadd(LP_coinfind(symbol),coinaddr,txid,vout,value,height,-1);
+    }
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
 void LP_postutxos(char *symbol,char *coinaddr)
 {
     bits256 zero; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
@@ -282,7 +298,7 @@ void LP_postutxos(char *symbol,char *coinaddr)
     }
 }
 
-char *LP_postedutxos(cJSON *argjson)
+char *LP_postutxos_recv(cJSON *argjson)
 {
     int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
     //printf("posted.(%s)\n",jprint(argjson,0));
@@ -295,22 +311,6 @@ char *LP_postedutxos(cJSON *argjson)
         }
         else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr,1)) != 0 )
             free_json(array);
-    }
-    return(clonestr("{\"result\":\"success\"}"));
-}
-
-char *LP_uitem_recv(cJSON *argjson)
-{
-    bits256 txid; int32_t vout,height; uint64_t value; char *coinaddr,*symbol;
-    txid = jbits256(argjson,"txid");
-    vout = jint(argjson,"vout");
-    height = jint(argjson,"ht");
-    value = j64bits(argjson,"value");
-    coinaddr = jstr(argjson,"coinaddr");
-    if ( (symbol= jstr(argjson,"coin")) != 0 && coinaddr != 0 )
-    {
-        //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
-        LP_address_utxoadd(LP_coinfind(symbol),coinaddr,txid,vout,value,height,-1);
     }
     return(clonestr("{\"result\":\"success\"}"));
 }
@@ -329,7 +329,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
     return(clonestr("{\"result\":\"success\"}"));
 }
 
-char *LP_postedprice(cJSON *argjson)
+char *LP_postprice_recv(cJSON *argjson)
 {
     bits256 pubkey; double price; char *base,*rel;
     //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
@@ -388,7 +388,6 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
     jaddstr(reqjson,"address",coinaddr);
     LP_reserved_msg("","",zero,jprint(reqjson,1));
 }
-
 
 int32_t LP_quote_checkmempool(struct LP_quoteinfo *qp,struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo)
 {

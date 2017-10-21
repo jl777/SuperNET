@@ -262,7 +262,7 @@ void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
     utxo->T.spentflag = (uint32_t)time(NULL);
 }
 
-char *LP_spentcheck(cJSON *argjson)
+/*char *LP_spentcheck(cJSON *argjson)
 {
     bits256 txid,checktxid; int32_t vout,checkvout; struct LP_utxoinfo *utxo; int32_t iambob,retval = 0;
     txid = jbits256(argjson,"txid");
@@ -291,7 +291,7 @@ char *LP_spentcheck(cJSON *argjson)
     if ( retval > 0 )
         return(clonestr("{\"result\":\"marked as spent\"}"));
     return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
-}
+}*/
 
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *coinaddr,bits256 pubkey,char *gui,uint32_t sessionid)
 {
