@@ -277,16 +277,19 @@ char *LP_postutxos_recv(cJSON *argjson)
 
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price)
 {
-    bits256 zero; cJSON *reqjson = cJSON_CreateObject();
+    struct iguana_info *basecoin,*relcoin; bits256 zero; cJSON *reqjson = cJSON_CreateObject();
     // LP_addsig
-    memset(zero.bytes,0,sizeof(zero));
-    jaddbits256(reqjson,"pubkey",G.LP_mypub25519);
-    jaddstr(reqjson,"base",base);
-    jaddstr(reqjson,"rel",rel);
-    jaddnum(reqjson,"price",price);
-    jaddstr(reqjson,"method","postprice");
-    LP_reserved_msg(base,rel,zero,jprint(reqjson,1));
-    return(clonestr("{\"result\":\"success\"}"));
+    if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 && basecoin->electrum == 0 && relcoin->electrum == 0 )
+    {
+        memset(zero.bytes,0,sizeof(zero));
+        jaddbits256(reqjson,"pubkey",G.LP_mypub25519);
+        jaddstr(reqjson,"base",base);
+        jaddstr(reqjson,"rel",rel);
+        jaddnum(reqjson,"price",price);
+        jaddstr(reqjson,"method","postprice");
+        LP_reserved_msg(base,rel,zero,jprint(reqjson,1));
+        return(clonestr("{\"result\":\"success\"}"));
+    } else return(clonestr("{\"error\":\"electrum node cant post bob asks\"}"));
 }
 
 char *LP_postprice_recv(cJSON *argjson)

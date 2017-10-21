@@ -627,6 +627,11 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 printf("this node has no price for %s/%s\n",Q.srccoin,Q.destcoin);
                 return(retval);
             }
+            if ( coin->electrum != 0 )
+            {
+                printf("electrum can only be for alice\n");
+                return(retval);
+            }
             price = ask;
             autxo = &A;
             butxo = &B;
