@@ -564,8 +564,8 @@ int32_t LP_alice_eligible()
         memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
         LP_Alicemaxprice = 0.;
         Alice_expiration = 0;
-        return(0);
-    } else return(1);
+    }
+    return(Alice_expiration == 0);
 }
 
 void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp)
