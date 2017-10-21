@@ -19,12 +19,13 @@
 //  marketmaker
 //
 // sign critical api calls (pubkey reg, listunspent, orders?)
+
 // process stats.log local file -> map of realtime activity!
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
 //
-// alice only coins GAME UNO BTM ANC: GAME BTCD PPC RDD XZC POT EAC FTC BASH SPR WDC UNO XPM XCN BELA CHC DIME MEC NAUT MED AUR MAX DGC RIC EB3 DOT BTM GEO ANC CANN ICASH WBB SRC PTC ADZ TIPS EQT START EFL FST FJC NYC GCN
 // verify portfolio, pricearray, interest to KMD withdraw
-// dPoW security -> 4: KMD notarized, 5: BTC notarized
+
+// dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 
 
 #include <stdio.h>
@@ -340,48 +341,6 @@ void command_rpcloop(void *myipaddr)
         }
         else if ( IAMLP == 0 )
             usleep(1000);
-    }
-}
-
-void LP_smartutxos_push(struct iguana_info *coin)
-{
-    struct LP_peerinfo *peer,*tmp; uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; char *retstr; cJSON *array,*item,*req;
-    if ( coin->smartaddr[0] == 0 )
-        return;
-    if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
-    {
-        memset(zero.bytes,0,sizeof(zero));
-        if ( (n= cJSON_GetArraySize(array)) > 0 )
-        {
-            //printf("PUSH %s %s\n",coin->symbol,coin->smartaddr);
-            for (i=0; i<n; i++)
-            {
-                item = jitem(array,i);
-                txid = jbits256(item,"tx_hash");
-                vout = jint(item,"tx_pos");
-                value = j64bits(item,"value");
-                height = jint(item,"height");
-                if ( (rand() % 100) == 0 && IAMLP == 0 )
-                {
-                    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-                    {
-                        if ( (retstr= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,vout,height,value)) != 0 )
-                            free(retstr);
-                    }
-                }
-                req = cJSON_CreateObject();
-                jaddstr(req,"method","uitem");
-                jaddstr(req,"coin",coin->symbol);
-                jaddstr(req,"coinaddr",coin->smartaddr);
-                jaddbits256(req,"txid",txid);
-                jaddnum(req,"vout",vout);
-                jaddnum(req,"ht",height);
-                jadd64bits(req,"value",value);
-                //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
-                LP_reserved_msg("","",zero,jprint(req,1));
-            }
-        }
-        free_json(array);
     }
 }
 

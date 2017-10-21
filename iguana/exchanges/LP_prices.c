@@ -872,7 +872,7 @@ uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance)
     return(KMDvalue);
 }
 
-char *LP_pricestr(char *base,char *rel,double origprice)
+/*char *LP_pricestr(char *base,char *rel,double origprice)
 {
     cJSON *retjson; double price = 0.;
     if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
@@ -884,7 +884,6 @@ char *LP_pricestr(char *base,char *rel,double origprice)
     if ( LP_pricevalid(price) > 0 )
     {
         retjson = cJSON_CreateObject();
-        // LP_addsig
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"method","postprice");
         jaddbits256(retjson,"pubkey",G.LP_mypub25519);
@@ -895,7 +894,7 @@ char *LP_pricestr(char *base,char *rel,double origprice)
         jadd(retjson,"quotes",LP_priceinfomatrix(1));
         return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"cant find baserel pair\"}"));
-}
+}*/
 
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32])
 {

@@ -63,6 +63,8 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
     }
     if ( method == 0 )
     {
+        if ( is_cJSON_Array(argjson) != 0 )
+            printf("RAWARRAY command? %s\n",jprint(argjson,0));
         if ( flag == 0 || jobj(argjson,"result") != 0 )
             printf("stats_JSON no method: (%s) (%s:%u)\n",jprint(argjson,0),ipaddr,argport);
         return(0);
@@ -228,7 +230,6 @@ stop()\n\
             {
                 if ( price > SMALLVAL )
                 {
-                    //LP_signature_add(argjson,base,rel,(uint64_t)price * SATOSHIDEN);
                     if ( LP_mypriceset(&changed,base,rel,price) < 0 )
                         return(clonestr("{\"error\":\"couldnt set price\"}"));
                     //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
@@ -238,7 +239,6 @@ stop()\n\
             }
             else if ( strcmp(method,"autoprice") == 0 )
             {
-                //LP_signature_add(argjson,base,rel,(uint64_t)price * SATOSHIDEN);
                 if ( LP_autoprice(base,rel,argjson) < 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
@@ -450,29 +450,13 @@ stop()\n\
         }
     }
     if ( strcmp(method,"postprice") == 0 )
-    {
-        // LP_checksig
         retstr = LP_postedprice(argjson);
-    }
     else if ( strcmp(method,"postutxos") == 0 )
         retstr = LP_postedutxos(argjson);
     else if ( strcmp(method,"getprices") == 0 )
         return(LP_prices());
     else if ( strcmp(method,"uitem") == 0 )
-    {
-        bits256 txid; int32_t vout,height; uint64_t value; char *coinaddr;
-        txid = jbits256(argjson,"txid");
-        vout = jint(argjson,"vout");
-        height = jint(argjson,"ht");
-        value = j64bits(argjson,"value");
-        coinaddr = jstr(argjson,"coinaddr");
-        if ( coin != 0 && coinaddr != 0 )
-        {
-            //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
-            LP_address_utxoadd(LP_coinfind(coin),coinaddr,txid,vout,value,height,-1);
-        }
-        return(clonestr("{\"result\":\"success\"}"));
-    }
+        retstr = LP_uitem_recv(argjson);
     else if ( strcmp(method,"orderbook") == 0 )
         return(LP_orderbook(base,rel,jint(argjson,"duration")));
     else if ( strcmp(method,"listunspent") == 0 )
@@ -549,26 +533,8 @@ stop()\n\
             return(jprint(LP_pricearray(base,rel,firsttime,juint(argjson,"lasttime"),jint(argjson,"timescale")),1));
         }
         else if ( strcmp(method,"notify") == 0 )
-        {
-            char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp;
-            pub = jbits256(argjson,"pub");
-            // LP_checksig
-            if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
-            {
-                if ( (pubp= LP_pubkeyadd(pub)) != 0 )
-                {
-                    decode_hex(pubp->rmd160,20,rmd160str);
-                    if ( (secpstr= jstr(argjson,"pubsecp")) != 0 )
-                    {
-                        decode_hex(pubp->pubsecp,sizeof(pubp->pubsecp),secpstr);
-                        //printf("got pubkey.(%s)\n",secpstr);
-                    }
-                }
-                //printf("NOTIFIED pub %s rmd160 %s\n",bits256_str(str,pub),rmd160str);
-            }
-            retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
-        }
-        if ( IAMLP != 0 )
+            retstr = LP_notify_recv(argjson);
+        else if ( IAMLP != 0 )
         {
             if ( strcmp(method,"broadcast") == 0 )
             {

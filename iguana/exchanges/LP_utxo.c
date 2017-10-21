@@ -429,27 +429,6 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     return(retjson);
 }
 
-void LP_postutxos(char *symbol,char *coinaddr)
-{
-    bits256 zero; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
-    if ( (coin= LP_coinfind(symbol)) != 0 && (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
-    {
-        //printf("LP_postutxos pubsock.%d %s %s\n",pubsock,symbol,coin->smartaddr);
-        if ( cJSON_GetArraySize(array) == 0 )
-            free_json(array);
-        else
-        {
-            memset(zero.bytes,0,sizeof(zero));
-            jaddstr(reqjson,"method","postutxos");
-            jaddstr(reqjson,"coin",symbol);
-            jaddstr(reqjson,"coinaddr",coinaddr);
-            jadd(reqjson,"utxos",array);
-            //printf("post (%s) -> %d\n",msg,LP_mypubsock);
-            LP_reserved_msg(symbol,symbol,zero,jprint(reqjson,1));
-        }
-    }
-}
-
 int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
 {
     int32_t i,n,v,ht,errs,height,count=0; uint64_t value,val; cJSON *item,*txobj; bits256 txid;
@@ -491,23 +470,6 @@ int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
         }
     }
     return(count);
-}
-
-char *LP_postedutxos(cJSON *argjson)
-{
-    int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
-    //printf("posted.(%s)\n",jprint(argjson,0));
-    if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
-    {
-        if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )
-        {
-            if ( (array= jarray(&n,argjson,"utxos")) != 0 )
-                LP_unspents_array(coin,coinaddr,array);
-        }
-        else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr,1)) != 0 )
-            free_json(array);
-    }
-    return(clonestr("{\"result\":\"success\"}"));
 }
 
 void LP_utxosetkey(uint8_t *key,bits256 txid,int32_t vout)
