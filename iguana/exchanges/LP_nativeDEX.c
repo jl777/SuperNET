@@ -105,6 +105,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_peers.c"
 #include "LP_utxos.c"
 #include "LP_forwarding.c"
+#include "LP_signatures.c"
 #include "LP_ordermatch.c"
 #include "LP_portfolio.c"
 #include "LP_messages.c"
