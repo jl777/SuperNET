@@ -695,7 +695,8 @@ int32_t LP_reserved_msgs()
 #endif
         LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
         Reserved_msgs[num_Reserved_msgs] = 0;
-        if ( n++ > 10 )
+        n++;
+        if ( n > 0 )
             break;
 #ifdef __APPLE__
         usleep(5000);
