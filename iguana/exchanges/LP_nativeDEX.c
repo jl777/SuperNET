@@ -349,6 +349,7 @@ void command_rpcloop(void *myipaddr)
         }
         else if ( IAMLP == 0 )
             usleep(1000);
+        else usleep(10);
     }
 }
 
@@ -698,7 +699,7 @@ int32_t LP_reserved_msgs()
 #ifdef __APPLE__
         usleep(5000);
 #else
-        usleep(100);
+        usleep(10);
 #endif
     }
     portable_mutex_unlock(&LP_reservedmutex);
@@ -894,7 +895,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         if ( nonz == 0 )
             usleep(10000);
         else if ( IAMLP != 0 )
-            usleep(1);
+            usleep(10);
         else usleep(10000);
     }
 }
