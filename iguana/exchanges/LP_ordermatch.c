@@ -581,7 +581,7 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
             Alice_expiration = 0;
             LP_query(ctx,myipaddr,mypubsock,"connect",qp);
         }
-    }
+    } else printf("reject reserved due to not eligible.%d or mismatched quote\n",LP_alice_eligible());
 }
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
