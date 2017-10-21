@@ -317,7 +317,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
             }
         }
         //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
-        nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr,10);
+        nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr,1);
     }
     /*HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
      {

@@ -588,6 +588,13 @@ char *LP_bestfit(char *rel,double relvolume)
     return(jprint(LP_utxojson(autxo),1));
 }
 
+int32_t LP_aliceonly(char *symbol)
+{
+    if ( strcmp(symbol,"GAME") == 0 )
+        return(1);
+    else return(0);
+}
+
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
     char *method,*msg,*retstr,str[65]; int32_t DEXselector = 0; uint64_t value,value2; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
@@ -632,7 +639,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 printf("electrum can only be for alice\n");
                 return(retval);
             }
-            if ( strcmp(Q.srccoin,"GAME") == 0 )
+            if ( LP_aliceonly(Q.srccoin) > 0 )
             {
                 printf("{\"error\":\"GAME can only be alice coin\"}\n");
                 return(retval);
@@ -832,7 +839,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
 char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui,uint32_t nonce)
 {
     uint64_t desttxfee,txfee; uint32_t lastnonce; int32_t i,maxiters,numpubs = 0; int64_t bestsatoshis=0,destsatoshis,bestdestsatoshis=0; struct LP_utxoinfo *autxo,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q; bits256 pubkeys[100];
-    if ( strcmp(base,"GAME") == 0 )
+    if ( LP_aliceonly(base) > 0 )
         return(clonestr("{\"error\":\"GAME can only be alice coin\"}"));
     printf("LP_autobuy %s/%s price %.8f vol %.8f nonce %u\n",base,rel,maxprice,relvolume,nonce);
     if ( (lastnonce= LP_lastnonce) != 0 && nonce <= lastnonce )
