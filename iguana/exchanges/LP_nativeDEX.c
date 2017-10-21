@@ -235,7 +235,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
     int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char *retstr,*str; struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
-        while ( nonz < 100 && recvlen > 0 )
+        while ( nonz < 1 && recvlen > 0 )
         {
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
