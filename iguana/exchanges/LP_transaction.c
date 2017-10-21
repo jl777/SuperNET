@@ -923,6 +923,12 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     suppress_pubkeys = 1;
     scriptlen = bitcoin_standardspend(script,0,G.LP_myrmd160);
     numvins = LP_vins_select(ctx,coin,&total,amount,V,utxos,numutxos,suppress_pubkeys,ignore_cltverr,privkey,privkeys,vins,script,scriptlen);
+    if ( total < amount )
+    {
+        printf("change %.8f = total %.8f - amount %.8f, adjust %.8f numvouts.%d, txfee %.8f\n",dstr(change),dstr(total),dstr(amount),dstr(adjust),numvouts,dstr(txfee));
+        printf("not enough inputs for amount %.8f < %.8f txfee %.8f\n",dstr(total),dstr(amount),dstr(txfee));
+        return(0);
+    }
     change = (total - amount);
     timestamp = (uint32_t)time(NULL);
     if ( strcmp("KMD",coin->symbol) == 0 )
@@ -936,6 +942,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         adjust = change / numvouts;
         change = 0;
     }
+    printf("change %.8f = total %.8f - amount %.8f, adjust %.8f numvouts.%d\n",dstr(change),dstr(total),dstr(amount),dstr(adjust),numvouts);
     for (i=0; i<numvouts; i++)
     {
         item = jitem(outputs,i);

@@ -752,7 +752,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
 
 char *LP_orderbook(char *base,char *rel,int32_t duration)
 {
-    uint32_t now,i; struct LP_priceinfo *basepp=0,*relpp=0; struct LP_orderbookentry **bids = 0,**asks = 0; cJSON *retjson,*array; struct iguana_info *basecoin,*relcoin; int32_t n,numbids=0,numasks=0,cachenumbids,cachenumasks,baseid,relid;
+    uint32_t now,i; struct LP_priceinfo *basepp=0,*relpp=0; struct LP_orderbookentry **bids = 0,**asks = 0; cJSON *retjson,*array; struct iguana_info *basecoin,*relcoin; int32_t n,numbids=0,numasks=0,cachenumbids,cachenumasks,baseid,relid,suppress_prefetch=0;
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( basecoin == 0 || relcoin == 0 )
@@ -760,7 +760,11 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     if ( (basepp= LP_priceinfofind(base)) == 0 || (relpp= LP_priceinfofind(rel)) == 0 )
         return(clonestr("{\"error\":\"base or rel not added\"}"));
     if ( duration <= 0 )
+    {
+        if ( duration < 0 )
+            suppress_prefetch = 1;
         duration = LP_ORDERBOOK_DURATION;
+    }
     baseid = basepp->ind;
     relid = relpp->ind;
     now = (uint32_t)time(NULL);
@@ -787,7 +791,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=n=0; i<numbids; i++)
     {
         jaddi(array,LP_orderbookjson(rel,bids[i]));
-        if ( n < 10 && bids[i]->numutxos == 0 )//|| relcoin->electrum == 0 )
+        if ( suppress_prefetch == 0 && n < 10 && bids[i]->numutxos == 0 )
         {
             //printf("bid ping %s %s\n",rel,bids[i]->coinaddr);
             LP_address(relcoin,bids[i]->coinaddr);
@@ -807,7 +811,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=n=0; i<numasks; i++)
     {
         jaddi(array,LP_orderbookjson(base,asks[i]));
-        if ( n < 10 && asks[i]->numutxos == 0 )//|| basecoin->electrum == 0 )
+        if ( suppress_prefetch == 0 && n < 10 && asks[i]->numutxos == 0 )
         {
             //printf("ask ping %s %s\n",base,asks[i]->coinaddr);
             LP_address(basecoin,asks[i]->coinaddr);
@@ -833,7 +837,42 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     return(jprint(retjson,1));
 }
 
-char *LP_pricestr(char *base,char *rel,double origprice)
+uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance)
+{
+    cJSON *bids,*asks,*orderbook,*item; double bid=0,ask=0,price = 0.; int32_t numasks,numbids; char *retstr; uint64_t KMDvalue=0;
+    if ( balance != 0 )
+    {
+        if ( strcmp(coin->symbol,"KMD") == 0 )
+            KMDvalue = balance;
+        else if ( (retstr= LP_orderbook(coin->symbol,"KMD",-1)) != 0 )
+        {
+            if ( (orderbook= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (asks= jarray(&numasks,orderbook,"asks")) != 0 && numasks > 0 )
+                {
+                    item = jitem(asks,0);
+                    price = ask = jdouble(item,"price");
+                    //printf("%s/%s ask %.8f\n",coin->symbol,"KMD",ask);
+                }
+                if ( (bids= jarray(&numbids,orderbook,"bids")) != 0 && numbids > 0 )
+                {
+                    item = jitem(asks,0);
+                    bid = jdouble(item,"price");
+                    if ( price == 0. )
+                        price = bid;
+                    else price = (bid + ask) * 0.5;
+                    //printf("%s/%s bid %.8f ask %.8f price %.8f\n",coin->symbol,"KMD",bid,ask,price);
+                }
+                KMDvalue = price * balance;
+                free_json(orderbook);
+            }
+            free(retstr);
+        }
+    }
+    return(KMDvalue);
+}
+
+/*char *LP_pricestr(char *base,char *rel,double origprice)
 {
     cJSON *retjson; double price = 0.;
     if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
@@ -845,7 +884,6 @@ char *LP_pricestr(char *base,char *rel,double origprice)
     if ( LP_pricevalid(price) > 0 )
     {
         retjson = cJSON_CreateObject();
-        // LP_addsig
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"method","postprice");
         jaddbits256(retjson,"pubkey",G.LP_mypub25519);
@@ -856,7 +894,7 @@ char *LP_pricestr(char *base,char *rel,double origprice)
         jadd(retjson,"quotes",LP_priceinfomatrix(1));
         return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"cant find baserel pair\"}"));
-}
+}*/
 
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32])
 {

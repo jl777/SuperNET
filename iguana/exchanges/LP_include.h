@@ -44,7 +44,7 @@
 #define LP_PEERGOOD_ERRORDECAY 0.9
 
 #define LP_SWAPSTEP_TIMEOUT 30
-#define LP_AUTOTRADE_TIMEOUT 10
+#define LP_AUTOTRADE_TIMEOUT 20
 #define LP_MIN_TXFEE 10000
 #define LP_MINVOL 20
 #define LP_MINCLIENTVOL 50
@@ -185,7 +185,7 @@ struct iguana_info
     portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,unspenttime,obooktime;
+    uint32_t lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,unspenttime,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128],lastunspent[64];
     // portfolio
@@ -320,6 +320,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
 int32_t LP_numpeers();
+uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance);
 int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 void LP_smartutxos_push(struct iguana_info *coin);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);
