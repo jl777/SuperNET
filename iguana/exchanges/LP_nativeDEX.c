@@ -699,7 +699,7 @@ int32_t LP_reserved_msgs()
 #ifdef __APPLE__
         usleep(5000);
 #else
-        usleep(10);
+        usleep(1000);
 #endif
     }
     portable_mutex_unlock(&LP_reservedmutex);
