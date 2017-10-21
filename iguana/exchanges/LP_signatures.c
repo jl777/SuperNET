@@ -197,7 +197,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 vout = jint(item,"tx_pos");
                 value = j64bits(item,"value");
                 height = jint(item,"height");
-                if ( (rand() % 100) == 0 && IAMLP == 0 )
+                if ( 0 && (rand() % 100) == 0 && IAMLP == 0 )
                 {
                     HASH_ITER(hh,LP_peerinfos,peer,tmp)
                     {
