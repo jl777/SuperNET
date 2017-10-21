@@ -630,7 +630,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             if ( strcmp(method,"request") == 0 )
             {
                 char str[65],str2[65];
-                if ( LP_allocated(butxo->payment.txid,butxo->payment.vout) != 0 || LP_allocated(butxo->deposit.txid,butxo->deposit.vout) != 0 || (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
+                if ( 1 )//LP_allocated(butxo->payment.txid,butxo->payment.vout) != 0 || LP_allocated(butxo->deposit.txid,butxo->deposit.vout) != 0 || (qprice= LP_quote_validate(autxo,butxo,&Q,1)) <= SMALLVAL )
                 {
                     printf("butxo.%p replace path %p %s, %p %s, %.8f\n",butxo,LP_allocated(butxo->payment.txid,butxo->payment.vout),bits256_str(str,butxo->payment.txid),LP_allocated(butxo->deposit.txid,butxo->deposit.vout),bits256_str(str2,butxo->deposit.txid),LP_quote_validate(autxo,butxo,&Q,1));
                     LP_listunspent_both(Q.srccoin,Q.coinaddr,0);
