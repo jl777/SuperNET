@@ -1014,7 +1014,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     printf("other path %p %p %.8f\n",LP_allocated(butxo->payment.txid,butxo->payment.vout),LP_allocated(butxo->deposit.txid,butxo->deposit.vout), LP_quote_validate(autxo,butxo,&Q,1));
                     value = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid,Q.vout);
                     value2 = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid2,Q.vout2);
-                    if ( (butxo= LP_utxoadd(1,coin->symbol,Q.txid,Q.vout,value,Q.txid,Q.vout2,value2,Q.coinaddr,G.LP_mypub25519,G.gui,0)) == 0 )
+                    if ( (butxo= LP_utxoadd(1,coin->symbol,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,G.LP_mypub25519,G.gui,0)) == 0 )
                         printf("couldnt create bob's utxopair\n");
                 }
             }
