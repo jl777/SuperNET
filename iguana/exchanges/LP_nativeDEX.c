@@ -695,14 +695,14 @@ int32_t LP_reserved_msgs()
 #endif
         LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
         Reserved_msgs[num_Reserved_msgs] = 0;
-        n++;
-        if ( n > 0 )
-            break;
 #ifdef __APPLE__
         usleep(5000);
 #else
         usleep(1000);
 #endif
+        n++;
+        if ( n > 0 )
+            break;
     }
     portable_mutex_unlock(&LP_reservedmutex);
     return(n);
