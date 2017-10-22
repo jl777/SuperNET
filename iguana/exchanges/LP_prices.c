@@ -274,9 +274,9 @@ cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
         {
             init_hexbytes_noT(hexstr,pubp->rmd160,sizeof(pubp->rmd160));
             jaddstr(obj,"rmd160",hexstr);
-            for (j=0; i<sizeof(pubp->pubsecp); i++)
+            for (j=0; j<sizeof(pubp->pubsecp); j++)
             {
-                if ( pubp->pubsecp[i] != 0 )
+                if ( pubp->pubsecp[j] != 0 )
                 {
                     init_hexbytes_noT(hexstr2,pubp->pubsecp,sizeof(pubp->pubsecp));
                     jaddstr(obj,"pubsecp",hexstr2);
