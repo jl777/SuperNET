@@ -536,7 +536,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 fprintf(stderr,"p");
                 LP_peer_pricesquery(peer);
                 fprintf(stderr,"u");
-                LP_utxos_sync(peer);
+                //LP_utxos_sync(peer);
                 needpings++;
             }
             peer->lastpeers = now;
@@ -575,6 +575,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         if ( coin->addr_listunspent_requested != 0 )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
+            fprintf(stderr,">");
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
         }
@@ -587,12 +588,13 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         if ( time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {
             nonz++;
+            fprintf(stderr,"X");
             if ( (height= LP_getheight(coin)) > coin->longestchain )
             {
                 coin->longestchain = height;
                 if ( coin->firstrefht != 0 )
                     printf(">>>>>>>>>> set %s longestchain %d (ref.%d [%d, %d])\n",coin->symbol,height,coin->firstrefht,coin->firstscanht,coin->lastscanht);
-            } else LP_mempoolscan(coin->symbol,zero);
+            } //else LP_mempoolscan(coin->symbol,zero);
             coin->lastgetinfo = (uint32_t)time(NULL);
         }
         if ( coin->firstrefht == 0 )
