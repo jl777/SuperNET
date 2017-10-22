@@ -18,12 +18,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// sign critical api calls (pubkey reg, listunspent, orders?)
-
 // process stats.log local file -> map of realtime activity!
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
 //
-// verify portfolio, pricearray, interest to KMD withdraw
+// verify portfolio, pricearray, interest to KMD withdraw, reliable networking
 
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 

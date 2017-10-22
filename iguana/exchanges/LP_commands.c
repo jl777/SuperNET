@@ -526,7 +526,7 @@ stop()\n\
     //    retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
-    else // special handling requests
+    else // psock requests/response
     {
         if ( IAMLP != 0 )
         {
