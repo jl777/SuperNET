@@ -322,7 +322,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
         //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
         milli = OS_milliseconds();
         nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr,1);
-        if ( OS_milliseconds()-milli > 3 )
+        if ( OS_milliseconds()-milli > 13 )
             fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds: (%s)\n",OS_milliseconds()-milli,LP_lastcommand!=0?LP_lastcommand:"");
     }
     /*HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
@@ -336,7 +336,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
     {
         milli = OS_milliseconds();
         nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
-        if ( OS_milliseconds()-milli > 3 )
+        if ( OS_milliseconds()-milli > 13 )
             fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds: (%s)\n",OS_milliseconds()-milli,LP_lastcommand!=0?LP_lastcommand:"");
     }
     //portable_mutex_unlock(&LP_nanorecvsmutex);

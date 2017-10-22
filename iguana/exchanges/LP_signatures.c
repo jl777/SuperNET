@@ -357,7 +357,7 @@ char *LP_notify_recv(cJSON *argjson)
                 //printf("got pubkey.(%s)\n",secpstr);
             }
         }
-        char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);
+        //char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);
     }
     return(clonestr("{\"result\":\"success\",\"notify\":\"received\"}"));
 }
