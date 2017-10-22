@@ -800,7 +800,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
     if ( bypass != 0 )
         val = satoshis;
     else val = LP_txvalue(destaddr,symbol,txid,vout);
-    if ( (up= LP_address_utxofind(coin,destaddr,txid,vout)) != 0 && up->spendheight > 0 )
+    /*if ( (up= LP_address_utxofind(coin,destaddr,txid,vout)) != 0 && up->spendheight > 0 )
     {
         //printf("%s/v%d spent %d\n",bits256_str(str,txid),vout,up->spendheight);
         return(-2);
@@ -809,7 +809,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
     {
         //printf("%s/v%d spent %d\n",bits256_str(str,txid2),vout2,up->spendheight);
         return(-3);
-    }
+    }*/
     txfee = LP_txfeecalc(LP_coinfind(symbol),0,0);
     if ( val >= satoshis && val > (1+LP_MINSIZE_TXFEEMULT)*txfee )
     {
