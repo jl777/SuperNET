@@ -504,7 +504,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         basepp->myprices[relpp->ind] = price;          // ask
         //printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
         //relpp->myprices[basepp->ind] = (1. / price);   // bid
-        if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
+        if ( (pubp= LP_pubkeyfind(G.LP_mypub25519)) != 0 )
         {
             pubp->matrix[basepp->ind][relpp->ind] = price;
             //pubp->matrix[relpp->ind][basepp->ind] = (1. / price);
@@ -1063,7 +1063,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             fwrite(&price64,1,sizeof(price64),fp);
             fflush(fp);
         }
-        if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
+        if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
         {
             if ( fabs(pubp->matrix[basepp->ind][relpp->ind] - price) > SMALLVAL )
             {
@@ -1074,7 +1074,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
                 dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
             }
             pubp->timestamp = (uint32_t)time(NULL);
-        } else printf("error creating pubkey entry\n");
+        } else printf("error finding pubkey entry\n");
     }
     //else if ( (rand() % 100) == 0 )
     //    printf("error finding %s/%s %.8f\n",base,rel,price);

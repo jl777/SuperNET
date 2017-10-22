@@ -762,6 +762,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     checkkey.bytes[0] &= 248, checkkey.bytes[31] &= 127, checkkey.bytes[31] |= 64;
     G.LP_mypub25519 = *pubkeyp = curve25519(checkkey,curve25519_basepoint9());
     G.LP_mypriv25519 = checkkey;
+    LP_pubkeyadd(G.LP_mypub25519);
     return(privkey);
 }
 
