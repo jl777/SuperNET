@@ -381,33 +381,38 @@ int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,ui
 
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
 {
-    int32_t i,siglen,len,retval=-1; uint8_t rmd160[20],pubsecp[33],sig[128],zeroes[20]; char *sigstr,*hexstr,*pubsecpstr;
+    int32_t i,siglen,len,retval=-1; uint8_t rmd160[20],checkrmd160[20],pubsecp[33],sig[128],zeroes[20]; char *sigstr,*hexstr,*pubsecpstr;
     if ( (hexstr= jstr(item,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
     {
         decode_hex(rmd160,sizeof(rmd160),hexstr);
         memset(zeroes,0,sizeof(zeroes));
-        if ( memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 && memcmp(rmd160,pubp->rmd160,20) != 0 )
+        if ( memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 )
         {
-            if ( (pubsecpstr= jstr(item,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
+            if ( memcmp(rmd160,pubp->rmd160,20) != 0 )
             {
-                decode_hex(pubsecp,sizeof(pubsecp),pubsecpstr);
-                //memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160)); // transition
-                //memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
-                if ( (sigstr= jstr(item,"sig")) != 0 && (len= is_hexstr(sigstr,0)) == 65*2  )
+                if ( (pubsecpstr= jstr(item,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
                 {
-                    siglen = len >> 1;
-                    decode_hex(sig,siglen,sigstr);
-                    if ( _LP_pubkey_sigcheck(sig,siglen,pubp->pubkey,rmd160,pubsecp) == 0 )
+                    decode_hex(pubsecp,sizeof(pubsecp),pubsecpstr);
+                    calc_rmd160(0,checkrmd160,pubsecp,33);
+                    //memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160)); // transition
+                    //memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
+                    if ( memcmp(checkrmd160,rmd160,20) == 0 && (sigstr= jstr(item,"sig")) != 0 && (len= is_hexstr(sigstr,0)) == 65*2  )
                     {
-                        for (i=0; i<20; i++)
-                            printf("%02x",pubp->rmd160[i]);
-                        memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
-                        memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
-                        char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
-                        retval = 0;
-                    } //else printf("sig %s error pub33.%s\n",sigstr,pubsecpstr);
+                        siglen = len >> 1;
+                        decode_hex(sig,siglen,sigstr);
+                        if ( _LP_pubkey_sigcheck(sig,siglen,pubp->pubkey,rmd160,pubsecp) == 0 )
+                        {
+                            for (i=0; i<20; i++)
+                                printf("%02x",pubp->rmd160[i]);
+                            memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
+                            memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
+                            char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
+                            retval = 0;
+                            pubp->timestamp = (uint32_t)time(NULL);
+                        } //else printf("sig %s error pub33.%s\n",sigstr,pubsecpstr);
+                    }
                 }
-            }
+            } else pubp->timestamp = (uint32_t)time(NULL);
         }
     }
     return(retval);
