@@ -37,6 +37,7 @@ int32_t num_Reserved_msgs,max_Reserved_msgs;
 struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
+struct LP_pubkeyinfo *LP_pubkeyinfos;
 #include "LP_network.c"
 
 char *activecoins[] = { "BTC", "KMD" };
@@ -497,7 +498,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( now > peer->lastpeers+60 )//|| (rand() % 10000) == 0 )
+        if ( now > peer->lastpeers+60 || (rand() % 10000) == 0 )
         {
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {

@@ -328,6 +328,40 @@ char *LP_postprice_recv(cJSON *argjson)
     return(clonestr("{\"error\":\"missing fields in posted price\"}"));
 }
 
+bits256 LP_pubkey_sighash(bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
+{
+    uint8_t buf[sizeof(pub) + 20 + 33]; bits256 sighash;
+    memcpy(buf,pub.bytes,sizeof(pub));
+    memcpy(&buf[sizeof(pub)],rmd160,20);
+    memcpy(&buf[sizeof(pub)+20],pubsecp,33);
+    vcalc_sha256(0,sighash.bytes,buf,sizeof(buf));
+    return(sighash);
+}
+
+int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
+{
+    static void *ctx;
+    uint8_t sig[128]; int32_t siglen=0; bits256 sighash; char sigstr[256];
+    sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    if ( (siglen= bitcoin_sign(ctx,"sigadd",sig,sighash,priv,0)) > 0 && siglen < 76 )
+    {
+        init_hexbytes_noT(sigstr,sig,siglen);
+        jaddstr(item,"sig",sigstr);
+        return(siglen);
+    } else return(0);
+}
+
+int32_t _LP_pubkey_sigcheck(uint8_t *sig,int32_t siglen,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
+{
+    static void *ctx;
+    bits256 sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    return(bitcoin_verify(ctx,sig,siglen,sighash,pubsecp,33));
+}
+
 void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 {
     bits256 zero; char secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
@@ -338,25 +372,48 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     jaddbits256(reqjson,"pub",G.LP_mypub25519);
     init_hexbytes_noT(secpstr,G.LP_pubsecp,33);
     jaddstr(reqjson,"pubsecp",secpstr);
+    LP_pubkey_sigadd(reqjson,G.LP_mypriv25519,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
     LP_reserved_msg("","",zero,jprint(reqjson,1));
+}
+
+void LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
+{
+    int32_t i,siglen,len; uint8_t rmd160[20],pubsecp[33],sig[128],zeroes[20]; char *sigstr,*hexstr,*pubsecpstr;
+    if ( (hexstr= jstr(item,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
+    {
+        decode_hex(rmd160,sizeof(rmd160),hexstr);
+        memset(zeroes,0,sizeof(zeroes));
+        if ( memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 )
+        {
+            if ( (pubsecpstr= jstr(item,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
+            {
+                decode_hex(pubsecp,sizeof(pubsecp),pubsecpstr);
+                if ( (sigstr= jstr(item,"sig")) != 0 && (len= is_hexstr(sigstr,0)) > 70*2 && len < 76*2  )
+                {
+                    siglen = len >> 1;
+                    decode_hex(sig,siglen,sigstr);
+                    if ( _LP_pubkey_sigcheck(sig,siglen,pubp->pubkey,rmd160,pubsecp) == 0 )
+                    {
+                        for (i=0; i<20; i++)
+                            printf("%02x",pubp->rmd160[i]);
+                        memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
+                        memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
+                        char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
+                    } else printf("sig error\n");
+                }
+            }
+        }
+    }
 }
 
 char *LP_notify_recv(cJSON *argjson)
 {
-    char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp; //double millis = OS_milliseconds();
+    bits256 pub; struct LP_pubkeyinfo *pubp;
     pub = jbits256(argjson,"pub");
-    // LP_checksig
-    if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
+    if ( bits256_nonz(pub) != 0 )
     {
         if ( (pubp= LP_pubkeyadd(pub)) != 0 )
-        {
-            decode_hex(pubp->rmd160,20,rmd160str);
-            if ( (secpstr= jstr(argjson,"pubsecp")) != 0 )
-            {
-                decode_hex(pubp->pubsecp,sizeof(pubp->pubsecp),secpstr);
-                //printf("got pubkey.(%s)\n",secpstr);
-            }
-        }
+            LP_pubkey_sigcheck(pubp,argjson);
         //char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);
     }
     return(clonestr("{\"result\":\"success\",\"notify\":\"received\"}"));

@@ -275,6 +275,18 @@ struct basilisk_swap
     
 };
 
+#define LP_MAXPRICEINFOS 256
+struct LP_pubkeyinfo
+{
+    UT_hash_handle hh;
+    bits256 pubkey;
+    double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
+    uint32_t timestamp,istrusted,numerrors;
+    uint8_t rmd160[20],sig[76],pubsecp[33],siglen;
+};
+
+void LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
+int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
 void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t vout);
 void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
 uint32_t basilisk_requestid(struct basilisk_request *rp);
