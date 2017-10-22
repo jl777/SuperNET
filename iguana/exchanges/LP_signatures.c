@@ -358,7 +358,7 @@ int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,ui
     {
         init_hexbytes_noT(sigstr,sig,siglen);
         jaddstr(item,"sig",sigstr);
-        printf("sigadd check: %d %s siglen.%d\n",_LP_pubkey_sigcheck(sig,siglen,pub,rmd160,pubsecp),sigstr,siglen);
+        printf("sigadd check: %d/%d %s siglen.%d\n",bitcoin_verify(ctx,sig,siglen,sighash,pubsecp,33),_LP_pubkey_sigcheck(sig,siglen,pub,rmd160,pubsecp),sigstr,siglen);
         return(siglen);
     } else return(0);
 }
