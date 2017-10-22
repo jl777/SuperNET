@@ -338,6 +338,15 @@ bits256 LP_pubkey_sighash(bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
     return(sighash);
 }
 
+int32_t _LP_pubkey_sigcheck(uint8_t *sig,int32_t siglen,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
+{
+    static void *ctx;
+    bits256 sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    return(bitcoin_verify(ctx,sig,siglen,sighash,pubsecp,33));
+}
+
 int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
 {
     static void *ctx;
@@ -349,17 +358,9 @@ int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,ui
     {
         init_hexbytes_noT(sigstr,sig,siglen);
         jaddstr(item,"sig",sigstr);
+        printf("sigadd check: %d %s siglen.%d\n",_LP_pubkey_sigcheck(sig,siglen,pub,rmd160,pubsecp),sigstr,siglen);
         return(siglen);
     } else return(0);
-}
-
-int32_t _LP_pubkey_sigcheck(uint8_t *sig,int32_t siglen,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
-{
-    static void *ctx;
-    bits256 sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
-    if ( ctx == 0 )
-        ctx = bitcoin_ctx();
-    return(bitcoin_verify(ctx,sig,siglen,sighash,pubsecp,33));
 }
 
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
@@ -407,6 +408,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     LP_pubkey_sigadd(reqjson,G.LP_mypriv25519,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
     if ( LP_pubkey_sigcheck(LP_pubkeyadd(G.LP_mypub25519),reqjson) == 0 )
         printf("sig verified\n");
+    else printf("sig error\n");
     LP_reserved_msg("","",zero,jprint(reqjson,1));
 }
 
