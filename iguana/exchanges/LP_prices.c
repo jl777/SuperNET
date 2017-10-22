@@ -670,6 +670,23 @@ struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,d
     return(op);
 }
 
+void LP_pubkeys_query()
+{
+    uint8_t zeroes[20]; bits256 zero; cJSON *reqjson; struct LP_pubkeyinfo *pubp=0,*tmp;
+    memset(zero.bytes,0,sizeof(zero));
+    memset(zeroes,0,sizeof(zeroes));
+    HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
+    {
+        if ( memcmp(zeroes,pubp->rmd160,sizeof(pubp->rmd160)) == 0 )
+        {
+            reqjson = cJSON_CreateObject();
+            jaddstr(reqjson,"method","wantnotify");
+            jaddbits256(reqjson,"pub",pubp->pubkey);
+            LP_reserved_msg("","",zero,jprint(reqjson,1));
+        }
+    }
+}
+
 int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum,int32_t duration)
 {
     char coinaddr[64]; uint8_t zeroes[20]; struct LP_pubkeyinfo *pubp=0,*tmp; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; struct LP_address *ap; struct iguana_info *basecoin; uint32_t oldest; double price; int32_t baseid,relid,n; uint64_t minsatoshis,maxsatoshis;
@@ -731,6 +748,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
             suppress_prefetch = 1;
         duration = LP_ORDERBOOK_DURATION;
     }
+    LP_pubkeys_query();
     baseid = basepp->ind;
     relid = relpp->ind;
     now = (uint32_t)time(NULL);
