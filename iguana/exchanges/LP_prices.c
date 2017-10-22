@@ -1074,7 +1074,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
                 dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
             }
             pubp->timestamp = (uint32_t)time(NULL);
-        } else printf("error finding pubkey entry\n");
+        } else printf("error finding pubkey entry %s, ok if rare\n",bits256_str(str,pubkey));
     }
     //else if ( (rand() % 100) == 0 )
     //    printf("error finding %s/%s %.8f\n",base,rel,price);
