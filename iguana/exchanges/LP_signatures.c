@@ -394,8 +394,6 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                 {
                     decode_hex(pubsecp,sizeof(pubsecp),pubsecpstr);
                     calc_rmd160(0,checkrmd160,pubsecp,33);
-                    //memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160)); // transition
-                    //memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
                     if ( memcmp(checkrmd160,rmd160,20) == 0 && (sigstr= jstr(item,"sig")) != 0 && (len= is_hexstr(sigstr,0)) == 65*2  )
                     {
                         siglen = len >> 1;
@@ -411,6 +409,15 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                             pubp->timestamp = (uint32_t)time(NULL);
                         } //else printf("sig %s error pub33.%s\n",sigstr,pubsecpstr);
                     }
+                    else
+                    {
+                        for (i=0; i<20; i++)
+                            printf("%02x",rmd160[i]);
+                        printf(" rmd160 vs ");
+                        for (i=0; i<20; i++)
+                            printf("%02x",checkrmd160[i]);
+                        printf(" for %s\n",pubsecpstr);
+                   }
                 }
             } else pubp->timestamp = (uint32_t)time(NULL);
         }
