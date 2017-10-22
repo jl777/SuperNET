@@ -628,8 +628,8 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                 spentvout = jint(vin,"vout");
                 if ( i == 0 && bits256_nonz(spenttxid) == 0 )
                     continue;
-                if ( strcmp("REVS",coin->symbol) == 0 )
-                    printf("ht.%d vini.%d %s/v%d spent\n",height,i,bits256_str(str,spenttxid),spentvout);
+                //if ( strcmp("REVS",coin->symbol) == 0 )
+                //    printf("ht.%d vini.%d %s/v%d spent\n",height,i,bits256_str(str,spenttxid),spentvout);
                 if ( (tx= LP_transactionfind(coin,spenttxid)) != 0 )
                 {
                     if ( spentvout < tx->numvouts )
