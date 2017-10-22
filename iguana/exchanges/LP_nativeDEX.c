@@ -126,7 +126,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
             //if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 &&
                 //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
         }
-    } else printf("finished tradecommand (%s)\n",jprint(argjson,0));
+    } //else printf("finished tradecommand (%s)\n",jprint(argjson,0));
     //if ( OS_milliseconds()-millis > 100 )
     //    printf("%.3f %s\n",OS_milliseconds()-millis,jprint(argjson,0));
     return(retstr);
@@ -728,7 +728,7 @@ int32_t LP_reserved_msgs()
                 LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
                 Reserved_msgs[num_Reserved_msgs] = 0;
                 portable_mutex_unlock(&LP_reservedmutex);
-                usleep(5000);
+                usleep(1000);
             } else break;
         } else break;
         if ( ++n > 100 )
