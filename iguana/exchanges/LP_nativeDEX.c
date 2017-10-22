@@ -238,7 +238,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock,char *remoteaddr,int32_t maxdepth)
 {
-    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char *retstr,*str; struct nn_pollfd pfd;
+    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char methodstr[64],*retstr,*str; struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
         while ( nonz < maxdepth && recvlen > 0 )
@@ -250,16 +250,17 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-                if ( 0 )
+                if ( 1 )
                 {
-                    cJSON *recvjson; char *mstr,*cstr;
+                    cJSON *recvjson; //char *mstr,*cstr;
                     if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
                     {
-                        if ( (mstr= jstr(recvjson,"method")) != 0 && strcmp(mstr,"uitem") == 0 &&
+                        /*if ( (mstr= jstr(recvjson,"method")) != 0 && strcmp(mstr,"uitem") == 0 &&
                             (cstr= jstr(recvjson,"coin")) != 0 && strcmp(cstr,"REVS") == 0 )
                         {
                             printf("%s RECV.(%s)\n",typestr,(char *)ptr);
-                        }
+                        }*/
+                        safecopy(methodstr,jstr(recvjson,"method"),sizeof(methodstr));
                         free_json(recvjson);
                     }
                 }
@@ -267,6 +268,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 if ( LP_lastcommand != 0 )
                     free(LP_lastcommand);
                 LP_lastcommand = clonestr((char *)ptr);
+                double millis = OS_milliseconds();
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
                 if ( Broadcaststr != 0 )
@@ -292,6 +294,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     }
                     free(str);
                 }
+                printf("%.3f LP_process_message %s\n",OS_milliseconds()-millis,methodstr);
             }
         }
     }
