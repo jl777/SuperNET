@@ -380,6 +380,15 @@ void command_rpcloop(void *myipaddr)
     }
 }
 
+void utxosQ_loop(void *myipaddr)
+{
+    while ( 1 )
+    {
+        if ( LP_utxosQ_process() == 0 )
+            usleep(10000);
+    }
+}
+
 int32_t LP_utxos_sync(struct LP_peerinfo *peer)
 {
     int32_t i,j,n=0,m,v,posted=0; bits256 txid; cJSON *array,*item,*item2,*array2,*array3; uint64_t total,total2,metric; struct iguana_info *coin,*ctmp; struct LP_address *ap; char *retstr,*retstr2,*coinaddr;
@@ -570,7 +579,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         myipaddr = "127.0.0.1";
     numpeers = LP_numpeers();
     needpings = 0;
-    fprintf(stderr,"P");
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( peer->errors >= LP_MAXPEER_ERRORS )
@@ -589,12 +597,9 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 nonz++;
-                fprintf(stderr,"q");
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
-                fprintf(stderr,"p");
                 LP_peer_pricesquery(peer);
-                fprintf(stderr,"u");
                 //LP_utxos_sync(peer);
                 needpings++;
             }
@@ -602,11 +607,9 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( peer->needping != 0 )
         {
-            fprintf(stderr,"u");
             LP_utxos_sync(peer);
             peer->diduquery = now;
             nonz++;
-            fprintf(stderr,"n");
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
             peer->needping = 0;
@@ -617,29 +620,24 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     {
         nonz++;
         //printf("needpings.%d send notify\n",needpings);
-        fprintf(stderr,"p");
         LP_notify_pubkeys(ctx,pubsock);
     }
     if ( (counter % 6000) == 10 )
     {
-        fprintf(stderr,"K");
         nonz++;
         LP_privkey_updates(ctx,pubsock,0);
     }
-    fprintf(stderr,"C");
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         if ( coin->addr_listunspent_requested != 0 )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
-            fprintf(stderr,">");
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
         }
         if ( time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {
             nonz++;
-            fprintf(stderr,"X");
             if ( (height= LP_getheight(coin)) > coin->longestchain )
             {
                 coin->longestchain = height;
@@ -651,7 +649,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     if ( (counter % 100000) == 90000 )
     {
-        fprintf(stderr,"S");
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
         {
             //printf("SWAPS.(%s)\n",retstr);
@@ -659,7 +656,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             free(retstr);
         }
     }
-    fprintf(stderr,".");
     counter++;
     return(nonz);
 }
@@ -726,9 +722,9 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
     }
 }
 
-int32_t LP_reserved_msgs()
+void LP_reserved_msgs(void *ignore)
 {
-    bits256 zero; int32_t flag,n = 0; struct nn_pollfd pfd;
+    bits256 zero; int32_t flag; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
     {
@@ -751,13 +747,10 @@ int32_t LP_reserved_msgs()
                 LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
                 Reserved_msgs[num_Reserved_msgs] = 0;
                 portable_mutex_unlock(&LP_reservedmutex);
-                usleep(3000);
-            } else break;
-        } else break;
-        if ( ++n > 1 )
-            break;
+            }
+        }
+        usleep(3000);
     }
-    return(n);
 }
 
 int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
@@ -911,6 +904,16 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_psockloop for (%s)\n",myipaddr);
         exit(-1);
     }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_reserved_msgs,(void *)myipaddr) != 0 )
+    {
+        printf("error launching LP_reserved_msgs for (%s)\n",myipaddr);
+        exit(-1);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)utxosQ_loop,(void *)myipaddr) != 0 )
+    {
+        printf("error launching utxosQ_loop for (%s)\n",myipaddr);
+        exit(-1);
+    }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
@@ -951,7 +954,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         }
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
-        fprintf(stderr," nonz.%d\n",nonz);
         if ( nonz == 0 )
             usleep(1000);
         else if ( IAMLP == 0 )
