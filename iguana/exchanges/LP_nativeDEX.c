@@ -728,7 +728,8 @@ int32_t LP_reserved_msgs()
                 LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
                 Reserved_msgs[num_Reserved_msgs] = 0;
                 portable_mutex_unlock(&LP_reservedmutex);
-            }
+                usleep(5000);
+            } else break;
         } else break;
         if ( ++n > 100 )
             break;
