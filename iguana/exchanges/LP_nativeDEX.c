@@ -677,29 +677,35 @@ int32_t LP_reserved_msgs()
 {
     bits256 zero; int32_t n = 0; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
-    portable_mutex_lock(&LP_reservedmutex);
-    while ( num_Reserved_msgs > 0 )
+    while ( 1 )
     {
-        memset(&pfd,0,sizeof(pfd));
-        pfd.fd = LP_mypubsock;
-        pfd.events = NN_POLLOUT;
-        if ( nn_poll(&pfd,1,1) != 1 )
-            break;
-        num_Reserved_msgs--;
-        //printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
+        portable_mutex_lock(&LP_reservedmutex);
+        if ( num_Reserved_msgs > 0 )
+        {
+            portable_mutex_unlock(&LP_reservedmutex);
+            memset(&pfd,0,sizeof(pfd));
+            pfd.fd = LP_mypubsock;
+            pfd.events = NN_POLLOUT;
+            if ( nn_poll(&pfd,1,1) == 1 )
+            {
+                portable_mutex_lock(&LP_reservedmutex);
+                num_Reserved_msgs--;
+                //printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
 #ifdef __APPLE__
 #endif
-        LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
-        Reserved_msgs[num_Reserved_msgs] = 0;
-/*#ifdef __APPLE__
-        usleep(5000);
-#else
-        usleep(3000);
-#endif*/
+                LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
+                Reserved_msgs[num_Reserved_msgs] = 0;
+                /*#ifdef __APPLE__
+                 usleep(5000);
+                 #else
+                 usleep(3000);
+                 #endif*/
+            }
+        }
+        portable_mutex_unlock(&LP_reservedmutex);
         if ( ++n > 0 )
             break;
     }
-    portable_mutex_unlock(&LP_reservedmutex);
     return(n);
 }
 
