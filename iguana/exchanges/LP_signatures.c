@@ -343,7 +343,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 
 char *LP_notify_recv(cJSON *argjson)
 {
-    char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp; double millis = OS_milliseconds();
+    char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp; //double millis = OS_milliseconds();
     pub = jbits256(argjson,"pub");
     // LP_checksig
     if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
