@@ -616,17 +616,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             needpings++;
         }
     }
-    if ( needpings != 0 || (counter % 10000) == 5 )
-    {
-        nonz++;
-        //printf("needpings.%d send notify\n",needpings);
-        LP_notify_pubkeys(ctx,pubsock);
-    }
-    if ( (counter % 6000) == 10 )
-    {
-        nonz++;
-        LP_privkey_updates(ctx,pubsock,0);
-    }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         if ( coin->addr_listunspent_requested != 0 )
@@ -645,15 +634,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                     printf(">>>>>>>>>> set %s longestchain %d (ref.%d [%d, %d])\n",coin->symbol,height,coin->firstrefht,coin->firstscanht,coin->lastscanht);
             } //else LP_mempoolscan(coin->symbol,zero);
             coin->lastgetinfo = (uint32_t)time(NULL);
-        }
-    }
-    if ( (counter % 100000) == 90000 )
-    {
-        if ( (retstr= basilisk_swapentry(0,0)) != 0 )
-        {
-            //printf("SWAPS.(%s)\n",retstr);
-            nonz++;
-            free(retstr);
         }
     }
     counter++;
@@ -719,6 +699,38 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
                 LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport);
             }
         } else LP_peersquery(mypeer,pubsock,seednode,myport,"127.0.0.1",myport);
+    }
+}
+
+void LP_pubkeysloop(void *ctx)
+{
+    sleep(10);
+    while ( 1 )
+    {
+        LP_notify_pubkeys(ctx,LP_mypubsock);
+        sleep(60);
+    }
+}
+
+void LP_privkeysloop(void *ctx)
+{
+    sleep(20);
+    while ( 1 )
+    {
+        LP_privkey_updates(ctx,LP_mypubsock,0);
+        sleep(60);
+    }
+}
+
+void LP_swapsloop(void *ignore)
+{
+    char *retstr;
+    sleep(50);
+    while ( 1 )
+    {
+        if ( (retstr= basilisk_swapentry(0,0)) != 0 )
+            free(retstr);
+        sleep(600);
     }
 }
 
@@ -939,7 +951,22 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_coinsloop for port.%u\n",myport);
         exit(-1);
     }
-    //if ( (retstr= basilisk_swapentry(0,0)) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_pubkeysloop,(void *)&myipaddr) != 0 )
+    {
+        printf("error launching LP_pubkeysloop for ctx.%p\n",ctx);
+        exit(-1);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,(void *)&myipaddr) != 0 )
+    {
+        printf("error launching LP_privkeysloop for ctx.%p\n",ctx);
+        exit(-1);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)&myipaddr) != 0 )
+    {
+        printf("error launching LP_swapsloop for port.%u\n",myport);
+        exit(-1);
+    }
+  //if ( (retstr= basilisk_swapentry(0,0)) != 0 )
     //    free(retstr);
     int32_t nonz;
     printf("start mainloop\n");
