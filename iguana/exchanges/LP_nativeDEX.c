@@ -500,10 +500,69 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
     return(posted);
 }
 
+void LP_coinsloop(void *myipaddr)
+{
+    struct iguana_info *coin,*ctmp; bits256 zero; int32_t j,nonz;
+    while ( 1 )
+    {
+        nonz = 0;
+        HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
+        {
+            memset(&zero,0,sizeof(zero));
+            if ( coin->inactive != 0 )
+                continue;
+            if ( coin->electrum != 0 )
+                continue;
+            if ( coin->firstrefht == 0 )
+                continue;
+            else if ( coin->firstscanht == 0 )
+                coin->lastscanht = coin->firstscanht = coin->firstrefht;
+            else if ( coin->firstrefht < coin->firstscanht )
+            {
+                printf("detected %s firstrefht.%d < firstscanht.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht);
+                coin->lastscanht = coin->firstscanht = coin->firstrefht;
+            }
+            if ( coin->lastscanht == coin->longestchain+1 )
+            {
+                printf("%s lastscanht.%d is longest.%d + 1\n",coin->symbol,coin->lastscanht,coin->longestchain);
+                continue;
+            }
+            else if ( coin->lastscanht > coin->longestchain+1 )
+            {
+                printf("detected chain rewind lastscanht.%d vs longestchain.%d, first.%d ref.%d\n",coin->lastscanht,coin->longestchain,coin->firstscanht,coin->firstrefht);
+                LP_undospends(coin,coin->longestchain-1);
+                //LP_mempoolscan(coin->symbol,zero);
+                coin->lastscanht = coin->longestchain - 1;
+                if ( coin->firstscanht < coin->lastscanht )
+                    coin->lastscanht = coin->firstscanht;
+                continue;
+            }
+            //if ( (coin->lastscanht % 1000) == 0 )
+            for (j=0; j<100; j++)
+            {
+                //if ( strcmp("REVS",coin->symbol) == 0 )
+                printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
+                if ( LP_blockinit(coin,coin->lastscanht) < 0 )
+                {
+                    printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
+                    break;
+                }
+                coin->lastscanht++;
+                if ( coin->lastscanht == coin->longestchain+1 )
+                    break;
+            }
+            nonz++;
+            continue;
+        }
+        if ( nonz == 0 )
+            usleep(1000);
+    }
+}
+
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport)
 {
     static uint32_t counter,numpeers;
-    struct iguana_info *coin,*ctmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp; uint32_t now; bits256 zero; int32_t needpings,j,height,nonz = 0;
+    struct iguana_info *coin,*ctmp; char *retstr,*origipaddr; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t needpings,height,nonz = 0;
     now = (uint32_t)time(NULL);
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
@@ -571,7 +630,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         fprintf(stderr,"%s ",coin->symbol);
-        memset(&zero,0,sizeof(zero));
         if ( coin->addr_listunspent_requested != 0 )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
@@ -579,12 +637,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
         }
-        if ( coin->inactive != 0 )
-            continue;
-        if ( coin->electrum != 0 )
-            continue;
-        //if ( coin->obooktime == 0 )
-        //    continue;
         if ( time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {
             nonz++;
@@ -597,57 +649,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             } //else LP_mempoolscan(coin->symbol,zero);
             coin->lastgetinfo = (uint32_t)time(NULL);
         }
-        if ( coin->firstrefht == 0 )
-        {
-            printf("%s no firstrefht\n",coin->symbol);
-            continue;
-        }
-        else if ( coin->firstscanht == 0 )
-            coin->lastscanht = coin->firstscanht = coin->firstrefht;
-        else if ( coin->firstrefht < coin->firstscanht )
-        {
-            printf("detected %s firstrefht.%d < firstscanht.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht);
-            coin->lastscanht = coin->firstscanht = coin->firstrefht;
-        }
-        if ( coin->lastscanht == coin->longestchain+1 )
-        {
-            printf("%s lastscanht.%d is longest.%d + 1\n",coin->symbol,coin->lastscanht,coin->longestchain);
-            continue;
-        }
-        else if ( coin->lastscanht > coin->longestchain+1 )
-        {
-            printf("detected chain rewind lastscanht.%d vs longestchain.%d, first.%d ref.%d\n",coin->lastscanht,coin->longestchain,coin->firstscanht,coin->firstrefht);
-            LP_undospends(coin,coin->longestchain-1);
-            LP_mempoolscan(coin->symbol,zero);
-            coin->lastscanht = coin->longestchain - 1;
-            if ( coin->firstscanht < coin->lastscanht )
-                coin->lastscanht = coin->firstscanht;
-            continue;
-        }
-        //if ( (coin->lastscanht % 1000) == 0 )
-        for (j=0; j<100; j++)
-        {
-            //if ( strcmp("REVS",coin->symbol) == 0 )
-                printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
-            if ( LP_blockinit(coin,coin->lastscanht) < 0 )
-            {
-                printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
-                break;
-            }
-            coin->lastscanht++;
-            if ( coin->lastscanht == coin->longestchain+1 )
-                break;
-        }
-        nonz++;
-        if ( j < 100 )
-            continue;
-        printf("break out of coins iters\n");
-        //LP_getestimatedrate(coin);
-        break;
     }
-    fprintf(stderr,"S");
     if ( (counter % 100000) == 90000 )
     {
+        fprintf(stderr,"S");
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
         {
             //printf("SWAPS.(%s)\n",retstr);
@@ -655,6 +660,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             free(retstr);
         }
     }
+    fprintf(stderr,".");
     counter++;
     return(nonz);
 }
@@ -913,17 +919,22 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,(void *)&myipaddr) != 0 )
     {
-        printf("error launching stats rpcloop for port.%u\n",myport);
+        printf("error launching command_rpcloop for port.%u\n",myport);
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)queue_loop,(void *)&myipaddr) != 0 )
     {
-        printf("error launching stats rpcloop for port.%u\n",myport);
+        printf("error launching queue_loop for port.%u\n",myport);
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,(void *)&myipaddr) != 0 )
     {
-        printf("error launching stats rpcloop for port.%u\n",myport);
+        printf("error launching prices_loop for port.%u\n",myport);
+        exit(-1);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)&myipaddr) != 0 )
+    {
+        printf("error launching LP_coinsloop for port.%u\n",myport);
         exit(-1);
     }
     //if ( (retstr= basilisk_swapentry(0,0)) != 0 )
