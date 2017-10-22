@@ -393,7 +393,7 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                 if ( (pubsecpstr= jstr(item,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
                 {
                     decode_hex(pubsecp,sizeof(pubsecp),pubsecpstr);
-                    calc_rmd160(0,checkrmd160,pubsecp,33);
+                    calc_rmd160_sha256(checkrmd160,pubsecp,33);
                     if ( memcmp(checkrmd160,rmd160,20) == 0 && (sigstr= jstr(item,"sig")) != 0 && (len= is_hexstr(sigstr,0)) == 65*2  )
                     {
                         siglen = len >> 1;
