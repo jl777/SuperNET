@@ -421,7 +421,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     jaddbits256(reqjson,"pub",G.LP_mypub25519);
     init_hexbytes_noT(secpstr,G.LP_pubsecp,33);
     jaddstr(reqjson,"pubsecp",secpstr);
-    LP_pubkey_sigadd(reqjson,G.LP_mypriv25519,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
+    LP_pubkey_sigadd(reqjson,G.LP_privkey,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
     LP_reserved_msg("","",zero,jprint(reqjson,1));
 }
 

@@ -382,9 +382,9 @@ stop()\n\
                 {
                     //privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
                     //LP_utxopurge(0);
-                    if ( bits256_nonz(G.LP_mypriv25519) != 0 )
-                        LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
-                    else printf("no LP_mypriv25519\n");
+                    if ( bits256_nonz(G.LP_privkey) != 0 )
+                        LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
+                    else printf("no LP_privkey\n");
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
                     jaddstr(retjson,"coin",coin);
@@ -483,9 +483,9 @@ stop()\n\
                 {
                     LP_address(ptr,coinaddr);
                     LP_listunspent_issue(coin,coinaddr,1);
-                    if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
+                    if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                     {
-                        LP_privkey_init(-1,ptr,G.LP_mypriv25519,G.LP_mypub25519);
+                        LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                         //LP_smartutxos_push(ptr);
                     }
                     else
@@ -508,7 +508,7 @@ stop()\n\
                 if ( coinaddr[0] != 0 )
                 {
                     LP_address(ptr,coinaddr);
-                    if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_mypriv25519) != 0 )
+                    if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                     {
                         //printf("ADDR_UNSPENTS %s %s is my address being asked for!\n",ptr->symbol,coinaddr);
                         ptr->addr_listunspent_requested = (uint32_t)time(NULL);
