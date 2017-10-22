@@ -260,21 +260,39 @@ void LP_postutxos(char *symbol,char *coinaddr)
     }
 }
 
+queue_t utxosQ;
+struct LP_utxos_qitem { struct queueitem DL; cJSON *argjson; };
+
 char *LP_postutxos_recv(cJSON *argjson)
 {
-    int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
-    //printf("posted.(%s)\n",jprint(argjson,0));
-    if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
-    {
-        if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )
-        {
-            if ( (array= jarray(&n,argjson,"utxos")) != 0 )
-                LP_unspents_array(coin,coinaddr,array);
-        }
-        else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr,1)) != 0 )
-            free_json(array);
-    }
+    struct LP_utxos_qitem *uitem;
+    uitem = calloc(1,sizeof(*uitem));
+    uitem->argjson = jduplicate(argjson);
+    queue_enqueue("utxosQ",&utxosQ,&uitem->DL);
     return(clonestr("{\"result\":\"success\"}"));
+}
+
+int32_t LP_utxosQ_process()
+{
+    struct LP_utxos_qitem *uitem; int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
+    if ( (uitem= queue_dequeue(&utxosQ)) != 0 )
+    {
+        printf("LP_utxosQ_process.(%s)\n",jprint(uitem->argjson,0));
+        if ( (coinaddr= jstr(uitem->argjson,"coinaddr")) != 0 && (symbol= jstr(uitem->argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
+        {
+            if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )
+            {
+                if ( (array= jarray(&n,uitem->argjson,"utxos")) != 0 )
+                    LP_unspents_array(coin,coinaddr,array);
+            }
+            else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr,1)) != 0 )
+                free_json(array);
+        }
+        free_json(uitem->argjson);
+        free(uitem);
+        return(1);
+    }
+    return(0);
 }
 
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price)
