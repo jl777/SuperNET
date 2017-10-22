@@ -391,13 +391,13 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     jaddbits256(reqjson,"pubkey",qp->srchash);
     jaddstr(reqjson,"method",method);
     msg = jprint(reqjson,1);
-    msg2 = clonestr(msg);
     // LP_addsig
     printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs)-2 )
     {
+        msg2 = clonestr(msg);
         Reserved_msgs[num_Reserved_msgs++] = msg;
         Reserved_msgs[num_Reserved_msgs++] = msg2;
     }

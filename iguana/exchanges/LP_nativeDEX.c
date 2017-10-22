@@ -54,7 +54,6 @@ int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
 int32_t LP_showwif,IAMLP = 0;
 double LP_profitratio = 1.;
-char *LP_lastcommand;
 
 struct LP_privkey { bits256 privkey; uint8_t rmd160[20]; };
 
@@ -265,9 +264,6 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free_json(recvjson);
                     }
                 }
-                if ( LP_lastcommand != 0 )
-                    free(LP_lastcommand);
-                LP_lastcommand = clonestr((char *)ptr);
                 //double millis = OS_milliseconds();
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
@@ -280,9 +276,6 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     {
                         if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
                             printf("self.(%s)\n",str);
-                        if ( LP_lastcommand != 0 )
-                            free(LP_lastcommand);
-                        LP_lastcommand = clonestr(str);
                         if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                         {
                             portable_mutex_lock(&LP_commandmutex);
@@ -323,7 +316,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
         milli = OS_milliseconds();
         nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr,1);
         if ( OS_milliseconds()-milli > 100 )
-            fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds: (%s)\n",OS_milliseconds()-milli,LP_lastcommand!=0?LP_lastcommand:"");
+            fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds\n",OS_milliseconds()-milli);
     }
     /*HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
      {
@@ -337,7 +330,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
         milli = OS_milliseconds();
         nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
         if ( OS_milliseconds()-milli > 100 )
-            fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds: (%s)\n",OS_milliseconds()-milli,LP_lastcommand!=0?LP_lastcommand:"");
+            fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds\n",OS_milliseconds()-milli);
     }
     //portable_mutex_unlock(&LP_nanorecvsmutex);
     return(nonz);
