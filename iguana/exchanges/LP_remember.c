@@ -260,7 +260,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
     }
     txid = txids[utxoind];
     memset(&spendtxid,0,sizeof(spendtxid));
-    if ( bits256_nonz(txid) != 0 && sentflags[utxoind] != 0 )
+    if ( bits256_nonz(txid) != 0 )//&& sentflags[utxoind] != 0 )
     {
         destaddr[0] = 0;
         spendtxid = LP_swap_spendtxid(symbol,destaddr,txid,vout);
