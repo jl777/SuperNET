@@ -242,6 +242,10 @@ printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
             peerind = (rand() % maxind);
         else peerind = 0;
         sock0 = LP_peerindsock(&peerind);
+        if ( (maxind= LP_numpeers()) > 0 )
+            peerind = (rand() % maxind);
+        else peerind = 0;
+        sock1 = LP_peerindsock(&peerind);
     }
     if ( sock0 >= 0 )
         _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
