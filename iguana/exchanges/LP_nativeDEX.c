@@ -289,7 +289,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     }
                     free(str);
                 }
-                if ( OS_milliseconds()-millis > 100 )
+                if ( OS_milliseconds()-millis > 1000 )
                     printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
             }
         }
