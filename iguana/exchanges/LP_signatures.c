@@ -381,7 +381,7 @@ int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,ui
 
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
 {
-    int32_t i,siglen,len,retval=-1; uint8_t rmd160[20],checkrmd160[20],pubsecp[33],sig[128],zeroes[20]; char *sigstr,*hexstr,*pubsecpstr;
+    int32_t i,len,siglen,retval=-1; uint8_t rmd160[20],checkrmd160[20],pubsecp[33],sig[65],zeroes[20]; char *sigstr,*hexstr,*pubsecpstr;
     if ( (hexstr= jstr(item,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
     {
         decode_hex(rmd160,sizeof(rmd160),hexstr);
@@ -406,6 +406,8 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                                     printf("%02x",pubp->rmd160[i]);
                                 memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
                                 memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
+                                memcpy(pubp->sig,sig,sizeof(pubp->sig));
+                                pubp->siglen = siglen;
                                 char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
                                 retval = 0;
                                 pubp->timestamp = (uint32_t)time(NULL);

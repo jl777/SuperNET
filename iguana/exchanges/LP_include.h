@@ -282,7 +282,7 @@ struct LP_pubkeyinfo
     bits256 pubkey;
     double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
     uint32_t timestamp,istrusted,numerrors;
-    uint8_t rmd160[20],sig[76],pubsecp[33],siglen;
+    uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };
 
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
