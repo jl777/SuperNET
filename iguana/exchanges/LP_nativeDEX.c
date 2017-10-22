@@ -265,7 +265,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free_json(recvjson);
                     }
                 }
-                //double millis = OS_milliseconds();
+                double millis = OS_milliseconds();
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
                 if ( Broadcaststr != 0 )
@@ -288,7 +288,8 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     }
                     free(str);
                 }
-                //printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
+                if ( OS_milliseconds()-millis > 100 )
+                    printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
             }
         }
     }
@@ -297,7 +298,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
 
 int32_t LP_nanomsg_recvs(void *ctx)
 {
-    int32_t nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp; double milli;
+    int32_t nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp;
     if ( (origipaddr= LP_myipaddr) == 0 )
         origipaddr = "127.0.0.1";
     //portable_mutex_lock(&LP_nanorecvsmutex);
@@ -314,10 +315,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
             }
         }
         //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
-        milli = OS_milliseconds();
         nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr,1);
-        if ( OS_milliseconds()-milli > 100 )
-            fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds\n",OS_milliseconds()-milli);
     }
     /*HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
      {
@@ -328,10 +326,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
      }*/
     if ( LP_mypullsock >= 0 )
     {
-        milli = OS_milliseconds();
         nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
-        if ( OS_milliseconds()-milli > 100 )
-            fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds\n",OS_milliseconds()-milli);
     }
     //portable_mutex_unlock(&LP_nanorecvsmutex);
     return(nonz);
