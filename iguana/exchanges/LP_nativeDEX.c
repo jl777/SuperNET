@@ -378,8 +378,7 @@ void command_rpcloop(void *myipaddr)
             else usleep(10000);
         }
         else if ( IAMLP == 0 )
-            usleep(1000);
-        else usleep(10);
+            usleep(100);
     }
 }
 
@@ -728,7 +727,7 @@ int32_t LP_reserved_msgs()
                 LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
                 Reserved_msgs[num_Reserved_msgs] = 0;
                 portable_mutex_unlock(&LP_reservedmutex);
-                usleep(5000);
+                usleep(3000);
             } else break;
         } else break;
         if ( ++n > 1 )
@@ -924,10 +923,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
         if ( nonz == 0 )
-            usleep(10000);
-        else if ( IAMLP != 0 )
-            usleep(10);
-        else usleep(10000);
+            usleep(1000);
+        else if ( IAMLP == 0 )
+            usleep(1000);
     }
 }
 
