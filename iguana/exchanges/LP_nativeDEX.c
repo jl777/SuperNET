@@ -586,7 +586,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             coin->lastgetinfo = (uint32_t)time(NULL);
         }
         if ( coin->firstrefht == 0 )
+        {
+            printf("%s no firstrefht\n",coin->symbol);
             continue;
+        }
         else if ( coin->firstscanht == 0 )
             coin->lastscanht = coin->firstscanht = coin->firstrefht;
         else if ( coin->firstrefht < coin->firstscanht )
@@ -595,7 +598,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             coin->lastscanht = coin->firstscanht = coin->firstrefht;
         }
         if ( coin->lastscanht == coin->longestchain+1 )
+        {
+            printf("%s lastscanht.%d is longest.%d + 1\n",coin->synbol,coin->lastscanht,coin->longestchain)
             continue;
+        }
         else if ( coin->lastscanht > coin->longestchain+1 )
         {
             printf("detected chain rewind lastscanht.%d vs longestchain.%d, first.%d ref.%d\n",coin->lastscanht,coin->longestchain,coin->firstscanht,coin->firstrefht);
@@ -609,7 +615,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         //if ( (coin->lastscanht % 1000) == 0 )
         for (j=0; j<100; j++)
         {
-            if ( strcmp("REVS",coin->symbol) == 0 )
+            //if ( strcmp("REVS",coin->symbol) == 0 )
                 printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
             if ( LP_blockinit(coin,coin->lastscanht) < 0 )
             {
@@ -623,6 +629,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         nonz++;
         if ( j < 100 )
             continue;
+        printf("break out of coins iters\n");
         //LP_getestimatedrate(coin);
         break;
     }
