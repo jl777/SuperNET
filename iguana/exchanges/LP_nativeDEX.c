@@ -535,7 +535,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             needpings++;
         }
     }
-    if ( needpings != 0 )//|| (counter % 6000) == 5 )
+    if ( needpings != 0 || (counter % 100000) == 5 )
     {
         nonz++;
         printf("needpings.%d send notify\n",needpings);
