@@ -533,7 +533,7 @@ void LP_coinsloop(void *myipaddr)
             }
             if ( coin->lastscanht == coin->longestchain+1 )
             {
-                printf("%s lastscanht.%d is longest.%d + 1\n",coin->symbol,coin->lastscanht,coin->longestchain);
+                //printf("%s lastscanht.%d is longest.%d + 1\n",coin->symbol,coin->lastscanht,coin->longestchain);
                 continue;
             }
             else if ( coin->lastscanht > coin->longestchain+1 )
