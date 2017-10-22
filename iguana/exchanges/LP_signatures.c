@@ -390,9 +390,9 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
             if ( (pubsecpstr= jstr(item,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
             {
                 decode_hex(pubsecp,sizeof(pubsecp),pubsecpstr);
-                memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160)); // transition
-                memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
-                if ( (sigstr= jstr(item,"sig")) != 0 && (len= is_hexstr(sigstr,0)) > 70*2 && len < 76*2  )
+                //memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160)); // transition
+                //memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
+                if ( (sigstr= jstr(item,"sig")) != 0 && (len= is_hexstr(sigstr,0)) == 65*2  )
                 {
                     siglen = len >> 1;
                     decode_hex(sig,siglen,sigstr);
