@@ -814,7 +814,7 @@ int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi
             rswap->sentflags[txi] = 1;
             _LP_refht_update(coin,rswap->txids[txi],tx->height);
         } else LP_refht_update(symbol,rswap->txids[txi]);
-    }
+    } else printf("sent.%d %s txi.%d\n",rswap->sentflags[txi],bits256_str(str,rswap->txids[txi]),txi);
     return(0);
 }
 
