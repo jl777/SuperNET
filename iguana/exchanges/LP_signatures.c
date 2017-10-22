@@ -350,31 +350,31 @@ int32_t _LP_pubkey_sigcheck(uint8_t *sig,int32_t siglen,bits256 pub,uint8_t *rmd
 int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
 {
     static void *ctx;
-    uint8_t sig[128],pub33[33]; int32_t i,siglen=0; bits256 sighash; char sigstr[256];
+    uint8_t sig[128],pub33[33]; int32_t i,j,siglen=0; bits256 sighash; char sigstr[256];
     sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( (siglen= bitcoin_sign(ctx,"sigadd",sig,sighash,priv,1)) > 0 && siglen == 65 )
+    for (j=0; j<100; j++)
     {
-        init_hexbytes_noT(sigstr,sig,siglen);
-        jaddstr(item,"sig",sigstr);
-        memset(pub33,0,33);
-        printf("sigadd check: %d %s siglen.%d\n",bitcoin_recoververify(ctx,"test",sig,sighash,pub33,0),sigstr,siglen);
-        if ( memcmp(pub33,pubsecp,33) != 0 )
+        if ( (siglen= bitcoin_sign(ctx,"sigadd",sig,sighash,priv,1)) > 0 && siglen == 65 )
         {
-            for (i=0; i<33; i++)
-                printf("%02x",pubsecp[i]);
-            printf(" pubsecp -> ");
-            for (i=0; i<33; i++)
-                printf("%02x",pub33[i]);
-            printf(" recovered, ");
-            bitcoin_pubkey33(ctx,pub33,priv);
-            for (i=0; i<33; i++)
-                printf("%02x",pub33[i]);
-            printf(" mismatched recovered pubkey\n");
+            init_hexbytes_noT(sigstr,sig,siglen);
+            jaddstr(item,"sig",sigstr);
+            memset(pub33,0,33);
+            //printf("sigadd check: %d %s siglen.%d\n",bitcoin_recoververify(ctx,"test",sig,sighash,pub33,0),sigstr,siglen);
+            if ( memcmp(pub33,pubsecp,33) == 0 )
+                return(siglen);
+            {
+                for (i=0; i<33; i++)
+                    printf("%02x",pubsecp[i]);
+                printf(" pubsecp -> ");
+                for (i=0; i<33; i++)
+                    printf("%02x",pub33[i]);
+                printf(" mismatched recovered pubkey.%d of %d\n",i,100);
+            }
         }
-        return(siglen);
-    } else return(0);
+    }
+    return(0);
 }
 
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
