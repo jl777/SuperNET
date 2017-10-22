@@ -243,6 +243,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
     {
         while ( nonz < maxdepth && recvlen > 0 )
         {
+            nonz++;
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
             pfd.events = NN_POLLIN;
@@ -264,7 +265,6 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free_json(recvjson);
                     }
                 }
-                nonz++;
                 if ( LP_lastcommand != 0 )
                     free(LP_lastcommand);
                 LP_lastcommand = clonestr((char *)ptr);
