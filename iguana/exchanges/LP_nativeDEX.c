@@ -519,15 +519,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             }
             peer->lastpeers = now;
         }
-        if ( peer->diduquery == 0 )
+        if ( peer->diduquery == 0 || peer->needping != 0 )
         {
-            nonz++;
             LP_peer_pricesquery(peer);
             LP_utxos_sync(peer);
             peer->diduquery = now;
-        }
-        if ( peer->needping != 0 )
-        {
             nonz++;
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
@@ -535,7 +531,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             needpings++;
         }
     }
-    if ( needpings != 0 || (counter % 100000) == 5 )
+    if ( needpings != 0 || (counter % 10000) == 5 )
     {
         nonz++;
         printf("needpings.%d send notify\n",needpings);
