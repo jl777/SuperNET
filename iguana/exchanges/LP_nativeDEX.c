@@ -606,10 +606,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 coin->lastscanht = coin->firstscanht;
             continue;
         }
-        if ( (coin->lastscanht % 1000) == 0 )
-            printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
+        //if ( (coin->lastscanht % 1000) == 0 )
         for (j=0; j<100; j++)
         {
+            if ( strcmp("REVS",coin->symbol) == 0 )
+                printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
             if ( LP_blockinit(coin,coin->lastscanht) < 0 )
             {
                 printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
@@ -619,9 +620,9 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( coin->lastscanht == coin->longestchain+1 )
                 break;
         }
+        nonz++;
         if ( j < 100 )
             continue;
-        nonz++;
         //LP_getestimatedrate(coin);
         break;
     }
