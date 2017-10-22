@@ -117,6 +117,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
     char *retstr=0;
     if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
         return(0);
+    double millis = OS_milliseconds();
     if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
     {
         if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,"127.0.0.1",0)) != 0 )
@@ -126,6 +127,8 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
                 //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
         }
     } //else printf("finished tradecommand (%s)\n",jprint(argjson,0));
+    if ( OS_milliseconds()-millis > 100 )
+        printf("%.3f %s\n",OS_milliseconds()-millis,jprint(argjson,0));
     return(retstr);
 }
 
