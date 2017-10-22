@@ -325,7 +325,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 
 char *LP_notify_recv(cJSON *argjson)
 {
-    char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp;
+    char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp; double millis = OS_milliseconds();
     pub = jbits256(argjson,"pub");
     // LP_checksig
     if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
@@ -339,7 +339,7 @@ char *LP_notify_recv(cJSON *argjson)
                 //printf("got pubkey.(%s)\n",secpstr);
             }
         }
-        //printf("NOTIFIED pub %s rmd160 %s\n",bits256_str(str,pub),rmd160str);
+        char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);
     }
     return(clonestr("{\"result\":\"success\",\"notify\":\"received\"}"));
 }
