@@ -218,11 +218,13 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
+                double millis = OS_milliseconds();
                 portable_mutex_lock(&LP_commandmutex);
                 if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                 {
                 }
                 portable_mutex_unlock(&LP_commandmutex);
+                printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
                 free_json(argjson);
             }
         }
