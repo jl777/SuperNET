@@ -511,6 +511,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         myipaddr = "127.0.0.1";
     numpeers = LP_numpeers();
     needpings = 0;
+    fprintf(stderr,"P");
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( peer->errors >= LP_MAXPEER_ERRORS )
@@ -529,9 +530,12 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 nonz++;
+                fprintf(stderr,"q");
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
+                fprintf(stderr,"p");
                 LP_peer_pricesquery(peer);
+                fprintf(stderr,"u");
                 LP_utxos_sync(peer);
                 needpings++;
             }
@@ -539,9 +543,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( peer->needping != 0 )
         {
+            fprintf(stderr,"u");
             LP_utxos_sync(peer);
             peer->diduquery = now;
             nonz++;
+            fprintf(stderr,"n");
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
             peer->needping = 0;
@@ -552,13 +558,16 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     {
         nonz++;
         //printf("needpings.%d send notify\n",needpings);
+        fprintf(stderr,"p");
         LP_notify_pubkeys(ctx,pubsock);
     }
     if ( (counter % 6000) == 10 )
     {
+        fprintf(stderr,"K");
         nonz++;
         LP_privkey_updates(ctx,pubsock,0);
     }
+    fprintf(stderr,"C");
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         fprintf(stderr,"%s ",coin->symbol);
@@ -634,6 +643,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         //LP_getestimatedrate(coin);
         break;
     }
+    fprintf(stderr,"S");
     if ( (counter % 100000) == 90000 )
     {
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
@@ -929,6 +939,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         }
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
+        fprintf(stderr," nonz.%d\n",nonz);
         if ( nonz == 0 )
             usleep(1000);
         else if ( IAMLP == 0 )
