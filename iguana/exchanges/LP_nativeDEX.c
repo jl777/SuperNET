@@ -159,6 +159,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 {
     static uint32_t dup,uniq;
     int32_t i,len,cipherlen,datalen=0,duplicate=0,encrypted=0; char *method,*method2,*tmp,*cipherstr,*retstr=0,*jsonstr=0; cJSON *argjson; uint32_t crc32;
+    double millis = OS_milliseconds();
     crc32 = calc_crc32(0,&ptr[2],recvlen-2);
     if ( (crc32 & 0xff) == ptr[0] && ((crc32>>8) & 0xff) == ptr[1] )
         encrypted = 1;
@@ -218,7 +219,6 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
-                double millis = OS_milliseconds();
                 portable_mutex_lock(&LP_commandmutex);
                 if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                 {
