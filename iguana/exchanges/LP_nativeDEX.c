@@ -728,8 +728,8 @@ int32_t LP_reserved_msgs()
                 Reserved_msgs[num_Reserved_msgs] = 0;
                 portable_mutex_unlock(&LP_reservedmutex);
             }
-        }
-        if ( ++n > 0 )
+        } else break;
+        if ( ++n > 100 )
             break;
     }
     return(n);
