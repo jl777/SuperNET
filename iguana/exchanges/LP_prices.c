@@ -1063,7 +1063,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             fwrite(&price64,1,sizeof(price64),fp);
             fflush(fp);
         }
-        if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
+        if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {
             if ( fabs(pubp->matrix[basepp->ind][relpp->ind] - price) > SMALLVAL )
             {
