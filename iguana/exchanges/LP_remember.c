@@ -852,7 +852,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         ctx = bitcoin_ctx();
     if ( (rswap.iambob= LP_rswap_init(&rswap,requestid,quoteid)) < 0 )
         return(cJSON_Parse("{\"error\":\"couldnt initialize rswap, are all coins active?\"}"));
-    decode_hex(deadtxid.bytes,32,"dead000000000000000000000000000000000000000000000000000000000000");
+    decode_hex(deadtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
     LP_swap_load(&rswap);
     memset(zero.bytes,0,sizeof(zero));
     otheraddr[0] = 0;
