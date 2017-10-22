@@ -629,7 +629,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     fprintf(stderr,"C");
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        fprintf(stderr,"%s ",coin->symbol);
         if ( coin->addr_listunspent_requested != 0 )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
