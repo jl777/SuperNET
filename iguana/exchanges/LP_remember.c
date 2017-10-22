@@ -260,7 +260,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
     }
     txid = txids[utxoind];
     memset(&spendtxid,0,sizeof(spendtxid));
-    if ( bits256_nonz(txid) != 0 )
+    if ( bits256_nonz(txid) != 0 && sentflags[utxoind] != 0 )
     {
         destaddr[0] = 0;
         spendtxid = LP_swap_spendtxid(symbol,destaddr,txid,vout);
@@ -804,7 +804,7 @@ void LP_txbytes_update(char *name,char *symbol,char *txbytes,bits256 *txidp,bits
 
 int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi)
 {
-    int32_t ht; struct LP_transaction *tx=0; struct iguana_info *coin; char str[65];
+    int32_t ht; struct iguana_info *coin; char str[65];
     if ( rswap->sentflags[txi] == 0 && bits256_nonz(rswap->txids[txi]) != 0 )
     {
         if ( (coin= LP_coinfind(symbol)) != 0 )
@@ -812,9 +812,9 @@ int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi
             if ( (ht= LP_txheight(coin,rswap->txids[txi])) > 0 )
             {
                 rswap->sentflags[txi] = 1;
-                _LP_refht_update(coin,rswap->txids[txi],tx->height);
+                _LP_refht_update(coin,rswap->txids[txi],ht);
             } else LP_refht_update(symbol,rswap->txids[txi]);
-            printf("[%s] %s txbytes.%p %s ht.%d\n",txnames[txi],txnames[txi],rswap->txbytes[txi],bits256_str(str,rswap->txids[txi]),tx!=0?tx->height:-1);
+            printf("[%s] %s txbytes.%p %s ht.%d\n",txnames[txi],txnames[txi],rswap->txbytes[txi],bits256_str(str,rswap->txids[txi]),ht);
         }
     } else printf("sent.%d %s txi.%d\n",rswap->sentflags[txi],bits256_str(str,rswap->txids[txi]),txi);
     return(0);
