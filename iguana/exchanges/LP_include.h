@@ -44,7 +44,7 @@
 #define LP_PEERGOOD_ERRORDECAY 0.9
 
 #define LP_SWAPSTEP_TIMEOUT 30
-#define LP_AUTOTRADE_TIMEOUT 20
+#define LP_AUTOTRADE_TIMEOUT 30
 #define LP_MIN_TXFEE 10000
 #define LP_MINVOL 20
 #define LP_MINCLIENTVOL 50
@@ -252,7 +252,7 @@ struct LP_quoteinfo
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
     uint64_t satoshis,txfee,destsatoshis,desttxfee;
     uint32_t timestamp,quotetime; int32_t vout,vout2,destvout,feevout,pair;
-    char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
+    char srccoin[16],coinaddr[64],destcoin[16],destaddr[64],gui[64];
 };
 
 struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };
@@ -275,6 +275,18 @@ struct basilisk_swap
     
 };
 
+#define LP_MAXPRICEINFOS 256
+struct LP_pubkeyinfo
+{
+    UT_hash_handle hh;
+    bits256 pubkey;
+    double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
+    uint32_t timestamp,istrusted,numerrors;
+    uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
+};
+
+int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
+int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
 void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t vout);
 void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
 uint32_t basilisk_requestid(struct basilisk_request *rp);

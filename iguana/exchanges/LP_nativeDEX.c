@@ -37,6 +37,7 @@ int32_t num_Reserved_msgs,max_Reserved_msgs;
 struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
+struct LP_pubkeyinfo *LP_pubkeyinfos;
 #include "LP_network.c"
 
 char *activecoins[] = { "BTC", "KMD" };
@@ -54,14 +55,13 @@ int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
 int32_t LP_showwif,IAMLP = 0;
 double LP_profitratio = 1.;
-char *LP_lastcommand;
 
 struct LP_privkey { bits256 privkey; uint8_t rmd160[20]; };
 
 struct LP_globals
 {
     struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
-    bits256 LP_mypub25519,LP_mypriv25519;
+    bits256 LP_mypub25519,LP_privkey,LP_mypriv25519;
     uint64_t LP_skipstatus[10000];
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
     uint32_t LP_sessionid,counter;
@@ -117,6 +117,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
     char *retstr=0;
     if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
         return(0);
+    //double millis = OS_milliseconds();
     if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
     {
         if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,"127.0.0.1",0)) != 0 )
@@ -126,6 +127,8 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
                 //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
         }
     } //else printf("finished tradecommand (%s)\n",jprint(argjson,0));
+    //if ( OS_milliseconds()-millis > 100 )
+    //    printf("%.3f %s\n",OS_milliseconds()-millis,jprint(argjson,0));
     return(retstr);
 }
 
@@ -156,10 +159,10 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 {
     static uint32_t dup,uniq;
     int32_t i,len,cipherlen,datalen=0,duplicate=0,encrypted=0; char *method,*method2,*tmp,*cipherstr,*retstr=0,*jsonstr=0; cJSON *argjson; uint32_t crc32;
+    //double millis = OS_milliseconds();
     crc32 = calc_crc32(0,&ptr[2],recvlen-2);
     if ( (crc32 & 0xff) == ptr[0] && ((crc32>>8) & 0xff) == ptr[1] )
         encrypted = 1;
-    portable_mutex_lock(&LP_commandmutex);
     i = LP_crc32find(&duplicate,-1,crc32);
     if ( duplicate != 0 )
         dup++;
@@ -216,14 +219,45 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
-                if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
+                if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"broadcast") == 0 )
                 {
+                    bits256 zero; cJSON *reqjson; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
+                    if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
+                    {
+                        Broadcaststr = jprint(reqjson,0);
+                        if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
+                        {
+                            cipherlen = (int32_t)strlen(cipherstr) >> 1;
+                            if ( cipherlen <= sizeof(cipher) )
+                            {
+                                decode_hex(cipher,cipherlen,cipherstr);
+                                LP_queuesend(calc_crc32(0,&cipher[2],cipherlen-2),LP_mypubsock,"","",cipher,cipherlen);
+                            } else retstr = clonestr("{\"error\":\"cipher too big\"}");
+                        }
+                        else
+                        {
+                            memset(zero.bytes,0,sizeof(zero));
+                            if ( (method= jstr(reqjson,"method")) != 0 && (strcmp(method,"request") == 0 || strcmp(method,"requested") == 0 || strcmp(method,"connect") == 0 || strcmp(method,"connected") == 0) )
+                                    printf("broadcast.(%s)\n",Broadcaststr);
+                            LP_reserved_msg("","",zero,jprint(reqjson,0));
+                        }
+                        retstr = clonestr("{\"result\":\"success\"}");
+                        free_json(reqjson);
+                    } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
+                }
+                else
+                {
+                    portable_mutex_lock(&LP_commandmutex);
+                    if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
+                    {
+                    }
+                    portable_mutex_unlock(&LP_commandmutex);
+                    //printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
                 }
                 free_json(argjson);
             }
         }
     } //else printf("DUPLICATE.(%s)\n",(char *)ptr);
-    portable_mutex_unlock(&LP_commandmutex);
     if ( jsonstr != 0 && (void *)jsonstr != (void *)ptr && encrypted == 0 )
         free(jsonstr);
     if ( ptr != 0 )
@@ -233,11 +267,12 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock,char *remoteaddr,int32_t maxdepth)
 {
-    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char *retstr,*str; struct nn_pollfd pfd;
+    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char methodstr[64],*retstr,*str; struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
         while ( nonz < maxdepth && recvlen > 0 )
         {
+            nonz++;
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
             pfd.events = NN_POLLIN;
@@ -245,23 +280,22 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-                if ( 0 )
+                methodstr[0] = 0;
+                if ( 1 )
                 {
-                    cJSON *recvjson; char *mstr,*cstr;
+                    cJSON *recvjson; //char *mstr,*cstr;
                     if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
                     {
-                        if ( (mstr= jstr(recvjson,"method")) != 0 && strcmp(mstr,"uitem") == 0 &&
+                        /*if ( (mstr= jstr(recvjson,"method")) != 0 && strcmp(mstr,"uitem") == 0 &&
                             (cstr= jstr(recvjson,"coin")) != 0 && strcmp(cstr,"REVS") == 0 )
                         {
                             printf("%s RECV.(%s)\n",typestr,(char *)ptr);
-                        }
+                        }*/
+                        safecopy(methodstr,jstr(recvjson,"method"),sizeof(methodstr));
                         free_json(recvjson);
                     }
                 }
-                nonz++;
-                if ( LP_lastcommand != 0 )
-                    free(LP_lastcommand);
-                LP_lastcommand = clonestr((char *)ptr);
+                double millis = OS_milliseconds();
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
                 if ( Broadcaststr != 0 )
@@ -273,9 +307,6 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     {
                         if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
                             printf("self.(%s)\n",str);
-                        if ( LP_lastcommand != 0 )
-                            free(LP_lastcommand);
-                        LP_lastcommand = clonestr(str);
                         if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                         {
                             portable_mutex_lock(&LP_commandmutex);
@@ -287,6 +318,8 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     }
                     free(str);
                 }
+                if ( OS_milliseconds()-millis > 1000 )
+                    printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
             }
         }
     }
@@ -295,14 +328,9 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
 
 int32_t LP_nanomsg_recvs(void *ctx)
 {
-    static double lastmilli;
-    int32_t nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp; double milli;
+    int32_t nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp;
     if ( (origipaddr= LP_myipaddr) == 0 )
         origipaddr = "127.0.0.1";
-    milli = OS_milliseconds();
-    if ( lastmilli > 0. && milli > lastmilli+3000 )
-        fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds: (%s)\n",milli-lastmilli,LP_lastcommand!=0?LP_lastcommand:"");
-    lastmilli = milli;
     //portable_mutex_lock(&LP_nanorecvsmutex);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
@@ -327,7 +355,9 @@ int32_t LP_nanomsg_recvs(void *ctx)
      nonz += LP_sock_check(coin->symbol,ctx,origipaddr,-1,coin->bussock,LP_profitratio - 1.);
      }*/
     if ( LP_mypullsock >= 0 )
+    {
         nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
+    }
     //portable_mutex_unlock(&LP_nanorecvsmutex);
     return(nonz);
 }
@@ -348,8 +378,7 @@ void command_rpcloop(void *myipaddr)
             else usleep(10000);
         }
         else if ( IAMLP == 0 )
-            usleep(1000);
-        else usleep(10);
+            usleep(100);
     }
 }
 
@@ -504,28 +533,24 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 nonz++;
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
+                LP_peer_pricesquery(peer);
                 LP_utxos_sync(peer);
+                needpings++;
             }
             peer->lastpeers = now;
         }
-        if ( peer->diduquery == 0 )
-        {
-            nonz++;
-            needpings++;
-            LP_peer_pricesquery(peer);
-            LP_utxos_sync(peer);
-            peer->diduquery = now;
-        }
         if ( peer->needping != 0 )
         {
+            LP_utxos_sync(peer);
+            peer->diduquery = now;
             nonz++;
-            needpings++;
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
             peer->needping = 0;
+            needpings++;
         }
     }
-    if ( needpings != 0 || (counter % 6000) == 5 )
+    if ( needpings != 0 || (counter % 10000) == 5 )
     {
         nonz++;
         //printf("needpings.%d send notify\n",needpings);
@@ -602,7 +627,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         //LP_getestimatedrate(coin);
         break;
     }
-    if ( (counter % 6000) == 60 )
+    if ( (counter % 100000) == 90000 )
     {
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
         {
@@ -679,32 +704,35 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 int32_t LP_reserved_msgs()
 {
-    bits256 zero; int32_t n = 0; //struct nn_pollfd pfd;
+    bits256 zero; int32_t flag,n = 0; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
-    portable_mutex_lock(&LP_reservedmutex);
-    while ( num_Reserved_msgs > 0 )
+    while ( 1 )
     {
-        /*memset(&pfd,0,sizeof(pfd));
-        pfd.fd = LP_mypubsock;
-        pfd.events = NN_POLLOUT;
-        if ( nn_poll(&pfd,1,1) != 1 )
-            break;*/
-        num_Reserved_msgs--;
-#ifdef __APPLE__
-//        printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
-#endif
-        LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
-        Reserved_msgs[num_Reserved_msgs] = 0;
-#ifdef __APPLE__
-        usleep(5000);
-#else
-        usleep(1000);
-#endif
-        n++;
-        if ( n > 0 )
+        if ( num_Reserved_msgs > 0 )
+        {
+            flag = 0;
+            if ( LP_mypubsock >= 0 )
+            {
+                memset(&pfd,0,sizeof(pfd));
+                pfd.fd = LP_mypubsock;
+                pfd.events = NN_POLLOUT;
+                if ( nn_poll(&pfd,1,1) == 1 )
+                    flag = 1;
+            } else flag = 1;
+            if ( flag == 1 )
+            {
+                portable_mutex_lock(&LP_reservedmutex);
+                num_Reserved_msgs--;
+                //printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
+                LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
+                Reserved_msgs[num_Reserved_msgs] = 0;
+                portable_mutex_unlock(&LP_reservedmutex);
+                usleep(3000);
+            } else break;
+        } else break;
+        if ( ++n > 1 )
             break;
     }
-    portable_mutex_unlock(&LP_reservedmutex);
     return(n);
 }
 
@@ -895,10 +923,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
         if ( nonz == 0 )
-            usleep(10000);
-        else if ( IAMLP != 0 )
-            usleep(10);
-        else usleep(10000);
+            usleep(1000);
+        else if ( IAMLP == 0 )
+            usleep(1000);
     }
 }
 

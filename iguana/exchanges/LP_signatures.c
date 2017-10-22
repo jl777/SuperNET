@@ -42,6 +42,7 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
 cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 {
     double price; cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jaddstr(retjson,"base",qp->srccoin);
     jaddstr(retjson,"rel",qp->destcoin);
     if ( qp->coinaddr[0] != 0 )
@@ -96,6 +97,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 {
+    safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
@@ -258,21 +260,39 @@ void LP_postutxos(char *symbol,char *coinaddr)
     }
 }
 
+queue_t utxosQ;
+struct LP_utxos_qitem { struct queueitem DL; cJSON *argjson; };
+
 char *LP_postutxos_recv(cJSON *argjson)
 {
-    int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
-    //printf("posted.(%s)\n",jprint(argjson,0));
-    if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
-    {
-        if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )
-        {
-            if ( (array= jarray(&n,argjson,"utxos")) != 0 )
-                LP_unspents_array(coin,coinaddr,array);
-        }
-        else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr,1)) != 0 )
-            free_json(array);
-    }
+    struct LP_utxos_qitem *uitem;
+    uitem = calloc(1,sizeof(*uitem));
+    uitem->argjson = jduplicate(argjson);
+    queue_enqueue("utxosQ",&utxosQ,&uitem->DL);
     return(clonestr("{\"result\":\"success\"}"));
+}
+
+int32_t LP_utxosQ_process()
+{
+    struct LP_utxos_qitem *uitem; int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
+    if ( (uitem= queue_dequeue(&utxosQ)) != 0 )
+    {
+        //printf("LP_utxosQ_process.(%s)\n",jprint(uitem->argjson,0));
+        if ( (coinaddr= jstr(uitem->argjson,"coinaddr")) != 0 && (symbol= jstr(uitem->argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
+        {
+            if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )
+            {
+                if ( (array= jarray(&n,uitem->argjson,"utxos")) != 0 )
+                    LP_unspents_array(coin,coinaddr,array);
+            }
+            else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr,1)) != 0 )
+                free_json(array);
+        }
+        free_json(uitem->argjson);
+        free(uitem);
+        return(1);
+    }
+    return(0);
 }
 
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price)
@@ -308,6 +328,108 @@ char *LP_postprice_recv(cJSON *argjson)
     return(clonestr("{\"error\":\"missing fields in posted price\"}"));
 }
 
+bits256 LP_pubkey_sighash(bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
+{
+    uint8_t buf[sizeof(pub) + 20 + 33]; bits256 sighash;
+    memcpy(buf,pub.bytes,sizeof(pub));
+    memcpy(&buf[sizeof(pub)],rmd160,20);
+    memcpy(&buf[sizeof(pub)+20],pubsecp,33);
+    vcalc_sha256(0,sighash.bytes,buf,sizeof(buf));
+    return(sighash);
+}
+
+int32_t _LP_pubkey_sigcheck(uint8_t *sig,int32_t siglen,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
+{
+    static void *ctx;
+    uint8_t pub33[33]; bits256 sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    return(bitcoin_recoververify(ctx,"sigcheck",sig,sighash,pub33,0));
+}
+
+int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
+{
+    static void *ctx;
+    uint8_t sig[128],pub33[33]; int32_t i,j,siglen=0; bits256 sighash; char sigstr[256];
+    sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    for (j=0; j<100; j++)
+    {
+        if ( (siglen= bitcoin_sign(ctx,"sigadd",sig,sighash,priv,1)) > 0 && siglen == 65 )
+        {
+            memset(pub33,0,33);
+            if ( bitcoin_recoververify(ctx,"test",sig,sighash,pub33,0) == 0 && memcmp(pub33,pubsecp,33) == 0 )
+            {
+                init_hexbytes_noT(sigstr,sig,siglen);
+                jaddstr(item,"sig",sigstr);
+                return(siglen);
+            }
+            if ( 0 )
+            {
+                for (i=0; i<33; i++)
+                    printf("%02x",pubsecp[i]);
+                printf(" pubsecp -> ");
+                for (i=0; i<33; i++)
+                    printf("%02x",pub33[i]);
+                printf(" mismatched recovered pubkey.%d of %d\n",j,100);
+            }
+        }
+    }
+    return(0);
+}
+
+int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
+{
+    int32_t i,len,siglen,retval=-1; uint8_t rmd160[20],checkrmd160[20],pubsecp[33],sig[65],zeroes[20]; char *sigstr,*hexstr,*pubsecpstr;
+    if ( (hexstr= jstr(item,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
+    {
+        decode_hex(rmd160,sizeof(rmd160),hexstr);
+        memset(zeroes,0,sizeof(zeroes));
+        if ( memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 )
+        {
+            if ( memcmp(rmd160,pubp->rmd160,20) != 0 )
+            {
+                if ( (pubsecpstr= jstr(item,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
+                {
+                    decode_hex(pubsecp,sizeof(pubsecp),pubsecpstr);
+                    calc_rmd160_sha256(checkrmd160,pubsecp,33);
+                    if ( memcmp(checkrmd160,rmd160,20) == 0 )
+                    {
+                        if ( (sigstr= jstr(item,"sig")) != 0 && (len= is_hexstr(sigstr,0)) == 65*2 )
+                        {
+                            siglen = len >> 1;
+                            decode_hex(sig,siglen,sigstr);
+                            if ( _LP_pubkey_sigcheck(sig,siglen,pubp->pubkey,rmd160,pubsecp) == 0 )
+                            {
+                                for (i=0; i<20; i++)
+                                    printf("%02x",pubp->rmd160[i]);
+                                memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
+                                memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
+                                memcpy(pubp->sig,sig,sizeof(pubp->sig));
+                                pubp->siglen = siglen;
+                                char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
+                                retval = 0;
+                                pubp->timestamp = (uint32_t)time(NULL);
+                            } //else printf("sig %s error pub33.%s\n",sigstr,pubsecpstr);
+                        }
+                    }
+                    else
+                    {
+                        for (i=0; i<20; i++)
+                            printf("%02x",rmd160[i]);
+                        printf(" rmd160 vs ");
+                        for (i=0; i<20; i++)
+                            printf("%02x",checkrmd160[i]);
+                        printf(" for %s\n",pubsecpstr);
+                   }
+                }
+            } else pubp->timestamp = (uint32_t)time(NULL);
+        }
+    }
+    return(retval);
+}
+
 void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 {
     bits256 zero; char secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
@@ -318,26 +440,19 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     jaddbits256(reqjson,"pub",G.LP_mypub25519);
     init_hexbytes_noT(secpstr,G.LP_pubsecp,33);
     jaddstr(reqjson,"pubsecp",secpstr);
+    LP_pubkey_sigadd(reqjson,G.LP_privkey,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
     LP_reserved_msg("","",zero,jprint(reqjson,1));
 }
 
 char *LP_notify_recv(cJSON *argjson)
 {
-    char *rmd160str,*secpstr; bits256 pub; struct LP_pubkeyinfo *pubp;
+    bits256 pub; struct LP_pubkeyinfo *pubp;
     pub = jbits256(argjson,"pub");
-    // LP_checksig
-    if ( bits256_nonz(pub) != 0 && (rmd160str= jstr(argjson,"rmd160")) != 0 && strlen(rmd160str) == 40 )
+    if ( bits256_nonz(pub) != 0 )
     {
         if ( (pubp= LP_pubkeyadd(pub)) != 0 )
-        {
-            decode_hex(pubp->rmd160,20,rmd160str);
-            if ( (secpstr= jstr(argjson,"pubsecp")) != 0 )
-            {
-                decode_hex(pubp->pubsecp,sizeof(pubp->pubsecp),secpstr);
-                //printf("got pubkey.(%s)\n",secpstr);
-            }
-        }
-        //printf("NOTIFIED pub %s rmd160 %s\n",bits256_str(str,pub),rmd160str);
+            LP_pubkey_sigcheck(pubp,argjson);
+        //char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);
     }
     return(clonestr("{\"result\":\"success\",\"notify\":\"received\"}"));
 }
@@ -354,7 +469,7 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
 
 void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_quoteinfo *qp)
 {
-    cJSON *reqjson; bits256 zero; char *msg; int32_t flag = 0; struct LP_utxoinfo *utxo;
+    cJSON *reqjson; bits256 zero; char *msg,*msg2; int32_t flag = 0; struct LP_utxoinfo *utxo;
     if ( strcmp(method,"request") == 0 )
     {
         if ( (utxo= LP_utxofind(0,qp->desttxid,qp->destvout)) != 0 && LP_ismine(utxo) > 0 && LP_isavailable(utxo) > 0 )
@@ -370,19 +485,19 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
         flag = 1;
     jaddbits256(reqjson,"pubkey",qp->srchash);
     jaddstr(reqjson,"method",method);
+    jaddnum(reqjson,"timestamp",time(NULL));
     msg = jprint(reqjson,1);
+    msg2 = clonestr(msg);
     // LP_addsig
     printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
-    if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs) )
-        Reserved_msgs[num_Reserved_msgs++] = msg;
-    else
+    if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs)-2 )
     {
-        //if ( 1 && strcmp(method,"request") == 0 )
-        LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg);
-        //else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
+        Reserved_msgs[num_Reserved_msgs++] = msg;
+        //Reserved_msgs[num_Reserved_msgs++] = msg2;
     }
+    LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg2);
     portable_mutex_unlock(&LP_reservedmutex);
 }
 
