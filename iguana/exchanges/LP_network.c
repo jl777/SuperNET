@@ -126,6 +126,7 @@ int32_t LP_peerindsock(int32_t *peerindp)
     struct LP_peerinfo *peer,*tmp; int32_t peerind = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        peerind++;
         if ( peer->errors < LP_MAXPEER_ERRORS && peer->pushsock >= 0 )
         {
             if ( peerind < *peerindp )
@@ -134,7 +135,6 @@ int32_t LP_peerindsock(int32_t *peerindp)
             //printf("peerind.%d -> sock %d\n",peerind,peer->pushsock);
             return(peer->pushsock);
         }
-        peerind++;
     }
     return(-1);
 }
@@ -158,9 +158,6 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-#ifdef __APPLE__
-//else printf("%d %p qsent %u msglen.%d peerind.%d (%s)\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind,ptr->msg);
-#endif
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
@@ -239,12 +236,12 @@ printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
     else
     {
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind);
-        else peerind = 0;
+            peerind = (rand() % maxind) + 1;
+        else peerind = 1;
         sock0 = LP_peerindsock(&peerind);
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind);
-        else peerind = 0;
+            peerind = (rand() % maxind) + 1;
+        else peerind = 1;
         sock1 = LP_peerindsock(&peerind);
     }
     if ( sock0 >= 0 )
