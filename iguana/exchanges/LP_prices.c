@@ -209,7 +209,7 @@ struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
 int32_t LP_pubkey_istrusted(bits256 pubkey)
 {
     struct LP_pubkeyinfo *pubp;
-    if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
+    if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         return(pubp->istrusted != 0);
     return(0);
 }
@@ -217,7 +217,7 @@ int32_t LP_pubkey_istrusted(bits256 pubkey)
 char *LP_pubkey_trustset(bits256 pubkey,uint32_t trustval)
 {
     struct LP_pubkeyinfo *pubp;
-    if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
+    if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
     {
         pubp->istrusted = trustval;
         return(clonestr("{\"result\":\"success\"}"));
@@ -504,7 +504,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         basepp->myprices[relpp->ind] = price;          // ask
         //printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
         //relpp->myprices[basepp->ind] = (1. / price);   // bid
-        if ( (pubp= LP_pubkeyfind(G.LP_mypub25519)) != 0 )
+        if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
         {
             pubp->matrix[basepp->ind][relpp->ind] = price;
             //pubp->matrix[relpp->ind][basepp->ind] = (1. / price);
