@@ -252,7 +252,7 @@ struct LP_quoteinfo
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
     uint64_t satoshis,txfee,destsatoshis,desttxfee;
     uint32_t timestamp,quotetime; int32_t vout,vout2,destvout,feevout,pair;
-    char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
+    char srccoin[16],coinaddr[64],destcoin[16],destaddr[64],gui[64];
 };
 
 struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };

@@ -42,6 +42,7 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
 cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 {
     double price; cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jaddstr(retjson,"base",qp->srccoin);
     jaddstr(retjson,"rel",qp->destcoin);
     if ( qp->coinaddr[0] != 0 )
@@ -96,6 +97,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 {
+    safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
