@@ -315,7 +315,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
         //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
         milli = OS_milliseconds();
         nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr,1);
-        if ( lastmilli > 0. )//&& milli > lastmilli+100 )
+        if ( lastmilli > 0. && milli > lastmilli+100 )
             fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds: (%s)\n",milli-lastmilli,LP_lastcommand!=0?LP_lastcommand:"");
         lastmilli = milli;
     }
@@ -330,7 +330,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
     {
         milli = OS_milliseconds();
         nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
-        if ( lastmilli > 0. )//&& milli > lastmilli+100 )
+        if ( lastmilli > 0. && milli > lastmilli+100 )
             fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds: (%s)\n",milli-lastmilli,LP_lastcommand!=0?LP_lastcommand:"");
         lastmilli = milli;
     }
@@ -494,7 +494,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     {
         if ( peer->errors >= LP_MAXPEER_ERRORS )
         {
-            if ( (rand() % 10000) == 0 )
+            if ( (rand() % 100000) == 0 )
             {
                 peer->errors--;
                 if ( peer->errors < LP_MAXPEER_ERRORS )
@@ -503,7 +503,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( now > peer->lastpeers+60 || (rand() % 10000) == 0 )
+        if ( now > peer->lastpeers+60 )//|| (rand() % 10000) == 0 )
         {
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
@@ -517,7 +517,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         if ( peer->diduquery == 0 )
         {
             nonz++;
-            needpings++;
             LP_peer_pricesquery(peer);
             LP_utxos_sync(peer);
             peer->diduquery = now;
@@ -528,9 +527,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
             peer->needping = 0;
+            needpings++;
         }
     }
-    if ( needpings != 0 || (counter % 6000) == 5 )
+    if ( needpings != 0 )//|| (counter % 6000) == 5 )
     {
         nonz++;
         printf("needpings.%d send notify\n",needpings);
