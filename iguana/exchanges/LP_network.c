@@ -167,7 +167,7 @@ void queue_loop(void *ignore)
                     else flag = 1;
                 } //else printf("sock not ready to send.%d\n",ptr->msglen);
             }
-            else if ( time(NULL) > ptr->starttime+13 )
+            else if ( 0 && time(NULL) > ptr->starttime+13 )
             {
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
@@ -177,7 +177,7 @@ void queue_loop(void *ignore)
                         printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     flag = 1;
                 }
-                else //if ( 0 ) // too much beyond duplicate filter when network is busy
+                else if ( 0 ) // too much beyond duplicate filter when network is busy
                 {
                     printf("couldnt find.%u peerind.%d Q.%d err.%d match.%d\n",ptr->crc32,ptr->peerind,LP_Qenqueued,LP_Qerrors,LP_Qfound);
                     ptr->peerind++;
