@@ -219,12 +219,39 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
-                portable_mutex_lock(&LP_commandmutex);
-                if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
+                if ( strcmp(method,"broadcast") == 0 )
                 {
+                    bits256 zero; cJSON *reqjson; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
+                    if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
+                    {
+                        Broadcaststr = jprint(reqjson,0);
+                        if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
+                        {
+                            cipherlen = (int32_t)strlen(cipherstr) >> 1;
+                            if ( cipherlen <= sizeof(cipher) )
+                            {
+                                decode_hex(cipher,cipherlen,cipherstr);
+                                LP_queuesend(calc_crc32(0,&cipher[2],cipherlen-2),LP_mypubsock,"","",cipher,cipherlen);
+                            } else retstr = clonestr("{\"error\":\"cipher too big\"}");
+                        }
+                        else
+                        {
+                            memset(zero.bytes,0,sizeof(zero));
+                            printf("broadcast.(%s)\n",Broadcaststr);
+                            LP_reserved_msg("","",zero,jprint(reqjson,0));
+                        }
+                        retstr = clonestr("{\"result\":\"success\"}");
+                    } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
                 }
-                portable_mutex_unlock(&LP_commandmutex);
-                //printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
+                else
+                {
+                    portable_mutex_lock(&LP_commandmutex);
+                    if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
+                    {
+                    }
+                    portable_mutex_unlock(&LP_commandmutex);
+                    //printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
+                }
                 free_json(argjson);
             }
         }

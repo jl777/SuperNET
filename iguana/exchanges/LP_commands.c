@@ -530,7 +530,7 @@ stop()\n\
     {
         if ( IAMLP != 0 )
         {
-            if ( strcmp(method,"broadcast") == 0 )
+            /*if ( strcmp(method,"broadcast") == 0 )
             {
                 bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
                 if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
@@ -548,13 +548,13 @@ stop()\n\
                     else
                     {
                         memset(zero.bytes,0,sizeof(zero));
-printf("broadcast.(%s)\n",Broadcaststr);
+//printf("broadcast.(%s)\n",Broadcaststr);
                         LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
                     }
                     retstr = clonestr("{\"result\":\"success\"}");
                 } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
             }
-            else if ( strcmp(method,"psock") == 0 )
+            else*/ if ( strcmp(method,"psock") == 0 )
             {
                 if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
                 {
