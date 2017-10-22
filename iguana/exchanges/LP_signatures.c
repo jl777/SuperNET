@@ -365,6 +365,7 @@ int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,ui
                 jaddstr(item,"sig",sigstr);
                 return(siglen);
             }
+            if ( 0 )
             {
                 for (i=0; i<33; i++)
                     printf("%02x",pubsecp[i]);
@@ -385,7 +386,7 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
     {
         decode_hex(rmd160,sizeof(rmd160),hexstr);
         memset(zeroes,0,sizeof(zeroes));
-        if ( memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 )
+        if ( memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 && memcmp(rmd160,pubp->rmd160,20) != 0 )
         {
             if ( (pubsecpstr= jstr(item,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
             {
