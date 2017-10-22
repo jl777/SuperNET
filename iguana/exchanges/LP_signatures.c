@@ -362,23 +362,9 @@ int32_t _LP_pubkey_sigcheck(uint8_t *sig,int32_t siglen,bits256 pub,uint8_t *rmd
     return(bitcoin_verify(ctx,sig,siglen,sighash,pubsecp,33));
 }
 
-void LP_notify_pubkeys(void *ctx,int32_t pubsock)
+int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
 {
-    bits256 zero; char secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
-    // LP_addsig
-    memset(zero.bytes,0,sizeof(zero));
-    jaddstr(reqjson,"method","notify");
-    jaddstr(reqjson,"rmd160",G.LP_myrmd160str);
-    jaddbits256(reqjson,"pub",G.LP_mypub25519);
-    init_hexbytes_noT(secpstr,G.LP_pubsecp,33);
-    jaddstr(reqjson,"pubsecp",secpstr);
-    LP_pubkey_sigadd(reqjson,G.LP_mypriv25519,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
-    LP_reserved_msg("","",zero,jprint(reqjson,1));
-}
-
-void LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
-{
-    int32_t i,siglen,len; uint8_t rmd160[20],pubsecp[33],sig[128],zeroes[20]; char *sigstr,*hexstr,*pubsecpstr;
+    int32_t i,siglen,len,retval=-1; uint8_t rmd160[20],pubsecp[33],sig[128],zeroes[20]; char *sigstr,*hexstr,*pubsecpstr;
     if ( (hexstr= jstr(item,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
     {
         decode_hex(rmd160,sizeof(rmd160),hexstr);
@@ -399,11 +385,29 @@ void LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                         memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
                         memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
                         char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
-                    } else printf("sig error\n");
+                        retval = 0;
+                    } else printf("sig %s error pub33.%s\n",sigstr,pubsecpstr);
                 }
             }
         }
     }
+    return(retval);
+}
+
+void LP_notify_pubkeys(void *ctx,int32_t pubsock)
+{
+    bits256 zero; char secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
+    // LP_addsig
+    memset(zero.bytes,0,sizeof(zero));
+    jaddstr(reqjson,"method","notify");
+    jaddstr(reqjson,"rmd160",G.LP_myrmd160str);
+    jaddbits256(reqjson,"pub",G.LP_mypub25519);
+    init_hexbytes_noT(secpstr,G.LP_pubsecp,33);
+    jaddstr(reqjson,"pubsecp",secpstr);
+    LP_pubkey_sigadd(reqjson,G.LP_mypriv25519,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
+    if ( LP_pubkey_sigcheck(LP_pubkeyadd(G.LP_mypub25519),reqjson) == 0 )
+        printf("sig verified\n");
+    LP_reserved_msg("","",zero,jprint(reqjson,1));
 }
 
 char *LP_notify_recv(cJSON *argjson)
