@@ -721,6 +721,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
                 printf("WIF.(%s) -> %s or %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkkey));
         }
     }
+    privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
     bitcoin_priv2pub(ctx,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     if ( coin->counter == 0 )
     {
@@ -762,6 +763,9 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     checkkey.bytes[0] &= 248, checkkey.bytes[31] &= 127, checkkey.bytes[31] |= 64;
     G.LP_mypub25519 = *pubkeyp = curve25519(checkkey,curve25519_basepoint9());
     G.LP_mypriv25519 = checkkey;
+    char str[65],str2[65];
+    if ( bits256_cmp(checkkey,privkey) != 0 )
+        printf("??????????? privkey mismatch %s vs %s\n",bits256_str(str,privkey),bits256_str(str2,checkkey));
     LP_pubkeyadd(G.LP_mypub25519);
     return(privkey);
 }
