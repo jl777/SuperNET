@@ -277,7 +277,7 @@ int32_t LP_utxosQ_process()
     struct LP_utxos_qitem *uitem; int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
     if ( (uitem= queue_dequeue(&utxosQ)) != 0 )
     {
-        printf("LP_utxosQ_process.(%s)\n",jprint(uitem->argjson,0));
+        //printf("LP_utxosQ_process.(%s)\n",jprint(uitem->argjson,0));
         if ( (coinaddr= jstr(uitem->argjson,"coinaddr")) != 0 && (symbol= jstr(uitem->argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
         {
             if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )

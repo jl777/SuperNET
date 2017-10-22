@@ -117,7 +117,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
     char *retstr=0;
     if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
         return(0);
-    double millis = OS_milliseconds();
+    //double millis = OS_milliseconds();
     if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
     {
         if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,"127.0.0.1",0)) != 0 )
@@ -127,8 +127,8 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
                 //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
         }
     } //else printf("finished tradecommand (%s)\n",jprint(argjson,0));
-    if ( OS_milliseconds()-millis > 100 )
-        printf("%.3f %s\n",OS_milliseconds()-millis,jprint(argjson,0));
+    //if ( OS_milliseconds()-millis > 100 )
+    //    printf("%.3f %s\n",OS_milliseconds()-millis,jprint(argjson,0));
     return(retstr);
 }
 
@@ -159,7 +159,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 {
     static uint32_t dup,uniq;
     int32_t i,len,cipherlen,datalen=0,duplicate=0,encrypted=0; char *method,*method2,*tmp,*cipherstr,*retstr=0,*jsonstr=0; cJSON *argjson; uint32_t crc32;
-    double millis = OS_milliseconds();
+    //double millis = OS_milliseconds();
     crc32 = calc_crc32(0,&ptr[2],recvlen-2);
     if ( (crc32 & 0xff) == ptr[0] && ((crc32>>8) & 0xff) == ptr[1] )
         encrypted = 1;
@@ -224,7 +224,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 {
                 }
                 portable_mutex_unlock(&LP_commandmutex);
-                printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
+                //printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
                 free_json(argjson);
             }
         }
@@ -268,7 +268,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 if ( LP_lastcommand != 0 )
                     free(LP_lastcommand);
                 LP_lastcommand = clonestr((char *)ptr);
-                double millis = OS_milliseconds();
+                //double millis = OS_milliseconds();
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
                 if ( Broadcaststr != 0 )
@@ -294,7 +294,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     }
                     free(str);
                 }
-                printf("%.3f LP_process_message %s\n",OS_milliseconds()-millis,methodstr);
+                //printf("%.3f LP_process_message %s\n",OS_milliseconds()-millis,methodstr);
             }
         }
     }
@@ -322,7 +322,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
         //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
         milli = OS_milliseconds();
         nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr,1);
-        if ( OS_milliseconds()-milli > 100 )
+        if ( OS_milliseconds()-milli > 3 )
             fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds: (%s)\n",OS_milliseconds()-milli,LP_lastcommand!=0?LP_lastcommand:"");
     }
     /*HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
@@ -336,7 +336,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
     {
         milli = OS_milliseconds();
         nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
-        if ( OS_milliseconds()-milli > 100 )
+        if ( OS_milliseconds()-milli > 3 )
             fprintf(stderr,">>>>>>>>>>>>>>>>> BIG latency lag %.3f milliseconds: (%s)\n",OS_milliseconds()-milli,LP_lastcommand!=0?LP_lastcommand:"");
     }
     //portable_mutex_unlock(&LP_nanorecvsmutex);
