@@ -472,6 +472,18 @@ stop()\n\
         return(LP_peers());
     else if ( strcmp(method,"getcoins") == 0 )
         return(jprint(LP_coinsjson(0),1));
+    else if ( strcmp(method,"wantnotify") == 0 )
+    {
+        bits256 pub;
+        pub = jbits256(argjson,"pub");
+        //char str[65]; printf("got wantnotify.(%s) vs %s\n",jprint(argjson,0),bits256_str(str,G.LP_mypub25519));
+        if ( bits256_cmp(pub,G.LP_mypub25519) == 0 )
+        {
+            printf("wantnotify for me!\n");
+            LP_notify_pubkeys(ctx,LP_mypubsock);
+        }
+        retstr = clonestr("{\"result\":\"success\"}");
+    }
     else if ( strcmp(method,"listunspent") == 0 )
     {
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
@@ -526,7 +538,7 @@ stop()\n\
     //    retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
-    else // special handling requests
+    else // psock requests/response
     {
         if ( IAMLP != 0 )
         {
