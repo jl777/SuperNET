@@ -469,7 +469,7 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
 
 void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_quoteinfo *qp)
 {
-    cJSON *reqjson; bits256 zero; char *msg; int32_t flag = 0; struct LP_utxoinfo *utxo;
+    cJSON *reqjson; bits256 zero; char *msg,*msg2; int32_t flag = 0; struct LP_utxoinfo *utxo;
     if ( strcmp(method,"request") == 0 )
     {
         if ( (utxo= LP_utxofind(0,qp->desttxid,qp->destvout)) != 0 && LP_ismine(utxo) > 0 && LP_isavailable(utxo) > 0 )
@@ -487,7 +487,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     jaddstr(reqjson,"method",method);
     jaddnum(reqjson,"timestamp",time(NULL));
     msg = jprint(reqjson,1);
-    //msg2 = clonestr(msg);
+    msg2 = clonestr(msg);
     // LP_addsig
     printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
@@ -497,12 +497,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
         Reserved_msgs[num_Reserved_msgs++] = msg;
         //Reserved_msgs[num_Reserved_msgs++] = msg2;
     }
-    else
-    {
-        //if ( 1 && strcmp(method,"request") == 0 )
-        LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg);
-        //else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
-    }
+    LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg2);
     portable_mutex_unlock(&LP_reservedmutex);
 }
 
