@@ -804,19 +804,18 @@ void LP_txbytes_update(char *name,char *symbol,char *txbytes,bits256 *txidp,bits
 
 int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi)
 {
-    struct LP_transaction *tx=0; struct iguana_info *coin; char str[65];
+    int32_t ht; struct LP_transaction *tx=0; struct iguana_info *coin; char str[65];
     if ( rswap->sentflags[txi] == 0 && bits256_nonz(rswap->txids[txi]) != 0 )
     {
-        coin = LP_coinfind(symbol);
-        if ( coin != 0 && (tx= LP_transactionfind(coin,rswap->txids[txi])) != 0 )
+        if ( (coin= LP_coinfind(symbol)) != 0 )
         {
-            rswap->sentflags[txi] = 1;
-            if ( tx->height <= 0 )
-                tx->height = LP_txheight(coin,rswap->txids[txi]);
-            if ( tx->height > 0 )
+            if ( (ht= LP_txheight(coin,rswap->txids[txi])) > 0 )
+            {
+                rswap->sentflags[txi] = 1;
                 _LP_refht_update(coin,rswap->txids[txi],tx->height);
-        } else LP_refht_update(symbol,rswap->txids[txi]);
-        printf("[%s] %s txbytes.%p %s ht.%d\n",txnames[txi],txnames[txi],rswap->txbytes[txi],bits256_str(str,rswap->txids[txi]),tx!=0?tx->height:-1);
+            } else LP_refht_update(symbol,rswap->txids[txi]);
+            printf("[%s] %s txbytes.%p %s ht.%d\n",txnames[txi],txnames[txi],rswap->txbytes[txi],bits256_str(str,rswap->txids[txi]),tx!=0?tx->height:-1);
+        }
     } else printf("sent.%d %s txi.%d\n",rswap->sentflags[txi],bits256_str(str,rswap->txids[txi]),txi);
     return(0);
 }
