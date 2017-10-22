@@ -548,7 +548,7 @@ stop()\n\
                     else
                     {
                         memset(zero.bytes,0,sizeof(zero));
-//printf("broadcast.(%s)\n",Broadcaststr);
+printf("broadcast.(%s)\n",Broadcaststr);
                         LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
                     }
                     retstr = clonestr("{\"result\":\"success\"}");
