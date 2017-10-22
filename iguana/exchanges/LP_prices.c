@@ -309,7 +309,7 @@ void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
         timestamp = juint(obj,"timestamp");
         if ( timestamp > now )
             timestamp = now;
-        if ( timestamp > pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
+        if ( timestamp >= pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
         {
             pubp->timestamp = timestamp;
             for (i=0; i<n; i++)

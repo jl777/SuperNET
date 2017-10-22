@@ -518,7 +518,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     {
         if ( peer->errors >= LP_MAXPEER_ERRORS )
         {
-            if ( (rand() % 100000) == 0 )
+            if ( (rand() % 10000) == 0 )
             {
                 peer->errors--;
                 if ( peer->errors < LP_MAXPEER_ERRORS )
@@ -540,7 +540,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             }
             peer->lastpeers = now;
         }
-        if ( peer->diduquery == 0 || peer->needping != 0 )
+        if ( peer->needping != 0 )
         {
             LP_utxos_sync(peer);
             peer->diduquery = now;
@@ -554,7 +554,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     if ( needpings != 0 || (counter % 10000) == 5 )
     {
         nonz++;
-        //printf("needpings.%d send notify\n",needpings);
+        printf("needpings.%d send notify\n",needpings);
         LP_notify_pubkeys(ctx,pubsock);
     }
     if ( (counter % 6000) == 10 )
