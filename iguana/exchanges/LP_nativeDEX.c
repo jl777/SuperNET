@@ -561,6 +561,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
+        fprintf(stderr,"%s ",coin->symbol);
         memset(&zero,0,sizeof(zero));
         if ( coin->addr_listunspent_requested != 0 )
         {
@@ -599,7 +600,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         }
         if ( coin->lastscanht == coin->longestchain+1 )
         {
-            printf("%s lastscanht.%d is longest.%d + 1\n",coin->synbol,coin->lastscanht,coin->longestchain)
+            printf("%s lastscanht.%d is longest.%d + 1\n",coin->symbol,coin->lastscanht,coin->longestchain);
             continue;
         }
         else if ( coin->lastscanht > coin->longestchain+1 )
