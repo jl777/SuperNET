@@ -350,7 +350,7 @@ int32_t _LP_pubkey_sigcheck(uint8_t *sig,int32_t siglen,bits256 pub,uint8_t *rmd
 int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
 {
     static void *ctx;
-    uint8_t sig[128]; int32_t siglen=0; bits256 sighash; char sigstr[256];
+    uint8_t sig[128],pub33[33]; int32_t i,siglen=0; bits256 sighash; char sigstr[256];
     sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
@@ -358,7 +358,16 @@ int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,ui
     {
         init_hexbytes_noT(sigstr,sig,siglen);
         jaddstr(item,"sig",sigstr);
-        printf("sigadd check: %d/%d %s siglen.%d\n",bitcoin_recoververify(ctx,"test",sig,sighash,pubsecp,33),_LP_pubkey_sigcheck(sig,siglen,pub,rmd160,pubsecp),sigstr,siglen);
+        printf("sigadd check: %d/%d %s siglen.%d\n",bitcoin_recoververify(ctx,"test",sig,sighash,pub33,33),_LP_pubkey_sigcheck(sig,siglen,pub,rmd160,pubsecp),sigstr,siglen);
+        if ( memcmp(pub33,pubsecp,33) != 0 )
+        {
+            for (i=0; i<33; i++)
+                printf("%02x",pubsecp[i]);
+            printf(" pubsecp -> ");
+            for (i=0; i<33; i++)
+                printf("%02x",pub33[i]);
+            printf(" mismatched recovered pubkey\n");
+        }
         return(siglen);
     } else return(0);
 }
@@ -375,6 +384,8 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
             if ( (pubsecpstr= jstr(item,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
             {
                 decode_hex(pubsecp,sizeof(pubsecp),pubsecpstr);
+                memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160)); // transition
+                memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
                 if ( (sigstr= jstr(item,"sig")) != 0 && (len= is_hexstr(sigstr,0)) > 70*2 && len < 76*2  )
                 {
                     siglen = len >> 1;
@@ -387,7 +398,7 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                         memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
                         char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
                         retval = 0;
-                    } else printf("sig %s error pub33.%s\n",sigstr,pubsecpstr);
+                    } //else printf("sig %s error pub33.%s\n",sigstr,pubsecpstr);
                 }
             }
         }
