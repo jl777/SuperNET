@@ -354,11 +354,11 @@ int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,ui
     sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( (siglen= bitcoin_sign(ctx,"sigadd",sig,sighash,priv,0)) > 0 && siglen < 76 )
+    if ( (siglen= bitcoin_sign(ctx,"sigadd",sig,sighash,priv,1)) > 0 && siglen == 64 )
     {
         init_hexbytes_noT(sigstr,sig,siglen);
         jaddstr(item,"sig",sigstr);
-        printf("sigadd check: %d/%d %s siglen.%d\n",bitcoin_verify(ctx,sig,siglen,sighash,pubsecp,33),_LP_pubkey_sigcheck(sig,siglen,pub,rmd160,pubsecp),sigstr,siglen);
+        printf("sigadd check: %d/%d %s siglen.%d\n",bitcoin_recoververify(ctx,"test",sig,sighash,pubsecp,33),_LP_pubkey_sigcheck(sig,siglen,pub,rmd160,pubsecp),sigstr,siglen);
         return(siglen);
     } else return(0);
 }
