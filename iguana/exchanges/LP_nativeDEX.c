@@ -250,6 +250,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 break;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
+                methodstr[0] = 0;
                 if ( 1 )
                 {
                     cJSON *recvjson; //char *mstr,*cstr;
@@ -264,7 +265,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free_json(recvjson);
                     }
                 }
-                //double millis = OS_milliseconds();
+                double millis = OS_milliseconds();
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
                 if ( Broadcaststr != 0 )
@@ -287,7 +288,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     }
                     free(str);
                 }
-                //printf("%.3f LP_process_message %s\n",OS_milliseconds()-millis,methodstr);
+                printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
             }
         }
     }
