@@ -358,19 +358,20 @@ int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,ui
     {
         if ( (siglen= bitcoin_sign(ctx,"sigadd",sig,sighash,priv,1)) > 0 && siglen == 65 )
         {
-            init_hexbytes_noT(sigstr,sig,siglen);
-            jaddstr(item,"sig",sigstr);
             memset(pub33,0,33);
-            //printf("sigadd check: %d %s siglen.%d\n",bitcoin_recoververify(ctx,"test",sig,sighash,pub33,0),sigstr,siglen);
-            if ( memcmp(pub33,pubsecp,33) == 0 )
+            if ( bitcoin_recoververify(ctx,"test",sig,sighash,pub33,0) == 0 && memcmp(pub33,pubsecp,33) == 0 )
+            {
+                init_hexbytes_noT(sigstr,sig,siglen);
+                jaddstr(item,"sig",sigstr);
                 return(siglen);
+            }
             {
                 for (i=0; i<33; i++)
                     printf("%02x",pubsecp[i]);
                 printf(" pubsecp -> ");
                 for (i=0; i<33; i++)
                     printf("%02x",pub33[i]);
-                printf(" mismatched recovered pubkey.%d of %d\n",i,100);
+                printf(" mismatched recovered pubkey.%d of %d\n",j,100);
             }
         }
     }
