@@ -708,7 +708,7 @@ int32_t LP_reserved_msgs()
 #ifdef __APPLE__
         usleep(5000);
 #else
-        usleep(1000);
+        usleep(3000);
 #endif
         n++;
         if ( n > 0 )
