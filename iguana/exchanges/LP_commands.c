@@ -476,6 +476,7 @@ stop()\n\
     {
         bits256 pub;
         pub = jbits256(argjson,"pub");
+        char str[65]; printf("got wantnotify.(%s) vs %s\n",jprint(argjson,0),bits256_str(str,G.LP_mypub25519));
         if ( bits256_cmp(pub,G.LP_mypub25519) == 0 )
         {
             printf("wantnotify for me!\n");
