@@ -341,10 +341,10 @@ bits256 LP_pubkey_sighash(bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
 int32_t _LP_pubkey_sigcheck(uint8_t *sig,int32_t siglen,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
 {
     static void *ctx;
-    bits256 sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
+    uint8_t pub33[33]; bits256 sighash = LP_pubkey_sighash(pub,rmd160,pubsecp);
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    return(bitcoin_verify(ctx,sig,siglen,sighash,pubsecp,33));
+    return(bitcoin_recoververify(ctx,"sigcheck",sig,sighash,pub33,0));
 }
 
 int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp)
@@ -365,6 +365,10 @@ int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,ui
             for (i=0; i<33; i++)
                 printf("%02x",pubsecp[i]);
             printf(" pubsecp -> ");
+            for (i=0; i<33; i++)
+                printf("%02x",pub33[i]);
+            printf(" recovered, ");
+            bitcoin_pubkey33(ctx,pub33,priv);
             for (i=0; i<33; i++)
                 printf("%02x",pub33[i]);
             printf(" mismatched recovered pubkey\n");
