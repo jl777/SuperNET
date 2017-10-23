@@ -518,7 +518,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
 {
     cJSON *retjson=0; struct iguana_info *coin = LP_coinfind(symbol);
     //printf("electrum.%s/%s listunspent last.(%s lag %d)\n",ep->symbol,coin->symbol,coin->lastunspent,(int32_t)(time(NULL) - coin->unspenttime));
-    if ( strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+30 )
+    if ( coin != 0 && (strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+30) )
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
@@ -526,7 +526,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
             if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
-            coin->unspenttime = (uint32_t)time(NULL);
+            //coin->unspenttime = (uint32_t)time(NULL);
         }
     } else retjson = LP_address_utxos(coin,addr,1);
     return(retjson);
