@@ -1107,9 +1107,10 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,rswap.requestid,rswap.quoteid), OS_compatible_path(fname);
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
+            jaddstr(item,"method","tradestatus");
             itemstr = jprint(item,0);
             fprintf(fp,"%s\n",itemstr);
-            free(itemstr);
+            LP_reserved_msg(rswap.src,rswap.dest,zero,itemstr);
             fclose(fp);
         }
     }

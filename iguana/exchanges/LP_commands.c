@@ -453,6 +453,12 @@ stop()\n\
     // end received response
     
     // public access, even from http
+    else if ( strcmp(method,"tradestatus") == 0 )
+    {
+        LP_tradecommand_log(argjson);
+        printf("GOT TRADESTATUS! %s\n",jprint(argjson,0));
+        retstr = clonestr("{\"result\":\"success\"}");
+    }
     else if ( strcmp(method,"balance") == 0 )
     {
         if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
