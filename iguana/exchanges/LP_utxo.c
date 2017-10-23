@@ -628,8 +628,6 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                 spentvout = jint(vin,"vout");
                 if ( i == 0 && bits256_nonz(spenttxid) == 0 )
                     continue;
-                //if ( strcmp("REVS",coin->symbol) == 0 )
-                //    printf("ht.%d vini.%d %s/v%d spent\n",height,i,bits256_str(str,spenttxid),spentvout);
                 if ( (tx= LP_transactionfind(coin,spenttxid)) != 0 )
                 {
                     if ( spentvout < tx->numvouts )
@@ -640,7 +638,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                             tx->outpoints[spentvout].spendvini = i;
                             tx->outpoints[spentvout].spendheight = height > 0 ? height : 1;
                             LP_address_utxoadd(coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
-                            if ( 0 && strcmp(coin->symbol,"BTC") != 0 )
+                            if ( strcmp(coin->symbol,"REVS") == 0 )
                                 printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
                         }
                     } else printf("LP_transactioninit: %s spentvout.%d < numvouts.%d spendheight.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts,tx->outpoints[spentvout].spendheight);
