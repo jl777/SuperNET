@@ -261,7 +261,7 @@ int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
         retval = bitcoin_recoververify(ctx,"utxos",sig,sighash,pub33,0);
         if ( memcmp(pub33,pubsecp,33) != 0 || retval != 0 )
         {
-            printf("LP_utxos_sigcheck failure\n");
+            printf("LP_utxos_sigcheck failure, probably from node with older version\n");
             retval = -1;
         } else retval = 0;
     }
@@ -314,7 +314,7 @@ void LP_postutxos(char *symbol,char *coinaddr)
             jaddstr(reqjson,"pubsecp",pubsecpstr);
             jaddbits256(reqjson,"pubkey",G.LP_mypub25519);
             utxoshash = LP_utxoshash_calc(array);
-            char str[65]; printf("utxoshash add %s\n",bits256_str(str,utxoshash));
+            //char str[65]; printf("utxoshash add %s\n",bits256_str(str,utxoshash));
             LP_utxos_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_pubsecp,G.LP_mypub25519,utxoshash);
             //printf("post (%s) -> %d\n",msg,LP_mypubsock);
             LP_reserved_msg(symbol,symbol,zero,jprint(reqjson,1));
@@ -331,7 +331,7 @@ char *LP_postutxos_recv(cJSON *argjson)
     if ( (obj= jobj(argjson,"utxos")) != 0 )
     {
         utxoshash = LP_utxoshash_calc(obj);
-        char str[65]; printf("got utxoshash %s\n",bits256_str(str,utxoshash));
+        //char str[65]; printf("got utxoshash %s\n",bits256_str(str,utxoshash));
         if ( LP_utxos_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),jbits256(argjson,"pubkey"),utxoshash) == 0 )
         {
             uitem = calloc(1,sizeof(*uitem));
@@ -385,7 +385,7 @@ int32_t LP_price_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
         else
         {
             retval = 0;
-            printf("valid price sig %s/%s %.8f\n",base,rel,dstr(price64));
+            //printf("valid price sig %s/%s %.8f\n",base,rel,dstr(price64));
         }
     }
     return(retval);
