@@ -548,7 +548,7 @@ void LP_coinsloop(void *myipaddr)
             }
             if ( (coin->lastscanht % 1000) == 0 )
                 printf("%s ref.%d scan.%d to %d, longest.%d\n",coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
-            for (j=0; j<100; j++)
+            for (j=0; j<1; j++)
             {
                 if ( LP_blockinit(coin,coin->lastscanht) < 0 )
                 {
