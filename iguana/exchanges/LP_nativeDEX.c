@@ -517,10 +517,16 @@ void LP_coinsloop(void *_coins)
         nonz = 0;
         HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
         {
-            if ( coins[0] != 0 && strcmp(coins,coin->symbol) != 0 )
-                continue;
-            else if ( strcmp("BTC",coin->symbol) == 0 || strcmp("KMD",coin->symbol) == 0 )
-                continue;
+            if ( coins[0] != 0 )
+            {
+                if ( strcmp(coins,coin->symbol) != 0 )
+                    continue;
+            }
+            else // avoid hardcode special case LP_coinsloop
+            {
+                if ( strcmp("BTC",coin->symbol) == 0 || strcmp("KMD",coin->symbol) == 0 )
+                    continue;
+            }
             if ( coins[0] != 0 )
                 printf("%s loop\n",coins);
             memset(&zero,0,sizeof(zero));
