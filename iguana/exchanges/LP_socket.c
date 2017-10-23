@@ -526,7 +526,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
             if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
-            //coin->unspenttime = (uint32_t)time(NULL);
+            coin->unspenttime = (uint32_t)time(NULL);
         }
     } else retjson = LP_address_utxos(coin,addr,1);
     return(retjson);
