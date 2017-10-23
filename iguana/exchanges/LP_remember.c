@@ -267,17 +267,17 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
         if ( bits256_nonz(spendtxid) != 0 )
         {
             sentflags[utxoind] = 1;
-            printf("utxoind.%d Alice.(%s %s) Bob.(%s %s) vs destaddr.(%s)\n",utxoind,aliceaddr,Adest,bobaddr,dest,destaddr);
+            //printf("utxoind.%d Alice.(%s %s) Bob.(%s %s) vs destaddr.(%s)\n",utxoind,aliceaddr,Adest,bobaddr,dest,destaddr);
             if ( aliceaddr != 0 && (strcmp(destaddr,aliceaddr) == 0 || strcmp(Adest,destaddr) == 0) )
             {
-                printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                //printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[alicespent] = 1;
                 sentflags[bobspent] = 0;
                 txids[alicespent] = spendtxid;
             }
             else if ( bobaddr != 0 && (strcmp(destaddr,bobaddr) == 0 || strcmp(dest,destaddr) == 0) )
             {
-                printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                //printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[bobspent] = 1;
                 sentflags[alicespent] = 0;
                 txids[bobspent] = spendtxid;
@@ -298,7 +298,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                     txids[alicespent] = spendtxid;
                 }
             }
-        } else printf("no spend of %s/v%d detected\n",bits256_str(str,txid),vout);
+        } //else printf("no spend of %s/v%d detected\n",bits256_str(str,txid),vout);
     } else printf("utxoind.%d null txid\n",utxoind);
     return(spendtxid);
 }
@@ -804,7 +804,7 @@ void LP_txbytes_update(char *name,char *symbol,char *txbytes,bits256 *txidp,bits
 
 int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi)
 {
-    int32_t ht; struct iguana_info *coin; char str[65];
+    int32_t ht; struct iguana_info *coin; //char str[65];
     if ( rswap->sentflags[txi] == 0 && bits256_nonz(rswap->txids[txi]) != 0 )
     {
         if ( (coin= LP_coinfind(symbol)) != 0 )
@@ -814,9 +814,9 @@ int32_t LP_rswap_checktx(struct LP_swap_remember *rswap,char *symbol,int32_t txi
                 rswap->sentflags[txi] = 1;
                 _LP_refht_update(coin,rswap->txids[txi],ht);
             } else LP_refht_update(symbol,rswap->txids[txi]);
-            printf("[%s] %s txbytes.%p %s ht.%d\n",txnames[txi],txnames[txi],rswap->txbytes[txi],bits256_str(str,rswap->txids[txi]),ht);
+            //printf("[%s] %s txbytes.%p %s ht.%d\n",txnames[txi],txnames[txi],rswap->txbytes[txi],bits256_str(str,rswap->txids[txi]),ht);
         }
-    } else printf("sent.%d %s txi.%d\n",rswap->sentflags[txi],bits256_str(str,rswap->txids[txi]),txi);
+    } //else printf("sent.%d %s txi.%d\n",rswap->sentflags[txi],bits256_str(str,rswap->txids[txi]),txi);
     return(0);
 }
 
@@ -1008,7 +1008,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         {
             if ( rswap.sentflags[BASILISK_BOBSPEND] == 0 && bits256_nonz(rswap.Apaymentspent) == 0 )
             {
-                printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,rswap.txids[BASILISK_ALICESPEND]),bits256_nonz(rswap.privAm));
+                //printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,rswap.txids[BASILISK_ALICESPEND]),bits256_nonz(rswap.privAm));
                 if ( bits256_nonz(rswap.txids[BASILISK_ALICESPEND]) != 0 || bits256_nonz(rswap.privAm) != 0 )
                 {
                     if ( (txoutobj= LP_gettxout(rswap.alicecoin,rswap.alicepaymentaddr,rswap.txids[BASILISK_ALICEPAYMENT],0)) != 0 )
@@ -1019,7 +1019,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         if ( bits256_nonz(rswap.privAm) == 0 )
                         {
                             rswap.privAm = basilisk_swap_privbob_extract(rswap.bobcoin,rswap.txids[BASILISK_ALICESPEND],0,1);
-                            printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,rswap.txids[BASILISK_ALICESPEND]),bits256_nonz(rswap.privAm));
+                            //printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,rswap.txids[BASILISK_ALICESPEND]),bits256_nonz(rswap.privAm));
                         }
                         if ( bits256_nonz(rswap.privAm) != 0 && bits256_nonz(rswap.privBn) != 0 )
                         {
