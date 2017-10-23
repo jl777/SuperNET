@@ -250,7 +250,7 @@ bits256 LP_utxos_sighash(uint32_t timestamp,uint8_t *pubsecp,bits256 pubkey,bits
 
 int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits256 pubkey,bits256 utxoshash)
 {
-    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash;
+    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; char str[65];
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( sigstr != 0 && pubsecpstr != 0 && strlen(sigstr) == 65*2 && strlen(pubsecpstr) == 33 *2 )
@@ -261,7 +261,9 @@ int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
         retval = bitcoin_recoververify(ctx,"utxos",sig,sighash,pub33,0);
         if ( memcmp(pub33,pubsecp,33) != 0 || retval != 0 )
         {
-            printf("LP_utxos_sigcheck failure, probably from node with older version\n");
+            static uint32_t counter;
+            if ( counter++ < 100 )
+            printf("LP_utxos_sigcheck failure, probably from %s with older version\n",bits256_str(str,pubkey));
             retval = -1;
         } else retval = 0;
     }
