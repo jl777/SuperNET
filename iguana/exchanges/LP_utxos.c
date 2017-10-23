@@ -18,6 +18,9 @@
 //  marketmaker
 //
 
+
+
+
 int32_t LP_ismine(struct LP_utxoinfo *utxo)
 {
     if ( utxo != 0 && bits256_cmp(utxo->pubkey,G.LP_mypub25519) == 0 )

@@ -18,6 +18,47 @@
 //  LP_transaction.c
 //  marketmaker
 //
+bits256 LP_privkeyfind(uint8_t rmd160[20])
+{
+    int32_t i; static bits256 zero;
+    for (i=0; i<G.LP_numprivkeys; i++)
+        if ( memcmp(rmd160,G.LP_privkeys[i].rmd160,20) == 0 )
+            return(G.LP_privkeys[i].privkey);
+    //for (i=0; i<20; i++)
+    //    printf("%02x",rmd160[i]);
+    //printf(" -> no privkey\n");
+    return(zero);
+}
+
+int32_t LP_privkeyadd(bits256 privkey,uint8_t rmd160[20])
+{
+    bits256 tmpkey;
+    tmpkey = LP_privkeyfind(rmd160);
+    if ( bits256_nonz(tmpkey) != 0 )
+        return(-bits256_cmp(privkey,tmpkey));
+    G.LP_privkeys[G.LP_numprivkeys].privkey = privkey;
+    memcpy(G.LP_privkeys[G.LP_numprivkeys].rmd160,rmd160,20);
+    //int32_t i; for (i=0; i<20; i++)
+    //    printf("%02x",rmd160[i]);
+    //char str[65]; printf(" -> add privkey.(%s)\n",bits256_str(str,privkey));
+    G.LP_numprivkeys++;
+    return(G.LP_numprivkeys);
+}
+
+bits256 LP_privkey(char *coinaddr,uint8_t taddr)
+{
+    bits256 privkey; uint8_t addrtype,rmd160[20];
+    bitcoin_addr2rmd160(taddr,&addrtype,rmd160,coinaddr);
+    privkey = LP_privkeyfind(rmd160);
+    return(privkey);
+}
+
+bits256 LP_pubkey(bits256 privkey)
+{
+    bits256 pubkey;
+    pubkey = curve25519(privkey,curve25519_basepoint9());
+    return(pubkey);
+}
 
 int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid)
 {
