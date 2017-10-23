@@ -1054,7 +1054,7 @@ int32_t LP_notarization_latest(int32_t *bestheightp,struct iguana_info *coin)
                 if ( (hasnotarization= LP_hasnotarization(coin,blockjson)) > 0 )
                 {
                     height = jint(blockjson,"height");
-                    char str[65]; printf("%s height.%d\n",bits256_str(str,blockhash),height);
+                    //char str[65]; printf("%s height.%d\n",bits256_str(str,blockhash),height);
                 }
                 else
                 {
