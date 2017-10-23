@@ -1110,7 +1110,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             jaddstr(item,"method","tradestatus");
             itemstr = jprint(item,0);
             fprintf(fp,"%s\n",itemstr);
-            LP_reserved_msg(rswap.src,rswap.dest,zero,itemstr);
+            LP_reserved_msg(rswap.src,rswap.dest,zero,clonestr(itemstr));
+            LP_broadcast_message(LP_mypubsock,rswap.src,rswap.dest,zero,itemstr);
             fclose(fp);
         }
     }
