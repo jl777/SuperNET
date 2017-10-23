@@ -522,12 +522,11 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            printf("%s u.%u t.%ld %s -> %s LISTUNSPENT.(%ld)\n",coin->symbol,coin->unspenttime,time(NULL),coin->lastunspent,addr,strlen(jprint(retjson,0)));
+            printf("%s %p u.%u t.%ld %s -> %s LISTUNSPENT.(%ld)\n",coin->symbol,&coin->unspenttime,coin->unspenttime,time(NULL),coin->lastunspent,addr,strlen(jprint(retjson,0)));
             if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
             coin->unspenttime = (uint32_t)time(NULL);
-            printf("%s u.%u t.%ld %s -> %s LISTUNSPENT.(%ld)\n",coin->symbol,coin->unspenttime,time(NULL),coin->lastunspent,addr,strlen(jprint(retjson,0)));
         }
     } else retjson = LP_address_utxos(coin,addr,1);
     return(retjson);
