@@ -35,7 +35,7 @@ char *LP_numutxos()
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t changed,otherpeers,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
-//printf("stats_JSON(%s)\n",jprint(argjson,0));
+    //printf("stats_JSON(%s)\n",jprint(argjson,0));
     method = jstr(argjson,"method");
     if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (method == 0 || strcmp(method,"electrum") != 0) )
     {
@@ -51,10 +51,10 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
                 if ( 0 && (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
                     peer->numpeers = otherpeers;
                 /*if ( 0 && (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
-                {
-                    printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
-                    peer->numutxos = othernumutxos;
-                }*/
+                 {
+                 printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
+                 peer->numutxos = othernumutxos;
+                 }*/
                 if ( peer->sessionid == 0 )
                     peer->sessionid = juint(argjson,"session");
                 //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
@@ -70,32 +70,32 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
         return(0);
     }
     /*if ( strcmp(method,"hello") == 0 )
-    {
-        //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
-        return(0);
-    }
-    else*/ if ( strcmp(method,"sendmessage") == 0 && jobj(argjson,"userpass") == 0 )
-    {
-        static char *laststr;
-        char *newstr; bits256 pubkey = jbits256(argjson,"pubkey");
-        if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,G.LP_mypub25519) == 0 )
-        {
-            newstr = jprint(argjson,0);
-            if ( laststr == 0 || strcmp(laststr,newstr) != 0 )
-            {
-                printf("got message.(%s) from %s:%u\n",newstr,ipaddr!=0?ipaddr:"",argport);
-                if ( laststr != 0 )
-                    free(laststr);
-                laststr = newstr;
-                LP_gotmessage(argjson);
-                retstr = clonestr(laststr);
-            }
-        } else retstr = clonestr("{\"error\":\"duplicate message\"}");
-    }
+     {
+     //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
+     return(0);
+     }
+     else*/ if ( strcmp(method,"sendmessage") == 0 && jobj(argjson,"userpass") == 0 )
+     {
+         static char *laststr;
+         char *newstr; bits256 pubkey = jbits256(argjson,"pubkey");
+         if ( bits256_nonz(pubkey) == 0 || bits256_cmp(pubkey,G.LP_mypub25519) == 0 )
+         {
+             newstr = jprint(argjson,0);
+             if ( laststr == 0 || strcmp(laststr,newstr) != 0 )
+             {
+                 printf("got message.(%s) from %s:%u\n",newstr,ipaddr!=0?ipaddr:"",argport);
+                 if ( laststr != 0 )
+                     free(laststr);
+                 laststr = newstr;
+                 LP_gotmessage(argjson);
+                 retstr = clonestr(laststr);
+             }
+         } else retstr = clonestr("{\"error\":\"duplicate message\"}");
+     }
     //else if ( strcmp(method,"nn_tests") == 0 )
     //    return(clonestr("{\"result\":\"success\"}"));
-    else if ( strcmp(method,"help") == 0 )
-        return(clonestr("{\"result\":\" \
+     else if ( strcmp(method,"help") == 0 )
+         return(clonestr("{\"result\":\" \
 available localhost RPC commands: \n \
 pricearray(base, rel, firsttime=0, lasttime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 setprice(base, rel, price)\n\
@@ -104,6 +104,7 @@ goal(coin=*, val=<autocalc>)\n\
 myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
+getrawtransaction(coin, txid)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
 lastnonce()\n\
@@ -137,7 +138,7 @@ dividends(coin, height, <args>)\n\
 stop()\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
-
+    
     base = jstr(argjson,"base");
     rel = jstr(argjson,"rel");
     coin = jstr(argjson,"coin");
@@ -328,6 +329,10 @@ stop()\n\
             else if ( strcmp(method,"sendrawtransaction") == 0 )
             {
                 return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx")));
+            }
+            else if ( strcmp(method,"getrawtransaction") == 0 )
+            {
+                return(jprint(LP_gettx(coin,jbits256(argjson,"txid")),0));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {
@@ -543,41 +548,41 @@ stop()\n\
         if ( IAMLP != 0 )
         {
             /*if ( strcmp(method,"broadcast") == 0 )
-            {
-                bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
-                if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
-                {
-                    Broadcaststr = jprint(reqjson,0);
-                    if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
-                    {
-                        cipherlen = (int32_t)strlen(cipherstr) >> 1;
-                        if ( cipherlen <= sizeof(cipher) )
-                        {
-                            decode_hex(cipher,cipherlen,cipherstr);
-                            LP_queuesend(calc_crc32(0,&cipher[2],cipherlen-2),LP_mypubsock,base,rel,cipher,cipherlen);
-                        } else retstr = clonestr("{\"error\":\"cipher too big\"}");
-                    }
-                    else
-                    {
-                        memset(zero.bytes,0,sizeof(zero));
-//printf("broadcast.(%s)\n",Broadcaststr);
-                        LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
-                    }
-                    retstr = clonestr("{\"result\":\"success\"}");
-                } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
-            }
-            else*/ if ( strcmp(method,"psock") == 0 )
-            {
-                if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
-                {
-                    if ( LP_mypeer != 0 )
-                        myipaddr = LP_mypeer->ipaddr;
-                    else printf("LP_psock dont have actual ipaddr?\n");
-                }
-                if ( jint(argjson,"ispaired") != 0 )
-                    return(LP_psock(myipaddr,jint(argjson,"ispaired")));
-                else return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-            }
+             {
+             bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
+             if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
+             {
+             Broadcaststr = jprint(reqjson,0);
+             if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
+             {
+             cipherlen = (int32_t)strlen(cipherstr) >> 1;
+             if ( cipherlen <= sizeof(cipher) )
+             {
+             decode_hex(cipher,cipherlen,cipherstr);
+             LP_queuesend(calc_crc32(0,&cipher[2],cipherlen-2),LP_mypubsock,base,rel,cipher,cipherlen);
+             } else retstr = clonestr("{\"error\":\"cipher too big\"}");
+             }
+             else
+             {
+             memset(zero.bytes,0,sizeof(zero));
+             //printf("broadcast.(%s)\n",Broadcaststr);
+             LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
+             }
+             retstr = clonestr("{\"result\":\"success\"}");
+             } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
+             }
+             else*/ if ( strcmp(method,"psock") == 0 )
+             {
+                 if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
+                 {
+                     if ( LP_mypeer != 0 )
+                         myipaddr = LP_mypeer->ipaddr;
+                     else printf("LP_psock dont have actual ipaddr?\n");
+                 }
+                 if ( jint(argjson,"ispaired") != 0 )
+                     return(LP_psock(myipaddr,jint(argjson,"ispaired")));
+                 else return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
+             }
         }
         else
         {
