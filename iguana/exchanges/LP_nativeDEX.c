@@ -18,13 +18,13 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// select oldest utxo first
 // process stats.log local file -> map of realtime activity!
+// select oldest utxo first
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
 //
 // verify portfolio, pricearray, interest to KMD withdraw, reliable networking
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
-// serialize sighash functions -> otherwise bigendian architectures not supported
+// bigendian architectures need to use little endian for sighash calcs
 
 #include <stdio.h>
 #include "LP_include.h"
