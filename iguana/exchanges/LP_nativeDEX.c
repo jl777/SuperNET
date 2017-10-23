@@ -519,7 +519,7 @@ void LP_coinsloop(void *_coins)
         {
             if ( coins[0] != 0 && strcmp(coins,coin->symbol) != 0 )
                 continue;
-            else if ( strcmp("BTC",coin->symbol) == 0 )
+            else if ( strcmp("BTC",coin->symbol) == 0 || strcmp("KMD",coin->symbol) == 0 )
                 continue;
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
@@ -537,7 +537,7 @@ void LP_coinsloop(void *_coins)
             }
             if ( coin->lastscanht == coin->longestchain+1 )
             {
-                printf("%s lastscanht.%d is longest.%d + 1\n",coin->symbol,coin->lastscanht,coin->longestchain);
+                //printf("%s lastscanht.%d is longest.%d + 1\n",coin->symbol,coin->lastscanht,coin->longestchain);
                 continue;
             }
             else if ( coin->lastscanht > coin->longestchain+1 )
@@ -957,6 +957,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)"BTC") != 0 )
     {
         printf("error launching BTC LP_coinsloop for port.%u\n",myport);
+        exit(-1);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)"KMD") != 0 )
+    {
+        printf("error launching KMD LP_coinsloop for port.%u\n",myport);
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_pubkeysloop,(void *)myipaddr) != 0 )
