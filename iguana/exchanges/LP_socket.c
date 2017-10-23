@@ -522,7 +522,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            printf("%s lag.%ld %s -> %s LISTUNSPENT.(%s)\n",coin->symbol,time(NULL) -( coin->unspenttime+30),coin->lastunspent,addr,jprint(retjson,0));
+            printf("%s u.%u t.%ld %s -> %s LISTUNSPENT.(%s)\n",coin->symbol,coin->unspenttime,time(NULL),coin->lastunspent,addr,jprint(retjson,0));
             if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
