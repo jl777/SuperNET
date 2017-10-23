@@ -552,7 +552,7 @@ void LP_coinsloop(void *_coins)
             }
             //if ( (coin->lastscanht % 1000) == 0 )
                 printf("[%s]: %s ref.%d scan.%d to %d, longest.%d\n",coins,coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
-            for (j=0; j<1; j++)
+            for (j=0; j<100; j++)
             {
                 if ( LP_blockinit(coin,coin->lastscanht) < 0 )
                 {
