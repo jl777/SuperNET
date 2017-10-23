@@ -44,7 +44,7 @@
 #define LP_PEERGOOD_ERRORDECAY 0.9
 
 #define LP_SWAPSTEP_TIMEOUT 30
-#define LP_AUTOTRADE_TIMEOUT 30
+#define LP_AUTOTRADE_TIMEOUT 15
 #define LP_MIN_TXFEE 10000
 #define LP_MINVOL 20
 #define LP_MINCLIENTVOL 50
@@ -286,7 +286,7 @@ struct LP_pubkeyinfo
 };
 
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
-int32_t LP_pubkey_sigadd(cJSON *item,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
+int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
 void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t vout);
 void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
 uint32_t basilisk_requestid(struct basilisk_request *rp);
@@ -311,7 +311,6 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
-int32_t LP_reserved_msgs();
 uint64_t LP_smartbalance(struct iguana_info *coin);
 int32_t LP_getheight(struct iguana_info *coin);
 int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg);

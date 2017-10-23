@@ -1259,7 +1259,9 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t v
     coinaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
     if ( LP_spendsearch(destaddr,&spendtxid,&spendvin,symbol,utxotxid,vout) > 0 )
-        printf("spend of %s/v%d detected\n",bits256_str(str,utxotxid),vout);
+    {
+        //printf("spend of %s/v%d detected\n",bits256_str(str,utxotxid),vout);
+    }
     else if ( 0 && (coin= LP_coinfind(symbol)) != 0 && coin->electrum == 0 )
     {
         if ( (retjson= LP_gettxout(symbol,coinaddr,utxotxid,vout)) == 0 )
