@@ -527,8 +527,6 @@ void LP_coinsloop(void *_coins)
                 if ( strcmp("BTC",coin->symbol) == 0 || strcmp("KMD",coin->symbol) == 0 )
                     continue;
             }
-            if ( coins[0] != 0 )
-                printf("%s loop\n",coins);
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
