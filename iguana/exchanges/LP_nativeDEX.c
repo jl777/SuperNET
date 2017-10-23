@@ -19,7 +19,7 @@
 //  marketmaker
 //
 // process stats.log local file -> map of realtime activity!
-// sign price
+// serialize sighash functions
 // select oldest utxo first
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
 //
