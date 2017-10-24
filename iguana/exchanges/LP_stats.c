@@ -38,12 +38,43 @@ void LP_tradecommand_log(cJSON *argjson)
     }
 }
 
-uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates;
+uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_numridqids;
 uint64_t Ridqids[128];
+
+int32_t LP_statslog_parsequote(cJSON *lineobj)
+{
+    int32_t i,duplicate=0; struct LP_quoteinfo Q; uint64_t ridqid;
+    memset(&Q,0,sizeof(Q));
+    if ( LP_quoteparse(&Q,lineobj) < 0 )
+    {
+        printf("quoteparse_error.(%s)\n",jprint(lineobj,0));
+        LP_parse_errors++;
+    }
+    else
+    {
+        ridqid = (((uint64_t)Q.R.requestid << 32) | Q.R.quoteid);
+        for (i=0; i<sizeof(Ridqids)/sizeof(*Ridqids); i++)
+        {
+            if ( Ridqids[i] == ridqid )
+            {
+                duplicate = 1;
+                LP_duplicates++;
+                break;
+            }
+        }
+        if ( duplicate == 0 )
+        {
+            Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
+            LP_numridqids++;
+            printf("connected requestid.%u quoteid.%u -> %d\n",Q.R.requestid,Q.R.quoteid,(int32_t)(LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))));
+        }
+    }
+    return(duplicate == 0);
+}
 
 void LP_statslog_parseline(cJSON *lineobj)
 {
-    char *method; int32_t i,duplicate; struct LP_quoteinfo Q; uint64_t ridqid;
+    char *method;
     if ( (method= jstr(lineobj,"method")) != 0 )
     {
         if ( strcmp(method,"request") == 0 )
@@ -51,33 +82,13 @@ void LP_statslog_parseline(cJSON *lineobj)
         else if ( strcmp(method,"reserved") == 0 )
             LP_reserveds++;
         else if ( strcmp(method,"connect") == 0 )
+        {
+            LP_statslog_parsequote(lineobj);
             LP_connects++;
+        }
         else if ( strcmp(method,"connected") == 0 )
         {
-            memset(&Q,0,sizeof(Q));
-            if ( LP_quoteparse(&Q,lineobj) < 0 )
-            {
-                printf("quoteparse_error.(%s)\n",jprint(lineobj,0));
-                LP_parse_errors++;
-            }
-            else
-            {
-                ridqid = (((uint64_t)Q.R.requestid << 32) | Q.R.quoteid);
-                for (i=duplicate=0; i<sizeof(Ridqids)/sizeof(*Ridqids); i++)
-                {
-                    if ( Ridqids[i] == ridqid )
-                    {
-                        duplicate = 1;
-                        LP_duplicates++;
-                        break;
-                    }
-                }
-                if ( duplicate == 0 )
-                {
-                    Ridqids[LP_connecteds % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
-                    printf("connected requestid.%u quoteid.%u -> %d\n",Q.R.requestid,Q.R.quoteid,(int32_t)(LP_connecteds % (sizeof(Ridqids)/sizeof(*Ridqids))));
-                }
-            }
+            LP_statslog_parsequote(lineobj);
             LP_connecteds++;
         }
         else if ( strcmp(method,"tradestatus") == 0 )
@@ -102,7 +113,7 @@ char *LP_statslog_disp(int32_t n)
     jaddnum(retjson,"connected",LP_connecteds);
     jaddnum(retjson,"duplicates",LP_duplicates);
     jaddnum(retjson,"parse_errors",LP_parse_errors);
-    jaddnum(retjson,"uniques",LP_connecteds-LP_duplicates);
+    jaddnum(retjson,"uniques",LP_numridqids);
     jaddnum(retjson,"tradestatus",LP_tradestatuses);
     jaddnum(retjson,"unknown",LP_unknowns);
     return(jprint(retjson,1));
