@@ -546,12 +546,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
                 ap->unspentheight = height;
             }
         }
-    }
-    else
-    {
-        retjson = LP_address_utxos(coin,addr,1);
-        printf("CACHED.%s\n",jprint(retjson,0));
-    }
+    } else retjson = LP_address_utxos(coin,addr,1);
     return(retjson);
 }
 
