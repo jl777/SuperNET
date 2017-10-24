@@ -26,8 +26,6 @@
 #include <WinSock2.h>
 #endif
 
-#define ELECTRUM_TIMEOUT 10
-
 int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
     int32_t opt,sock,result; char ipaddr[64],checkipaddr[64]; struct timeval timeout;
@@ -652,7 +650,7 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
             free_json(hexjson);
             //printf("return from electrum_transaction\n");
             return(*retjsonp);
-        } else printf("non-hex tx.(%s)\n",jprint(hexjson,0));
+        } else printf("%s %s non-hex tx.(%s)\n",coin->symbol,bits256_str(str,txid),jprint(hexjson,0));
         free(hexstr);
         free_json(hexjson);
     }

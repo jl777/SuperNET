@@ -23,6 +23,11 @@
 
 //#define LP_STRICTPEERS
 
+#define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
+#define LP_AUTOTRADE_TIMEOUT 10
+#define ELECTRUM_TIMEOUT 15
+#define LP_MEMPOOL_TIMEINCR 10
+
 #define LP_COMMAND_SENDSOCK NN_PUSH
 #define LP_COMMAND_RECVSOCK NN_PULL
 
@@ -34,17 +39,14 @@
 #define MAINLOOP_PERSEC 100
 #define MAX_PSOCK_PORT 60000
 #define MIN_PSOCK_PORT 10000
-#define LP_MEMPOOL_TIMEINCR 10
 #define LP_GETINFO_INCR 30
 #define LP_ORDERBOOK_DURATION 120
 
-#define LP_HTTP_TIMEOUT 2 // 1 is too small due to edge cases of time(NULL)
 #define LP_MAXPEER_ERRORS 3
 #define LP_MINPEER_GOOD 20
 #define LP_PEERGOOD_ERRORDECAY 0.9
 
 #define LP_SWAPSTEP_TIMEOUT 30
-#define LP_AUTOTRADE_TIMEOUT 10
 #define LP_MIN_TXFEE 10000
 #define LP_MINVOL 20
 #define LP_MINCLIENTVOL 50
