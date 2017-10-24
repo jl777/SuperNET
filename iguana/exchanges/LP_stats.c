@@ -43,7 +43,7 @@ uint64_t Ridqids[128];
 
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
-    double qprice; int32_t i,destvout,feevout,duplicate=0; char *base,*rel; uint64_t txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t ridqid;
+    double qprice; uint32_t timestamp; int32_t i,destvout,feevout,duplicate=0; char *base,*rel,tstr[128]; uint64_t txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t ridqid;
     memset(&Q,0,sizeof(Q));
     if ( LP_quoteparse(&Q,lineobj) < 0 )
     {
@@ -63,6 +63,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
             return(-1);
         }
         txfee = j64bits(lineobj,"txfee");
+        timestamp = juint(lineobj,"timestamp");
         destsatoshis = j64bits(lineobj,"destsatoshis");
         desttxid = jbits256(lineobj,"desttxid");
         destvout = jint(lineobj,"destvout");
@@ -83,7 +84,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         if ( duplicate == 0 )
         {
             Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
-            printf("%-4d %9s swap.%-16llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f\n",LP_numridqids,method,(long long)ridqid,dstr(satoshis),base,dstr(destsatoshis),rel,qprice);
+            printf("%s %-4d %9s swap.%-16llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f\n",utc_str(tstr,timestamp),LP_numridqids,method,(long long)ridqid,dstr(satoshis),base,dstr(destsatoshis),rel,qprice);
             LP_numridqids++;
         }
     }
