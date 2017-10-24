@@ -345,7 +345,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         {
             if ( tx->outpoints[vout].spendheight > 0 )
                 return(0);
-            return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
+            //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
         }
         if ( coinaddr[0] == 0 )
         {
@@ -362,7 +362,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
             {
                 if ( up->spendheight > 0 )
                     return(0);
-                return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
+                //return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
             }
             if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr,1)) != 0 )
             {
