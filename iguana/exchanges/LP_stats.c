@@ -75,7 +75,7 @@ void LP_statslog_parseline(cJSON *lineobj)
                 if ( duplicate == 0 )
                 {
                     Ridqids[LP_connecteds % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
-                    printf("connected requestid.%u quoteid.%u\n",Q.R.requestid,Q.R.quoteid);
+                    printf("connected requestid.%u quoteid.%u -> %d\n",Q.R.requestid,Q.R.quoteid,(int32_t)(LP_connecteds % (sizeof(Ridqids)/sizeof(*Ridqids))));
                 }
             }
             LP_connecteds++;
@@ -102,7 +102,7 @@ char *LP_statslog_disp(int32_t n)
     jaddnum(retjson,"connected",LP_connecteds);
     jaddnum(retjson,"duplicates",LP_duplicates);
     jaddnum(retjson,"parse_errors",LP_parse_errors);
-    jaddnum(retjson,"uniqes",LP_connecteds-LP_duplicates);
+    jaddnum(retjson,"uniques",LP_connecteds-LP_duplicates);
     jaddnum(retjson,"tradestatus",LP_tradestatuses);
     jaddnum(retjson,"unknown",LP_unknowns);
     return(jprint(retjson,1));
