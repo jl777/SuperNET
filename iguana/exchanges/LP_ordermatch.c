@@ -272,7 +272,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
     struct LP_address *ap; uint64_t targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2; struct LP_utxoinfo *utxo = 0;
     if ( coin != 0 && (ap= LP_addressfind(coin,coinaddr)) != 0 )
     {
-        if ( (m= LP_address_utxo_ptrs(iambob,utxos,max,ap,coinaddr)) > 1 )
+        if ( (m= LP_address_utxo_ptrs(coin,iambob,utxos,max,ap,coinaddr)) > 1 )
         {
             targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee);
             if ( 0 )

@@ -43,7 +43,7 @@ uint64_t Ridqids[128];
 
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
-    int32_t i,duplicate=0; struct LP_quoteinfo Q; uint64_t ridqid;
+    int32_t i,destvout,feevout,duplicate=0; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t ridqid;
     memset(&Q,0,sizeof(Q));
     if ( LP_quoteparse(&Q,lineobj) < 0 )
     {
@@ -52,7 +52,11 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     }
     else
     {
-        ridqid = (((uint64_t)Q.desttxid.uints[0] << 48) | ((uint64_t)Q.destvout << 32) || ((uint64_t)Q.feetxid.uints[0] << 16) | (uint32_t)Q.feevout);
+        desttxid = jbits256(lineobj,"desttxid");
+        destvout = jint(lineobj,"destvout");
+        feetxid = jbits256(lineobj,"feetxid");
+        feevout = jint(lineobj,"feevout");
+        ridqid = (((uint64_t)desttxid.uints[0] << 48) | ((uint64_t)destvout << 32) || ((uint64_t)feetxid.uints[0] << 16) | (uint32_t)feevout);
         for (i=0; i<sizeof(Ridqids)/sizeof(*Ridqids); i++)
         {
             if ( Ridqids[i] == ridqid )
@@ -66,7 +70,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         {
             Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
             LP_numridqids++;
-            char str[65]; printf("%10s ridqid.%-16llx -> %d %s/v%d\n",method,(long long)ridqid,(int32_t)(LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))),bits256_str(str,jbits256(lineobj,"desttxid")),jint(lineobj,"destvout"));
+            char str[65]; printf("%10s ridqid.%-16llx -> %d %s/v%d\n",method,(long long)ridqid,(int32_t)(LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))),bits256_str(str,desttxid),destvout);
         }
     }
     return(duplicate == 0);
