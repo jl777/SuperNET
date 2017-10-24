@@ -1958,7 +1958,43 @@ if ( aliceutxo->S.swap == 0 )
 LP_availableset(aliceutxo);
 return(jprint(bestitem,0));
 }
-
+if ( 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
+{
+    if ( (array2= cJSON_Parse(retstr)) != 0 )
+    {
+        if ( (m= cJSON_GetArraySize(array2)) > 0 )
+        {
+            for (j=0; j<m; j++)
+            {
+                item = jitem(array2,j);
+                if ( (coinaddr= jfieldname(item)) != 0 )
+                {
+                    metric = j64bits(item,coinaddr);
+                    //printf("(%s) -> %.8f n.%d\n",coinaddr,dstr(metric>>16),(uint16_t)metric);
+                    if ( (ap= LP_addressfind(coin,coinaddr)) == 0 || _LP_unspents_metric(ap->total,ap->n) != metric )
+                    {
+                        if ( ap == 0 || ap->n < (metric & 0xffff) )
+                        {
+                            if ( (retstr2= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coinaddr)) != 0 )
+                            {
+                                if ( (array3= cJSON_Parse(retstr2)) != 0 )
+                                {
+                                    LP_unspents_array(coin,coinaddr,array3);
+                                    //printf("pulled.(%s)\n",retstr2);
+                                    free_json(array3);
+                                }
+                                free(retstr2);
+                            }
+                        } //else printf("wait for %s to pull %d vs %d\n",peer->ipaddr,ap!=0?ap->n:-1,(uint16_t)metric);
+                    }
+                }
+            }
+        }
+        free_json(array2);
+    }
+    //printf("processed.(%s)\n",retstr);
+    free(retstr);
+}
 /*if ( time(NULL) > coin->lastmonitor+60 )
  {
  //portable_mutex_lock(&coin->addrmutex);

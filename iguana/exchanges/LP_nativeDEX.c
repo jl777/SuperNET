@@ -396,7 +396,7 @@ void utxosQ_loop(void *myipaddr)
 
 int32_t LP_utxos_sync(struct LP_peerinfo *peer)
 {
-    int32_t i,j,n=0,m,v,posted=0; bits256 txid; cJSON *array,*item,*item2,*array2,*array3; uint64_t total,total2,metric; struct iguana_info *coin,*ctmp; struct LP_address *ap; char *retstr,*retstr2,*coinaddr;
+    int32_t i,j,n=0,m,v,posted=0; bits256 txid; cJSON *array,*item,*item2,*array2; uint64_t total,total2; struct iguana_info *coin,*ctmp; char *retstr,*retstr2;
     if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
         return(0);
     HASH_ITER(hh,LP_coins,coin,ctmp)
@@ -472,43 +472,6 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
                 }
             }
             free_json(array);
-        }
-        if ( 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
-        {
-            if ( (array2= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( (m= cJSON_GetArraySize(array2)) > 0 )
-                {
-                    for (j=0; j<m; j++)
-                    {
-                        item = jitem(array2,j);
-                        if ( (coinaddr= jfieldname(item)) != 0 )
-                        {
-                            metric = j64bits(item,coinaddr);
-                            //printf("(%s) -> %.8f n.%d\n",coinaddr,dstr(metric>>16),(uint16_t)metric);
-                            if ( (ap= LP_addressfind(coin,coinaddr)) == 0 || _LP_unspents_metric(ap->total,ap->n) != metric )
-                            {
-                                if ( ap == 0 || ap->n < (metric & 0xffff) )
-                                {
-                                    if ( (retstr2= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coinaddr)) != 0 )
-                                    {
-                                        if ( (array3= cJSON_Parse(retstr2)) != 0 )
-                                        {
-                                            LP_unspents_array(coin,coinaddr,array3);
-                                            //printf("pulled.(%s)\n",retstr2);
-                                            free_json(array3);
-                                        }
-                                        free(retstr2);
-                                    }
-                                } //else printf("wait for %s to pull %d vs %d\n",peer->ipaddr,ap!=0?ap->n:-1,(uint16_t)metric);
-                            }
-                        }
-                    }
-                }
-                free_json(array2);
-            }
-            //printf("processed.(%s)\n",retstr);
-            free(retstr);
         }
     }
     return(posted);
@@ -645,14 +608,13 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
                 LP_peer_pricesquery(peer);
-                //LP_utxos_sync(peer);
+                LP_utxos_sync(peer);
                 needpings++;
             }
             peer->lastpeers = now;
         }
         if ( peer->needping != 0 )
         {
-            LP_utxos_sync(peer);
             peer->diduquery = now;
             nonz++;
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )

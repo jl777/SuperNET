@@ -251,6 +251,8 @@ cJSON *LP_address_item(struct iguana_info *coin,struct LP_address_utxo *up,int32
         jaddnum(item,"tx_pos",up->U.vout);
         jaddnum(item,"height",up->U.height);
         jadd64bits(item,"value",up->U.value);
+        if ( up->U.value == 0 )
+            printf("ERROR LP_address_item illegal.(%s)\n",jprint(item,0));
     }
     return(item);
 }
@@ -356,9 +358,9 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                             up->spendheight = 1;
                         else free_json(txobj);
                     }
-                    if ( up->spendheight <= 0 )
+                    if ( up->spendheight <= 0 && up->U.value != 0 )
                     {
-                        if ( up->SPV >= 0 )
+                        if ( coin->electrum == 0 || up->SPV > 0 )
                         {
                             jaddi(array,LP_address_item(coin,up,electrumret));
                             n++;
