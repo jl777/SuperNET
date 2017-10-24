@@ -191,6 +191,11 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                     break;
             }
         }
+        else
+        {
+            if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
+                tx->outpoints[up->U.vout].spendheight = 1;
+        }
     }
     portable_mutex_unlock(&LP_utxomutex);
     //printf("return n.%d\n",n);
@@ -276,8 +281,8 @@ int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,b
             DL_APPEND(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);                
             retval = 1;
-            if ( value == 0 )
-                printf("%s null? ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
+            //if ( value == 0 )
+                printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
     } // else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
     //printf("done %s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);

@@ -519,9 +519,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     cJSON *retjson=0; struct LP_address *ap; struct iguana_info *coin; int32_t height,usecache=1;
     if ( (coin= LP_coinfind(symbol)) == 0 )
         return(0);
-    if ( ep->heightp == 0 )
-        height = coin->longestchain;
-    else height = *(ep->heightp);
+    height = coin->longestchain;
     if ( (ap= LP_address(coin,addr)) != 0 )
     {
         if ( ap->unspenttime == 0 )
