@@ -508,6 +508,7 @@ stop()\n\
                     LP_listunspent_issue(coin,coinaddr,1);
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                     {
+                        printf("network invoked\n");
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                         //LP_smartutxos_push(ptr);
                     }
