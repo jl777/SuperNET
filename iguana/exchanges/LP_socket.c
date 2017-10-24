@@ -597,6 +597,14 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
                 return(txobj);
             }
         }
+        if ( bits256_cmp(txid,coin->cachedtxid) == 0 )
+        {
+            if ( (txobj= LP_transaction_fromdata(coin,txid,coin->cachedtxiddata,coin->cachedtxidlen)) != 0 )
+            {
+                *retjsonp = txobj;
+                return(txobj);
+            }
+        }
         hexjson = electrum_hasharg(symbol,ep,&hexjson,"blockchain.transaction.get",txid,ELECTRUM_TIMEOUT);
         hexstr = jprint(hexjson,0);
         if ( strlen(hexstr) > 60000 )
@@ -615,7 +623,12 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
         {
             len = (int32_t)strlen(hexstr+1) >> 1;
             serialized = malloc(len);
+            if ( coin->cachedtxiddata != 0 )
+                free(coin->cachedtxiddata);
+            coin->cachedtxiddata = malloc(len);
+            coin->cachedtxidlen = len;
             decode_hex(serialized,len,hexstr+1);
+            memcpy(coin->cachedtxiddata,serialized,len);
             free(hexstr);
             //printf("DATA.(%s) from (%s)\n",hexstr+1,jprint(hexjson,0));
             txobj = LP_transaction_fromdata(coin,txid,serialized,len);

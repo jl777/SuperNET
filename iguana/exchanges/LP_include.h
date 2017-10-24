@@ -193,6 +193,7 @@ struct iguana_info
     void *electrum; void *ctx;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33];
+    bits256 cachedtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
 };
 
 struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout,height; };
