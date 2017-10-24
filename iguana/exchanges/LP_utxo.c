@@ -566,7 +566,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                 tx->outpoints[i].value = LP_value_extract(vout,0);
                 tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
                 LP_destaddr(tx->outpoints[i].coinaddr,vout);
-                //printf("from transaction init\n");
+                printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
                 //LP_address_utxoadd(coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
             }
             //printf("numvouts.%d\n",numvouts);
