@@ -635,6 +635,7 @@ void prices_loop(void *ignore)
             }
             free(retstr);
         }
+        sleep(60);
     }
 }
 
