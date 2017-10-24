@@ -18,19 +18,6 @@
 //  marketmaker
 //
 
-// listunspent: valid for local node, mostly valid for electrum
-
-// full node + electrum for external listunspent, gettxout to validate
-// pruned node + electrum for external listunspent, gettxout to validate
-// full node, network for external listunspent, gettxout to validate
-// pruned node, network for external listunspent, gettxout to validate
-// electrum only, network for gettxout
-
-// handle spurious errors
-// handle invalid data
-
-//REJECT KMD ccee27b53b52ca61bbc9fdc7de5feb0a12c14d4d92639414d372f002cc3d092f/v0 value.468169379 vs 468169380 ({"bestblock":"080400d4216c02d100004fd2f4f3505ddb507b643785e02703d3412feba39fb1","confirmations":2356,"value":4.68169380,"scriptPubKey":{"asm":"0224e31f93eff0cc30eaf0b2389fbc591085c0e122c4d11862c1729d090106c842 OP_CHECKSIG","hex":"210224e31f93eff0cc30eaf0b2389fbc591085c0e122c4d11862c1729d090106c842ac","reqSigs":1,"type":"pubkey","addresses":["RFssbc211PJdVy1bvcvAG5X2N4ovPAoy5o"]},"version":1,"coinbase":true})
-
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest)
 {
     double val = 0.; uint64_t value = 0; int32_t electrumflag;
@@ -208,12 +195,8 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             if ( vout == up->U.vout && bits256_cmp(up->U.txid,txid) == 0 )
             {
                 flag = 1;
-                if ( height > 0 && up->U.height != height && up->SPV <= 0 )
-                {
-                    if ( up->U.height > 0 )
-                        printf("%s SPV.%d update %s/v%d up->U.height %d <- %d\n",coin->symbol,up->SPV,bits256_str(str,up->U.txid),up->U.vout,up->U.height,height);
+                if ( height > 0 && up->U.height != height )
                     up->U.height = height, flag |= 2;
-                }
                 if ( spendheight > 0 && up->spendheight != spendheight )
                     up->spendheight = spendheight, flag |= 4;
                 if ( up->U.value == 0 && up->U.value != value )
@@ -240,9 +223,9 @@ int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,
             up->spendheight = spendheight;
             portable_mutex_lock(&coin->addrmutex);
             DL_APPEND(ap->utxos,up);
-            portable_mutex_unlock(&coin->addrmutex);
+            portable_mutex_unlock(&coin->addrmutex);                
             retval = 1;
-            //if ( 0 && height > 0 && strcmp("REVS",coin->symbol) == 0 )
+            if ( 0 && height > 0 && strcmp("REVS",coin->symbol) == 0 )
                 printf("ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
     } // else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
@@ -354,15 +337,10 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
 
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
-    cJSON *array,*item; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; cJSON *txobj; struct electrum_info *ep,*backupep=0;
+    cJSON *array,*item; int32_t n; uint64_t total; struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; cJSON *txobj; 
     array = cJSON_CreateArray();
     if ( coinaddr != 0 && coinaddr[0] != 0 )
     {
-        if ( (ep= coin->electrum) != 0 )
-        {
-            if ( (backupep= ep->prev) == 0 )
-                backupep = ep;
-        }
         //portable_mutex_lock(&coin->addrmutex);
         if ( (ap= _LP_addressfind(coin,coinaddr)) != 0 )
         {

@@ -18,6 +18,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// variable timeout based on number of electrums in swap
+// listunspent on each new block or 30 seconds if doing swap
+// reject swap response from bob?
+//
 // electrum swaps efficiency
 // process stats.log local file -> map of realtime activity!
 // select oldest utxo first
@@ -397,7 +401,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
         return(0);
     HASH_ITER(hh,LP_coins,coin,ctmp)
     {
-        if ( IAMLP == 0 && coin->inactive != 0 )//|| (coin->electrum != 0 && coin->obooktime == 0) )
+        if ( IAMLP == 0 && coin->inactive != 0 )
             continue;
         if ( coin->smartaddr[0] == 0 )
             continue;
@@ -512,7 +516,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
 
 void LP_coinsloop(void *_coins)
 {
-    struct iguana_info *coin,*ctmp; bits256 zero; int32_t j,nonz; char *coins = _coins;
+    struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
     while ( 1 )
     {
         nonz = 0;
@@ -531,8 +535,37 @@ void LP_coinsloop(void *_coins)
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
-            if ( coin->electrum != 0 )
+            if ( (ep= coin->electrum) != 0 )
+            {
+                if ( (backupep= ep->prev) == 0 )
+                    backupep = ep;
+                HASH_ITER(hh,coin->addresses,ap,atmp)
+                {
+                    DL_FOREACH_SAFE(ap->utxos,up,tmp)
+                    {
+                        if ( up->SPV == 0 )
+                        {
+                            nonz++;
+                            up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                            if ( up->SPV > 0 )
+                                printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
+                        }
+                        else if ( up->SPV == -1 )
+                        {
+                            nonz++;
+                            printf("SPV failure for %s %s\n",coin->symbol,bits256_str(str,up->U.txid));
+                            oldht = up->U.height;
+                            LP_txheight_check(coin,ap->coinaddr,up);
+                            if ( oldht != up->U.height )
+                                up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                            if ( up->SPV <= 0 )
+                                up->SPV = -2;
+                            else printf("%s %s: corrected SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
+                        }
+                    }
+                }
                 continue;
+            }
             if ( coin->firstrefht == 0 )
                 continue;
             else if ( coin->firstscanht == 0 )
@@ -557,6 +590,7 @@ void LP_coinsloop(void *_coins)
                     coin->lastscanht = coin->firstscanht;
                 continue;
             }
+            nonz++;
             //if ( (coin->lastscanht % 1000) == 0 )
                 printf("[%s]: %s ref.%d scan.%d to %d, longest.%d\n",coins,coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
             for (j=0; j<100; j++)
@@ -570,8 +604,6 @@ void LP_coinsloop(void *_coins)
                 if ( coin->lastscanht == coin->longestchain+1 )
                     break;
             }
-            nonz++;
-            continue;
         }
         if ( nonz == 0 )
             usleep(1000);
