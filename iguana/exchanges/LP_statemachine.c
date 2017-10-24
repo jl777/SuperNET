@@ -1433,6 +1433,27 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
  }
  return(-1);
  }*/
+/*if ( (butxo= LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2)) == 0 )
+ {
+ value = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid,Q.vout);
+ value2 = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid2,Q.vout2);
+ if ( value == 0 || value2 == 0 )
+ {
+ printf("zero value %.8f or value2 %.8f\n",dstr(value),dstr(value2));
+ return(clonestr("{\"error\":\"spent txid or txid2 for bob?\"}"));
+ }
+ if ( (butxo= LP_utxoadd(1,Q.srccoin,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,LP_gui,0)) == 0 )
+ {
+ printf("cant find or create butxo\n");
+ return(clonestr("{\"error\":\"cant find or create butxo\"}"));
+ }
+ if ( value < Q.satoshis )
+ {
+ printf("butxo value %.8f less satoshis %.8f\n",dstr(value),dstr(Q.satoshis));
+ return(clonestr("{\"error\":\"butxo value less than satoshis\"}"));
+ }
+ }*/
+
 /*if ( addflag != 0 && LP_utxofind(1,Q.txid,Q.vout) == 0 )
  {
  LP_utxoadd(1,-1,Q.srccoin,Q.txid,Q.vout,Q.value,Q.txid2,Q.vout2,Q.value2,"",Q.srcaddr,Q.srchash,0.);
