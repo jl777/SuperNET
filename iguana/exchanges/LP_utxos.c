@@ -490,7 +490,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         txfee = LP_txfeecalc(coin,0,0);
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
-            printf("LP_privkey_init %s %s\n",coin->symbol,jprint(array,0));
+            //printf("LP_privkey_init %s %s\n",coin->symbol,jprint(array,0));
             for (iambob=0; iambob<=1; iambob++)
             {
                 if ( iambob == 0 )
@@ -753,7 +753,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
         //printf("i.%d of %d\n",i,LP_numcoins);
         else if ( IAMLP == 0 || coin->inactive == 0 )
         {
-            printf("from updates %s\n",coin->symbol);
+            //printf("from updates %s\n",coin->symbol);
             if ( LP_privkey_init(pubsock,coin,G.LP_privkey,G.LP_mypub25519) == 0 && (rand() % 10) == 0 )
                 LP_postutxos(coin->symbol,coin->smartaddr);
         }

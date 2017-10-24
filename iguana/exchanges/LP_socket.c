@@ -339,7 +339,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                 if (tx->height <= 0 )
                 {
                     tx->height = ht;
-                    printf("%s %s >>>>>>>>>> set %s <- height %d\n",coin->symbol,coinaddr,bits256_str(str,txid),tx->height);
+                    //printf("%s %s >>>>>>>>>> set %s <- height %d\n",coin->symbol,coinaddr,bits256_str(str,txid),tx->height);
                 }
                 if ( v >= 0 && v < tx->numvouts )
                 {
@@ -373,7 +373,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-printf("%s %s\n",symbol,stratumreq);
+printf("%s %s",symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = (struct stritem *)queueitem(stratumreq);
             sitem->expiration = timeout;
@@ -485,7 +485,6 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
                         if ( tx->height > 0 && tx->height != height )
                             printf("update %s height.%d <- %d\n",bits256_str(str,txid),tx->height,height);
                         tx->height = height;
-                        //printf("from history\n");
                         LP_address_utxoadd("electrum history",coin,addr,txid,0,0,height,-1);
                     }
                 }
