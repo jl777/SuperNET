@@ -39,7 +39,7 @@ void LP_tradecommand_log(cJSON *argjson)
 }
 
 uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_numridqids;
-uint64_t Ridqids[16];
+uint64_t Ridqids[128];
 
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
@@ -66,7 +66,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         {
             Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
             LP_numridqids++;
-            printf("%10s requestid.%-10u quoteid.%-10u -> %d\n",method,Q.R.requestid,Q.R.quoteid,(int32_t)(LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))));
+            char str[65]; printf("%10s requestid.%-10u quoteid.%-10u -> %d %s/v%d\n",method,Q.R.requestid,Q.R.quoteid,(int32_t)(LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))),bits256_str(str,jbits256(lineobj,"desttxid")),jint(lineobj,"destvout"));
         }
     }
     return(duplicate == 0);
