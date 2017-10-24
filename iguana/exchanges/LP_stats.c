@@ -58,7 +58,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         feetxid = jbits256(lineobj,"feetxid");
         feevout = jint(lineobj,"feevout");
         printf("%s/v%d %s/v%d\n",bits256_str(str,desttxid),destvout,bits256_str(str2,feetxid),feevout);
-        ridqid = (((uint64_t)desttxid.uints[0] << 48) | ((uint64_t)destvout << 32) || ((uint64_t)feetxid.uints[0] << 16) | (uint32_t)feevout);
+        ridqid = (((uint64_t)desttxid.uints[0] << 48) | ((uint64_t)destvout << 32) | ((uint64_t)feetxid.uints[0] << 16) | (uint32_t)feevout);
         for (i=0; i<sizeof(Ridqids)/sizeof(*Ridqids); i++)
         {
             if ( Ridqids[i] == ridqid )
@@ -71,8 +71,8 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         if ( duplicate == 0 )
         {
             Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
-            LP_numridqids++;
             printf("%10s ridqid.%-16llx -> %d %s/v%d\n",method,(long long)ridqid,(int32_t)(LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))),bits256_str(str,desttxid),destvout);
+            LP_numridqids++;
         }
     }
     return(duplicate == 0);
