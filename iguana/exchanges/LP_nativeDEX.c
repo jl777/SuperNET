@@ -18,12 +18,11 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-//
 // process stats.log local file -> map of realtime activity!
-// select oldest utxo first
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
-//
-// verify portfolio, pricearray, interest to KMD withdraw, reliable networking
+// select oldest utxo first
+
+// verify portfolio, pricearray, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 
@@ -100,6 +99,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_prices.c"
 #include "LP_scan.c"
 #include "LP_transaction.c"
+#include "LP_stats.c"
 #include "LP_remember.c"
 #include "LP_swap.c"
 #include "LP_peers.c"
