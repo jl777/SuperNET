@@ -576,7 +576,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag)
                         value = LP_value_extract(item,0);
                         height = LP_txheight(coin,txid);
                         //char str[65]; printf("LP_listunspent_both: %s/v%d ht.%d %.8f\n",bits256_str(str,txid),v,height,dstr(value));
-                        LP_address_utxoadd(coin,coinaddr,txid,v,value,height,-1);
+                        LP_address_utxoadd("LP_listunspent_both",coin,coinaddr,txid,v,value,height,-1);
                     }
                 }
             }

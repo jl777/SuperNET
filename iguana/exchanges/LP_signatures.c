@@ -591,8 +591,8 @@ char *LP_uitem_recv(cJSON *argjson)
     coinaddr = jstr(argjson,"coinaddr");
     if ( (symbol= jstr(argjson,"coin")) != 0 && coinaddr != 0 )
     {
-        //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
-        LP_address_utxoadd(LP_coinfind(symbol),coinaddr,txid,vout,value,height,-1);
+        char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",symbol,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
+        LP_address_utxoadd("LP_uitem,recv",LP_coinfind(symbol),coinaddr,txid,vout,value,height,-1);
     }
     return(clonestr("{\"result\":\"success\"}"));
 }
