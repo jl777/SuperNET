@@ -263,7 +263,7 @@ int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
         {
             static uint32_t counter;
             if ( counter++ < 100 )
-            printf("LP_utxos_sigcheck failure, probably from %s with older version\n",bits256_str(str,pubkey));
+                printf("LP_utxos_sigcheck failure, probably from %s with older version\n",bits256_str(str,pubkey));
             retval = -1;
         } else retval = 0;
     }
