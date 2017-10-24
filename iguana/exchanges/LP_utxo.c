@@ -240,7 +240,8 @@ cJSON *LP_address_item(struct iguana_info *coin,struct LP_address_utxo *up,int32
     {
         jaddbits256(item,"txid",up->U.txid);
         jaddnum(item,"vout",up->U.vout);
-        jaddnum(item,"confirmations",LP_getheight(coin) - up->U.height + 1);
+        if ( up->U.height > 0 )
+            jaddnum(item,"confirmations",LP_getheight(coin) - up->U.height + 1);
         jaddnum(item,"amount",dstr(up->U.value));
         jaddstr(item,"scriptPubKey","");
     }
