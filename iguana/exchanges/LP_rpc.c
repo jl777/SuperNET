@@ -290,7 +290,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     {
         if ( (retjson= electrum_transaction(symbol,coin->electrum,&retjson,txid)) != 0 )
             return(retjson);
-        else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,buf);
+        else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,bits256_str(str,txid));
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
     }
 }
