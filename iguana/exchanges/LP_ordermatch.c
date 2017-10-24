@@ -371,8 +371,8 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
                 retjson = LP_quotejson(qp);
                 jaddstr(retjson,"method","connected");
                 jaddstr(retjson,"pair",pairstr);
-                jaddnum(retjson,"requestid",qp->R.requestid);
-                jaddnum(retjson,"quoteid",qp->R.quoteid);
+                //jaddnum(retjson,"requestid",qp->R.requestid);
+                //jaddnum(retjson,"quoteid",qp->R.quoteid);
                 // LP_addsig
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,utxo->S.otherpubkey));
                 LP_reserved_msg(base,rel,utxo->S.otherpubkey,jprint(retjson,0));
@@ -529,10 +529,10 @@ char *LP_connectedalice(cJSON *argjson) // alice
             printf("alice pairstr.(%s) pairsock.%d\n",pairstr,pairsock);
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)swap) == 0 )
             {
+                retjson = LP_quotejson(&Q);
                 jaddstr(retjson,"result","success");
-                jadd(retjson,"trade",LP_quotejson(&Q));
-                jaddnum(retjson,"requestid",Q.R.requestid);
-                jaddnum(retjson,"quoteid",Q.R.quoteid);
+                //jaddnum(retjson,"requestid",Q.R.requestid);
+                //jaddnum(retjson,"quoteid",Q.R.quoteid);
             } else jaddstr(retjson,"error","couldnt aliceloop");
         } else printf("connect error %s\n",nn_strerror(nn_errno()));
         printf("connected result.(%s)\n",jprint(retjson,0));

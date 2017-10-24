@@ -99,7 +99,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 
 void LP_statslog_parseline(cJSON *lineobj)
 {
-    char *method;
+    char *method; cJSON *obj;
     if ( (method= jstr(lineobj,"method")) != 0 )
     {
         if ( strcmp(method,"request") == 0 )
@@ -108,7 +108,9 @@ void LP_statslog_parseline(cJSON *lineobj)
             LP_reserveds++;
         else if ( strcmp(method,"connect") == 0 )
         {
-            LP_statslog_parsequote(method,lineobj);
+            if ( (obj= jobj(lineobj,"trade")) == 0 )
+                obj = lineobj;
+            LP_statslog_parsequote(method,obj);
             LP_connects++;
         }
         else if ( strcmp(method,"connected") == 0 )
