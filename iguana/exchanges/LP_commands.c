@@ -214,7 +214,7 @@ stop()\n\
         {
             return(LP_portfolio());
         }
-        else if ( strcmp(method,"") == 0 )
+        else if ( strcmp(method,"parselog") == 0 )
             return(LP_statslog_parse());
         else if ( strcmp(method,"secretaddresses") == 0 )
         {
