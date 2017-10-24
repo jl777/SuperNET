@@ -746,6 +746,7 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
 void LP_bobloop(void *_swap)
 {
     uint8_t *data; int32_t maxlen,m,n; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    G.LP_pendingswaps++;
     fprintf(stderr,"start swap iambob\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
@@ -804,11 +805,13 @@ void LP_bobloop(void *_swap)
         basilisk_swap_finished(swap);
         //free(swap);
     } else printf("swap timed out\n");
+    G.LP_pendingswaps--;
 }
 
 void LP_aliceloop(void *_swap)
 {
     uint8_t *data; int32_t maxlen,n,m; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    G.LP_pendingswaps++;
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;

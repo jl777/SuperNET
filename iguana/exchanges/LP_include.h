@@ -185,9 +185,9 @@ struct iguana_info
     portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,unspenttime,obooktime;
+    uint32_t lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
-    char symbol[16],smartaddr[64],userpass[1024],serverport[128],lastunspent[64];
+    char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
@@ -231,7 +231,8 @@ struct LP_address
     struct LP_address_utxo *utxos;
     bits256 pubkey;
     int64_t balance,total;
-    uint32_t timestamp,n;
+    uint32_t timestamp,n,unspenttime;
+    int32_t unspentheight;
     char coinaddr[40];
     uint8_t pubsecp[33],pad;
 };
@@ -287,6 +288,7 @@ struct LP_pubkeyinfo
 
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
 int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
+struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr);
 void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t vout);
 void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
 uint32_t basilisk_requestid(struct basilisk_request *rp);

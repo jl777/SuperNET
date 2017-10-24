@@ -373,7 +373,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-printf("%s\n",stratumreq);
+printf("%s %s\n",symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = (struct stritem *)queueitem(stratumreq);
             sitem->expiration = timeout;
@@ -517,17 +517,34 @@ cJSON *electrum_address_getmempool(char *symbol,struct electrum_info *ep,cJSON *
 
 cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr,int32_t electrumflag)
 {
-    cJSON *retjson=0; struct iguana_info *coin = LP_coinfind(symbol);
+    cJSON *retjson=0; struct LP_address *ap; struct iguana_info *coin; int32_t height,usecache=1;
+    if ( (coin= LP_coinfind(symbol)) == 0 )
+        return(0);
+    if ( ep->heightp == 0 )
+        height = coin->longestchain;
+    else height = *(ep->heightp);
+    if ( (ap= LP_address(coin,addr)) != 0 )
+    {
+        if ( ap->unspenttime == 0 )
+            usecache = 0;
+        else if ( ap->unspentheight < height )
+            usecache = 0;
+        else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+20 )
+            usecache = 0;
+    }
     //printf("electrum.%s/%s listunspent last.(%s lag %d)\n",ep->symbol,coin->symbol,coin->lastunspent,(int32_t)(time(NULL) - coin->unspenttime));
-    if ( coin != 0 && (strcmp(coin->lastunspent,addr) != 0 || time(NULL) > coin->unspenttime+30) )
+    if ( usecache == 0 )
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            printf("%s %p u.%u t.%ld %s -> %s LISTUNSPENT.(%ld)\n",coin->symbol,&coin->unspenttime,coin->unspenttime,time(NULL),coin->lastunspent,addr,strlen(jprint(retjson,0)));
+            printf("%s u.%u t.%ld %s LISTUNSPENT.(%ld)\n",coin->symbol,ap->unspenttime,time(NULL),addr,strlen(jprint(retjson,0)));
             if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
                 LP_postutxos(coin->symbol,addr);
-            safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));
-            coin->unspenttime = (uint32_t)time(NULL);
+            if ( ap != 0 )
+            {
+                ap->unspenttime = (uint32_t)time(NULL);
+                ap->unspentheight = height;
+            }
         }
     } else retjson = LP_address_utxos(coin,addr,1);
     return(retjson);

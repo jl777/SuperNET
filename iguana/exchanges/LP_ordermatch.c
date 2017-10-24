@@ -485,7 +485,6 @@ char *LP_connectedalice(cJSON *argjson) // alice
     if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
     {
         LP_availableset(autxo);
-        //G.LP_pendingswaps--;
         printf("quote validate error %.0f\n",qprice);
         return(clonestr("{\"error\":\"quote validation error\"}"));
     }
@@ -493,16 +492,12 @@ char *LP_connectedalice(cJSON *argjson) // alice
     {
         printf("this node has no price for %s/%s (%.8f %.8f)\n",Q.destcoin,Q.srccoin,bid,ask);
         LP_availableset(autxo);
-        //G.LP_pendingswaps--;
         return(clonestr("{\"error\":\"no price set\"}"));
     }
     printf("%s/%s bid %.8f ask %.8f values %.8f %.8f\n",Q.srccoin,Q.destcoin,bid,ask,dstr(butxo->payment.value),dstr(butxo->deposit.value));
     price = bid;
     if ( (coin= LP_coinfind(Q.destcoin)) == 0 )
-    {
-        //G.LP_pendingswaps--;
         return(clonestr("{\"error\":\"cant get alicecoin\"}"));
-    }
     Q.privkey = LP_privkey(Q.destaddr,coin->taddr);
     if ( bits256_nonz(Q.privkey) != 0 )//&& Q.quotetime >= Q.timestamp-3 )
     {
@@ -531,7 +526,6 @@ char *LP_connectedalice(cJSON *argjson) // alice
         printf("connected result.(%s)\n",jprint(retjson,0));
         if ( jobj(retjson,"error") != 0 )
             LP_availableset(autxo);
-        else G.LP_pendingswaps++;
         return(jprint(retjson,1));
     }
     else
