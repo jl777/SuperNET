@@ -199,13 +199,13 @@ int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,b
                     up->U.height = height, flag |= 2;
                 if ( spendheight > 0 && up->spendheight != spendheight )
                     up->spendheight = spendheight, flag |= 4;
-                if ( up->U.value == 0 && up->U.value != value )
+                if ( value != 0 && up->U.value == 0 && up->U.value != value )
                     up->U.value = value, flag |= 8;
 //printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
                 break;
             }
         }
-        if ( flag == 0 )
+        if ( flag == 0 && value != 0 )
         {
             if ( coin->electrum == 0 )
             {
@@ -569,7 +569,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                 tx->outpoints[i].value = LP_value_extract(vout,0);
                 tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
                 LP_destaddr(tx->outpoints[i].coinaddr,vout);
-                printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
+                //printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
                 LP_address_utxoadd("LP_transactioninit iter0",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
             }
             //printf("numvouts.%d\n",numvouts);
