@@ -575,7 +575,7 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
     free(extraspace);
     if ( bits256_cmp(txid,checktxid) != 0 )
     {
-        printf("LP_transaction_fromdata mismatched txid %s vs %s\n",bits256_str(str,txid),bits256_str(str2,checktxid));
+        printf("%s LP_transaction_fromdata mismatched txid %s vs %s\n",coin->symbol,bits256_str(str,txid),bits256_str(str2,checktxid));
         free_json(txobj);
         txobj = 0;
     }

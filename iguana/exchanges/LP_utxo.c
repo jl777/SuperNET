@@ -281,7 +281,7 @@ int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,b
             DL_APPEND(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);                
             retval = 1;
-            //if ( value == 0 )
+            if ( value == 0 )
                 printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
         }
     } // else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
