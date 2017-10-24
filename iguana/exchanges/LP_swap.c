@@ -1123,9 +1123,16 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     swap->bobpayment.utxotxid = qp->txid, swap->bobpayment.utxovout = qp->vout;
     swap->bobdeposit.utxotxid = qp->txid2, swap->bobdeposit.utxovout = qp->vout2;
     swap->alicepayment.utxotxid = qp->desttxid, swap->alicepayment.utxovout = qp->destvout;
+    LP_mark_spent(swap->bobcoin.symbol,qp->txid,qp->vout);
+    LP_mark_spent(swap->bobcoin.symbol,qp->txid2,qp->vout2);
+    LP_mark_spent(swap->alicecoin.symbol,qp->desttxid,qp->destvout);
     if ( swap->I.iambob != 0 )
         swap->otherfee.utxotxid = qp->feetxid, swap->otherfee.utxovout = qp->feevout;
-    else swap->myfee.utxotxid = qp->feetxid, swap->myfee.utxovout = qp->feevout;
+    else
+    {
+        swap->myfee.utxotxid = qp->feetxid, swap->myfee.utxovout = qp->feevout;
+        LP_mark_spent(swap->alicecoin.symbol,qp->feetxid,qp->feevout);
+    }
     char str[65],str2[65],str3[65]; printf("IAMBOB.%d %s %s %s\n",swap->I.iambob,bits256_str(str,qp->txid),bits256_str(str2,qp->txid2),bits256_str(str3,qp->feetxid));
     return(swap);
 }

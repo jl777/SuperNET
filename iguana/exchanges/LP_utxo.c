@@ -198,6 +198,23 @@ struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coina
     return(0);
 }
 
+void LP_mark_spent(char *symbol,bits256 txid,int32_t vout)
+{
+    struct iguana_info *coin; struct LP_transaction *tx; struct LP_address_utxo *up;
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+        {
+            if ( vout < tx->numvouts )
+            {
+                tx->outpoints[vout].spendheight = 1;
+                if ( (up= LP_address_utxofind(coin,tx->outpoints[vout].coinaddr,txid,vout)) != 0 )
+                    up->spendheight = 1;
+            }
+        }
+    }
+}
+
 int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; cJSON *txobj; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; char str[65];
