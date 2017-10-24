@@ -140,7 +140,7 @@ struct LP_utxoinfo *LP_allocated(bits256 txid,int32_t vout)
 
 int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct LP_address *ap,char *coinaddr)
 {
-    struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout; int32_t n = 0;
+    struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout; int32_t n = 0; char str[65];
     //printf("LP_address_utxo_ptrs for (%s).(%s)\n",ap->coinaddr,coinaddr);
     if ( strcmp(ap->coinaddr,coinaddr) != 0 )
         printf("UNEXPECTED coinaddr mismatch (%s) != (%s)\n",ap->coinaddr,coinaddr);
@@ -156,11 +156,18 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                     free_json(txout);
                 else
                 {
-                    char str[65]; printf("%s %s payment %s/v%d is spent\n",coin->symbol,coinaddr,bits256_str(str,up->U.txid),up->U.vout);
+                    printf("LP_address_utxo_ptrs skips %s %s payment %s/v%d is spent\n",coin->symbol,coinaddr,bits256_str(str,up->U.txid),up->U.vout);
                     up->spendheight = 1;
                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                         tx->outpoints[up->U.vout].spendheight = 1;
                     continue;
+                }
+            }
+            else
+            {
+                if ( up->SPV <= 0 || up->U.height == 0 )
+                {
+                    printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str,up->U.txid),up->U.vout,up->SPV,up->U.height);
                 }
             }
             if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
