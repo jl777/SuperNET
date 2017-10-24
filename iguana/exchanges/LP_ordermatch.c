@@ -680,7 +680,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 butxo = LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2);
             if ( butxo == 0 || bits256_cmp(Q.txid,butxo->payment.txid) != 0 || bits256_cmp(Q.txid2,butxo->deposit.txid) != 0 )
             {
-                printf("null butxo.%p case\n",butxo);
+                printf("%s %s null butxo.%p case\n",Q.srccoin,Q.coinaddr,butxo);
                 value = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid,Q.vout);
                 value2 = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid2,Q.vout2);
                 butxo = LP_utxoadd(1,Q.srccoin,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,LP_gui,0);
