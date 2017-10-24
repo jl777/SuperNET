@@ -623,7 +623,7 @@ char *LP_uitem_recv(cJSON *argjson)
         //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",symbol,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
         if ( strcmp(coin->smartaddr,coinaddr) != 0 )
             LP_address_utxoadd("LP_uitem,recv",coin,coinaddr,txid,vout,value,height,-1);
-        else printf("ignore external uitem %s %s\n",symbol,coin->smartaddr);
+        //else printf("ignore external uitem %s %s\n",symbol,coin->smartaddr);
     }
     return(clonestr("{\"result\":\"success\"}"));
 }
