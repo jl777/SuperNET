@@ -48,7 +48,7 @@ uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32
 
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
-    double qprice; uint32_t timestamp; int32_t i,destvout,feevout,duplicate=0; char *base,*rel,tstr[128]; uint64_t txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t aliceid;
+    double qprice; uint32_t timestamp; int32_t i,destvout,feevout,duplicate=0; char *gui,*base,*rel,tstr[128]; uint64_t txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t aliceid;
     memset(&Q,0,sizeof(Q));
     if ( LP_quoteparse(&Q,lineobj) < 0 )
     {
@@ -60,6 +60,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     {
         base = jstr(lineobj,"base");
         rel = jstr(lineobj,"rel");
+        gui = jstr(lineobj,"gui");
         satoshis = j64bits(lineobj,"satoshis");
         if ( base == 0 || rel == 0 || satoshis == 0 )
         {
@@ -89,7 +90,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         if ( duplicate == 0 )
         {
             Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = aliceid;
-            printf("%s %-4d %9s swap.%-16llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f\n",utc_str(tstr,timestamp),LP_numridqids,method,(long long)aliceid,dstr(satoshis),base,dstr(destsatoshis),rel,qprice);
+            printf("%s %8s %-4d %9s swap.%-16llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f\n",utc_str(tstr,timestamp),gui!=0?gui:"",LP_numridqids,method,(long long)aliceid,dstr(satoshis),base,dstr(destsatoshis),rel,qprice);
             LP_numridqids++;
         }
     }
