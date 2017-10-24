@@ -83,7 +83,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         if ( duplicate == 0 )
         {
             Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
-            printf("%-4d %8s ridqid.%-16llx -> %.8f %5s -> %.8f %5s %.8f\n",LP_numridqids,method,(long long)ridqid,dstr(satoshis),base,dstr(destsatoshis),rel,qprice);
+            printf("%-4d %9s swap.%-16llx -> %.8f %5s -> %.8f %5s %.8f\n",LP_numridqids,method,(long long)ridqid,dstr(satoshis),base,dstr(destsatoshis),rel,qprice);
             LP_numridqids++;
         }
     }
