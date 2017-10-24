@@ -38,11 +38,12 @@ void LP_tradecommand_log(cJSON *argjson)
     }
 }
 
-uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns;
+uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates;
+uint64_t Ridqids[128];
 
 void LP_statslog_parseline(cJSON *lineobj)
 {
-    char *method; struct LP_quoteinfo Q;
+    char *method; int32_t i,duplicate; struct LP_quoteinfo Q; uint64_t ridqid;
     if ( (method= jstr(lineobj,"method")) != 0 )
     {
         if ( strcmp(method,"request") == 0 )
@@ -53,7 +54,6 @@ void LP_statslog_parseline(cJSON *lineobj)
             LP_connects++;
         else if ( strcmp(method,"connected") == 0 )
         {
-            LP_connecteds++;
             memset(&Q,0,sizeof(Q));
             if ( LP_quoteparse(&Q,lineobj) < 0 )
             {
@@ -62,8 +62,23 @@ void LP_statslog_parseline(cJSON *lineobj)
             }
             else
             {
-                printf("connected requestid.%u quoteid.%u\n",Q.R.requestid,Q.R.quoteid);
+                ridqid = (((uint64_t)Q.R.requestid << 32) | Q.R.quoteid);
+                for (i=duplicate=0; i<sizeof(Ridqids)/sizeof(*Ridqids); i++)
+                {
+                    if ( Ridqids[i] == ridqid )
+                    {
+                        duplicate = 1;
+                        LP_duplicates++;
+                        break;
+                    }
+                }
+                if ( duplicate == 0 )
+                {
+                    Ridqids[LP_connecteds % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
+                    printf("connected requestid.%u quoteid.%u\n",Q.R.requestid,Q.R.quoteid);
+                }
             }
+            LP_connecteds++;
         }
         else if ( strcmp(method,"tradestatus") == 0 )
             LP_tradestatuses++;
@@ -85,7 +100,9 @@ char *LP_statslog_disp(int32_t n)
     jaddnum(retjson,"reserved",LP_reserveds);
     jaddnum(retjson,"connect",LP_connects);
     jaddnum(retjson,"connected",LP_connecteds);
+    jaddnum(retjson,"duplicates",LP_duplicates);
     jaddnum(retjson,"parse_errors",LP_parse_errors);
+    jaddnum(retjson,"uniqes",LP_connecteds-LP_duplicates);
     jaddnum(retjson,"tradestatus",LP_tradestatuses);
     jaddnum(retjson,"unknown",LP_unknowns);
     return(jprint(retjson,1));
