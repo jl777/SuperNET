@@ -634,7 +634,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
         }
-        if ( time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
+        if ( coin->inactive == 0 && time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {
             nonz++;
             if ( (height= LP_getheight(coin)) > coin->longestchain )
