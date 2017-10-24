@@ -265,37 +265,6 @@ void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
     utxo->T.spentflag = (uint32_t)time(NULL);
 }
 
-/*char *LP_spentcheck(cJSON *argjson)
-{
-    bits256 txid,checktxid; int32_t vout,checkvout; struct LP_utxoinfo *utxo; int32_t iambob,retval = 0;
-    txid = jbits256(argjson,"txid");
-    vout = jint(argjson,"vout");
-    for (iambob=0; iambob<=1; iambob++)
-    {
-        if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 && utxo->T.spentflag == 0 )
-        {
-            if ( jobj(argjson,"check") == 0 )
-                checktxid = txid, checkvout = vout;
-            else
-            {
-                checktxid = jbits256(argjson,"checktxid");
-                checkvout = jint(argjson,"checkvout");
-            }
-            if ( LP_txvalue(0,utxo->coin,checktxid,checkvout) == 0 )
-            {
-                //if ( LP_mypeer != 0 && LP_mypeer->numutxos > 0 )
-                //    LP_mypeer->numutxos--;
-                utxo->T.spentflag = (uint32_t)time(NULL);
-                retval++;
-                printf("indeed txid was spent\n");
-            }
-        }
-    }
-    if ( retval > 0 )
-        return(clonestr("{\"result\":\"marked as spent\"}"));
-    return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
-}*/
-
 struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *coinaddr,bits256 pubkey,char *gui,uint32_t sessionid)
 {
     uint64_t val,val2=0,tmpsatoshis,txfee; int32_t spendvini,numconfirms,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
@@ -305,11 +274,6 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         printf("session.%u addutxo %d %d %d %d %d %d %d %d\n",sessionid,symbol == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }
-    /*if ( iambob != 0 )
-    {
-        printf("deprecated bob utxos\n");
-        return(0);
-    }*/
     if ( (coin= LP_coinfind(symbol)) == 0 || (IAMLP == 0 && coin->inactive != 0) )
     {
         //printf("LP_utxoadd reject inactive %s\n",symbol);

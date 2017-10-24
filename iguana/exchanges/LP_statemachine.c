@@ -1831,6 +1831,36 @@ void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
     }
 }
 
+/*char *LP_spentcheck(cJSON *argjson)
+ {
+ bits256 txid,checktxid; int32_t vout,checkvout; struct LP_utxoinfo *utxo; int32_t iambob,retval = 0;
+ txid = jbits256(argjson,"txid");
+ vout = jint(argjson,"vout");
+ for (iambob=0; iambob<=1; iambob++)
+ {
+ if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 && utxo->T.spentflag == 0 )
+ {
+ if ( jobj(argjson,"check") == 0 )
+ checktxid = txid, checkvout = vout;
+ else
+ {
+ checktxid = jbits256(argjson,"checktxid");
+ checkvout = jint(argjson,"checkvout");
+ }
+ if ( LP_txvalue(0,utxo->coin,checktxid,checkvout) == 0 )
+ {
+ //if ( LP_mypeer != 0 && LP_mypeer->numutxos > 0 )
+ //    LP_mypeer->numutxos--;
+ utxo->T.spentflag = (uint32_t)time(NULL);
+ retval++;
+ printf("indeed txid was spent\n");
+ }
+ }
+ }
+ if ( retval > 0 )
+ return(clonestr("{\"result\":\"marked as spent\"}"));
+ return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
+ }*/
 void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo)
 {
     struct _LP_utxoinfo u; struct iguana_info *coin; char str[65]; uint32_t now = (uint32_t)time(NULL);
