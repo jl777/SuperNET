@@ -52,7 +52,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     }
     else
     {
-        ridqid = (((uint64_t)Q.R.requestid << 32) | Q.R.quoteid);
+        ridqid = (((uint64_t)Q.desttxid.uints[0] << 48) | ((uint64_t)Q.destvout << 32) || ((uint64_t)Q.feetxid.uints[0] << 16) | (uint32_t)Q.feevout);
         for (i=0; i<sizeof(Ridqids)/sizeof(*Ridqids); i++)
         {
             if ( Ridqids[i] == ridqid )
@@ -66,7 +66,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         {
             Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
             LP_numridqids++;
-            char str[65]; printf("%10s requestid.%-10u quoteid.%-10u -> %d %s/v%d\n",method,Q.R.requestid,Q.R.quoteid,(int32_t)(LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))),bits256_str(str,jbits256(lineobj,"desttxid")),jint(lineobj,"destvout"));
+            char str[65]; printf("%10s ridqid.%-16llx -> %d %s/v%d\n",method,(long long)ridqid,(int32_t)(LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))),bits256_str(str,jbits256(lineobj,"desttxid")),jint(lineobj,"destvout"));
         }
     }
     return(duplicate == 0);
