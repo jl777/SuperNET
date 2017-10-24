@@ -373,7 +373,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-printf("%s %s",symbol,stratumreq);
+//printf("%s %s",symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = (struct stritem *)queueitem(stratumreq);
             sitem->expiration = timeout;
@@ -536,7 +536,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%s)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(jprint(retjson,0)));
+            printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%ld)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,strlen(jprint(retjson,0)));
             if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
                 LP_postutxos(coin->symbol,addr);
             if ( ap != 0 )
@@ -558,8 +558,12 @@ cJSON *electrum_addpeer(char *symbol,struct electrum_info *ep,cJSON **retjsonp,c
 cJSON *electrum_sendrawtransaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *rawtx) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.transaction.broadcast",rawtx,ELECTRUM_TIMEOUT)); }
 
 cJSON *electrum_estimatefee(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t numblocks) { return(electrum_intarg(symbol,ep,retjsonp,"blockchain.estimatefee",numblocks,ELECTRUM_TIMEOUT)); }
-cJSON *electrum_getheader(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t n) { return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.get_header",n,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_getchunk(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t n) { return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.get_chunk",n,ELECTRUM_TIMEOUT)); }
+
+cJSON *electrum_getheader(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t n)
+{
+    return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.get_header",n,ELECTRUM_TIMEOUT));
+}
 
 cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len)
 {
