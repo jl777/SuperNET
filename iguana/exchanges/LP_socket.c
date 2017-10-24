@@ -519,7 +519,9 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     cJSON *retjson=0; struct LP_address *ap; struct iguana_info *coin; int32_t height,usecache=1;
     if ( (coin= LP_coinfind(symbol)) == 0 )
         return(0);
-    height = coin->longestchain;
+    if ( ep->heightp == 0 )
+        height = coin->longestchain;
+    else height = *(ep->heightp);
     if ( (ap= LP_address(coin,addr)) != 0 )
     {
         if ( ap->unspenttime == 0 )
@@ -807,7 +809,8 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
         {
             if ( (height= jint(resultjson,"block_height")) > 0 && ep->heightp != 0 && ep->heighttimep != 0 )
             {
-                *(ep->heightp) = height;
+                if ( height > *(ep->heightp) )
+                    *(ep->heightp) = height;
                 *(ep->heighttimep) = (uint32_t)time(NULL);
                 if ( (coin= LP_coinfind(ep->symbol)) != 0 )
                     coin->updaterate = (uint32_t)time(NULL);
