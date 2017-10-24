@@ -104,6 +104,8 @@ goal(coin=*, val=<autocalc>)\n\
 myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
+notarizations(coin)\n\
+parselog()\n\
 getrawtransaction(coin, txid)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\

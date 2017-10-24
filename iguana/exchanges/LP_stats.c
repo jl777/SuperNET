@@ -38,12 +38,43 @@ void LP_tradecommand_log(cJSON *argjson)
     }
 }
 
+uint32_t LP_requests,LP_requesteds,LP_connects,LP_connecteds,LP_tradestatuses,LP_unknowns;
+
+void LP_statslog_parseline(cJSON *lineobj)
+{
+    char *method;
+    if ( (method= jstr(lineobj,"method")) != 0 )
+    {
+        if ( strcmp(method,"request") == 0 )
+            LP_requests++;
+        else if ( strcmp(method,"requested") == 0 )
+            LP_requesteds++;
+        if ( strcmp(method,"connect") == 0 )
+            LP_connects++;
+        else if ( strcmp(method,"connected") == 0 )
+            LP_connecteds++;
+        else if ( strcmp(method,"tradestatus") == 0 )
+            LP_tradestatuses++;
+        else
+        {
+            LP_unknowns++;
+            printf("parseline unknown method.(%s)\n",jprint(lineobj,0));
+        }
+   } else printf("parseline no method.(%s)\n",jprint(lineobj,0));
+}
+
 char *LP_statslog_disp(int32_t n)
 {
     cJSON *retjson;
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"newlines",n);
+    jaddnum(retjson,"request",LP_requests);
+    jaddnum(retjson,"requested",LP_requesteds);
+    jaddnum(retjson,"connect",LP_connects);
+    jaddnum(retjson,"connected",LP_connecteds);
+    jaddnum(retjson,"tradestatus",LP_tradestatuses);
+    jaddnum(retjson,"unknown",LP_unknowns);
     return(jprint(retjson,1));
 }
 
@@ -60,7 +91,7 @@ char *LP_statslog_parse()
             else
             {
                 fclose(fp);
-                return(clonestr("{\"result\":\"success\"}"));
+                return(clonestr("{\"result\":\"success\",\"newlines\":0}"));
             }
         }
         while ( fgets(line,sizeof(line),fp) > 0 )
@@ -69,7 +100,8 @@ char *LP_statslog_parse()
             if ( (lineobj= cJSON_Parse(line)) != 0 )
             {
                 n++;
-                printf("%s\n",jprint(lineobj,0));
+                LP_statslog_parseline(lineobj);
+                //printf("%s\n",jprint(lineobj,0));
                 free_json(lineobj);
             }
         }
