@@ -38,11 +38,11 @@ void LP_tradecommand_log(cJSON *argjson)
     }
 }
 
-uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_unknowns;
+uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns;
 
 void LP_statslog_parseline(cJSON *lineobj)
 {
-    char *method;
+    char *method; struct LP_quoteinfo Q;
     if ( (method= jstr(lineobj,"method")) != 0 )
     {
         if ( strcmp(method,"request") == 0 )
@@ -52,7 +52,18 @@ void LP_statslog_parseline(cJSON *lineobj)
         else if ( strcmp(method,"connect") == 0 )
             LP_connects++;
         else if ( strcmp(method,"connected") == 0 )
+        {
             LP_connecteds++;
+            if ( LP_quoteparse(&Q,lineobj) < 0 )
+            {
+                printf("quoteparse_error.(%s)\n",jprint(lineobj,0));
+                LP_parse_errors++;
+            }
+            else
+            {
+                printf("connected requestid.%u quoteid.%u\n",Q.R.requestid,Q.R.quoteid);
+            }
+        }
         else if ( strcmp(method,"tradestatus") == 0 )
             LP_tradestatuses++;
         else
@@ -73,6 +84,7 @@ char *LP_statslog_disp(int32_t n)
     jaddnum(retjson,"reserved",LP_reserveds);
     jaddnum(retjson,"connect",LP_connects);
     jaddnum(retjson,"connected",LP_connecteds);
+    jaddnum(retjson,"parse_errors",LP_parse_errors);
     jaddnum(retjson,"tradestatus",LP_tradestatuses);
     jaddnum(retjson,"unknown",LP_unknowns);
     return(jprint(retjson,1));
