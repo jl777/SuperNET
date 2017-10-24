@@ -373,6 +373,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
+printf("%s\n",stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = (struct stritem *)queueitem(stratumreq);
             sitem->expiration = timeout;
@@ -522,7 +523,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            //printf("%s %p u.%u t.%ld %s -> %s LISTUNSPENT.(%ld)\n",coin->symbol,&coin->unspenttime,coin->unspenttime,time(NULL),coin->lastunspent,addr,strlen(jprint(retjson,0)));
+            printf("%s %p u.%u t.%ld %s -> %s LISTUNSPENT.(%ld)\n",coin->symbol,&coin->unspenttime,coin->unspenttime,time(NULL),coin->lastunspent,addr,strlen(jprint(retjson,0)));
             if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
                 LP_postutxos(coin->symbol,addr);
             safecopy(coin->lastunspent,addr,sizeof(coin->lastunspent));

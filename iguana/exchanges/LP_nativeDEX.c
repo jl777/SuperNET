@@ -18,6 +18,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// electrum swaps efficiency
 // process stats.log local file -> map of realtime activity!
 // select oldest utxo first
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
