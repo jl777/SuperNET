@@ -101,6 +101,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 {
+    uint32_t rid,qid;
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
@@ -122,6 +123,18 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->destsatoshis = j64bits(argjson,"destsatoshis");
     qp->txfee = j64bits(argjson,"txfee");
     qp->desttxfee = j64bits(argjson,"desttxfee");
+    qp->R.requestid = juint(argjson,"requestid");
+    qp->R.quoteid = juint(argjson,"quoteid");
+    if ( qp->R.requestid != (rid= basilisk_requestid(&qp->R)) )
+    {
+        printf("requestid.%u -> %u\n",qp->R.requestid,rid);
+        qp->R.requestid = rid;
+    }
+    if ( qp->R.quoteid != (qid= basilisk_quoteid(&qp->R)) )
+    {
+        printf("quoteid.%u -> %u\n",qp->R.quoteid,qid);
+        qp->R.quoteid = qid;
+    }
     return(0);
 }
 
