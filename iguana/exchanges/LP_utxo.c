@@ -748,10 +748,10 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
             return(tx->outpoints[vout].value);
         } else printf("LP_txvalue vout.%d >= tx->numvouts.%d\n",vout,tx->numvouts);
     }
-    else
+    else if ( coin->electrum == 0 )
     {
-        printf("LP_txvalue: unexpected null tx %s %s %s/v%d\n",coin->symbol,coinaddr,bits256_str(str,txid),vout);
-        /*if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) != 0 )
+        uint64_t value; char _coinaddr[64];
+        if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) != 0 )
         {
             value = LP_value_extract(txobj,0);//SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
             if ( coinaddr == 0 )
@@ -764,9 +764,9 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
                 return(value);
             }
         }
-        printf("pruned node? LP_txvalue couldnt find %s tx %s/v%d (%s)\n",coin->symbol,bits256_str(str,txid),vout,txobj!=0?jprint(txobj,0):"");
+        //printf("pruned node? LP_txvalue couldnt find %s tx %s/v%d (%s)\n",coin->symbol,bits256_str(str,txid),vout,txobj!=0?jprint(txobj,0):"");
         if ( txobj != 0 )
-            free_json(txobj);*/
+            free_json(txobj);
     }
     return(0);
 }
