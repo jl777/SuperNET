@@ -56,6 +56,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         destvout = jint(lineobj,"destvout");
         feetxid = jbits256(lineobj,"feetxid");
         feevout = jint(lineobj,"feevout");
+        printf("%s\n",jprint(lineobj,0));
         ridqid = (((uint64_t)desttxid.uints[0] << 48) | ((uint64_t)destvout << 32) || ((uint64_t)feetxid.uints[0] << 16) | (uint32_t)feevout);
         for (i=0; i<sizeof(Ridqids)/sizeof(*Ridqids); i++)
         {

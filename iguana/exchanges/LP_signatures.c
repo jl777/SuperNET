@@ -353,7 +353,7 @@ char *LP_postutxos_recv(cJSON *argjson)
     {
         if ( strcmp(coinaddr,coin->smartaddr) == 0 )
         {
-            printf("ignore my utxo from external source %s %s\n",symbol,coinaddr);
+            //printf("ignore my utxo from external source %s %s\n",symbol,coinaddr);
             return(clonestr("{\"result\":\"success\"}"));
         }
     }
