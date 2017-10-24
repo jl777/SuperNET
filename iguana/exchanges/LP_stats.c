@@ -41,9 +41,14 @@ void LP_tradecommand_log(cJSON *argjson)
 uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_numridqids;
 uint64_t Ridqids[128];
 
+uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32_t feevout)
+{
+    return((((uint64_t)desttxid.uints[0] << 48) | ((uint64_t)destvout << 32) | ((uint64_t)feetxid.uints[0] << 16) | (uint32_t)feevout));
+}
+
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
-    double qprice; uint32_t timestamp; int32_t i,destvout,feevout,duplicate=0; char *base,*rel,tstr[128]; uint64_t txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t ridqid;
+    double qprice; uint32_t timestamp; int32_t i,destvout,feevout,duplicate=0; char *base,*rel,tstr[128]; uint64_t txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t aliceid;
     memset(&Q,0,sizeof(Q));
     if ( LP_quoteparse(&Q,lineobj) < 0 )
     {
@@ -71,10 +76,10 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         feevout = jint(lineobj,"feevout");
         qprice = ((double)destsatoshis / (satoshis - txfee));
         //printf("%s/v%d %s/v%d\n",bits256_str(str,desttxid),destvout,bits256_str(str2,feetxid),feevout);
-        ridqid = (((uint64_t)desttxid.uints[0] << 48) | ((uint64_t)destvout << 32) | ((uint64_t)feetxid.uints[0] << 16) | (uint32_t)feevout);
+        aliceid =  LP_aliceid_calc(desttxid,destvout,feetxid,feevout);
         for (i=0; i<sizeof(Ridqids)/sizeof(*Ridqids); i++)
         {
-            if ( Ridqids[i] == ridqid )
+            if ( Ridqids[i] == aliceid )
             {
                 duplicate = 1;
                 LP_duplicates++;
@@ -83,8 +88,8 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         }
         if ( duplicate == 0 )
         {
-            Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = ridqid;
-            printf("%s %-4d %9s swap.%-16llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f\n",utc_str(tstr,timestamp),LP_numridqids,method,(long long)ridqid,dstr(satoshis),base,dstr(destsatoshis),rel,qprice);
+            Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = aliceid;
+            printf("%s %-4d %9s swap.%-16llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f\n",utc_str(tstr,timestamp),LP_numridqids,method,(long long)aliceid,dstr(satoshis),base,dstr(destsatoshis),rel,qprice);
             LP_numridqids++;
         }
     }

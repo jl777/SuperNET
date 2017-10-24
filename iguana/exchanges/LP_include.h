@@ -252,7 +252,7 @@ struct LP_quoteinfo
 {
     struct basilisk_request R;
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
-    uint64_t satoshis,txfee,destsatoshis,desttxfee;
+    uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
     uint32_t timestamp,quotetime; int32_t vout,vout2,destvout,feevout,pair;
     char srccoin[16],coinaddr[64],destcoin[16],destaddr[64],gui[64];
 };
@@ -272,7 +272,7 @@ struct basilisk_swap
     bits256 privkeys[INSTANTDEX_DECKSIZE];
     struct basilisk_swapmessage *messages; int32_t nummessages,sentflag;
     char Bdeposit[64],Bpayment[64];
-    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    uint64_t aliceid,otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint8_t persistent_pubkey33[33],persistent_other33[33],changermd160[20],pad[15],verifybuf[100000];
     
 };
