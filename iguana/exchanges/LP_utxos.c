@@ -483,7 +483,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     }
     //printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
     if ( coin->inactive == 0 )
-        LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
+        LP_listunspent_issue(coin->symbol,coin->smartaddr,1);
     LP_address(coin,coin->smartaddr);
     if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
@@ -516,12 +516,12 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                     }
                     satoshis = LP_txvalue(destaddr,coin->symbol,txid,vout);
                     if ( satoshis != 0 && satoshis != value )
-                        printf("unexpected privkey_init value mismatch %.8f vs %.8f (%s) %.8f %.8f\n",dstr(satoshis),dstr(value),jprint(item,0),jdouble(item,"amount"),jdouble(item,"interest"));
+                        printf("%s %s unexpected privkey_init value mismatch %.8f vs %.8f (%s) %.8f %.8f\n",coin->symbol,coin->smartaddr,dstr(satoshis),dstr(value),jprint(item,0),jdouble(item,"amount"),jdouble(item,"interest"));
                     if ( LP_inventory_prevent(iambob,coin->symbol,txid,vout) == 0 && height > 0 )
                     {
                         //printf("%s\n",jprint(item,0));
                         values[i] = satoshis;
-                        flag += LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
+                        //flag += LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
                     } else used++;
                 }
                 //printf("array.%d\n",n);
