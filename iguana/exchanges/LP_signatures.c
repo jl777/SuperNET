@@ -92,6 +92,10 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
             jaddnum(retjson,"price",price);
         }
     }
+    if ( qp->R.requestid != 0 )
+        jaddnum(retjson,"requestid",qp->R.requestid);
+    if ( qp->R.quoteid != 0 )
+        jaddnum(retjson,"quoteid",qp->R.quoteid);
     return(retjson);
 }
 

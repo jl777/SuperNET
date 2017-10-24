@@ -18,11 +18,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// variable timeout based on number of electrums in swap
-// listunspent on each new block or 30 seconds if doing swap
-// reject swap response from bob?
 //
-// electrum swaps efficiency
 // process stats.log local file -> map of realtime activity!
 // select oldest utxo first
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
