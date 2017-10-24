@@ -388,7 +388,11 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
             } else printf("couldnt get header for ht.%d\n",height);
         }
         if ( SPV < 0 )
+        {
             printf("MERKLE DIDNT VERIFY.(%s)\n",jprint(merkobj,0));
+            if ( jobj(merkobj,"error") != 0 )
+                SPV = 0; // try again later
+        }
         free_json(merkobj);
     }
     return(SPV);

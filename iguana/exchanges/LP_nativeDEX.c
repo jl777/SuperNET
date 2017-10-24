@@ -18,6 +18,9 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// ZEC LP_transaction_fromdata mismatched txid e2a3eebcf5bef6fe63296f53ce35d2f2c6e3b29c7c907da4171a580f50c93c74 vs 1ed5c15bbf991ff42c73b1492d1bb50e91d1d731c86cb3058405cff95cd9bd70
+//0200000000018c343500000000001976a9141462c3dd3f936d595c9af55978003b27c250441f88ac000000000100000000000000009c5b3500000000005a6c707fc604699d0166b2a750c8a2ff21c8aed0b6e6fe160f651da8cf865c2aa079a7f71f7782604785e1f9a7300cd6c89ca50b5d91f6c0ae5f293ea5a72e62bb0f05da84510e6431c5d4be7a372221265fd98dbccee11f5ed064c5afaa19eff27fd12c30a7a5205f70c99f22b7090c00048c1c9767eea1c79e54ed60c08c138758ad73d43f2692fcb05f data2json n.44 vs len.
+
 // process stats.log local file -> map of realtime activity!
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
 // select oldest utxo first
