@@ -537,7 +537,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            printf("%s u.%u t.%ld %s LISTUNSPENT.(%ld)\n",coin->symbol,ap->unspenttime,time(NULL),addr,strlen(jprint(retjson,0)));
+            printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%ld)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,strlen(jprint(retjson,0)));
             if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
                 LP_postutxos(coin->symbol,addr);
             if ( ap != 0 )
