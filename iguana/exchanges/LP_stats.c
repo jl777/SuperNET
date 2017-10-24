@@ -54,6 +54,7 @@ void LP_statslog_parseline(cJSON *lineobj)
         else if ( strcmp(method,"connected") == 0 )
         {
             LP_connecteds++;
+            memset(&Q,0,sizeof(Q));
             if ( LP_quoteparse(&Q,lineobj) < 0 )
             {
                 printf("quoteparse_error.(%s)\n",jprint(lineobj,0));

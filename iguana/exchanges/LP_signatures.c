@@ -125,7 +125,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->desttxfee = j64bits(argjson,"desttxfee");
     qp->R.requestid = juint(argjson,"requestid");
     qp->R.quoteid = juint(argjson,"quoteid");
-    if ( qp->R.requestid != (rid= basilisk_requestid(&qp->R)) )
+    /*if ( qp->R.requestid != (rid= basilisk_requestid(&qp->R)) )
     {
         printf("requestid.%u -> %u\n",qp->R.requestid,rid);
         qp->R.requestid = rid;
@@ -134,7 +134,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     {
         printf("quoteid.%u -> %u\n",qp->R.quoteid,qid);
         qp->R.quoteid = qid;
-    }
+    }*/
     return(0);
 }
 
