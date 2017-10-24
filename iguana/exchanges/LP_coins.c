@@ -184,13 +184,13 @@ uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,
 
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 {
-    struct electrum_info *ep; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
+    struct electrum_info *ep; uint64_t balance; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
     if ( showwif != 0 )
     {
-        bitcoin_priv2wif(coin->wiftaddr,wifstr,G.LP_mypriv25519,coin->wiftype);
+        bitcoin_priv2wif(coin->wiftaddr,wifstr,G.LP_privkey,coin->wiftype);
         bitcoin_wif2priv(coin->wiftaddr,&tmptype,&checkkey,wifstr);
-        if ( bits256_cmp(G.LP_mypriv25519,checkkey) == 0 )
+        if ( bits256_cmp(G.LP_privkey,checkkey) == 0 )
             jaddstr(item,"wif",wifstr);
         else jaddstr(item,"wif","error creating wif");
     }
@@ -198,7 +198,9 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     if ( coin->userpass[0] != 0 )
     {
         jaddnum(item,"height",LP_getheight(coin));
-        jaddnum(item,"balance",dstr(LP_smartbalance(coin)));
+        balance = LP_smartbalance(coin);
+        jaddnum(item,"balance",dstr(balance));
+        jaddnum(item,"KMDvalue",dstr(LP_KMDvalue(coin,balance)));
     }
     else
     {

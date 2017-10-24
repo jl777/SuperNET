@@ -87,7 +87,7 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
 
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
 {
-    static uint32_t crcs[64]; static unsigned long dup,total;
+    static uint32_t crcs[1024]; static unsigned long dup,total;
     int32_t i;
     *duplicatep = 0;
     if ( ind < 0 )
@@ -144,7 +144,6 @@ void queue_loop(void *ignore)
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
     while ( 1 )
     {
-        LP_reserved_msgs();
         nonz = 0;
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = 0;
@@ -158,16 +157,13 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-#ifdef __APPLE__
-//else printf("%d %p qsent %u msglen.%d peerind.%d (%s)\n",n,ptr,ptr->crc32,ptr->msglen,ptr->peerind,ptr->msg);
-#endif
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
                     else flag = 1;
                 } //else printf("sock not ready to send.%d\n",ptr->msglen);
             }
-            else if ( time(NULL) > ptr->starttime+13 )
+            else if ( 0 && time(NULL) > ptr->starttime+13 )
             {
                 LP_crc32find(&duplicate,-1,ptr->crc32);
                 if ( duplicate > 0 )
@@ -239,9 +235,13 @@ printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
     else
     {
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind);
-        else peerind = 0;
+            peerind = (rand() % maxind) + 1;
+        else peerind = 1;
         sock0 = LP_peerindsock(&peerind);
+        if ( (maxind= LP_numpeers()) > 0 )
+            peerind = (rand() % maxind) + 1;
+        else peerind = 1;
+        sock1 = LP_peerindsock(&peerind);
     }
     if ( sock0 >= 0 )
         _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);

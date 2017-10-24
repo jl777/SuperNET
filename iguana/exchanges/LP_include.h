@@ -23,6 +23,11 @@
 
 //#define LP_STRICTPEERS
 
+#define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
+#define LP_AUTOTRADE_TIMEOUT 10
+#define ELECTRUM_TIMEOUT 15
+#define LP_MEMPOOL_TIMEINCR 10
+
 #define LP_COMMAND_SENDSOCK NN_PUSH
 #define LP_COMMAND_RECVSOCK NN_PULL
 
@@ -34,17 +39,14 @@
 #define MAINLOOP_PERSEC 100
 #define MAX_PSOCK_PORT 60000
 #define MIN_PSOCK_PORT 10000
-#define LP_MEMPOOL_TIMEINCR 10
 #define LP_GETINFO_INCR 30
 #define LP_ORDERBOOK_DURATION 120
 
-#define LP_HTTP_TIMEOUT 2 // 1 is too small due to edge cases of time(NULL)
 #define LP_MAXPEER_ERRORS 3
 #define LP_MINPEER_GOOD 20
 #define LP_PEERGOOD_ERRORDECAY 0.9
 
 #define LP_SWAPSTEP_TIMEOUT 30
-#define LP_AUTOTRADE_TIMEOUT 10
 #define LP_MIN_TXFEE 10000
 #define LP_MINVOL 20
 #define LP_MINCLIENTVOL 50
@@ -72,7 +74,7 @@
 #define LP_RESERVETIME 60
 #define LP_AVETXSIZE 256
 #define LP_CACHEDURATION 60
-#define BASILISK_DEFAULT_NUMCONFIRMS 3
+#define BASILISK_DEFAULT_NUMCONFIRMS 1
 #define BASILISK_DEFAULT_MAXCONFIRMS 6
 #define DEX_SLEEP 3
 #define BASILISK_KEYSIZE ((int32_t)(2*sizeof(bits256)+sizeof(uint32_t)*2))
@@ -185,14 +187,15 @@ struct iguana_info
     portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,unspenttime,obooktime;
+    uint32_t lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
-    char symbol[16],smartaddr[64],userpass[1024],serverport[128],lastunspent[64];
+    char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33];
+    bits256 cachedtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
 };
 
 struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout,height; };
@@ -231,7 +234,8 @@ struct LP_address
     struct LP_address_utxo *utxos;
     bits256 pubkey;
     int64_t balance,total;
-    uint32_t timestamp,n;
+    uint32_t timestamp,n,unspenttime;
+    int32_t unspentheight;
     char coinaddr[40];
     uint8_t pubsecp[33],pad;
 };
@@ -250,9 +254,9 @@ struct LP_quoteinfo
 {
     struct basilisk_request R;
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
-    uint64_t satoshis,txfee,destsatoshis,desttxfee;
+    uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
     uint32_t timestamp,quotetime; int32_t vout,vout2,destvout,feevout,pair;
-    char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
+    char srccoin[16],coinaddr[64],destcoin[16],destaddr[64],gui[64];
 };
 
 struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };
@@ -270,11 +274,25 @@ struct basilisk_swap
     bits256 privkeys[INSTANTDEX_DECKSIZE];
     struct basilisk_swapmessage *messages; int32_t nummessages,sentflag;
     char Bdeposit[64],Bpayment[64];
-    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    uint64_t aliceid,otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint8_t persistent_pubkey33[33],persistent_other33[33],changermd160[20],pad[15],verifybuf[100000];
     
 };
 
+#define LP_MAXPRICEINFOS 256
+struct LP_pubkeyinfo
+{
+    UT_hash_handle hh;
+    bits256 pubkey;
+    double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
+    uint32_t timestamp,istrusted,numerrors;
+    uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
+};
+
+int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
+int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
+int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
+struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr);
 void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,uint8_t *data,int32_t datalen,int32_t vout);
 void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
 uint32_t basilisk_requestid(struct basilisk_request *rp);
@@ -292,6 +310,7 @@ struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port);
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest);
 int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
+int64_t LP_komodo_interest(bits256 txid,int64_t value);
 void LP_availableset(struct LP_utxoinfo *utxo);
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2);
 int32_t LP_pullsock_check(void *ctx,char **retstrp,char *myipaddr,int32_t pubsock,int32_t pullsock);
@@ -299,7 +318,6 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
-int32_t LP_reserved_msgs();
 uint64_t LP_smartbalance(struct iguana_info *coin);
 int32_t LP_getheight(struct iguana_info *coin);
 int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg);
@@ -320,7 +338,8 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
 int32_t LP_numpeers();
-int32_t LP_address_utxoadd(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
+uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance);
+int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 void LP_smartutxos_push(struct iguana_info *coin);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);
 cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout);

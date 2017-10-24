@@ -230,7 +230,7 @@ uint64_t LP_smartbalance(struct iguana_info *coin)
     cJSON *array,*item; char buf[512],*retstr; int32_t i,n; uint64_t valuesum,value;
     valuesum = 0;
     sprintf(buf,"[0, 99999999, [\"%s\"]]",coin->smartaddr);
-    retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"listunspent","[]");
+    retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,"listunspent",buf);
     if ( retstr != 0 && retstr[0] != 0 )
     {
         array = cJSON_Parse(retstr);
@@ -290,7 +290,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     {
         if ( (retjson= electrum_transaction(symbol,coin->electrum,&retjson,txid)) != 0 )
             return(retjson);
-        else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,buf);
+        else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,bits256_str(str,txid));
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
     }
 }
@@ -345,7 +345,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         {
             if ( tx->outpoints[vout].spendheight > 0 )
                 return(0);
-            return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
+            //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
         }
         if ( coinaddr[0] == 0 )
         {
@@ -362,7 +362,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
             {
                 if ( up->spendheight > 0 )
                     return(0);
-                return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
+                //return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
             }
             if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr,1)) != 0 )
             {
@@ -1047,7 +1047,6 @@ int32_t LP_notarization_latest(int32_t *bestheightp,struct iguana_info *coin)
             blockhash = LP_getbestblockhash(coin);
         if ( bits256_nonz(blockhash) != 0 )
         {
-            //char str[65]; printf("check %s\n",bits256_str(str,blockhash));
             if ( (blockjson= LP_getblock(coin->symbol,blockhash)) != 0 )
             {
                 if ( *bestheightp < 0 )
@@ -1055,7 +1054,7 @@ int32_t LP_notarization_latest(int32_t *bestheightp,struct iguana_info *coin)
                 if ( (hasnotarization= LP_hasnotarization(coin,blockjson)) > 0 )
                 {
                     height = jint(blockjson,"height");
-                    //printf("height.%d\n",height);
+                    //char str[65]; printf("%s height.%d\n",bits256_str(str,blockhash),height);
                 }
                 else
                 {

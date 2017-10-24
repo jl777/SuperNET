@@ -325,33 +325,6 @@ enum opcodetype
     OP_INVALIDOPCODE = 0xff,
 };
 
-bits256 LP_privkeyfind(uint8_t rmd160[20])
-{
-    int32_t i; static bits256 zero;
-    for (i=0; i<G.LP_numprivkeys; i++)
-        if ( memcmp(rmd160,G.LP_privkeys[i].rmd160,20) == 0 )
-            return(G.LP_privkeys[i].privkey);
-    //for (i=0; i<20; i++)
-    //    printf("%02x",rmd160[i]);
-    //printf(" -> no privkey\n");
-    return(zero);
-}
-
-int32_t LP_privkeyadd(bits256 privkey,uint8_t rmd160[20])
-{
-    bits256 tmpkey;
-    tmpkey = LP_privkeyfind(rmd160);
-    if ( bits256_nonz(tmpkey) != 0 )
-        return(-bits256_cmp(privkey,tmpkey));
-    G.LP_privkeys[G.LP_numprivkeys].privkey = privkey;
-    memcpy(G.LP_privkeys[G.LP_numprivkeys].rmd160,rmd160,20);
-    //int32_t i; for (i=0; i<20; i++)
-    //    printf("%02x",rmd160[i]);
-    //char str[65]; printf(" -> add privkey.(%s)\n",bits256_str(str,privkey));
-    G.LP_numprivkeys++;
-    return(G.LP_numprivkeys);
-}
-
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp)
 {
     int32_t i; uint64_t x;
@@ -2231,21 +2204,6 @@ int32_t bitcoin_priv2wiflong(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8
     return((int32_t)strlen(wifstr));
 }
 
-bits256 LP_privkey(char *coinaddr,uint8_t taddr)
-{
-    bits256 privkey; uint8_t addrtype,rmd160[20];
-    bitcoin_addr2rmd160(taddr,&addrtype,rmd160,coinaddr);
-    privkey = LP_privkeyfind(rmd160);
-    return(privkey);
-}
-
-bits256 LP_pubkey(bits256 privkey)
-{
-    bits256 pubkey;
-    pubkey = curve25519(privkey,curve25519_basepoint9());
-    return(pubkey);
-}
-
 char *_setVsigner(uint8_t wiftaddr,uint8_t pubtype,struct vin_info *V,int32_t ind,char *pubstr,char *wifstr)
 {
     uint8_t addrtype;
@@ -3603,7 +3561,7 @@ cJSON *bitcoin_data2json(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t 
     if ( n != len )
     {
         int32_t i;
-        for (i=0; i<=len; i++)
+        for (i=0; i<=len&&i<200; i++)
             printf("%02x",serialized[i]);
         printf(" data2json n.%d vs len.%d\n",n,len);
     }
