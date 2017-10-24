@@ -49,7 +49,7 @@ void LP_statslog_parseline(cJSON *lineobj)
             LP_requests++;
         else if ( strcmp(method,"reserved") == 0 )
             LP_reserveds++;
-        if ( strcmp(method,"connect") == 0 )
+        else if ( strcmp(method,"connect") == 0 )
             LP_connects++;
         else if ( strcmp(method,"connected") == 0 )
             LP_connecteds++;
