@@ -329,11 +329,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
     struct nn_cws *cws;
 
     cws = nn_cont (self, struct nn_cws, fsm);
-    int32_t rc = 0;
-    if ( type == 2 && cws->state == 3 )
-        rc = nn_pipebase_start (&cws->pipebase);
-    printf("cws_handler src.%d type.%d state.%d rc.%d\n",src,type,cws->state,rc);
-
+    printf("cws_handler src.%d type.%d state.%d\n",src,type,cws->state);
     switch (cws->state) {
 
 /******************************************************************************/
