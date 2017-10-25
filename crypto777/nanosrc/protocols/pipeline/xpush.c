@@ -160,6 +160,7 @@ static int nn_xpush_events (struct nn_sockbase *self)
 
 static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
+    printf("nn_xpush_send\n");
     return nn_lb_send (&nn_cont (self, struct nn_xpush, sockbase)->lb,
         msg, NULL);
 }
