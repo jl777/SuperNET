@@ -275,16 +275,21 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
         while ( nonz < maxdepth && recvlen > 0 )
         {
             nonz++;
+#ifndef FROM_JS
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
             pfd.events = NN_POLLIN;
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
+#endif
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 methodstr[0] = 0;
                 if ( 1 )
                 {
+#ifdef FROM_JS
+                    printf("%s RECV.(%s)\n",typestr,(char *)ptr);
+#endif
                     cJSON *recvjson; //char *mstr,*cstr;
                     if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
                     {
@@ -297,6 +302,9 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free_json(recvjson);
                     }
                 }
+#ifdef FROM_JS
+                else printf("%s got recv.%d\n",typestr,recvlen);
+#endif
                 double millis = OS_milliseconds();
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
@@ -767,12 +775,16 @@ void LP_reserved_msgs(void *ignore)
             {
                 portable_mutex_lock(&LP_reservedmutex);
                 num_Reserved_msgs--;
-                //printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
+#ifdef FROM_JS
+                printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
+#endif
                 LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
                 Reserved_msgs[num_Reserved_msgs] = 0;
                 portable_mutex_unlock(&LP_reservedmutex);
             }
         }
+        if ( ignore == 0 )
+            break;
         usleep(3000);
     }
 }
@@ -1030,6 +1042,9 @@ void LP_fromjs_iter()
         ctx = bitcoin_ctx();
     if ( 0 && (LP_counter % 100) == 0 )
         printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
+    LP_pubkeys_query();
+    LP_utxosQ_process();
+    LP_reserved_msgs(0);
     LP_nanomsg_recvs(ctx);
     LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     LP_counter++;

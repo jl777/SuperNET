@@ -157,6 +157,9 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
+#ifdef FROM_JS
+                    else printf("sent %d bytes of %d to sock.%d\n",sentbytes,ptr->msglen,ptr->sock);
+#endif
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
