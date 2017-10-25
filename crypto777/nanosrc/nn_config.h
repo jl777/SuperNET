@@ -46,7 +46,7 @@
 
 #define NN_HAVE_MSG_CONTROL 0
 //#define STANDALONE 1
-#define PNACL_msg 
+#define PNACL_msg(...)
 
 #if !defined(WIN32)
 //#define NN_ENABLE_EXTRA 1
