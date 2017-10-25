@@ -794,6 +794,7 @@ void LP_reserved_msgs(void *ignore)
 int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
 {
     int32_t n = 0;
+#ifndef FROM_JS
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs) )
     {
@@ -801,6 +802,9 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
         n = num_Reserved_msgs;
     } else LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
     portable_mutex_unlock(&LP_reservedmutex);
+#else
+    LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
+#endif
     if ( num_Reserved_msgs > max_Reserved_msgs )
     {
         max_Reserved_msgs = num_Reserved_msgs;
@@ -1046,7 +1050,6 @@ void LP_fromjs_iter()
         printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
     LP_pubkeys_query();
     LP_utxosQ_process();
-    LP_reserved_msgs(0);
     LP_nanomsg_recvs(ctx);
     LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     LP_counter++;
