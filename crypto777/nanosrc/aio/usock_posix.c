@@ -286,13 +286,13 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
 
     /*  Allow re-using the address. */
     opt = 1;
-    printf("call setsockopt %d SOL_SOCKET.%d SO_REUSEADDR.%d in nn_usock_bind\n",self->s,SOL_SOCKET,SO_REUSEADDR);
+    PNACL_msg("call setsockopt %d SOL_SOCKET.%d SO_REUSEADDR.%d in nn_usock_bind\n",self->s,SOL_SOCKET,SO_REUSEADDR);
     rc = setsockopt (self->s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt));
-    printf("called setsockopt in nn_usock_bind returns %d\n",rc);
+    PNACL_msg("called setsockopt in nn_usock_bind returns %d\n",rc);
     errno_assert (rc == 0);
 
     rc = bind (self->s, addr, (socklen_t) addrlen);
-    printf("usock.%d -> bind rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
+    PNACL_msg("usock.%d -> bind rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
     if (nn_slow (rc != 0))
         return -errno;
 
@@ -308,7 +308,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
 
     /*  Start listening for incoming connections. */
     rc = listen (self->s, backlog);
-    //printf("usock.%d -> listen rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
+    //PNACL_msg("usock.%d -> listen rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
     if (nn_slow (rc != 0))
         return -errno;
 
@@ -335,7 +335,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 #else
     s = accept (listener->s, NULL, NULL);
 #endif
-    //printf("usock.%d -> accept errno.%d s.%d %s\n",self->s,errno,s,nn_strerror(errno));
+    //PNACL_msg("usock.%d -> accept errno.%d s.%d %s\n",self->s,errno,s,nn_strerror(errno));
 
     /*  Immediate success. */
     if (nn_fast (s >= 0)) {
@@ -395,7 +395,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 
     /* Do the connect itself. */
     rc = connect(self->s,addr,(socklen_t)addrlen);
-    //printf("usock.%d <- connect (%llx) rc.%d errno.%d %s\n",self->s,*(long long *)addr,rc,errno,nn_strerror(errno));
+    //PNACL_msg("usock.%d <- connect (%llx) rc.%d errno.%d %s\n",self->s,*(long long *)addr,rc,errno,nn_strerror(errno));
     /* Immediate success. */
     if ( nn_fast(rc == 0) )
     {
@@ -1146,7 +1146,7 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
     nbytes = sendmsg(self->s,hdr,MSG_NOSIGNAL);
 #else
     nbytes = sendmsg(self->s,hdr,0);
-    //printf("sendmsg nbytes.%d\n",(int32_t)nbytes);
+    //PNACL_msg("sendmsg nbytes.%d\n",(int32_t)nbytes);
 #endif
 #endif
     /*  Handle errors. */
@@ -1288,7 +1288,7 @@ static int nn_usock_recv_raw(struct nn_usock *self, void *buf, size_t *len)
     
 #if NN_USE_MYMSG
     nbytes = myrecvmsg(self->s,&hdr,0,(int32_t)iov.iov_len);
-    //printf("got nbytes.%d from recvmsg errno.%d %s\n",(int32_t)nbytes,errno,nn_strerror(errno));
+    //PNACL_msg("got nbytes.%d from recvmsg errno.%d %s\n",(int32_t)nbytes,errno,nn_strerror(errno));
 #else
     nbytes = recvmsg (self->s, &hdr, 0);
 #endif
@@ -1300,7 +1300,7 @@ static int nn_usock_recv_raw(struct nn_usock *self, void *buf, size_t *len)
             nbytes = 0;
         else
         {
-            printf("recvraw errno.%d %s\n",errno,nn_strerror(errno));
+            PNACL_msg("recvraw errno.%d %s\n",errno,nn_strerror(errno));
             // If the peer closes the connection, return ECONNRESET
             errno_assert(errno == ECONNRESET || errno == ENOTCONN || errno == ECONNREFUSED || errno == ETIMEDOUT || errno == EHOSTUNREACH
 #if NN_USE_MYMSG
