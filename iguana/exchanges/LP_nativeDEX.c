@@ -1039,6 +1039,7 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     static uint32_t counter; char fname[512],*retstr; long fsize;
     sprintf(fname,"bitcoind_RPC/req.%u",counter);
     counter++;
+    printf("issue.(%s)\n",url);
     emscripten_wget(url,fname);
     retstr = OS_filestr(&fsize,fname);
     printf("bitcoind_RPC(%s) -> fname.(%s) %s\n",url,fname,retstr);

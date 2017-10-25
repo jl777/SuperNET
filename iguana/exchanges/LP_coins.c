@@ -301,6 +301,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
 uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath)
 {
     char *name2;
+    printf("clear coin\n");
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
     coin->updaterate = (uint32_t)time(NULL);
@@ -314,8 +315,11 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     coin->p2shtype = p2shtype;
     coin->wiftype = wiftype;
     coin->inactive = (uint32_t)time(NULL);
+    printf("call coinbus\n");
     coin->bussock = LP_coinbus(busport);
+    printf("call bitcoin_ctx\n");
     coin->ctx = bitcoin_ctx();
+    printf("back from bitcoin_ctx\n");
     if ( assetname != 0 && strcmp(name,assetname) == 0 )
     {
         //printf("%s is assetchain\n",symbol);
