@@ -803,7 +803,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("call nn_socket\n");
         sock = nn_socket(AF_SP,NN_PUSH);
         printf("nn_socket(NN_PUSH) %d\n",sock);
-        if ( nn_connect(sock,pushaddr) >= 0 )
+        if ( nn_connect(sock,"tcp://5.9.253.199:7784") >= 0 )
         {
             timeout = 1;
             printf("call setsockopt\n");
