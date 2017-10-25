@@ -19,13 +19,17 @@
 //  Copyright © 2017 SuperNET. All rights reserved.
 //
 
+void PNACL_msg(char *arg,...)
+{
+    
+}
 #define FROM_MARKETMAKER
 #include <stdio.h>
 #include <stdint.h>
 #ifndef NATIVE_WINDOWS
-	#include "OS_portable.h"
+#include "OS_portable.h"
 #else
-	#include "../../crypto777/OS_portable.h"
+#include "../../crypto777/OS_portable.h"
 #endif // !_WIN_32
 
 
