@@ -176,6 +176,7 @@ int nn_pipe_send(struct nn_pipe *self,struct nn_msg *msg)
     int rc;
     struct nn_pipebase *pipebase;
     pipebase = (struct nn_pipebase *)self;
+    printf("pipesend\n");
     nn_assert (pipebase->outstate == NN_PIPEBASE_OUTSTATE_IDLE);
     pipebase->outstate = NN_PIPEBASE_OUTSTATE_SENDING;
     rc = pipebase->vfptr->send(pipebase,msg);

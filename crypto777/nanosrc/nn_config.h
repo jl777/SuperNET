@@ -31,8 +31,8 @@
 #define NN_HAVE_SEMAPHORE 1 // must have
 
 // need one of following 3, listed in order of precedence, used by efd*
-//#define NN_HAVE_EVENTFD 1
-#define NN_HAVE_PIPE 1
+#define NN_HAVE_EVENTFD 1
+//#define NN_HAVE_PIPE 1
 //#define NN_HAVE_SOCKETPAIR 1
 
 // need one of following 3, listed in order of precedence, used by poller*
