@@ -36,8 +36,8 @@
 //#define NN_HAVE_SOCKETPAIR 1
 
 // need one of following 3, listed in order of precedence, used by poller*
-//#define NN_USE_POLL 1
-#define NN_USE_EPOLL 1
+#define NN_USE_POLL 1
+//#define NN_USE_EPOLL 1
 //#define NN_USE_KQUEUE 1
 
 #define NN_DISABLE_GETADDRINFO_A 1
