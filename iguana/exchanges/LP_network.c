@@ -30,7 +30,7 @@ uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT;
 
 char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port); // ws is worse
+    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port); // ws is worse
     return(str);
 }
 
@@ -287,7 +287,21 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
         // add signature here
         msg = (void *)jprint(argjson,0);
         msglen = (int32_t)strlen((char *)msg) + 1;
+#ifdef FROM_JS
+        int32_t sentbytes,sock,peerind,maxind;
+        if ( (maxind= LP_numpeers()) > 0 )
+            peerind = (rand() % maxind) + 1;
+        else peerind = 1;
+        sock = LP_peerindsock(&peerind);
+        if ( sock >= 0 )
+        {
+            if ( (sentbytes= nn_send(sock,msg,msglen,0)) != msglen )
+                printf("LP_send sent %d instead of %d\n",sentbytes,msglen);
+            else printf("sent %d bytes of %d to sock.%d\n",sentbytes,msglen,sock);
+        } else printf("couldnt get valid sock\n");
+#else
         LP_queuesend(crc32,-1,base,rel,msg,msglen);
+#endif
     } else LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
     free(msg);
 }
@@ -332,7 +346,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                 //    printf("finished %u\n",crc32);
             } // else printf("no valid method in (%s)\n",msgstr);
             free_json(argjson);
-        } else printf("couldnt parse (%s)\n",msgstr);
+        } else printf("couldnt parse %p (%s)\n",msgstr,msgstr);
     }
     else
     {

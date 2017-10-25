@@ -1433,6 +1433,27 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
  }
  return(-1);
  }*/
+/*if ( (butxo= LP_utxopairfind(1,Q.txid,Q.vout,Q.txid2,Q.vout2)) == 0 )
+ {
+ value = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid,Q.vout);
+ value2 = LP_txvalue(Q.coinaddr,Q.srccoin,Q.txid2,Q.vout2);
+ if ( value == 0 || value2 == 0 )
+ {
+ printf("zero value %.8f or value2 %.8f\n",dstr(value),dstr(value2));
+ return(clonestr("{\"error\":\"spent txid or txid2 for bob?\"}"));
+ }
+ if ( (butxo= LP_utxoadd(1,Q.srccoin,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,LP_gui,0)) == 0 )
+ {
+ printf("cant find or create butxo\n");
+ return(clonestr("{\"error\":\"cant find or create butxo\"}"));
+ }
+ if ( value < Q.satoshis )
+ {
+ printf("butxo value %.8f less satoshis %.8f\n",dstr(value),dstr(Q.satoshis));
+ return(clonestr("{\"error\":\"butxo value less than satoshis\"}"));
+ }
+ }*/
+
 /*if ( addflag != 0 && LP_utxofind(1,Q.txid,Q.vout) == 0 )
  {
  LP_utxoadd(1,-1,Q.srccoin,Q.txid,Q.vout,Q.value,Q.txid2,Q.vout2,Q.value2,"",Q.srcaddr,Q.srchash,0.);
@@ -1831,6 +1852,36 @@ void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
     }
 }
 
+/*char *LP_spentcheck(cJSON *argjson)
+ {
+ bits256 txid,checktxid; int32_t vout,checkvout; struct LP_utxoinfo *utxo; int32_t iambob,retval = 0;
+ txid = jbits256(argjson,"txid");
+ vout = jint(argjson,"vout");
+ for (iambob=0; iambob<=1; iambob++)
+ {
+ if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 && utxo->T.spentflag == 0 )
+ {
+ if ( jobj(argjson,"check") == 0 )
+ checktxid = txid, checkvout = vout;
+ else
+ {
+ checktxid = jbits256(argjson,"checktxid");
+ checkvout = jint(argjson,"checkvout");
+ }
+ if ( LP_txvalue(0,utxo->coin,checktxid,checkvout) == 0 )
+ {
+ //if ( LP_mypeer != 0 && LP_mypeer->numutxos > 0 )
+ //    LP_mypeer->numutxos--;
+ utxo->T.spentflag = (uint32_t)time(NULL);
+ retval++;
+ printf("indeed txid was spent\n");
+ }
+ }
+ }
+ if ( retval > 0 )
+ return(clonestr("{\"result\":\"marked as spent\"}"));
+ return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
+ }*/
 void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo)
 {
     struct _LP_utxoinfo u; struct iguana_info *coin; char str[65]; uint32_t now = (uint32_t)time(NULL);
@@ -1928,7 +1979,43 @@ if ( aliceutxo->S.swap == 0 )
 LP_availableset(aliceutxo);
 return(jprint(bestitem,0));
 }
-
+if ( 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")) != 0 )
+{
+    if ( (array2= cJSON_Parse(retstr)) != 0 )
+    {
+        if ( (m= cJSON_GetArraySize(array2)) > 0 )
+        {
+            for (j=0; j<m; j++)
+            {
+                item = jitem(array2,j);
+                if ( (coinaddr= jfieldname(item)) != 0 )
+                {
+                    metric = j64bits(item,coinaddr);
+                    //printf("(%s) -> %.8f n.%d\n",coinaddr,dstr(metric>>16),(uint16_t)metric);
+                    if ( (ap= LP_addressfind(coin,coinaddr)) == 0 || _LP_unspents_metric(ap->total,ap->n) != metric )
+                    {
+                        if ( ap == 0 || ap->n < (metric & 0xffff) )
+                        {
+                            if ( (retstr2= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coinaddr)) != 0 )
+                            {
+                                if ( (array3= cJSON_Parse(retstr2)) != 0 )
+                                {
+                                    LP_unspents_array(coin,coinaddr,array3);
+                                    //printf("pulled.(%s)\n",retstr2);
+                                    free_json(array3);
+                                }
+                                free(retstr2);
+                            }
+                        } //else printf("wait for %s to pull %d vs %d\n",peer->ipaddr,ap!=0?ap->n:-1,(uint16_t)metric);
+                    }
+                }
+            }
+        }
+        free_json(array2);
+    }
+    //printf("processed.(%s)\n",retstr);
+    free(retstr);
+}
 /*if ( time(NULL) > coin->lastmonitor+60 )
  {
  //portable_mutex_lock(&coin->addrmutex);

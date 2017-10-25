@@ -104,6 +104,9 @@ goal(coin=*, val=<autocalc>)\n\
 myprice(base, rel)\n\
 enable(coin)\n\
 disable(coin)\n\
+notarizations(coin)\n\
+parselog()\n\
+statsdisp()\n\
 getrawtransaction(coin, txid)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
@@ -214,6 +217,10 @@ stop()\n\
         {
             return(LP_portfolio());
         }
+        else if ( strcmp(method,"parselog") == 0 )
+            return(LP_statslog_parse());
+        else if ( strcmp(method,"statsdisp") == 0 )
+            return(LP_statslog_disp(0));
         else if ( strcmp(method,"secretaddresses") == 0 )
         {
             uint8_t taddr,pubtype;
@@ -443,13 +450,13 @@ stop()\n\
     }
     // received response
     if ( strcmp(method,"postprice") == 0 )
-        retstr = LP_postprice_recv(argjson);
+        return(LP_postprice_recv(argjson));
     else if ( strcmp(method,"postutxos") == 0 )
-        retstr = LP_postutxos_recv(argjson);
+        return(LP_postutxos_recv(argjson));
     else if ( strcmp(method,"uitem") == 0 )
-        retstr = LP_uitem_recv(argjson);
+        return(LP_uitem_recv(argjson));
     else if ( strcmp(method,"notify") == 0 )
-        retstr = LP_notify_recv(argjson);
+        return(LP_notify_recv(argjson));
     // end received response
     
     // public access, even from http
@@ -508,6 +515,7 @@ stop()\n\
                     LP_listunspent_issue(coin,coinaddr,1);
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                     {
+                        printf("network invoked\n");
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                         //LP_smartutxos_push(ptr);
                     }

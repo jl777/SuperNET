@@ -19,13 +19,17 @@
 //  Copyright © 2017 SuperNET. All rights reserved.
 //
 
+void PNACL_message(char *arg,...)
+{
+    
+}
 #define FROM_MARKETMAKER
 #include <stdio.h>
 #include <stdint.h>
 #ifndef NATIVE_WINDOWS
-	#include "OS_portable.h"
+#include "OS_portable.h"
 #else
-	#include "../../crypto777/OS_portable.h"
+#include "../../crypto777/OS_portable.h"
 #endif // !_WIN_32
 
 
@@ -35,7 +39,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 
 //defined(__APPLE__) ||
-#if defined(WIN32) || defined(USE_STATIC_NANOMSG)
+#ifdef FROM_JS // defined(WIN32) || defined(USE_STATIC_NANOMSG)
 #include "../../crypto777/nanosrc/nn.h"
 #include "../../crypto777/nanosrc/bus.h"
 #include "../../crypto777/nanosrc/pubsub.h"
@@ -878,6 +882,13 @@ int main(int argc, const char * argv[])
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+#ifdef FROM_JS
+    argc = 2;
+    retjson = cJSON_Parse("{\"client\":1,\"passphrase\":\"test\"}");
+    printf("calling LP_main(%s)\n",jprint(retjson,0));
+    LP_main(retjson);
+    emscripten_set_main_loop(LP_fromjs_iter,1,0);
+#else
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
@@ -949,5 +960,6 @@ int main(int argc, const char * argv[])
         }
         free_json(retjson);
     }
+#endif
     return 0;
 }

@@ -290,7 +290,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     {
         if ( (retjson= electrum_transaction(symbol,coin->electrum,&retjson,txid)) != 0 )
             return(retjson);
-        else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,buf);
+        else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,bits256_str(str,txid));
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
     }
 }
@@ -345,7 +345,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         {
             if ( tx->outpoints[vout].spendheight > 0 )
                 return(0);
-            return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
+            //return(LP_gettxout_json(txid,vout,tx->height,tx->outpoints[vout].coinaddr,tx->outpoints[vout].value));
         }
         if ( coinaddr[0] == 0 )
         {
@@ -362,7 +362,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
             {
                 if ( up->spendheight > 0 )
                     return(0);
-                return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
+                //return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
             }
             if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr,1)) != 0 )
             {

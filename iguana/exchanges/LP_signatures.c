@@ -43,6 +43,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 {
     double price; cJSON *retjson = cJSON_CreateObject();
     jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
+    jadd64bits(retjson,"aliceid",qp->aliceid);
     jaddstr(retjson,"base",qp->srccoin);
     jaddstr(retjson,"rel",qp->destcoin);
     if ( qp->coinaddr[0] != 0 )
@@ -92,16 +93,22 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
             jaddnum(retjson,"price",price);
         }
     }
+    if ( qp->R.requestid != 0 )
+        jaddnum(retjson,"requestid",qp->R.requestid);
+    if ( qp->R.quoteid != 0 )
+        jaddnum(retjson,"quoteid",qp->R.quoteid);
     return(retjson);
 }
 
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 {
+    uint32_t rid,qid;
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
     safecopy(qp->destaddr,jstr(argjson,"destaddr"),sizeof(qp->destaddr));
+    qp->aliceid = j64bits(argjson,"aliceid");
     qp->timestamp = juint(argjson,"timestamp");
     qp->quotetime = juint(argjson,"quotetime");
     qp->txid = jbits256(argjson,"txid");
@@ -118,6 +125,20 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->destsatoshis = j64bits(argjson,"destsatoshis");
     qp->txfee = j64bits(argjson,"txfee");
     qp->desttxfee = j64bits(argjson,"desttxfee");
+    qp->R.requestid = juint(argjson,"requestid");
+    qp->R.quoteid = juint(argjson,"quoteid");
+    if ( qp->R.requestid == 0 )
+    {
+        rid= basilisk_requestid(&qp->R);
+        //printf("requestid.%u -> %u\n",qp->R.requestid,rid);
+        qp->R.requestid = rid;
+    }
+    if ( qp->R.quoteid == 0 )
+    {
+        qid= basilisk_quoteid(&qp->R);
+        //printf("quoteid.%u -> %u\n",qp->R.quoteid,qid);
+        qp->R.quoteid = qid;
+    }
     return(0);
 }
 
@@ -263,7 +284,7 @@ int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
         {
             static uint32_t counter;
             if ( counter++ < 100 )
-            printf("LP_utxos_sigcheck failure, probably from %s with older version\n",bits256_str(str,pubkey));
+                printf("LP_utxos_sigcheck failure, probably from %s with older version\n",bits256_str(str,pubkey));
             retval = -1;
         } else retval = 0;
     }
@@ -329,7 +350,15 @@ struct LP_utxos_qitem { struct queueitem DL; cJSON *argjson; };
 
 char *LP_postutxos_recv(cJSON *argjson)
 {
-    struct LP_utxos_qitem *uitem; bits256 utxoshash; cJSON *obj;
+    struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash; cJSON *obj;
+    if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 )
+    {
+        if ( strcmp(coinaddr,coin->smartaddr) == 0 )
+        {
+            //printf("ignore my utxo from external source %s %s\n",symbol,coinaddr);
+            return(clonestr("{\"result\":\"success\"}"));
+        }
+    }
     if ( (obj= jobj(argjson,"utxos")) != 0 )
     {
         utxoshash = LP_utxoshash_calc(obj);
@@ -583,16 +612,18 @@ void LP_smartutxos_push(struct iguana_info *coin)
 
 char *LP_uitem_recv(cJSON *argjson)
 {
-    bits256 txid; int32_t vout,height; uint64_t value; char *coinaddr,*symbol;
+    bits256 txid; int32_t vout,height; uint64_t value; struct iguana_info *coin; char *coinaddr,*symbol;
     txid = jbits256(argjson,"txid");
     vout = jint(argjson,"vout");
     height = jint(argjson,"ht");
     value = j64bits(argjson,"value");
     coinaddr = jstr(argjson,"coinaddr");
-    if ( (symbol= jstr(argjson,"coin")) != 0 && coinaddr != 0 )
+    if ( (symbol= jstr(argjson,"coin")) != 0 && coinaddr != 0 && (coin= LP_coinfind(symbol)) != 0 )
     {
-        //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",coin,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
-        LP_address_utxoadd(LP_coinfind(symbol),coinaddr,txid,vout,value,height,-1);
+        //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",symbol,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
+        if ( strcmp(coin->smartaddr,coinaddr) != 0 )
+            LP_address_utxoadd("LP_uitem,recv",coin,coinaddr,txid,vout,value,height,-1);
+        //else printf("ignore external uitem %s %s\n",symbol,coin->smartaddr);
     }
     return(clonestr("{\"result\":\"success\"}"));
 }
