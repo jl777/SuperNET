@@ -1031,6 +1031,7 @@ void LP_fromjs_iter()
         ctx = bitcoin_ctx();
     if ( 0 && (LP_counter % 100) == 0 )
         printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
+    LP_nanomsg_recvs(ctx);
     LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     LP_counter++;
 }
