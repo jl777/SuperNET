@@ -1041,7 +1041,7 @@ void LP_fromjs_iter()
     }
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( (LP_counter % 100) == 0 )
+    if ( 0 && (LP_counter % 100) == 0 )
         printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
     LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     LP_counter++;
@@ -1054,10 +1054,10 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
         return(clonestr("{\"error\":\"only http allowed\"}"));
     sprintf(fname,"bitcoind_RPC/req.%u",counter);
     counter++;
-    printf("issue.(%s)\n",url);
+    //printf("issue.(%s)\n",url);
     emscripten_wget(url,fname);
     retstr = OS_filestr(&fsize,fname);
-    printf("bitcoind_RPC(%s) -> fname.(%s) %s\n",url,fname,retstr);
+    //printf("bitcoind_RPC(%s) -> fname.(%s) %s\n",url,fname,retstr);
     return(retstr);
 }
 
