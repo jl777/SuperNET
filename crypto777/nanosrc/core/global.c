@@ -1245,11 +1245,11 @@ static int nn_global_create_ep (int s, const char *addr, int bind)
     protosz = delim - addr;
     addr += protosz + 3;
 #ifdef NN_USE_MYMSG
-    if ( strncmp("inproc",proto,strlen("inproc")) != 0 && strncmp("ipc",proto,strlen("ipc")) != 0 && strncmp("tcp",proto,strlen("tcp")) != 0 )
+    if ( strncmp("inproc",proto,strlen("inproc")) != 0 && strncmp("ipc",proto,strlen("ipc")) != 0 && strncmp("tcp",proto,strlen("tcp") && strncmp("ws",proto,strlen("ws")) != 0 )
     {
-        PNACL_msg("only ipc, inproc and tcp transport is supported\n");
-        printf("only ipc, inproc and tcp transport is supported\n");
-        fprintf(stderr,"only ipc, inproc and tcp transport is supported\n");
+        PNACL_msg("only ipc, inproc, ws and tcp transport is supported\n");
+        printf("only ipc, inproc, ws and tcp transport is supported\n");
+        fprintf(stderr,"only ipc, inproc, ws and tcp transport is supported\n");
         exit(-1);
         return -EPROTONOSUPPORT;
     }
