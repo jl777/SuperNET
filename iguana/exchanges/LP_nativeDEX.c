@@ -1016,6 +1016,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 
 #ifdef FROM_JS
 
+void emscripten_usleep(int32_t x)
+{
+}
 
 void LP_fromjs_iter()
 {
@@ -1035,7 +1038,7 @@ void LP_fromjs_iter()
 
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
-    static uint32_t counter; char fname[512],retstr; long fsize;
+    static uint32_t counter; char fname[512],*retstr; long fsize;
     sprintf(fname,"bitcoind_RPC/req.%u",counter);
     counter++;
     emscripten_wget(url,fname);

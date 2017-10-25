@@ -24,7 +24,8 @@
 #ifdef FROM_JS
 #include <emscripten.h>
 #define sleep(x) emscripten_sleep(x)
-#define usleep
+void emscripten_usleep(int32_t x);
+#define usleep(x) emscripten_usleep(x)
 
 #endif
 //#define LP_STRICTPEERS
