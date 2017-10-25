@@ -883,7 +883,7 @@ int main(int argc, const char * argv[])
     retjson = cJSON_Parse("{\"client\":1,\"passphrase\":\"test\"}");
     printf("calling LP_main(%s)\n",jprint(retjson,0));
     LP_main(retjson);
-    emscripten_set_main_loop(LP_fromjs_iter,0,0);
+    emscripten_set_main_loop(LP_fromjs_iter,5,0);
 #else
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
