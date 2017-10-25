@@ -286,7 +286,7 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
 
     /*  Allow re-using the address. */
     opt = 1;
-    printf("call setsockopt in nn_usock_bind\n");
+    printf("call setsockopt %s SOL_SOCKET.%d SO_REUSEADDR.%d in nn_usock_bind\n",self->s,SOL_SOCKET,SO_REUSEADDR);
     rc = setsockopt (self->s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt));
     printf("called setsockopt in nn_usock_bind returns %d\n",rc);
     errno_assert (rc == 0);
