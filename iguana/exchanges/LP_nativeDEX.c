@@ -1015,6 +1015,12 @@ void LP_fromjs_iter()
     printf("LP_fromjs_iter got called LP_counter.%d\n",LP_counter);
     LP_counter++;
 }
+
+char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params)
+{
+    return(clonestr("{\"error\":\"curl is disabled\"}"));
+}
+
 #endif
 
 
