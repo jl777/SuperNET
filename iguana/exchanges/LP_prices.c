@@ -344,6 +344,9 @@ void LP_peer_pricesquery(struct LP_peerinfo *peer)
     peer->needping = (uint32_t)time(NULL);
     if ( (retstr= issue_LP_getprices(peer->ipaddr,peer->port)) != 0 )
     {
+#ifdef FROM_JS
+        printf("%s\n",retstr);
+#endif
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(array) && (n= cJSON_GetArraySize(array)) > 0 )

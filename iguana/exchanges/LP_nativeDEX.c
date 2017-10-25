@@ -612,7 +612,9 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 nonz++;
+#ifndef FROM_JS
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+#endif
                 peer->diduquery = 0;
                 LP_peer_pricesquery(peer);
                 LP_utxos_sync(peer);
