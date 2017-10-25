@@ -652,6 +652,7 @@ int32_t nn_send(int32_t s,const void *buf,size_t len,int32_t flags)
     hdr.msg_iovlen = 1;
     hdr.msg_control = NULL;
     hdr.msg_controllen = 0;
+    printf("nn_send calling nn_sendmsg\n");
     return nn_sendmsg(s,&hdr,flags);
 }
 
