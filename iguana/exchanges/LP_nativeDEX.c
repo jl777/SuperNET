@@ -1009,9 +1009,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 
 #ifdef FROM_JS
 
-em_callback_func LP_fromjs_iter(void *arg)
+uint32_t LP_counter;
+void LP_fromjs_iter()
 {
-    printf("LP_fromjs_iter got arg.%p\n",arg);
+    printf("LP_fromjs_iter got called LP_counter.%d\n",LP_counter);
+    LP_counter++;
 }
 #endif
 
