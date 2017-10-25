@@ -30,7 +30,7 @@ uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT;
 
 char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port); // ws is worse
+    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port); // ws is worse
     return(str);
 }
 
