@@ -83,6 +83,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             else peer->sessionid = sessionid;
             peer->pushsock = peer->subsock = pushsock = subsock = -1;
             strcpy(peer->ipaddr,ipaddr);
+#ifndef FROM_JS
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
                 nanomsg_transportname(0,pushaddr,peer->ipaddr,pushport);
@@ -114,6 +115,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     printf("error connecting to push.(%s)\n",pushaddr);
                 }
             } else printf("%s pushport.%u subport.%u pushsock.%d\n",ipaddr,pushport,subport,pushsock);
+#endif
             //peer->profitmargin = profitmargin;
             peer->ipbits = ipbits;
             peer->port = port;

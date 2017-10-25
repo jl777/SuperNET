@@ -481,7 +481,6 @@ void LP_coinsloop(void *_coins)
     struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
     while ( 1 )
     {
-        printf("coinsloop\n");
         nonz = 0;
         HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
         {
@@ -715,7 +714,7 @@ void LP_pubkeysloop(void *ctx)
     while ( 1 )
     {
         LP_counter += 100;
-        printf("LP_pubkeysloop %d\n",LP_counter);
+        //printf("LP_pubkeysloop %d\n",LP_counter);
         LP_notify_pubkeys(ctx,LP_mypubsock);
         sleep(60);
     }
@@ -727,7 +726,7 @@ void LP_privkeysloop(void *ctx)
     while ( 1 )
     {
         LP_counter += 1000;
-        printf("LP_privkeysloop %u\n",LP_counter);
+        //printf("LP_privkeysloop %u\n",LP_counter);
         LP_privkey_updates(ctx,LP_mypubsock,0);
         sleep(60);
     }
@@ -740,7 +739,7 @@ void LP_swapsloop(void *ignore)
     while ( 1 )
     {
         LP_counter += 10000;
-        printf("LP_swapsloop %u\n",LP_counter);
+        //printf("LP_swapsloop %u\n",LP_counter);
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
         sleep(600);
@@ -994,7 +993,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
 #ifndef FROM_JS
     int32_t nonz;
-    printf("start mainloop\n");
     while ( 1 )
     {
         nonz = 0;
