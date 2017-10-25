@@ -50,7 +50,7 @@ char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.25
 
 //uint32_t LP_deadman_switch;
 uint16_t LP_fixed_pairport,LP_publicport;
-uint32_t LP_lastnonce;
+uint32_t LP_lastnonce,LP_counter;
 int32_t LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
@@ -481,6 +481,7 @@ void LP_coinsloop(void *_coins)
     struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
     while ( 1 )
     {
+        printf("coinsloop\n");
         nonz = 0;
         HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
         {
@@ -713,7 +714,8 @@ void LP_pubkeysloop(void *ctx)
     sleep(10);
     while ( 1 )
     {
-        printf("LP_pubkeysloop\n");
+        LP_counter += 100;
+        printf("LP_pubkeysloop %d\n",LP_counter);
         LP_notify_pubkeys(ctx,LP_mypubsock);
         sleep(60);
     }
@@ -724,7 +726,8 @@ void LP_privkeysloop(void *ctx)
     sleep(20);
     while ( 1 )
     {
-        printf("LP_privkeysloop\n");
+        LP_counter += 1000;
+        printf("LP_privkeysloop %u\n",LP_counter);
         LP_privkey_updates(ctx,LP_mypubsock,0);
         sleep(60);
     }
@@ -736,7 +739,8 @@ void LP_swapsloop(void *ignore)
     sleep(50);
     while ( 1 )
     {
-        printf("LP_swapsloop\n");
+        LP_counter += 10000;
+        printf("LP_swapsloop %u\n",LP_counter);
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
         sleep(600);
@@ -1012,7 +1016,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 
 #ifdef FROM_JS
 
-uint32_t LP_counter;
 
 void LP_fromjs_iter()
 {
@@ -1024,7 +1027,8 @@ void LP_fromjs_iter()
     }
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
+    if ( (LP_counter % 100) == 0 )
+        printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
     LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     LP_counter++;
 }
