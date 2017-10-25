@@ -1063,7 +1063,6 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
 
 void PNACL_message(char *fmt,...)
 {
-    printf(fmt);
 }
 
 #endif
