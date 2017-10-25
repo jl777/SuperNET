@@ -26,7 +26,7 @@
 #include <signal.h>
 #include <stdint.h>
 
-static void *nn_thread_main_routine(void *arg)
+void *nn_thread_main_routine(void *arg)
 {
     struct nn_thread *self;
     self = (struct nn_thread *)arg;
