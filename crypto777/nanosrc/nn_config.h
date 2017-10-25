@@ -58,10 +58,10 @@
  performance optimal make sure that this value is larger than network MTU. */
 #define NN_USOCK_BATCH_SIZE (2048)
 //#define NN_USOCK_BATCH_SIZE (_NN_USOCK_BATCH_SIZE - 5 - 256 - 16) // adjust for veclen/clen + sizeof(ctrl)
-#define NN_USE_MYMSG 1
+#define NN_USE_MYMSG 0
 
 #if defined __PNACL || defined __APPLE__
-#define NN_USE_MYMSG 1
+#define NN_USE_MYMSG 0
 #endif
 
 #define nn_errstr() nn_strerror(nn_errno())

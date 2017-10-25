@@ -548,6 +548,7 @@ int nn_sock_send(struct nn_sock *self, struct nn_msg *msg, int flags)
 
         /*  Try to send the message in a non-blocking way. */
         rc = self->sockbase->vfptr->send (self->sockbase, msg);
+printf("sockbase send rc.%d\n",rc);
         if (nn_fast (rc == 0)) {
             nn_ctx_leave (&self->ctx);
             return 0;
@@ -560,8 +561,7 @@ int nn_sock_send(struct nn_sock *self, struct nn_msg *msg, int flags)
             return rc;
         }
 
-        /*  If the message cannot be sent at the moment and the send call
-            is non-blocking, return immediately. */
+        //  If the message cannot be sent at the moment and the send call is non-blocking, return immediately.
         if (nn_fast (flags & NN_DONTWAIT)) {
             nn_ctx_leave (&self->ctx);
             return -EAGAIN;

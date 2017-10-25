@@ -370,7 +370,7 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_cmsghdr *cmsg;
     struct nn_msghdr msghdr;
     uint8_t rand_mask [NN_SWS_FRAME_SIZE_MASK];
-
+printf("nn_sws_send\n");
     sws = nn_cont (self, struct nn_sws, pipebase);
 
     nn_assert_state (sws, NN_SWS_STATE_ACTIVE);

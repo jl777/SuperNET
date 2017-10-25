@@ -668,7 +668,7 @@ int32_t nn_recv(int32_t s,void *buf,size_t len,int32_t flags)
     return nn_recvmsg(s,&hdr,flags);
 }
 
-#ifdef NN_USE_MYMSG
+#if NN_USE_MYMSG
 
 int32_t nn_sendmsg(int32_t s,const struct nn_msghdr *msghdr,int32_t flags)
 {
@@ -1253,7 +1253,7 @@ static int nn_global_create_ep (int s, const char *addr, int bind)
         return -EINVAL;
     protosz = delim - addr;
     addr += protosz + 3;
-#ifdef NN_USE_MYMSG
+#if NN_USE_MYMSG
     if ( strncmp("inproc",proto,strlen("inproc")) != 0 && strncmp("ipc",proto,strlen("ipc")) != 0 && strncmp("tcp",proto,strlen("tcp")) && strncmp("ws",proto,strlen("ws")) != 0 )
     {
         PNACL_msg("only ipc, inproc, ws and tcp transport is supported\n");
