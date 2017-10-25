@@ -884,7 +884,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
     int rc;
 
     sws = nn_cont (self, struct nn_sws, fsm);
-
+    printf("sws src.%d type.%d state.%d\n",src,type,sws->state);
     switch (sws->state) {
 
 /******************************************************************************/

@@ -1276,7 +1276,10 @@ static int nn_global_create_ep (int s, const char *addr, int bind)
         tp = NULL;
     }
     if ( !tp ) // The protocol specified doesn't match any known protocol
+    {
+        printf("unknown protocol\n");
         return -EPROTONOSUPPORT;
+    }
     rc = nn_sock_add_ep (SELF.socks [s], tp, bind, addr); // Ask the socket to create the endpoint
     return rc;
 }
