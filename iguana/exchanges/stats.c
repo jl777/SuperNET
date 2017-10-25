@@ -328,11 +328,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
     j = i = 0;
     filetype[0] = 0;
     //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
-#ifdef __PNACL
-    snprintf(furl,sizeof(furl),"%s/%s",GLOBAL_DBDIR,url+1);
-#else
     snprintf(furl,sizeof(furl),"%s",url+1);
-#endif
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
         *jsonflagp = 1;
