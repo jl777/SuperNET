@@ -914,7 +914,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
     if ( coinsjson == 0 )
     {
-        printf("no coins object or coins file, must abort\n");
+        printf("no coins object or coins.json file, must abort\n");
         exit(-1);
     }
     LP_initcoins(ctx,pubsock,coinsjson);
