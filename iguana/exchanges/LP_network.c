@@ -157,9 +157,6 @@ void queue_loop(void *ignore)
                 {
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-#ifdef FROM_JS
-                    else printf("sent %d bytes of %d to sock.%d\n",sentbytes,ptr->msglen,ptr->sock);
-#endif
                     ptr->sock = -1;
                     if ( ptr->peerind > 0 )
                         ptr->starttime = (uint32_t)time(NULL);
@@ -290,7 +287,21 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
         // add signature here
         msg = (void *)jprint(argjson,0);
         msglen = (int32_t)strlen((char *)msg) + 1;
+#ifdef FROM_JS
+        int32_t sentbytes,sock,peerind,maxind;
+        if ( (maxind= LP_numpeers()) > 0 )
+            peerind = (rand() % maxind) + 1;
+        else peerind = 1;
+        sock = LP_peerindsock(&peerind);
+        if ( sock >= 0 )
+        {
+            if ( (sentbytes= nn_send(sock,msg,msglen,0)) != msglen )
+                printf("%d LP_send sent %d instead of %d\n",n,sentbytes,msglen);
+            else printf("sent %d bytes of %d to sock.%d\n",sentbytes,msglen,sock);
+        } else printf("couldnt get valid sock\n");
+#else
         LP_queuesend(crc32,-1,base,rel,msg,msglen);
+#endif
     } else LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
     free(msg);
 }
@@ -335,7 +346,7 @@ void LP_broadcast_message(int32_t pubsock,char *base,char *rel,bits256 destpub25
                 //    printf("finished %u\n",crc32);
             } // else printf("no valid method in (%s)\n",msgstr);
             free_json(argjson);
-        } else printf("couldnt parse (%s)\n",msgstr);
+        } else printf("couldnt parse %p (%s)\n",msgstr,msgstr);
     }
     else
     {
