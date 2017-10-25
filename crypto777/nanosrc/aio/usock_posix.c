@@ -289,7 +289,8 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     PNACL_msg("call setsockopt %d SOL_SOCKET.%d SO_REUSEADDR.%d in nn_usock_bind\n",self->s,SOL_SOCKET,SO_REUSEADDR);
     rc = setsockopt (self->s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt));
     PNACL_msg("called setsockopt in nn_usock_bind returns %d\n",rc);
-    errno_assert (rc == 0);
+    // ignore SO_REUSEADDR failures
+    //errno_assert (rc == 0);
 
     rc = bind (self->s, addr, (socklen_t) addrlen);
     PNACL_msg("usock.%d -> bind rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
