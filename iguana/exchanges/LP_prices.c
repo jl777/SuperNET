@@ -685,7 +685,7 @@ void LP_pubkeys_query()
             reqjson = cJSON_CreateObject();
             jaddstr(reqjson,"method","wantnotify");
             jaddbits256(reqjson,"pub",pubp->pubkey);
-            printf("LP_pubkeys_query %s\n",jprint(reqjson,0));
+            //printf("LP_pubkeys_query %s\n",jprint(reqjson,0));
             LP_reserved_msg("","",zero,jprint(reqjson,1));
         }
     }
