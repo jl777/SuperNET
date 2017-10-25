@@ -802,8 +802,8 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
     } else LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
     portable_mutex_unlock(&LP_reservedmutex);
 #else
-    LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
     printf("reserved_msg.(%s)\n",msg);
+    LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
 #endif
     if ( num_Reserved_msgs > max_Reserved_msgs )
     {
