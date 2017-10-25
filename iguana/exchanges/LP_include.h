@@ -23,7 +23,7 @@
 
 #ifdef FROM_JS
 #include <emscripten.h>
-#define sleep(x) emscripten_sleep(x)
+#define sleep(x) emscripten_sleep((x) * 1000)
 void emscripten_usleep(int32_t x);
 #define usleep(x) emscripten_usleep(x)
 
