@@ -1035,10 +1035,13 @@ void LP_fromjs_iter()
 
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
-    //char fullurl[512];
-    //sprintf(fullurl,"%s@%s",userpass,url);
-    printf("bitcoind_RPC(%s)\n",url);
-    return(clonestr("{\"error\":\"curl is disabled\"}"));
+    static uint32_t counter; char fname[512],retstr; long fsize;
+    sprintf(fname,"bitcoind_RPC/req.%u",counter);
+    counter++;
+    emscripten_wget(url,fname);
+    retstr = OS_filestr(&fsize,fname);
+    printf("bitcoind_RPC(%s) -> fname.(%s) %s\n",url,fname,retstr);
+    return(retstr);
 }
 
 #endif
