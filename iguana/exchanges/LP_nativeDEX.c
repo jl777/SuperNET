@@ -789,11 +789,6 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
     return(n);
 }
 
-void LP_fromjs_iter(void *arg)
-{
-    printf("LP_fromjs_iter got arg.%p\n",arg);
-}
-
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
     char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
@@ -1012,5 +1007,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 #endif
 }
 
+#ifdef FROM_JS
+
+em_callback_func LP_fromjs_iter(void *arg)
+{
+    printf("LP_fromjs_iter got arg.%p\n",arg);
+}
+#endif
 
 
