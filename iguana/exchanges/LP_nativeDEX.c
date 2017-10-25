@@ -779,9 +779,6 @@ void LP_reserved_msgs(void *ignore)
             {
                 portable_mutex_lock(&LP_reservedmutex);
                 num_Reserved_msgs--;
-#ifdef FROM_JS
-                printf("%d BROADCASTING RESERVED.(%s)\n",num_Reserved_msgs,Reserved_msgs[num_Reserved_msgs]);
-#endif
                 LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
                 Reserved_msgs[num_Reserved_msgs] = 0;
                 portable_mutex_unlock(&LP_reservedmutex);
@@ -806,6 +803,7 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
     portable_mutex_unlock(&LP_reservedmutex);
 #else
     LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
+    printf("reserved_msg.(%s)\n",msg);
 #endif
     if ( num_Reserved_msgs > max_Reserved_msgs )
     {
