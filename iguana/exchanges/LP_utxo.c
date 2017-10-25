@@ -389,7 +389,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
         }
         if ( SPV < 0 )
         {
-            printf("MERKLE DIDNT VERIFY.(%s)\n",jprint(merkobj,0));
+            printf("MERKLE DIDNT VERIFY.%s %s ht.%d (%s)\n",coin->symbol,bits256_str(str,txid),height,jprint(merkobj,0));
             if ( jobj(merkobj,"error") != 0 )
                 SPV = 0; // try again later
         }

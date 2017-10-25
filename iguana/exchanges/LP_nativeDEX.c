@@ -50,7 +50,7 @@ char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.25
 
 //uint32_t LP_deadman_switch;
 uint16_t LP_fixed_pairport,LP_publicport;
-uint32_t LP_lastnonce;
+uint32_t LP_lastnonce,LP_counter;
 int32_t LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
@@ -713,6 +713,8 @@ void LP_pubkeysloop(void *ctx)
     sleep(10);
     while ( 1 )
     {
+        LP_counter += 100;
+        //printf("LP_pubkeysloop %d\n",LP_counter);
         LP_notify_pubkeys(ctx,LP_mypubsock);
         sleep(60);
     }
@@ -723,6 +725,8 @@ void LP_privkeysloop(void *ctx)
     sleep(20);
     while ( 1 )
     {
+        LP_counter += 1000;
+        //printf("LP_privkeysloop %u\n",LP_counter);
         LP_privkey_updates(ctx,LP_mypubsock,0);
         sleep(60);
     }
@@ -734,6 +738,8 @@ void LP_swapsloop(void *ignore)
     sleep(50);
     while ( 1 )
     {
+        LP_counter += 10000;
+        //printf("LP_swapsloop %u\n",LP_counter);
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
         sleep(600);
@@ -851,7 +857,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_butxomutex);
     portable_mutex_init(&LP_reservedmutex);
     portable_mutex_init(&LP_nanorecvsmutex);
+    myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
+#ifndef FROM_JS
     if ( system("curl -s4 checkip.amazonaws.com > myipaddr") == 0 )
     {
         char ipfname[64];
@@ -865,7 +873,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
 #else
-    myipaddr = clonestr("127.0.0.1");
+    IAMLP = 0;
+#endif
 #endif
     if ( IAMLP != 0 )
     {
@@ -900,7 +909,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     printf("canbind.%d my command address is (%s) pullsock.%d pullport.%u\n",LP_canbind,pushaddr,LP_mypullsock,mypullport);
     if ( (coinsjson= jobj(argjson,"coins")) == 0 )
     {
-        if ( (coins_str= OS_filestr(&filesize,"coins.json")) != 0 )
+        if ( (coins_str= OS_filestr(&filesize,"coins.json")) != 0 || (coins_str= OS_filestr(&filesize,"exchanges/coins.json")) != 0 )
         {
             unstringify(coins_str);
             printf("UNSTRINGIFIED.(%s)\n",coins_str);
@@ -911,12 +920,13 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
     if ( coinsjson == 0 )
     {
-        printf("no coins object or coins file, must abort\n");
+        printf("no coins object or coins.json file, must abort\n");
         exit(-1);
     }
     LP_initcoins(ctx,pubsock,coinsjson);
     G.waiting = 1;
     LP_passphrase_init(passphrase,jstr(argjson,"gui"));
+#ifndef FROM_JS
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_psockloop for (%s)\n",myipaddr);
@@ -982,10 +992,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
     }
-  //if ( (retstr= basilisk_swapentry(0,0)) != 0 )
-    //    free(retstr);
     int32_t nonz;
-    printf("start mainloop\n");
     while ( 1 )
     {
         nonz = 0;
@@ -1002,7 +1009,46 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         else if ( IAMLP == 0 )
             usleep(1000);
     }
+#endif
 }
 
+#ifdef FROM_JS
+
+void emscripten_usleep(int32_t x)
+{
+}
+
+void LP_fromjs_iter()
+{
+    static void *ctx;
+    if ( G.initializing != 0 )
+    {
+        printf("LP_fromjs_iter during G.initializing, skip\n");
+        return;
+    }
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    if ( 0 && (LP_counter % 100) == 0 )
+        printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
+    LP_nanomsg_recvs(ctx);
+    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
+    LP_counter++;
+}
+
+char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
+{
+    static uint32_t counter; char fname[512],*retstr; long fsize;
+    if ( strncmp("http://",url,strlen("http://")) != 0 )
+        return(clonestr("{\"error\":\"only http allowed\"}"));
+    sprintf(fname,"bitcoind_RPC/req.%u",counter);
+    counter++;
+    //printf("issue.(%s)\n",url);
+    emscripten_wget(url,fname);
+    retstr = OS_filestr(&fsize,fname);
+    //printf("bitcoind_RPC(%s) -> fname.(%s) %s\n",url,fname,retstr);
+    return(retstr);
+}
+
+#endif
 
 

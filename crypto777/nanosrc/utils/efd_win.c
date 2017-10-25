@@ -84,8 +84,9 @@ int nn_efd_init (struct nn_efd *self)
     reuseaddr = 1;
     rc = setsockopt (listener, SOL_SOCKET, SO_REUSEADDR,
         (char*) &reuseaddr, sizeof (reuseaddr));
-    if (nn_slow (rc == SOCKET_ERROR))
-        goto wsafail;
+    // ignore SO_REUSEADDR failures
+    // if (nn_slow (rc == SOCKET_ERROR))
+    //    goto wsafail;
 
     /*  Bind the listening socket to the local port. */
     memset (&addr, 0, sizeof (addr));

@@ -57,7 +57,7 @@ char *LP_peers()
 struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t numpeers,int32_t numutxos,uint32_t sessionid)
 {
     uint32_t ipbits; int32_t pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
-    printf("addpeer (%s:%u)\n",ipaddr,port);
+    printf("addpeer (%s:%u) pushport.%u subport.%u\n",ipaddr,port,pushport,subport);
 #ifdef LP_STRICTPEERS
     if ( strncmp("5.9.253",ipaddr,strlen("5.9.253")) != 0 )
         return(0);
@@ -83,6 +83,10 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             else peer->sessionid = sessionid;
             peer->pushsock = peer->subsock = pushsock = subsock = -1;
             strcpy(peer->ipaddr,ipaddr);
+            //peer->profitmargin = profitmargin;
+            peer->ipbits = ipbits;
+            peer->port = port;
+            peer->ip_port = ((uint64_t)port << 32) | ipbits;
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
                 nanomsg_transportname(0,pushaddr,peer->ipaddr,pushport);
@@ -114,36 +118,36 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     printf("error connecting to push.(%s)\n",pushaddr);
                 }
             } else printf("%s pushport.%u subport.%u pushsock.%d\n",ipaddr,pushport,subport,pushsock);
-            //peer->profitmargin = profitmargin;
-            peer->ipbits = ipbits;
-            peer->port = port;
-            peer->ip_port = ((uint64_t)port << 32) | ipbits;
-            portable_mutex_lock(&LP_peermutex);
-            HASH_ADD(hh,LP_peerinfos,ip_port,sizeof(peer->ip_port),peer);
-            if ( mypeer != 0 )
+            if ( peer->pushsock >= 0 && peer->subsock >= 0 )
             {
-                mypeer->numpeers++;
-                printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d other.(%d %d)\n",ipaddr,mypeer->numpeers,mypubsock,numpeers,numutxos);
-            } else peer->numpeers = 1; // will become mypeer
-            portable_mutex_unlock(&LP_peermutex);
-            if ( IAMLP != 0 && mypubsock >= 0 )
-            {
-                struct iguana_info *coin,*ctmp; bits256 zero; char busaddr[64];
-                memset(zero.bytes,0,sizeof(zero));
-                //LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
-                LP_reserved_msg("","",zero,jprint(LP_peerjson(peer),1));
-                if ( 0 )
+                printf("add peer %s\n",peer->ipaddr);
+                portable_mutex_lock(&LP_peermutex);
+                HASH_ADD(hh,LP_peerinfos,ip_port,sizeof(peer->ip_port),peer);
+                if ( mypeer != 0 )
                 {
-                    HASH_ITER(hh,LP_coins,coin,ctmp)
+                    mypeer->numpeers++;
+                    printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d other.(%d %d)\n",ipaddr,mypeer->numpeers,mypubsock,numpeers,numutxos);
+                } else peer->numpeers = 1; // will become mypeer
+                portable_mutex_unlock(&LP_peermutex);
+                if ( IAMLP != 0 && mypubsock >= 0 )
+                {
+                    struct iguana_info *coin,*ctmp; bits256 zero; char busaddr[64];
+                    memset(zero.bytes,0,sizeof(zero));
+                    //LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
+                    LP_reserved_msg("","",zero,jprint(LP_peerjson(peer),1));
+                    if ( 0 )
                     {
-                        if ( coin->bussock >= 0 )
+                        HASH_ITER(hh,LP_coins,coin,ctmp)
                         {
-                            nanomsg_transportname(0,busaddr,peer->ipaddr,coin->busport);
-                            nn_connect(coin->bussock,busaddr);
+                            if ( coin->bussock >= 0 )
+                            {
+                                nanomsg_transportname(0,busaddr,peer->ipaddr,coin->busport);
+                                nn_connect(coin->bussock,busaddr);
+                            }
                         }
                     }
                 }
-            }
+            } else printf("%s invalid pushsock.%d or subsock.%d\n",peer->ipaddr,peer->pushsock,peer->subsock);
         }
     } else printf("LP_addpeer: checkip.(%s) vs (%s)\n",checkip,ipaddr);
     return(peer);

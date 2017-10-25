@@ -917,7 +917,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     *txobjp = 0;
     if ( sizeof(utxos)/sizeof(*utxos) != max )
     {
-        printf("LP_createrawtransaction: internal error %ld != max.%d\n",sizeof(utxos)/sizeof(*utxos),max);
+        printf("LP_createrawtransaction: internal error %d != max.%d\n",(int32_t)(sizeof(utxos)/sizeof(*utxos)),max);
         return(0);
     }
     if ( coin == 0 || outputs == 0 || (numvouts= cJSON_GetArraySize(outputs)) <= 0 )

@@ -285,7 +285,6 @@ struct iguana_info *LP_coinsearch(char *symbol)
 struct iguana_info *LP_coinadd(struct iguana_info *cdata)
 {
     struct iguana_info *coin = calloc(1,sizeof(*coin));
-    //printf("%s: (%s) (%s)\n",symbol,cdata.serverport,cdata.userpass);
     *coin = *cdata;
     portable_mutex_init(&coin->txmutex);
     portable_mutex_init(&coin->addrmutex);
@@ -297,6 +296,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
 
 uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath)
 {
+    static void *ctx;
     char *name2;
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
@@ -312,10 +312,12 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     coin->wiftype = wiftype;
     coin->inactive = (uint32_t)time(NULL);
     coin->bussock = LP_coinbus(busport);
-    coin->ctx = bitcoin_ctx();
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    coin->ctx = ctx;
     if ( assetname != 0 && strcmp(name,assetname) == 0 )
     {
-        printf("%s is assetchain\n",symbol);
+        //printf("%s is assetchain\n",symbol);
         coin->isassetchain = 1;
     }
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
@@ -326,7 +328,9 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
         coin->noimportprivkey_flag = 1;
         printf("truncate importprivkey for %s\n",symbol);
     }
+#ifndef FROM_JS
     port = LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath,port);
+#endif
     sprintf(coin->serverport,"127.0.0.1:%u",port);
     return(port);
 }
@@ -434,7 +438,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
             }
         } else coin->inactive = 0;
     }
-    if ( coin != 0 && coin->inactive != 0 )
+    if ( 0 && coin != 0 && coin->inactive != 0 )
         printf("LPnode.%d %s inactive.%u %p vs %p\n",IAMLP,coin->symbol,coin->inactive,assetname,name);
     return(0);
 }

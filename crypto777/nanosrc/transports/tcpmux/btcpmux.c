@@ -44,12 +44,8 @@
 #include "../../utils/win.h"
 #else
 #include <unistd.h>
-#ifndef __PNACL
 #include <sys/uio.h>
 #include <sys/un.h>
-#else
-#include <glibc-compat/sys/un.h>
-#endif
 #include <arpa/inet.h>
 #endif
 

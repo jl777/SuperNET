@@ -26,9 +26,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef __PNACL
-#define printf PostMessage
-#endif
+//#ifdef __PNACL
+//#define printf PostMessage
+//#endif
 
 #include "../utils/attr.h"
 #include "../utils/err.h"
