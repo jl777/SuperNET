@@ -450,13 +450,13 @@ stop()\n\
     }
     // received response
     if ( strcmp(method,"postprice") == 0 )
-        retstr = LP_postprice_recv(argjson);
+        return(LP_postprice_recv(argjson));
     else if ( strcmp(method,"postutxos") == 0 )
-        retstr = LP_postutxos_recv(argjson);
+        return(LP_postutxos_recv(argjson));
     else if ( strcmp(method,"uitem") == 0 )
-        retstr = LP_uitem_recv(argjson);
+        return(LP_uitem_recv(argjson));
     else if ( strcmp(method,"notify") == 0 )
-        retstr = LP_notify_recv(argjson);
+        return(LP_notify_recv(argjson));
     // end received response
     
     // public access, even from http

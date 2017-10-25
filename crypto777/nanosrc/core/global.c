@@ -652,6 +652,7 @@ int32_t nn_send(int32_t s,const void *buf,size_t len,int32_t flags)
     hdr.msg_iovlen = 1;
     hdr.msg_control = NULL;
     hdr.msg_controllen = 0;
+    printf("nn_send calling nn_sendmsg\n");
     return nn_sendmsg(s,&hdr,flags);
 }
 
@@ -672,15 +673,17 @@ int32_t nn_recv(int32_t s,void *buf,size_t len,int32_t flags)
 int32_t nn_sendmsg(int32_t s,const struct nn_msghdr *msghdr,int32_t flags)
 {
     int32_t rc,i,nnmsg; size_t sz; struct nn_iovec *iov; struct nn_msg msg; void *chunk;
-    //PNACL_msg("nn_sendmsg.(%d) \n",s);
+    printf("nn_sendmsg.(%d) \n",s);
     NN_BASIC_CHECKS;
     if ( nn_slow(!msghdr) )
     {
+        printf("nn_sendmsg.(%d) einval\n",s);
         errno = EINVAL;
         return -1;
     }
     if ( nn_slow(msghdr->msg_iovlen < 0) )
     {
+        printf("nn_sendmsg.(%d) emsgsize\n",s);
         errno = EMSGSIZE;
         return -1;
     }
@@ -689,6 +692,7 @@ int32_t nn_sendmsg(int32_t s,const struct nn_msghdr *msghdr,int32_t flags)
         chunk = *(void **)msghdr->msg_iov[0].iov_base;
         if ( nn_slow(chunk == NULL) )
         {
+            printf("nn_sendmsg.(%d) efault\n",s);
             errno = EFAULT;
             return -1;
         }
@@ -731,6 +735,7 @@ int32_t nn_sendmsg(int32_t s,const struct nn_msghdr *msghdr,int32_t flags)
     }
     nn_assert(msghdr->msg_control == 0); // cant support msgs until sendmsg()/recvmsg() native to pnacl
     rc = nn_sock_send(SELF.socks[s],&msg,flags); // Send it further down the stack
+    printf("rc from nn_socksend.%d\n",rc);
     if ( nn_slow(rc < 0) )
     {
         // If we are dealing with user-supplied buffer, detach it from the message object
@@ -809,15 +814,17 @@ int32_t nn_recvmsg(int32_t s,struct nn_msghdr *msghdr,int32_t flags)
 int32_t nn_sendmsg(int32_t s,const struct nn_msghdr *msghdr,int32_t flags)
 {
     int32_t rc,i,nnmsg; size_t sz,spsz; struct nn_iovec *iov; struct nn_msg msg; void *chunk; struct nn_cmsghdr *cmsg;
-    //PNACL_msg("nn_sendmsg.(%d) \n",s);
+    printf("nn_sendmsg.(%d) \n",s);
     NN_BASIC_CHECKS;
     if ( nn_slow(!msghdr) )
     {
+        printf("nn_sendmsg.EINVAL\n");
         errno = EINVAL;
         return -1;
     }
     if ( nn_slow(msghdr->msg_iovlen < 0) )
     {
+        printf("nn_sendmsg.EMSGSIZE\n");
         errno = EMSGSIZE;
         return -1;
     }
@@ -827,6 +834,7 @@ int32_t nn_sendmsg(int32_t s,const struct nn_msghdr *msghdr,int32_t flags)
         if ( nn_slow(chunk == NULL) )
         {
             errno = EFAULT;
+            printf("nn_sendmsg.EFAULT\n");
             return -1;
         }
         sz = nn_chunk_size(chunk);
@@ -905,6 +913,7 @@ int32_t nn_sendmsg(int32_t s,const struct nn_msghdr *msghdr,int32_t flags)
 
     /*  Send it further down the stack. */
     rc = nn_sock_send (SELF.socks [s], &msg, flags);
+    printf("nn_sock_send rc.%d\n",rc);
     if (nn_slow (rc < 0)) {
 
         /*  If we are dealing with user-supplied buffer, detach it from
