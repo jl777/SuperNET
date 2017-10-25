@@ -28,11 +28,7 @@
 #else
 #include <unistd.h>
 #include <sys/socket.h>
-//#ifndef __PNACL
 #include <sys/un.h>
-//#else
-//#include <glibc-compat/sys/un.h>
-//#endif
 #endif
 
 #include "tcpmux.h"

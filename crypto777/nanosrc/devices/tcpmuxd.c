@@ -53,12 +53,7 @@ int nn_tcpmuxd (int port)
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/time.h>
-//#ifndef __PNACL
 #include <sys/un.h>
-//#else
-//#include <glibc-compat/sys/un.h>
-//#include <glibc-compat/sys/uio.h>
-//#endif
 #include <stddef.h>
 #include <ctype.h>
 #include <poll.h>

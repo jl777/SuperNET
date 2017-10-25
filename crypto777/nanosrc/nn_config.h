@@ -47,22 +47,11 @@
 #define NN_HAVE_MSG_CONTROL 0
 //#define STANDALONE 1
 
-#ifdef __PNACL
-//#define FD_CLOEXEC 1
-
-#define PNACL_message printf
-//void PNACL_message(const char* format, ...);
-#include <sys/uio.h>
-#include <sys/un.h>
-//#include <glibc-compat/sys/uio.h>
-//#include <glibc-compat/sys/un.h>
-#else
 #if !defined(WIN32)
 //#define NN_ENABLE_EXTRA 1
 #define PNACL_message printf
 #include <sys/uio.h>
 #include <sys/un.h>
-#endif
 #endif
 
 /*  Size of the buffer used for batch-reads of inbound data. To keep the
