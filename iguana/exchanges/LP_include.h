@@ -27,7 +27,7 @@
 void emscripten_usleep(int32_t x);
 #define usleep(x) emscripten_usleep(x)
 // ./autogen.sh
-// emconfigure ./configure CFLAGS="-s PTHREAD_POOL_SIZE=8 -s USE_PTHREADS=1"
+// emconfigure ./configure CFLAGS="-s PTHREAD_POOL_SIZE=8 -s USE_PTHREADS=1 -O2"
 // Edit src/core/sock.c and add here #include <limits.h> for INT_MAX support
 // emmake make
 // cp .libs/libnanomsg.a ~/SuperNET/OSlibs/js
