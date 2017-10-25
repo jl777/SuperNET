@@ -326,7 +326,9 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
         coin->noimportprivkey_flag = 1;
         printf("truncate importprivkey for %s\n",symbol);
     }
+#ifndef FROM_JS
     port = LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath,port);
+#endif
     sprintf(coin->serverport,"127.0.0.1:%u",port);
     return(port);
 }
