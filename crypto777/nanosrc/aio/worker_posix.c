@@ -175,7 +175,9 @@ static void nn_worker_routine (void *arg)
     struct nn_worker_timer *timer;
     printf("nn_worker_routine started\n");
     self = (struct nn_worker*) arg;
+#ifndef FROM_JS
     while ( 1 ) //  Infinite loop. It will be interrupted only when the object is shut down.
+#endif
     {
         // Wait for new events and/or timeouts.
         rc = nn_poller_wait(&self->poller,nn_timerset_timeout (&self->timerset));
@@ -226,7 +228,12 @@ static void nn_worker_routine (void *arg)
                     nn_ctx_leave (task->owner->ctx);
                 }
                 nn_queue_term (&tasks);
+#ifdef FROM_JS
+                printf("done worker ITER\n");
+                return;
+#else
                 continue;
+#endif
             }
             printf("nn_worker true i/o, invoke handler\n");
             fd = nn_cont(phndl,struct nn_worker_fd,hndl); // It's a true I/O event. Invoke the handler

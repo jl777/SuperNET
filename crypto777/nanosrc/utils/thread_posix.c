@@ -42,6 +42,8 @@ void nn_thread_term(struct nn_thread *self)
     errnum_assert(rc == 0,rc);
 }
 
+void *Nanomsg_threadarg;
+
 #ifdef __PNACL
 void nn_thread_init(struct nn_thread *self,nn_thread_routine *routine,void *arg)
 {
@@ -50,8 +52,12 @@ void nn_thread_init(struct nn_thread *self,nn_thread_routine *routine,void *arg)
     printf("nn_thread_init routine.%p arg.%p\n",routine,arg);
     self->routine = routine;
     self->arg = arg;
+#ifdef FROM_JS
+    Nanomsg_threadarg = self;
+#else
     rc = pthread_create(&self->handle,NULL,nn_thread_main_routine,(void *)self);
     errnum_assert (rc == 0, rc);
+#endif
 }
 #else
 

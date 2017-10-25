@@ -1031,28 +1031,10 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 }
 
 #ifdef FROM_JS
+extern void *Nanomsg_threadarg;
 
 void emscripten_usleep(int32_t x)
 {
-}
-
-void LP_fromjs_iter()
-{
-    static void *ctx;
-    if ( G.initializing != 0 )
-    {
-        printf("LP_fromjs_iter during G.initializing, skip\n");
-        return;
-    }
-    if ( ctx == 0 )
-        ctx = bitcoin_ctx();
-    if ( 0 && (LP_counter % 100) == 0 )
-        printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
-    LP_pubkeys_query();
-    LP_utxosQ_process();
-    LP_nanomsg_recvs(ctx);
-    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
-    LP_counter++;
 }
 
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
@@ -1067,6 +1049,27 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     retstr = OS_filestr(&fsize,fname);
     //printf("bitcoind_RPC(%s) -> fname.(%s) %s\n",url,fname,retstr);
     return(retstr);
+}
+
+void LP_fromjs_iter()
+{
+    static void *ctx;
+    if ( G.initializing != 0 )
+    {
+        printf("LP_fromjs_iter during G.initializing, skip\n");
+        return;
+    }
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    if ( 0 && (LP_counter % 100) == 0 )
+        printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
+    if ( Nanomsg_threadarg != 0 )
+        nn_thread_main_routine(Nanomsg_threadarg);
+    LP_pubkeys_query();
+    LP_utxosQ_process();
+    LP_nanomsg_recvs(ctx);
+    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
+    LP_counter++;
 }
 
 #endif
