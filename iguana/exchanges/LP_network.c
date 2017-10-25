@@ -296,7 +296,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
         if ( sock >= 0 )
         {
             if ( (sentbytes= nn_send(sock,msg,msglen,0)) != msglen )
-                printf("%d LP_send sent %d instead of %d\n",n,sentbytes,msglen);
+                printf("LP_send sent %d instead of %d\n",sentbytes,msglen);
             else printf("sent %d bytes of %d to sock.%d\n",sentbytes,msglen,sock);
         } else printf("couldnt get valid sock\n");
 #else
