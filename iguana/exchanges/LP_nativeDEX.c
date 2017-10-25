@@ -1031,8 +1031,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 }
 
 #ifdef FROM_JS
-//extern void *Nanomsg_threadarg;
-//void *nn_thread_main_routine(void *arg);
+extern void *Nanomsg_threadarg;
+void *nn_thread_main_routine(void *arg);
 
 void emscripten_usleep(int32_t x)
 {
@@ -1064,8 +1064,8 @@ void LP_fromjs_iter()
         ctx = bitcoin_ctx();
     if ( 0 && (LP_counter % 100) == 0 )
         printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
-    //if ( Nanomsg_threadarg != 0 )
-    //    nn_thread_main_routine(Nanomsg_threadarg);
+    if ( Nanomsg_threadarg != 0 )
+        nn_thread_main_routine(Nanomsg_threadarg);
     LP_pubkeys_query();
     LP_utxosQ_process();
     LP_nanomsg_recvs(ctx);
