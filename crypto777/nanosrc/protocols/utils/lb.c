@@ -37,8 +37,7 @@ void nn_lb_term (struct nn_lb *self)
     nn_priolist_term (&self->priolist);
 }
 
-void nn_lb_add (struct nn_lb *self, struct nn_lb_data *data,
-    struct nn_pipe *pipe, int priority)
+void nn_lb_add (struct nn_lb *self, struct nn_lb_data *data,struct nn_pipe *pipe, int priority)
 {
     nn_priolist_add (&self->priolist, &data->priodata, pipe, priority);
 }

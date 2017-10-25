@@ -115,7 +115,7 @@ static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     alloc_assert (data);
     nn_pipe_setdata (pipe, data);
     nn_lb_add (&xpush->lb, &data->lb, pipe, sndprio);
-
+    printf("nn_xpush_add\n");
     return 0;
 }
 
