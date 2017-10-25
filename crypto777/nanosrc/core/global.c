@@ -246,7 +246,7 @@ PNACL_msg("transports init\n");
 nn_global_add_transport(nn_ipc);
     nn_global_add_transport(nn_tcp);
 nn_global_add_transport(nn_inproc);
-//nn_global_add_transport(nn_ws);
+nn_global_add_transport(nn_ws);
 //nn_global_add_transport(nn_tcpmux);
     //sleep(1);
 PNACL_msg("socktypes init\n");
