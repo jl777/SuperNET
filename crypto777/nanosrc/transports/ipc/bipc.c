@@ -39,12 +39,12 @@
 #include "../../utils/win.h"
 #else
 #include <unistd.h>
-#ifndef __PNACL
+//#ifndef __PNACL
 #include <sys/uio.h>
 #include <sys/un.h>
-#else
-#include <glibc-compat/sys/un.h>
-#endif
+//#else
+//#include <glibc-compat/sys/un.h>
+//#endif
 #include <fcntl.h>
 #endif
 

@@ -37,11 +37,11 @@
 #include "../../utils/win.h"
 #else
 #include <sys/socket.h>
-#ifndef __PNACL
+//#ifndef __PNACL
 #include <sys/uio.h>
-#else
-#include <glibc-compat/sys/un.h>
-#endif
+//#else
+//#include <glibc-compat/sys/un.h>
+//#endif
 #include <unistd.h>
 #endif
 

@@ -25,10 +25,10 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#ifndef __PNACL
+//#ifndef __PNACL
 #include <sys/uio.h>
-#else
-#include <glibc-compat/sys/uio.h>
+//#else
+//#include <glibc-compat/sys/uio.h>
 #endif
 
 struct nn_usock {

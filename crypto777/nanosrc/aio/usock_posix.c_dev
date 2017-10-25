@@ -31,11 +31,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#ifndef __PNACL
+//#ifndef __PNACL
 #include <sys/uio.h>
-#else
-#include <glibc-compat/sys/uio.h>
-#endif
+//#else
+//#include <glibc-compat/sys/uio.h>
+//#endif
 
 #define NN_USOCK_STATE_IDLE 1
 #define NN_USOCK_STATE_STARTING 2
