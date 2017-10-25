@@ -102,28 +102,28 @@ void nn_worker_task_term (struct nn_worker_task *self)
 int nn_worker_init(struct nn_worker *self)
 {
     int32_t rc;
-    PNACL_message("nn_worker_init %p\n",self);
+    //PNACL_message("nn_worker_init %p\n",self);
     rc = nn_efd_init(&self->efd);
-    PNACL_message("efd init: rc.%d\n",rc);
+    //PNACL_message("efd init: rc.%d\n",rc);
     if ( rc < 0 )
         return rc;
-    PNACL_message("nn_mutex_init\n");
+    //PNACL_message("nn_mutex_init\n");
     nn_mutex_init(&self->sync);
-    PNACL_message("nn_queue_init\n");
+    //PNACL_message("nn_queue_init\n");
     nn_queue_init(&self->tasks);
-    PNACL_message("nn_queue_item_init\n");
+    //PNACL_message("nn_queue_item_init\n");
     nn_queue_item_init(&self->stop);
-    PNACL_message("nn_poller_init\n");
+    //PNACL_message("nn_poller_init\n");
     nn_poller_init(&self->poller);
-    PNACL_message("nn_poller_add\n");
+    //PNACL_message("nn_poller_add\n");
     nn_poller_add(&self->poller,nn_efd_getfd(&self->efd),&self->efd_hndl);
-    PNACL_message("nn_poller_set_in\n");
+    //PNACL_message("nn_poller_set_in\n");
     nn_poller_set_in(&self->poller, &self->efd_hndl);
-    PNACL_message("nn_timerset_init\n");
+    //PNACL_message("nn_timerset_init\n");
     nn_timerset_init(&self->timerset);
-    PNACL_message("nn_thread_init\n");
+    //PNACL_message("nn_thread_init\n");
     nn_thread_init(&self->thread,nn_worker_routine, self);
-    PNACL_message("finished nn_worker_init\n");
+    //PNACL_message("finished nn_worker_init\n");
     return 0;
 }
 

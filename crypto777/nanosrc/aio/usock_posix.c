@@ -286,11 +286,13 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
 
     /*  Allow re-using the address. */
     opt = 1;
+    printf("call setsockopt in nn_usock_bind\n");
     rc = setsockopt (self->s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt));
+    printf("called setsockopt in nn_usock_bind returns %d\n",rc);
     errno_assert (rc == 0);
 
     rc = bind (self->s, addr, (socklen_t) addrlen);
-    //printf("usock.%d -> bind rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
+    printf("usock.%d -> bind rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
     if (nn_slow (rc != 0))
         return -errno;
 

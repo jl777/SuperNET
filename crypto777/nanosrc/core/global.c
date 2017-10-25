@@ -243,11 +243,11 @@ PNACL_message("list init\n");
     //sleep(1);
 PNACL_message("transports init\n");
     //  Plug in individual transports.
-    //nn_global_add_transport(nn_ipc);
+nn_global_add_transport(nn_ipc);
     nn_global_add_transport(nn_tcp);
-    //nn_global_add_transport(nn_inproc);
-    //nn_global_add_transport(nn_ws);
-    //nn_global_add_transport(nn_tcpmux);
+nn_global_add_transport(nn_inproc);
+nn_global_add_transport(nn_ws);
+nn_global_add_transport(nn_tcpmux);
     //sleep(1);
 PNACL_message("socktypes init\n");
     // Plug in individual socktypes

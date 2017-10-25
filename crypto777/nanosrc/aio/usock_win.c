@@ -126,7 +126,7 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
 #if defined HANDLE_FLAG_INHERIT
     BOOL brc;
 #endif
-
+printf("nn_usock_start protocol %d\n",protocol);
     /* NamedPipes aren't sockets. They don't need all the socket
        initialisation stuff. */
     if (domain != AF_UNIX) {
