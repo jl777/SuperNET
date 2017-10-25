@@ -1061,7 +1061,7 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     return(retstr);
 }
 
-void PNACL_message(...)
+void PNACL_message(char *fmt,...)
 {
     
 }
