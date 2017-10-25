@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#define PNACL_message printf
 
 /*  Include nn.h header to define nanomsg-specific error codes. */
 #include "../nn.h"

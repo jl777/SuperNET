@@ -46,10 +46,10 @@
 
 #define NN_HAVE_MSG_CONTROL 0
 //#define STANDALONE 1
+#define PNACL_message printf
 
 #if !defined(WIN32)
 //#define NN_ENABLE_EXTRA 1
-#define PNACL_message printf
 #include <sys/uio.h>
 #include <sys/un.h>
 #endif
