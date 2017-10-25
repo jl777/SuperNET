@@ -298,7 +298,6 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
 {
     static void *ctx;
     char *name2;
-    printf("clear coin\n");
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
     coin->updaterate = (uint32_t)time(NULL);
@@ -439,7 +438,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
             }
         } else coin->inactive = 0;
     }
-    if ( coin != 0 && coin->inactive != 0 )
+    if ( 0 && coin != 0 && coin->inactive != 0 )
         printf("LPnode.%d %s inactive.%u %p vs %p\n",IAMLP,coin->symbol,coin->inactive,assetname,name);
     return(0);
 }

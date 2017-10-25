@@ -1037,6 +1037,8 @@ void LP_fromjs_iter()
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
     static uint32_t counter; char fname[512],*retstr; long fsize;
+    if ( strncmp("http://",url,strlen("http://")) != 0 )
+        return(clonestr("{\"error\":\"only http allowed\"}"));
     sprintf(fname,"bitcoind_RPC/req.%u",counter);
     counter++;
     printf("issue.(%s)\n",url);
