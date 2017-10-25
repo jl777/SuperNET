@@ -315,7 +315,7 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     coin->ctx = bitcoin_ctx();
     if ( assetname != 0 && strcmp(name,assetname) == 0 )
     {
-        printf("%s is assetchain\n",symbol);
+        //printf("%s is assetchain\n",symbol);
         coin->isassetchain = 1;
     }
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
@@ -436,7 +436,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
             }
         } else coin->inactive = 0;
     }
-    if ( coin != 0 && coin->inactive != 0 )
+    if ( 0 && coin != 0 && coin->inactive != 0 )
         printf("LPnode.%d %s inactive.%u %p vs %p\n",IAMLP,coin->symbol,coin->inactive,assetname,name);
     return(0);
 }

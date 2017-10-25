@@ -1035,9 +1035,9 @@ void LP_fromjs_iter()
 
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
-    char fullurl[512];
-    sprintf(fullurl,"%s@%s",userpass,url);
-    printf("bitcoind_RPC(%s)\n",fullurl);
+    //char fullurl[512];
+    //sprintf(fullurl,"%s@%s",userpass,url);
+    printf("bitcoind_RPC(%s)\n",url);
     return(clonestr("{\"error\":\"curl is disabled\"}"));
 }
 

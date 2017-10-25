@@ -23,6 +23,8 @@
 
 #ifdef FROM_JS
 #include <emscripten.h>
+#define sleep(x) emscripten_sleep(x)
+
 #endif
 //#define LP_STRICTPEERS
 
