@@ -173,7 +173,7 @@ static void nn_worker_routine (void *arg)
     struct nn_worker_task *task;
     struct nn_worker_fd *fd;
     struct nn_worker_timer *timer;
-    PNACL_msg("nn_worker_routine started\n");
+    printf("nn_worker_routine started\n");
     self = (struct nn_worker*) arg;
     while ( 1 ) //  Infinite loop. It will be interrupted only when the object is shut down.
     {
@@ -185,7 +185,7 @@ static void nn_worker_routine (void *arg)
             rc = nn_timerset_event(&self->timerset, &thndl);
             if ( rc == -EAGAIN )
                 break;
-            PNACL_msg("nn_worker process expired user\n");
+            printf("nn_worker process expired user\n");
             errnum_assert(rc == 0, -rc);
             timer = nn_cont(thndl, struct nn_worker_timer, hndl);
             nn_ctx_enter(timer->owner->ctx);
@@ -197,7 +197,7 @@ static void nn_worker_routine (void *arg)
             rc = nn_poller_event(&self->poller,&pevent,&phndl); //  Get next poller event, such as IN or OUT
             if ( nn_slow(rc == -EAGAIN) )
                 break;
-            PNACL_msg("nn_worker process all events from the poller\n");
+            printf("nn_worker process all events from the poller\n");
             if ( phndl == &self->efd_hndl ) // If there are any new incoming worker tasks, process them
             {
                 nn_assert (pevent == NN_POLLER_IN);
@@ -212,14 +212,14 @@ static void nn_worker_routine (void *arg)
                     item = nn_queue_pop(&tasks); //  Next worker task
                     if ( nn_slow(!item) )
                         break;
-                    PNACL_msg("nn_worker next worker task\n");
+                    printf("nn_worker next worker task\n");
                     if ( nn_slow(item == &self->stop) ) //  If the worker thread is asked to stop, do so
                     {
                         nn_queue_term(&tasks);
                         return;
                     }
                     // It's a user-defined task. Notify the user that it has arrived in the worker thread
-                    PNACL_msg("nn_worker user defined task\n");
+                    printf("nn_worker user defined task\n");
                     task = nn_cont(item,struct nn_worker_task,item);
                     nn_ctx_enter(task->owner->ctx);
                     nn_fsm_feed(task->owner,task->src,NN_WORKER_TASK_EXECUTE,task);
@@ -228,15 +228,15 @@ static void nn_worker_routine (void *arg)
                 nn_queue_term (&tasks);
                 continue;
             }
-            PNACL_msg("nn_worker true i/o, invoke handler\n");
+            printf("nn_worker true i/o, invoke handler\n");
             fd = nn_cont(phndl,struct nn_worker_fd,hndl); // It's a true I/O event. Invoke the handler
-            PNACL_msg("nn_worker true i/o, fd.%p\n",fd);
+            printf("nn_worker true i/o, fd.%p\n",fd);
             nn_ctx_enter(fd->owner->ctx);
-            PNACL_msg("nn_worker true i/o, after nn_ctx_enter\n");
+            printf("nn_worker true i/o, after nn_ctx_enter\n");
             nn_fsm_feed(fd->owner,fd->src,pevent,fd);
-            PNACL_msg("nn_worker true i/o, after nn_fsm_feed leave.%p\n",fd->owner->ctx);
+            printf("nn_worker true i/o, after nn_fsm_feed leave.%p\n",fd->owner->ctx);
             nn_ctx_leave(fd->owner->ctx);
-            PNACL_msg("nn_worker true i/o, after nn_ctx_leave\n");
+            printf("nn_worker true i/o, after nn_ctx_leave\n");
         }
     }
 }
