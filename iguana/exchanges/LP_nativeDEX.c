@@ -1016,7 +1016,7 @@ void LP_fromjs_iter()
     LP_counter++;
 }
 
-char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params)
+char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
     return(clonestr("{\"error\":\"curl is disabled\"}"));
 }
