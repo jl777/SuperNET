@@ -103,7 +103,6 @@ int nn_worker_init(struct nn_worker *self)
 {
     int32_t rc;
     PNACL_message("nn_worker_init %p\n",self);
-    //sleep(1);
     rc = nn_efd_init(&self->efd);
     PNACL_message("efd init: rc.%d\n",rc);
     if ( rc < 0 )

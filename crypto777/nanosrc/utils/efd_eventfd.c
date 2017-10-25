@@ -32,9 +32,9 @@ int nn_efd_init(struct nn_efd *self)
 {
     int rc;
     int flags;
-    //PostMessage("inside efd_init eventfd\n");
+    PNACL_msg("inside efd_init eventfd\n");
     self->efd = eventfd(0, EFD_CLOEXEC);
-    //PostMessage("self->efd: %d\n",self->efd);
+    PNACL_msg("self->efd: %d\n",self->efd);
     if (self->efd == -1 && (errno == EMFILE || errno == ENFILE))
         return -EMFILE;
     errno_assert(self->efd != -1);
