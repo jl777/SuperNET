@@ -801,8 +801,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     {
         int32_t sock;
         printf("call nn_socket\n");
-        sock = nn_socket(AF_SP,NN_PAIR);
-        printf("nn_socket(PAIR) %d\n",sock);
+        sock = nn_socket(AF_SP,NN_PUSH);
+        printf("nn_socket(NN_PUSH) %d\n",sock);
     }
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
