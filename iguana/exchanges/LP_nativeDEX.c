@@ -789,6 +789,11 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
     return(n);
 }
 
+void LP_fromjs_iter(void *arg)
+{
+    printf("LP_fromjs_iter got arg.%p\n",arg);
+}
+
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
     char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
@@ -851,7 +856,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_butxomutex);
     portable_mutex_init(&LP_reservedmutex);
     portable_mutex_init(&LP_nanorecvsmutex);
+    myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
+#ifndef FROM_JS
     if ( system("curl -s4 checkip.amazonaws.com > myipaddr") == 0 )
     {
         char ipfname[64];
@@ -865,7 +872,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         } else printf("error getting myipaddr\n");
     } else printf("error issuing curl\n");
 #else
-    myipaddr = clonestr("127.0.0.1");
+    IAMLP = 0;
+#endif
 #endif
     if ( IAMLP != 0 )
     {
@@ -982,8 +990,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
     }
-  //if ( (retstr= basilisk_swapentry(0,0)) != 0 )
-    //    free(retstr);
+#ifndef FROM_JS
     int32_t nonz;
     printf("start mainloop\n");
     while ( 1 )
@@ -1002,6 +1009,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         else if ( IAMLP == 0 )
             usleep(1000);
     }
+#endif
 }
 
 

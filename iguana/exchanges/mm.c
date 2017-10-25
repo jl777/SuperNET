@@ -878,6 +878,13 @@ int main(int argc, const char * argv[])
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+#ifdef FROM_JS
+    argc = 2;
+    retjson = cJSON_Parse("{\"client\":1,\"passphrase\":\"test\"}");
+    printf("calling LP_main(%s)\n",jprint(retjson,0));
+    LP_main(retjson);
+    emscripten_set_main_loop(LP_mainiter,0,0);
+#else
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
@@ -949,5 +956,6 @@ int main(int argc, const char * argv[])
         }
         free_json(retjson);
     }
+#endif
     return 0;
 }
