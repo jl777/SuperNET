@@ -21,6 +21,9 @@
 #ifndef LP_INCLUDE_H
 #define LP_INCLUDE_H
 
+#ifdef FROM_JS
+#include <emscripten.h>
+#endif
 //#define LP_STRICTPEERS
 
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
