@@ -19,7 +19,7 @@
 //  Copyright © 2017 SuperNET. All rights reserved.
 //
 
-void PNACL_msg(char *arg,...)
+void PNACL_message(char *arg,...)
 {
     
 }
