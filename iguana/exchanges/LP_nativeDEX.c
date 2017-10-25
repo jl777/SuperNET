@@ -626,8 +626,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             peer->diduquery = now;
             nonz++;
+#ifndef FROM_JS
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
+#endif
             peer->needping = 0;
             needpings++;
         }
