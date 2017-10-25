@@ -288,13 +288,9 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     *coin = *cdata;
     portable_mutex_init(&coin->txmutex);
     portable_mutex_init(&coin->addrmutex);
-    printf("mutexlock\n");
     portable_mutex_lock(&LP_coinmutex);
-    printf("mutexlocked\n");
     HASH_ADD_KEYPTR(hh,LP_coins,coin->symbol,strlen(coin->symbol),coin);
-    printf("mutexunlock\n");
     portable_mutex_unlock(&LP_coinmutex);
-    printf("mutexunlocked\n");
     return(coin);
 }
 
@@ -316,13 +312,10 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     coin->p2shtype = p2shtype;
     coin->wiftype = wiftype;
     coin->inactive = (uint32_t)time(NULL);
-    printf("call coinbus\n");
     coin->bussock = LP_coinbus(busport);
-    printf("call bitcoin_ctx\n");
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     coin->ctx = ctx;
-    printf("back from bitcoin_ctx\n");
     if ( assetname != 0 && strcmp(name,assetname) == 0 )
     {
         //printf("%s is assetchain\n",symbol);
@@ -407,7 +400,6 @@ struct iguana_info *LP_coinfind(char *symbol)
 struct iguana_info *LP_coincreate(cJSON *item)
 {
     struct iguana_info cdata,*coin=0; int32_t isPoS,longestchain = 1; uint16_t port; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name=0,*symbol,*assetname=0;
-    printf("LP_coincreate\n");
     if ( (symbol= jstr(item,"coin")) != 0 && symbol[0] != 0 && strlen(symbol) < 16 && LP_coinfind(symbol) == 0 && (port= juint(item,"rpcport")) != 0 )
     {
         isPoS = jint(item,"isPoS");
@@ -426,21 +418,13 @@ struct iguana_info *LP_coincreate(cJSON *item)
         }
         else if ( (name= jstr(item,"name")) == 0 )
             name = symbol;
-        printf("LP_coininit\n");
         if ( LP_coininit(&cdata,symbol,name,assetname==0?"":assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,juint(item,"wiftaddr"),juint(item,"taddr"),LP_busport(port),jstr(item,"confpath")) < 0 )
         {
-            printf("LP_coinadd\n");
             coin = LP_coinadd(&cdata);
             coin->inactive = (uint32_t)time(NULL);
-        }
-        else
-        {
-            printf("LP_coinadd\n");
-            coin = LP_coinadd(&cdata);
-        }
+        } else coin = LP_coinadd(&cdata);
     } else if ( symbol != 0 && jobj(item,"rpcport") == 0 )
         printf("SKIP %s, missing rpcport field in coins array\n",symbol);
-    printf("end of coininit\n");
     if ( coin != 0 && item != 0 )
     {
         if ( strcmp("KMD",coin->symbol) != 0 )
