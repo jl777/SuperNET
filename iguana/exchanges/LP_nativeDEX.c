@@ -713,6 +713,7 @@ void LP_pubkeysloop(void *ctx)
     sleep(10);
     while ( 1 )
     {
+        printf("LP_pubkeysloop\n");
         LP_notify_pubkeys(ctx,LP_mypubsock);
         sleep(60);
     }
@@ -723,6 +724,7 @@ void LP_privkeysloop(void *ctx)
     sleep(20);
     while ( 1 )
     {
+        printf("LP_privkeysloop\n");
         LP_privkey_updates(ctx,LP_mypubsock,0);
         sleep(60);
     }
@@ -734,6 +736,7 @@ void LP_swapsloop(void *ignore)
     sleep(50);
     while ( 1 )
     {
+        printf("LP_swapsloop\n");
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
         sleep(600);
@@ -1010,14 +1013,27 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 #ifdef FROM_JS
 
 uint32_t LP_counter;
+
 void LP_fromjs_iter()
 {
-    printf("LP_fromjs_iter got called LP_counter.%d\n",LP_counter);
+    static void *ctx;
+    if ( G.initializing != 0 )
+    {
+        printf("LP_fromjs_iter during G.initializing, skip\n");
+        return;
+    }
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
+    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     LP_counter++;
 }
 
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
+    char fullurl[512];
+    sprintf(fullurl,"%s@%s",userpass,url);
+    printf("bitcoind_RPC(%s)\n",fullurl);
     return(clonestr("{\"error\":\"curl is disabled\"}"));
 }
 
