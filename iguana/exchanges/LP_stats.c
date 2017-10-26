@@ -46,9 +46,10 @@ struct LP_swapstats
 {
     UT_hash_handle hh;
     struct LP_quoteinfo Q;
+    bits256 bobdeposit,alicepayment,bobpayment,paymentspent,Apaymentspent,depositspent;
     double qprice;
     uint64_t aliceid;
-    uint32_t ind,methodind;
+    uint32_t ind,methodind,finished;
 } *LP_swapstats;
 
 struct LP_swapstats *LP_swapstats_find(uint64_t aliceid)
@@ -75,20 +76,63 @@ uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32
     return((((uint64_t)desttxid.uints[0] << 48) | ((uint64_t)destvout << 32) | ((uint64_t)feetxid.uints[0] << 16) | (uint32_t)feevout));
 }
 
-void LP_swapstats_line(char *line,struct LP_swapstats *sp)
+void LP_swapstats_line(uint64_t *basevols,uint64_t *relvols,char *line,struct LP_swapstats *sp)
 {
-    char tstr[64];
-    sprintf(line,"%s %8s %-4d %9s swap.%016llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice);
+    char tstr[64]; int32_t baseind,relind;
+    if ( (baseind= LP_priceinfoind(sp->Q.srccoin)) >= 0 )
+        basevols[baseind] += sp->Q.satoshis;
+    if ( (relind= LP_priceinfoind(sp->Q.destcoin)) >= 0 )
+        relvols[relind] += sp->Q.destsatoshis;
+    sprintf(line,"%s %8s %-4d %9s swap.%016llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f finished.%d",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice,sp->finished);
+}
+
+bits256 LP_swapstats_txid(cJSON *argjson,char *name,bits256 oldtxid)
+{
+    bits256 txid,deadtxid;
+    decode_hex(deadtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+    txid = jbits256(argjson,name);
+    if ( bits256_nonz(txid) != 0 )
+    {
+        if ( bits256_cmp(deadtxid,txid) == 0 )
+        {
+            if ( bits256_nonz(oldtxid) == 0 )
+                return(deadtxid);
+            else return(oldtxid);
+        } else return(txid);
+    } else return(oldtxid);
 }
 
 void LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *lineobj)
 {
-    
+    char *statusstr,*base,*rel; uint32_t requestid,quoteid; uint64_t satoshis,destsatoshis;
+    if ( strcmp(LP_stats_methods[sp->methodind],"tradestatus") == 0 )
+    {
+        base = jstr(lineobj,"bob");
+        rel = jstr(lineobj,"alice");
+        requestid = juint(lineobj,"requestid");
+        quoteid = juint(lineobj,"quoteid");
+        satoshis = jdouble(lineobj,"srcamount") * SATOSHIDEN;
+        destsatoshis = jdouble(lineobj,"destamount") * SATOSHIDEN;
+        if ( base != 0 && strcmp(base,sp->Q.srccoin) == 0 && rel != 0 && strcmp(rel,sp->Q.destcoin) == 0 && requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid && satoshis == sp->Q.satoshis && destsatoshis == sp->Q.destsatoshis )
+        {
+            sp->bobdeposit = LP_swapstats_txid(lineobj,"bobdeposit",sp->bobdeposit);
+            sp->alicepayment = LP_swapstats_txid(lineobj,"alicepayment",sp->alicepayment);
+            sp->bobpayment = LP_swapstats_txid(lineobj,"bobpayment",sp->bobpayment);
+            sp->paymentspent = LP_swapstats_txid(lineobj,"paymentspent",sp->paymentspent);
+            sp->Apaymentspent = LP_swapstats_txid(lineobj,"Apaymentspent",sp->Apaymentspent);
+            sp->depositspent = LP_swapstats_txid(lineobj,"depositspent",sp->depositspent);
+            if ( (statusstr= jstr(lineobj,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
+                sp->finished = juint(lineobj,"timestamp");
+        } else printf("mismatched tradestatus aliceid.%016llx\n",(long long)sp->aliceid);
+        
+    } else sp->Q = *qp;
 }
 
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
-    struct LP_swapstats *sp; double qprice; uint32_t timestamp; int32_t i,methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel,line[1024]; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q;
+    struct LP_swapstats *sp; double qprice; uint32_t timestamp; int32_t i,methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel,line[1024]; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    memset(basevols,0,sizeof(basevols));
+    memset(relvols,0,sizeof(relvols));
     memset(&Q,0,sizeof(Q));
     if ( LP_quoteparse(&Q,lineobj) < 0 )
     {
@@ -142,7 +186,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 sp->qprice = qprice;
                 sp->methodind = methodind;
                 sp->ind = LP_aliceids++;
-                LP_swapstats_line(line,sp);
+                LP_swapstats_line(basevols,relvols,line,sp);
                 printf("%s\n",line);
             } else printf("unexpected LP_swapstats_add failure\n");
         }
@@ -183,7 +227,9 @@ void LP_statslog_parseline(cJSON *lineobj)
 
 char *LP_statslog_disp(int32_t n)
 {
-    cJSON *retjson,*array; struct LP_swapstats *sp,*tmp; char line[1024];
+    cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i; char line[1024]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    memset(basevols,0,sizeof(basevols));
+    memset(relvols,0,sizeof(relvols));
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"newlines",n);
@@ -199,10 +245,24 @@ char *LP_statslog_disp(int32_t n)
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_swapstats,sp,tmp)
     {
-        LP_swapstats_line(line,sp);
+        LP_swapstats_line(basevols,relvols,line,sp);
         jaddistr(array,line);
     }
     jadd(retjson,"swaps",array);
+    array = cJSON_CreateArray();
+    for (i=0; i<LP_MAXPRICEINFOS; i++)
+    {
+        if ( basevols[i] != 0 || relvols[i] != 0 )
+        {
+            item = cJSON_CreateObject();
+            jaddstr(item,"coin",LP_priceinfostr(i));
+            jaddnum(item,"srcvol",dstr(basevols[i]));
+            jaddnum(item,"destvol",dstr(relvols[i]));
+            jaddnum(item,"total",dstr(basevols[i] + relvols[i]));
+            jaddi(array,item);
+        }
+    }
+    jadd(retjson,"volumes",array);
     return(jprint(retjson,1));
 }
 

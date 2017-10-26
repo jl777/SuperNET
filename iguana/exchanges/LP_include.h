@@ -290,7 +290,7 @@ struct basilisk_swap
     
 };
 
-#define LP_MAXPRICEINFOS 256
+#define LP_MAXPRICEINFOS 1024
 struct LP_pubkeyinfo
 {
     UT_hash_handle hh;
