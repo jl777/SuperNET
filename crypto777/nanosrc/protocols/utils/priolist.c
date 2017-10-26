@@ -136,7 +136,7 @@ struct nn_pipe *nn_priolist_getpipe(struct nn_priolist *self)
 {
     if ( nn_slow(self->current == -1) )
     {
-        printf("nn_priolist_getpipe.%p -1 current it is\n",self);
+        //printf("nn_priolist_getpipe.%p -1 current it is\n",self);
         return NULL;
     }
     printf("nn_priolist_getpipe.%p current.%d slot.%p\n",self,self->current,self->slots[self->current - 1].current->pipe);
