@@ -240,9 +240,11 @@ void LP_statslog_parseline(cJSON *lineobj)
    } else printf("parseline no method.(%s)\n",jprint(lineobj,0));
 }
 
-char *LP_statslog_disp(int32_t n)
+char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime)
 {
     cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i; char line[1024]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    if ( starttime > endtime )
+        starttime = endtime;
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
     retjson = cJSON_CreateObject();
@@ -251,6 +253,7 @@ char *LP_statslog_disp(int32_t n)
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_swapstats,sp,tmp)
     {
+        if ( (starttime == 0 && endtime == 0) || (sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime) )
         LP_swapstats_line(basevols,relvols,line,sp);
         jaddistr(array,line);
     }

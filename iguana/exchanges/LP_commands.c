@@ -106,7 +106,7 @@ enable(coin)\n\
 disable(coin)\n\
 notarizations(coin)\n\
 parselog()\n\
-statsdisp()\n\
+statsdisp(starttime=0, endtime=0)\n\
 getrawtransaction(coin, txid)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
@@ -220,7 +220,7 @@ stop()\n\
         else if ( strcmp(method,"parselog") == 0 )
             return(LP_statslog_parse());
         else if ( strcmp(method,"statsdisp") == 0 )
-            return(LP_statslog_disp(0));
+            return(LP_statslog_disp(0,juint(argjson,"starttime"),juint(argjson,"endtime")));
         else if ( strcmp(method,"secretaddresses") == 0 )
         {
             uint8_t taddr,pubtype;
