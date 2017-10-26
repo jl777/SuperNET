@@ -20,6 +20,8 @@
 
 #define LP_STATSLOG_FNAME "stats.log"
 
+char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "connected", "tradestatus" };
+
 void LP_tradecommand_log(cJSON *argjson)
 {
     static FILE *logfp; char *jsonstr;
@@ -46,8 +48,7 @@ struct LP_swapstats
     struct LP_quoteinfo Q;
     double qprice;
     uint64_t aliceid;
-    uint32_t ind;
-    char method[16];
+    uint32_t ind,methodind;
 } *LP_swapstats;
 
 struct LP_swapstats *LP_swapstats_find(uint64_t aliceid)
@@ -77,12 +78,17 @@ uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32
 void LP_swapstats_line(char *line,struct LP_swapstats *sp)
 {
     char tstr[64];
-    sprintf(line,"%s %8s %-4d %9s swap.%016llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,sp->ind,sp->method,(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice);
+    sprintf(line,"%s %8s %-4d %9s swap.%016llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice);
+}
+
+void LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *lineobj)
+{
+    
 }
 
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
-    struct LP_swapstats *sp; double qprice; uint32_t timestamp; int32_t destvout,feevout,duplicate=0; char *gui,*base,*rel,line[1024]; uint64_t txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t aliceid;
+    struct LP_swapstats *sp; double qprice; uint32_t timestamp; int32_t i,methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel,line[1024]; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q;
     memset(&Q,0,sizeof(Q));
     if ( LP_quoteparse(&Q,lineobj) < 0 )
     {
@@ -92,6 +98,12 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     }
     else
     {
+        for (i=methodind=0; i<sizeof(LP_stats_methods)/sizeof(*LP_stats_methods); i++)
+            if ( strcmp(LP_stats_methods[i],method) == 0 )
+            {
+                methodind = i;
+                break;
+            }
         base = jstr(lineobj,"base");
         rel = jstr(lineobj,"rel");
         gui = jstr(lineobj,"gui");
@@ -114,6 +126,11 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         aliceid =  LP_aliceid_calc(desttxid,destvout,feetxid,feevout);
         if ( (sp= LP_swapstats_find(aliceid)) != 0 )
         {
+            if ( methodind > sp->methodind || strcmp(method,"tradestatus") == 0 )
+            {
+                sp->methodind = methodind;
+                LP_swapstats_update(sp,&Q,lineobj);
+            }
             duplicate = 1;
             LP_duplicates++;
         }
@@ -123,6 +140,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
             {
                 sp->Q = Q;
                 sp->qprice = qprice;
+                sp->methodind = methodind;
                 sp->ind = LP_aliceids++;
                 LP_swapstats_line(line,sp);
                 printf("%s\n",line);
