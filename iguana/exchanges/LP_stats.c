@@ -20,7 +20,19 @@
 
 #define LP_STATSLOG_FNAME "stats.log"
 
+struct LP_swapstats
+{
+    UT_hash_handle hh;
+    struct LP_quoteinfo Q;
+    bits256 bobdeposit,alicepayment,bobpayment,paymentspent,Apaymentspent,depositspent;
+    double qprice;
+    uint64_t aliceid;
+    uint32_t ind,methodind,finished,expired;
+} *LP_swapstats;
+
 char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "connected", "tradestatus" };
+
+static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_aliceids;
 
 void LP_tradecommand_log(cJSON *argjson)
 {
@@ -39,18 +51,6 @@ void LP_tradecommand_log(cJSON *argjson)
         fflush(logfp);
     }
 }
-
-static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_aliceids;
-
-struct LP_swapstats
-{
-    UT_hash_handle hh;
-    struct LP_quoteinfo Q;
-    bits256 bobdeposit,alicepayment,bobpayment,paymentspent,Apaymentspent,depositspent;
-    double qprice;
-    uint64_t aliceid;
-    uint32_t ind,methodind,finished;
-} *LP_swapstats;
 
 struct LP_swapstats *LP_swapstats_find(uint64_t aliceid)
 {
@@ -83,7 +83,7 @@ void LP_swapstats_line(uint64_t *basevols,uint64_t *relvols,char *line,struct LP
         basevols[baseind] += sp->Q.satoshis;
     if ( (relind= LP_priceinfoind(sp->Q.destcoin)) >= 0 )
         relvols[relind] += sp->Q.destsatoshis;
-    sprintf(line,"%s %8s %-4d %9s swap.%016llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f finished.%d",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice,sp->finished);
+    sprintf(line,"%s %8s %-4d %9s %016llx: (%.8f %5s) -> (%.8f %5s) %.8f finished.%u expired.%u",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice,sp->finished,sp->expired);
 }
 
 bits256 LP_swapstats_txid(cJSON *argjson,char *name,bits256 oldtxid)
@@ -105,6 +105,8 @@ bits256 LP_swapstats_txid(cJSON *argjson,char *name,bits256 oldtxid)
 void LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *lineobj)
 {
     char *statusstr,*base,*rel; uint32_t requestid,quoteid; uint64_t satoshis,destsatoshis;
+    if ( time(NULL) > sp->Q.timestamp+INSTANTDEX_LOCKTIME*2 )
+        sp->expired = (uint32_t)time(NULL);
     if ( strcmp(LP_stats_methods[sp->methodind],"tradestatus") == 0 )
     {
         base = jstr(lineobj,"bob");
@@ -216,7 +218,10 @@ void LP_statslog_parseline(cJSON *lineobj)
             LP_connecteds++;
         }
         else if ( strcmp(method,"tradestatus") == 0 )
+        {
+            LP_statslog_parsequote(method,lineobj);
             LP_tradestatuses++;
+        }
         else
         {
             LP_unknowns++;
