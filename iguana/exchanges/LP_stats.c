@@ -38,8 +38,12 @@ void LP_tradecommand_log(cJSON *argjson)
     }
 }
 
-uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_numridqids;
-uint64_t Ridqids[128];
+static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_numridqids;
+
+struct LP_swapstats
+{
+    uint64_t aliceid;
+};
 
 uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32_t feevout)
 {

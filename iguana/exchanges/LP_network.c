@@ -139,7 +139,7 @@ int32_t LP_peerindsock(int32_t *peerindp)
     return(-1);
 }
 
-void queue_loop(void *ignore)
+void queue_loop(void *arg)
 {
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
     while ( 1 )
@@ -195,6 +195,8 @@ void queue_loop(void *ignore)
                 ptr = 0;
             }
         }
+        if ( arg == 0 )
+            break;
         //if ( n != 0 )
         //    printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )

@@ -492,15 +492,18 @@ void LP_coinsloop(void *_coins)
         nonz = 0;
         HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
         {
-            if ( coins[0] != 0 )
+            if ( coins != 0 )
             {
-                if ( strcmp(coins,coin->symbol) != 0 )
-                    continue;
-            }
-            else // avoid hardcode special case LP_coinsloop
-            {
-                if ( strcmp("BTC",coin->symbol) == 0 || strcmp("KMD",coin->symbol) == 0 )
-                    continue;
+                if ( coins[0] != 0 )
+                {
+                    if ( strcmp(coins,coin->symbol) != 0 )
+                        continue;
+                }
+                else // avoid hardcode special case LP_coinsloop
+                {
+                    if ( strcmp("BTC",coin->symbol) == 0 || strcmp("KMD",coin->symbol) == 0 )
+                        continue;
+                }
             }
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
@@ -578,6 +581,8 @@ void LP_coinsloop(void *_coins)
                     break;
             }
         }
+        if ( coins == 0 )
+            return;
         if ( nonz == 0 )
             usleep(1000);
     }
@@ -793,7 +798,6 @@ void LP_reserved_msgs(void *ignore)
 int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
 {
     int32_t n = 0;
-#ifndef FROM_JS
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs) )
     {
@@ -801,10 +805,6 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
         n = num_Reserved_msgs;
     } else LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
     portable_mutex_unlock(&LP_reservedmutex);
-#else
-    printf("reserved_msg.(%s)\n",msg);
-    LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
-#endif
     if ( num_Reserved_msgs > max_Reserved_msgs )
     {
         max_Reserved_msgs = num_Reserved_msgs;
@@ -1054,7 +1054,7 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
 
 void LP_fromjs_iter()
 {
-    static void *ctx;
+    static void *ctx; char *retstr;
     if ( G.initializing != 0 )
     {
         printf("LP_fromjs_iter during G.initializing, skip\n");
@@ -1064,12 +1064,25 @@ void LP_fromjs_iter()
         ctx = bitcoin_ctx();
     if ( 0 && (LP_counter % 100) == 0 )
         printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
-    if ( Nanomsg_threadarg != 0 )
-        nn_thread_main_routine(Nanomsg_threadarg);
-    LP_pubkeys_query();
+    //if ( Nanomsg_threadarg != 0 )
+    //    nn_thread_main_routine(Nanomsg_threadarg);
+    //LP_pubkeys_query();
     LP_utxosQ_process();
     LP_nanomsg_recvs(ctx);
     LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
+    queue_loop(0);
+    if ( (LP_counter % 10) == 0 )
+    {
+        LP_coinsloop(0);
+        if ( (LP_counter % 100) == 0 )
+        {
+            LP_notify_pubkeys(ctx,LP_mypubsock);
+            LP_privkey_updates(ctx,LP_mypubsock,0);
+            prices_loop(0);
+            if ( (retstr= basilisk_swapentry(0,0)) != 0 )
+                free(retstr);
+        }
+    }
     LP_counter++;
 }
 
