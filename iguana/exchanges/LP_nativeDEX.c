@@ -900,13 +900,14 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         nanomsg_transportname(0,subaddr,myipaddr,mypubport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
         nanomsg_transportname2(1,bindaddr2,myipaddr,mypubport);
+        valid = 0;
         if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
         {
             valid = 0;
             if ( nn_bind(pubsock,bindaddr) >= 0 )
                 valid++;
-                if ( nn_bind(pubsock,bindaddr2) >= 0 )
-                    valid++;
+            if ( nn_bind(pubsock,bindaddr2) >= 0 )
+                valid++;
             if ( valid > 0 )
             {
                 timeout = 1;
