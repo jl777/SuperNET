@@ -115,7 +115,7 @@ void LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *
         quoteid = juint(lineobj,"quoteid");
         satoshis = jdouble(lineobj,"srcamount") * SATOSHIDEN;
         destsatoshis = jdouble(lineobj,"destamount") * SATOSHIDEN;
-        if ( base != 0 && strcmp(base,sp->Q.srccoin) == 0 && rel != 0 && strcmp(rel,sp->Q.destcoin) == 0 && requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid && satoshis == sp->Q.satoshis && destsatoshis == sp->Q.destsatoshis )
+        if ( base != 0 && strcmp(base,sp->Q.srccoin) == 0 && rel != 0 && strcmp(rel,sp->Q.destcoin) == 0 && requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid && satoshis+2*sp->Q.txfee == sp->Q.satoshis && destsatoshis+2*sp->Q.desttxfee == sp->Q.destsatoshis )
         {
             sp->bobdeposit = LP_swapstats_txid(lineobj,"bobdeposit",sp->bobdeposit);
             sp->alicepayment = LP_swapstats_txid(lineobj,"alicepayment",sp->alicepayment);
@@ -125,13 +125,14 @@ void LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *
             sp->depositspent = LP_swapstats_txid(lineobj,"depositspent",sp->depositspent);
             if ( (statusstr= jstr(lineobj,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
                 sp->finished = juint(lineobj,"timestamp");
-        } else printf("mismatched tradestatus aliceid.%016llx b%s/%s r%s/%s r%u/%u q%u/%u %.8f/%.8f -> %.8f/%.8f\n",(long long)sp->aliceid,base,sp->Q.srccoin,rel,sp->Q.destcoin,requestid,sp->Q.R.requestid,quoteid,sp->Q.R.quoteid,dstr(satoshis),dstr(sp->Q.satoshis),dstr(destsatoshis),dstr(sp->Q.destsatoshis));
+        } else printf("mismatched tradestatus aliceid.%016llx b%s/%s r%s/%s r%u/%u q%u/%u %.8f/%.8f -> %.8f/%.8f\n",(long long)sp->aliceid,base,sp->Q.srccoin,rel,sp->Q.destcoin,requestid,sp->Q.R.requestid,quoteid,sp->Q.R.quoteid,dstr(satoshis+2*sp->Q.txfee),dstr(sp->Q.satoshis),dstr(destsatoshis+2*sp->Q.desttxfee),dstr(sp->Q.destsatoshis));
         
     } else sp->Q = *qp;
 }
 
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
+    static uint32_t unexpected;
     struct LP_swapstats *sp; double qprice; uint32_t timestamp; int32_t i,methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel,line[1024]; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
@@ -149,7 +150,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         {
             sp->methodind = methodind;
             LP_swapstats_update(sp,&Q,lineobj);
-        } else printf("unexpected tradestatus.(%s)\n",jprint(lineobj,0));
+        } else printf("unexpected.%d tradestatus.(%s)\n",unexpected++,jprint(lineobj,0));
         return(0);
     }
     if ( LP_quoteparse(&Q,lineobj) < 0 )
@@ -313,7 +314,7 @@ char *LP_statslog_parse()
         }
         fclose(fp);
     }
-    return(LP_statslog_disp(n));
+    return(LP_statslog_disp(n,0,0));
 }
 
 
