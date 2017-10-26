@@ -102,7 +102,7 @@ bits256 LP_swapstats_txid(cJSON *argjson,char *name,bits256 oldtxid)
     } else return(oldtxid);
 }
 
-void LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *lineobj)
+int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *lineobj)
 {
     char *statusstr,*base,*rel; uint32_t requestid,quoteid; uint64_t satoshis,destsatoshis;
     if ( time(NULL) > sp->Q.timestamp+INSTANTDEX_LOCKTIME*2 )
@@ -125,9 +125,16 @@ void LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *
             sp->depositspent = LP_swapstats_txid(lineobj,"depositspent",sp->depositspent);
             if ( (statusstr= jstr(lineobj,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
                 sp->finished = juint(lineobj,"timestamp");
-        } else printf("mismatched tradestatus aliceid.%016llx b%s/%s r%s/%s r%u/%u q%u/%u %.8f/%.8f -> %.8f/%.8f\n",(long long)sp->aliceid,base,sp->Q.srccoin,rel,sp->Q.destcoin,requestid,sp->Q.R.requestid,quoteid,sp->Q.R.quoteid,dstr(satoshis+2*sp->Q.txfee),dstr(sp->Q.satoshis),dstr(destsatoshis+2*sp->Q.desttxfee),dstr(sp->Q.destsatoshis));
+            return(0);
+        }
+        else
+        {
+            printf("mismatched tradestatus aliceid.%016llx b%s/%s r%s/%s r%u/%u q%u/%u %.8f/%.8f -> %.8f/%.8f\n",(long long)sp->aliceid,base,sp->Q.srccoin,rel,sp->Q.destcoin,requestid,sp->Q.R.requestid,quoteid,sp->Q.R.quoteid,dstr(satoshis+2*sp->Q.txfee),dstr(sp->Q.satoshis),dstr(destsatoshis+2*sp->Q.desttxfee),dstr(sp->Q.destsatoshis));
+            return(-1);
+        }
         
     } else sp->Q = *qp;
+    return(0);
 }
 
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
@@ -154,9 +161,10 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         {
             flag = 1;
             sp->methodind = methodind;
-            LP_swapstats_update(sp,&Q,lineobj);
+            if ( LP_swapstats_update(sp,&Q,lineobj) == 0 )
+                flag = 1;
         }
-        else
+        if ( flag == 0 )
         {
             HASH_ITER(hh,LP_swapstats,sp,tmp)
             {
