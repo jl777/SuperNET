@@ -267,7 +267,6 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
             gui = "nogui";
         base = jstr(lineobj,"base");
         rel = jstr(lineobj,"rel");
-        gui = jstr(lineobj,"gui");
         satoshis = j64bits(lineobj,"satoshis");
         if ( base == 0 || rel == 0 || satoshis == 0 )
         {
