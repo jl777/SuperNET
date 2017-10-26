@@ -136,7 +136,23 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
     memset(&Q,0,sizeof(Q));
-    if ( strcmp(method,"tradestatus") != 0 && LP_quoteparse(&Q,lineobj) < 0 )
+    for (i=methodind=0; i<sizeof(LP_stats_methods)/sizeof(*LP_stats_methods); i++)
+        if ( strcmp(LP_stats_methods[i],method) == 0 )
+        {
+            methodind = i;
+            break;
+        }
+    if ( strcmp(method,"tradestatus") == 0 )
+    {
+        aliceid = j64bits(lineobj,"aliceid");
+        if ( (sp= LP_swapstats_find(aliceid)) != 0 )
+        {
+            sp->methodind = methodind;
+            LP_swapstats_update(sp,&Q,lineobj);
+        } else printf("unexpected tradestatus.(%s)\n",jprint(lineobj,0));
+        return(0);
+    }
+    if ( LP_quoteparse(&Q,lineobj) < 0 )
     {
         printf("quoteparse_error.(%s)\n",jprint(lineobj,0));
         LP_parse_errors++;
@@ -144,12 +160,6 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     }
     else
     {
-        for (i=methodind=0; i<sizeof(LP_stats_methods)/sizeof(*LP_stats_methods); i++)
-            if ( strcmp(LP_stats_methods[i],method) == 0 )
-            {
-                methodind = i;
-                break;
-            }
         base = jstr(lineobj,"base");
         rel = jstr(lineobj,"rel");
         gui = jstr(lineobj,"gui");
@@ -172,7 +182,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         aliceid =  LP_aliceid_calc(desttxid,destvout,feetxid,feevout);
         if ( (sp= LP_swapstats_find(aliceid)) != 0 )
         {
-            if ( methodind > sp->methodind || strcmp(method,"tradestatus") == 0 )
+            if ( methodind > sp->methodind )
             {
                 sp->methodind = methodind;
                 LP_swapstats_update(sp,&Q,lineobj);
