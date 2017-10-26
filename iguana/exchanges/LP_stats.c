@@ -294,8 +294,10 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime)
         else if ( sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime )
             dispflag = 1;
         if ( dispflag != 0 )
+        {
             LP_swapstats_line(numtrades,basevols,relvols,line,sp);
-        jaddistr(array,line);
+            jaddistr(array,line);
+        }
     }
     jadd(retjson,"swaps",array);
     array = cJSON_CreateArray();
