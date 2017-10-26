@@ -2305,7 +2305,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
                             {
                                 numrestraints++;
                                 butxo->T.bestflag = 0;
-                                pubp->numerrors = 0;
+                                //pubp->numerrors = 0;
                             }
                         }
                     }

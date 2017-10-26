@@ -271,10 +271,11 @@ bits256 LP_utxos_sighash(uint32_t timestamp,uint8_t *pubsecp,bits256 pubkey,bits
 
 int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits256 pubkey,bits256 utxoshash)
 {
-    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; char str[65];
+    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; char str[65]; struct LP_pubkeyinfo *pubp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( sigstr != 0 && pubsecpstr != 0 && strlen(sigstr) == 65*2 && strlen(pubsecpstr) == 33 *2 )
+    pubp = LP_pubkeyfind(pubkey);
+    if ( pubp->numerrors < LP_MAXPUBKEY_ERRORS && sigstr != 0 && pubsecpstr != 0 && strlen(sigstr) == 65*2 && strlen(pubsecpstr) == 33 *2 )
     {
         decode_hex(sig,65,sigstr);
         decode_hex(pubsecp,33,pubsecpstr);
@@ -284,7 +285,11 @@ int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
         {
             static uint32_t counter;
             if ( counter++ < 100 )
+            {
+                if ( pubp != 0 )
+                    pubp->numerrors++;
                 printf("LP_utxos_sigcheck failure, probably from %s with older version\n",bits256_str(str,pubkey));
+            }
             retval = -1;
         } else retval = 0;
     }
