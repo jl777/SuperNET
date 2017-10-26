@@ -181,7 +181,7 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
         quoteid = juint(lineobj,"quoteid");
         satoshis = jdouble(lineobj,"srcamount") * SATOSHIDEN;
         destsatoshis = jdouble(lineobj,"destamount") * SATOSHIDEN;
-        if ( base != 0 && strcmp(base,sp->Q.srccoin) == 0 && rel != 0 && strcmp(rel,sp->Q.destcoin) == 0 && requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid && satoshis+2*sp->Q.txfee == sp->Q.satoshis && destsatoshis+2*sp->Q.desttxfee == sp->Q.destsatoshis )
+        if ( base != 0 && strcmp(base,sp->Q.srccoin) == 0 && rel != 0 && strcmp(rel,sp->Q.destcoin) == 0 && requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid && ((satoshis+2*sp->Q.txfee)|1) == (sp->Q.satoshis|1) && ((destsatoshis+2*sp->Q.desttxfee)|1) == (sp->Q.destsatoshis|1) )
         {
             sp->bobdeposit = LP_swapstats_txid(lineobj,"bobdeposit",sp->bobdeposit);
             sp->alicepayment = LP_swapstats_txid(lineobj,"alicepayment",sp->alicepayment);
@@ -197,7 +197,8 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
         }
         else
         {
-            printf("mismatched tradestatus aliceid.%016llx b%s/%s r%s/%s r%u/%u q%u/%u %.8f/%.8f -> %.8f/%.8f\n",(long long)sp->aliceid,base,sp->Q.srccoin,rel,sp->Q.destcoin,requestid,sp->Q.R.requestid,quoteid,sp->Q.R.quoteid,dstr(satoshis+2*sp->Q.txfee),dstr(sp->Q.satoshis),dstr(destsatoshis+2*sp->Q.desttxfee),dstr(sp->Q.destsatoshis));
+            if ( requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid )
+                printf("mismatched tradestatus aliceid.%016llx b%s/%s r%s/%s r%u/%u q%u/%u %.8f/%.8f -> %.8f/%.8f\n",(long long)sp->aliceid,base,sp->Q.srccoin,rel,sp->Q.destcoin,requestid,sp->Q.R.requestid,quoteid,sp->Q.R.quoteid,dstr(satoshis+2*sp->Q.txfee),dstr(sp->Q.satoshis),dstr(destsatoshis+2*sp->Q.desttxfee),dstr(sp->Q.destsatoshis));
             return(-1);
         }
         
@@ -263,6 +264,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         gui = jstr(lineobj,"gui");
         if ( gui == 0 || gui[0] == 0 )
             gui = "nogui";
+        printf("%s\n",gui);
         base = jstr(lineobj,"base");
         rel = jstr(lineobj,"rel");
         gui = jstr(lineobj,"gui");
