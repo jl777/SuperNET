@@ -105,8 +105,6 @@ bits256 LP_swapstats_txid(cJSON *argjson,char *name,bits256 oldtxid)
 int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *lineobj)
 {
     char *statusstr,*base,*rel; uint32_t requestid,quoteid; uint64_t satoshis,destsatoshis;
-    if ( time(NULL) > sp->Q.timestamp+INSTANTDEX_LOCKTIME*2 )
-        sp->expired = (uint32_t)time(NULL);
     if ( strcmp(LP_stats_methods[sp->methodind],"tradestatus") == 0 )
     {
         base = jstr(lineobj,"bob");
@@ -125,6 +123,8 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
             sp->depositspent = LP_swapstats_txid(lineobj,"depositspent",sp->depositspent);
             if ( (statusstr= jstr(lineobj,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
                 sp->finished = juint(lineobj,"timestamp");
+            if ( sp->finished == 0 && time(NULL) > sp->Q.timestamp+INSTANTDEX_LOCKTIME*2 )
+                sp->expired = (uint32_t)time(NULL);
             return(0);
         }
         else
@@ -171,8 +171,9 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 if ( sp->Q.R.requestid == requestid && sp->Q.R.quoteid == quoteid )
                 {
                     sp->methodind = methodind;
-                    LP_swapstats_update(sp,&Q,lineobj);
-                    flag = 1;
+                    if ( LP_swapstats_update(sp,&Q,lineobj) == 0 )
+                        flag = 1;
+                    else printf("error after delayed match\n");
                     break;
                 }
             }
@@ -271,7 +272,7 @@ void LP_statslog_parseline(cJSON *lineobj)
 
 char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime)
 {
-    cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i,numtrades[LP_MAXPRICEINFOS]; char line[1024]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i,dispflag,numtrades[LP_MAXPRICEINFOS]; char line[1024]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     if ( starttime > endtime )
         starttime = endtime;
     memset(basevols,0,sizeof(basevols));
@@ -283,8 +284,17 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime)
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_swapstats,sp,tmp)
     {
-        if ( (starttime == 0 && endtime == 0) || (sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime) )
-        LP_swapstats_line(numtrades,basevols,relvols,line,sp);
+        if ( sp->finished == 0 && time(NULL) > sp->Q.timestamp+INSTANTDEX_LOCKTIME*2 )
+            sp->expired = (uint32_t)time(NULL);
+        dispflag = 0;
+        if ( starttime == 0 && endtime == 0 )
+            dispflag = 1;
+        else if ( starttime > time(NULL) && endtime == starttime && sp->finished == 0 && sp->expired == 0 )
+            dispflag = 1;
+        else if ( sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime )
+            dispflag = 1;
+        if ( dispflag != 0 )
+            LP_swapstats_line(numtrades,basevols,relvols,line,sp);
         jaddistr(array,line);
     }
     jadd(retjson,"swaps",array);
