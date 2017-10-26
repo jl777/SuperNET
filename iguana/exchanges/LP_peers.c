@@ -120,7 +120,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                         if ( valid > 0 )
                         {
                             peer->subsock = subsock;
-                            printf("connected to sub.(%s %s) subsock.%d valid.%d\n",subaddr,subaddr2,peer->subsock,valie);
+                            printf("connected to sub.(%s %s) subsock.%d valid.%d\n",subaddr,subaddr2,peer->subsock,valid);
                         } else nn_close(subsock);
                     }
                 }
