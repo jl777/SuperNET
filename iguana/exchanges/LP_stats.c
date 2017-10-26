@@ -189,7 +189,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 sp->methodind = methodind;
                 sp->ind = LP_aliceids++;
                 LP_swapstats_line(basevols,relvols,line,sp);
-                printf("%s\n",line);
+                //printf("%s\n",line);
             } else printf("unexpected LP_swapstats_add failure\n");
         }
     }
