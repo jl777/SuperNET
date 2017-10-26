@@ -298,6 +298,13 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime)
             LP_swapstats_line(numtrades,basevols,relvols,line,sp);
             item = cJSON_CreateObject();
             jadd64bits(item,"aliceid",sp->aliceid);
+            jaddbits256(item,"src",sp->Q.srchash);
+            jaddstr(item,"base",sp->Q.srccoin);
+            jaddnum(item,"basevol",dstr(sp->Q.satoshis));
+            jaddbits256(item,"dest",sp->Q.desthash);
+            jaddstr(item,"rel",sp->Q.destcoin);
+            jaddnum(item,"relvol",dstr(sp->Q.destsatoshis));
+            jaddnum(item,"price",sp->qprice);
             jaddnum(item,"requestid",sp->Q.R.requestid);
             jaddnum(item,"quoteid",sp->Q.R.quoteid);
             jaddstr(item,"line",line);
