@@ -133,7 +133,7 @@ void LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
     static uint32_t unexpected;
-    struct LP_swapstats *sp; double qprice; uint32_t timestamp; int32_t i,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel,line[1024]; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    struct LP_swapstats *sp,*tmp; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel,line[1024]; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     memset(numtrades,0,sizeof(numtrades));
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
@@ -146,12 +146,31 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         }
     if ( strcmp(method,"tradestatus") == 0 )
     {
+        flag = 0;
         aliceid = j64bits(lineobj,"aliceid");
+        requestid = juint(lineobj,"requestid");
+        quoteid = juint(lineobj,"quoteid");
         if ( (sp= LP_swapstats_find(aliceid)) != 0 )
         {
+            flag = 1;
             sp->methodind = methodind;
             LP_swapstats_update(sp,&Q,lineobj);
-        } else printf("unexpected.%d tradestatus.(%s)\n",unexpected++,jprint(lineobj,0));
+        }
+        else
+        {
+            HASH_ITER(hh,LP_swapstats,sp,tmp)
+            {
+                if ( sp->Q.R.requestid == requestid && sp->Q.R.quoteid == quoteid )
+                {
+                    sp->methodind = methodind;
+                    LP_swapstats_update(sp,&Q,lineobj);
+                    flag = 1;
+                    break;
+                }
+            }
+        }
+        if ( flag == 0 )
+            printf("unexpected.%d tradestatus.(%s)\n",unexpected++,jprint(lineobj,0));
         return(0);
     }
     if ( LP_quoteparse(&Q,lineobj) < 0 )
