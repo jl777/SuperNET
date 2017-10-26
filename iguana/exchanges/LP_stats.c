@@ -265,9 +265,6 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         gui = jstr(lineobj,"gui");
         if ( gui == 0 || gui[0] == 0 )
             gui = "nogui";
-        if ( jint(lineobj,"iambob") != 0 )
-            strcpy(sp->bobgui,gui);
-        else strcpy(sp->alicegui,gui);
         base = jstr(lineobj,"base");
         rel = jstr(lineobj,"rel");
         gui = jstr(lineobj,"gui");
@@ -309,6 +306,15 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 LP_swapstats_line(numtrades,basevols,relvols,line,sp);
                 //printf("%s\n",line);
             } else printf("unexpected LP_swapstats_add failure\n");
+        }
+        if ( sp != 0 )
+        {
+            if ( strcmp(gui,"nogui") != 0 )
+            {
+                if ( jint(lineobj,"iambob") != 0 )
+                    strcpy(sp->bobgui,gui);
+                else strcpy(sp->alicegui,gui);
+            }
         }
     }
     return(duplicate == 0);
