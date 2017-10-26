@@ -38,22 +38,50 @@ void LP_tradecommand_log(cJSON *argjson)
     }
 }
 
-static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_numridqids;
+static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_aliceids;
 
 struct LP_swapstats
 {
+    UT_hash_handle hh;
+    struct LP_quoteinfo Q;
+    double qprice;
     uint64_t aliceid;
-};
-uint64_t Ridqids[128];
+    char method[16];
+} *LP_swapstats;
+
+struct LP_swapstats *LP_swapstats_find(uint64_t aliceid)
+{
+    struct LP_swapstats *sp;
+    HASH_FIND(hh,LP_swapstats,&aliceid,sizeof(aliceid),sp);
+    return(sp);
+}
+
+struct LP_swapstats *LP_swapstats_add(uint64_t aliceid)
+{
+    struct LP_swapstats *sp;
+    if ( (sp= LP_swapstats_find(aliceid)) == 0 )
+    {
+        sp = calloc(1,sizeof(*sp));
+        sp->aliceid = aliceid;
+        HASH_ADD(hh,LP_swapstats,aliceid,sizeof(aliceid),sp);
+    }
+    return(LP_swapstats_find(aliceid));
+}
 
 uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32_t feevout)
 {
     return((((uint64_t)desttxid.uints[0] << 48) | ((uint64_t)destvout << 32) | ((uint64_t)feetxid.uints[0] << 16) | (uint32_t)feevout));
 }
 
+void LP_swapstats_line(char *line,struct LP_swapstats *sp)
+{
+    char tstr[64];
+    printf("%s %8s %-4d %9s swap.%016llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,LP_aliceids,sp->method,(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice);
+}
+
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
-    double qprice; uint32_t timestamp; int32_t i,destvout,feevout,duplicate=0; char *gui,*base,*rel,tstr[128]; uint64_t txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t aliceid;
+    struct LP_swapstats *sp; double qprice; uint32_t timestamp; int32_t destvout,feevout,duplicate=0; char *gui,*base,*rel,line[1024]; uint64_t txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t aliceid;
     memset(&Q,0,sizeof(Q));
     if ( LP_quoteparse(&Q,lineobj) < 0 )
     {
@@ -83,20 +111,21 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         qprice = ((double)destsatoshis / (satoshis - txfee));
         //printf("%s/v%d %s/v%d\n",bits256_str(str,desttxid),destvout,bits256_str(str2,feetxid),feevout);
         aliceid =  LP_aliceid_calc(desttxid,destvout,feetxid,feevout);
-        for (i=0; i<sizeof(Ridqids)/sizeof(*Ridqids); i++)
+        if ( (sp= LP_swapstats_find(aliceid)) != 0 )
         {
-            if ( Ridqids[i] == aliceid )
-            {
-                duplicate = 1;
-                LP_duplicates++;
-                break;
-            }
+            duplicate = 1;
+            LP_duplicates++;
         }
-        if ( duplicate == 0 )
+        else
         {
-            Ridqids[LP_numridqids % (sizeof(Ridqids)/sizeof(*Ridqids))] = aliceid;
-            printf("%s %8s %-4d %9s swap.%016llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f\n",utc_str(tstr,timestamp),gui!=0?gui:"",LP_numridqids,method,(long long)aliceid,dstr(satoshis),base,dstr(destsatoshis),rel,qprice);
-            LP_numridqids++;
+            if ( (sp= LP_swapstats_add(aliceid)) != 0 )
+            {
+                sp->Q = Q;
+                sp->qprice = qprice;
+                LP_swapstats_line(line,sp);
+                printf("%s\n",line);
+                LP_aliceids++;
+            } else printf("unexpected LP_swapstats_add failure\n");
         }
     }
     return(duplicate == 0);
@@ -135,7 +164,7 @@ void LP_statslog_parseline(cJSON *lineobj)
 
 char *LP_statslog_disp(int32_t n)
 {
-    cJSON *retjson;
+    cJSON *retjson,*array; struct LP_swapstats *sp,*tmp; char line[1024];
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"newlines",n);
@@ -145,9 +174,16 @@ char *LP_statslog_disp(int32_t n)
     jaddnum(retjson,"connected",LP_connecteds);
     jaddnum(retjson,"duplicates",LP_duplicates);
     jaddnum(retjson,"parse_errors",LP_parse_errors);
-    jaddnum(retjson,"uniques",LP_numridqids);
+    jaddnum(retjson,"uniques",LP_aliceids);
     jaddnum(retjson,"tradestatus",LP_tradestatuses);
     jaddnum(retjson,"unknown",LP_unknowns);
+    array = cJSON_CreateArray();
+    HASH_ITER(hh,LP_swapstats,sp,tmp)
+    {
+        LP_swapstats_line(line,sp);
+        jaddistr(array,line);
+    }
+    jadd(retjson,"swaps",array);
     return(jprint(retjson,1));
 }
 
