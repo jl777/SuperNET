@@ -46,6 +46,7 @@ struct LP_swapstats
     struct LP_quoteinfo Q;
     double qprice;
     uint64_t aliceid;
+    uint32_t ind;
     char method[16];
 } *LP_swapstats;
 
@@ -76,7 +77,7 @@ uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32
 void LP_swapstats_line(char *line,struct LP_swapstats *sp)
 {
     char tstr[64];
-    printf("%s %8s %-4d %9s swap.%016llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,LP_aliceids,sp->method,(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice);
+    sprintf(line,"%s %8s %-4d %9s swap.%016llx: (%.8f %5s) -> (%.8f %5s) qprice %.8f",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,sp->ind,sp->method,(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice);
 }
 
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
@@ -122,9 +123,9 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
             {
                 sp->Q = Q;
                 sp->qprice = qprice;
+                sp->ind = LP_aliceids++;
                 LP_swapstats_line(line,sp);
                 printf("%s\n",line);
-                LP_aliceids++;
             } else printf("unexpected LP_swapstats_add failure\n");
         }
     }
