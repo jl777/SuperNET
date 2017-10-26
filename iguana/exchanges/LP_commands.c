@@ -97,7 +97,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
      else if ( strcmp(method,"help") == 0 )
          return(clonestr("{\"result\":\" \
 available localhost RPC commands: \n \
-pricearray(base, rel, firsttime=0, lasttime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
+pricearray(base, rel, starttime=0, endtime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 setprice(base, rel, price)\n\
 autoprice(base, rel, minprice, margin, refbase, refrel, factor, offset)*\n\
 goal(coin=*, val=<autocalc>)\n\
@@ -106,7 +106,7 @@ enable(coin)\n\
 disable(coin)\n\
 notarizations(coin)\n\
 parselog()\n\
-statsdisp()\n\
+statsdisp(starttime=0, endtime=0)\n\
 getrawtransaction(coin, txid)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
@@ -218,9 +218,15 @@ stop()\n\
             return(LP_portfolio());
         }
         else if ( strcmp(method,"parselog") == 0 )
-            return(LP_statslog_parse());
+        {
+            int32_t n = LP_statslog_parse();
+            return(LP_statslog_disp(n,2000000000,2000000000));
+        }
         else if ( strcmp(method,"statsdisp") == 0 )
-            return(LP_statslog_disp(0));
+        {
+            int32_t n = LP_statslog_parse();
+            return(LP_statslog_disp(n,juint(argjson,"starttime"),juint(argjson,"endtime")));
+        }
         else if ( strcmp(method,"secretaddresses") == 0 )
         {
             uint8_t taddr,pubtype;
@@ -253,7 +259,7 @@ stop()\n\
             }
             else if ( strcmp(method,"pricearray") == 0 )
             {
-                return(jprint(LP_pricearray(base,rel,juint(argjson,"firsttime"),juint(argjson,"lasttime"),jint(argjson,"timescale")),1));
+                return(jprint(LP_pricearray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
             }
             else if ( strcmp(method,"myprice") == 0 )
             {

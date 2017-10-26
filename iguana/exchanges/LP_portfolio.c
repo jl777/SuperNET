@@ -595,13 +595,15 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
     return(n);
 }
 
-void prices_loop(void *ignore)
+void prices_loop(void *arg)
 {
     char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256]; struct LP_priceinfo *btcpp; void *ctx = bitcoin_ctx();
     while ( 1 )
     {
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
         {
+            if ( arg == 0 )
+                return;
             sleep(60);
             continue;
         }
@@ -635,6 +637,8 @@ void prices_loop(void *ignore)
             }
             free(retstr);
         }
+        if ( arg == 0 )
+            return;
         sleep(60);
     }
 }

@@ -271,10 +271,11 @@ bits256 LP_utxos_sighash(uint32_t timestamp,uint8_t *pubsecp,bits256 pubkey,bits
 
 int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits256 pubkey,bits256 utxoshash)
 {
-    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; char str[65];
+    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; char str[65]; struct LP_pubkeyinfo *pubp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( sigstr != 0 && pubsecpstr != 0 && strlen(sigstr) == 65*2 && strlen(pubsecpstr) == 33 *2 )
+    pubp = LP_pubkeyfind(pubkey);
+    if ( (pubp == 0 || pubp->numerrors < LP_MAXPUBKEY_ERRORS) && sigstr != 0 && pubsecpstr != 0 && strlen(sigstr) == 65*2 && strlen(pubsecpstr) == 33 *2 )
     {
         decode_hex(sig,65,sigstr);
         decode_hex(pubsecp,33,pubsecpstr);
@@ -284,7 +285,11 @@ int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
         {
             static uint32_t counter;
             if ( counter++ < 100 )
-                printf("LP_utxos_sigcheck failure, probably from %s with older version\n",bits256_str(str,pubkey));
+            {
+                if ( pubp != 0 )
+                    pubp->numerrors++;
+                printf("LP_utxos_sigcheck failure.%d, probably from %s with older version\n",pubp!=0?pubp->numerrors:-1,bits256_str(str,pubkey));
+            }
             retval = -1;
         } else retval = 0;
     }
@@ -350,7 +355,11 @@ struct LP_utxos_qitem { struct queueitem DL; cJSON *argjson; };
 
 char *LP_postutxos_recv(cJSON *argjson)
 {
-    struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash; cJSON *obj;
+    struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash,pubkey; cJSON *obj; struct LP_pubkeyinfo *pubp;
+    pubkey = jbits256(argjson,"pubkey");
+    pubp = LP_pubkeyfind(pubkey);
+    if ( pubp->numerrors > LP_MAXPUBKEY_ERRORS )
+        return(clonestr("{\"error\":\"blacklisted\"}"));
     if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 )
     {
         if ( strcmp(coinaddr,coin->smartaddr) == 0 )
@@ -363,7 +372,7 @@ char *LP_postutxos_recv(cJSON *argjson)
     {
         utxoshash = LP_utxoshash_calc(obj);
         //char str[65]; printf("got utxoshash %s\n",bits256_str(str,utxoshash));
-        if ( LP_utxos_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),jbits256(argjson,"pubkey"),utxoshash) == 0 )
+        if ( LP_utxos_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,utxoshash) == 0 )
         {
             uitem = calloc(1,sizeof(*uitem));
             uitem->argjson = jduplicate(argjson);
@@ -399,10 +408,11 @@ int32_t LP_utxosQ_process()
 
 int32_t LP_price_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits256 pubkey,char *base,char *rel,uint64_t price64)
 {
-    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash;
+    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; struct LP_pubkeyinfo *pubp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( sigstr != 0 && pubsecpstr != 0 && strlen(sigstr) == 65*2 && strlen(pubsecpstr) == 33 *2 )
+    pubp = LP_pubkeyfind(pubkey);
+    if ( (pubp == 0 || pubp->numerrors < LP_MAXPUBKEY_ERRORS) && sigstr != 0 && pubsecpstr != 0 && strlen(sigstr) == 65*2 && strlen(pubsecpstr) == 33 *2 )
     {
         decode_hex(sig,65,sigstr);
         decode_hex(pubsecp,33,pubsecpstr);
@@ -410,6 +420,8 @@ int32_t LP_price_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
         retval = bitcoin_recoververify(ctx,"price",sig,sighash,pub33,0);
         if ( memcmp(pub33,pubsecp,33) != 0 || retval != 0 )
         {
+            if ( pubp != 0 )
+                pubp->numerrors++;
             printf("LP_price_sigcheck failure\n");
             retval = -1;
         }
@@ -520,7 +532,7 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                                 char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
                                 retval = 0;
                                 pubp->timestamp = (uint32_t)time(NULL);
-                            } //else printf("sig %s error pub33.%s\n",sigstr,pubsecpstr);
+                            } else pubp->numerrors++;
                         }
                     }
                     else
@@ -622,7 +634,7 @@ char *LP_uitem_recv(cJSON *argjson)
     {
         //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",symbol,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
         if ( strcmp(coin->smartaddr,coinaddr) != 0 )
-            LP_address_utxoadd("LP_uitem,recv",coin,coinaddr,txid,vout,value,height,-1);
+            LP_address_utxoadd("LP_uitem_recv",coin,coinaddr,txid,vout,value,height,-1);
         //else printf("ignore external uitem %s %s\n",symbol,coin->smartaddr);
     }
     return(clonestr("{\"result\":\"success\"}"));

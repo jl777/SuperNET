@@ -1000,7 +1000,7 @@ static int32_t nn_usock_send_raw(struct nn_usock *self,struct msghdr *hdr)
 #else
     nbytes = sendmsg(self->s,hdr,0);
 #endif
-    PostMessage("nn_usock_send_raw nbytes.%d for sock.%d\n",(int32_t)nbytes,self->s);
+    printf("nn_usock_send_raw nbytes.%d for sock.%d\n",(int32_t)nbytes,self->s);
     if ( nn_slow(nbytes < 0) ) // Handle errors
     {
         if ( nn_fast(errno == EAGAIN || errno == EWOULDBLOCK) )

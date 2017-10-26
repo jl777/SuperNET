@@ -47,6 +47,13 @@ struct LP_cacheinfo
     uint32_t timestamp;
 } *LP_cacheinfos;
 
+char *LP_priceinfostr(int32_t ind)
+{
+    if ( ind < 0 || ind >= LP_MAXPRICEINFOS )
+        return("UNKNOWN");
+    else return(LP_priceinfos[ind].symbol);
+}
+
 int32_t LP_pricevalid(double price)
 {
     if ( price > SMALLVAL && isnan(price) == 0 && price < SATOSHIDEN )
@@ -68,6 +75,14 @@ struct LP_priceinfo *LP_priceinfofind(char *symbol)
                 return(pp);
     }
     return(0);
+}
+
+int32_t LP_priceinfoind(char *symbol)
+{
+    struct LP_priceinfo *pp;
+    if ( (pp= LP_priceinfofind(symbol)) != 0 )
+        return(pp->ind);
+    else return(-1);
 }
 
 struct LP_priceinfo *LP_priceinfoptr(int32_t *indp,char *base,char *rel)
@@ -685,7 +700,7 @@ void LP_pubkeys_query()
             reqjson = cJSON_CreateObject();
             jaddstr(reqjson,"method","wantnotify");
             jaddbits256(reqjson,"pub",pubp->pubkey);
-            printf("LP_pubkeys_query %s\n",jprint(reqjson,0));
+            //printf("LP_pubkeys_query %s\n",jprint(reqjson,0));
             LP_reserved_msg("","",zero,jprint(reqjson,1));
         }
     }
