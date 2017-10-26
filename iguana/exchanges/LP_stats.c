@@ -28,6 +28,7 @@ struct LP_swapstats
     double qprice;
     uint64_t aliceid;
     uint32_t ind,methodind,finished,expired;
+    char alicegui[32],bobgui[32];
 } *LP_swapstats;
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj);
 
@@ -150,7 +151,7 @@ void LP_swapstats_line(int32_t *numtrades,uint64_t *basevols,uint64_t *relvols,c
         basevols[baseind] += sp->Q.satoshis, numtrades[baseind]++;
     if ( (relind= LP_priceinfoind(sp->Q.destcoin)) >= 0 )
         relvols[relind] += sp->Q.destsatoshis, numtrades[relind]++;
-    sprintf(line,"%s %8s %-4d %9s %22llu: (%.8f %5s) -> (%.8f %5s) %.8f finished.%u expired.%u",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice,sp->finished,sp->expired);
+    sprintf(line,"%s %8s/%8s %-4d %9s %22llu: (%.8f %5s) -> (%.8f %5s) %.8f finished.%u expired.%u",utc_str(tstr,sp->Q.timestamp),sp->alicegui,sp->bobgui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice,sp->finished,sp->expired);
 }
 
 bits256 LP_swapstats_txid(cJSON *argjson,char *name,bits256 oldtxid)
@@ -264,7 +265,9 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         gui = jstr(lineobj,"gui");
         if ( gui == 0 || gui[0] == 0 )
             gui = "nogui";
-        printf("%s\n",gui);
+        if ( jint(lineobj,"iambob") != 0 )
+            strcpy(sp->bobgui,gui);
+        else strcpy(sp->alicegui,gui);
         base = jstr(lineobj,"base");
         rel = jstr(lineobj,"rel");
         gui = jstr(lineobj,"gui");
