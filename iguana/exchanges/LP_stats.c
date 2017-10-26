@@ -151,7 +151,7 @@ void LP_swapstats_line(int32_t *numtrades,uint64_t *basevols,uint64_t *relvols,c
         basevols[baseind] += sp->Q.satoshis, numtrades[baseind]++;
     if ( (relind= LP_priceinfoind(sp->Q.destcoin)) >= 0 )
         relvols[relind] += sp->Q.destsatoshis, numtrades[relind]++;
-    sprintf(line,"%s %8s/%8s %-4d %9s %22llu: (%.8f %5s) -> (%.8f %5s) %.8f finished.%u expired.%u",utc_str(tstr,sp->Q.timestamp),sp->alicegui,sp->bobgui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice,sp->finished,sp->expired);
+    sprintf(line,"%s (%s).(%s) %-4d %9s %22llu: (%.8f %5s) -> (%.8f %5s) %.8f finished.%u expired.%u",utc_str(tstr,sp->Q.timestamp),sp->alicegui,sp->bobgui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice,sp->finished,sp->expired);
 }
 
 bits256 LP_swapstats_txid(cJSON *argjson,char *name,bits256 oldtxid)
@@ -212,7 +212,7 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
     static uint32_t unexpected;
-    struct LP_swapstats *sp,*tmp; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel,line[1024]; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    struct LP_swapstats *sp,*tmp; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     memset(numtrades,0,sizeof(numtrades));
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
@@ -302,7 +302,9 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 sp->qprice = qprice;
                 sp->methodind = methodind;
                 sp->ind = LP_aliceids++;
-                LP_swapstats_line(numtrades,basevols,relvols,line,sp);
+                strcpy(sp->bobgui,"nogui");
+                strcpy(sp->alicegui,"nogui");
+                //LP_swapstats_line(numtrades,basevols,relvols,line,sp);
                 //printf("%s\n",line);
             } else printf("unexpected LP_swapstats_add failure\n");
         }
