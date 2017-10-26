@@ -44,6 +44,7 @@ struct LP_swapstats
 {
     uint64_t aliceid;
 };
+uint64_t Ridqids[128];
 
 uint64_t LP_aliceid_calc(bits256 desttxid,int32_t destvout,bits256 feetxid,int32_t feevout)
 {
