@@ -218,9 +218,15 @@ stop()\n\
             return(LP_portfolio());
         }
         else if ( strcmp(method,"parselog") == 0 )
-            return(LP_statslog_parse());
+        {
+            int32_t n = LP_statslog_parse();
+            return(LP_statslog_disp(n,2000000000,2000000000));
+        }
         else if ( strcmp(method,"statsdisp") == 0 )
-            return(LP_statslog_disp(0,juint(argjson,"starttime"),juint(argjson,"endtime")));
+        {
+            int32_t n = LP_statslog_parse();
+            return(LP_statslog_disp(n,juint(argjson,"starttime"),juint(argjson,"endtime")));
+        }
         else if ( strcmp(method,"secretaddresses") == 0 )
         {
             uint8_t taddr,pubtype;

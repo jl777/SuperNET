@@ -29,6 +29,7 @@ struct LP_swapstats
     uint64_t aliceid;
     uint32_t ind,methodind,finished,expired;
 } *LP_swapstats;
+int32_t LP_statslog_parsequote(char *method,cJSON *lineobj);
 
 char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "connected", "tradestatus" };
 
@@ -50,6 +51,72 @@ void LP_tradecommand_log(cJSON *argjson)
         free(jsonstr);
         fflush(logfp);
     }
+}
+
+void LP_statslog_parseline(cJSON *lineobj)
+{
+    char *method; cJSON *obj;
+    if ( (method= jstr(lineobj,"method")) != 0 )
+    {
+        if ( strcmp(method,"request") == 0 )
+            LP_requests++;
+        else if ( strcmp(method,"reserved") == 0 )
+            LP_reserveds++;
+        else if ( strcmp(method,"connect") == 0 )
+        {
+            if ( (obj= jobj(lineobj,"trade")) == 0 )
+                obj = lineobj;
+            LP_statslog_parsequote(method,obj);
+            LP_connects++;
+        }
+        else if ( strcmp(method,"connected") == 0 )
+        {
+            LP_statslog_parsequote(method,lineobj);
+            LP_connecteds++;
+        }
+        else if ( strcmp(method,"tradestatus") == 0 )
+        {
+            LP_statslog_parsequote(method,lineobj);
+            LP_tradestatuses++;
+        }
+        else
+        {
+            LP_unknowns++;
+            printf("parseline unknown method.(%s) (%s)\n",method,jprint(lineobj,0));
+        }
+    } else printf("parseline no method.(%s)\n",jprint(lineobj,0));
+}
+
+int32_t LP_statslog_parse()
+{
+    static long lastpos; FILE *fp; char line[8192]; cJSON *lineobj; int32_t n = 0;
+    if ( (fp= fopen(LP_STATSLOG_FNAME,"rb")) != 0 )
+    {
+        if ( lastpos > 0 )
+        {
+            fseek(fp,0,SEEK_END);
+            if ( ftell(fp) > lastpos )
+                fseek(fp,lastpos,SEEK_SET);
+            else
+            {
+                fclose(fp);
+                return(0);
+            }
+        }
+        while ( fgets(line,sizeof(line),fp) > 0 )
+        {
+            lastpos = ftell(fp);
+            if ( (lineobj= cJSON_Parse(line)) != 0 )
+            {
+                n++;
+                LP_statslog_parseline(lineobj);
+                //printf("%s\n",jprint(lineobj,0));
+                free_json(lineobj);
+            }
+        }
+        fclose(fp);
+    }
+    return(n);
 }
 
 struct LP_swapstats *LP_swapstats_find(uint64_t aliceid)
@@ -236,40 +303,6 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     return(duplicate == 0);
 }
 
-void LP_statslog_parseline(cJSON *lineobj)
-{
-    char *method; cJSON *obj;
-    if ( (method= jstr(lineobj,"method")) != 0 )
-    {
-        if ( strcmp(method,"request") == 0 )
-            LP_requests++;
-        else if ( strcmp(method,"reserved") == 0 )
-            LP_reserveds++;
-        else if ( strcmp(method,"connect") == 0 )
-        {
-            if ( (obj= jobj(lineobj,"trade")) == 0 )
-                obj = lineobj;
-            LP_statslog_parsequote(method,obj);
-            LP_connects++;
-        }
-        else if ( strcmp(method,"connected") == 0 )
-        {
-            LP_statslog_parsequote(method,lineobj);
-            LP_connecteds++;
-        }
-        else if ( strcmp(method,"tradestatus") == 0 )
-        {
-            LP_statslog_parsequote(method,lineobj);
-            LP_tradestatuses++;
-        }
-        else
-        {
-            LP_unknowns++;
-            printf("parseline unknown method.(%s) (%s)\n",method,jprint(lineobj,0));
-        }
-   } else printf("parseline no method.(%s)\n",jprint(lineobj,0));
-}
-
 char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime)
 {
     cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i,dispflag,numtrades[LP_MAXPRICEINFOS]; char line[1024]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
@@ -337,38 +370,6 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime)
     jaddnum(retjson,"tradestatus",LP_tradestatuses);
     jaddnum(retjson,"unknown",LP_unknowns);
     return(jprint(retjson,1));
-}
-
-char *LP_statslog_parse()
-{
-    static long lastpos; FILE *fp; char line[8192]; cJSON *lineobj; int32_t n = 0;
-    if ( (fp= fopen(LP_STATSLOG_FNAME,"rb")) != 0 )
-    {
-        if ( lastpos > 0 )
-        {
-            fseek(fp,0,SEEK_END);
-            if ( ftell(fp) > lastpos )
-                fseek(fp,lastpos,SEEK_SET);
-            else
-            {
-                fclose(fp);
-                return(clonestr("{\"result\":\"success\",\"newlines\":0}"));
-            }
-        }
-        while ( fgets(line,sizeof(line),fp) > 0 )
-        {
-            lastpos = ftell(fp);
-            if ( (lineobj= cJSON_Parse(line)) != 0 )
-            {
-                n++;
-                LP_statslog_parseline(lineobj);
-                //printf("%s\n",jprint(lineobj,0));
-                free_json(lineobj);
-            }
-        }
-        fclose(fp);
-    }
-    return(LP_statslog_disp(n,0,0));
 }
 
 
