@@ -171,7 +171,8 @@ bits256 LP_swapstats_txid(cJSON *argjson,char *name,bits256 oldtxid)
 
 int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *lineobj)
 {
-    char *statusstr,*base,*rel; uint32_t requestid,quoteid; uint64_t satoshis,destsatoshis;
+    char *statusstr,*base,*rel,gui[64]; uint32_t requestid,quoteid; uint64_t satoshis,destsatoshis;
+    safecopy(gui,sp->Q.gui,sizeof(gui));
     if ( strcmp(LP_stats_methods[sp->methodind],"tradestatus") == 0 )
     {
         base = jstr(lineobj,"bob");
@@ -201,6 +202,8 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
         }
         
     } else sp->Q = *qp;
+    if ( sp->Q.gui[0] == 0 || strcmp(sp->Q.gui,"nogui") == 0 )
+        strcpy(sp->Q.gui,gui);
     return(0);
 }
 
@@ -257,6 +260,9 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     }
     else
     {
+        gui = jstr(lineobj,"gui");
+        if ( gui == 0 || gui[0] == 0 )
+            gui = "nogui";
         base = jstr(lineobj,"base");
         rel = jstr(lineobj,"rel");
         gui = jstr(lineobj,"gui");
