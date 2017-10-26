@@ -136,7 +136,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
     memset(&Q,0,sizeof(Q));
-    if ( LP_quoteparse(&Q,lineobj) < 0 )
+    if ( strcmp(method,"tradestatus") != 0 && LP_quoteparse(&Q,lineobj) < 0 )
     {
         printf("quoteparse_error.(%s)\n",jprint(lineobj,0));
         LP_parse_errors++;
@@ -238,15 +238,6 @@ char *LP_statslog_disp(int32_t n)
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"newlines",n);
-    jaddnum(retjson,"request",LP_requests);
-    jaddnum(retjson,"reserved",LP_reserveds);
-    jaddnum(retjson,"connect",LP_connects);
-    jaddnum(retjson,"connected",LP_connecteds);
-    jaddnum(retjson,"duplicates",LP_duplicates);
-    jaddnum(retjson,"parse_errors",LP_parse_errors);
-    jaddnum(retjson,"uniques",LP_aliceids);
-    jaddnum(retjson,"tradestatus",LP_tradestatuses);
-    jaddnum(retjson,"unknown",LP_unknowns);
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_swapstats,sp,tmp)
     {
@@ -268,6 +259,15 @@ char *LP_statslog_disp(int32_t n)
         }
     }
     jadd(retjson,"volumes",array);
+    jaddnum(retjson,"request",LP_requests);
+    jaddnum(retjson,"reserved",LP_reserveds);
+    jaddnum(retjson,"connect",LP_connects);
+    jaddnum(retjson,"connected",LP_connecteds);
+    jaddnum(retjson,"duplicates",LP_duplicates);
+    jaddnum(retjson,"parse_errors",LP_parse_errors);
+    jaddnum(retjson,"uniques",LP_aliceids);
+    jaddnum(retjson,"tradestatus",LP_tradestatuses);
+    jaddnum(retjson,"unknown",LP_unknowns);
     return(jprint(retjson,1));
 }
 
