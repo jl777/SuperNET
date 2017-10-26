@@ -83,7 +83,7 @@ void LP_swapstats_line(int32_t *numtrades,uint64_t *basevols,uint64_t *relvols,c
         basevols[baseind] += sp->Q.satoshis, numtrades[baseind]++;
     if ( (relind= LP_priceinfoind(sp->Q.destcoin)) >= 0 )
         relvols[relind] += sp->Q.destsatoshis, numtrades[relind]++;
-    sprintf(line,"%s %8s %-4d %9s %016llx: (%.8f %5s) -> (%.8f %5s) %.8f finished.%u expired.%u %s",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice,sp->finished,sp->expired,LP_stats_methods[sp->methodind]);
+    sprintf(line,"%s %8s %-4d %9s %016llx: (%.8f %5s) -> (%.8f %5s) %.8f finished.%u expired.%u",utc_str(tstr,sp->Q.timestamp),sp->Q.gui,sp->ind,LP_stats_methods[sp->methodind],(long long)sp->aliceid,dstr(sp->Q.satoshis),sp->Q.srccoin,dstr(sp->Q.destsatoshis),sp->Q.destcoin,sp->qprice,sp->finished,sp->expired);
 }
 
 bits256 LP_swapstats_txid(cJSON *argjson,char *name,bits256 oldtxid)
@@ -296,7 +296,12 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime)
         if ( dispflag != 0 )
         {
             LP_swapstats_line(numtrades,basevols,relvols,line,sp);
-            jaddistr(array,line);
+            item = cJSON_CreateObject();
+            jadd64bits(item,"aliceid",sp->aliceid);
+            jaddnum(item,"requestid",sp->Q.R.requestid);
+            jaddnum(item,"quoteid",sp->Q.R.quoteid);
+            jaddstr(item,"line",line);
+            jaddi(array,item);
         }
     }
     jadd(retjson,"swaps",array);
