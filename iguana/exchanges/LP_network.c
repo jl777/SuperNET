@@ -748,7 +748,8 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                     printf("bind to %s error for %s: %s\n",bindaddr,publicaddr,nn_strerror(nn_errno()));
                     exit(-1);
                 }
-                nn_bind(pullsock,bindaddr2);
+                if ( nn_bind(pullsock,bindaddr2) >= 0 )
+                    printf("bound to %s\n",bindaddr2);
             }
             timeout = 1;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));

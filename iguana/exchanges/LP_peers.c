@@ -121,13 +121,20 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                         {
                             peer->subsock = subsock;
                             printf("connected to sub.(%s %s) subsock.%d valid.%d\n",subaddr,subaddr2,peer->subsock,valid);
-                        } else nn_close(subsock);
+                        }
+                        else
+                        {
+                            printf("error connecting to subsock.%d (%s %s)\n",subsock,subaddr,subaddr2);
+                            nn_close(subsock);
+                            subsock = -1;
+                        }
                     }
                 }
                 else
                 {
                     nn_close(pushsock);
-                    printf("error connecting to push.(%s)\n",pushaddr);
+                    pushsock = -1;
+                    printf("error connecting to push.(%s %s)\n",pushaddr,pushaddr2);
                 }
             } else printf("%s pushport.%u subport.%u pushsock.%d\n",ipaddr,pushport,subport,pushsock);
             if ( peer->pushsock >= 0 && peer->subsock >= 0 )
