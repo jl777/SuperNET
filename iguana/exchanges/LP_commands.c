@@ -97,7 +97,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
      else if ( strcmp(method,"help") == 0 )
          return(clonestr("{\"result\":\" \
 available localhost RPC commands: \n \
-pricearray(base, rel, firsttime=0, lasttime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
+pricearray(base, rel, starttime=0, endtime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 setprice(base, rel, price)\n\
 autoprice(base, rel, minprice, margin, refbase, refrel, factor, offset)*\n\
 goal(coin=*, val=<autocalc>)\n\
@@ -259,7 +259,7 @@ stop()\n\
             }
             else if ( strcmp(method,"pricearray") == 0 )
             {
-                return(jprint(LP_pricearray(base,rel,juint(argjson,"firsttime"),juint(argjson,"lasttime"),jint(argjson,"timescale")),1));
+                return(jprint(LP_pricearray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
             }
             else if ( strcmp(method,"myprice") == 0 )
             {

@@ -815,7 +815,7 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
+    char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],bindaddr2[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
@@ -899,6 +899,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         pubsock = -1;
         nanomsg_transportname(0,subaddr,myipaddr,mypubport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
+        nanomsg_transportname2(1,bindaddr2,myipaddr,mypubport+10);
         if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
         {
             if ( nn_bind(pubsock,bindaddr) >= 0 )
@@ -911,6 +912,15 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                 printf("error binding to (%s).%d\n",subaddr,pubsock);
                 if ( pubsock >= 0 )
                     nn_close(pubsock), pubsock = -1;
+            }
+            if ( nn_bind(pubsock,bindaddr2) >= 0 )
+            {
+                timeout = 1;
+                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+            }
+            else
+            {
+                printf("error binding2 to (%s)\n",bindaddr2);
             }
         } else printf("error getting pubsock %d\n",pubsock);
         printf(">>>>>>>>> myipaddr.%s (%s) pullsock.%d\n",myipaddr,subaddr,pubsock);
