@@ -125,7 +125,7 @@ void LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *
             sp->depositspent = LP_swapstats_txid(lineobj,"depositspent",sp->depositspent);
             if ( (statusstr= jstr(lineobj,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
                 sp->finished = juint(lineobj,"timestamp");
-        } else printf("mismatched tradestatus aliceid.%016llx\n",(long long)sp->aliceid);
+        } else printf("mismatched tradestatus aliceid.%016llx b%s/%s r%s/%s r%u/%u q%u/%u %.8f/%.8f -> %.8f/%.8f\n",(long long)sp->aliceid,base,sp->Q.srccoin,rel,sp->Q.destcoin,requestid,sp->Q.R.requestid,quoteid,sp->Q.R.quoteid,dstr(satoshis),dstr(sp->Q.satoshis),dstr(destsatoshis),dstr(sp->Q.destsatoshis));
         
     } else sp->Q = *qp;
 }
