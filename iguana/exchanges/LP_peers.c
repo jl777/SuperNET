@@ -102,7 +102,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                     //maxsize = 2 * 1024 * 1024;
                     //nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDBUF,&maxsize,sizeof(maxsize));
-                    printf("connected to push.(%s %s) pushsock.%d valid.%d\n",pushaddr,pushsock,valid);
+                    printf("connected to push.(%s %s) pushsock.%d valid.%d\n",pushaddr,pushaddr2,pushsock,valid);
                     peer->connected = (uint32_t)time(NULL);
                     peer->pushsock = pushsock;
                     if ( (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
