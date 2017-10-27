@@ -1297,6 +1297,8 @@ char *LP_recent_swaps(int32_t limit)
         item = cJSON_CreateObject();
         jaddnum(item,"expiration",Alice_expiration);
         jaddnum(item,"timeleft",Alice_expiration-time(NULL));
+        jaddnum(item,"requestid",LP_Alicequery.R.requestid);
+        jaddnum(item,"quoteid",LP_Alicequery.R.quoteid);
         jaddstr(item,"bob",LP_Alicequery.srccoin);
         jaddstr(item,"base",LP_Alicequery.srccoin);
         jaddnum(item,"basevalue",dstr(LP_Alicequery.satoshis));
@@ -1308,27 +1310,33 @@ char *LP_recent_swaps(int32_t limit)
     return(jprint(retjson,1));
 }
 
-int32_t basilisk_swap_addarray(cJSON *item,char *refbase,char *refrel)
+uint64_t basilisk_swap_addarray(cJSON *item,char *refbase,char *refrel)
 {
-    char *base,*rel;
+    char *base,*rel; uint32_t requestid,quoteid; uint64_t ridqid = 0;
     base = jstr(item,"bob");
     rel = jstr(item,"alice");
     if ( refrel == 0 || refrel[0] == 0 )
     {
         if ( strcmp(base,refbase) == 0 || strcmp(rel,refbase) == 0 )
-            return(1);
+            ridqid = 1;
     }
     else if ( strcmp(base,refbase) == 0 && strcmp(rel,refrel) == 0 )
-        return(1);
-    return(0);
+        ridqid = 1;
+    if ( ridqid != 0 )
+    {
+        requestid = jint(item,"requestid");
+        quoteid = jint(item,"quoteid");
+        ridqid = ((uint64_t)requestid << 32) | quoteid;
+    }
+    return(ridqid);
 }
 
 char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
 {
-    char *liststr,*retstr2; cJSON *retjson,*array,*pending,*swapjson,*item,*retarray; int32_t i,n; uint32_t requestid,quoteid;
+    uint64_t ridqids[1024],ridqid; char *liststr,*retstr2; cJSON *retjson,*array,*pending,*swapjson,*item,*retarray; int32_t i,j,n,count = 0; uint32_t requestid,quoteid;
     if ( limit <= 0 )
         limit = 10;
-    printf("swapentries %s %s limit.%d\n",refbase,refrel,limit);
+    memset(ridqids,0,sizeof(ridqids));
     retarray = cJSON_CreateArray();
     if ( (liststr= basilisk_swaplist(0,0)) != 0 )
     {
@@ -1340,9 +1348,10 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    if ( basilisk_swap_addarray(item,refbase,refrel) > 0 )
+                    if ( (ridqid= basilisk_swap_addarray(item,refbase,refrel)) > 0 )
                     {
-                        printf("add %d of %d\n",i,n);
+                        if ( count < sizeof(ridqids)/sizeof(*ridqids) )
+                            ridqids[count++] = ridqid;
                         jaddi(retarray,jduplicate(item));
                     }
                 }
@@ -1351,7 +1360,6 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
         }
         free(liststr);
     }
-    printf("check recents\n");
     if ( (liststr= LP_recent_swaps(limit)) != 0 )
     {
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
@@ -1363,24 +1371,45 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                     item = jitem(array,i);
                     requestid = juint(jitem(item,0),0);
                     quoteid = juint(jitem(item,1),0);
-                    printf("r%u q%u\n",requestid,quoteid);
-                    if ( (retstr2= basilisk_swapentry(requestid,quoteid)) != 0 )
+                    ridqid = ((uint64_t)requestid << 32) | quoteid;
+                    for (j=0; j<count; j++)
+                        if ( ridqid == ridqids[j] )
+                            break;
+                    if ( j == count )
                     {
-                        if ( (swapjson= cJSON_Parse(retstr2)) != 0 )
+                        if ( (retstr2= basilisk_swapentry(requestid,quoteid)) != 0 )
                         {
-                            if ( basilisk_swap_addarray(swapjson,refbase,refrel) > 0 )
-                                jaddi(retarray,swapjson);
-                            else free_json(swapjson);
+                            if ( (swapjson= cJSON_Parse(retstr2)) != 0 )
+                            {
+                                if ( basilisk_swap_addarray(swapjson,refbase,refrel) > 0 )
+                                {
+                                    if ( count < sizeof(ridqids)/sizeof(*ridqids) )
+                                        ridqids[count++] = ridqid;
+                                    jaddi(retarray,swapjson);
+                                } else free_json(swapjson);
+                            }
+                            free(retstr2);
                         }
-                        free(retstr2);
                     }
                 }
             }
             if ( (pending= jobj(retjson,"pending")) != 0 )
             {
-                if ( basilisk_swap_addarray(pending,refbase,refrel) > 0 )
-                    jaddi(retarray,pending);
-                else free_json(pending);
+                requestid = juint(pending,"requestid");
+                quoteid = juint(pending,"quoteid");
+                j = 0;
+                if ( (ridqid= ((uint64_t)requestid << 32) | quoteid) != 0 )
+                {
+                    for (j=0; j<count; j++)
+                        if ( ridqid == ridqids[j] )
+                            break;
+                }
+                if ( ridqid == 0 || j == count )
+                {
+                    if ( basilisk_swap_addarray(pending,refbase,refrel) > 0 )
+                        jaddi(retarray,pending);
+                    else free_json(pending);
+                } else free_json(pending);
             }
             free_json(retjson);
         }
