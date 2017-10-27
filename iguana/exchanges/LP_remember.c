@@ -1328,6 +1328,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
     char *liststr,*retstr2; cJSON *retjson,*array,*pending,*swapjson,*item,*retarray; int32_t i,n; uint32_t requestid,quoteid;
     if ( limit <= 0 )
         limit = 10;
+    printf("swapentries %s %s limit.%d\n",refbase,refrel,limit);
     retarray = cJSON_CreateArray();
     if ( (liststr= basilisk_swaplist(0,0)) != 0 )
     {
