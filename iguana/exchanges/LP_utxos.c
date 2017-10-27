@@ -787,11 +787,12 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
         }
         if ( G.LP_utxoinfos2[iambob] != 0 )
         {
-            HASH_ITER(hh,G.LP_utxoinfos2[iambob],utxo,tmp)
+            G.LP_utxoinfos2[iambob] = 0;
+            /*HASH_ITER(hh,G.LP_utxoinfos2[iambob],utxo,tmp)
             {
                 HASH_DELETE(hh,G.LP_utxoinfos2[iambob],utxo);
-                //free(utxo);
-            }
+                free(utxo);
+            }*/
         }
     }
     memset(&G,0,sizeof(G));
