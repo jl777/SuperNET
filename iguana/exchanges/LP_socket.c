@@ -241,7 +241,7 @@ int32_t LP_socketrecv(int32_t sock,uint8_t *recvbuf,int32_t maxlen)
 struct electrum_info
 {
     queue_t sendQ,pendingQ;
-    portable_mutex_t mutex;
+    portable_mutex_t mutex,txmutex;
     struct electrum_info *prev;
     int32_t bufsize,sock,*heightp;
     struct iguana_info *coin;
@@ -378,10 +378,12 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             sitem->expiration = timeout;
             sitem->DL.type = ep->stratumid++;
             sitem->retptrp = (void **)retjsonp;
+            portable_mutex_lock(&ep->mutex);
             queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
             expiration = (uint32_t)time(NULL) + timeout + 1;
             while ( *retjsonp == 0 && time(NULL) <= expiration )
                 usleep(10000);
+            portable_mutex_unlock(&ep->mutex);
             if ( ep->prev == 0 )
             {
                 if ( *retjsonp == 0 )
@@ -663,10 +665,10 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
 {
     cJSON *retjson;
     if ( ep != 0 )
-        portable_mutex_lock(&ep->mutex);
+        portable_mutex_lock(&ep->txmutex);
     retjson = _electrum_transaction(symbol,ep,retjsonp,txid);
     if ( ep != 0 )
-        portable_mutex_unlock(&ep->mutex);
+        portable_mutex_unlock(&ep->txmutex);
     return(retjson);
 }
 
@@ -771,6 +773,7 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
         }
         ep = calloc(1,sizeof(*ep) + bufsize);
         portable_mutex_init(&ep->mutex);
+        portable_mutex_init(&ep->txmutex);
         ep->sock = sock;
         safecopy(ep->symbol,symbol,sizeof(ep->symbol));
         safecopy(ep->ipaddr,ipaddr,sizeof(ep->ipaddr));
