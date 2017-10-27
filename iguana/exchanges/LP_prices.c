@@ -803,6 +803,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     if ( numasks > 1 )
     {
         qsort(asks,numasks,sizeof(*asks),_cmp_orderbook);
+        depth = 0;
         for (i=0; i<numasks; i++)
         {
             depth += asks[i]->depth;
