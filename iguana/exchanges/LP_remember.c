@@ -1343,7 +1343,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                     if ( basilisk_swap_addarray(item,refbase,refrel) > 0 )
                     {
                         printf("add %d of %d\n",i,n);
-                        jaddi(retarray,item);
+                        jaddi(retarray,jduplicate(item));
                     }
                 }
             }
