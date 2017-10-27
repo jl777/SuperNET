@@ -1388,14 +1388,14 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                     for (j=0; j<count; j++)
                         if ( ridqid == ridqids[j] )
                             break;
-                    printf("j.%d count.%d ridqid.%16llx\n",j,count,(long long)ridqid);
+                    printf("j.%d count.%d %u %u ridqid.%16llx\n",j,count,requestid,quoteid,(long long)ridqid);
                     if ( j == count )
                     {
                         if ( (retstr2= basilisk_swapentry(requestid,quoteid)) != 0 )
                         {
                             if ( (swapjson= cJSON_Parse(retstr2)) != 0 )
                             {
-                                if ( basilisk_swap_addarray(swapjson,refbase,refrel) > 0 )
+                                if ( (ridqid= basilisk_swap_addarray(swapjson,refbase,refrel)) > 0 )
                                 {
                                     if ( count < sizeof(ridqids)/sizeof(*ridqids) )
                                         ridqids[count++] = ridqid;
