@@ -273,6 +273,7 @@ cJSON *LP_paxprice(char *fiat)
 cJSON *LP_gettx(char *symbol,bits256 txid)
 {
     struct iguana_info *coin; char buf[512],str[65]; cJSON *retjson;
+    printf("LP_gettx\n");
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
