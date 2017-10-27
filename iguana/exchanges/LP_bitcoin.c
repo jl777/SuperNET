@@ -3244,7 +3244,7 @@ bits256 bitcoin_sigtxid(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t i
     memcpy(dest.vins,msgtx->vins,dest.tx_in * sizeof(*dest.vins));
     memcpy(dest.vouts,msgtx->vouts,dest.tx_out * sizeof(*dest.vouts));
     memset(sigtxid.bytes,0,sizeof(sigtxid));
-    if ( hashtype != SIGHASH_ALL )
+    if ( (hashtype & ~SIGHASH_FORKID) != SIGHASH_ALL )
     {
         printf("currently only SIGHASH_ALL supported, not %d\n",hashtype);
         return(sigtxid);
@@ -3279,11 +3279,6 @@ bits256 bitcoin_sigtxid(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t i
         if ( height >= BTC2_HARDFORK_HEIGHT )
             hashtype |= (0x777 << 20);
 #endif
-        if ( zcash == LP_IS_BITCOINCASH )
-        {
-            hashtype |= SIGHASH_FORKID;
-            printf("hashtype is %04x\n",hashtype);
-        }
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
         revsigtxid = bits256_doublesha256(0,serialized,len);
         for (i=0; i<sizeof(revsigtxid); i++)

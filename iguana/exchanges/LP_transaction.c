@@ -401,6 +401,8 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
             script = msgtx->vins[vini].spendscript;
             scriptlen = msgtx->vins[vini].spendlen;
         }
+        if ( zcash == LP_IS_BITCOINCASH )
+            sighash |= SIGHASH_FORKID;
         sigtxid = bitcoin_sigtxid(taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,sighash,vpnstr,suppress_pubkeys,zcash);
         if ( bits256_nonz(sigtxid) != 0 )
         {
