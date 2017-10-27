@@ -159,7 +159,19 @@ stop()\n\
         if ( strcmp(method,"passphrase") != 0 && ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) )
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         jdelete(argjson,"userpass");
-        if ( strcmp(method,"sendmessage") == 0 )
+        if ( strcmp(method,"passphrase") == 0 )
+        {
+            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
+                return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
+            {
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"userpass",G.USERPASS);
+                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+                return(jprint(retjson,1));
+            }
+        }
+        else if ( strcmp(method,"sendmessage") == 0 )
         {
             if ( jobj(argjson,"method2") == 0 )
             {
@@ -186,18 +198,6 @@ stop()\n\
         {
             LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
-        }
-        else if ( strcmp(method,"passphrase") == 0 )
-        {
-            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
-                return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
-            {
-                retjson = cJSON_CreateObject();
-                jaddstr(retjson,"result","success");
-                jaddstr(retjson,"userpass",G.USERPASS);
-                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
-                return(jprint(retjson,1));
-            }
         }
         else if ( strcmp(method,"notarizations") == 0 )
         {

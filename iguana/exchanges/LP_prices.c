@@ -18,7 +18,7 @@
 //  marketmaker
 //
 
-struct LP_orderbookentry { bits256 pubkey; double price; uint64_t minsatoshis,maxsatoshis; uint32_t timestamp; int32_t numutxos; char coinaddr[64]; };
+struct LP_orderbookentry { bits256 pubkey; double price; uint64_t minsatoshis,maxsatoshis,depth; uint32_t timestamp; int32_t numutxos; char coinaddr[64]; };
 
 struct LP_priceinfo
 {
@@ -673,13 +673,14 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
         jaddnum(item,"numutxos",op->numutxos);
         jaddnum(item,"minvolume",dstr(op->minsatoshis)*0.8);
         jaddnum(item,"maxvolume",dstr(op->maxsatoshis)*0.8);
+        jaddnum(item,"depth",dstr(op->depth)*0.8);
         jaddbits256(item,"pubkey",op->pubkey);
         jaddnum(item,"age",time(NULL)-op->timestamp);
     }
     return(item);
 }
 
-struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,double price,int32_t numutxos,uint64_t minsatoshis,uint64_t maxsatoshis,bits256 pubkey,uint32_t timestamp)
+struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,double price,int32_t numutxos,uint64_t minsatoshis,uint64_t maxsatoshis,bits256 pubkey,uint32_t timestamp,uint64_t depth)
 {
     struct LP_orderbookentry *op;
     if ( (op= calloc(1,sizeof(*op))) != 0 )
@@ -691,6 +692,7 @@ struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,d
         op->maxsatoshis = maxsatoshis;
         op->pubkey = pubkey;
         op->timestamp = timestamp;
+        op->depth = depth;
     }
     return(op);
 }
@@ -715,7 +717,7 @@ void LP_pubkeys_query()
 
 int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum,int32_t duration)
 {
-    char coinaddr[64]; uint8_t zeroes[20]; struct LP_pubkeyinfo *pubp=0,*tmp; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; struct LP_address *ap; struct iguana_info *basecoin; uint32_t oldest; double price; int32_t baseid,relid,n; uint64_t minsatoshis,maxsatoshis;
+    char coinaddr[64]; uint8_t zeroes[20]; struct LP_pubkeyinfo *pubp=0,*tmp; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; struct LP_address *ap; struct iguana_info *basecoin; uint32_t oldest; double price; int32_t baseid,relid,n; uint64_t minsatoshis,maxsatoshis,balance,depth;
     if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
         baseid = basepp->ind;
     else return(num);
@@ -724,6 +726,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
     now = (uint32_t)time(NULL);
     oldest = now - duration;
     memset(zeroes,0,sizeof(zeroes));
+    depth = 0;
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
     {
         if ( memcmp(zeroes,pubp->rmd160,sizeof(pubp->rmd160)) == 0 )
@@ -740,15 +743,17 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
         {
             if ( (ap= LP_addressfind(basecoin,coinaddr)) != 0 )
             {
-                n = LP_address_minmax(&minsatoshis,&maxsatoshis,ap);
+                n = LP_address_minmax(&balance,&minsatoshis,&maxsatoshis,ap);
                 if ( polarity > 0 )
                 {
+                    balance *= price;
                     minsatoshis *= price;
                     maxsatoshis *= price;
                 }
+                depth += balance;
                 //printf("%s/%s %s n.%d ap->n.%d %.8f\n",base,rel,coinaddr,n,ap->n,dstr(ap->total));
             }
-            if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,minsatoshis,maxsatoshis,pubp->pubkey,pubp->timestamp)) != 0 )
+            if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,minsatoshis,maxsatoshis,pubp->pubkey,pubp->timestamp,depth)) != 0 )
             {
                 *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                 (*arrayp)[num++] = op;
