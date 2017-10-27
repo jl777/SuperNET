@@ -782,7 +782,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
             HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
             {
                 HASH_DELETE(hh,G.LP_utxoinfos[iambob],utxo);
-                free(utxo);
+                //free(utxo);
             }
         }
         if ( G.LP_utxoinfos2[iambob] != 0 )
