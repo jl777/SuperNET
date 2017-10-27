@@ -163,6 +163,7 @@ stop()\n\
         jdelete(argjson,"userpass");
         if ( strcmp(method,"passphrase") == 0 )
         {
+            G.USERPASS_COUNTER = 1;
             if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
                 return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
             {
