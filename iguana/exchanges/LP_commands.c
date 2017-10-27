@@ -237,6 +237,17 @@ stop()\n\
             taddr = (jobj(argjson,"taddr") == 0) ? 0 : juint(argjson,"taddr");
             return(LP_secretaddresses(ctx,jstr(argjson,"prefix"),jstr(argjson,"passphrase"),juint(argjson,"num"),taddr,pubtype));
         }
+        else if ( strcmp(method,"swapstatus") == 0 )
+        {
+            uint32_t requestid,quoteid;
+            if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
+                return(basilisk_swapentry(requestid,quoteid));
+            else if ( coin != 0 && coin[0] != 0 )
+                return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
+            else if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
+                return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
+            else return(basilisk_swaplist(0,0));
+        }
         if ( base != 0 && rel != 0 )
         {
             double price,bid,ask;
@@ -420,17 +431,6 @@ stop()\n\
         }
         else if ( strcmp(method,"goal") == 0 )
             return(LP_portfolio_goal("*",100.));
-        else if ( strcmp(method,"swapstatus") == 0 )
-        {
-            uint32_t requestid,quoteid;
-            if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
-                return(basilisk_swapentry(requestid,quoteid));
-            else if ( coin != 0 && coin[0] != 0 )
-                return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
-            else if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
-                return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
-            else return(basilisk_swaplist(0,0));
-        }
         else if ( strcmp(method,"lastnonce") == 0 )
         {
             cJSON *retjson = cJSON_CreateObject();
