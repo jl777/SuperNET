@@ -23,11 +23,10 @@
 
 // select oldest utxo first
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
-// depth
+
 // verify portfolio, pricearray, interest to KMD withdraw, pricebroadcast loop, trade to pubkey
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
-//statsdisp(starttime=0, endtime=0, gui="", pubkey="")\n\
 
 #include <stdio.h>
 #include "LP_include.h"
