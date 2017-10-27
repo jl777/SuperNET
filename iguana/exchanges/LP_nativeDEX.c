@@ -23,10 +23,11 @@
 
 // select oldest utxo first
 // handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
-// depth and trade to pubkey
-// verify portfolio, pricearray, interest to KMD withdraw
+// depth
+// verify portfolio, pricearray, interest to KMD withdraw, pricebroadcast loop, trade to pubkey
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
+//statsdisp(starttime=0, endtime=0, gui="", pubkey="")\n\
 
 #include <stdio.h>
 #include "LP_include.h"
@@ -736,6 +737,26 @@ void LP_pubkeysloop(void *ctx)
     }
 }
 
+void LP_price_broadcastloop(void *ctx)
+{
+    struct LP_priceinfo *basepp,*relpp; double price; int32_t baseind,relind;
+    sleep(30);
+    while ( 1 )
+    {
+        for (baseind=0; baseind<LP_MAXPRICEINFOS; baseind++)
+        {
+            basepp = LP_priceinfo(baseind);
+            for (relind=0; relind<LP_MAXPRICEINFOS; relind++)
+            {
+                relpp = LP_priceinfo(relind);
+                if ( basepp != 0 && relpp != 0 && (price= basepp->myprices[relpp->ind]) > SMALLVAL)
+                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
+            }
+        }
+        sleep(60);
+    }
+}
+
 void LP_privkeysloop(void *ctx)
 {
     sleep(20);
@@ -1006,12 +1027,17 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_pubkeysloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,(void *)&myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_privkeysloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)&myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)myipaddr) != 0 )
+    {
+        printf("error launching LP_swapsloop for port.%u\n",myport);
+        exit(-1);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_price_broadcastloop,(void *)ctx) != 0 )
     {
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
@@ -1077,10 +1103,10 @@ void LP_fromjs_iter()
     LP_nanomsg_recvs(ctx);
     LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     queue_loop(0);
-    if ( (LP_counter % 10) == 0 )
+    if ( (LP_counter % 10) == 0 ) // 10 seconds
     {
         LP_coinsloop(0);
-        if ( (LP_counter % 100) == 0 )
+        if ( (LP_counter % 100) == 0 ) // 100 seconds
         {
             LP_notify_pubkeys(ctx,LP_mypubsock);
             LP_privkey_updates(ctx,LP_mypubsock,0);

@@ -484,7 +484,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 
 int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui)
 {
-    char *retstr2; double bid,ask,maxprice; uint32_t requestid,quoteid,iter,i; cJSON *retjson2;
+    char *retstr2; double bid,ask,maxprice; bits256 zero; uint32_t requestid,quoteid,iter,i; cJSON *retjson2;
     requestid = quoteid = 0;
     LP_myprice(&bid,&ask,buy->symbol,sell->symbol);
     maxprice = ask;
@@ -504,7 +504,8 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
                 break;
             if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
             {
-                if ( (retstr2= LP_autobuy(ctx,"127.0.0.1",-1,buy->symbol,sell->symbol,maxprice,relvolume,60,24*3600,gui,LP_lastnonce+1)) != 0 )
+                memset(zero.bytes,0,sizeof(zero));
+                if ( (retstr2= LP_autobuy(ctx,"127.0.0.1",-1,buy->symbol,sell->symbol,maxprice,relvolume,60,24*3600,gui,LP_lastnonce+1,zero)) != 0 )
                 {
                     if ( (retjson2= cJSON_Parse(retstr2)) != 0 )
                     {

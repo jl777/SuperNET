@@ -477,7 +477,7 @@ int32_t LP_address_isvalid(char *symbol,char *address)
 
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
-    char buf[128]; cJSON *retjson; struct iguana_info *coin;
+    char buf[128]; cJSON *retjson; int32_t numconfs; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -488,7 +488,10 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
     {
         if ( LP_address_ismine(symbol,coinaddr) > 0 )
         {
-            sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
+            if ( strcmp(symbol,"BTC") == 0 )
+                numconfs = 0;
+            else numconfs = 1;
+            sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             return(bitcoin_json(coin,"listunspent",buf));
         } else return(LP_address_utxos(coin,coinaddr,0));
     } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));

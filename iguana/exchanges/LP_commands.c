@@ -106,13 +106,13 @@ enable(coin)\n\
 disable(coin)\n\
 notarizations(coin)\n\
 parselog()\n\
-statsdisp(starttime=0, endtime=0)\n\
+statsdisp(starttime=0, endtime=0, gui="", pubkey="")\n\
 getrawtransaction(coin, txid)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
 lastnonce()\n\
-buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
-sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
+buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, pubkey="")\n\
+sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce, pubkey="")\n\
 withdraw(coin, outputs[])\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus()\n\
@@ -278,7 +278,7 @@ stop()\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"sell") == 0 )
@@ -286,7 +286,7 @@ stop()\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }

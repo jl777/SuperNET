@@ -47,6 +47,13 @@ struct LP_cacheinfo
     uint32_t timestamp;
 } *LP_cacheinfos;
 
+struct LP_priceinfo *LP_priceinfo(int32_t ind)
+{
+    if ( ind < 0 || ind >= LP_MAXPRICEINFOS )
+        return(0);
+    else return(&LP_priceinfos[ind]);
+}
+
 char *LP_priceinfostr(int32_t ind)
 {
     if ( ind < 0 || ind >= LP_MAXPRICEINFOS )
@@ -874,30 +881,6 @@ uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance)
     }
     return(KMDvalue);
 }
-
-/*char *LP_pricestr(char *base,char *rel,double origprice)
-{
-    cJSON *retjson; double price = 0.;
-    if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
-    {
-        price = LP_price(base,rel);
-        if ( origprice > SMALLVAL && origprice < price )
-            price = origprice;
-    }
-    if ( LP_pricevalid(price) > 0 )
-    {
-        retjson = cJSON_CreateObject();
-        jaddstr(retjson,"result","success");
-        jaddstr(retjson,"method","postprice");
-        jaddbits256(retjson,"pubkey",G.LP_mypub25519);
-        jaddstr(retjson,"base",base);
-        jaddstr(retjson,"rel",rel);
-        jaddnum(retjson,"price",price);
-        jadd(retjson,"theoretical",LP_priceinfomatrix(0));
-        jadd(retjson,"quotes",LP_priceinfomatrix(1));
-        return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"cant find baserel pair\"}"));
-}*/
 
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32])
 {

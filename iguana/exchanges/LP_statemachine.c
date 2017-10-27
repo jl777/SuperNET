@@ -1882,6 +1882,31 @@ void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
  return(clonestr("{\"result\":\"marked as spent\"}"));
  return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
  }*/
+
+
+/*char *LP_pricestr(char *base,char *rel,double origprice)
+ {
+ cJSON *retjson; double price = 0.;
+ if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
+ {
+ price = LP_price(base,rel);
+ if ( origprice > SMALLVAL && origprice < price )
+ price = origprice;
+ }
+ if ( LP_pricevalid(price) > 0 )
+ {
+ retjson = cJSON_CreateObject();
+ jaddstr(retjson,"result","success");
+ jaddstr(retjson,"method","postprice");
+ jaddbits256(retjson,"pubkey",G.LP_mypub25519);
+ jaddstr(retjson,"base",base);
+ jaddstr(retjson,"rel",rel);
+ jaddnum(retjson,"price",price);
+ jadd(retjson,"theoretical",LP_priceinfomatrix(0));
+ jadd(retjson,"quotes",LP_priceinfomatrix(1));
+ return(jprint(retjson,1));
+ } else return(clonestr("{\"error\":\"cant find baserel pair\"}"));
+ }*/
 void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo)
 {
     struct _LP_utxoinfo u; struct iguana_info *coin; char str[65]; uint32_t now = (uint32_t)time(NULL);
