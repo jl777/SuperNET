@@ -1148,8 +1148,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
 
 char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
 {
-    char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i;
+    uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i,j,count=0;
     portable_mutex_lock(&LP_swaplistmutex);
+    memset(ridqids,0,sizeof(ridqids));
     memset(KMDtotals,0,sizeof(KMDtotals));
     memset(BTCtotals,0,sizeof(BTCtotals));
     //,statebits; int32_t optionduration; struct basilisk_request R; bits256 privkey;
@@ -1189,8 +1190,17 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
                 }
                 if ( flag == 0 )
                 {
-                    if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
-                        jaddi(array,item);
+                    ridqid = ((uint64_t)requestid << 32) | quoteid;
+                    for (j=0; j<count; j++)
+                        if ( ridqid == ridqids[j] )
+                            break;
+                    if ( j == count )
+                    {
+                        if ( count < sizeof(ridqids)/sizeof(*ridqids) )
+                            ridqids[count++] = ridqid;
+                        if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+                            jaddi(array,item);
+                    }
                 }
             }
             fclose(fp);
