@@ -116,8 +116,8 @@ sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce, pubkey="")\
 withdraw(coin, outputs[])\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus()\n\
-swapstatus(coin)\n\
-swapstatus(base, rel)\n\
+swapstatus(coin, limit=10)\n\
+swapstatus(base, rel, limit=10)\n\
 swapstatus(requestid, quoteid)\n\
 recentswaps(limit=3)\n\
 public API:\n \
@@ -425,9 +425,9 @@ stop()\n\
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
                 return(basilisk_swapentry(requestid,quoteid));
             else if ( coin != 0 && coin[0] != 0 )
-                return(basilisk_swapentries(coin,0));
+                return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
             else if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
-                return(basilisk_swapentries(base,rel));
+                return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
             else return(basilisk_swaplist(0,0));
         }
         else if ( strcmp(method,"lastnonce") == 0 )
