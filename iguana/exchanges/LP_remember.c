@@ -1334,8 +1334,8 @@ uint64_t basilisk_swap_addarray(cJSON *item,char *refbase,char *refrel)
         ridqid = 1;
     if ( ridqid != 0 )
     {
-        requestid = jint(item,"requestid");
-        quoteid = jint(item,"quoteid");
+        requestid = juint(item,"requestid");
+        quoteid = juint(item,"quoteid");
         ridqid = ((uint64_t)requestid << 32) | quoteid;
         printf("%u %u -> %16llx\n",requestid,quoteid,(long long)ridqid);
     }
