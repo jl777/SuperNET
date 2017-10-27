@@ -3303,7 +3303,7 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
             sigser = calloc(1,maxsize*2);
         //printf("json.%p array.%p sigser.%p\n",json,vinarray,sigser);
     }
-    //printf("version.%d\n",msg->version);
+    printf("version.%d\n",msg->version);
     if ( isPoS != 0 )
     {
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
@@ -3328,7 +3328,7 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
     }
     for (i=0; i<msg->tx_in; i++)
     {
-        //printf("vin.%d starts offset.%d\n",i,len);
+        printf("vin.%d starts offset.%d numvins.%d\n",i,len,msg->tx_in);
         if ( vins != 0 && jitem(vins,i) != 0 )
             iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
         if ( (n= iguana_vinparse(rwflag,&serialized[len],&msg->vins[i])) < 0 )
@@ -3344,9 +3344,9 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
             return(-1);
         }
     }
-    //for (i=-3; i<7; i++)
-    //    printf("%02x",serialized[len+i]);
-    //printf(" prev 3 bytes before tx_out rw.%d\n",rwflag);
+    for (i=-3; i<7; i++)
+        printf("%02x",serialized[len+i]);
+    printf(" prev 3 bytes before tx_out rw.%d\n",rwflag);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
     if ( rwflag == 0 )
     {
@@ -3366,7 +3366,7 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
     }
     for (i=0; i<msg->tx_out; i++)
     {
-        //printf("rwflag.%d vout.%d starts %d\n",rwflag,i,len);
+        printf("rwflag.%d vout.%d starts %d numvouts.%d\n",rwflag,i,len,msg->tx_out);
         if ( (n= iguana_voutparse(rwflag,&serialized[len],&msg->vouts[i])) < 0 )
             return(-1);
         len += n;
@@ -3379,7 +3379,7 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
             jaddi(voutarray,iguana_voutjson(taddr,pubtype,p2shtype,&msg->vouts[i],i,*txidp));
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
-    //printf("lock_time.%08x len.%d\n",msg->lock_time,len);
+    printf("lock_time.%08x len.%d\n",msg->lock_time,len);
     /*if ( strcmp(coin->symbol,"VPN") == 0 )
     {
         uint16_t ddosflag = 0;
