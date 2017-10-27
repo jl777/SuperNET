@@ -335,7 +335,10 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     if ( strcmp(symbol,"KMD") == 0 || coin->isassetchain != 0 || taddr != 0 )
         coin->zcash = LP_IS_ZCASHPROTOCOL;
     else if ( strcmp(symbol,"BCH") == 0 )
+    {
         coin->zcash = LP_IS_BITCOINCASH;
+        printf("set coin.%s <- LP_IS_BITCOINCASH %d\n",symbol,coin->zcash);
+    }
     return(port);
 }
 
