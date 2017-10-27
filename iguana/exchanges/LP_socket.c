@@ -241,6 +241,7 @@ int32_t LP_socketrecv(int32_t sock,uint8_t *recvbuf,int32_t maxlen)
 struct electrum_info
 {
     queue_t sendQ,pendingQ;
+    portable_mutex_t mutex;
     struct electrum_info *prev;
     int32_t bufsize,sock,*heightp;
     struct iguana_info *coin;
@@ -580,7 +581,7 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
     return(txobj);
 }
 
-cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
+cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
 {
     char *hexstr,str[65]; int32_t len; cJSON *hexjson,*txobj=0; struct iguana_info *coin; uint8_t *serialized; struct LP_transaction *tx;
     printf("electrum_transaction %s %s\n",symbol,bits256_str(str,txid));
@@ -656,6 +657,17 @@ cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjso
     }
     *retjsonp = 0;
     return(*retjsonp);
+}
+
+cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
+{
+    cJSON *retjson;
+    if ( ep != 0 )
+        portable_mutex_lock(&ep->mutex);
+    retjson = _electrum_transaction(symbol,ep,retjsonp,txid);
+    if ( ep != 0 )
+        portable_mutex_unlock(&ep->mutex);
+    return(retjson);
 }
 
 cJSON *electrum_getmerkle(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid,int32_t height)
@@ -758,6 +770,7 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
             return(0);
         }
         ep = calloc(1,sizeof(*ep) + bufsize);
+        portable_mutex_init(&ep->mutex);
         ep->sock = sock;
         safecopy(ep->symbol,symbol,sizeof(ep->symbol));
         safecopy(ep->ipaddr,ipaddr,sizeof(ep->ipaddr));
