@@ -3561,7 +3561,7 @@ cJSON *bitcoin_data2json(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t 
     if ( n != len )
     {
         int32_t i;
-        for (i=0; i<=len&&i<200; i++)
+        for (i=0; i<len; i++)
             printf("%02x",serialized[i]);
         printf(" data2json n.%d vs len.%d\n",n,len);
     }
