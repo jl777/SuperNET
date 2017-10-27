@@ -1,0 +1,3 @@
+#!/bin/bash
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"statsdisp\",\"starttime\":0,\"endtime\":0,\"pubkey\":\"a2593155464e37fcc88245780240a412a38cf3d316809445aad73f4e7789187d\"}"
