@@ -485,7 +485,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
 {
     struct LP_priceinfo *basepp,*relpp; struct LP_pubkeyinfo *pubp;
     *changedp = 0;
-    if ( base != 0 && rel != 0 && LP_pricevalid(price) > 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
+    if ( base != 0 && rel != 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         
         if ( fabs(basepp->myprices[relpp->ind] - price) > SMALLVAL )
