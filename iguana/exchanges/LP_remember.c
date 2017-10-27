@@ -1337,7 +1337,7 @@ uint64_t basilisk_swap_addarray(cJSON *item,char *refbase,char *refrel)
         requestid = juint(item,"requestid");
         quoteid = juint(item,"quoteid");
         ridqid = ((uint64_t)requestid << 32) | quoteid;
-        printf("%u %u -> %16llx\n",requestid,quoteid,(long long)ridqid);
+        //printf("%u %u -> %16llx\n",requestid,quoteid,(long long)ridqid);
     }
     return(ridqid);
 }
@@ -1364,7 +1364,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                         if ( count < sizeof(ridqids)/sizeof(*ridqids) )
                         {
                             ridqids[count++] = ridqid;
-                            printf("add ridqid.%16llx\n",(long long)ridqid);
+                            //printf("add ridqid.%16llx\n",(long long)ridqid);
                         }
                         jaddi(retarray,jduplicate(item));
                     }
@@ -1389,7 +1389,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                     for (j=0; j<count; j++)
                         if ( ridqid == ridqids[j] )
                             break;
-                    printf("j.%d count.%d %u %u ridqid.%16llx\n",j,count,requestid,quoteid,(long long)ridqid);
+                    //printf("j.%d count.%d %u %u ridqid.%16llx\n",j,count,requestid,quoteid,(long long)ridqid);
                     if ( j == count )
                     {
                         if ( (retstr2= basilisk_swapentry(requestid,quoteid)) != 0 )
