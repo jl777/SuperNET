@@ -1361,7 +1361,10 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                     if ( (ridqid= basilisk_swap_addarray(item,refbase,refrel)) > 0 )
                     {
                         if ( count < sizeof(ridqids)/sizeof(*ridqids) )
+                        {
                             ridqids[count++] = ridqid;
+                            printf("add ridqid.%16llx\n",(long long)ridqid);
+                        }
                         jaddi(retarray,jduplicate(item));
                     }
                 }
@@ -1385,6 +1388,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                     for (j=0; j<count; j++)
                         if ( ridqid == ridqids[j] )
                             break;
+                    printf("j.%d count.%d ridqid.%16llx\n",j,count,(long long)ridqid);
                     if ( j == count )
                     {
                         if ( (retstr2= basilisk_swapentry(requestid,quoteid)) != 0 )
