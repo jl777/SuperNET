@@ -1256,6 +1256,38 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
     return(retstr);
 }
 
+char *basilisk_swapentries(char *refbase,char *refrel)
+{
+    char *liststr,*base,*rel; cJSON *retjson,*array,*item,*retarray; int32_t i,n;
+    retarray = cJSON_CreateArray();
+    if ( (liststr= basilisk_swaplist(0,0)) != 0 )
+    {
+        //printf("swapentry.(%s)\n",liststr);
+        if ( (retjson= cJSON_Parse(liststr)) != 0 )
+        {
+            if ( (array= jarray(&n,retjson,"swaps")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    base = jstr(item,"bob");
+                    rel = jstr(item,"alice");
+                    if ( refrel == 0 || refrel[0] == 0 )
+                    {
+                        if ( strcmp(base,refbase) == 0 || strcmp(rel,refbase) == 0 )
+                            jaddi(retarray,item);
+                    }
+                    else if ( strcmp(base,refbase) == 0 && strcmp(rel,refrel) == 0 )
+                        jaddi(retarray,item);
+                }
+            }
+            free_json(retjson);
+        }
+        free(liststr);
+    }
+    return(jprint(retarray,1));
+}
+
 extern struct LP_quoteinfo LP_Alicequery;
 extern uint32_t Alice_expiration;
 
