@@ -1341,13 +1341,17 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                 {
                     item = jitem(array,i);
                     if ( basilisk_swap_addarray(item,refbase,refrel) > 0 )
+                    {
+                        printf("add %d of %d\n",i,n);
                         jaddi(retarray,item);
+                    }
                 }
             }
             free_json(retjson);
         }
         free(liststr);
     }
+    printf("check recents\n");
     if ( (liststr= LP_recent_swaps(limit)) != 0 )
     {
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
