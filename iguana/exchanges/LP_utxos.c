@@ -762,7 +762,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
 
 int32_t LP_passphrase_init(char *passphrase,char *gui)
 {
-    static void *ctx; int32_t iambob; struct LP_utxoinfo *utxo,*tmp;
+    static void *ctx; int32_t iambob,counter; struct LP_utxoinfo *utxo,*tmp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( G.LP_pendingswaps != 0 )
@@ -770,6 +770,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
     G.initializing = 1;
     if ( gui == 0 )
         gui = "cli";
+    counter = G.USERPASS_COUNTER;
     while ( G.waiting == 0 )
     {
         printf("waiting for G.waiting\n");
@@ -800,6 +801,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
     init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
     G.LP_sessionid = (uint32_t)time(NULL);
     safecopy(G.gui,gui,sizeof(G.gui));
+    G.USERPASS_COUNTER = counter;
     return(0);
 }
 
