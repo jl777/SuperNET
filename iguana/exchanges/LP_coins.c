@@ -333,7 +333,9 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
 #endif
     sprintf(coin->serverport,"127.0.0.1:%u",port);
     if ( strcmp(symbol,"KMD") == 0 || coin->isassetchain != 0 || taddr != 0 )
-        coin->zcash = 1;
+        coin->zcash = LP_IS_ZCASHPROTOCOL;
+    else if ( strcmp(symbol,"BCH") == 0 )
+        coin->zcash = LP_IS_BITCOINCASH;
     return(port);
 }
 

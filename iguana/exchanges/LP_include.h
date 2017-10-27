@@ -90,6 +90,10 @@ void emscripten_usleep(int32_t x);
 #define DEX_SLEEP 3
 #define BASILISK_KEYSIZE ((int32_t)(2*sizeof(bits256)+sizeof(uint32_t)*2))
 
+#define LP_IS_ZCASHPROTOCOL 1
+#define LP_IS_BITCOINCASH 2
+
+#define SIGHASH_FORKID 0x40
 #define ZKSNARK_PROOF_SIZE 296
 #define ZCASH_SOLUTION_ELEMENTS 1344
 

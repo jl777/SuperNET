@@ -3279,6 +3279,8 @@ bits256 bitcoin_sigtxid(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t i
         if ( height >= BTC2_HARDFORK_HEIGHT )
             hashtype |= (0x777 << 20);
 #endif
+        if ( zcash == LP_IS_BITCOINCASH )
+            hashtype |= SIGHASH_FORKID;
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
         revsigtxid = bits256_doublesha256(0,serialized,len);
         for (i=0; i<sizeof(revsigtxid); i++)
@@ -3407,7 +3409,7 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
     //printf("lock_time.%08x len.%d\n",msg->lock_time,len);
-    if ( zcash != 0 && msg->version > 1 )
+    if ( zcash == LP_IS_ZCASHPROTOCOL && msg->version > 1 )
     {
         uint32_t numjoinsplits; struct iguana_msgjoinsplit joinsplit; uint8_t joinsplitpubkey[33],joinsplitsig[64];
         len += iguana_rwvarint32(rwflag,&serialized[len],&numjoinsplits);
