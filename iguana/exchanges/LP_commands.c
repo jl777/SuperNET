@@ -222,13 +222,14 @@ stop()\n\
         }
         else if ( strcmp(method,"parselog") == 0 )
         {
-            int32_t n = LP_statslog_parse();
-            return(LP_statslog_disp(n,2000000000,2000000000));
+            bits256 zero; int32_t n = LP_statslog_parse();
+            memset(zero.bytes,0,sizeof(zero));
+            return(LP_statslog_disp(n,2000000000,2000000000,"",zero));
         }
         else if ( strcmp(method,"statsdisp") == 0 )
         {
             int32_t n = LP_statslog_parse();
-            return(LP_statslog_disp(n,juint(argjson,"starttime"),juint(argjson,"endtime")));
+            return(LP_statslog_disp(n,juint(argjson,"starttime"),juint(argjson,"endtime"),jstr(argjson,"gui"),jbits256(argjson,"pubkey")));
         }
         else if ( strcmp(method,"secretaddresses") == 0 )
         {

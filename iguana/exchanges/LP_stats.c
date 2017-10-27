@@ -321,7 +321,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     return(duplicate == 0);
 }
 
-char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime)
+char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey)
 {
     cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i,dispflag,numtrades[LP_MAXPRICEINFOS]; char line[1024]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     if ( starttime > endtime )
@@ -344,6 +344,15 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime)
             dispflag = 1;
         else if ( sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime )
             dispflag = 1;
+        if ( dispflag != 0 )
+        {
+            dispflag = 0;
+            if ( refgui == 0 || refgui[0] == 0 || strcmp(refgui,sp->bobgui) == 0 || strcmp(refgui,sp->alicegui) == 0 )
+            {
+                if ( bits256_nonz(refpubkey) == 0 || bits256_cmp(refpubkey,sp->Q.srchash) == 0 || bits256_cmp(refpubkey,sp->Q.desthash) == 0 )
+                    dispflag = 1;
+            }
+        }
         if ( dispflag != 0 )
         {
             LP_swapstats_line(numtrades,basevols,relvols,line,sp);
