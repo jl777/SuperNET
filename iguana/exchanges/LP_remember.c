@@ -1148,8 +1148,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
 
 char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
 {
-    char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i;
+    uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i,j,count=0;
     portable_mutex_lock(&LP_swaplistmutex);
+    memset(ridqids,0,sizeof(ridqids));
     memset(KMDtotals,0,sizeof(KMDtotals));
     memset(BTCtotals,0,sizeof(BTCtotals));
     //,statebits; int32_t optionduration; struct basilisk_request R; bits256 privkey;
@@ -1189,8 +1190,17 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
                 }
                 if ( flag == 0 )
                 {
-                    if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
-                        jaddi(array,item);
+                    ridqid = ((uint64_t)requestid << 32) | quoteid;
+                    for (j=0; j<count; j++)
+                        if ( ridqid == ridqids[j] )
+                            break;
+                    if ( j == count )
+                    {
+                        if ( count < sizeof(ridqids)/sizeof(*ridqids) )
+                            ridqids[count++] = ridqid;
+                        if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+                            jaddi(array,item);
+                    }
                 }
             }
             fclose(fp);
@@ -1297,11 +1307,129 @@ char *LP_recent_swaps(int32_t limit)
         item = cJSON_CreateObject();
         jaddnum(item,"expiration",Alice_expiration);
         jaddnum(item,"timeleft",Alice_expiration-time(NULL));
+        jaddnum(item,"requestid",LP_Alicequery.R.requestid);
+        jaddnum(item,"quoteid",LP_Alicequery.R.quoteid);
+        jaddstr(item,"bob",LP_Alicequery.srccoin);
         jaddstr(item,"base",LP_Alicequery.srccoin);
         jaddnum(item,"basevalue",dstr(LP_Alicequery.satoshis));
+        jaddstr(item,"alice",LP_Alicequery.destcoin);
         jaddstr(item,"rel",LP_Alicequery.destcoin);
         jaddnum(item,"relvalue",dstr(LP_Alicequery.destsatoshis));
         jadd(retjson,"pending",item);
     } else Alice_expiration = 0;
     return(jprint(retjson,1));
 }
+
+uint64_t basilisk_swap_addarray(cJSON *item,char *refbase,char *refrel)
+{
+    char *base,*rel; uint32_t requestid,quoteid; uint64_t ridqid = 0;
+    base = jstr(item,"bob");
+    rel = jstr(item,"alice");
+    if ( refrel == 0 || refrel[0] == 0 )
+    {
+        if ( strcmp(base,refbase) == 0 || strcmp(rel,refbase) == 0 )
+            ridqid = 1;
+    }
+    else if ( strcmp(base,refbase) == 0 && strcmp(rel,refrel) == 0 )
+        ridqid = 1;
+    if ( ridqid != 0 )
+    {
+        requestid = juint(item,"requestid");
+        quoteid = juint(item,"quoteid");
+        ridqid = ((uint64_t)requestid << 32) | quoteid;
+        //printf("%u %u -> %16llx\n",requestid,quoteid,(long long)ridqid);
+    }
+    return(ridqid);
+}
+
+char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
+{
+    uint64_t ridqids[1024],ridqid; char *liststr,*retstr2; cJSON *retjson,*array,*pending,*swapjson,*item,*retarray; int32_t i,j,n,count = 0; uint32_t requestid,quoteid;
+    if ( limit <= 0 )
+        limit = 10;
+    memset(ridqids,0,sizeof(ridqids));
+    retarray = cJSON_CreateArray();
+    if ( (liststr= basilisk_swaplist(0,0)) != 0 )
+    {
+        //printf("swapentry.(%s)\n",liststr);
+        if ( (retjson= cJSON_Parse(liststr)) != 0 )
+        {
+            if ( (array= jarray(&n,retjson,"swaps")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( (ridqid= basilisk_swap_addarray(item,refbase,refrel)) > 0 )
+                    {
+                        if ( count < sizeof(ridqids)/sizeof(*ridqids) )
+                        {
+                            ridqids[count++] = ridqid;
+                            //printf("add ridqid.%16llx\n",(long long)ridqid);
+                        }
+                        jaddi(retarray,jduplicate(item));
+                    }
+                }
+            }
+            free_json(retjson);
+        }
+        free(liststr);
+    }
+    if ( (liststr= LP_recent_swaps(limit)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(liststr)) != 0 )
+        {
+            if ( (array= jarray(&n,retjson,"swaps")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    requestid = juint(jitem(item,0),0);
+                    quoteid = juint(jitem(item,1),0);
+                    ridqid = ((uint64_t)requestid << 32) | quoteid;
+                    for (j=0; j<count; j++)
+                        if ( ridqid == ridqids[j] )
+                            break;
+                    //printf("j.%d count.%d %u %u ridqid.%16llx\n",j,count,requestid,quoteid,(long long)ridqid);
+                    if ( j == count )
+                    {
+                        if ( (retstr2= basilisk_swapentry(requestid,quoteid)) != 0 )
+                        {
+                            if ( (swapjson= cJSON_Parse(retstr2)) != 0 )
+                            {
+                                if ( (ridqid= basilisk_swap_addarray(swapjson,refbase,refrel)) > 0 )
+                                {
+                                    if ( count < sizeof(ridqids)/sizeof(*ridqids) )
+                                        ridqids[count++] = ridqid;
+                                    jaddi(retarray,swapjson);
+                                } else free_json(swapjson);
+                            }
+                            free(retstr2);
+                        }
+                    }
+                }
+            }
+            if ( (pending= jobj(retjson,"pending")) != 0 )
+            {
+                requestid = juint(pending,"requestid");
+                quoteid = juint(pending,"quoteid");
+                j = 0;
+                if ( (ridqid= ((uint64_t)requestid << 32) | quoteid) != 0 )
+                {
+                    for (j=0; j<count; j++)
+                        if ( ridqid == ridqids[j] )
+                            break;
+                }
+                if ( ridqid == 0 || j == count )
+                {
+                    if ( basilisk_swap_addarray(pending,refbase,refrel) > 0 )
+                        jaddi(retarray,pending);
+                    else free_json(pending);
+                } else free_json(pending);
+            }
+            free_json(retjson);
+        }
+        free(liststr);
+    }
+    return(jprint(retarray,1));
+}
+

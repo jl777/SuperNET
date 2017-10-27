@@ -106,18 +106,20 @@ enable(coin)\n\
 disable(coin)\n\
 notarizations(coin)\n\
 parselog()\n\
-statsdisp(starttime=0, endtime=0)\n\
+statsdisp(starttime=0, endtime=0, gui="", pubkey="")\n\
 getrawtransaction(coin, txid)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
 lastnonce()\n\
-buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
-sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
+buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, pubkey="")\n\
+sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce, pubkey="")\n\
 withdraw(coin, outputs[])\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus()\n\
-recentswaps(limit=3)\n\
+swapstatus(coin, limit=10)\n\
+swapstatus(base, rel, limit=10)\n\
 swapstatus(requestid, quoteid)\n\
+recentswaps(limit=3)\n\
 public API:\n \
 getcoins()\n\
 getcoin(coin)\n\
@@ -156,10 +158,23 @@ stop()\n\
             jadd(retjson,"coins",LP_coinsjson(LP_showwif));
             return(jprint(retjson,1));
         }
-        if ( (userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0 )
+        if ( strcmp(method,"passphrase") != 0 && ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) )
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         jdelete(argjson,"userpass");
-        if ( strcmp(method,"sendmessage") == 0 )
+        if ( strcmp(method,"passphrase") == 0 )
+        {
+            G.USERPASS_COUNTER = 1;
+            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
+                return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
+            {
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"userpass",G.USERPASS);
+                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+                return(jprint(retjson,1));
+            }
+        }
+        else if ( strcmp(method,"sendmessage") == 0 )
         {
             if ( jobj(argjson,"method2") == 0 )
             {
@@ -186,18 +201,6 @@ stop()\n\
         {
             LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
             return(clonestr("{\"result\":\"success\"}"));
-        }
-        else if ( strcmp(method,"passphrase") == 0 )
-        {
-            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
-                return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
-            {
-                retjson = cJSON_CreateObject();
-                jaddstr(retjson,"result","success");
-                jaddstr(retjson,"userpass",G.USERPASS);
-                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
-                return(jprint(retjson,1));
-            }
         }
         else if ( strcmp(method,"notarizations") == 0 )
         {
@@ -234,6 +237,17 @@ stop()\n\
             taddr = (jobj(argjson,"taddr") == 0) ? 0 : juint(argjson,"taddr");
             return(LP_secretaddresses(ctx,jstr(argjson,"prefix"),jstr(argjson,"passphrase"),juint(argjson,"num"),taddr,pubtype));
         }
+        else if ( strcmp(method,"swapstatus") == 0 )
+        {
+            uint32_t requestid,quoteid;
+            if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
+                return(basilisk_swapentry(requestid,quoteid));
+            else if ( coin != 0 && coin[0] != 0 )
+                return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
+            else if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
+                return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
+            else return(basilisk_swaplist(0,0));
+        }
         if ( base != 0 && rel != 0 )
         {
             double price,bid,ask;
@@ -242,14 +256,11 @@ stop()\n\
             price = jdouble(argjson,"price");
             if ( strcmp(method,"setprice") == 0 )
             {
-                if ( price > SMALLVAL )
-                {
-                    if ( LP_mypriceset(&changed,base,rel,price) < 0 )
-                        return(clonestr("{\"error\":\"couldnt set price\"}"));
-                    //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
-                    //    return(clonestr("{\"error\":\"couldnt set price\"}"));
-                    else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
-                } else return(clonestr("{\"error\":\"no price\"}"));
+                if ( LP_mypriceset(&changed,base,rel,price) < 0 )
+                    return(clonestr("{\"error\":\"couldnt set price\"}"));
+                //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
+                //    return(clonestr("{\"error\":\"couldnt set price\"}"));
+                else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
             }
             else if ( strcmp(method,"autoprice") == 0 )
             {
@@ -278,7 +289,7 @@ stop()\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"sell") == 0 )
@@ -286,7 +297,7 @@ stop()\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey")));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
@@ -420,13 +431,6 @@ stop()\n\
         }
         else if ( strcmp(method,"goal") == 0 )
             return(LP_portfolio_goal("*",100.));
-        else if ( strcmp(method,"swapstatus") == 0 )
-        {
-            uint32_t requestid,quoteid;
-            if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
-                return(basilisk_swapentry(requestid,quoteid));
-            else return(basilisk_swaplist(0,0));
-        }
         else if ( strcmp(method,"lastnonce") == 0 )
         {
             cJSON *retjson = cJSON_CreateObject();
