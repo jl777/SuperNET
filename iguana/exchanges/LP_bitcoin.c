@@ -3280,7 +3280,10 @@ bits256 bitcoin_sigtxid(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t i
             hashtype |= (0x777 << 20);
 #endif
         if ( zcash == LP_IS_BITCOINCASH )
+        {
             hashtype |= SIGHASH_FORKID;
+            printf("hashtype is %04x\n",hashtype);
+        }
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
         revsigtxid = bits256_doublesha256(0,serialized,len);
         for (i=0; i<sizeof(revsigtxid); i++)
