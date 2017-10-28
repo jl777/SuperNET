@@ -18,6 +18,8 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+//MERKLE DIDNT VERIFY.ZEC 96d8484efb1f96e2a692f572d2b3bbc49a59bb586ec84ad952483186b69cb29b ht.209417 ({"error":"timeout"})
+//MERKLE DIDNT VERIFY.ZEC 2520e53f9e0366f711bd924fcfc6fa5c3de7f095e8d7459a68daba2d2124b262 ht.209418 ({"error":"timeout"})
 // pricearray? RT metrics
 // select oldest utxo first, handles <-> pubkeys, reputations, bonds etc.
 //
@@ -105,6 +107,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_utxos.c"
 #include "LP_forwarding.c"
 #include "LP_signatures.c"
+#include "LP_RTmetrics.c"
 #include "LP_ordermatch.c"
 #include "LP_portfolio.c"
 #include "LP_messages.c"
@@ -742,12 +745,16 @@ void LP_price_broadcastloop(void *ctx)
         for (baseind=0; baseind<LP_MAXPRICEINFOS; baseind++)
         {
             basepp = LP_priceinfo(baseind);
+            if ( basepp->symbol[0] == 0 )
+                continue;
             for (relind=0; relind<LP_MAXPRICEINFOS; relind++)
             {
                 relpp = LP_priceinfo(relind);
+                if ( relpp->symbol[0] == 0 )
+                    continue;
                 if ( basepp != 0 && relpp != 0 && (price= relpp->myprices[basepp->ind]) > SMALLVAL)
                 {
-                    printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
+                    //printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
                     LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
                 }
             }
@@ -1095,14 +1102,14 @@ void LP_fromjs_iter()
         ctx = bitcoin_ctx();
     if ( 0 && (LP_counter % 100) == 0 )
         printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
-    //if ( Nanomsg_threadarg != 0 )
-    //    nn_thread_main_routine(Nanomsg_threadarg);
+    if ( Nanomsg_threadarg != 0 )
+        nn_thread_main_routine(Nanomsg_threadarg);
     //LP_pubkeys_query();
-    LP_utxosQ_process();
+    //LP_utxosQ_process();
     LP_nanomsg_recvs(ctx);
-    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
-    queue_loop(0);
-    if ( (LP_counter % 10) == 0 ) // 10 seconds
+    //LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
+    //queue_loop(0);
+    if ( 0 && (LP_counter % 10) == 0 ) // 10 seconds
     {
         LP_coinsloop(0);
         if ( (LP_counter % 100) == 0 ) // 100 seconds

@@ -90,7 +90,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
                 nanomsg_transportname(0,pushaddr,peer->ipaddr,pushport);
-                nanomsg_transportname(0,pushaddr2,peer->ipaddr,pushport);
+                nanomsg_transportname2(0,pushaddr2,peer->ipaddr,pushport);
                 valid = 0;
                 if ( nn_connect(pushsock,pushaddr) >= 0 )
                     valid++;

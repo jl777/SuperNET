@@ -108,7 +108,7 @@ char *LP_apicall(struct iguana_info *coin,char *method,char *params)
         return(0);
     if ( coin->electrum != 0 )
     {
-        if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT)) != 0 )
+        if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,ELECTRUM_TIMEOUT)) != 0 )
         {
             retstr = jprint(retjson,0);
             //printf("got.%p (%s)\n",retjson,retstr);
@@ -142,7 +142,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             }
             else
             {
-                if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT)) != 0 )
+                if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,ELECTRUM_TIMEOUT)) != 0 )
                 {
                     if ( jobj(retjson,"error") != 0 )
                     {
