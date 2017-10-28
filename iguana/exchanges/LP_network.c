@@ -86,11 +86,11 @@ const char *nn_strerror(int errnum)
 {
     return("nanomsg error");
 }
-*/
+
 int32_t nn_poll(struct nn_pollfd *fds, int nfds, int timeout)
 {
     return(0);
-}
+}*/
 
 
 #endif
