@@ -2349,6 +2349,24 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
     LP_mypriceset(&changed,autxo->coin,base,1. / *ordermatchpricep);
     return(bestutxo);
 }
+/*portable_mutex_lock(&ep->pendingQ.mutex);
+ if ( ep->pendingQ.list != 0 )
+ {
+ printf("list %p\n",ep->pendingQ.list);
+ DL_FOREACH_SAFE(ep->pendingQ.list,item,tmp)
+ {
+ printf("item.%p\n",item);
+ if ( item->type == 0xffffffff )
+ {
+ printf("%p purge %s",item,((struct stritem *)item)->str);
+ DL_DELETE(ep->pendingQ.list,item);
+ free(item);
+ }
+ }
+ }
+ DL_APPEND(ep->pendingQ.list,&sitem->DL);
+ portable_mutex_unlock(&ep->pendingQ.mutex);*/
+//printf("%p SENT.(%s) to %s:%u\n",sitem,sitem->str,ep->ipaddr,ep->port);
 
 char *LP_ordermatch(char *base,int64_t txfee,double maxprice,double maxvolume,char *rel,bits256 txid,int32_t vout,bits256 feetxid,int32_t feevout,int64_t desttxfee,int32_t duration)
 {

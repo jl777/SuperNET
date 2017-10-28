@@ -18,6 +18,8 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+//MERKLE DIDNT VERIFY.ZEC 96d8484efb1f96e2a692f572d2b3bbc49a59bb586ec84ad952483186b69cb29b ht.209417 ({"error":"timeout"})
+//MERKLE DIDNT VERIFY.ZEC 2520e53f9e0366f711bd924fcfc6fa5c3de7f095e8d7459a68daba2d2124b262 ht.209418 ({"error":"timeout"})
 // pricearray? RT metrics
 // select oldest utxo first, handles <-> pubkeys, reputations, bonds etc.
 //
