@@ -745,9 +745,13 @@ void LP_price_broadcastloop(void *ctx)
         for (baseind=0; baseind<LP_MAXPRICEINFOS; baseind++)
         {
             basepp = LP_priceinfo(baseind);
+            if ( basepp->symbol[0] == 0 )
+                continue;
             for (relind=0; relind<LP_MAXPRICEINFOS; relind++)
             {
                 relpp = LP_priceinfo(relind);
+                if ( relpp->symbol[0] == 0 )
+                    continue;
                 if ( basepp != 0 && relpp != 0 && (price= relpp->myprices[basepp->ind]) > SMALLVAL)
                 {
                     printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
