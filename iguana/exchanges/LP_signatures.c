@@ -204,7 +204,7 @@ char *LP_quotereceived(cJSON *argjson)
 
 int32_t LP_bitcoinsig_add(cJSON *item,bits256 priv,uint8_t *pubsecp,bits256 sighash)
 {
-    static void *ctx; int32_t i,j,siglen; uint8_t pub33[33],sig[65]; char sigstr[128];
+    static void *ctx; int32_t i,j,siglen; uint8_t pub33[33],sig[65]; char sigstr[256];
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     for (j=0; j<100; j++)
