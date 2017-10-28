@@ -273,6 +273,7 @@ cJSON *LP_paxprice(char *fiat)
 cJSON *LP_gettx(char *symbol,bits256 txid)
 {
     struct iguana_info *coin; char buf[512],str[65]; cJSON *retjson;
+    //printf("LP_gettx %s %s\n",symbol,bits256_str(str,txid));
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -742,7 +743,7 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
     signedtx = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     //printf("locktime.%u sequenceid.%x rawtx.(%s) vins.(%s)\n",locktime,sequenceid,rawtxbytes,jprint(vins,0));
-    if ( (*completedp= iguana_signrawtransaction(coin->ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,1000000,&msgtx,&signedtx,signedtxidp,V,16,rawtx,vins,privkeys)) < 0 )
+    if ( (*completedp= iguana_signrawtransaction(coin->ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,1000000,&msgtx,&signedtx,signedtxidp,V,16,rawtx,vins,privkeys,coin->zcash)) < 0 )
         //if ( (signedtx= LP_signrawtx(symbol,signedtxidp,&completed,vins,rawtxbytes,privkeys,V)) == 0 )
         printf("couldnt sign transaction.%s %s\n",rawtx,bits256_str(str,*signedtxidp));
     else if ( *completedp == 0 )

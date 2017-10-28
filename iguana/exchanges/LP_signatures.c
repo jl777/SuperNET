@@ -358,7 +358,7 @@ char *LP_postutxos_recv(cJSON *argjson)
     struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash,pubkey; cJSON *obj; struct LP_pubkeyinfo *pubp;
     pubkey = jbits256(argjson,"pubkey");
     pubp = LP_pubkeyfind(pubkey);
-    if ( pubp->numerrors > LP_MAXPUBKEY_ERRORS )
+    if ( pubp != 0 && pubp->numerrors > LP_MAXPUBKEY_ERRORS )
         return(clonestr("{\"error\":\"blacklisted\"}"));
     if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 )
     {
