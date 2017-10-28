@@ -1065,8 +1065,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 }
 
 #ifdef FROM_JS
-extern void *Nanomsg_threadarg;
-void *nn_thread_main_routine(void *arg);
+//extern void *Nanomsg_threadarg;
+//void *nn_thread_main_routine(void *arg);
 
 void emscripten_usleep(int32_t x)
 {
