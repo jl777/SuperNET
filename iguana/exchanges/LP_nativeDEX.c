@@ -1101,9 +1101,9 @@ void LP_fromjs_iter()
     //if ( Nanomsg_threadarg != 0 )
     //    nn_thread_main_routine(Nanomsg_threadarg);
     //LP_pubkeys_query();
-    LP_utxosQ_process();
+    //LP_utxosQ_process();
     LP_nanomsg_recvs(ctx);
-    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
+    //LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     //queue_loop(0);
     if ( 0 && (LP_counter % 10) == 0 ) // 10 seconds
     {
