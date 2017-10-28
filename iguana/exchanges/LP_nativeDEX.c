@@ -740,7 +740,7 @@ void LP_price_broadcastloop(void *ctx)
 {
     struct LP_priceinfo *basepp,*relpp; double price; int32_t baseind,relind;
     sleep(30);
-    while ( 0 )
+    while ( 1 )
     {
         for (baseind=0; baseind<LP_MAXPRICEINFOS; baseind++)
         {
