@@ -368,7 +368,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         ep = electrum_server(symbol,0);
     while ( ep != 0 )
     {
-        if ( ep != 0 && ep->numerrors < LP_ELECTRUM_MAXERRORS && ep->sock >= 0 && retjsonp != 0 )
+        if ( ep != 0 && ep->sock >= 0 && retjsonp != 0 )
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
