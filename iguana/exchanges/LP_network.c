@@ -29,7 +29,7 @@ struct psock
 uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT;
 
 #ifdef FROM_JS
-
+/*
 int32_t nn_socket(int domain, int protocol)
 {
     return(0);
@@ -91,7 +91,7 @@ const char *nn_strerror(int errnum)
 {
     return("nanomsg error");
 }
-
+*/
 
 #endif
 
