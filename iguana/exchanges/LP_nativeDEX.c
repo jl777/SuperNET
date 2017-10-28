@@ -1104,8 +1104,8 @@ void LP_fromjs_iter()
     LP_utxosQ_process();
     //LP_nanomsg_recvs(ctx);
     LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
-    queue_loop(0);
-    if ( (LP_counter % 10) == 0 ) // 10 seconds
+    //queue_loop(0);
+    if ( 0 && (LP_counter % 10) == 0 ) // 10 seconds
     {
         LP_coinsloop(0);
         if ( (LP_counter % 100) == 0 ) // 100 seconds
