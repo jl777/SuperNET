@@ -752,10 +752,10 @@ void LP_price_broadcastloop(void *ctx)
                 relpp = LP_priceinfo(relind);
                 if ( relpp->symbol[0] == 0 )
                     continue;
-                if ( basepp != 0 && relpp != 0 && (price= basepp->myprices[relpp->ind]) > SMALLVAL)
+                if ( basepp != 0 && relpp != 0 && (price= relpp->myprices[basepp->ind]) > SMALLVAL)
                 {
-                    printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
-                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,1./price);
+                    //printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
+                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
                 }
             }
         }
