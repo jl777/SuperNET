@@ -77,11 +77,6 @@ int32_t nn_recv(int s, void *buf, size_t len, int flags)
     return(0);
 }
 
-int32_t nn_poll(struct nn_pollfd *fds, int nfds, int timeout)
-{
-    return(0);
-}
-
 int32_t nn_errno(void)
 {
     return(-11);
@@ -92,6 +87,11 @@ const char *nn_strerror(int errnum)
     return("nanomsg error");
 }
 */
+int32_t nn_poll(struct nn_pollfd *fds, int nfds, int timeout)
+{
+    return(0);
+}
+
 
 #endif
 
