@@ -52,11 +52,13 @@ int32_t nn_getsockopt(int s, int level, int option, void *optval,size_t *optvall
 
 int32_t nn_bind(int s, const char *addr)
 {
-    return(0);
+    return(-1);
 }
 
 int32_t nn_connect(int s, const char *addr)
 {
+    if ( strncmp("ws://",addr,strlen("ws://")) != 0 )
+        return(-1);
     return(0);
 }
 
