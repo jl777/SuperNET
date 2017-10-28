@@ -766,7 +766,7 @@ struct LP_utxoinfo *LP_ordermatch_iter(struct LP_address_utxo **utxos,int32_t ma
 
 struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,char *gui,bits256 *avoids,int32_t numavoids,bits256 destpubkey)
 {
-    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*asks,*item; int32_t maxiters,i,j,numasks,max; struct LP_address_utxo **utxos; double price; struct LP_pubkeyinfo *pubp; uint64_t asatoshis; struct iguana_info *basecoin; struct LP_utxoinfo *bestutxo = 0;
+    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*asks,*rawasks,*item; int32_t maxiters,i,j,numasks,max; struct LP_address_utxo **utxos; double price; struct LP_pubkeyinfo *pubp; uint64_t asatoshis; struct iguana_info *basecoin; struct LP_utxoinfo *bestutxo = 0;
     maxiters = 100;
     *ordermatchpricep = 0.;
     *bestsatoshisp = *bestdestsatoshisp = 0;
@@ -785,8 +785,10 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
     {
         if ( (orderbook= cJSON_Parse(obookstr)) != 0 )
         {
-            if ( (asks= jarray(&numasks,orderbook,"asks")) != 0 )
+            if ( (rawasks= jarray(&numasks,orderbook,"asks")) != 0 )
             {
+                if ( (asks= LP_RTmetrics_sort(rawasks,numasks,maxprice,dstr(autxo->S.satoshis))) == 0 )
+                    asks = rawasks;
                 for (i=0; i<numasks; i++)
                 {
                     item = jitem(asks,i);
@@ -832,6 +834,8 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                         break;
                     }
                 }
+                if ( asks != 0 && asks != rawasks )
+                    free_json(asks);
             }
             free_json(orderbook);
         }
