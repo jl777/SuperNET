@@ -759,7 +759,7 @@ void LP_price_broadcastloop(void *ctx)
                 }
             }
         }
-        sleep(60);
+        sleep(LP_ORDERBOOK_DURATION * .9);
     }
 }
 
