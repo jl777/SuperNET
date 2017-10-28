@@ -76,6 +76,10 @@ int32_t nn_recv(int s, void *buf, size_t len, int flags)
     return(0);
 }
 
+int32_t nn_poll(struct nn_pollfd *fds, int nfds, int timeout)
+{
+    return(0);
+}
 
 #endif
 
