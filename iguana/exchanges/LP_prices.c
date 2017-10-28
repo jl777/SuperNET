@@ -197,7 +197,7 @@ struct LP_pubkeyinfo *LP_pubkeyfind(bits256 pubkey)
 
 struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
 {
-    struct LP_pubkeyinfo *pubp=0;
+    char str[65]; struct LP_pubkeyinfo *pubp=0;
     portable_mutex_lock(&LP_pubkeymutex);
     HASH_FIND(hh,LP_pubkeyinfos,&pubkey,sizeof(pubkey),pubp);
     if ( pubp == 0 )
@@ -212,7 +212,7 @@ struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
         HASH_ADD_KEYPTR(hh,LP_pubkeyinfos,&pubp->pubkey,sizeof(pubp->pubkey),pubp);
         HASH_FIND(hh,LP_pubkeyinfos,&pubkey,sizeof(pubkey),pubp);
         if ( pubp == 0 )
-            printf("pubkeyadd find error after add\n");
+            printf("pubkeyadd find %s error after add\n",bits256_str(str,pubp->pubkey));
     }
     portable_mutex_unlock(&LP_pubkeymutex);
     return(pubp);

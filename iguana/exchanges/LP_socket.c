@@ -243,7 +243,7 @@ struct electrum_info
     queue_t sendQ,pendingQ;
     portable_mutex_t mutex,txmutex;
     struct electrum_info *prev;
-    int32_t bufsize,sock,*heightp;
+    int32_t bufsize,sock,*heightp,numerrors;
     struct iguana_info *coin;
     uint32_t stratumid,lasttime,pending,*heighttimep;
     char ipaddr[64],symbol[16];
@@ -382,8 +382,23 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
             expiration = (uint32_t)time(NULL) + timeout + 1;
             while ( *retjsonp == 0 && time(NULL) <= expiration )
-                usleep(10000);
+                usleep(5000);
             portable_mutex_unlock(&ep->mutex);
+            if ( *retjsonp == 0 || jobj(*retjsonp,"error") != 0 )
+            {
+                if ( ++ep->numerrors >= LP_ELECTRUM_MAXERRORS )
+                {
+                    closesocket(ep->sock), ep->sock = -1;
+                    if ( (ep->sock= LP_socket(0,ep->ipaddr,ep->port)) < 0 )
+                        printf("error RE-connecting to %s:%u\n",ep->ipaddr,ep->port);
+                    else
+                    {
+                        printf("ep.%p %s numerrors.%d too big -> new %s:%u sock.%d\n",ep,ep->symbol,ep->numerrors,ep->ipaddr,ep->port,ep->sock);
+                        ep->numerrors = 0;
+                    }
+                }
+            } else if ( ep->numerrors > 0 )
+                ep->numerrors++;
             if ( ep->prev == 0 )
             {
                 if ( *retjsonp == 0 )
@@ -395,6 +410,8 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             }
         } else printf("couldnt find electrum server for (%s %s) or no retjsonp.%p\n",method,params,retjsonp);
         ep = ep->prev;
+        if ( ep != 0 )
+            printf("using prev ep.%s\n",ep->symbol);
     }
     return(0);
 }
@@ -898,24 +915,6 @@ void LP_dedicatedloop(void *arg)
             if ( sitem->expiration != 0 )
                 sitem->expiration += (uint32_t)time(NULL);
             else sitem->expiration = (uint32_t)time(NULL) + ELECTRUM_TIMEOUT;
-            /*portable_mutex_lock(&ep->pendingQ.mutex);
-            if ( ep->pendingQ.list != 0 )
-            {
-                printf("list %p\n",ep->pendingQ.list);
-                DL_FOREACH_SAFE(ep->pendingQ.list,item,tmp)
-                {
-                    printf("item.%p\n",item);
-                    if ( item->type == 0xffffffff )
-                    {
-                        printf("%p purge %s",item,((struct stritem *)item)->str);
-                        DL_DELETE(ep->pendingQ.list,item);
-                        free(item);
-                    }
-                }
-            }
-            DL_APPEND(ep->pendingQ.list,&sitem->DL);
-            portable_mutex_unlock(&ep->pendingQ.mutex);*/
-            //printf("%p SENT.(%s) to %s:%u\n",sitem,sitem->str,ep->ipaddr,ep->port);
             queue_enqueue("pendingQ",&ep->pendingQ,&sitem->DL);
             flag++;
         }
