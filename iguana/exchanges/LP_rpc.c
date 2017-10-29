@@ -173,13 +173,13 @@ char *NXTnodes[] = { "62.75.159.113", "91.44.203.238", "82.114.88.225", "78.63.2
 cJSON *LP_NXT_redeems()
 {
     char url[1024],*retstr; cJSON *retjson=0;
-    sprintf(url,"http://%s:7876/nxt?=%%2Fnxt&requestType=getAccountTransactions&account=NXT-MRBN-8DFH-PFMK-A4DBM",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))]);
+    sprintf(url,"http://%s:7876/nxt?requestType=getAccountTransactions&account=NXT-MRBN-8DFH-PFMK-A4DBM",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))]);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         retjson = cJSON_Parse(retstr);
         printf("%s\n",retstr);
         free(retstr);
-    }
+    } else printf("%s -> null\n",url);
     return(retjson);
 }
 
