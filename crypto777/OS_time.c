@@ -357,7 +357,7 @@ struct tai tai_now()
 #ifndef DISABLE_LEAPS
         UTC_ADJUST = -36;
 #endif
-        printf("TAINOW.%llu %03.3f UTC.%u vs %u [diff %d]\n",(long long)t.x,t.millis,First_utc,tai2utc(t),UTC_ADJUST);
+        //printf("TAINOW.%llu %03.3f UTC.%u vs %u [diff %d]\n",(long long)t.x,t.millis,First_utc,tai2utc(t),UTC_ADJUST);
     }
     return(t);
 }
