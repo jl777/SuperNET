@@ -237,7 +237,7 @@ cJSON *LP_RTmetrics_sort(char *base,char *rel,cJSON *rawasks,int32_t numasks,dou
             break;
         if ( i == 0 )
             bestprice = price;
-        else if ( price < bestprice*1.01 )
+        else if ( price < bestprice*LP_RTMETRICS_TOPGROUP )
             groupi = i;
         num++;
     }

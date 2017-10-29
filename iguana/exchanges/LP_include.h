@@ -39,6 +39,9 @@ void emscripten_usleep(int32_t x);
 #define ELECTRUM_TIMEOUT 10
 #define LP_ELECTRUM_MAXERRORS 3
 #define LP_MEMPOOL_TIMEINCR 10
+
+// RTmetrics
+#define LP_RTMETRICS_TOPGROUP 1.01
 #define LP_MAXPENDING_SWAPS 13
 
 #define LP_COMMAND_SENDSOCK NN_PUSH
