@@ -878,7 +878,7 @@ int main(int argc, const char * argv[])
     char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase; 
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
     cJSON *retjson,*loginjson; int32_t i;
-    if ( argc == 0 )
+    if ( argc == 1 )
     {
         LP_NXT_redeems();
         sleep(3);
