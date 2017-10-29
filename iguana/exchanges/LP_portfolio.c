@@ -305,6 +305,33 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
     }
 }
 
+void LP_price_broadcastloop(void *ctx)
+{
+    struct LP_priceinfo *basepp,*relpp; double price; int32_t baseind,relind;
+    sleep(30);
+    while ( 1 )
+    {
+        for (baseind=0; baseind<LP_MAXPRICEINFOS; baseind++)
+        {
+            basepp = LP_priceinfo(baseind);
+            if ( basepp->symbol[0] == 0 )
+                continue;
+            for (relind=0; relind<LP_MAXPRICEINFOS; relind++)
+            {
+                relpp = LP_priceinfo(relind);
+                if ( relpp->symbol[0] == 0 )
+                    continue;
+                if ( basepp != 0 && relpp != 0 && (price= relpp->myprices[basepp->ind]) > SMALLVAL)
+                {
+                    //printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
+                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
+                }
+            }
+        }
+        sleep(LP_ORDERBOOK_DURATION * .9);
+    }
+}
+
 double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinfo *btcpp)
 {
     //{"success":true,"message":"","result":[{"MarketName":"BTC-KMD","High":0.00040840,"Low":0.00034900,"Volume":328042.46061669,"Last":0.00037236,"BaseVolume":123.36439511,"TimeStamp":"2017-07-15T13:50:21.87","Bid":0.00035721,"Ask":0.00037069,"OpenBuyOrders":343,"OpenSellOrders":1690,"PrevDay":0.00040875,"Created":"2017-02-11T23:04:01.853"},

@@ -875,20 +875,15 @@ void LP_main(void *ptr)
 
 int main(int argc, const char * argv[])
 {
-    char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase; struct electrum_info *ep;
+    char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase; 
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
-    cJSON *retjson,*loginjson; int32_t i,already;
-    OS_init();
-    if ( (0) )
+    cJSON *retjson,*loginjson; int32_t i;
+    if ( argc == 0 )
     {
-        ep = LP_electrum_info(&already,"BTC","88.198.241.196",50001,IGUANA_MAXPACKETSIZE * 10); 
-        if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
-        {
-            printf("error launching LP_dedicatedloop (%s:%u)\n",ep->ipaddr,ep->port);
-            exit(-1);
-        } else printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
-        electrum_test();
+        LP_NXT_redeems();
+        return(0);
     }
+    OS_init();
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);

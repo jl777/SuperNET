@@ -731,33 +731,6 @@ void LP_pubkeysloop(void *ctx)
     }
 }
 
-void LP_price_broadcastloop(void *ctx)
-{
-    struct LP_priceinfo *basepp,*relpp; double price; int32_t baseind,relind;
-    sleep(30);
-    while ( 1 )
-    {
-        for (baseind=0; baseind<LP_MAXPRICEINFOS; baseind++)
-        {
-            basepp = LP_priceinfo(baseind);
-            if ( basepp->symbol[0] == 0 )
-                continue;
-            for (relind=0; relind<LP_MAXPRICEINFOS; relind++)
-            {
-                relpp = LP_priceinfo(relind);
-                if ( relpp->symbol[0] == 0 )
-                    continue;
-                if ( basepp != 0 && relpp != 0 && (price= relpp->myprices[basepp->ind]) > SMALLVAL)
-                {
-                    //printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
-                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
-                }
-            }
-        }
-        sleep(LP_ORDERBOOK_DURATION * .9);
-    }
-}
-
 void LP_privkeysloop(void *ctx)
 {
     sleep(20);
