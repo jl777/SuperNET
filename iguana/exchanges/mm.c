@@ -881,6 +881,7 @@ int main(int argc, const char * argv[])
     if ( argc == 0 )
     {
         LP_NXT_redeems();
+        sleep(3);
         return(0);
     }
     OS_init();
