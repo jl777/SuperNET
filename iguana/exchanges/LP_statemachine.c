@@ -2349,6 +2349,20 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
     LP_mypriceset(&changed,autxo->coin,base,1. / *ordermatchpricep);
     return(bestutxo);
 }
+
+/*static int _LP_metric_eval(const void *a,const void *b)
+ {
+ #define aptr (*(struct LP_metricinfo **)a)
+ #define bptr (*(struct LP_metricinfo **)b)
+ if ( bptr->metric > aptr->metric )
+ return(1);
+ else if ( bptr->metric < aptr->metric )
+ return(-1);
+ return(0);
+ #undef aptr
+ #undef bptr
+ }*/
+
 /*portable_mutex_lock(&ep->pendingQ.mutex);
  if ( ep->pendingQ.list != 0 )
  {

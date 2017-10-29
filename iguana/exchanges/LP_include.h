@@ -40,6 +40,10 @@ void emscripten_usleep(int32_t x);
 #define LP_ELECTRUM_MAXERRORS 3
 #define LP_MEMPOOL_TIMEINCR 10
 
+// RTmetrics
+#define LP_RTMETRICS_TOPGROUP 1.01
+#define LP_MAXPENDING_SWAPS 13
+
 #define LP_COMMAND_SENDSOCK NN_PUSH
 #define LP_COMMAND_RECVSOCK NN_PULL
 
@@ -52,7 +56,7 @@ void emscripten_usleep(int32_t x);
 #define MAX_PSOCK_PORT 60000
 #define MIN_PSOCK_PORT 10000
 #define LP_GETINFO_INCR 30
-#define LP_ORDERBOOK_DURATION 120
+#define LP_ORDERBOOK_DURATION 180
 
 #define LP_MAXPEER_ERRORS 3
 #define LP_MINPEER_GOOD 20
@@ -313,7 +317,8 @@ struct LP_pubkeyinfo
     UT_hash_handle hh;
     bits256 pubkey;
     double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
-    uint32_t timestamp,istrusted,numerrors;
+    uint32_t timestamp,numerrors;
+    int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };
 
@@ -361,11 +366,13 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
 struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout);
 int32_t LP_destaddr(char *destaddr,cJSON *item);
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration);
+char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey);
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid);
 cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJSON *txobj);
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
 int32_t LP_numpeers();
+char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid);
 uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance);
 int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 void LP_smartutxos_push(struct iguana_info *coin);

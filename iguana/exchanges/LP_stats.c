@@ -191,7 +191,10 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
             sp->Apaymentspent = LP_swapstats_txid(lineobj,"Apaymentspent",sp->Apaymentspent);
             sp->depositspent = LP_swapstats_txid(lineobj,"depositspent",sp->depositspent);
             if ( (statusstr= jstr(lineobj,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
-                sp->finished = juint(lineobj,"timestamp");
+            {
+                if ( (sp->finished= juint(lineobj,"timestamp")) == 0 )
+                    sp->finished = (uint32_t)time(NULL);
+            }
             if ( sp->finished == 0 && time(NULL) > sp->Q.timestamp+INSTANTDEX_LOCKTIME*2 )
                 sp->expired = (uint32_t)time(NULL);
             return(0);
@@ -231,7 +234,6 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         quoteid = juint(lineobj,"quoteid");
         if ( (sp= LP_swapstats_find(aliceid)) != 0 )
         {
-            flag = 1;
             sp->methodind = methodind;
             if ( LP_swapstats_update(sp,&Q,lineobj) == 0 )
                 flag = 1;
