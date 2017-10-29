@@ -212,7 +212,7 @@ cJSON *LP_NXT_redeems()
                             if ( (msgjson= LP_NXT_message(method,txnum,"test")) != 0 )
                             {
                                 printf("%d method.(%s) (%s)\n",i,method,jprint(msgjson,0));
-                                free_json(retjson);
+                                free_json(msgjson);
                             }
                         }
                     }
