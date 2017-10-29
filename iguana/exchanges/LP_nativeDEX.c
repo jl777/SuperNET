@@ -18,9 +18,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// pricearray? RT metrics
-// select oldest utxo first, handles <-> pubkeys, reputations, bonds etc.
-//
 // verify portfolio, interest to KMD withdraw, pricebroadcast loop, trade to pubkey
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
