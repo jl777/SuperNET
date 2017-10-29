@@ -200,7 +200,7 @@ cJSON *LP_NXT_redeems()
                 for (i=0; i<numtx; i++)
                 {
                     item = jitem(array,i);
-                    printf("%s\n",jprint(item,0));
+                    //printf("%d: %s\n",i,jprint(item,0));
                     if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 )
                     {
                         if ( (attach= jobj(item,"attachment")) != 0 )
@@ -208,13 +208,15 @@ cJSON *LP_NXT_redeems()
                             printf("(%s)\n",jprint(attach,0));
                             txnum = j64bits(item,"transaction");
                             if ( jint(attach,"version.PrunablePlainMessage") == 1 )
-                                method = "getPrunableMessage";
-                            else method = "readMessage";
-                            if ( (msgjson= LP_NXT_message(method,txnum,"test")) != 0 )
                             {
-                                printf("%d method.(%s) (%s)\n",i,method,jprint(msgjson,0));
-                                free_json(msgjson);
+                                method = "getPrunableMessage";
+                                if ( (msgjson= LP_NXT_message(method,txnum,"test")) != 0 )
+                                {
+                                    printf("%d method.(%s) (%s)\n",i,method,jprint(msgjson,0));
+                                    free_json(msgjson);
+                                }
                             }
+                            printf("%d: message.(%s)\n",i,jstr(attach,"message"));
                         }
                     }
                 }
