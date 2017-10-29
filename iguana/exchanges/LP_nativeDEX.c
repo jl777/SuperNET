@@ -18,8 +18,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-//MERKLE DIDNT VERIFY.ZEC 96d8484efb1f96e2a692f572d2b3bbc49a59bb586ec84ad952483186b69cb29b ht.209417 ({"error":"timeout"})
-//MERKLE DIDNT VERIFY.ZEC 2520e53f9e0366f711bd924fcfc6fa5c3de7f095e8d7459a68daba2d2124b262 ht.209418 ({"error":"timeout"})
 // pricearray? RT metrics
 // select oldest utxo first, handles <-> pubkeys, reputations, bonds etc.
 //
@@ -96,6 +94,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_bitcoin.c"
 #include "LP_coins.c"
 #include "LP_rpc.c"
+#include "LP_RTmetrics.c"
 #include "LP_utxo.c"
 #include "LP_prices.c"
 #include "LP_scan.c"
@@ -107,7 +106,6 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_utxos.c"
 #include "LP_forwarding.c"
 #include "LP_signatures.c"
-#include "LP_RTmetrics.c"
 #include "LP_ordermatch.c"
 #include "LP_portfolio.c"
 #include "LP_messages.c"
@@ -732,7 +730,7 @@ void LP_pubkeysloop(void *ctx)
         LP_counter += 100;
         //printf("LP_pubkeysloop %d\n",LP_counter);
         LP_notify_pubkeys(ctx,LP_mypubsock);
-        sleep(60);
+        sleep(LP_ORDERBOOK_DURATION * .777);
     }
 }
 
@@ -771,7 +769,7 @@ void LP_privkeysloop(void *ctx)
         LP_counter += 1000;
         //printf("LP_privkeysloop %u\n",LP_counter);
         LP_privkey_updates(ctx,LP_mypubsock,0);
-        sleep(60);
+        sleep(LP_ORDERBOOK_DURATION * .777);
     }
 }
 

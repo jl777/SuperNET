@@ -128,7 +128,7 @@ getpeers()\n\
 passphrase(passphrase, gui)\n\
 listunspent(coin, address)\n\
 setconfirms(coin, numconfirms, maxconfirms=6)\n\
-trust(pubkey, trust)\n\
+trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
 balance(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
