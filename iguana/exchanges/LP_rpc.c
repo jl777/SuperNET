@@ -207,9 +207,9 @@ cJSON *LP_NXT_redeems()
                         msgstr = jstr(item,"message");
                         if ( (attach= jobj(item,"attachment")) != 0 )
                         {
-                            printf("(%s)\n",jprint(attach,0));
                             txnum = j64bits(item,"transaction");
-                            if ( jint(attach,"version.PrunablePlainMessage") == 1 )
+                            printf("txnum.%llu (%s)\n",(long long)txnum,jprint(attach,0));
+                            if ( (msgstr == 0 || msgstr[0] == 0) && jint(attach,"version.PrunablePlainMessage") == 1 )
                             {
                                 method = "getPrunableMessage";
                                 if ( (msgjson= LP_NXT_message(method,txnum,"test")) != 0 )
@@ -218,7 +218,7 @@ cJSON *LP_NXT_redeems()
                                     printf("%d method.(%s) (%s)\n",i,method,msgstr);
                                 }
                             }
-                            else if ( msgstr == 0 || msgstr[0] == 0 )
+                            if ( msgstr == 0 || msgstr[0] == 0 )
                                 msgstr = jstr(attach,"message");
                         }
                         if ( msgstr != 0 )
