@@ -218,7 +218,7 @@ cJSON *LP_NXT_redeems()
                                     printf("%d method.(%s) (%s)\n",i,method,msgstr);
                                 }
                             }
-                            else if ( msgstr == 0 && msgstr[0] == 0 )
+                            else if ( msgstr == 0 || msgstr[0] == 0 )
                                 msgstr = jstr(attach,"message");
                         }
                         if ( msgstr != 0 )
