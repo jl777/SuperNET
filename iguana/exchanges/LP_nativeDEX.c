@@ -18,14 +18,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// ZEC LP_transaction_fromdata mismatched txid e2a3eebcf5bef6fe63296f53ce35d2f2c6e3b29c7c907da4171a580f50c93c74 vs 1ed5c15bbf991ff42c73b1492d1bb50e91d1d731c86cb3058405cff95cd9bd70
-//0200000000018c343500000000001976a9141462c3dd3f936d595c9af55978003b27c250441f88ac000000000100000000000000009c5b3500000000005a6c707fc604699d0166b2a750c8a2ff21c8aed0b6e6fe160f651da8cf865c2aa079a7f71f7782604785e1f9a7300cd6c89ca50b5d91f6c0ae5f293ea5a72e62bb0f05da84510e6431c5d4be7a372221265fd98dbccee11f5ed064c5afaa19eff27fd12c30a7a5205f70c99f22b7090c00048c1c9767eea1c79e54ed60c08c138758ad73d43f2692fcb05f data2json n.44 vs len.
-
-// process stats.log local file -> map of realtime activity!
-// handles <-> pubkeys, deal with offline pubkeys, reputations, bonds etc.
-// select oldest utxo first
-
-// verify portfolio, pricearray, interest to KMD withdraw
+// verify portfolio, interest to KMD withdraw, pricebroadcast loop, trade to pubkey
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 
@@ -98,6 +91,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_bitcoin.c"
 #include "LP_coins.c"
 #include "LP_rpc.c"
+#include "LP_RTmetrics.c"
 #include "LP_utxo.c"
 #include "LP_prices.c"
 #include "LP_scan.c"
@@ -492,15 +486,18 @@ void LP_coinsloop(void *_coins)
         nonz = 0;
         HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
         {
-            if ( coins[0] != 0 )
+            if ( coins != 0 )
             {
-                if ( strcmp(coins,coin->symbol) != 0 )
-                    continue;
-            }
-            else // avoid hardcode special case LP_coinsloop
-            {
-                if ( strcmp("BTC",coin->symbol) == 0 || strcmp("KMD",coin->symbol) == 0 )
-                    continue;
+                if ( coins[0] != 0 )
+                {
+                    if ( strcmp(coins,coin->symbol) != 0 )
+                        continue;
+                }
+                else // avoid hardcode special case LP_coinsloop
+                {
+                    if ( strcmp("BTC",coin->symbol) == 0 || strcmp("KMD",coin->symbol) == 0 )
+                        continue;
+                }
             }
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
@@ -578,6 +575,8 @@ void LP_coinsloop(void *_coins)
                     break;
             }
         }
+        if ( coins == 0 )
+            return;
         if ( nonz == 0 )
             usleep(1000);
     }
@@ -728,7 +727,34 @@ void LP_pubkeysloop(void *ctx)
         LP_counter += 100;
         //printf("LP_pubkeysloop %d\n",LP_counter);
         LP_notify_pubkeys(ctx,LP_mypubsock);
-        sleep(60);
+        sleep(LP_ORDERBOOK_DURATION * .777);
+    }
+}
+
+void LP_price_broadcastloop(void *ctx)
+{
+    struct LP_priceinfo *basepp,*relpp; double price; int32_t baseind,relind;
+    sleep(30);
+    while ( 1 )
+    {
+        for (baseind=0; baseind<LP_MAXPRICEINFOS; baseind++)
+        {
+            basepp = LP_priceinfo(baseind);
+            if ( basepp->symbol[0] == 0 )
+                continue;
+            for (relind=0; relind<LP_MAXPRICEINFOS; relind++)
+            {
+                relpp = LP_priceinfo(relind);
+                if ( relpp->symbol[0] == 0 )
+                    continue;
+                if ( basepp != 0 && relpp != 0 && (price= relpp->myprices[basepp->ind]) > SMALLVAL)
+                {
+                    //printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
+                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
+                }
+            }
+        }
+        sleep(LP_ORDERBOOK_DURATION * .9);
     }
 }
 
@@ -740,7 +766,7 @@ void LP_privkeysloop(void *ctx)
         LP_counter += 1000;
         //printf("LP_privkeysloop %u\n",LP_counter);
         LP_privkey_updates(ctx,LP_mypubsock,0);
-        sleep(60);
+        sleep(LP_ORDERBOOK_DURATION * .777);
     }
 }
 
@@ -793,7 +819,6 @@ void LP_reserved_msgs(void *ignore)
 int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
 {
     int32_t n = 0;
-#ifndef FROM_JS
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs) )
     {
@@ -801,10 +826,6 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
         n = num_Reserved_msgs;
     } else LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
     portable_mutex_unlock(&LP_reservedmutex);
-#else
-    printf("reserved_msg.(%s)\n",msg);
-    LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
-#endif
     if ( num_Reserved_msgs > max_Reserved_msgs )
     {
         max_Reserved_msgs = num_Reserved_msgs;
@@ -815,7 +836,7 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
+    char *myipaddr=0; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],bindaddr2[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
@@ -899,9 +920,16 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         pubsock = -1;
         nanomsg_transportname(0,subaddr,myipaddr,mypubport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
+        nanomsg_transportname2(1,bindaddr2,myipaddr,mypubport);
+        valid = 0;
         if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
         {
+            valid = 0;
             if ( nn_bind(pubsock,bindaddr) >= 0 )
+                valid++;
+            if ( nn_bind(pubsock,bindaddr2) >= 0 )
+                valid++;
+            if ( valid > 0 )
             {
                 timeout = 1;
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
@@ -913,7 +941,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                     nn_close(pubsock), pubsock = -1;
             }
         } else printf("error getting pubsock %d\n",pubsock);
-        printf(">>>>>>>>> myipaddr.%s (%s) pullsock.%d\n",myipaddr,subaddr,pubsock);
+        printf(">>>>>>>>> myipaddr.(%s %s) (%s) pullsock.%d valid.%d\n",bindaddr,bindaddr2,subaddr,pubsock,valid);
         LP_mypubsock = pubsock;
     }
     printf("got %s, initpeers\n",myipaddr);
@@ -1000,12 +1028,17 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_pubkeysloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,(void *)&myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_privkeysloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)&myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)myipaddr) != 0 )
+    {
+        printf("error launching LP_swapsloop for port.%u\n",myport);
+        exit(-1);
+    }
+    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_price_broadcastloop,(void *)ctx) != 0 )
     {
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
@@ -1031,28 +1064,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 }
 
 #ifdef FROM_JS
+extern void *Nanomsg_threadarg;
+void *nn_thread_main_routine(void *arg);
 
 void emscripten_usleep(int32_t x)
 {
-}
-
-void LP_fromjs_iter()
-{
-    static void *ctx;
-    if ( G.initializing != 0 )
-    {
-        printf("LP_fromjs_iter during G.initializing, skip\n");
-        return;
-    }
-    if ( ctx == 0 )
-        ctx = bitcoin_ctx();
-    if ( 0 && (LP_counter % 100) == 0 )
-        printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
-    LP_pubkeys_query();
-    LP_utxosQ_process();
-    LP_nanomsg_recvs(ctx);
-    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
-    LP_counter++;
 }
 
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
@@ -1067,6 +1083,40 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     retstr = OS_filestr(&fsize,fname);
     //printf("bitcoind_RPC(%s) -> fname.(%s) %s\n",url,fname,retstr);
     return(retstr);
+}
+
+void LP_fromjs_iter()
+{
+    static void *ctx; char *retstr;
+    if ( G.initializing != 0 )
+    {
+        printf("LP_fromjs_iter during G.initializing, skip\n");
+        return;
+    }
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    if ( 0 && (LP_counter % 100) == 0 )
+        printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
+    if ( Nanomsg_threadarg != 0 )
+        nn_thread_main_routine(Nanomsg_threadarg);
+    //LP_pubkeys_query();
+    //LP_utxosQ_process();
+    LP_nanomsg_recvs(ctx);
+    //LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
+    //queue_loop(0);
+    if ( 0 && (LP_counter % 10) == 0 ) // 10 seconds
+    {
+        LP_coinsloop(0);
+        if ( (LP_counter % 100) == 0 ) // 100 seconds
+        {
+            LP_notify_pubkeys(ctx,LP_mypubsock);
+            LP_privkey_updates(ctx,LP_mypubsock,0);
+            prices_loop(0);
+            if ( (retstr= basilisk_swapentry(0,0)) != 0 )
+                free(retstr);
+        }
+    }
+    LP_counter++;
 }
 
 #endif

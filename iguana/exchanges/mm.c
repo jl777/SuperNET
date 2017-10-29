@@ -48,13 +48,23 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 #include "../../crypto777/nanosrc/tcp.h"
 #include "../../crypto777/nanosrc/pair.h"
 #else
-#include "/usr/local/include/nanomsg/nn.h"
-#include "/usr/local/include/nanomsg/bus.h"
-#include "/usr/local/include/nanomsg/pubsub.h"
-#include "/usr/local/include/nanomsg/pipeline.h"
-#include "/usr/local/include/nanomsg/reqrep.h"
-#include "/usr/local/include/nanomsg/tcp.h"
-#include "/usr/local/include/nanomsg/pair.h"
+#if defined(WIN32) || defined(USE_STATIC_NANOMSG)
+	#include "../../crypto777/nanosrc/nn.h"
+	#include "../../crypto777/nanosrc/bus.h"
+	#include "../../crypto777/nanosrc/pubsub.h"
+	#include "../../crypto777/nanosrc/pipeline.h"
+	#include "../../crypto777/nanosrc/reqrep.h"
+	#include "../../crypto777/nanosrc/tcp.h"
+	#include "../../crypto777/nanosrc/pair.h"
+#else
+	#include "/usr/local/include/nanomsg/nn.h"
+	#include "/usr/local/include/nanomsg/bus.h"
+	#include "/usr/local/include/nanomsg/pubsub.h"
+	#include "/usr/local/include/nanomsg/pipeline.h"
+	#include "/usr/local/include/nanomsg/reqrep.h"
+	#include "/usr/local/include/nanomsg/tcp.h"
+	#include "/usr/local/include/nanomsg/pair.h"
+#endif
 #endif
 
 char DEX_baseaddr[64],DEX_reladdr[64];

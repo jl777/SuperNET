@@ -108,7 +108,7 @@ char *LP_apicall(struct iguana_info *coin,char *method,char *params)
         return(0);
     if ( coin->electrum != 0 )
     {
-        if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT)) != 0 )
+        if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,ELECTRUM_TIMEOUT)) != 0 )
         {
             retstr = jprint(retjson,0);
             //printf("got.%p (%s)\n",retjson,retstr);
@@ -142,7 +142,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
             }
             else
             {
-                if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,LP_HTTP_TIMEOUT)) != 0 )
+                if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,ELECTRUM_TIMEOUT)) != 0 )
                 {
                     if ( jobj(retjson,"error") != 0 )
                     {
@@ -273,6 +273,7 @@ cJSON *LP_paxprice(char *fiat)
 cJSON *LP_gettx(char *symbol,bits256 txid)
 {
     struct iguana_info *coin; char buf[512],str[65]; cJSON *retjson;
+    //printf("LP_gettx %s %s\n",symbol,bits256_str(str,txid));
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -477,7 +478,7 @@ int32_t LP_address_isvalid(char *symbol,char *address)
 
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
-    char buf[128]; cJSON *retjson; struct iguana_info *coin;
+    char buf[128]; cJSON *retjson; int32_t numconfs; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -488,7 +489,10 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
     {
         if ( LP_address_ismine(symbol,coinaddr) > 0 )
         {
-            sprintf(buf,"[0, 99999999, [\"%s\"]]",coinaddr);
+            if ( strcmp(symbol,"BTC") == 0 )
+                numconfs = 0;
+            else numconfs = 1;
+            sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             return(bitcoin_json(coin,"listunspent",buf));
         } else return(LP_address_utxos(coin,coinaddr,0));
     } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
@@ -739,7 +743,7 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
     signedtx = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     //printf("locktime.%u sequenceid.%x rawtx.(%s) vins.(%s)\n",locktime,sequenceid,rawtxbytes,jprint(vins,0));
-    if ( (*completedp= iguana_signrawtransaction(coin->ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,1000000,&msgtx,&signedtx,signedtxidp,V,16,rawtx,vins,privkeys)) < 0 )
+    if ( (*completedp= iguana_signrawtransaction(coin->ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,1000000,&msgtx,&signedtx,signedtxidp,V,16,rawtx,vins,privkeys,coin->zcash)) < 0 )
         //if ( (signedtx= LP_signrawtx(symbol,signedtxidp,&completed,vins,rawtxbytes,privkeys,V)) == 0 )
         printf("couldnt sign transaction.%s %s\n",rawtx,bits256_str(str,*signedtxidp));
     else if ( *completedp == 0 )

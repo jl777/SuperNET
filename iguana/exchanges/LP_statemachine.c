@@ -1882,6 +1882,31 @@ void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
  return(clonestr("{\"result\":\"marked as spent\"}"));
  return(clonestr("{\"error\":\"cant find txid to check spent status\"}"));
  }*/
+
+
+/*char *LP_pricestr(char *base,char *rel,double origprice)
+ {
+ cJSON *retjson; double price = 0.;
+ if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
+ {
+ price = LP_price(base,rel);
+ if ( origprice > SMALLVAL && origprice < price )
+ price = origprice;
+ }
+ if ( LP_pricevalid(price) > 0 )
+ {
+ retjson = cJSON_CreateObject();
+ jaddstr(retjson,"result","success");
+ jaddstr(retjson,"method","postprice");
+ jaddbits256(retjson,"pubkey",G.LP_mypub25519);
+ jaddstr(retjson,"base",base);
+ jaddstr(retjson,"rel",rel);
+ jaddnum(retjson,"price",price);
+ jadd(retjson,"theoretical",LP_priceinfomatrix(0));
+ jadd(retjson,"quotes",LP_priceinfomatrix(1));
+ return(jprint(retjson,1));
+ } else return(clonestr("{\"error\":\"cant find baserel pair\"}"));
+ }*/
 void LP_utxo_spentcheck(int32_t pubsock,struct LP_utxoinfo *utxo)
 {
     struct _LP_utxoinfo u; struct iguana_info *coin; char str[65]; uint32_t now = (uint32_t)time(NULL);
@@ -2305,7 +2330,7 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
                             {
                                 numrestraints++;
                                 butxo->T.bestflag = 0;
-                                pubp->numerrors = 0;
+                                //pubp->numerrors = 0;
                             }
                         }
                     }
@@ -2324,6 +2349,38 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
     LP_mypriceset(&changed,autxo->coin,base,1. / *ordermatchpricep);
     return(bestutxo);
 }
+
+/*static int _LP_metric_eval(const void *a,const void *b)
+ {
+ #define aptr (*(struct LP_metricinfo **)a)
+ #define bptr (*(struct LP_metricinfo **)b)
+ if ( bptr->metric > aptr->metric )
+ return(1);
+ else if ( bptr->metric < aptr->metric )
+ return(-1);
+ return(0);
+ #undef aptr
+ #undef bptr
+ }*/
+
+/*portable_mutex_lock(&ep->pendingQ.mutex);
+ if ( ep->pendingQ.list != 0 )
+ {
+ printf("list %p\n",ep->pendingQ.list);
+ DL_FOREACH_SAFE(ep->pendingQ.list,item,tmp)
+ {
+ printf("item.%p\n",item);
+ if ( item->type == 0xffffffff )
+ {
+ printf("%p purge %s",item,((struct stritem *)item)->str);
+ DL_DELETE(ep->pendingQ.list,item);
+ free(item);
+ }
+ }
+ }
+ DL_APPEND(ep->pendingQ.list,&sitem->DL);
+ portable_mutex_unlock(&ep->pendingQ.mutex);*/
+//printf("%p SENT.(%s) to %s:%u\n",sitem,sitem->str,ep->ipaddr,ep->port);
 
 char *LP_ordermatch(char *base,int64_t txfee,double maxprice,double maxvolume,char *rel,bits256 txid,int32_t vout,bits256 feetxid,int32_t feevout,int64_t desttxfee,int32_t duration)
 {

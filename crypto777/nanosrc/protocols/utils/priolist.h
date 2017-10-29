@@ -86,8 +86,7 @@ void nn_priolist_activate (struct nn_priolist *self, struct nn_priolist_data *da
     0 otherwise. */
 int nn_priolist_is_active (struct nn_priolist *self);
 
-/*  Get the pointer to the current pipe. If there's no pipe in the list,
-    NULL is returned. */
+//  Get the pointer to the current pipe. If there's no pipe in the list, NULL is returned.
 struct nn_pipe *nn_priolist_getpipe (struct nn_priolist *self);
 
 /*  Moves to the next pipe in the list. If 'release' is set to 1, the current

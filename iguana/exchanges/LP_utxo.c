@@ -92,10 +92,10 @@ struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr)
     return(ap);
 }
 
-int32_t LP_address_minmax(uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
+int32_t LP_address_minmax(uint64_t *balancep,uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
 {
     struct LP_address_utxo *up,*tmp; int32_t n = 0;
-    *minp = *maxp = 0;
+    *minp = *maxp = *balancep = 0;
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
         if ( up->spendheight <= 0 )
@@ -104,6 +104,7 @@ int32_t LP_address_minmax(uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
                 *maxp = up->U.value;
             if ( *minp == 0 || up->U.value < *minp )
                 *minp = up->U.value;
+            *balancep += up->U.value;
             n++;
         }
     }
@@ -148,7 +149,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
         //char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d spendheight.%d allocated.%p\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout,up->spendheight,LP_allocated(up->U.txid,up->U.vout));
-        if ( up->spendheight <= 0 )
+        if ( up->spendheight <= 0 && LP_RTmetrics_avoidtxid(up->U.txid) < 0 )
         {
             if ( coin->electrum == 0 )
             {

@@ -329,7 +329,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
     struct nn_cws *cws;
 
     cws = nn_cont (self, struct nn_cws, fsm);
-
+    printf("cws_handler src.%d type.%d state.%d\n",src,type,cws->state);
     switch (cws->state) {
 
 /******************************************************************************/
@@ -409,6 +409,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
         case NN_CWS_SRC_USOCK:
             switch (type) {
             case NN_USOCK_CONNECTED:
+    printf("cws connected\n");
                 nn_sws_start (&cws->sws, &cws->usock, NN_WS_CLIENT,
                     nn_chunkref_data (&cws->resource),
                     nn_chunkref_data (&cws->remote_host));
@@ -421,6 +422,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                 nn_epbase_clear_error (&cws->epbase);
                 return;
             case NN_USOCK_ERROR:
+                    printf("cws NN_USOCK_ERROR\n");
                 nn_epbase_set_error (&cws->epbase,nn_usock_geterrno (&cws->usock),__FILE__,__LINE__);
                 nn_usock_stop(&cws->usock);
                 cws->state = NN_CWS_STATE_STOPPING_USOCK;
