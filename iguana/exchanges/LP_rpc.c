@@ -199,6 +199,7 @@ cJSON *LP_NXT_redeems()
             {
                 for (i=0; i<numtx; i++)
                 {
+                    msgjson = 0;
                     item = jitem(array,i);
                     //printf("%d: %s\n",i,jprint(item,0));
                     if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 )
@@ -215,7 +216,6 @@ cJSON *LP_NXT_redeems()
                                 {
                                     msgstr = jstr(msgjson,"message");
                                     printf("%d method.(%s) (%s)\n",i,method,msgstr);
-                                    free_json(msgjson);
                                 }
                             }
                             else if ( msgstr == 0 && msgstr[0] == 0 )
@@ -223,6 +223,8 @@ cJSON *LP_NXT_redeems()
                         }
                         if ( msgstr != 0 )
                             printf("%d: message.(%s)\n",i,msgstr);
+                        if ( msgjson != 0 )
+                            free_json(msgjson);
                     }
                 }
             }
