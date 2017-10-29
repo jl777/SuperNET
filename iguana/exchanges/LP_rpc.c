@@ -174,11 +174,12 @@ cJSON *LP_NXT_message(char *method,uint64_t txnum,char *passphrase)
 {
     char url[1024],*retstr; cJSON *retjson = 0;
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=%s&transaction=%llu&secretPhrase=%s",method,(long long)txnum,passphrase);
+    //printf("issue.(%s)\n",url);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
-            free_json(retjson);
+            
         }
         free(retstr);
     }
@@ -207,8 +208,8 @@ cJSON *LP_NXT_redeems()
                             if ( jint(attach,"version.PrunablePlainMessage") == 1 )
                                 method = "getPrunableMessage";
                             else method = "readMessage";
-                            msgjson = LP_NXT_message(method,txnum,"");
-                            printf("%d method.(%s) (%s)\n",i,method,jprint(msgjson,0));
+                            if ( (msgjson= LP_NXT_message(method,txnum,"test")) != 0 )
+                                printf("%d method.(%s) (%s)\n",i,method,jprint(msgjson,0));
                         }
                     }
                 }
