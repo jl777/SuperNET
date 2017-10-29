@@ -188,7 +188,7 @@ cJSON *LP_NXT_message(char *method,uint64_t txnum,char *passphrase)
 
 cJSON *LP_NXT_redeems()
 {
-    char url[1024],*retstr,*recv,*method; uint64_t txnum; int32_t i,numtx; cJSON *item,*attach,*array,*msgjson,*retjson=0;
+    char url[1024],*retstr,*recv,*method,*msgstr; uint64_t txnum; int32_t i,numtx; cJSON *item,*attach,*array,*msgjson,*retjson=0;
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getBlockchainTransactions&account=NXT-MRBN-8DFH-PFMK-A4DBM");//,NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))]);
     printf("calling (%s)\n",url);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
@@ -203,6 +203,7 @@ cJSON *LP_NXT_redeems()
                     //printf("%d: %s\n",i,jprint(item,0));
                     if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 )
                     {
+                        msgstr = jstr(item,"message");
                         if ( (attach= jobj(item,"attachment")) != 0 )
                         {
                             printf("(%s)\n",jprint(attach,0));
@@ -212,12 +213,16 @@ cJSON *LP_NXT_redeems()
                                 method = "getPrunableMessage";
                                 if ( (msgjson= LP_NXT_message(method,txnum,"test")) != 0 )
                                 {
-                                    printf("%d method.(%s) (%s)\n",i,method,jprint(msgjson,0));
+                                    msgstr = jstr(msgjson,"message");
+                                    printf("%d method.(%s) (%s)\n",i,method,msgstr);
                                     free_json(msgjson);
                                 }
                             }
-                            printf("%d: message.(%s)\n",i,jstr(attach,"message"));
+                            else if ( msgstr == 0 && msgstr[0] == 0 )
+                                msgstr = jstr(attach,"message");
                         }
+                        if ( msgstr != 0 )
+                            printf("%d: message.(%s)\n",i,msgstr);
                     }
                 }
             }
