@@ -202,6 +202,7 @@ cJSON *LP_NXT_redeems()
                     item = jitem(array,i);
                     if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 )
                     {
+                        printf("%s\n",jprint(item,0));
                         if ( (attach= jobj(item,"attachment")) != 0 )
                         {
                             printf("(%s)\n",jprint(attach,0));
