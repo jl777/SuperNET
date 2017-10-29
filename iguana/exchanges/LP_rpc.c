@@ -172,28 +172,38 @@ char *NXTnodes[] = { "62.75.159.113", "91.44.203.238", "82.114.88.225", "78.63.2
 
 cJSON *LP_NXT_redeems()
 {
-    char url[1024],*retstr; cJSON *retjson=0;
+    char url[1024],*retstr; int32_t i,numtx; cJSON *item,*array,*retjson=0;
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getBlockchainTransactions&account=NXT-MRBN-8DFH-PFMK-A4DBM");//,NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))]);
     printf("calling (%s)\n",url);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
-        retjson = cJSON_Parse(retstr);
-        printf("%s\n",retstr);
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (array= jarray(&numtx,retjson,"transactions")) != 0 )
+            {
+                for (i=0; i<numtx; i++)
+                {
+                    item = jitem(array,i);
+                    printf("%d.(%s)\n",i,jprint(item,0));
+                }
+            }
+            free_json(retjson);
+        }
         free(retstr);
-    } else printf("%s -> null\n",url);
+    } ;
     return(retjson);
 }
 
 cJSON *LP_assethbla(char *assetid)
 {
     char url[1024],*retstr; int32_t n; cJSON *array,*bid=0,*ask=0,*retjson;
-    sprintf(url,"http://%s:7876/nxt?=%%2Fnxt&requestType=getBidOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
+    sprintf(url,"http://%s:7876/nxt?requestType=getBidOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         bid = cJSON_Parse(retstr);
         free(retstr);
     }
-    sprintf(url,"http://%s:7876/nxt?=%%2Fnxt&requestType=getAskOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
+    sprintf(url,"http://%s:7876/nxt?requestType=getAskOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         ask = cJSON_Parse(retstr);
