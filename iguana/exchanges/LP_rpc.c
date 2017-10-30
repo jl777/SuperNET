@@ -224,7 +224,7 @@ cJSON *LP_NXT_redeems()
                             if ( msgstr == 0 || msgstr[0] == 0 )
                                 msgstr = jstr(attach,"message");
                         }
-                        printf("%d: (%s) <- %.8f %llu\n",i,msgstr,dstr(qty),(long long)assetid);
+                        printf("%d: (%s) <- %.8f %llu\n",i,msgstr!=0?msgstr:jprint(attach,0),dstr(qty),(long long)assetid);
                         if ( msgjson != 0 )
                             free_json(msgjson);
                     }
