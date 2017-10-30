@@ -266,6 +266,7 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
 
 void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel)
 {
+    static uint32_t lasttime;
     double margin,minprice,newprice,oppomargin,factor,offset; double bid,ask; int32_t changed;
     margin = basepp->margins[relpp->ind];
     oppomargin = relpp->margins[basepp->ind];
@@ -298,8 +299,11 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
             {
                 LP_mypriceset(&changed,relpp->symbol,basepp->symbol,newprice);
                 //printf("changed.%d %s/%s <- %.8f\n",changed,basepp->symbol,relpp->symbol,price);
-                if ( changed != 0 )
+                if ( changed != 0 || time(NULL) > lasttime+LP_ORDERBOOK_DURATION*.777)
+                {
+                    lasttime = (uint32_t)time(NULL);
                     LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,newprice);
+                }
             }
         }
     }
