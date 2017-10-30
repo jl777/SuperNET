@@ -163,7 +163,7 @@ uint32_t _LP_magic_check(bits256 hash,bits256 magic)
     bits256 pubkey,shared;
     pubkey = curve25519(magic,curve25519_basepoint9());
     shared = curve25519(hash,pubkey);
-    return(shared.uints[1] & ~(1 << LP_MAGICBITS));
+    return(shared.uints[1] & ((1 << LP_MAGICBITS)-1));
 }
 
 bits256 LP_calc_magic(uint8_t *msg,int32_t len)
@@ -202,7 +202,7 @@ int32_t LP_magic_check(uint8_t *msg,int32_t recvlen)
         vcalc_sha256(0,hash.bytes,msg,recvlen);
         memcpy(magic.bytes,&msg[recvlen],sizeof(magic));
         val = _LP_magic_check(hash,magic);
-        printf("magicval = %d\n",val);
+        printf("magicval = %x\n",val);
         return(val == LP_BARTERDEX_VERSION);
     }
     return(-1);
