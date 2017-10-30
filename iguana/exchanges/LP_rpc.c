@@ -263,7 +263,7 @@ cJSON *LP_NXT_redeems()
                         }
                         mult = LP_assetid_mult(assetname,assetid);
                         if ( msgstr != 0 && assetname[0] != 0 && qty != 0 )
-                        printf("%d: (%35s) <- %13.8f %8s %llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)mult);
+                        printf("%d: (%35s) <- %13.8f %8s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
                         if ( msgjson != 0 )
                             free_json(msgjson);
                     }
