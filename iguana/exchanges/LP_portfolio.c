@@ -266,6 +266,7 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
 
 void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel)
 {
+    static uint32_t lasttime;
     double margin,minprice,newprice,oppomargin,factor,offset; double bid,ask; int32_t changed;
     margin = basepp->margins[relpp->ind];
     oppomargin = relpp->margins[basepp->ind];
@@ -297,9 +298,12 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
             if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
             {
                 LP_mypriceset(&changed,relpp->symbol,basepp->symbol,newprice);
-                //printf("changed.%d %s/%s <- %.8f\n",changed,basepp->symbol,relpp->symbol,price);
-                if ( changed != 0 )
+                //printf("autoprice changed.%d %s/%s <- %.8f\n",changed,basepp->symbol,relpp->symbol,price);
+                if ( changed != 0 || time(NULL) > lasttime+LP_ORDERBOOK_DURATION*.777)
+                {
+                    lasttime = (uint32_t)time(NULL);
                     LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,newprice);
+                }
             }
         }
     }
@@ -397,20 +401,6 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
     }
     return(nxtkmd);
 }
-
-static char *assetids[][3] =
-{
-    { "12071612744977229797", "UNITY", "10000" },
-    { "15344649963748848799", "DEX", "1" },
-    { "6883271355794806507", "PANGEA", "10000" },
-    { "17911762572811467637", "JUMBLR", "10000" },
-    { "17083334802666450484", "BET", "10000" },
-    { "13476425053110940554", "CRYPTO", "1000" },
-    { "6932037131189568014", "HODL", "1" },
-    { "3006420581923704757", "SHARK", "10000" },
-    { "17571711292785902558", "BOTS", "1" },
-    { "10524562908394749924", "MGW", "1" },
-};
 
 void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 {

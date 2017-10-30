@@ -509,7 +509,7 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
         memset(zeroes,0,sizeof(zeroes));
         if ( memcmp(zeroes,rmd160,sizeof(rmd160)) != 0 )
         {
-            if ( memcmp(rmd160,pubp->rmd160,20) != 0 )
+            //if ( memcmp(rmd160,pubp->rmd160,20) != 0 )
             {
                 if ( (pubsecpstr= jstr(item,"pubsecp")) != 0 && is_hexstr(pubsecpstr,0) == 66 )
                 {
@@ -523,15 +523,18 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                             decode_hex(sig,siglen,sigstr);
                             if ( _LP_pubkey_sigcheck(sig,siglen,juint(item,"timestamp"),pubp->pubkey,rmd160,pubsecp) == 0 )
                             {
-                                for (i=0; i<20; i++)
-                                    printf("%02x",pubp->rmd160[i]);
-                                memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
-                                memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
-                                memcpy(pubp->sig,sig,sizeof(pubp->sig));
-                                pubp->siglen = siglen;
-                                char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
+                                if ( memcmp(rmd160,pubp->rmd160,20) != 0 )
+                                {
+                                    for (i=0; i<20; i++)
+                                        printf("%02x",pubp->rmd160[i]);
+                                    memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
+                                    memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
+                                    memcpy(pubp->sig,sig,sizeof(pubp->sig));
+                                    pubp->siglen = siglen;
+                                    char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
+                                    pubp->timestamp = (uint32_t)time(NULL);
+                                }
                                 retval = 0;
-                                pubp->timestamp = (uint32_t)time(NULL);
                             } else pubp->numerrors++;
                         }
                     }
@@ -545,7 +548,7 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                         printf(" for %s\n",pubsecpstr);
                    }
                 }
-            } else pubp->timestamp = (uint32_t)time(NULL);
+            }// else pubp->timestamp = (uint32_t)time(NULL);
         }
     }
     return(retval);
@@ -584,7 +587,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
     struct LP_peerinfo *peer,*tmp; uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; char *retstr; cJSON *array,*item,*req;
     if ( coin->smartaddr[0] == 0 )
         return;
-    LP_notify_pubkeys(coin->ctx,LP_mypubsock);
+    //LP_notify_pubkeys(coin->ctx,LP_mypubsock);
     if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
     {
         memset(zero.bytes,0,sizeof(zero));

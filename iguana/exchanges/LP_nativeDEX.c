@@ -18,7 +18,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// verify portfolio, interest to KMD withdraw, pricebroadcast loop, trade to pubkey
+// verify portfolio, interest to KMD withdraw, pricebroadcast loop
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 
@@ -279,19 +279,18 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 methodstr[0] = 0;
-                if ( 1 )
+                if ( 0 )
                 {
 #ifdef FROM_JS
                     printf("%s RECV.(%s)\n",typestr,(char *)ptr);
 #endif
-                    cJSON *recvjson; //char *mstr,*cstr;
+                    cJSON *recvjson; char *mstr;//,*cstr;
                     if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
                     {
-                        /*if ( (mstr= jstr(recvjson,"method")) != 0 && strcmp(mstr,"uitem") == 0 &&
-                            (cstr= jstr(recvjson,"coin")) != 0 && strcmp(cstr,"REVS") == 0 )
+                        if ( (mstr= jstr(recvjson,"method")) != 0 )//&& strcmp(mstr,"uitem") == 0 && (cstr= jstr(recvjson,"coin")) != 0 && strcmp(cstr,"REVS") == 0 )
                         {
                             printf("%s RECV.(%s)\n",typestr,(char *)ptr);
-                        }*/
+                        }
                         safecopy(methodstr,jstr(recvjson,"method"),sizeof(methodstr));
                         free_json(recvjson);
                     }
@@ -300,6 +299,9 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 else printf("%s got recv.%d\n",typestr,recvlen);
 #endif
                 double millis = OS_milliseconds();
+                if ( strlen((char *)ptr)+sizeof(bits256) <= recvlen )
+                    if ( LP_magic_check(ptr,recvlen,remoteaddr) <= 0 )
+                        printf("magic check error\n");
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
                 if ( Broadcaststr != 0 )
@@ -731,33 +733,6 @@ void LP_pubkeysloop(void *ctx)
     }
 }
 
-void LP_price_broadcastloop(void *ctx)
-{
-    struct LP_priceinfo *basepp,*relpp; double price; int32_t baseind,relind;
-    sleep(30);
-    while ( 1 )
-    {
-        for (baseind=0; baseind<LP_MAXPRICEINFOS; baseind++)
-        {
-            basepp = LP_priceinfo(baseind);
-            if ( basepp->symbol[0] == 0 )
-                continue;
-            for (relind=0; relind<LP_MAXPRICEINFOS; relind++)
-            {
-                relpp = LP_priceinfo(relind);
-                if ( relpp->symbol[0] == 0 )
-                    continue;
-                if ( basepp != 0 && relpp != 0 && (price= relpp->myprices[basepp->ind]) > SMALLVAL)
-                {
-                    //printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
-                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
-                }
-            }
-        }
-        sleep(LP_ORDERBOOK_DURATION * .9);
-    }
-}
-
 void LP_privkeysloop(void *ctx)
 {
     sleep(20);
@@ -1034,11 +1009,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)myipaddr) != 0 )
-    {
-        printf("error launching LP_swapsloop for port.%u\n",myport);
-        exit(-1);
-    }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_price_broadcastloop,(void *)ctx) != 0 )
     {
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);

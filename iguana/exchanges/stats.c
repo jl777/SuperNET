@@ -30,6 +30,24 @@
 #include "DEXstats.h"
 char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 
+char *stats_validmethods[] =
+{
+    "getprices", "listunspent", "notify", "getpeers", "uitem", // from issue_
+    "orderbook", "help", "getcoins", "pricearray", "balance"
+};
+
+int32_t LP_valid_remotemethod(cJSON *argjson)
+{
+    char *method; int32_t i;
+    if ( (method= jstr(argjson,"method")) != 0 )
+    {
+        for (i=0; i<sizeof(stats_validmethods)/sizeof(*stats_validmethods); i++)
+            if ( strcmp(method,stats_validmethods[i]) == 0 )
+                return(1);
+    }
+    return(-1);
+}
+
 #ifndef _WIN32
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL	0x4000	// Do not generate SIGPIPE
@@ -493,12 +511,24 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
                     jaddstr(argjson,"userpass",userpass);
                 //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
+#ifdef FROM_MARKETMAKER
+                if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(argjson) > 0 )
+                {
+                    if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
+                    {
+                        if ( (retitem= cJSON_Parse(retstr)) != 0 )
+                            jaddi(retarray,retitem);
+                        free(retstr);
+                    }
+                } else retstr = clonestr("{\"error\":\"invalid remote method\"}");
+#else
                 if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
                 {
                     if ( (retitem= cJSON_Parse(retstr)) != 0 )
                         jaddi(retarray,retitem);
                     free(retstr);
                 }
+#endif
                 //printf("(%s) {%s} -> (%s) postflag.%d (%s)\n",urlstr,jprint(argjson,0),cJSON_Print(json),*postflagp,retstr);
             }
             free_json(origargjson);
@@ -516,7 +546,13 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             //printf("ARGJSON.(%s)\n",jprint(arg,0));
             if ( userpass != 0 && jstr(arg,"userpass") == 0 )
                 jaddstr(arg,"userpass",userpass);
+#ifdef FROM_MARKETMAKER
+            if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(arg) > 0 )
+                retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
+            else retstr = clonestr("{\"error\":\"invalid remote method\"}");
+#else
             retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
+#endif
         }
         free_json(argjson);
         free_json(json);

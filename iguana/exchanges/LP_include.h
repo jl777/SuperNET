@@ -34,6 +34,9 @@ void emscripten_usleep(int32_t x);
 #endif
 //#define LP_STRICTPEERS
 
+#define LP_BARTERDEX_VERSION 0
+#define LP_MAGICBITS 10
+
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
 #define LP_AUTOTRADE_TIMEOUT 10
 #define ELECTRUM_TIMEOUT 10
@@ -311,13 +314,13 @@ struct basilisk_swap
     
 };
 
-#define LP_MAXPRICEINFOS 1024
+#define LP_MAXPRICEINFOS 256
 struct LP_pubkeyinfo
 {
     UT_hash_handle hh;
     bits256 pubkey;
-    double matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
-    uint32_t timestamp,numerrors;
+    float matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
+    uint32_t timestamps[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS],timestamp,numerrors;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };

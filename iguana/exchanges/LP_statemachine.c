@@ -2219,7 +2219,143 @@ if ( 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")
  LP_utxo_clientpublish(utxo);
  }
  }*/
+void LP_price_broadcastloop(void *ctx)
+{
+    struct LP_priceinfo *basepp,*relpp; double price; int32_t baseind,relind;
+    sleep(30);
+    while ( 1 )
+    {
+        for (baseind=0; baseind<LP_MAXPRICEINFOS; baseind++)
+        {
+            basepp = LP_priceinfo(baseind);
+            if ( basepp->symbol[0] == 0 )
+                continue;
+            for (relind=0; relind<LP_MAXPRICEINFOS; relind++)
+            {
+                relpp = LP_priceinfo(relind);
+                if ( relpp->symbol[0] == 0 )
+                    continue;
+                if ( basepp != 0 && relpp != 0 && (price= relpp->myprices[basepp->ind]) > SMALLVAL)
+                {
+                    //printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
+                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
+                }
+            }
+        }
+        sleep(LP_ORDERBOOK_DURATION * .9);
+    }
+}
+//else if ( strcmp(method,"checktxid") == 0 )
+//    retstr = LP_spentcheck(argjson);
+//else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
+//    return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
+//else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
+//    retstr = clonestr("{\"result\":\"coin is disabled\"}");
+/*if ( strcmp(method,"broadcast") == 0 )
+ {
+ bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
+ if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
+ {
+ Broadcaststr = jprint(reqjson,0);
+ if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
+ {
+ cipherlen = (int32_t)strlen(cipherstr) >> 1;
+ if ( cipherlen <= sizeof(cipher) )
+ {
+ decode_hex(cipher,cipherlen,cipherstr);
+ LP_queuesend(calc_crc32(0,&cipher[2],cipherlen-2),LP_mypubsock,base,rel,cipher,cipherlen);
+ } else retstr = clonestr("{\"error\":\"cipher too big\"}");
+ }
+ else
+ {
+ memset(zero.bytes,0,sizeof(zero));
+ //printf("broadcast.(%s)\n",Broadcaststr);
+ LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
+ }
+ retstr = clonestr("{\"result\":\"success\"}");
+ } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
+ }
+ else*/ #ifdef FROM_JS
+int32_t sentbytes,sock,peerind,maxind;
+if ( (maxind= LP_numpeers()) > 0 )
+peerind = (rand() % maxind) + 1;
+else peerind = 1;
+sock = LP_peerindsock(&peerind);
+if ( sock >= 0 )
+{
+    if ( (sentbytes= nn_send(sock,msg,msglen,0)) != msglen )
+        printf("LP_send sent %d instead of %d\n",sentbytes,msglen);
+        else printf("sent %d bytes of %d to sock.%d\n",sentbytes,msglen,sock);
+            } else printf("couldnt get valid sock\n");
+#else
 
+void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
+{
+    int32_t maxind,peerind = 0; //sentbytes,
+    if ( sock0 >= 0 || sock1 >= 0 )
+    {
+        /*        if ( sock0 >= 0 && LP_sockcheck(sock0) > 0 )
+         {
+         if ( (sentbytes= nn_send(sock0,msg,msglen,0)) != msglen )
+         printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
+         else
+         {
+         printf("Q sent %u msglen.%d (%s)\n",crc32,msglen,msg);
+         sock0 = -1;
+         }
+         }
+         if ( sock1 >= 0 && LP_sockcheck(sock1) > 0 )
+         {
+         if ( (sentbytes= nn_send(sock1,msg,msglen,0)) != msglen )
+         printf("_LP_queuesend1 sent %d instead of %d\n",sentbytes,msglen);
+         else
+         {
+         printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
+         sock1 = -1;
+         }
+         }
+         if ( sock0 < 0 && sock1 < 0 )
+         return;*/
+    }
+    else
+    {
+        if ( (maxind= LP_numpeers()) > 0 )
+            peerind = (rand() % maxind) + 1;
+        else peerind = 1;
+        sock0 = LP_peerindsock(&peerind);
+        if ( (maxind= LP_numpeers()) > 0 )
+            peerind = (rand() % maxind) + 1;
+        else peerind = 1;
+        sock1 = LP_peerindsock(&peerind);
+    }
+    if ( sock0 >= 0 )
+        _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
+    if ( sock1 >= 0 )
+        _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
+}
+
+if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_price_broadcastloop,(void *)ctx) != 0 )
+{
+    printf("error launching LP_swapsloop for port.%u\n",myport);
+    exit(-1);
+}
+void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
+{
+    //struct iguana_info *coin; int32_t flag=0,socks[2];
+    portable_mutex_lock(&LP_networkmutex);
+    if ( pubsock >= 0 )
+    {
+        //socks[0] = socks[1] = -1;
+        //if ( rel != 0 && rel[0] != 0 && (coin= LP_coinfind(rel)) != 0 && coin->bussock >= 0 )
+        //    socks[flag++] = coin->bussock;
+        //if ( base != 0 && base[0] != 0 && (coin= LP_coinfind(base)) != 0 && coin->bussock >= 0 )
+        //    socks[flag++] = coin->bussock;
+        //if ( flag == 0 && pubsock >= 0 )
+        _LP_queuesend(crc32,pubsock,-1,msg,msglen,0);
+        //else _LP_queuesend(socks[0],socks[1],msg,msglen,0);
+    } else _LP_queuesend(crc32,-1,-1,msg,msglen,1);
+    portable_mutex_unlock(&LP_networkmutex);
+}
 #ifdef oldway
 struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,uint64_t maxdestsatoshis)
 {
@@ -2349,6 +2485,16 @@ struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,
     LP_mypriceset(&changed,autxo->coin,base,1. / *ordermatchpricep);
     return(bestutxo);
 }
+if ( (0) )
+{
+    ep = LP_electrum_info(&already,"BTC","88.198.241.196",50001,IGUANA_MAXPACKETSIZE * 10);
+    if ( ep != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_dedicatedloop,(void *)ep) != 0 )
+    {
+        printf("error launching LP_dedicatedloop (%s:%u)\n",ep->ipaddr,ep->port);
+        exit(-1);
+    } else printf("launched.(%s:%u)\n",ep->ipaddr,ep->port);
+        electrum_test();
+        }
 
 /*static int _LP_metric_eval(const void *a,const void *b)
  {

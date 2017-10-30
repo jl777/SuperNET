@@ -503,11 +503,12 @@ stop()\n\
         return(jprint(LP_coinsjson(0),1));
     else if ( strcmp(method,"wantnotify") == 0 )
     {
-        bits256 pub;
+        bits256 pub; static uint32_t lastnotify;
         pub = jbits256(argjson,"pub");
         //char str[65]; printf("got wantnotify.(%s) vs %s\n",jprint(argjson,0),bits256_str(str,G.LP_mypub25519));
-        if ( bits256_cmp(pub,G.LP_mypub25519) == 0 )
+        if ( bits256_cmp(pub,G.LP_mypub25519) == 0 && time(NULL) > lastnotify+30 )
         {
+            lastnotify = (uint32_t)time(NULL);
             printf("wantnotify for me!\n");
             LP_notify_pubkeys(ctx,LP_mypubsock);
         }
@@ -560,44 +561,14 @@ stop()\n\
         }
         retstr = clonestr("{\"result\":\"success\"}");
     }
-    //else if ( strcmp(method,"checktxid") == 0 )
-    //    retstr = LP_spentcheck(argjson);
-    //else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
-    //    return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
-    //else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
-    //    retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
     else // psock requests/response
     {
         if ( IAMLP != 0 )
         {
-            /*if ( strcmp(method,"broadcast") == 0 )
-             {
-             bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
-             if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
-             {
-             Broadcaststr = jprint(reqjson,0);
-             if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
-             {
-             cipherlen = (int32_t)strlen(cipherstr) >> 1;
-             if ( cipherlen <= sizeof(cipher) )
-             {
-             decode_hex(cipher,cipherlen,cipherstr);
-             LP_queuesend(calc_crc32(0,&cipher[2],cipherlen-2),LP_mypubsock,base,rel,cipher,cipherlen);
-             } else retstr = clonestr("{\"error\":\"cipher too big\"}");
-             }
-             else
-             {
-             memset(zero.bytes,0,sizeof(zero));
-             //printf("broadcast.(%s)\n",Broadcaststr);
-             LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
-             }
-             retstr = clonestr("{\"result\":\"success\"}");
-             } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
-             }
-             else*/ if ( strcmp(method,"psock") == 0 )
-             {
+            if ( strcmp(method,"psock") == 0 )
+            {
                  if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
                  {
                      if ( LP_mypeer != 0 )
