@@ -18,7 +18,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// verify portfolio, interest to KMD withdraw, pricebroadcast loop, trade to pubkey
+// verify portfolio, interest to KMD withdraw, pricebroadcast loop
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 
@@ -1006,11 +1006,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)myipaddr) != 0 )
-    {
-        printf("error launching LP_swapsloop for port.%u\n",myport);
-        exit(-1);
-    }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_price_broadcastloop,(void *)ctx) != 0 )
     {
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);

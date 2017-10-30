@@ -2219,6 +2219,38 @@ if ( 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,"")
  LP_utxo_clientpublish(utxo);
  }
  }*/
+void LP_price_broadcastloop(void *ctx)
+{
+    struct LP_priceinfo *basepp,*relpp; double price; int32_t baseind,relind;
+    sleep(30);
+    while ( 1 )
+    {
+        for (baseind=0; baseind<LP_MAXPRICEINFOS; baseind++)
+        {
+            basepp = LP_priceinfo(baseind);
+            if ( basepp->symbol[0] == 0 )
+                continue;
+            for (relind=0; relind<LP_MAXPRICEINFOS; relind++)
+            {
+                relpp = LP_priceinfo(relind);
+                if ( relpp->symbol[0] == 0 )
+                    continue;
+                if ( basepp != 0 && relpp != 0 && (price= relpp->myprices[basepp->ind]) > SMALLVAL)
+                {
+                    //printf("automated price broadcast %s/%s %.8f\n",relpp->symbol,basepp->symbol,price);
+                    LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,price);
+                }
+            }
+        }
+        sleep(LP_ORDERBOOK_DURATION * .9);
+    }
+}
+
+if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_price_broadcastloop,(void *)ctx) != 0 )
+{
+    printf("error launching LP_swapsloop for port.%u\n",myport);
+    exit(-1);
+}
 
 #ifdef oldway
 struct LP_utxoinfo *LP_bestutxo(double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,uint64_t maxdestsatoshis)
