@@ -206,7 +206,7 @@ double _LP_RTmetric_calc(struct LP_metricinfo *mp,double bestprice,double maxpri
         while ( n-- > 0 )
             metric *= 1.1;
     if ( metric != origmetric )
-        printf("price %.8f orig %.8f -> %.8f relvol %.8f min %.8f max %.8f bal %.8f age.%d pend.%d\n",mp->price,origmetric,metric,relvolume,mp->minvol,mp->maxvol,mp->balance,mp->age,mp->pendingswaps);
+        printf("i.%d price %.8f orig %.8f -> %.8f relvol %.8f min %.8f max %.8f bal %.8f age.%d pend.%d\n",mp->ind,mp->price,origmetric,metric,relvolume,mp->minvol,mp->maxvol,mp->balance,mp->age,mp->pendingswaps);
     return(metric);
 }
 
@@ -241,9 +241,10 @@ cJSON *LP_RTmetrics_sort(char *base,char *rel,cJSON *rawasks,int32_t numasks,dou
             groupi = i;
         num++;
     }
-    if ( 0 && groupi > 0 )
+    if ( groupi > 0 )
     {
         sortbuf = calloc(groupi+1,sizeof(*sortbuf));
+        printf("alloc %d\n",groupi+1);
         prevdepth = 0.;
         for (i=0; i<=groupi; i++)
         {
@@ -251,7 +252,9 @@ cJSON *LP_RTmetrics_sort(char *base,char *rel,cJSON *rawasks,int32_t numasks,dou
             LP_RTmetric_calc(sortbuf,i,item,bestprice,maxprice,relvolume,prevdepth);
             prevdepth = jdouble(item,"depth");
         }
+        printf("call revsortds\n");
         revsortds(&sortbuf[0].metric,groupi+1,sizeof(*sortbuf));
+        printf("back\n");
         array = cJSON_CreateArray();
         for (i=0; i<=groupi; i++)
         {
