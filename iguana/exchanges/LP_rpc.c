@@ -209,7 +209,7 @@ cJSON *LP_NXT_redeems()
                     {
                         assetid = j64bits(item,"asset");
                         qty = j64bits(item,"quantityQNT");
-                        if ( (attach= jobj(item,"attachment")) != 0 && jint(item,"version.AssetTransfer") == 1 )
+                        if ( (attach= jobj(item,"attachment")) != 0 && jint(attach,"version.AssetTransfer") == 1 )
                         {
                             printf("txnum.%llu (%s)\n",(long long)txnum,jprint(attach,0));
                             if ( (msgstr == 0 || msgstr[0] == 0) && jint(attach,"version.PrunablePlainMessage") == 1 )
@@ -224,8 +224,7 @@ cJSON *LP_NXT_redeems()
                             if ( msgstr == 0 || msgstr[0] == 0 )
                                 msgstr = jstr(attach,"message");
                         }
-                        if ( msgstr != 0 )
-                            printf("%d: message.(%s) <- %.8f %llu\n",i,msgstr,dstr(qty),(long long)assetid);
+                        printf("%d: message.(%s) <- %.8f %llu\n",i,msgstr,dstr(qty),(long long)assetid);
                         if ( msgjson != 0 )
                             free_json(msgjson);
                     }
