@@ -173,8 +173,8 @@ char *NXTnodes[] = { "62.75.159.113", "91.44.203.238", "82.114.88.225", "78.63.2
 static char *assetids[][4] =
 {
     { "13502152099823770958", "SUPERNETx2", "10000", "10000" },
-    { "12071612744977229797", "UNITY", "10000", "10000" },
     { "12071612744977229797", "SUPERNET", "10000", "10000" },
+    { "12071612744977229797", "UNITY", "10000", "10000" },
     { "15344649963748848799", "DEX", "1", "100000000" },
     { "6883271355794806507", "PANGEA", "10000", "10000" },
     { "17911762572811467637", "JUMBLR", "10000", "10000" },
@@ -186,14 +186,16 @@ static char *assetids[][4] =
     { "10524562908394749924", "MGW", "1", "100000000" },
 };
 
-uint64_t LP_assetid_mult(char *name,uint64_t assetid)
+uint64_t LP_assetid_mult(int32_t *assetindp,char *name,uint64_t assetid)
 {
     int32_t i; uint64_t mult = 0;
     name[0] = 0;
+    *assetindp = -1;
     for (i=0; i<sizeof(assetids)/sizeof(*assetids); i++)
     {
         if ( assetid == calc_nxt64bits(assetids[i][0]) )
         {
+            *assetindp = i;
             mult = atoi(assetids[i][3]);
             strcpy(name,assetids[i][1]);
             break;
@@ -220,7 +222,8 @@ cJSON *LP_NXT_message(char *method,uint64_t txnum,char *passphrase)
 
 cJSON *LP_NXT_redeems()
 {
-    char url[1024],*retstr,*recv,*method,*msgstr,assetname[16]; uint64_t mult,txnum,assetid,qty; int32_t i,numtx; cJSON *item,*attach,*array,*msgjson,*encjson,*retjson=0;
+    char url[1024],*retstr,*recv,*method,*msgstr,assetname[16]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx; cJSON *item,*attach,*array,*msgjson,*encjson,*retjson=0;
+    memset(totals,0,sizeof(totals));
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getBlockchainTransactions&account=NXT-MRBN-8DFH-PFMK-A4DBM");//,NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))]);
     //printf("calling (%s)\n",url);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
@@ -250,7 +253,7 @@ cJSON *LP_NXT_redeems()
                                 if ( (msgjson= LP_NXT_message(method,txnum,"test")) != 0 )
                                 {
                                     msgstr = jstr(msgjson,"message");
-                                    printf("%d method.(%s) (%s)\n",i,method,msgstr);
+                                    //printf("%d method.(%s) (%s)\n",i,method,msgstr);
                                 }
                             }
                             if ( msgstr == 0 || msgstr[0] == 0 )
@@ -261,9 +264,11 @@ cJSON *LP_NXT_redeems()
                                     msgstr = "encryptedMessage";//jstr(encjson,"data");
                             }
                         }
-                        mult = LP_assetid_mult(assetname,assetid);
+                        mult = LP_assetid_mult(&ind,assetname,assetid);
+                        if ( ind >= 0 )
+                            totals[ind] += qty * mult;
                         if ( msgstr != 0 && assetname[0] != 0 && qty != 0 )
-                        printf("%-4d: (%35s) <- %13.8f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
+                        printf("%-4d: (%35s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
                         if ( msgjson != 0 )
                             free_json(msgjson);
                     }
@@ -274,7 +279,13 @@ cJSON *LP_NXT_redeems()
             free_json(retjson);
         }
         free(retstr);
-    } ;
+    }
+    printf("\nTotal redeemed\n");
+    for (i=0; i<sizeof(totals)/sizeof(*totals); i++)
+    {
+        if ( totals[i] != 0 )
+            printf("%-10s %.8f\n",assetids[i][1],dstr(totals[i]));
+    }
     return(retjson);
 }
 
