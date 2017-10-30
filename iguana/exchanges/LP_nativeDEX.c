@@ -279,7 +279,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 methodstr[0] = 0;
-                if ( 0 )
+                if ( 1 )
                 {
 #ifdef FROM_JS
                     printf("%s RECV.(%s)\n",typestr,(char *)ptr);
@@ -289,7 +289,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     {
                         if ( (mstr= jstr(recvjson,"method")) != 0 )//&& strcmp(mstr,"uitem") == 0 && (cstr= jstr(recvjson,"coin")) != 0 && strcmp(cstr,"REVS") == 0 )
                         {
-                            printf("%s RECV.(%s)\n",typestr,(char *)ptr);
+                            //printf("%s RECV.(%s)\n",typestr,(char *)ptr);
                         }
                         safecopy(methodstr,jstr(recvjson,"method"),sizeof(methodstr));
                         free_json(recvjson);

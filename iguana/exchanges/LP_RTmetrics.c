@@ -259,10 +259,10 @@ cJSON *LP_RTmetrics_sort(char *base,char *rel,cJSON *rawasks,int32_t numasks,dou
             item = jitem(rawasks,sortbuf[i].ind);
             jaddi(array,jduplicate(item));
         }
-        free(sortbuf);
-        for (; i<num; i++)
+        for (; i<numasks; i++)
             jaddi(array,jduplicate(jitem(rawasks,i)));
         printf("new ask order for %d of %d, capped at num.%d\n",groupi,numasks,num);
+        free(sortbuf);
     } else array = rawasks;
     return(array);
 }

@@ -862,6 +862,8 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     uint64_t desttxfee,txfee; uint32_t lastnonce; int32_t i,maxiters,numpubs = 0; int64_t bestsatoshis=0,destsatoshis,bestdestsatoshis=0; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,*bestutxo = 0; double qprice,ordermatchprice=0.; struct LP_quoteinfo Q; bits256 pubkeys[100];
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
+    if ( gui == 0 )
+        gui = "nogui";
     if ( basecoin == 0 || basecoin->inactive != 0 || relcoin == 0 || relcoin->inactive != 0 )
         return(clonestr("{\"error\":\"base or rel not found or inactive\"}"));
     if ( LP_aliceonly(base) > 0 )
