@@ -1327,10 +1327,10 @@ uint64_t basilisk_swap_addarray(cJSON *item,char *refbase,char *refrel)
     rel = jstr(item,"alice");
     if ( refrel == 0 || refrel[0] == 0 )
     {
-        if ( strcmp(base,refbase) == 0 || strcmp(rel,refbase) == 0 )
+        if ( (base != 0 && strcmp(base,refbase) == 0) || (rel != 0 && strcmp(rel,refbase) == 0) )
             ridqid = 1;
     }
-    else if ( strcmp(base,refbase) == 0 && strcmp(rel,refrel) == 0 )
+    else if ( (base != 0 && strcmp(base,refbase) == 0) && (rel != 0 && strcmp(rel,refrel) == 0) )
         ridqid = 1;
     if ( ridqid != 0 )
     {
