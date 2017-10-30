@@ -2245,7 +2245,37 @@ void LP_price_broadcastloop(void *ctx)
         sleep(LP_ORDERBOOK_DURATION * .9);
     }
 }
-#ifdef FROM_JS
+//else if ( strcmp(method,"checktxid") == 0 )
+//    retstr = LP_spentcheck(argjson);
+//else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
+//    return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
+//else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
+//    retstr = clonestr("{\"result\":\"coin is disabled\"}");
+/*if ( strcmp(method,"broadcast") == 0 )
+ {
+ bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
+ if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
+ {
+ Broadcaststr = jprint(reqjson,0);
+ if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
+ {
+ cipherlen = (int32_t)strlen(cipherstr) >> 1;
+ if ( cipherlen <= sizeof(cipher) )
+ {
+ decode_hex(cipher,cipherlen,cipherstr);
+ LP_queuesend(calc_crc32(0,&cipher[2],cipherlen-2),LP_mypubsock,base,rel,cipher,cipherlen);
+ } else retstr = clonestr("{\"error\":\"cipher too big\"}");
+ }
+ else
+ {
+ memset(zero.bytes,0,sizeof(zero));
+ //printf("broadcast.(%s)\n",Broadcaststr);
+ LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
+ }
+ retstr = clonestr("{\"result\":\"success\"}");
+ } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
+ }
+ else*/ #ifdef FROM_JS
 int32_t sentbytes,sock,peerind,maxind;
 if ( (maxind= LP_numpeers()) > 0 )
 peerind = (rand() % maxind) + 1;
