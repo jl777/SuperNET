@@ -1060,6 +1060,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
         }
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {
+            if ( (rand() % 100) == 0 )
             printf("PRICEFEED UPDATE.(%-6s/%6s) %12.8f %s %12.8f\n",base,rel,price,bits256_str(str,pubkey),1./price);
             if ( fabs(pubp->matrix[basepp->ind][relpp->ind] - price) > SMALLVAL )
             {
