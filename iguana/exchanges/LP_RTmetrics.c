@@ -123,7 +123,7 @@ void LP_RTmetrics_swapsinfo(char *refbase,char *refrel,cJSON *swaps,int32_t nums
         quoteid = juint(item,"quoteid");
         LP_RTmetrics_pendingswap(srcpub);
         LP_RTmetrics_pendingswap(destpub);
-        if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
+        if ( 0 && (retstr= basilisk_swapentry(requestid,quoteid)) != 0 ) // no need for this
         {
             if ( (swapjson= cJSON_Parse(retstr)) != 0 )
             {

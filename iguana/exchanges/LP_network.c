@@ -147,15 +147,30 @@ int32_t LP_Qenqueued,LP_Qerrors,LP_Qfound;
 void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 {
     struct LP_queue *ptr;
-    ptr = calloc(1,sizeof(*ptr) + msglen);
+    ptr = calloc(1,sizeof(*ptr) + msglen + sizeof(bits256));
     ptr->crc32 = crc32;
     ptr->sock = sock;
     ptr->peerind = peerind;
-    ptr->msglen = msglen;
-    memcpy(ptr->msg,msg,msglen);
+    ptr->msglen = (int32_t)(msglen + sizeof(bits256));
+    memcpy(ptr->msg,msg,msglen); // sizeof(bits256) at the end all zeroes
     DL_APPEND(LP_Q,ptr);
     LP_Qenqueued++;
     //printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
+}
+
+bits256 LP_calc_magic(uint8_t *msg,int32_t len)
+{
+    bits256 magic,hash,pubkey,shared;
+    vcalc_sha256(0,hash.bytes,msg,len);
+    while ( 1 )
+    {
+        magic = rand256(1);
+        pubkey = curve25519(magic,curve25519_basepoint9());
+        shared = curve25519(magic,pubkey);
+        if ( shared.bytes[1] == LP_BARTERDEX_VERSION )
+            break;
+    }
+    return(magic);
 }
 
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
@@ -228,6 +243,9 @@ void queue_loop(void *arg)
             {
                 if ( LP_sockcheck(ptr->sock) > 0 )
                 {
+                    bits256 magic;
+                    magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
+                    memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
                     ptr->sock = -1;

@@ -343,8 +343,9 @@ void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
                 {
                     if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
                     {
-                        //char str[65]; printf("gotprice %s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
+                        char str[65]; printf("gotprice %s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
                         pubp->matrix[basepp->ind][relid] = askprice;
+                        pubp->timestamps[basepp->ind][relid] = timestamp;
                         if ( (relpp= LP_priceinfofind(rel)) != 0 )
                         {
                             dxblend(&basepp->relvals[relpp->ind],askprice,0.9);
@@ -494,9 +495,10 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         //relpp->myprices[basepp->ind] = (1. / price);   // bid
         if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
         {
-            pubp->matrix[basepp->ind][relpp->ind] = price;
-            //pubp->matrix[relpp->ind][basepp->ind] = (1. / price);
             pubp->timestamp = (uint32_t)time(NULL);
+            pubp->matrix[basepp->ind][relpp->ind] = price;
+            pubp->timestamps[basepp->ind][relpp->ind] = pubp->timestamp;
+            //pubp->matrix[relpp->ind][basepp->ind] = (1. / price);
         }
         return(0);
     } else return(-1);
@@ -739,7 +741,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
         bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
         minsatoshis = maxsatoshis = n = 0;
         ap = 0;
-        if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL )
+        if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL && pubp->timestamps[baseid][relid] >= oldest )
         {
             balance = 0;
             if ( (ap= LP_addressfind(basecoin,coinaddr)) != 0 )
@@ -1063,14 +1065,15 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {
             if ( (rand() % 100) == 0 )
-            printf("PRICEFEED UPDATE.(%-6s/%6s) %12.8f %s %12.8f\n",base,rel,price,bits256_str(str,pubkey),1./price);
+                printf("PRICEFEED UPDATE.(%-6s/%6s) %12.8f %s %12.8f\n",base,rel,price,bits256_str(str,pubkey),1./price);
+            pubp->timestamp = (uint32_t)time(NULL);
             if ( fabs(pubp->matrix[basepp->ind][relpp->ind] - price) > SMALLVAL )
             {
                 pubp->matrix[basepp->ind][relpp->ind] = price;
+                pubp->timestamps[basepp->ind][relpp->ind] = pubp->timestamp;
                 dxblend(&basepp->relvals[relpp->ind],price,0.9);
                 dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
             }
-            pubp->timestamp = (uint32_t)time(NULL);
         } else printf("error finding pubkey entry %s, ok if rare\n",bits256_str(str,pubkey));
     }
     //else if ( (rand() % 100) == 0 )
