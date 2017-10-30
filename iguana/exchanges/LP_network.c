@@ -107,7 +107,7 @@ char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t po
     return(str);
 }
 
-int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
+/*int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
 {
     int32_t sentbytes;
     if ( sock < 0 )
@@ -123,7 +123,7 @@ int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
     if ( freeflag != 0 )
         free(msg);
     return(sentbytes);
-}
+}*/
 
 int32_t LP_sockcheck(int32_t sock)
 {
@@ -282,32 +282,7 @@ void queue_loop(void *arg)
 void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
     int32_t maxind,peerind = 0; //sentbytes,
-    if ( sock0 >= 0 || sock1 >= 0 )
-    {
-/*        if ( sock0 >= 0 && LP_sockcheck(sock0) > 0 )
-        {
-            if ( (sentbytes= nn_send(sock0,msg,msglen,0)) != msglen )
-                printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
-            else
-            {
-printf("Q sent %u msglen.%d (%s)\n",crc32,msglen,msg);
-                sock0 = -1;
-            }
-        }
-        if ( sock1 >= 0 && LP_sockcheck(sock1) > 0 )
-        {
-            if ( (sentbytes= nn_send(sock1,msg,msglen,0)) != msglen )
-                printf("_LP_queuesend1 sent %d instead of %d\n",sentbytes,msglen);
-            else
-            {
-printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
-                sock1 = -1;
-            }
-        }
-        if ( sock0 < 0 && sock1 < 0 )
-            return;*/
-    }
-    else
+    if ( sock0 < 0 && sock1 < 0 )
     {
         if ( (maxind= LP_numpeers()) > 0 )
             peerind = (rand() % maxind) + 1;
@@ -326,19 +301,10 @@ printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
 
 void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
 {
-    //struct iguana_info *coin; int32_t flag=0,socks[2];
     portable_mutex_lock(&LP_networkmutex);
     if ( pubsock >= 0 )
-    {
-        //socks[0] = socks[1] = -1;
-        //if ( rel != 0 && rel[0] != 0 && (coin= LP_coinfind(rel)) != 0 && coin->bussock >= 0 )
-        //    socks[flag++] = coin->bussock;
-        //if ( base != 0 && base[0] != 0 && (coin= LP_coinfind(base)) != 0 && coin->bussock >= 0 )
-        //    socks[flag++] = coin->bussock;
-        //if ( flag == 0 && pubsock >= 0 )
-            _LP_queuesend(crc32,pubsock,-1,msg,msglen,0);
-        //else _LP_queuesend(socks[0],socks[1],msg,msglen,0);
-    } else _LP_queuesend(crc32,-1,-1,msg,msglen,1);
+        _LP_queuesend(crc32,pubsock,-1,msg,msglen,0);
+    else _LP_queuesend(crc32,-1,-1,msg,msglen,1);
     portable_mutex_unlock(&LP_networkmutex);
 }
 
@@ -362,21 +328,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
         // add signature here
         msg = (void *)jprint(argjson,0);
         msglen = (int32_t)strlen((char *)msg) + 1;
-#ifdef FROM_JS
-        int32_t sentbytes,sock,peerind,maxind;
-        if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
-        else peerind = 1;
-        sock = LP_peerindsock(&peerind);
-        if ( sock >= 0 )
-        {
-            if ( (sentbytes= nn_send(sock,msg,msglen,0)) != msglen )
-                printf("LP_send sent %d instead of %d\n",sentbytes,msglen);
-            else printf("sent %d bytes of %d to sock.%d\n",sentbytes,msglen,sock);
-        } else printf("couldnt get valid sock\n");
-#else
         LP_queuesend(crc32,-1,base,rel,msg,msglen);
-#endif
     } else LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
     free(msg);
 }
