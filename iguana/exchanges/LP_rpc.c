@@ -211,7 +211,7 @@ cJSON *LP_NXT_redeems()
                         {
                             assetid = j64bits(attach,"asset");
                             qty = j64bits(attach,"quantityQNT");
-                            printf("txnum.%llu (%s)\n",(long long)txnum,jprint(attach,0));
+                            //printf("txnum.%llu (%s)\n",(long long)txnum,jprint(attach,0));
                             if ( (msgstr == 0 || msgstr[0] == 0) && jint(attach,"version.PrunablePlainMessage") == 1 )
                             {
                                 method = "getPrunableMessage";
@@ -224,7 +224,7 @@ cJSON *LP_NXT_redeems()
                             if ( msgstr == 0 || msgstr[0] == 0 )
                                 msgstr = jstr(attach,"message");
                         }
-                        printf("%d: message.(%s) <- %.8f %llu\n",i,msgstr,dstr(qty),(long long)assetid);
+                        printf("%d: (%s) <- %.8f %llu\n",i,msgstr,dstr(qty),(long long)assetid);
                         if ( msgjson != 0 )
                             free_json(msgjson);
                     }
