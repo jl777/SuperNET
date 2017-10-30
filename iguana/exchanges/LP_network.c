@@ -160,7 +160,8 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
 
 bits256 LP_calc_magic(uint8_t *msg,int32_t len)
 {
-    static uint32_t maxn; bits256 magic,hash,pubkey,shared; int32_t n = 0;
+    static uint32_t maxn; bits256 magic,hash,pubkey,shared; int32_t n = 0; double millis;
+    millis = OS_milliseconds();
     vcalc_sha256(0,hash.bytes,msg,len);
     while ( 1 )
     {
@@ -171,6 +172,7 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
             break;
         n++;
     }
+    printf("millis %.3f\n",OS_milliseconds() - millis);
     if ( n > maxn )
     {
         printf("LP_calc_magic maxn.%d <- %d\n",maxn,n);
