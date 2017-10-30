@@ -207,9 +207,9 @@ cJSON *LP_NXT_redeems()
                     qty = j64bits(item,"quantityQNT");
                     msgstr = jstr(item,"message");
                     //printf("%d: %s\n",i,jprint(item,0));
-                    if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 && jint(item,"version.AssetTransfer") == 1 )
+                    if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 )
                     {
-                        if ( (attach= jobj(item,"attachment")) != 0 )
+                        if ( (attach= jobj(item,"attachment")) != 0 && jint(item,"version.AssetTransfer") == 1 )
                         {
                             printf("txnum.%llu (%s)\n",(long long)txnum,jprint(attach,0));
                             if ( (msgstr == 0 || msgstr[0] == 0) && jint(attach,"version.PrunablePlainMessage") == 1 )
