@@ -206,7 +206,7 @@ cJSON *LP_NXT_redeems()
                     if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 && jint(item,"version.AssetTransfer") == 1 )
                     {
                         txnum = j64bits(item,"transaction");
-                        assetid = j64bits(item,"17571711292785902558");
+                        assetid = j64bits(item,"asset");
                         qty = j64bits(item,"quantityQNT");
                         msgstr = jstr(item,"message");
                         if ( (attach= jobj(item,"attachment")) != 0 )
