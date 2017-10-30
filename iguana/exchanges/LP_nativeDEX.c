@@ -208,7 +208,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                     }
                     else
                     {
-                        printf("packet not for this node %u\n",crc32);
+                        //printf("packet not for this node %u\n",crc32);
                     }
                 } else printf("error (%s) method is %s\n",jsonstr,method);
             }

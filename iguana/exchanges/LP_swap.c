@@ -575,10 +575,10 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
     {
         memcpy(rawtx->redeemscript,&data[datalen],rawtx->I.redeemlen);
-        for (i=0; i<rawtx->I.redeemlen; i++)
-            printf("%02x",rawtx->redeemscript[i]);
+        //for (i=0; i<rawtx->I.redeemlen; i++)
+        //    printf("%02x",rawtx->redeemscript[i]);
         bitcoin_address(redeemaddr,rawtx->coin->taddr,rawtx->coin->p2shtype,rawtx->redeemscript,rawtx->I.redeemlen);
-        printf(" received redeemscript.(%s) %s taddr.%d\n",redeemaddr,rawtx->coin->symbol,rawtx->coin->taddr);
+        //printf(" received redeemscript.(%s) %s taddr.%d\n",redeemaddr,rawtx->coin->symbol,rawtx->coin->taddr);
         LP_swap_coinaddr(rawtx->coin,checkaddr,0,data,datalen,0);
         if ( strcmp(redeemaddr,checkaddr) != 0 )
         {
