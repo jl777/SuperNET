@@ -344,7 +344,8 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
 uint64_t _iguana_interest(uint32_t now,int32_t txheight,uint32_t txlocktime,uint64_t value)
 {
     int32_t minutes; uint64_t numerator=0,denominator=0,interest=0; uint32_t activation = 1491350400;
-
+    if ( txheight >= 7777777 )
+        return(0);
     if ( (minutes= ((uint32_t)time(NULL) - 60 - txlocktime) / 60) >= 60 )
     {
         if ( minutes > 365 * 24 * 60 )

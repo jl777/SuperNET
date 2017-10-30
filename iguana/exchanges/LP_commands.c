@@ -509,7 +509,7 @@ stop()\n\
         if ( bits256_cmp(pub,G.LP_mypub25519) == 0 && time(NULL) > lastnotify+30 )
         {
             lastnotify = (uint32_t)time(NULL);
-            printf("wantnotify for me!\n");
+            //printf("wantnotify for me!\n");
             LP_notify_pubkeys(ctx,LP_mypubsock);
         }
         retstr = clonestr("{\"result\":\"success\"}");

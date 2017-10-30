@@ -284,7 +284,7 @@ int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
         if ( memcmp(pub33,pubsecp,33) != 0 || retval != 0 )
         {
             static uint32_t counter;
-            if ( counter++ < 100 )
+            if ( counter++ < 10 )
             {
                 if ( pubp != 0 )
                     pubp->numerrors++;
