@@ -747,7 +747,7 @@ void LP_bobloop(void *_swap)
 {
     uint8_t *data; int32_t maxlen,m,n; uint32_t expiration; struct basilisk_swap *swap = _swap;
     G.LP_pendingswaps++;
-    fprintf(stderr,"start swap iambob\n");
+    printf("start swap iambob\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
@@ -817,7 +817,7 @@ void LP_aliceloop(void *_swap)
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
     if ( swap != 0 )
     {
-        fprintf(stderr,"start swap iamalice pair.%d\n",swap->N.pair);
+        printf("start swap iamalice pair.%d\n",swap->N.pair);
         if ( LP_sendwait("pubkeys",60,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
             printf("error LP_sendwait pubkeys\n");
         else if ( LP_sendwait("choosei",LP_SWAPSTEP_TIMEOUT,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
@@ -910,12 +910,12 @@ int32_t instantdex_pubkeyargs(struct basilisk_swap *swap,int32_t numpubs,bits256
     {
         if ( swap->I.numpubs+2 >= numpubs )
             return(numpubs);
-        //fprintf(stderr,">>>>>> start generating %s\n",buf);
+        //printf(">>>>>> start generating %s\n",buf);
     }
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
         pubi = instantdex_derivekeypair(swap->ctx,&privkey,pubkey,privkey,hash);
-        //fprintf(stderr,"i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
+        //printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
         if ( pubkey[0] != firstbyte )
             continue;
         if ( n < 2 )

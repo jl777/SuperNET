@@ -68,7 +68,7 @@ int32_t LP_scanblockchain(struct iguana_info *coin,int32_t startheight,int32_t e
         }
         n++;
         if ( (n % 1000) == 0 )
-            fprintf(stderr,"%.1f%% ",100. * (double)n/(endheight-startheight+1));
+            printf("%.1f%% ",100. * (double)n/(endheight-startheight+1));
     }
     return(endheight);
 }
@@ -100,7 +100,7 @@ int32_t komodo_bannedset(int32_t *indallvoutsp,bits256 *array,int32_t max)
     int32_t i;
     if ( sizeof(banned_txids)/sizeof(*banned_txids) > max )
     {
-        fprintf(stderr,"komodo_bannedset: buffer too small %ld vs %d\n",(long)sizeof(banned_txids)/sizeof(*banned_txids),max);
+        printf("komodo_bannedset: buffer too small %ld vs %d\n",(long)sizeof(banned_txids)/sizeof(*banned_txids),max);
         exit(-1);
     }
     for (i=0; i<sizeof(banned_txids)/sizeof(*banned_txids); i++)

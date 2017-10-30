@@ -490,7 +490,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
         if ( (txobj= bitcoin_hex2json(taddr,pubtype,p2shtype,isPoS,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys,zcash)) != 0 )
         {
             //printf("back from bitcoin_hex2json (%s)\n",jprint(vins,0));
-        } else fprintf(stderr,"no txobj from bitcoin_hex2json\n");
+        } else printf("no txobj from bitcoin_hex2json\n");
         //printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
@@ -593,7 +593,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
                     } else printf("interpreter passed\n");*/
                 } else printf("complete.%d\n",complete);
             } else printf("rwmsgtx error\n");
-        } else fprintf(stderr,"no inputs in vins.(%s)\n",vins!=0?jprint(vins,0):"null");
+        } else printf("no inputs in vins.(%s)\n",vins!=0?jprint(vins,0):"null");
         free(extraspace);
         free(serialized), free(serialized2), free(serialized3), free(serialized4);
     } else return(-1);

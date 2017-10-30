@@ -669,7 +669,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
     int32_t i,n; cJSON *item;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
-        fprintf(stderr,"%s ",activecoins[i]);
+        printf("%s ",activecoins[i]);
         LP_coinfind(activecoins[i]);
         LP_priceinfoadd(activecoins[i]);
     }
@@ -678,12 +678,12 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
         for (i=0; i<n; i++)
         {
             item = jitem(coins,i);
-            fprintf(stderr,"%s ",jstr(item,"coin"));
+            printf("%s ",jstr(item,"coin"));
             LP_coincreate(item);
             LP_priceinfoadd(jstr(item,"coin"));
         }
     }
-    fprintf(stderr,"privkey updates\n");
+    printf("privkey updates\n");
 }
 
 void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,char *seednode)
@@ -1025,7 +1025,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         G.waiting = 1;
         while ( G.initializing != 0 )
         {
-            fprintf(stderr,".");
+            //fprintf(stderr,".");
             sleep(3);
         }
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
