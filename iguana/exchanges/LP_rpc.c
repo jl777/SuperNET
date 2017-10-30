@@ -200,6 +200,7 @@ cJSON *LP_NXT_redeems()
                 for (i=0; i<numtx; i++)
                 {
                     msgjson = 0;
+                    txnum = 0;
                     item = jitem(array,i);
                     //printf("%d: %s\n",i,jprint(item,0));
                     if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 )
@@ -226,6 +227,8 @@ cJSON *LP_NXT_redeems()
                         if ( msgjson != 0 )
                             free_json(msgjson);
                     }
+                    if ( txnum == 7256847492742571143LL )
+                        break;
                 }
             }
             free_json(retjson);
