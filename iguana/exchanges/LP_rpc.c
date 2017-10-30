@@ -227,7 +227,7 @@ cJSON *LP_NXT_redeems()
                         if ( msgjson != 0 )
                             free_json(msgjson);
                     }
-                    if ( txnum == 7256847492742571143LL )
+                    if ( txnum == calc_nxt64bits("7256847492742571143") )
                         break;
                 }
             }
