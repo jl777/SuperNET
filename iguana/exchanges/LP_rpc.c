@@ -284,7 +284,7 @@ cJSON *LP_NXT_redeems()
     for (i=0; i<sizeof(totals)/sizeof(*totals); i++)
     {
         if ( totals[i] != 0 )
-            printf("%-10s %.8f\n",assetids[i][1],dstr(totals[i]));
+            printf("%-10s %13.5f\n",assetids[i][1],dstr(totals[i]));
     }
     return(retjson);
 }
