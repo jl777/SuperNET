@@ -587,7 +587,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
     struct LP_peerinfo *peer,*tmp; uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; char *retstr; cJSON *array,*item,*req;
     if ( coin->smartaddr[0] == 0 )
         return;
-    LP_notify_pubkeys(coin->ctx,LP_mypubsock);
+    //LP_notify_pubkeys(coin->ctx,LP_mypubsock);
     if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
