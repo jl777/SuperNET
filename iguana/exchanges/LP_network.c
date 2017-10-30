@@ -168,7 +168,7 @@ uint32_t _LP_magic_check(bits256 hash,bits256 magic)
 
 bits256 LP_calc_magic(uint8_t *msg,int32_t len)
 {
-    static uint32_t maxn,counter; static double sum;
+    static uint32_t maxn,counter,nsum; static double sum;
     bits256 magic,hash; int32_t n = 0; double millis;
     millis = OS_milliseconds();
     vcalc_sha256(0,hash.bytes,msg,len);
@@ -180,6 +180,7 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
         n++;
     }
     sum += (OS_milliseconds() - millis);
+    nsum += n;
     counter++;
     if ( n > maxn || (rand() % 100) == 0 )
     {
@@ -188,12 +189,12 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
             printf("LP_calc_magic maxn.%d <- %d\n",maxn,n);
             maxn = n;
         }
-        printf("millis %.3f ave %.3f\n",OS_milliseconds() - millis,sum/counter);
+        printf("millis %.3f ave %.3f, aveiters %.1f\n",OS_milliseconds() - millis,sum/counter,(double)nsum/counter);
     }
     return(magic);
 }
 
-int32_t LP_magic_check(uint8_t *msg,int32_t recvlen)
+int32_t LP_magic_check(uint8_t *msg,int32_t recvlen,char *remoteaddr)
 {
     bits256 magic,hash; uint32_t val;
     recvlen -= sizeof(bits256);
@@ -202,7 +203,8 @@ int32_t LP_magic_check(uint8_t *msg,int32_t recvlen)
         vcalc_sha256(0,hash.bytes,msg,recvlen);
         memcpy(magic.bytes,&msg[recvlen],sizeof(magic));
         val = _LP_magic_check(hash,magic);
-        printf("magicval = %x\n",val);
+        if ( val != LP_BARTERDEX_VERSION )
+            printf("magicval = %x from %s\n",val,remoteaddr);
         return(val == LP_BARTERDEX_VERSION);
     }
     return(-1);
