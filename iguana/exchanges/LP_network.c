@@ -170,8 +170,8 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
 {
     static uint32_t maxn,counter,nsum; static double sum;
     bits256 magic,hash; int32_t n = 0; double millis;
-    millis = OS_milliseconds();
     vcalc_sha256(0,hash.bytes,msg,len);
+    millis = OS_milliseconds();
     while ( 1 )
     {
         magic = rand256(1);
