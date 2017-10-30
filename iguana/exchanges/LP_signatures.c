@@ -523,13 +523,16 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                             decode_hex(sig,siglen,sigstr);
                             if ( _LP_pubkey_sigcheck(sig,siglen,juint(item,"timestamp"),pubp->pubkey,rmd160,pubsecp) == 0 )
                             {
-                                for (i=0; i<20; i++)
-                                    printf("%02x",pubp->rmd160[i]);
-                                memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
-                                memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
-                                memcpy(pubp->sig,sig,sizeof(pubp->sig));
-                                pubp->siglen = siglen;
-                                char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
+                                if ( memcmp(rmd160,pubp->rmd160,20) != 0 )
+                                {
+                                    for (i=0; i<20; i++)
+                                        printf("%02x",pubp->rmd160[i]);
+                                    memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
+                                    memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
+                                    memcpy(pubp->sig,sig,sizeof(pubp->sig));
+                                    pubp->siglen = siglen;
+                                    char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
+                                }
                                 retval = 0;
                                 pubp->timestamp = (uint32_t)time(NULL);
                             } else pubp->numerrors++;
