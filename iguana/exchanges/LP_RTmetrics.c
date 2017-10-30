@@ -178,7 +178,7 @@ void LP_RTmetrics_update(char *base,char *rel)
 
 double _LP_RTmetric_calc(struct LP_metricinfo *mp,double bestprice,double maxprice,double relvolume)
 {
-    int32_t n; double metric,origmetric = (bestprice / mp->price);
+    int32_t n; double metric,origmetric = (mp->price / bestprice);
     metric = origmetric;
     if ( mp->numutxos == 0 || relvolume == 0. || mp->maxvol == 0. || mp->balance == 0. )
         return(metric * 100.);
@@ -241,7 +241,7 @@ cJSON *LP_RTmetrics_sort(char *base,char *rel,cJSON *rawasks,int32_t numasks,dou
             groupi = i;
         num++;
     }
-    if ( groupi > 0 )
+    if ( 0 && groupi > 0 )
     {
         sortbuf = calloc(groupi+1,sizeof(*sortbuf));
         prevdepth = 0.;
