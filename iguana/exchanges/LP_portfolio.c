@@ -425,20 +425,6 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
     return(nxtkmd);
 }
 
-static char *assetids[][3] =
-{
-    { "12071612744977229797", "UNITY", "10000" },
-    { "15344649963748848799", "DEX", "1" },
-    { "6883271355794806507", "PANGEA", "10000" },
-    { "17911762572811467637", "JUMBLR", "10000" },
-    { "17083334802666450484", "BET", "10000" },
-    { "13476425053110940554", "CRYPTO", "1000" },
-    { "6932037131189568014", "HODL", "1" },
-    { "3006420581923704757", "SHARK", "10000" },
-    { "17571711292785902558", "BOTS", "1" },
-    { "10524562908394749924", "MGW", "1" },
-};
-
 void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 {
     char *retstr; cJSON *retjson,*bid,*ask; uint64_t bidsatoshis,asksatoshis; int32_t i; double nxtkmd,price; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
