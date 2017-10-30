@@ -158,41 +158,52 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
     //printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
 }
 
+uint32_t _LP_magic_check(bits256 hash,bits256 magic)
+{
+    bits256 pubkey,shared;
+    pubkey = curve25519(magic,curve25519_basepoint9());
+    shared = curve25519(hash,pubkey);
+    return(shared.uints[1] & ~(1 << LP_MAGICBITS));
+}
+
 bits256 LP_calc_magic(uint8_t *msg,int32_t len)
 {
-    static uint32_t maxn; bits256 magic,hash,pubkey,shared; int32_t n = 0; double millis;
+    static uint32_t maxn,counter; static double sum;
+    bits256 magic,hash; int32_t n = 0; double millis;
     millis = OS_milliseconds();
     vcalc_sha256(0,hash.bytes,msg,len);
     while ( 1 )
     {
         magic = rand256(1);
-        pubkey = curve25519(magic,curve25519_basepoint9());
-        shared = curve25519(hash,pubkey);
-        if ( shared.bytes[1] == LP_BARTERDEX_VERSION )
+        if ( _LP_magic_check(hash,magic) == LP_BARTERDEX_VERSION )
             break;
         n++;
     }
-    printf("millis %.3f\n",OS_milliseconds() - millis);
-    if ( n > maxn )
+    sum += (OS_milliseconds() - millis);
+    counter++;
+    if ( n > maxn || (rand() % 100) == 0 )
     {
-        printf("LP_calc_magic maxn.%d <- %d\n",maxn,n);
-        maxn = n;
+        if ( n > maxn )
+        {
+            printf("LP_calc_magic maxn.%d <- %d\n",maxn,n);
+            maxn = n;
+        }
+        printf("millis %.3f ave %.3f\n",OS_milliseconds() - millis,sum/counter);
     }
     return(magic);
 }
 
 int32_t LP_magic_check(uint8_t *msg,int32_t recvlen)
 {
-    bits256 magic,hash,pubkey,shared;
+    bits256 magic,hash; uint32_t val;
     recvlen -= sizeof(bits256);
     if ( recvlen > 0 )
     {
         vcalc_sha256(0,hash.bytes,msg,recvlen);
         memcpy(magic.bytes,&msg[recvlen],sizeof(magic));
-        pubkey = curve25519(magic,curve25519_basepoint9());
-        shared = curve25519(hash,pubkey);
-        printf("shared.[1] = %d\n",shared.bytes[1]);
-        return(shared.bytes[1] == LP_BARTERDEX_VERSION);
+        val = _LP_magic_check(hash,magic);
+        printf("magicval = %d\n",val);
+        return(val == LP_BARTERDEX_VERSION);
     }
     return(-1);
 }
