@@ -212,7 +212,7 @@ int32_t LP_magic_check(uint8_t *msg,int32_t recvlen,char *remoteaddr)
 
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
 {
-    static uint32_t crcs[1024]; static unsigned long dup,total;
+    static uint32_t crcs[4096]; static unsigned long dup,total;
     int32_t i;
     *duplicatep = 0;
     if ( ind < 0 )

@@ -35,10 +35,10 @@ void emscripten_usleep(int32_t x);
 //#define LP_STRICTPEERS
 
 #define LP_BARTERDEX_VERSION 0
-#define LP_MAGICBITS 10
+#define LP_MAGICBITS 8
 
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
-#define LP_AUTOTRADE_TIMEOUT 10
+#define LP_AUTOTRADE_TIMEOUT 15
 #define ELECTRUM_TIMEOUT 10
 #define LP_ELECTRUM_MAXERRORS 3
 #define LP_MEMPOOL_TIMEINCR 10
