@@ -172,7 +172,9 @@ char *NXTnodes[] = { "62.75.159.113", "91.44.203.238", "82.114.88.225", "78.63.2
 
 static char *assetids[][3] =
 {
+    { "13502152099823770958", "SUPERNETx2", "10000" },
     { "12071612744977229797", "UNITY", "10000" },
+    { "12071612744977229797", "SUPERNET", "10000" },
     { "15344649963748848799", "DEX", "1" },
     { "6883271355794806507", "PANGEA", "10000" },
     { "17911762572811467637", "JUMBLR", "10000" },
@@ -256,11 +258,11 @@ cJSON *LP_NXT_redeems()
                             if ( msgstr == 0 || msgstr[0] == 0 )
                             {
                                 if ( (encjson= jobj(attach,"encryptedMessage")) != 0 )
-                                    msgstr = jstr(encjson,"data");
+                                    msgstr = "encryptedMessage";//jstr(encjson,"data");
                             }
                         }
                         mult = LP_assetid_mult(assetname,assetid);
-                        printf("%d: (%s) <- %.8f %8s %llu\n",i,msgstr!=0?msgstr:jprint(attach,0),dstr(qty * mult),assetname,(long long)assetid);
+                        printf("%d: (%s) <- %13.8f %8s %llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)assetid);
                         if ( msgjson != 0 )
                             free_json(msgjson);
                     }
