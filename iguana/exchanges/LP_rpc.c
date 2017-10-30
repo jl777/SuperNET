@@ -188,7 +188,7 @@ cJSON *LP_NXT_message(char *method,uint64_t txnum,char *passphrase)
 
 cJSON *LP_NXT_redeems()
 {
-    char url[1024],*retstr,*recv,*method,*msgstr; uint64_t txnum,assetid,qty; int32_t i,numtx; cJSON *item,*attach,*array,*msgjson,*retjson=0;
+    char url[1024],*retstr,*recv,*method,*msgstr; uint64_t txnum; int32_t i,numtx; cJSON *item,*attach,*array,*msgjson,*retjson=0;
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getBlockchainTransactions&account=NXT-MRBN-8DFH-PFMK-A4DBM");//,NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))]);
     //printf("calling (%s)\n",url);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
@@ -200,31 +200,30 @@ cJSON *LP_NXT_redeems()
                 for (i=0; i<numtx; i++)
                 {
                     msgjson = 0;
-                    txnum = assetid = qty = 0;
+                    txnum = 0;
                     item = jitem(array,i);
                     //printf("%d: %s\n",i,jprint(item,0));
-                    if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 && jint(item,"version.AssetTransfer") == 1 )
+                    if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 )
                     {
-                        txnum = j64bits(item,"transaction");
-                        assetid = j64bits(item,"asset");
-                        qty = j64bits(item,"quantityQNT");
                         msgstr = jstr(item,"message");
                         if ( (attach= jobj(item,"attachment")) != 0 )
                         {
-                            //printf("txnum.%llu (%s)\n",(long long)txnum,jprint(attach,0));
+                            txnum = j64bits(item,"transaction");
+                            printf("txnum.%llu (%s)\n",(long long)txnum,jprint(attach,0));
                             if ( (msgstr == 0 || msgstr[0] == 0) && jint(attach,"version.PrunablePlainMessage") == 1 )
                             {
                                 method = "getPrunableMessage";
                                 if ( (msgjson= LP_NXT_message(method,txnum,"test")) != 0 )
                                 {
                                     msgstr = jstr(msgjson,"message");
-                                    //printf("%d method.(%s) (%s)\n",i,method,msgstr);
+                                    printf("%d method.(%s) (%s)\n",i,method,msgstr);
                                 }
                             }
                             if ( msgstr == 0 || msgstr[0] == 0 )
                                 msgstr = jstr(attach,"message");
                         }
-                        printf("%d: message.(%s) <- %.8f %llu\n",i,msgstr!=0?msgstr:"no message!",dstr(qty),(long long)assetid);
+                        if ( msgstr != 0 )
+                            printf("%d: message.(%s)\n",i,msgstr);
                         if ( msgjson != 0 )
                             free_json(msgjson);
                     }
