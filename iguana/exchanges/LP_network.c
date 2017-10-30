@@ -160,7 +160,7 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
 
 bits256 LP_calc_magic(uint8_t *msg,int32_t len)
 {
-    bits256 magic,hash,pubkey,shared;
+    static uint32_t maxn; bits256 magic,hash,pubkey,shared; int32_t n = 0;
     vcalc_sha256(0,hash.bytes,msg,len);
     while ( 1 )
     {
@@ -169,6 +169,12 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
         shared = curve25519(hash,pubkey);
         if ( shared.bytes[1] == LP_BARTERDEX_VERSION )
             break;
+        n++;
+    }
+    if ( n > maxn )
+    {
+        printf("LP_calc_magic maxn.%d <- %d\n",maxn,n);
+        maxn = n;
     }
     return(magic);
 }
