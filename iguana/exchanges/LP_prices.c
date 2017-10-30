@@ -333,7 +333,7 @@ void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
             timestamp = now;
         if ( timestamp >= pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
         {
-            pubp->timestamp = timestamp;
+            //pubp->timestamp = timestamp;
             for (i=0; i<n; i++)
             {
                 item = jitem(asks,i);
