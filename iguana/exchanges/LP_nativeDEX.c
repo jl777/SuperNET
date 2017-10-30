@@ -299,6 +299,9 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 else printf("%s got recv.%d\n",typestr,recvlen);
 #endif
                 double millis = OS_milliseconds();
+                if ( strlen((char *)ptr)+sizeof(bits256) <= recvlen )
+                    if ( LP_magic_check(ptr,recvlen) < 0 )
+                        printf("magic check error\n");
                 if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                     free(retstr);
                 if ( Broadcaststr != 0 )

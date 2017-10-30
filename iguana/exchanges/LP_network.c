@@ -166,11 +166,27 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
     {
         magic = rand256(1);
         pubkey = curve25519(magic,curve25519_basepoint9());
-        shared = curve25519(magic,pubkey);
+        shared = curve25519(hash,pubkey);
         if ( shared.bytes[1] == LP_BARTERDEX_VERSION )
             break;
     }
     return(magic);
+}
+
+int32_t LP_magic_check(uint8_t *msg,int32_t recvlen)
+{
+    bits256 magic,hash,pubkey,shared;
+    recvlen -= sizeof(bits256);
+    if ( recvlen > 0 )
+    {
+        vcalc_sha256(0,hash.bytes,msg,recvlen);
+        memcpy(magic.bytes,&msg[recvlen],sizeof(magic));
+        pubkey = curve25519(magic,curve25519_basepoint9());
+        shared = curve25519(hash,pubkey);
+        printf("shared.[1] = %d\n",shared.bytes[1]);
+        return(shared.bytes[1] == LP_BARTERDEX_VERSION);
+    }
+    return(-1);
 }
 
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
