@@ -454,7 +454,16 @@ cJSON *electrum_hasharg(char *symbol,struct electrum_info *ep,cJSON **retjsonp,c
     return(electrum_submit(symbol,ep,retjsonp,method,params,timeout));
 }
 
-cJSON *electrum_version(char *symbol,struct electrum_info *ep,cJSON **retjsonp) { return(electrum_noargs(symbol,ep,retjsonp,"server.version",ELECTRUM_TIMEOUT)); }
+cJSON *electrum_version(char *symbol,struct electrum_info *ep,cJSON **retjsonp)
+{
+    char params[128]; cJSON *retjson;
+    if ( retjsonp == 0 )
+        retjsonp = &retjson;
+    sprintf(params,"[\"client_name\":\"barterDEX\", \"protocol_version\":[\"1.1\", \"1.1\"]]");
+    return(electrum_submit(symbol,ep,retjsonp,"server.version",params,ELECTRUM_TIMEOUT));
+}
+
+
 cJSON *electrum_banner(char *symbol,struct electrum_info *ep,cJSON **retjsonp) { return(electrum_noargs(symbol,ep,retjsonp,"server.banner",ELECTRUM_TIMEOUT)); }
 cJSON *electrum_donation(char *symbol,struct electrum_info *ep,cJSON **retjsonp) { return(electrum_noargs(symbol,ep,retjsonp,"server.donation_address",ELECTRUM_TIMEOUT)); }
 cJSON *electrum_peers(char *symbol,struct electrum_info *ep,cJSON **retjsonp) { return(electrum_noargs(symbol,ep,retjsonp,"server.peers.subscribe",ELECTRUM_TIMEOUT)); }
@@ -767,7 +776,7 @@ void electrum_test()
 
 struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipaddr,uint16_t port,int32_t bufsize)
 {
-    struct electrum_info *ep=0; int32_t i,sock; struct stritem *sitem; char name[512],*str = "init string";
+    struct electrum_info *ep=0; cJSON *retjson; int32_t i,sock; struct stritem *sitem; char name[512],*str = "init string";
     *alreadyp = 0;
     portable_mutex_lock(&LP_electrummutex);
     for (i=0; i<Num_electrums; i++)
@@ -809,6 +818,8 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
         if ( (sitem= queue_dequeue(&ep->pendingQ)) == 0 && strcmp(sitem->str,str) != 0 )
             printf("error with string pendingQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
         electrum_server(symbol,ep);
+        if ( (retjson= electrum_version(symbol,ep,0)) != 0 )
+            printf("electrum_version %s\n",jprint(retjson,1));
     }
     return(ep);
 }
