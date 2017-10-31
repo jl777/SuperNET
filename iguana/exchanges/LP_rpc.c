@@ -225,11 +225,11 @@ cJSON *LP_NXT_decrypt(uint64_t txnum,char *account,char *data,char *nonce,char *
     char url[1024],*retstr; cJSON *retjson = 0;
     if ( account != 0 && data != 0 && nonce != 0 && passphrase != 0 )
     {
-        sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAccountId&secretPhrase=%s",passphrase);
+        //sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAccountId&secretPhrase=%s",passphrase);
         sprintf(url,"http://127.0.0.1:7876/nxt?requestType=readMessage&transaction=%llu&secretPhrase=%s",(long long)txnum,passphrase);
-        if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+        //if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
             printf("%s\n",retstr);
-        sprintf(url,"http://127.0.0.1:7876/nxt?requestType=decryptFrom&account=%s&secretPhrase=%s&data=%s&nonce=%s",account,passphrase,data,nonce);
+        //sprintf(url,"http://127.0.0.1:7876/nxt?requestType=decryptFrom&account=%s&secretPhrase=%s&data=%s&nonce=%s",account,passphrase,data,nonce);
         //printf("issue.(%s)\n",url);
         if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
         {
@@ -259,7 +259,7 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
             {
                 for (i=0; i<numtx; i++)
                 {
-                    msgjson = 0;
+                    msgjson = encjson = decjson = 0;
                     txnum = assetid = qty = 0;
                     item = jitem(array,i);
                     msgstr = jstr(item,"message");
@@ -291,8 +291,8 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
                                     msgstr = "encryptedMessage";//jstr(encjson,"data");
                                     if ( (decjson= LP_NXT_decrypt(txnum,account,jstr(encjson,"data"),jstr(encjson,"nonce"),passphrase)) != 0 )
                                     {
-                                        printf("%s\n",jprint(decjson,0));
-                                        free_json(decjson);
+                                        //printf("%s\n",jprint(decjson,0));
+                                        msgstr = jstr(decjson,"decryptedMessage");
                                     }
 
                                 }
@@ -302,9 +302,13 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
                         if ( ind >= 0 )
                             totals[ind] += qty * mult;
                         if ( msgstr != 0 && assetname[0] != 0 && qty != 0 )
-                        printf("%-4d: (%35s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
+                        printf("%-4d: (%34s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
                         if ( msgjson != 0 )
                             free_json(msgjson);
+                        if ( encjson != 0 )
+                            free_json(encjson);
+                        if ( decjson != 0 )
+                            free_json(decjson);
                     }
                     if ( txnum == calc_nxt64bits("7256847492742571143") )
                         break;
