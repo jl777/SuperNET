@@ -619,9 +619,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 nonz++;
-#ifndef FROM_JS
-                LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+#ifdef FROM_JS
+                if ( (rand() % 100) == 0 )
 #endif
+                LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
                 LP_peer_pricesquery(peer);
                 LP_utxos_sync(peer);
@@ -633,23 +634,25 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             peer->diduquery = now;
             nonz++;
-#ifndef FROM_JS
+#ifdef FROM_JS
+            if ( (rand() % 100) == 0 )
+#endif
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
-#endif
             peer->needping = 0;
             needpings++;
         }
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        if ( coin->addr_listunspent_requested != 0 )
+        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+60 )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
+            coin->lastpushtime = (uint32_t)time(NULL);
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
         }
-        if ( coin->inactive == 0 && time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
+        if ( coin->electrum == 0 && coin->inactive == 0 && time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {
             nonz++;
             if ( (height= LP_getheight(coin)) > coin->longestchain )
@@ -1073,12 +1076,12 @@ void LP_fromjs_iter()
         ctx = bitcoin_ctx();
     if ( 0 && (LP_counter % 100) == 0 )
         printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
-    if ( Nanomsg_threadarg != 0 )
-        nn_thread_main_routine(Nanomsg_threadarg);
+    //if ( Nanomsg_threadarg != 0 )
+    //    nn_thread_main_routine(Nanomsg_threadarg);
     //LP_pubkeys_query();
     //LP_utxosQ_process();
-    LP_nanomsg_recvs(ctx);
-    //LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
+    //LP_nanomsg_recvs(ctx);
+    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     //queue_loop(0);
     if ( 0 && (LP_counter % 10) == 0 ) // 10 seconds
     {
