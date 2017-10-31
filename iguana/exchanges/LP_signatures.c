@@ -371,14 +371,14 @@ char *LP_postutxos_recv(cJSON *argjson)
     if ( (obj= jobj(argjson,"utxos")) != 0 )
     {
         utxoshash = LP_utxoshash_calc(obj);
-        //char str[65]; printf("got utxoshash %s\n",bits256_str(str,utxoshash));
+        char str[65]; //printf("got utxoshash %s\n",bits256_str(str,utxoshash));
         if ( LP_utxos_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,utxoshash) == 0 )
         {
             uitem = calloc(1,sizeof(*uitem));
             uitem->argjson = jduplicate(argjson);
             queue_enqueue("utxosQ",&utxosQ,&uitem->DL);
             return(clonestr("{\"result\":\"success\"}"));
-        } else printf("valid utxos sig\n");
+        } else printf("valid utxos sig %s\n",bits256_str(str,pubp->pubkey));
     }
     return(clonestr("{\"error\":\"sig failure\"}"));
 }
