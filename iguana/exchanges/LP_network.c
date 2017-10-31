@@ -69,7 +69,7 @@ int32_t nn_shutdown(int s, int how)
 
 int32_t nn_send(int s, const void *buf, size_t len, int flags)
 {
-    printf("JS cant nn_send (%s)\n",(char *buf));
+    printf("JS cant nn_send (%s)\n",(char *)buf);
     return(0);
 }
 
