@@ -379,7 +379,7 @@ char *LP_postutxos_recv(cJSON *argjson)
             uitem->argjson = jduplicate(argjson);
             queue_enqueue("utxosQ",&utxosQ,&uitem->DL);
             return(clonestr("{\"result\":\"success\"}"));
-        } else printf("valid utxos sig %s\n",bits256_str(str,pubp->pubkey));
+        } //else printf("valid utxos sig %s\n",bits256_str(str,pubp->pubkey));
     }
     return(clonestr("{\"error\":\"sig failure\"}"));
 }
