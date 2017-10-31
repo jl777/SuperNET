@@ -776,7 +776,7 @@ void electrum_test()
 
 struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipaddr,uint16_t port,int32_t bufsize)
 {
-    struct electrum_info *ep=0; cJSON *retjson; int32_t i,sock; struct stritem *sitem; char name[512],*str = "init string";
+    struct electrum_info *ep=0; int32_t i,sock; struct stritem *sitem; char name[512],*str = "init string";
     *alreadyp = 0;
     portable_mutex_lock(&LP_electrummutex);
     for (i=0; i<Num_electrums; i++)
@@ -818,8 +818,6 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
         if ( (sitem= queue_dequeue(&ep->pendingQ)) == 0 && strcmp(sitem->str,str) != 0 )
             printf("error with string pendingQ sitem.%p (%s)\n",sitem,sitem==0?0:sitem->str);
         electrum_server(symbol,ep);
-        if ( (retjson= electrum_version(symbol,ep,0)) != 0 )
-            printf("electrum_version %s\n",jprint(retjson,1));
     }
     return(ep);
 }
@@ -904,9 +902,11 @@ void LP_dedicatedloop(void *arg)
     struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct electrum_info *ep = arg;
     if ( (coin= LP_coinfind(ep->symbol)) != 0 )
         ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
-    if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,0)) != 0 )
+    if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,&retjson)) != 0 )
         free_json(retjson);
-    printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p %s ht.%d\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums,ep->symbol,*ep->heightp);
+    if ( (retjson= electrum_version(ep->symbol,ep,&retjson)) != 0 )
+        printf("electrum_version %s\n",jprint(retjson,1));
+   printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p %s ht.%d\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums,ep->symbol,*ep->heightp);
     while ( ep->sock >= 0 )
     {
         flag = 0;
