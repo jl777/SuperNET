@@ -1074,6 +1074,7 @@ char *barterDEX(char *argstr)
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     printf("barterDEX.(%s)\n",argstr);
+    return(clonestr("{\"error\":\"couldnt parse request\"}"));
     if ( (argjson= cJSON_Parse(argstr)) != 0 )
     {
         retstr = LP_command_process(ctx,LP_myipaddr,LP_mypubsock,argjson,(uint8_t *)argstr,(int32_t)strlen(argstr));
