@@ -1055,12 +1055,24 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     static uint32_t counter; char fname[512],*retstr; long fsize;
     if ( strncmp("http://",url,strlen("http://")) != 0 )
         return(clonestr("{\"error\":\"only http allowed\"}"));
-    sprintf(fname,"bitcoind_RPC/req.%u",counter);
+    sprintf(fname,"bitcoind_RPC/request.%d",counter % 10);
     counter++;
     //printf("issue.(%s)\n",url);
     emscripten_wget(url,fname);
     retstr = OS_filestr(&fsize,fname);
     //printf("bitcoind_RPC(%s) -> fname.(%s) %s\n",url,fname,retstr);
+    return(retstr);
+}
+
+char *barterDEX(char *argstr)
+{
+    cJSON *argjson; char *retstr;
+    printf("barterDEX.(%s)\n",argstr);
+    if ( (argjson= cJSON_Parse(argstr)) != 0 )
+    {
+        retstr = LP_command_process(void *ctx,LP_myipaddr,LP_mypubsock,argjson,(uint8_t *)argstr,(int32_t)strlen(argstr)));
+        free_json(argjson);
+    } else retstr = clonestr("{\"error\":\"couldnt parse request\"}");
     return(retstr);
 }
 
