@@ -222,7 +222,7 @@ struct iguana_info
     portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
+    uint32_t lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
@@ -320,7 +320,8 @@ struct LP_pubkeyinfo
     UT_hash_handle hh;
     bits256 pubkey;
     float matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
-    uint32_t timestamps[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS],timestamp,numerrors;
+    //uint32_t timestamps[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
+    uint32_t timestamp,numerrors;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };

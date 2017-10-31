@@ -288,7 +288,8 @@ int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
             {
                 if ( pubp != 0 )
                     pubp->numerrors++;
-                printf("LP_utxos_sigcheck failure.%d, probably from %s with older version\n",pubp!=0?pubp->numerrors:-1,bits256_str(str,pubkey));
+                if ( pubp != 0 && pubp->numerrors > 1 )
+                    printf("LP_utxos_sigcheck failure.%d, probably from %s with older version\n",pubp!=0?pubp->numerrors:-1,bits256_str(str,pubkey));
             }
             retval = -1;
         } else retval = 0;
@@ -371,14 +372,14 @@ char *LP_postutxos_recv(cJSON *argjson)
     if ( (obj= jobj(argjson,"utxos")) != 0 )
     {
         utxoshash = LP_utxoshash_calc(obj);
-        //char str[65]; printf("got utxoshash %s\n",bits256_str(str,utxoshash));
+        //char str[65]; //printf("got utxoshash %s\n",bits256_str(str,utxoshash));
         if ( LP_utxos_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,utxoshash) == 0 )
         {
             uitem = calloc(1,sizeof(*uitem));
             uitem->argjson = jduplicate(argjson);
             queue_enqueue("utxosQ",&utxosQ,&uitem->DL);
             return(clonestr("{\"result\":\"success\"}"));
-        }
+        } //else printf("valid utxos sig %s\n",bits256_str(str,pubp->pubkey));
     }
     return(clonestr("{\"error\":\"sig failure\"}"));
 }
@@ -532,8 +533,9 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                                     memcpy(pubp->sig,sig,sizeof(pubp->sig));
                                     pubp->siglen = siglen;
                                     char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
-                                    pubp->timestamp = (uint32_t)time(NULL);
+                                    //pubp->timestamp = (uint32_t)time(NULL);
                                 }
+                                pubp->timestamp = juint(item,"timestamp");
                                 retval = 0;
                             } else pubp->numerrors++;
                         }
@@ -548,7 +550,7 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                         printf(" for %s\n",pubsecpstr);
                    }
                 }
-            }// else pubp->timestamp = (uint32_t)time(NULL);
+            }
         }
     }
     return(retval);
@@ -584,7 +586,7 @@ char *LP_notify_recv(cJSON *argjson)
 
 void LP_smartutxos_push(struct iguana_info *coin)
 {
-    struct LP_peerinfo *peer,*tmp; uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; char *retstr; cJSON *array,*item,*req;
+    uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; cJSON *array,*item,*req;
     if ( coin->smartaddr[0] == 0 )
         return;
     //LP_notify_pubkeys(coin->ctx,LP_mypubsock);
@@ -601,14 +603,17 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 vout = jint(item,"tx_pos");
                 value = j64bits(item,"value");
                 height = jint(item,"height");
-                if ( 0 && (rand() % 100) == 0 && IAMLP == 0 )
+#ifdef FROM_JS
+                //if ( 0 && (rand() % 100) == 0 && IAMLP == 0 )
                 {
+                    struct LP_peerinfo *peer,*tmp; char *retstr; 
                     HASH_ITER(hh,LP_peerinfos,peer,tmp)
                     {
                         if ( (retstr= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,vout,height,value)) != 0 )
                             free(retstr);
                     }
                 }
+#else
                 req = cJSON_CreateObject();
                 jaddstr(req,"method","uitem");
                 jaddstr(req,"coin",coin->symbol);
@@ -619,6 +624,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 jadd64bits(req,"value",value);
                 //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
                 LP_reserved_msg("","",zero,jprint(req,1));
+#endif
             }
         }
         free_json(array);

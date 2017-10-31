@@ -878,12 +878,6 @@ int main(int argc, const char * argv[])
     char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase; 
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
     cJSON *retjson,*loginjson; int32_t i;
-    if ( argc == 1 )
-    {
-        LP_NXT_redeems();
-        sleep(3);
-        return(0);
-    }
     OS_init();
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
@@ -895,6 +889,12 @@ int main(int argc, const char * argv[])
     LP_main(retjson);
     emscripten_set_main_loop(LP_fromjs_iter,1,0);
 #else
+    if ( argc == 1 )
+    {
+        LP_NXT_redeems();
+        sleep(3);
+        return(0);
+    }
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )

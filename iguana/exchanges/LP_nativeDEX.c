@@ -18,9 +18,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// verify portfolio, interest to KMD withdraw, pricebroadcast loop
+// verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
+// BCH signing
 
 #include <stdio.h>
 #include "LP_include.h"
@@ -298,39 +299,42 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
 #ifdef FROM_JS
                 else printf("%s got recv.%d\n",typestr,recvlen);
 #endif
-                double millis = OS_milliseconds();
+                int32_t validreq = 0; double millis = OS_milliseconds();
                 if ( strlen((char *)ptr)+sizeof(bits256) <= recvlen )
                 {
                     if ( LP_magic_check(ptr,recvlen,remoteaddr) <= 0 )
                     {
                         //printf("magic check error\n");
-                    }
+                    } else validreq = 1;
                     recvlen -= sizeof(bits256);
                 }
-                if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
-                    free(retstr);
-                if ( Broadcaststr != 0 )
+                if ( validreq != 0 )
                 {
-                    //printf("self broadcast.(%s)\n",Broadcaststr);
-                    str = Broadcaststr;
-                    Broadcaststr = 0;
-                    if ( (argjson= cJSON_Parse(str)) != 0 )
+                    if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
+                        free(retstr);
+                    if ( Broadcaststr != 0 )
                     {
-                        if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
-                            printf("self.(%s)\n",str);
-                        if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
+                        //printf("self broadcast.(%s)\n",Broadcaststr);
+                        str = Broadcaststr;
+                        Broadcaststr = 0;
+                        if ( (argjson= cJSON_Parse(str)) != 0 )
                         {
-                            portable_mutex_lock(&LP_commandmutex);
-                            if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
-                            free(retstr);
-                            portable_mutex_unlock(&LP_commandmutex);
+                            if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
+                                printf("self.(%s)\n",str);
+                            if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
+                            {
+                                portable_mutex_lock(&LP_commandmutex);
+                                if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
+                                    free(retstr);
+                                portable_mutex_unlock(&LP_commandmutex);
+                            }
+                            free_json(argjson);
                         }
-                        free_json(argjson);
+                        free(str);
                     }
-                    free(str);
+                    if ( OS_milliseconds()-millis > 1000 )
+                        printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
                 }
-                if ( OS_milliseconds()-millis > 1000 )
-                    printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
             }
         }
     }
@@ -618,9 +622,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 nonz++;
-#ifndef FROM_JS
-                LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+#ifdef FROM_JS
+                if ( (rand() % 100) == 0 )
 #endif
+                LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
                 LP_peer_pricesquery(peer);
                 LP_utxos_sync(peer);
@@ -632,23 +637,25 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             peer->diduquery = now;
             nonz++;
-#ifndef FROM_JS
+#ifdef FROM_JS
+            if ( (rand() % 100) == 0 )
+#endif
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
-#endif
             peer->needping = 0;
             needpings++;
         }
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        if ( coin->addr_listunspent_requested != 0 )
+        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+60 )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
+            coin->lastpushtime = (uint32_t)time(NULL);
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
         }
-        if ( coin->inactive == 0 && time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
+        if ( coin->electrum == 0 && coin->inactive == 0 && time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
         {
             nonz++;
             if ( (height= LP_getheight(coin)) > coin->longestchain )
@@ -1051,12 +1058,28 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     static uint32_t counter; char fname[512],*retstr; long fsize;
     if ( strncmp("http://",url,strlen("http://")) != 0 )
         return(clonestr("{\"error\":\"only http allowed\"}"));
-    sprintf(fname,"bitcoind_RPC/req.%u",counter);
+    sprintf(fname,"bitcoind_RPC/request.%d",counter % 10);
     counter++;
     //printf("issue.(%s)\n",url);
     emscripten_wget(url,fname);
     retstr = OS_filestr(&fsize,fname);
     //printf("bitcoind_RPC(%s) -> fname.(%s) %s\n",url,fname,retstr);
+    return(retstr);
+}
+
+char *barterDEX(char *argstr)
+{
+    static void *ctx;
+    cJSON *argjson; char *retstr;
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    printf("barterDEX.(%s)\n",argstr);
+    return(clonestr("{\"error\":\"couldnt parse request\"}"));
+    if ( (argjson= cJSON_Parse(argstr)) != 0 )
+    {
+        retstr = LP_command_process(ctx,LP_myipaddr,LP_mypubsock,argjson,(uint8_t *)argstr,(int32_t)strlen(argstr));
+        free_json(argjson);
+    } else retstr = clonestr("{\"error\":\"couldnt parse request\"}");
     return(retstr);
 }
 
@@ -1072,12 +1095,12 @@ void LP_fromjs_iter()
         ctx = bitcoin_ctx();
     if ( 0 && (LP_counter % 100) == 0 )
         printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
-    if ( Nanomsg_threadarg != 0 )
-        nn_thread_main_routine(Nanomsg_threadarg);
+    //if ( Nanomsg_threadarg != 0 )
+    //    nn_thread_main_routine(Nanomsg_threadarg);
     //LP_pubkeys_query();
     //LP_utxosQ_process();
-    LP_nanomsg_recvs(ctx);
-    //LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
+    //LP_nanomsg_recvs(ctx);
+    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     //queue_loop(0);
     if ( 0 && (LP_counter % 10) == 0 ) // 10 seconds
     {
