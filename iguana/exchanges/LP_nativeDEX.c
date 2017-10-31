@@ -299,39 +299,42 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
 #ifdef FROM_JS
                 else printf("%s got recv.%d\n",typestr,recvlen);
 #endif
-                double millis = OS_milliseconds();
+                int32_t validreq = 0; double millis = OS_milliseconds();
                 if ( strlen((char *)ptr)+sizeof(bits256) <= recvlen )
                 {
                     if ( LP_magic_check(ptr,recvlen,remoteaddr) <= 0 )
                     {
                         //printf("magic check error\n");
-                    }
+                    } else validreq = 1;
                     recvlen -= sizeof(bits256);
                 }
-                if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
-                    free(retstr);
-                if ( Broadcaststr != 0 )
+                if ( validreq != 0 )
                 {
-                    //printf("self broadcast.(%s)\n",Broadcaststr);
-                    str = Broadcaststr;
-                    Broadcaststr = 0;
-                    if ( (argjson= cJSON_Parse(str)) != 0 )
+                    if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
+                        free(retstr);
+                    if ( Broadcaststr != 0 )
                     {
-                        if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
-                            printf("self.(%s)\n",str);
-                        if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
+                        //printf("self broadcast.(%s)\n",Broadcaststr);
+                        str = Broadcaststr;
+                        Broadcaststr = 0;
+                        if ( (argjson= cJSON_Parse(str)) != 0 )
                         {
-                            portable_mutex_lock(&LP_commandmutex);
-                            if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
-                            free(retstr);
-                            portable_mutex_unlock(&LP_commandmutex);
+                            if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
+                                printf("self.(%s)\n",str);
+                            if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
+                            {
+                                portable_mutex_lock(&LP_commandmutex);
+                                if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
+                                    free(retstr);
+                                portable_mutex_unlock(&LP_commandmutex);
+                            }
+                            free_json(argjson);
                         }
-                        free_json(argjson);
+                        free(str);
                     }
-                    free(str);
+                    if ( OS_milliseconds()-millis > 1000 )
+                        printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
                 }
-                if ( OS_milliseconds()-millis > 1000 )
-                    printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
             }
         }
     }
