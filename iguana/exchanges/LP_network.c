@@ -29,7 +29,7 @@ struct psock
 uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT;
 
 #ifdef FROM_JS
-/*
+
 int32_t nn_socket(int domain, int protocol)
 {
     return(0);
@@ -69,6 +69,7 @@ int32_t nn_shutdown(int s, int how)
 
 int32_t nn_send(int s, const void *buf, size_t len, int flags)
 {
+    printf("JS cant nn_send (%s)\n",(char *buf));
     return(0);
 }
 
@@ -90,7 +91,7 @@ const char *nn_strerror(int errnum)
 int32_t nn_poll(struct nn_pollfd *fds, int nfds, int timeout)
 {
     return(0);
-}*/
+}
 
 
 #endif
