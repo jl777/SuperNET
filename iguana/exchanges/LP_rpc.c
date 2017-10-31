@@ -225,6 +225,9 @@ cJSON *LP_NXT_decrypt(char *account,char *data,char *nonce,char *passphrase)
     char url[1024],*retstr; cJSON *retjson = 0;
     if ( account != 0 && data != 0 && nonce != 0 && passphrase != 0 )
     {
+        sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAccountId&secretPhrase=%s",passphrase);
+        if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+            printf("%s\n",retstr);
         sprintf(url,"http://127.0.0.1:7876/nxt?requestType=decryptFrom&account=%s&secretPhrase=%s&data=%s&nonce=%s",account,passphrase,data,nonce);
         //printf("issue.(%s)\n",url);
         if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
