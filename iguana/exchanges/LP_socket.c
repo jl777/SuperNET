@@ -902,6 +902,7 @@ void LP_dedicatedloop(void *arg)
     struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct electrum_info *ep = arg;
     if ( (coin= LP_coinfind(ep->symbol)) != 0 )
         ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
+    sleep(2);
     if ( (retjson= electrum_version(ep->symbol,ep,&retjson)) != 0 )
         printf("electrum_version %s\n",jprint(retjson,1));
     if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,&retjson)) != 0 )
