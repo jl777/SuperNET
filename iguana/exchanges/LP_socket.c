@@ -459,7 +459,7 @@ cJSON *electrum_version(char *symbol,struct electrum_info *ep,cJSON **retjsonp)
     char params[128]; cJSON *retjson;
     if ( retjsonp == 0 )
         retjsonp = &retjson;
-    sprintf(params,"[\"client_name\":\"barterDEX\", \"protocol_version\":[\"1.1\", \"1.1\"]]");
+    sprintf(params,"[\"barterDEX\", [\"1.1\", \"1.1\"]]");
     return(electrum_submit(symbol,ep,retjsonp,"server.version",params,ELECTRUM_TIMEOUT));
 }
 
@@ -902,11 +902,11 @@ void LP_dedicatedloop(void *arg)
     struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct electrum_info *ep = arg;
     if ( (coin= LP_coinfind(ep->symbol)) != 0 )
         ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
-    if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,&retjson)) != 0 )
-        free_json(retjson);
     if ( (retjson= electrum_version(ep->symbol,ep,&retjson)) != 0 )
         printf("electrum_version %s\n",jprint(retjson,1));
-   printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p %s ht.%d\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums,ep->symbol,*ep->heightp);
+    if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,&retjson)) != 0 )
+        free_json(retjson);
+    printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p %s ht.%d\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums,ep->symbol,*ep->heightp);
     while ( ep->sock >= 0 )
     {
         flag = 0;
