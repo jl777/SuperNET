@@ -1066,7 +1066,10 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
 
 char *barterDEX(char *argstr)
 {
+    static void *ctx;
     cJSON *argjson; char *retstr;
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
     printf("barterDEX.(%s)\n",argstr);
     if ( (argjson= cJSON_Parse(argstr)) != 0 )
     {
