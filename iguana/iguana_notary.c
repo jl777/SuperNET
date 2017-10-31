@@ -145,8 +145,10 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     }
     else
     {
-        freq = 1;
         minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
+        if ( strcmp("CHIPS",dp->symbol) == 0 )
+            freq = 100;
+        else freq = 1;
     }
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( strcmp(dp->dest,"KMD") == 0 )
