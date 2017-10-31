@@ -320,7 +320,8 @@ struct LP_pubkeyinfo
     UT_hash_handle hh;
     bits256 pubkey;
     float matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
-    uint32_t timestamps[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS],timestamp,numerrors;
+    //uint32_t timestamps[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
+    uint32_t timestamp,numerrors;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };

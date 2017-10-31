@@ -345,7 +345,7 @@ void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
                     {
                         //char str[65]; printf("gotprice %s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
                         pubp->matrix[basepp->ind][relid] = askprice;
-                        pubp->timestamps[basepp->ind][relid] = timestamp;
+                        //pubp->timestamps[basepp->ind][relid] = timestamp;
                         if ( (relpp= LP_priceinfofind(rel)) != 0 )
                         {
                             dxblend(&basepp->relvals[relpp->ind],askprice,0.9);
@@ -497,7 +497,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         {
             pubp->timestamp = (uint32_t)time(NULL);
             pubp->matrix[basepp->ind][relpp->ind] = price;
-            pubp->timestamps[basepp->ind][relpp->ind] = pubp->timestamp;
+            //pubp->timestamps[basepp->ind][relpp->ind] = pubp->timestamp;
             //pubp->matrix[relpp->ind][basepp->ind] = (1. / price);
         }
         return(0);
@@ -741,7 +741,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
         bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
         minsatoshis = maxsatoshis = n = 0;
         ap = 0;
-        if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL && pubp->timestamps[baseid][relid] >= oldest )
+        if ( (price= pubp->matrix[baseid][relid]) > SMALLVAL )//&& pubp->timestamps[baseid][relid] >= oldest )
         {
             balance = 0;
             if ( (ap= LP_addressfind(basecoin,coinaddr)) != 0 )
@@ -1070,7 +1070,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             if ( fabs(pubp->matrix[basepp->ind][relpp->ind] - price) > SMALLVAL )
             {
                 pubp->matrix[basepp->ind][relpp->ind] = price;
-                pubp->timestamps[basepp->ind][relpp->ind] = pubp->timestamp;
+                //pubp->timestamps[basepp->ind][relpp->ind] = pubp->timestamp;
                 dxblend(&basepp->relvals[relpp->ind],price,0.9);
                 dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
             }
