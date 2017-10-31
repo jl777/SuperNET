@@ -240,7 +240,9 @@ cJSON *LP_NXT_decrypt(uint64_t txnum,char *account,char *data,char *nonce,char *
 
 cJSON *LP_NXT_redeems()
 {
-    char url[1024],*retstr,*recv,*method,*msgstr,assetname[16]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
+    char url[1024],*retstr,*recv,*method,*msgstr,assetname[16]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
+    uint64_t txnum_marker = calc_nxt64bits("0");
+    uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143");
 char *passphrase = "";
 char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
     memset(totals,0,sizeof(totals));
@@ -259,6 +261,8 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
                     item = jitem(array,i);
                     msgstr = jstr(item,"message");
                     txnum = j64bits(item,"transaction");
+                    if ( txnum == txnum_marker )
+                        past_marker = 1;
                     //printf("%d: %s\n",i,jprint(item,0));
                     if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 )
                     {
@@ -298,15 +302,31 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
                             totals[ind] += qty * mult;
                         if ( msgstr != 0 && assetname[0] != 0 && qty != 0 )
                         {
-                            // extract valid address
-                            printf("%-4d: (%34s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
+                            char validaddress[64]; int32_t z,n;
+                            n = (int32_t)strlen(msgstr);
+                            for (z=0; z<n; z++)
+                            {
+                                if ( msgstr[z] == 'R' )
+                                    break;
+                            }
+                            memset(validaddress,0,sizeof(validaddress));
+                            if ( n-z >= 34 )
+                                strncpy(validaddress,&msgstr[z],34);
+                            if ( strlen(validaddress) == 34 || strlen(validaddress) == 33 )
+                            {
+                                printf("%-4d: (%34s) <- %13.5f %10s tx.%llu past_marker.%d\n",i,validaddress,dstr(qty * mult),assetname,(long long)txnum,past_marker);
+                            } else printf("%-4d: (%34s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
+                            if ( past_marker == 0 )
+                            {
+                                
+                            }
                         }
                         if ( msgjson != 0 )
                             free_json(msgjson);
                         if ( decjson != 0 )
                             free_json(decjson);
                     }
-                    if ( txnum == calc_nxt64bits("7256847492742571143") )
+                    if ( txnum == txnum_marker2 )
                         break;
                 }
             }
