@@ -18,9 +18,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// verify portfolio, interest to KMD withdraw, pricebroadcast loop
+// verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
+// BCH signing
 
 #include <stdio.h>
 #include "LP_include.h"

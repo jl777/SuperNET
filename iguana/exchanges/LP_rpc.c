@@ -220,11 +220,32 @@ cJSON *LP_NXT_message(char *method,uint64_t txnum,char *passphrase)
     return(retjson);
 }
 
+cJSON *LP_NXT_decrypt(char *account,char *data,char *nonce,char *passphrase)
+{
+    char url[1024],*retstr; cJSON *retjson = 0;
+    if ( account != 0 && data != 0 && nonce != 0 && passphrase != 0 )
+    {
+        sprintf(url,"http://127.0.0.1:7876/nxt?requestType=decryptFrom&account=%s&secretPhrase=%s&data=%s&nonce=%s",account,passphrase,data,nonce);
+        //printf("issue.(%s)\n",url);
+        if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                
+            }
+            free(retstr);
+        }
+    }
+    return(retjson);
+}
+
 cJSON *LP_NXT_redeems()
 {
-    char url[1024],*retstr,*recv,*method,*msgstr,assetname[16]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx; cJSON *item,*attach,*array,*msgjson,*encjson,*retjson=0;
+    char url[1024],*retstr,*recv,*method,*msgstr,assetname[16]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
+char *passphrase = "";
+char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
     memset(totals,0,sizeof(totals));
-    sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getBlockchainTransactions&account=NXT-MRBN-8DFH-PFMK-A4DBM");//,NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))]);
+    sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getBlockchainTransactions&account=%s",account);
     //printf("calling (%s)\n",url);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
@@ -260,8 +281,17 @@ cJSON *LP_NXT_redeems()
                                 msgstr = jstr(attach,"message");
                             if ( msgstr == 0 || msgstr[0] == 0 )
                             {
+                                
                                 if ( (encjson= jobj(attach,"encryptedMessage")) != 0 )
+                                {
                                     msgstr = "encryptedMessage";//jstr(encjson,"data");
+                                    if ( (decjson= LP_NXT_decrypt(account,jstr(encjson,"data"),jstr(encjson,"nonce"),passphrase)) != 0 )
+                                    {
+                                        printf("%s\n",jprint(decjson,0));
+                                        free_json(decjson);
+                                    }
+
+                                }
                             }
                         }
                         mult = LP_assetid_mult(&ind,assetname,assetid);
