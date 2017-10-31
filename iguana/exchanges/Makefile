@@ -6,4 +6,5 @@
 
 all:
 	emcc -s ABORTING_MALLOC=0 -s ASSERTIONS=1 -s ASYNCIFY=1 -s TOTAL_MEMORY=167772160 --embed-file coins.json -DFROM_JS -O2 -I../includes -I../crypto777 -o /var/www/html/index.html exchanges/mm.c ../crypto777/*.c ../crypto777/jpeg/*.c ../crypto777/jpeg/unix/*.c mini-gmp.c secp256k1/src/secp256k1.c -lm 
+	emcc -s WASM=1 -s ABORTING_MALLOC=0 -s ASSERTIONS=1 -s ASYNCIFY=1 -s TOTAL_MEMORY=167772160 --embed-file coins.json -DFROM_JS -O2 -I../includes -I../crypto777 -o /var/www/html/index.html exchanges/mm.c ../crypto777/*.c ../crypto777/jpeg/*.c ../crypto777/jpeg/unix/*.c mini-gmp.c secp256k1/src/secp256k1.c -lm 
 
