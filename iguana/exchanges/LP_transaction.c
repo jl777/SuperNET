@@ -879,7 +879,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         utxos[numunspents] = 0;
         total += up->U.value;
         remains -= up->U.value;
-        //if ( coin->electrum == 0 && strcmp(coin->symbol,"KMD") == 0 )
+        if ( up->U.height < 7777777 && strcmp(coin->symbol,"KMD") == 0 )
         {
             if ( (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
             {
