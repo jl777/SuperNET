@@ -327,6 +327,7 @@ char *LP_tradebot_limitbuy(void *ctx,int32_t pubsock,cJSON *argjson)
     rel = jstr(argjson,"rel");
     maxprice = jdouble(argjson,"maxprice");
     relvolume = jdouble(argjson,"relvolume");
+    printf("limit buy %s/%s %.8f %.8f\n",base,rel,maxprice,relvolume);
     if ( LP_priceinfofind(base) != 0 && LP_priceinfofind(rel) != 0 && maxprice > SMALLVAL && maxprice < SATOSHIDEN && relvolume > 0.0001 && relvolume < SATOSHIDEN )
         return(LP_tradebot_buy(1,base,rel,maxprice,relvolume));
     return(clonestr("{\"error\":\"invalid parameter\"}"));
