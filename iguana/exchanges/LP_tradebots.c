@@ -35,7 +35,7 @@ struct LP_tradebot
     struct LP_tradebot *next,*prev;
     char name[128],base[32],rel[32];
     int32_t numtrades,numpending,completed,dispdir;
-    double maxprice,totalrelvolume,basesum,relsum,pendbasesum,pendrelsum;
+    double maxprice,totalrelvolume,totalbasevolume,basesum,relsum,pendbasesum,pendrelsum;
     uint32_t dead,pause,started,id;
     struct LP_tradebot_trade *trades[LP_TRADEBOTS_MAXTRADES];
 } *LP_tradebots;
@@ -99,11 +99,13 @@ void LP_tradebot_calcstats(struct LP_tradebot *bot)
 
 double LP_pricevol_invert(double *basevolumep,double maxprice,double relvolume)
 {
+    double price;
     *basevolumep = 0.;
     if ( maxprice > SMALLVAL && maxprice < SATOSHIDEN )
     {
-        *basevolumep = (relvolume * maxprice);
-        return(1. /  maxprice);
+        price = (1. / maxprice);
+        *basevolumep = (relvolume * price);
+        return(price);
     }
     return(0.);
 }
@@ -149,8 +151,9 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
         jaddstr(json,"rel",bot->rel);
         jaddnum(json,"maxprice",bot->maxprice);
         jaddnum(json,"totalrelvolume",bot->totalrelvolume);
-        LP_pricevol_invert(&basevolume,1./bot->maxprice,bot->totalrelvolume);
-        jaddnum(json,"totalbasevolume",basevolume);
+        LP_pricevol_invert(&basevolume,bot->maxprice,bot->totalrelvolume);
+        jaddnum(json,"totalbasevolume2",basevolume);
+        jaddnum(json,"totalbasevolume",bot->totalbasevolume);
         if ( (vol= bot->relsum) > SMALLVAL )
         {
             jaddnum(json,"aveprice",bot->basesum/vol);
@@ -314,7 +317,10 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
     {
         safecopy(bot->base,base,sizeof(bot->base));
         safecopy(bot->rel,rel,sizeof(bot->rel));
-        bot->dispdir = dispdir, bot->maxprice = maxprice, bot->totalrelvolume = relvolume;
+        bot->dispdir = dispdir;
+        bot->maxprice = maxprice;
+        bot->totalrelvolume = relvolume;
+        LP_pricevol_invert(&bot->totalbasevolume,maxprice,relvolume);
         bot->started = (uint32_t)time(NULL);
         if ( dispdir > 0 )
             sprintf(bot->name,"buy_%s_%s.%d",base,rel,bot->started);
