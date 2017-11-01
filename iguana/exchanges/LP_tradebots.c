@@ -151,8 +151,6 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
         jaddstr(json,"rel",bot->rel);
         jaddnum(json,"maxprice",bot->maxprice);
         jaddnum(json,"totalrelvolume",bot->totalrelvolume);
-        LP_pricevol_invert(&basevolume,bot->maxprice,bot->totalrelvolume);
-        jaddnum(json,"totalbasevolume2",basevolume);
         jaddnum(json,"totalbasevolume",bot->totalbasevolume);
         if ( (vol= bot->relsum) > SMALLVAL )
         {
@@ -252,26 +250,26 @@ void LP_tradebotadd(struct LP_tradebot *bot)
 
 void LP_tradebot_timeslice(struct LP_tradebot *bot)
 {
-    double minprice,basevol,relvol;
+    double minprice,basevol,relvol,p,v;
     if ( bot->dead == 0 )
     {
         if ( bot->pause == 0 )
         {
             //if ( (rand() % 100) == 0 )
             {
+                relvol = bot->totalrelvolume * 0.1;
+                p = LP_pricevol_invert(&v,bot->maxprice,relvol);
                 if ( bot->dispdir > 0 )
                 {
-                    printf("simulated trade buy %s/%s maxprice %.8f volume %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum);
+                    printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base);
                 }
                 else
                 {
                     minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
-                    printf("simulated trade sell %s/%s maxprice %.8f volume %.8f\n",bot->rel,bot->base,minprice,basevol);
+                    printf("simulated trade sell %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s min %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p);
                 }
-                relvol = bot->totalrelvolume * 0.1;
-                minprice = LP_pricevol_invert(&basevol,bot->maxprice,relvol);
                 bot->relsum += relvol;
-                bot->basesum += basevol;
+                bot->basesum += v;
                 if ( bot->relsum >= bot->totalrelvolume-SMALLVAL || bot->basesum >= bot->totalbasevolume-SMALLVAL )
                     bot->dead = (uint32_t)time(NULL);
                 else if ( (bot->pendrelsum+bot->relsum) >= bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= bot->totalbasevolume-SMALLVAL )
