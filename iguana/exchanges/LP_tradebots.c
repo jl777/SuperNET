@@ -283,7 +283,6 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                                     bot->dead = (uint32_t)time(NULL);
                                 else if ( (bot->pendrelsum+bot->relsum) >= bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= bot->totalbasevolume-SMALLVAL )
                                     bot->pause = (uint32_t)time(NULL);
-                                printf("%s\n",jprint(LP_tradebot_json(bot),1));
                             } else printf("didnt get any trade pending %s %s\n\n",bot->name,retstr);
                             free_json(retjson2);
                         } else printf("%s\n",retstr);
@@ -315,7 +314,6 @@ void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid)
                 bot->numpending--, bot->completed++;
                 printf("bot.%u detected completion tradeid.%u aliceid.%llx r.%u q.%u\n",bot->id,tp->tradeid,(long long)tp->aliceid,tp->requestid,tp->quoteid);
                 tp->finished = (uint32_t)time(NULL);
-                printf("%s\n",jprint(LP_tradebot_json(bot),1));
                 break;
             }
         }
@@ -348,7 +346,6 @@ void LP_tradebot_timeslices(void *ctx)
                         }
                     }
                 }
-                printf("%s\n",jprint(LP_tradebot_json(bot),1));
             }
             else if ( bot->numpending == 0 )
                 LP_tradebot_timeslice(ctx,bot);
