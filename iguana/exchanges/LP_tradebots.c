@@ -165,8 +165,8 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
         jaddstr(json,"rel",bot->base);
         aveprice = LP_pricevol_invert(&basevolume,bot->maxprice,bot->totalrelvolume);
         jaddnum(json,"minprice",aveprice);
-        jaddnum(json,"totalbasevolume",basevolume);
-        jaddnum(json,"totalrelvolume",bot->totalrelvolume);
+        jaddnum(json,"totalbasevolume",bot->totalrelvolume);
+        jaddnum(json,"totalrelvolume",basevolume);
         if ( (vol= bot->relsum) > SMALLVAL )
         {
             aveprice = LP_pricevol_invert(&basevolume,bot->basesum / vol,vol);
@@ -175,7 +175,7 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
         }
     }
     array = cJSON_CreateArray();
-    LP_tradebot_calcstats(bot);
+    //LP_tradebot_calcstats(bot);
     for (i=0; i<bot->numtrades; i++)
     {
         jaddi(array,LP_tradebot_tradejson(bot->trades[i],bot->dispdir));
@@ -266,14 +266,23 @@ void LP_tradebot_timeslice(struct LP_tradebot *bot)
                 else
                 {
                     minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
-                    printf("simulated trade sell %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s min %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p);
+                    printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s min %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p);
                 }
-                bot->relsum += relvol;
-                bot->basesum += v;
+                if ( (rand() % 2) == 0 )
+                {
+                    bot->relsum += relvol;
+                    bot->basesum += v;
+                }
+                else
+                {
+                    bot->pendrelsum += relvol;
+                    bot->pendbasesum += v;
+                }
                 if ( bot->relsum >= bot->totalrelvolume-SMALLVAL || bot->basesum >= bot->totalbasevolume-SMALLVAL )
                     bot->dead = (uint32_t)time(NULL);
                 else if ( (bot->pendrelsum+bot->relsum) >= bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= bot->totalbasevolume-SMALLVAL )
                     bot->pause = (uint32_t)time(NULL);
+                printf("%s\n",jprint(LP_tradebot_json(bot),1));
             }
         }
     }
