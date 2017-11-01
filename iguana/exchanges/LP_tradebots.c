@@ -261,17 +261,21 @@ void LP_tradebot_timeslice(struct LP_tradebot *bot)
             {
                 if ( bot->dispdir > 0 )
                 {
-                    printf("simulated trade %s/%s maxprice %.8f volume %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum);
+                    printf("simulated trade buy %s/%s maxprice %.8f volume %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum);
                 }
                 else
                 {
                     minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
-                    printf("simulated trade %s/%s maxprice %.8f volume %.8f\n",bot->rel,bot->base,minprice,basevol);
+                    printf("simulated trade sell %s/%s maxprice %.8f volume %.8f\n",bot->rel,bot->base,minprice,basevol);
                 }
                 relvol = bot->totalrelvolume * 0.1;
                 minprice = LP_pricevol_invert(&basevol,bot->maxprice,relvol);
                 bot->relsum += relvol;
                 bot->basesum += basevol;
+                if ( bot->relsum >= bot->totalrelvolume-SMALLVAL || bot->basesum >= bot->totalbasevolume-SMALLVAL )
+                    bot->dead = (uint32_t)time(NULL);
+                else if ( (bot->pendrelsum+bot->relsum) >= bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= bot->totalbasevolume-SMALLVAL )
+                    bot->pause = (uint32_t)time(NULL);
             }
         }
     }
@@ -287,7 +291,6 @@ void LP_tradebot_timeslices(void *ignore)
     struct LP_tradebot *bot,*tmp;
     while ( 1 )
     {
-        printf("LP_tradebot_timeslices\n");
         DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
         {
             portable_mutex_lock(&LP_tradebotsmutex);
@@ -357,7 +360,7 @@ char *LP_tradebot_limitsell(void *ctx,int32_t pubsock,cJSON *argjson)
         maxprice = price;
         relvolume = (price * basevolume);
         p = LP_pricevol_invert(&v,maxprice,relvolume);
-        printf("minprice %.8f basevolume %.8f -> (%.8f %.8f) -> (%.8f %.8f)\n",price,basevolume,maxprice,relvolume,p,v);
+        printf("minprice %.8f basevolume %.8f -> (%.8f %.8f) -> (%.8f %.8f)\n",price,basevolume,maxprice,relvolume,1./p,v);
         return(LP_tradebot_buy(-1,rel,base,maxprice,relvolume));
     }
     return(clonestr("{\"error\":\"invalid parameter\"}"));
