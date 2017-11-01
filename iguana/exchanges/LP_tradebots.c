@@ -257,7 +257,7 @@ void LP_tradebot_timeslice(struct LP_tradebot *bot)
         {
             //if ( (rand() % 100) == 0 )
             {
-                r = (double)(51 + (rand()%50))/100.;
+                r = (double)(51 + (rand()%25))/100.;
                 relvol = (bot->totalrelvolume - bot->relsum);
                 if ( relvol > (bot->totalrelvolume * .1) )
                     relvol *= r;
@@ -265,12 +265,12 @@ void LP_tradebot_timeslice(struct LP_tradebot *bot)
                 p = LP_pricevol_invert(&v,bot->maxprice * r,relvol);
                 if ( bot->dispdir > 0 )
                 {
-                    printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s, price %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base,bot->maxprice*r);
+                    printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s, price %.8f relvol %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base,bot->maxprice*r,relvol);
                 }
                 else
                 {
                     minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
-                    printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s price %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p);
+                    printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s price %.8f relvol %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p,relvol);
                 }
                 if ( (rand() % 2) == 0 )
                 {
@@ -328,7 +328,11 @@ char *LP_tradebot_list(void *ctx,int32_t pubsock,cJSON *argjson)
 
 char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,double relvolume)
 {
-    struct LP_tradebot *bot;
+    struct LP_tradebot *bot; struct iguana_info *basecoin,*relcoin;
+    basecoin = LP_coinfind(base);
+    relcoin = LP_coinfind(rel);
+    if ( basecoin == 0 || relcoin == 0 || basecoin->inactive != 0 || relcoin->inactive != 0 )
+        return(clonestr("{\"error\":\"one or more coins inactive\"}"));
     printf("disp.%d tradebot_buy(%s / %s) maxprice %.8f relvolume %.8f\n",dispdir,base,rel,maxprice,relvolume);
     if ( (bot= calloc(1,sizeof(*bot))) != 0 )
     {
