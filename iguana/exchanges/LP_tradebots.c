@@ -303,6 +303,7 @@ char *LP_tradebot_list(void *ctx,int32_t pubsock,cJSON *argjson)
 char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,double relvolume)
 {
     struct LP_tradebot *bot;
+    printf("disp.%d tradebot_buy(%s / %s) maxprice %.8f relvolume %.8f\n",dispdir,base,rel,maxprice,relvolume);
     if ( (bot= calloc(1,sizeof(*bot))) != 0 )
     {
         safecopy(bot->base,base,sizeof(bot->base));
@@ -428,6 +429,7 @@ char *LP_tradebot_resume(void *ctx,int32_t pubsock,cJSON *argjson,uint32_t botid
 char *LP_istradebots_command(void *ctx,int32_t pubsock,char *method,cJSON *argjson)
 {
     uint32_t botid;
+    printf("istradebots.(%s)\n",method);
     if ( strcmp(method,"bot_list") == 0 )
         return(LP_tradebot_list(ctx,pubsock,argjson));
     else if ( strcmp(method,"bot_buy") == 0 )
@@ -449,6 +451,7 @@ char *LP_istradebots_command(void *ctx,int32_t pubsock,char *method,cJSON *argjs
         else if ( strcmp(method,"bot_resume") == 0 )
             return(LP_tradebot_resume(ctx,pubsock,argjson,botid));
     }
+    printf("not tradebots\n");
     return(0);
 }
 
