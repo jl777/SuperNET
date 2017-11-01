@@ -44,7 +44,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     double price; cJSON *retjson = cJSON_CreateObject();
     jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jadd64bits(retjson,"aliceid",qp->aliceid);
-    jaddnum(retjson,"botid",qp->botid);
+    jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
     jaddstr(retjson,"rel",qp->destcoin);
     if ( qp->coinaddr[0] != 0 )
@@ -110,7 +110,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
     safecopy(qp->destaddr,jstr(argjson,"destaddr"),sizeof(qp->destaddr));
     qp->aliceid = j64bits(argjson,"aliceid");
-    qp->botid = juint(argjson,"botid");
+    qp->tradeid = juint(argjson,"tradeid");
     qp->timestamp = juint(argjson,"timestamp");
     qp->quotetime = juint(argjson,"quotetime");
     qp->txid = jbits256(argjson,"txid");

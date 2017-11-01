@@ -295,7 +295,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
         bot->pause = (uint32_t)time(NULL);
 }
 
-void LP_tradebots_finished(uint32_t tradeid)
+void LP_tradebot_finished(uint32_t tradeid)
 {
     struct LP_tradebot *bot,*tmp; int32_t i; struct LP_tradebot_trade *tp;
     DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
