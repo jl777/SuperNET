@@ -250,6 +250,7 @@ struct LP_tradebot_trade *LP_tradebot_pending(struct LP_tradebot *bot,cJSON *pen
     tp->aliceid = j64bits(pending,"aliceid");
     tp->basevol = jdouble(pending,"basevalue");
     tp->relvol = jdouble(pending,"relvalue");
+    printf("tradebot pending basevol %.8f relvol %.8f\n",tp->basevol,tp->relvol);
     bot->pendrelsum += tp->relvol;
     bot->pendbasesum += tp->basevol;
     bot->numpending++;
