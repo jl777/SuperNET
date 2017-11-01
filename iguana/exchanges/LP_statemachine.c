@@ -1613,6 +1613,65 @@ void LP_address_monitor(struct LP_pubkeyinfo *pubp)
  return(LP_autotrade(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
  } else return(clonestr("{\"error\":\"no price set\"}"));
  }*/
+if ( flag != 0 )
+{
+    // need to find the requestid/quoteid for aliceid
+    if ( (retstr= basilisk_swapentries(bot->base,bot->rel,0)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(retjson)) != 0 )
+            {
+                for (flag=j=0; j<n; j++)
+                {
+                    item = jitem(retjson,j);
+                    aliceid = j64bits(item,"aliceid");
+                    for (i=0; i<bot->numtrades; i++)
+                    {
+                        if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->requestid == 0 && tp->quoteid == 0 )
+                        {
+                            if ( tp->aliceid == aliceid )
+                            {
+                                tp->requestid = juint(item,"requestid");
+                                tp->quoteid = juint(item,"quoteid");
+                                printf("found aliceid.%llx to set requestid.%u quoteid.%u\n",(long long)aliceid,tp->requestid,tp->quoteid);
+                                flag = 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+}
+// check for finished pending swap
+for (i=0; i<bot->numtrades; i++)
+{
+    if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->requestid != 0 && tp->quoteid != 0 )
+    {
+        if ( (retstr= basilisk_swapentry(tp->requestid,tp->quoteid)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (status= jstr(retjson,"status")) != 0 && strcmp(status,"finished") == 0 )
+                {
+                    bot->pendbasesum -= tp->basevol, bot->basesum += tp->basevol;
+                    bot->pendrelsum -= tp->relvol, bot->relsum += tp->relvol;
+                    bot->numpending--, bot->completed++;
+                    printf("detected completion aliceid.%llx r.%u q.%u\n",(long long)tp->aliceid,tp->requestid,tp->quoteid);
+                    tp->finished = (uint32_t)time(NULL);
+                }
+                free_json(retjson);
+            }
+            free(retstr);
+        }
+    }
+}
+}
+
 int32_t LP_utxopurge(int32_t allutxos)
 {
     char str[65]; struct LP_utxoinfo *utxo,*tmp; int32_t iambob,n = 0;

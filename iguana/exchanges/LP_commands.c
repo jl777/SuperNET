@@ -300,7 +300,7 @@ bot_resume(botid)\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey"),0));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"sell") == 0 )
@@ -308,7 +308,7 @@ bot_resume(botid)\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey"),0));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }

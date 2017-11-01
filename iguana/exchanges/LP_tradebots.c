@@ -26,7 +26,7 @@ struct LP_tradebot_trade
     double maxprice,totalrelvolume,basevol,relvol;
     uint64_t aliceid;
     int32_t dispdir;
-    uint32_t started,finished,requestid,quoteid;
+    uint32_t started,finished,requestid,quoteid,tradeid;
     char base[32],rel[32];
 };
 
@@ -233,10 +233,11 @@ void LP_tradebotadd(struct LP_tradebot *bot)
     portable_mutex_unlock(&LP_tradebotsmutex);
 }
 
-struct LP_tradebot_trade *LP_tradebot_pending(struct LP_tradebot *bot,cJSON *pending)
+struct LP_tradebot_trade *LP_tradebot_pending(struct LP_tradebot *bot,cJSON *pending,uint32_t tradeid)
 {
     struct LP_tradebot_trade *tp;
     tp = calloc(1,sizeof(*tp));
+    tp->tradeid = tradeid;
     tp->maxprice = bot->maxprice;
     tp->totalrelvolume = bot->totalrelvolume;
     tp->started = (uint32_t)time(NULL);
@@ -254,7 +255,7 @@ struct LP_tradebot_trade *LP_tradebot_pending(struct LP_tradebot *bot,cJSON *pen
 
 void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
 {
-    double remaining; bits256 destpubkey; char *retstr,*liststr; cJSON *retjson,*pending;
+    double remaining; uint32_t tradeid; bits256 destpubkey; char *retstr,*liststr; cJSON *retjson,*pending;
     memset(destpubkey.bytes,0,sizeof(destpubkey));
     if ( bot->dead == 0 && bot->pause == 0 && bot->numtrades < sizeof(bot->trades)/sizeof(*bot->trades) )
     {
@@ -266,13 +267,14 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                 {
                     remaining = bot->totalrelvolume - (bot->relsum + bot->pendrelsum);
                     printf("try autobuy %s/%s remaining %.8f maxprice %.8f\n",bot->base,bot->rel,remaining,bot->maxprice);
-                    if ( (retstr= LP_autobuy(ctx,LP_myipaddr,LP_mypubsock,bot->base,bot->rel,bot->maxprice,remaining,0,0,G.gui,0,destpubkey)) != 0 )
+                    tradeid = rand();
+                    if ( (retstr= LP_autobuy(ctx,LP_myipaddr,LP_mypubsock,bot->base,bot->rel,bot->maxprice,remaining,0,0,G.gui,0,destpubkey,tradeid)) != 0 )
                     {
                         if ( (pending= cJSON_Parse(retstr)) != 0 )
                         {
                             if ( jobj(pending,"pending") != 0 )
                             {
-                                bot->trades[bot->numtrades++] = LP_tradebot_pending(bot,pending);
+                                bot->trades[bot->numtrades++] = LP_tradebot_pending(bot,pending,tradeid);
                                 if ( bot->relsum >= bot->totalrelvolume-SMALLVAL || bot->basesum >= bot->totalbasevolume-SMALLVAL )
                                     bot->dead = (uint32_t)time(NULL);
                                 else if ( (bot->pendrelsum+bot->relsum) >= bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= bot->totalbasevolume-SMALLVAL )
@@ -293,19 +295,37 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
         bot->pause = (uint32_t)time(NULL);
 }
 
+void LP_tradebots_finished(uint32_t tradeid)
+{
+    struct LP_tradebot *bot,*tmp; int32_t i; struct LP_tradebot_trade *tp;
+    DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
+    {
+        for (i=0; i<bot->numtrades; i++)
+        {
+            if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->tradeid == tradeid )
+            {
+                bot->pendbasesum -= tp->basevol, bot->basesum += tp->basevol;
+                bot->pendrelsum -= tp->relvol, bot->relsum += tp->relvol;
+                bot->numpending--, bot->completed++;
+                printf("detected completion aliceid.%llx r.%u q.%u\n",(long long)tp->aliceid,tp->requestid,tp->quoteid);
+                tp->finished = (uint32_t)time(NULL);
+                break;
+            }
+        }
+    }
+}
+
 void LP_tradebot_timeslices(void *ctx)
 {
-    struct LP_tradebot_trade *tp; struct LP_tradebot *bot,*tmp; char *retstr,*status; cJSON *retjson,*item; uint64_t aliceid; int32_t i,j,n,flag,lastnumfinished = 0;
+    struct LP_tradebot_trade *tp; struct LP_tradebot *bot,*tmp; int32_t i,lastnumfinished = 0;
     while ( 1 )
     {
         DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
         {
-            portable_mutex_lock(&LP_tradebotsmutex);
-            LP_tradebot_timeslice(ctx,bot);
             if ( bot->numpending > 0 && LP_numfinished > lastnumfinished )
             {
                 // expire pending trades and see if any still need their requestid/quoteid
-                for (i=flag=0; i<bot->numtrades; i++)
+                for (i=0; i<bot->numtrades; i++)
                 {
                     if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 )
                     {
@@ -317,73 +337,15 @@ void LP_tradebot_timeslices(void *ctx)
                             tp->finished = (uint32_t)time(NULL);
                             printf("%s trade.%d of %d expired\n",bot->name,i,bot->numtrades);
                         }
-                        else if ( tp->requestid == 0 && tp->quoteid == 0 )
-                            flag = 1;
                     }
                 }
-                if ( flag != 0 )
-                {
-                    // need to find the requestid/quoteid for aliceid
-                    if ( (retstr= basilisk_swapentries(bot->base,bot->rel,0)) != 0 )
-                    {
-                        if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                        {
-                            if ( (n= cJSON_GetArraySize(retjson)) != 0 )
-                            {
-                                for (flag=j=0; j<n; j++)
-                                {
-                                    item = jitem(retjson,j);
-                                    aliceid = j64bits(item,"aliceid");
-                                    for (i=0; i<bot->numtrades; i++)
-                                    {
-                                        if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->requestid == 0 && tp->quoteid == 0 )
-                                        {
-                                            if ( tp->aliceid == aliceid )
-                                            {
-                                                tp->requestid = juint(item,"requestid");
-                                                tp->quoteid = juint(item,"quoteid");
-                                                printf("found aliceid.%llx to set requestid.%u quoteid.%u\n",(long long)aliceid,tp->requestid,tp->quoteid);
-                                                flag = 1;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            free_json(retjson);
-                        }
-                        free(retstr);
-                    }
-                }
-                // check for finished pending swap
-                for (i=0; i<bot->numtrades; i++)
-                {
-                    if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->requestid != 0 && tp->quoteid != 0 )
-                    {
-                        if ( (retstr= basilisk_swapentry(tp->requestid,tp->quoteid)) != 0 )
-                        {
-                            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                            {
-                                if ( (status= jstr(retjson,"status")) != 0 && strcmp(status,"finished") == 0 )
-                                {
-                                    bot->pendbasesum -= tp->basevol, bot->basesum += tp->basevol;
-                                    bot->pendrelsum -= tp->relvol, bot->relsum += tp->relvol;
-                                    bot->numpending--, bot->completed++;
-                                    printf("detected completion aliceid.%llx r.%u q.%u\n",(long long)tp->aliceid,tp->requestid,tp->quoteid);
-                                    tp->finished = (uint32_t)time(NULL);
-                                }
-                                free_json(retjson);
-                            }
-                            free(retstr);
-                        }
-                    }
-                }
+                printf("%s\n",jprint(LP_tradebot_json(bot),1));
             }
-            portable_mutex_unlock(&LP_tradebotsmutex);
-            sleep(1);
+            else if ( bot->numpending == 0 )
+                LP_tradebot_timeslice(ctx,bot);
         }
         lastnumfinished = LP_numfinished;
-        sleep(10);
+        sleep(60);
     }
 }
 

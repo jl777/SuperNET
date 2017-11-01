@@ -44,6 +44,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     double price; cJSON *retjson = cJSON_CreateObject();
     jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jadd64bits(retjson,"aliceid",qp->aliceid);
+    jaddnum(retjson,"botid",qp->botid);
     jaddstr(retjson,"base",qp->srccoin);
     jaddstr(retjson,"rel",qp->destcoin);
     if ( qp->coinaddr[0] != 0 )
@@ -109,6 +110,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
     safecopy(qp->destaddr,jstr(argjson,"destaddr"),sizeof(qp->destaddr));
     qp->aliceid = j64bits(argjson,"aliceid");
+    qp->botid = juint(argjson,"botid");
     qp->timestamp = juint(argjson,"timestamp");
     qp->quotetime = juint(argjson,"quotetime");
     qp->txid = jbits256(argjson,"txid");
@@ -146,7 +148,7 @@ void LP_txfees(uint64_t *txfeep,uint64_t *desttxfeep,char *base,char *rel)
 {
     *txfeep = LP_txfeecalc(LP_coinfind(base),0,0);
     *desttxfeep = LP_txfeecalc(LP_coinfind(rel),0,0);
-    printf("LP_txfees(%.8f %.8f)\n",dstr(*txfeep),dstr(*desttxfeep));
+    //printf("LP_txfees(%.8f %.8f)\n",dstr(*txfeep),dstr(*desttxfeep));
 }
 
 int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *destcoin,double price,uint64_t satoshis,uint64_t destsatoshis)
