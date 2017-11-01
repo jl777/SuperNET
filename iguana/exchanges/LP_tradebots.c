@@ -102,7 +102,7 @@ double LP_pricevol_invert(double *basevolumep,double maxprice,double relvolume)
     *basevolumep = 0.;
     if ( maxprice > SMALLVAL && maxprice < SATOSHIDEN )
     {
-        *basevolumep = (relvolume * maxprice);
+        *basevolumep = (relvolume / maxprice);
         return(1. /  maxprice);
     }
     return(0.);
@@ -122,7 +122,7 @@ cJSON *LP_tradebot_tradejson(struct LP_tradebot_trade *tp,int32_t dispflag)
         }
         else
         {
-            price = LP_pricevol_invert(&basevol,tp->basevol / tp->relvol,tp->relvol);
+            price = LP_pricevol_invert(&basevol,tp->relvol / tp->basevol,tp->relvol);
             jaddnum(item,"price",price);
             jaddnum(item,"volume",basevol);
         }
@@ -316,8 +316,8 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
         bot->dispdir = dispdir, bot->maxprice = maxprice, bot->totalrelvolume = relvolume;
         bot->started = (uint32_t)time(NULL);
         if ( dispdir > 0 )
-            sprintf(bot->name,"%s_%s.%d",base,rel,bot->started);
-        else sprintf(bot->name,"%s_%s.%d",rel,base,bot->started);
+            sprintf(bot->name,"buy_%s_%s.%d",base,rel,bot->started);
+        else sprintf(bot->name,"sell_%s_%s.%d",rel,base,bot->started);
         bot->id = calc_crc32(0,(uint8_t *)bot,sizeof(*bot));
         LP_tradebotadd(bot);
         return(jprint(LP_tradebot_json(bot),1));
@@ -348,7 +348,7 @@ char *LP_tradebot_limitsell(void *ctx,int32_t pubsock,cJSON *argjson)
     if ( LP_priceinfofind(base) != 0 && LP_priceinfofind(rel) != 0 && price > SMALLVAL && price < SATOSHIDEN && basevolume > 0.0001 && basevolume < SATOSHIDEN )
     {
         maxprice = 1. / price;
-        relvolume = (price * basevolume);
+        relvolume = (maxprice * basevolume);
         return(LP_tradebot_buy(-1,rel,base,maxprice,relvolume));
     }
     return(clonestr("{\"error\":\"invalid parameter\"}"));
