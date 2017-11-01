@@ -102,7 +102,7 @@ double LP_pricevol_invert(double *basevolumep,double maxprice,double relvolume)
     *basevolumep = 0.;
     if ( maxprice > SMALLVAL && maxprice < SATOSHIDEN )
     {
-        *basevolumep = (relvolume / maxprice);
+        *basevolumep = (relvolume * maxprice);
         return(1. /  maxprice);
     }
     return(0.);
@@ -147,7 +147,7 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
         jaddstr(json,"base",bot->base);
         jaddstr(json,"rel",bot->rel);
         jaddnum(json,"maxprice",bot->maxprice);
-        jaddnum(json,"totalvolume",bot->totalrelvolume);
+        jaddnum(json,"totalrelvolume",bot->totalrelvolume);
         if ( (vol= bot->relsum) > SMALLVAL )
         {
             jaddnum(json,"aveprice",bot->basesum/vol);
@@ -160,7 +160,7 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
         jaddstr(json,"rel",bot->base);
         aveprice = LP_pricevol_invert(&basevolume,bot->maxprice,bot->totalrelvolume);
         jaddnum(json,"minprice",aveprice);
-        jaddnum(json,"totalvolume",basevolume);
+        jaddnum(json,"totalbasevolume",basevolume);
         if ( (vol= bot->relsum) > SMALLVAL )
         {
             aveprice = LP_pricevol_invert(&basevolume,bot->basesum / vol,vol);
