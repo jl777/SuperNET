@@ -257,6 +257,8 @@ bot_resume(botid)\n\
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
             else return(basilisk_swaplist(0,0));
         }
+        else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
+            return(retstr);
         if ( base != 0 && rel != 0 )
         {
             double price,bid,ask;
@@ -453,8 +455,6 @@ bot_resume(botid)\n\
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
         else if ( strcmp(method,"trusted") == 0 )
             return(LP_pubkey_trusted());
-        else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
-            return(retstr);
     } // end of protected localhost commands
     if ( IAMLP == 0 )
     {
