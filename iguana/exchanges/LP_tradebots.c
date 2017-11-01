@@ -257,8 +257,10 @@ void LP_tradebot_timeslice(struct LP_tradebot *bot)
         {
             //if ( (rand() % 100) == 0 )
             {
-                r = (double)(91 + (rand()%10))/100.;
-                relvol = bot->totalrelvolume * 0.1 * r;
+                r = (double)(51 + (rand()%50))/100.;
+                relvol = (bot->totalrelvolume - bot->relsum);
+                if ( relvol > (bot->totalrelvolume * .1) )
+                    relvol *= r;
                 r = (double)(96 + (rand()%5))/100.;
                 p = LP_pricevol_invert(&v,bot->maxprice * r,relvol);
                 if ( bot->dispdir > 0 )
