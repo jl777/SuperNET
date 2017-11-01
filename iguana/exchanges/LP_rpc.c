@@ -397,7 +397,7 @@ int32_t LP_getheight(struct iguana_info *coin)
     return(height);
 }
 
-uint64_t LP_smartbalance(struct iguana_info *coin)
+uint64_t LP_RTsmartbalance(struct iguana_info *coin)
 {
     cJSON *array,*item; char buf[512],*retstr; int32_t i,n; uint64_t valuesum,value;
     valuesum = 0;

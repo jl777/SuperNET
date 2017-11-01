@@ -399,7 +399,7 @@ char *LP_tradebot_list(void *ctx,int32_t pubsock,cJSON *argjson)
 
 char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,double relvolume)
 {
-    struct LP_tradebot *bot; int32_t i,n; cJSON *array,*item,*retjson; uint64_t txfees,balance=0; struct iguana_info *basecoin,*relcoin;
+    struct LP_tradebot *bot; double shortfall; int32_t i,n; cJSON *array,*item,*retjson; uint64_t txfees,balance=0,abalance=0; struct iguana_info *basecoin,*relcoin;
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( basecoin == 0 || relcoin == 0 || basecoin->inactive != 0 || relcoin->inactive != 0 )
@@ -412,22 +412,43 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
             {
                 item = jitem(array,i);
                 //valuesum += j64bits(item,"value") + j64bits(item,"value2");
-                balance += j64bits(item,"satoshis");
+                abalance += j64bits(item,"satoshis");
             }
         }
         free_json(array);
     }
     txfees = 10 * relcoin->txfee;
-    if ( dstr(balance) < relvolume + dstr(txfees) )
+    if ( dstr(abalance) < relvolume + dstr(txfees) )
     {
-        printf("%s inventory balance only %.8f, less than relvolume %.8f + txfees %.8f\n",rel,dstr(balance),relvolume,dstr(txfees));
+        printf("%s inventory balance only %.8f, less than relvolume %.8f + txfees %.8f\n",rel,dstr(abalance),relvolume,dstr(txfees));
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"error","not enough funds");
         jaddstr(retjson,"coin",rel);
-        jaddnum(retjson,"balance",dstr(balance));
+        jaddnum(retjson,"balance",dstr(abalance));
         jaddnum(retjson,"relvolume",relvolume);
         jaddnum(retjson,"txfees",dstr(txfees));
-        jaddnum(retjson,"shortfall",(relvolume + dstr(txfees)) - dstr(balance));
+        shortfall = (relvolume + dstr(txfees)) - dstr(balance);
+        jaddnum(retjson,"shortfall",shortfall);
+        if ( (balance= LP_RTsmartbalance(relcoin)) > abalance+SATOSHIDEN*shortfall )
+        {
+            char *withdrawstr; cJSON *outputjson,*withdrawjson,*outputs,*item;
+            outputjson = cJSON_CreateObject();
+            outputs = cJSON_CreateArray();
+            item = cJSON_CreateObject();
+            jaddnum(item,relcoin->smartaddr,relvolume+dstr(txfees));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,relcoin->smartaddr,(relvolume+dstr(txfees))/777);
+            jaddi(outputs,item);
+            jadd(outputjson,"outputs",outputs);
+            if ( (withdrawstr= LP_withdraw(relcoin,outputjson)) != 0 )
+            {
+                if ( (withdrawjson= cJSON_Parse(withdrawstr)) != 0 )
+                    jadd(retjson,"withdraw",withdrawjson);
+                free(withdrawstr);
+            }
+            free_json(outputjson);
+        }
         return(jprint(retjson,1));
     }
     printf("disp.%d tradebot_buy(%s / %s) maxprice %.8f relvolume %.8f\n",dispdir,base,rel,maxprice,relvolume);

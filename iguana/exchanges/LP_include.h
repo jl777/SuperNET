@@ -356,7 +356,7 @@ uint16_t LP_psock_get(char *connectaddr,char *connectaddr2,char *publicaddr,int3
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
-uint64_t LP_smartbalance(struct iguana_info *coin);
+uint64_t LP_RTsmartbalance(struct iguana_info *coin);
 int32_t LP_getheight(struct iguana_info *coin);
 int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg);
 struct iguana_info *LP_coinfind(char *symbol);
