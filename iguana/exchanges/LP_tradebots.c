@@ -104,7 +104,7 @@ double LP_pricevol_invert(double *basevolumep,double maxprice,double relvolume)
     if ( maxprice > SMALLVAL && maxprice < SATOSHIDEN )
     {
         price = (1. / maxprice);
-        *basevolumep = (relvolume * maxprice);
+        *basevolumep = (relvolume * price);
         return(price);
     }
     return(0.);
@@ -354,7 +354,7 @@ char *LP_tradebot_limitsell(void *ctx,int32_t pubsock,cJSON *argjson)
     basevolume = jdouble(argjson,"basevolume");
     if ( LP_priceinfofind(base) != 0 && LP_priceinfofind(rel) != 0 && price > SMALLVAL && price < SATOSHIDEN && basevolume > 0.0001 && basevolume < SATOSHIDEN )
     {
-        maxprice = 1. / price;
+        maxprice = price;
         relvolume = (price * basevolume);
         p = LP_pricevol_invert(&v,maxprice,relvolume);
         printf("minprice %.8f basevolume %.8f -> (%.8f %.8f) -> (%.8f %.8f)\n",price,basevolume,maxprice,relvolume,p,v);
