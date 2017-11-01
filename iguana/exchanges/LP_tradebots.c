@@ -324,11 +324,13 @@ void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid)
 
 void LP_tradebot_timeslices(void *ctx)
 {
-    struct LP_tradebot_trade *tp; struct LP_tradebot *bot,*tmp; int32_t i,lastnumfinished = 0;
+    struct LP_tradebot_trade *tp; struct iguana_info *relcoin; struct LP_tradebot *bot,*tmp; int32_t i,lastnumfinished = 0;
     while ( 1 )
     {
         DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
         {
+            if ( (relcoin= LP_coinfind(bot->rel)) != 0 )
+                LP_listunspent_issue(bot->rel,relcoin->smartaddr,1);
             if ( bot->numpending > 0 && LP_numfinished > lastnumfinished )
             {
                 // expire pending trades and see if any still need their requestid/quoteid
