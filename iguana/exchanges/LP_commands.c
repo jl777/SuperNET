@@ -141,6 +141,14 @@ snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
 stop()\n\
+bot_list()\n\
+bot_buy(base, rel, maxprice, relvolume) -> botid\n\
+bot_sell(base, rel, minprice, basevolume) -> botid\n\
+bot_settings(botid, newprice, newvolume)\n\
+bot_status(botid)\n\
+bot_stop(botid)\n\
+bot_pause(botid)\n\
+bot_resume(botid)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
@@ -249,6 +257,8 @@ stop()\n\
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
             else return(basilisk_swaplist(0,0));
         }
+        else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
+            return(retstr);
         if ( base != 0 && rel != 0 )
         {
             double price,bid,ask;

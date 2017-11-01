@@ -362,9 +362,31 @@ bits256 validate_merkle(int32_t pos,bits256 txid,cJSON *proofarray,int32_t proof
     return(hash);
 }
 
+bits256 LP_merkleroot(struct iguana_info *coin,struct electrum_info *ep,int32_t height)
+{
+    cJSON *hdrobj; bits256 merkleroot;
+    memset(merkleroot.bytes,0,sizeof(merkleroot));
+    if ( coin->cachedmerkleheight == height )
+        return(coin->cachedmerkle);
+    if ( (hdrobj= electrum_getheader(coin->symbol,ep,&hdrobj,height)) != 0 )
+    {
+        if ( jobj(hdrobj,"merkle_root") != 0 )
+        {
+            merkleroot = jbits256(hdrobj,"merkle_root");
+            if ( bits256_nonz(merkleroot) != 0 )
+            {
+                coin->cachedmerkle = merkleroot;
+                coin->cachedmerkleheight = height;
+            }
+        }
+        free_json(hdrobj);
+    } else printf("couldnt get header for ht.%d\n",height);
+    return(merkleroot);
+}
+
 int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256 txid,int32_t height)
 {
-    cJSON *merkobj,*merkles,*hdrobj; bits256 roothash,merkleroot; int32_t m,SPV = 0;
+    cJSON *merkobj,*merkles; bits256 roothash,merkleroot; int32_t m,SPV = 0;
     if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
     {
         char str[65],str2[65],str3[65];
@@ -373,20 +395,16 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
         if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 )
         {
             roothash = validate_merkle(jint(merkobj,"pos"),txid,merkles,m);
-            if ( (hdrobj= electrum_getheader(coin->symbol,ep,&hdrobj,height)) != 0 )
+            merkleroot = LP_merkleroot(coin,ep,height);
+            if ( bits256_nonz(merkleroot) != 0 )
             {
-                if ( jobj(hdrobj,"merkle_root") != 0 )
+                if ( bits256_cmp(merkleroot,roothash) == 0 )
                 {
-                    merkleroot = jbits256(hdrobj,"merkle_root");
-                    if ( bits256_cmp(merkleroot,roothash) == 0 )
-                    {
-                        SPV = height;
-                        //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
-                    }
-                    else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s (%s)\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot),jprint(hdrobj,0));
-                } else SPV = 0;
-                free_json(hdrobj);
-            } else printf("couldnt get header for ht.%d\n",height);
+                    SPV = height;
+                    //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
+                }
+                else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
+            } else SPV = 0;
         }
         if ( SPV < 0 )
         {
