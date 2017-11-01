@@ -278,7 +278,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                                 else if ( (bot->pendrelsum+bot->relsum) >= bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= bot->totalbasevolume-SMALLVAL )
                                     bot->pause = (uint32_t)time(NULL);
                                 printf("%s\n",jprint(LP_tradebot_json(bot),1));
-                            } else printf("didnt get any trade pending %s\n",bot->name);
+                            } else printf("didnt get any trade pending %s\n\n",bot->name);
                             free_json(pending);
                         } else printf("%s\n",retstr);
                         free(retstr);
