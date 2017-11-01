@@ -100,8 +100,11 @@ cJSON *LP_tradebot_tradejson(struct LP_tradebot_trade *tp,int32_t dispflag)
     double price,basevol; cJSON *item = cJSON_CreateObject();
     if ( tp == 0 )
         return(cJSON_Parse("{}"));
-    jaddnum(item,"requestid",tp->requestid);
-    jaddnum(item,"quoteid",tp->quoteid);
+    if ( tp->requestid != 0 && tp->quoteid != 0 )
+    {
+        jaddnum(item,"requestid",tp->requestid);
+        jaddnum(item,"quoteid",tp->quoteid);
+    } else jaddnum(item,"tradeid",tp->tradeid);
     if ( tp->basevol > SMALLVAL && tp->relvol > SMALLVAL )
     {
         if ( dispflag > 0 )
@@ -295,7 +298,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
         bot->pause = (uint32_t)time(NULL);
 }
 
-void LP_tradebot_finished(uint32_t tradeid)
+void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid)
 {
     struct LP_tradebot *bot,*tmp; int32_t i; struct LP_tradebot_trade *tp;
     DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
@@ -304,11 +307,14 @@ void LP_tradebot_finished(uint32_t tradeid)
         {
             if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->tradeid == tradeid )
             {
+                tp->requestid = requestid;
+                tp->quoteid = quoteid;
                 bot->pendbasesum -= tp->basevol, bot->basesum += tp->basevol;
                 bot->pendrelsum -= tp->relvol, bot->relsum += tp->relvol;
                 bot->numpending--, bot->completed++;
-                printf("detected completion aliceid.%llx r.%u q.%u\n",(long long)tp->aliceid,tp->requestid,tp->quoteid);
+                printf("bot.%u detected completion tradeid.%u aliceid.%llx r.%u q.%u\n",bot->id,tp->tradeid,(long long)tp->aliceid,tp->requestid,tp->quoteid);
                 tp->finished = (uint32_t)time(NULL);
+                printf("%s\n",jprint(LP_tradebot_json(bot),1));
                 break;
             }
         }
@@ -373,7 +379,6 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                //valuesum += j64bits(item,"value") + j64bits(item,"value2");
                 abalance += j64bits(item,"satoshis");
             }
         }

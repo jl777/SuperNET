@@ -1110,7 +1110,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         LP_numfinished++;
         printf("SWAP %u-%u finished LP_numfinished.%d !\n",requestid,quoteid,LP_numfinished);
         if ( rswap.tradeid != 0 )
-            LP_tradebot_finished(rswap.tradeid);
+            LP_tradebot_finished(rswap.tradeid,rswap.requestid,rswap.quoteid);
         sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,rswap.requestid,rswap.quoteid), OS_compatible_path(fname);
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
