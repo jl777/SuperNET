@@ -910,6 +910,8 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"cant find alice utxo that is big enough\"}"));
     if ( destsatoshis < autxo->S.satoshis )
         autxo->S.satoshis = destsatoshis - 2*desttxfee;
+    else if ( autxo->S.satoshis < destsatoshis )
+        destsatoshis = autxo->S.satoshis - 2*desttxfee;
     if ( destsatoshis < (autxo->payment.value / LP_MINCLIENTVOL) || autxo->payment.value < desttxfee*LP_MINSIZE_TXFEEMULT )
     {
         printf("destsatoshis %.8f vs utxo %.8f this would have triggered an quote error -13\n",dstr(destsatoshis),dstr(autxo->payment.value));
