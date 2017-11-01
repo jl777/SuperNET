@@ -430,6 +430,8 @@ char *LP_tradebot_resume(void *ctx,int32_t pubsock,cJSON *argjson,uint32_t botid
 char *LP_istradebots_command(void *ctx,int32_t pubsock,char *method,cJSON *argjson)
 {
     uint32_t botid;
+    if ( strncmp("bot_",method,strlen("bot_")) != 0 )
+        return(0);
     printf("istradebots.(%s)\n",method);
     if ( strcmp(method,"bot_list") == 0 )
         return(LP_tradebot_list(ctx,pubsock,argjson));
