@@ -274,7 +274,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
                     continue;
                 }
                 bestutxo = utxo;
-            } else printf("skip alice utxo %.8f vs dest %.8f\n",dstr(utxo->S.satoshis),dstr(destsatoshis));
+            } // else printf("skip alice utxo %.8f vs dest %.8f\n",dstr(utxo->S.satoshis),dstr(destsatoshis));
         }
     }
     return(bestutxo);

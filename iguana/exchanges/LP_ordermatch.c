@@ -599,7 +599,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_quoteparse(&Q,argjson);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-2*Q.txfee,Q.destcoin,Q.destsatoshis-2*Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         LP_tradecommand_log(argjson);
-        printf("LP_tradecommand: check received method %s aliceid.%llx\n",method,(long long)Q.aliceid);
+        //printf("LP_tradecommand: check received method %s aliceid.%llx\n",method,(long long)Q.aliceid);
         retval = 1;
         if ( strcmp(method,"reserved") == 0 )
         {
@@ -616,7 +616,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         {
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
-                printf("alice %s received CONNECTED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
+                //printf("alice %s received CONNECTED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
                 if ( (retstr= LP_connectedalice(argjson)) != 0 )
                     free(retstr);
             }
@@ -790,7 +790,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
     else max = 40;
     utxos = calloc(max,sizeof(*utxos));
     LP_txfees(&txfee,&desttxfee,base,autxo->coin);
-    printf("LP_buyutxo maxprice %.8f relvol %.8f %s/%s %.8f %.8f\n",maxprice,dstr(autxo->S.satoshis),base,autxo->coin,dstr(txfee),dstr(desttxfee));
+    //printf("LP_buyutxo maxprice %.8f relvol %.8f %s/%s %.8f %.8f\n",maxprice,dstr(autxo->S.satoshis),base,autxo->coin,dstr(txfee),dstr(desttxfee));
     if ( (obookstr= LP_orderbook(base,autxo->coin,duration)) != 0 )
     {
         if ( (orderbook= cJSON_Parse(obookstr)) != 0 )

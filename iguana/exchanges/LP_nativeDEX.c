@@ -147,7 +147,7 @@ char *LP_decrypt(uint8_t *ptr,int32_t *recvlenp)
             {
                 printf("unexpected len %d vs recvlen.%d\n",(int32_t)strlen(jsonstr)+1,recvlen);
                 jsonstr = 0;
-            } else printf("decrypted (%s)\n",jsonstr);
+            } //else printf("decrypted (%s)\n",jsonstr);
         }
     } else printf("cipher.%d too big for %d\n",cipherlen,(int32_t)sizeof(decoded));
     *recvlenp = recvlen;
