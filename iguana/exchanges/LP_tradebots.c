@@ -270,7 +270,7 @@ void LP_tradebot_timeslice(struct LP_tradebot *bot)
                     minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
                     printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s min %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p);
                 }
-                if ( (rand() % 2) == 0 )
+                if ( 1 || (rand() % 2) == 0 )
                 {
                     bot->relsum += relvol;
                     bot->basesum += v;
