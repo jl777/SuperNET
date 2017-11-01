@@ -23,8 +23,8 @@
 
 #ifdef FROM_JS
 #include <emscripten.h>
-#define sleep(x) emscripten_sleep((x) * 1000)
-void emscripten_usleep(int32_t x);
+#define sleep(x) emscripten_usleep((x) * 1000000)
+void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define usleep(x) emscripten_usleep(x)
 // ./autogen.sh
 // emconfigure ./configure CFLAGS="-s PTHREAD_POOL_SIZE=8 -s USE_PTHREADS=1 -O2"
@@ -40,7 +40,7 @@ void emscripten_usleep(int32_t x);
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
 #define LP_AUTOTRADE_TIMEOUT 15
 #define ELECTRUM_TIMEOUT 10
-#define LP_ELECTRUM_MAXERRORS 3
+#define LP_ELECTRUM_MAXERRORS 777
 #define LP_MEMPOOL_TIMEINCR 10
 
 // RTmetrics

@@ -18,6 +18,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// limit bot
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -25,7 +26,7 @@
 
 #include <stdio.h>
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[1000];
 int32_t num_Reserved_msgs,max_Reserved_msgs;
@@ -105,6 +106,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_forwarding.c"
 #include "LP_signatures.c"
 #include "LP_ordermatch.c"
+#include "LP_tradebots.c"
 #include "LP_portfolio.c"
 #include "LP_messages.c"
 #include "LP_commands.c"
@@ -883,6 +885,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_butxomutex);
     portable_mutex_init(&LP_reservedmutex);
     portable_mutex_init(&LP_nanorecvsmutex);
+    portable_mutex_init(&LP_tradebotsmutex);
     myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
 #ifndef FROM_JS
@@ -1023,6 +1026,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_swapsloop for port.%u\n",myport);
+        exit(-1);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradebot_timeslices,(void *)myipaddr) != 0 )
+    {
+        printf("error launching LP_tradebot_timeslices for port.%u\n",myport);
         exit(-1);
     }
     int32_t nonz;

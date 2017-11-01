@@ -668,7 +668,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                         {
                             if ( bits256_cmp(txid,jbits256(txjson,"txid")) != 0 )
                             {
-                                printf("txid mismatch error ht.%d i.%d\n",loadheight,i);
+                                printf("%s txid mismatch error ht.%d i.%d\n",coin->symbol,loadheight,i);
                                 continue;
                             }
                             vouts = jarray(&numvouts,txjson,"vout");

@@ -141,6 +141,14 @@ snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
 stop()\n\
+bot_list()\n\
+bot_buy(base, rel, maxprice, relvolume) -> botid\n\
+bot_sell(base, rel, minprice, basevolume) -> botid\n\
+bot_settings(botid, newprice, newvolume)\n\
+bot_status(botid)\n\
+bot_stop(botid)\n\
+bot_pause(botid)\n\
+bot_resume(botid)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
@@ -445,6 +453,8 @@ stop()\n\
             return(LP_pubkey_trustset(jbits256(argjson,"pubkey"),jint(argjson,"trust")));
         else if ( strcmp(method,"trusted") == 0 )
             return(LP_pubkey_trusted());
+        else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
+            return(retstr);
     } // end of protected localhost commands
     if ( IAMLP == 0 )
     {
