@@ -411,7 +411,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     qp->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
     LP_query(ctx,myipaddr,mypubsock,"request",qp);
     LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_expiration = qp->timestamp + timeout;
-    return(clonestr("{\"result\":\"success\"}"));
+    return(LP_recent_swaps(0));
 }
 
 int32_t LP_quotecmp(struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2)
@@ -625,11 +625,11 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 printf("this node has no price for %s/%s\n",Q.srccoin,Q.destcoin);
                 return(retval);
             }
-            if ( coin->electrum != 0 )
+            /*if ( coin->electrum != 0 )
             {
                 printf("electrum can only be for alice\n");
                 return(retval);
-            }
+            }*/
             if ( LP_aliceonly(Q.srccoin) > 0 )
             {
                 printf("{\"error\":\"GAME can only be alice coin\"}\n");
@@ -783,7 +783,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
         return(0);
     if ( basecoin->electrum == 0 )
         max = 1000;
-    else max = 20;
+    else max = 40;
     utxos = calloc(max,sizeof(*utxos));
     LP_txfees(&txfee,&desttxfee,base,autxo->coin);
     printf("LP_buyutxo maxprice %.8f relvol %.8f %s/%s %.8f %.8f\n",maxprice,dstr(autxo->S.satoshis),base,autxo->coin,dstr(txfee),dstr(desttxfee));

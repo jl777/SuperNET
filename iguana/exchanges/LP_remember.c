@@ -1130,7 +1130,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     if ( rswap.origfinishedflag == 0 && rswap.finishedflag != 0 )
     {
         char fname[1024],*itemstr; FILE *fp;
-        printf("SWAP %u-%u finished!\n",requestid,quoteid);
+        LP_numfinished++;
+        printf("SWAP %u-%u finished LP_numfinished.%d !\n",requestid,quoteid,LP_numfinished);
         sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,rswap.requestid,rswap.quoteid), OS_compatible_path(fname);
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
@@ -1315,6 +1316,7 @@ char *LP_recent_swaps(int32_t limit)
         jaddstr(item,"alice",LP_Alicequery.destcoin);
         jaddstr(item,"rel",LP_Alicequery.destcoin);
         jaddnum(item,"relvalue",dstr(LP_Alicequery.destsatoshis));
+        jaddnum(item,"aliceid",LP_aliceid_calc(LP_Alicequery.desttxid,LP_Alicequery.destvout,LP_Alicequery.feetxid,LP_Alicequery.feevout));
         jadd(retjson,"pending",item);
     } else Alice_expiration = 0;
     return(jprint(retjson,1));

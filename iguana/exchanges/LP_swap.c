@@ -798,7 +798,7 @@ void LP_bobloop(void *_swap)
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,30);
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,INSTANTDEX_LOCKTIME*2,30);
                 }
             }
         }
@@ -864,7 +864,7 @@ void LP_aliceloop(void *_swap)
                     }*/
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,4*3600,30);
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,INSTANTDEX_LOCKTIME*2,30);
                 }
             }
         }

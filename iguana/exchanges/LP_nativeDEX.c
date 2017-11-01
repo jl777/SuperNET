@@ -49,7 +49,7 @@ uint32_t LP_lastnonce,LP_counter;
 int32_t LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
-int32_t LP_showwif,IAMLP = 0;
+int32_t LP_numfinished,LP_showwif,IAMLP = 0;
 double LP_profitratio = 1.;
 
 struct LP_privkey { bits256 privkey; uint8_t rmd160[20]; };
@@ -1028,9 +1028,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradebot_timeslices,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradebot_timeslices,ctx) != 0 )
     {
-        printf("error launching LP_tradebot_timeslices for port.%u\n",myport);
+        printf("error launching LP_tradebot_timeslices\n");
         exit(-1);
     }
     int32_t nonz;

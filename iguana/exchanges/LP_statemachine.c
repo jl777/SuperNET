@@ -2275,7 +2275,34 @@ void LP_price_broadcastloop(void *ctx)
  retstr = clonestr("{\"result\":\"success\"}");
  } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
  }
- else*/ #ifdef FROM_JS
+ else*/
+
+/*relvol = bot->totalrelvolume * .1;
+ p = LP_pricevol_invert(&v,bot->maxprice,relvol);
+ if ( bot->dispdir > 0 )
+ {
+ printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s, price %.8f relvol %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base,bot->maxprice,relvol);
+ }
+ else
+ {
+ minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
+ printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s price %.8f relvol %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p,relvol);
+ }
+ if ( (rand() % 2) == 0 )
+ {
+ bot->relsum += relvol;
+ bot->basesum += v;
+ bot->completed++;
+ }
+ else
+ {
+ bot->pendrelsum += relvol;
+ bot->pendbasesum += v;
+ bot->numpending++;
+ }
+ bot->numtrades++;
+ */
+#ifdef FROM_JS
 int32_t sentbytes,sock,peerind,maxind;
 if ( (maxind= LP_numpeers()) > 0 )
 peerind = (rand() % maxind) + 1;
