@@ -113,6 +113,8 @@ double LP_pricevol_invert(double *basevolumep,double maxprice,double relvolume)
 cJSON *LP_tradebot_tradejson(struct LP_tradebot_trade *tp,int32_t dispflag)
 {
     double price,basevol; cJSON *item = cJSON_CreateObject();
+    if ( tp == 0 )
+        return(cJSON_Parse("{}"));
     jaddnum(item,"requestid",tp->requestid);
     jaddnum(item,"quoteid",tp->quoteid);
     if ( tp->basevol > SMALLVAL && tp->relvol > SMALLVAL )
@@ -272,12 +274,15 @@ void LP_tradebot_timeslice(struct LP_tradebot *bot)
                 {
                     bot->relsum += relvol;
                     bot->basesum += v;
+                    bot->completed++;
                 }
                 else
                 {
                     bot->pendrelsum += relvol;
                     bot->pendbasesum += v;
+                    bot->numpending++;
                 }
+                bot->numtrades++;
                 if ( bot->relsum >= bot->totalrelvolume-SMALLVAL || bot->basesum >= bot->totalbasevolume-SMALLVAL )
                     bot->dead = (uint32_t)time(NULL);
                 else if ( (bot->pendrelsum+bot->relsum) >= bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= bot->totalbasevolume-SMALLVAL )
