@@ -49,7 +49,7 @@ uint32_t LP_lastnonce,LP_counter;
 int32_t LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
-int32_t LP_showwif,IAMLP = 0;
+int32_t LP_numfinished,LP_showwif,IAMLP = 0;
 double LP_profitratio = 1.;
 
 struct LP_privkey { bits256 privkey; uint8_t rmd160[20]; };
@@ -147,7 +147,7 @@ char *LP_decrypt(uint8_t *ptr,int32_t *recvlenp)
             {
                 printf("unexpected len %d vs recvlen.%d\n",(int32_t)strlen(jsonstr)+1,recvlen);
                 jsonstr = 0;
-            } else printf("decrypted (%s)\n",jsonstr);
+            } //else printf("decrypted (%s)\n",jsonstr);
         }
     } else printf("cipher.%d too big for %d\n",cipherlen,(int32_t)sizeof(decoded));
     *recvlenp = recvlen;
@@ -236,8 +236,8 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                         else
                         {
                             memset(zero.bytes,0,sizeof(zero));
-                            if ( (method= jstr(reqjson,"method")) != 0 && (strcmp(method,"request") == 0 || strcmp(method,"requested") == 0 || strcmp(method,"connect") == 0 || strcmp(method,"connected") == 0) )
-                                    printf("broadcast.(%s)\n",Broadcaststr);
+                            /*if ( (method= jstr(reqjson,"method")) != 0 && (strcmp(method,"request") == 0 || strcmp(method,"requested") == 0 || strcmp(method,"connect") == 0 || strcmp(method,"connected") == 0) )
+                                    printf("broadcast.(%s)\n",Broadcaststr);*/
                             LP_reserved_msg("","",zero,jprint(reqjson,0));
                         }
                         retstr = clonestr("{\"result\":\"success\"}");
@@ -1028,9 +1028,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradebot_timeslices,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradebot_timeslices,ctx) != 0 )
     {
-        printf("error launching LP_tradebot_timeslices for port.%u\n",myport);
+        printf("error launching LP_tradebot_timeslices\n");
         exit(-1);
     }
     int32_t nonz;

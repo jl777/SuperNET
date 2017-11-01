@@ -397,7 +397,7 @@ int32_t LP_getheight(struct iguana_info *coin)
     return(height);
 }
 
-uint64_t LP_smartbalance(struct iguana_info *coin)
+uint64_t LP_RTsmartbalance(struct iguana_info *coin)
 {
     cJSON *array,*item; char buf[512],*retstr; int32_t i,n; uint64_t valuesum,value;
     valuesum = 0;
@@ -694,7 +694,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
             }
             else if ( IAMLP == 0 )
             {
-                printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
+                //printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
                 LP_listunspent_query(coin->symbol,coin->smartaddr);
                 if ( fullflag != 0 )
                 {
@@ -862,7 +862,7 @@ char *LP_sendrawtransaction(char *symbol,char *signedtx)
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"sendrawtransaction",paramstr);
-        printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
+        //printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
         free(paramstr);
     }
     else

@@ -1613,6 +1613,65 @@ void LP_address_monitor(struct LP_pubkeyinfo *pubp)
  return(LP_autotrade(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
  } else return(clonestr("{\"error\":\"no price set\"}"));
  }*/
+if ( flag != 0 )
+{
+    // need to find the requestid/quoteid for aliceid
+    if ( (retstr= basilisk_swapentries(bot->base,bot->rel,0)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(retjson)) != 0 )
+            {
+                for (flag=j=0; j<n; j++)
+                {
+                    item = jitem(retjson,j);
+                    aliceid = j64bits(item,"aliceid");
+                    for (i=0; i<bot->numtrades; i++)
+                    {
+                        if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->requestid == 0 && tp->quoteid == 0 )
+                        {
+                            if ( tp->aliceid == aliceid )
+                            {
+                                tp->requestid = juint(item,"requestid");
+                                tp->quoteid = juint(item,"quoteid");
+                                printf("found aliceid.%llx to set requestid.%u quoteid.%u\n",(long long)aliceid,tp->requestid,tp->quoteid);
+                                flag = 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+}
+// check for finished pending swap
+for (i=0; i<bot->numtrades; i++)
+{
+    if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->requestid != 0 && tp->quoteid != 0 )
+    {
+        if ( (retstr= basilisk_swapentry(tp->requestid,tp->quoteid)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (status= jstr(retjson,"status")) != 0 && strcmp(status,"finished") == 0 )
+                {
+                    bot->pendbasesum -= tp->basevol, bot->basesum += tp->basevol;
+                    bot->pendrelsum -= tp->relvol, bot->relsum += tp->relvol;
+                    bot->numpending--, bot->completed++;
+                    printf("detected completion aliceid.%llx r.%u q.%u\n",(long long)tp->aliceid,tp->requestid,tp->quoteid);
+                    tp->finished = (uint32_t)time(NULL);
+                }
+                free_json(retjson);
+            }
+            free(retstr);
+        }
+    }
+}
+}
+
 int32_t LP_utxopurge(int32_t allutxos)
 {
     char str[65]; struct LP_utxoinfo *utxo,*tmp; int32_t iambob,n = 0;
@@ -2275,7 +2334,34 @@ void LP_price_broadcastloop(void *ctx)
  retstr = clonestr("{\"result\":\"success\"}");
  } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
  }
- else*/ #ifdef FROM_JS
+ else*/
+
+/*relvol = bot->totalrelvolume * .1;
+ p = LP_pricevol_invert(&v,bot->maxprice,relvol);
+ if ( bot->dispdir > 0 )
+ {
+ printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s, price %.8f relvol %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base,bot->maxprice,relvol);
+ }
+ else
+ {
+ minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
+ printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s price %.8f relvol %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p,relvol);
+ }
+ if ( (rand() % 2) == 0 )
+ {
+ bot->relsum += relvol;
+ bot->basesum += v;
+ bot->completed++;
+ }
+ else
+ {
+ bot->pendrelsum += relvol;
+ bot->pendbasesum += v;
+ bot->numpending++;
+ }
+ bot->numtrades++;
+ */
+#ifdef FROM_JS
 int32_t sentbytes,sock,peerind,maxind;
 if ( (maxind= LP_numpeers()) > 0 )
 peerind = (rand() % maxind) + 1;

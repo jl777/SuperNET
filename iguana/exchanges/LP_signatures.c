@@ -35,7 +35,7 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
     rp->desthash = desthash;
     rp->destamount = destsatoshis;
     rp->quoteid = basilisk_quoteid(rp);
-    printf("r.%u %u, q.%u %u: %s %.8f -> %s %.8f\n",rp->timestamp,rp->requestid,rp->quotetime,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount));
+    //printf("r.%u %u, q.%u %u: %s %.8f -> %s %.8f\n",rp->timestamp,rp->requestid,rp->quotetime,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount));
     return(rp);
 }
 
@@ -44,6 +44,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     double price; cJSON *retjson = cJSON_CreateObject();
     jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jadd64bits(retjson,"aliceid",qp->aliceid);
+    jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
     jaddstr(retjson,"rel",qp->destcoin);
     if ( qp->coinaddr[0] != 0 )
@@ -109,6 +110,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
     safecopy(qp->destaddr,jstr(argjson,"destaddr"),sizeof(qp->destaddr));
     qp->aliceid = j64bits(argjson,"aliceid");
+    qp->tradeid = juint(argjson,"tradeid");
     qp->timestamp = juint(argjson,"timestamp");
     qp->quotetime = juint(argjson,"quotetime");
     qp->txid = jbits256(argjson,"txid");
@@ -146,7 +148,7 @@ void LP_txfees(uint64_t *txfeep,uint64_t *desttxfeep,char *base,char *rel)
 {
     *txfeep = LP_txfeecalc(LP_coinfind(base),0,0);
     *desttxfeep = LP_txfeecalc(LP_coinfind(rel),0,0);
-    printf("LP_txfees(%.8f %.8f)\n",dstr(*txfeep),dstr(*desttxfeep));
+    //printf("LP_txfees(%.8f %.8f)\n",dstr(*txfeep),dstr(*desttxfeep));
 }
 
 int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *destcoin,double price,uint64_t satoshis,uint64_t destsatoshis)
@@ -680,8 +682,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     jaddnum(reqjson,"timestamp",time(NULL));
     msg = jprint(reqjson,1);
     msg2 = clonestr(msg);
-    // LP_addsig
-    printf("QUERY.(%s)\n",msg);
+    //printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs)-2 )
