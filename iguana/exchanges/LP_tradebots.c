@@ -250,22 +250,18 @@ void LP_tradebotadd(struct LP_tradebot *bot)
 
 void LP_tradebot_timeslice(struct LP_tradebot *bot)
 {
-    double minprice,basevol,relvol,p,v,r;
+    double minprice,basevol,relvol,p,v;
     if ( bot->dead == 0 )
     {
         if ( bot->pause == 0 )
         {
             //if ( (rand() % 100) == 0 )
             {
-                r = (double)(51 + (rand()%25))/100.;
-                relvol = (bot->totalrelvolume - bot->relsum);
-                if ( relvol > (bot->totalrelvolume * .1) )
-                    relvol *= r;
-                r = (double)(96 + (rand()%5))/100.;
-                p = LP_pricevol_invert(&v,bot->maxprice * r,relvol);
+                relvol = bot->totalrelvolume * .1;
+                p = LP_pricevol_invert(&v,bot->maxprice,relvol);
                 if ( bot->dispdir > 0 )
                 {
-                    printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s, price %.8f relvol %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base,bot->maxprice*r,relvol);
+                    printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s, price %.8f relvol %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base,bot->maxprice,relvol);
                 }
                 else
                 {
