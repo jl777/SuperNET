@@ -102,7 +102,7 @@ double LP_pricevol_invert(double *basevolumep,double maxprice,double relvolume)
     *basevolumep = 0.;
     if ( maxprice > SMALLVAL && maxprice < SATOSHIDEN )
     {
-        *basevolumep = (relvolume / maxprice);
+        *basevolumep = (relvolume * maxprice);
         return(1. /  maxprice);
     }
     return(0.);
@@ -284,6 +284,7 @@ void LP_tradebot_timeslices(void *ignore)
     struct LP_tradebot *bot,*tmp;
     while ( 1 )
     {
+        printf("LP_tradebot_timeslices\n");
         DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
         {
             portable_mutex_lock(&LP_tradebotsmutex);
