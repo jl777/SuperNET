@@ -280,7 +280,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                                 printf("%s\n",jprint(LP_tradebot_json(bot),1));
                             } else printf("didnt get any trade pending %s\n",bot->name);
                             free_json(pending);
-                        }
+                        } else printf("%s\n",retstr);
                         free(retstr);
                     }
                 }
@@ -418,9 +418,9 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
         free_json(array);
     }
     txfees = 10 * relcoin->txfee;
+    printf("%s inventory balance %.8f, relvolume %.8f + txfees %.8f\n",rel,dstr(abalance),relvolume,dstr(txfees));
     if ( dstr(abalance) < relvolume + dstr(txfees) )
     {
-        printf("%s inventory balance only %.8f, less than relvolume %.8f + txfees %.8f\n",rel,dstr(abalance),relvolume,dstr(txfees));
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"error","not enough funds");
         jaddstr(retjson,"coin",rel);
@@ -429,13 +429,19 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
         jaddnum(retjson,"txfees",dstr(txfees));
         shortfall = (relvolume + dstr(txfees)) - dstr(balance);
         jaddnum(retjson,"shortfall",shortfall);
-        if ( (balance= LP_RTsmartbalance(relcoin)) > abalance+SATOSHIDEN*shortfall )
+        if ( (balance= LP_RTsmartbalance(relcoin)) > abalance+SATOSHIDEN*(shortfall+relvolume/77.) )
         {
             char *withdrawstr; cJSON *outputjson,*withdrawjson,*outputs,*item;
             outputjson = cJSON_CreateObject();
             outputs = cJSON_CreateArray();
             item = cJSON_CreateObject();
             jaddnum(item,relcoin->smartaddr,relvolume+dstr(txfees));
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,relcoin->smartaddr,(relvolume+dstr(txfees))/777);
+            jaddi(outputs,item);
+            item = cJSON_CreateObject();
+            jaddnum(item,relcoin->smartaddr,(relvolume+dstr(txfees))/777);
             jaddi(outputs,item);
             item = cJSON_CreateObject();
             jaddnum(item,relcoin->smartaddr,(relvolume+dstr(txfees))/777);
