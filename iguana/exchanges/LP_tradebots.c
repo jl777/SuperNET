@@ -149,7 +149,7 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
         jaddstr(json,"rel",bot->rel);
         jaddnum(json,"maxprice",bot->maxprice);
         jaddnum(json,"totalrelvolume",bot->totalrelvolume);
-        LP_pricevol_invert(&basevolume,bot->maxprice,bot->totalrelvolume);
+        LP_pricevol_invert(&basevolume,1./bot->maxprice,bot->totalrelvolume);
         jaddnum(json,"totalbasevolume",basevolume);
         if ( (vol= bot->relsum) > SMALLVAL )
         {
@@ -254,7 +254,7 @@ void LP_tradebot_timeslice(struct LP_tradebot *bot)
     {
         if ( bot->pause == 0 )
         {
-            if ( (rand() % 100) == 0 )
+            //if ( (rand() % 100) == 0 )
             {
                 if ( bot->dispdir > 0 )
                 {
@@ -292,7 +292,7 @@ void LP_tradebot_timeslices(void *ignore)
             portable_mutex_unlock(&LP_tradebotsmutex);
             sleep(1);
         }
-        sleep(30);
+        sleep(10);
     }
 }
 
