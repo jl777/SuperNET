@@ -258,7 +258,7 @@ void LP_tradebot_timeslice(struct LP_tradebot *bot)
             //if ( (rand() % 100) == 0 )
             {
                 relvol = bot->totalrelvolume * 0.1;
-                p = LP_pricevol_invert(&v,bot->maxprice,relvol);
+                p = LP_pricevol_invert(&v,bot->maxprice,relvol) * (double)(91 + (rand()%10)/100.);
                 if ( bot->dispdir > 0 )
                 {
                     printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base);
