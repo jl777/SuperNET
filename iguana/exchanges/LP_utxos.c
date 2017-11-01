@@ -229,7 +229,7 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 
 struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
 {
-    uint64_t srcvalue,srcvalue2; struct LP_utxoinfo *utxo,*tmp,*bestutxo = 0; int32_t iambob = 0;
+    uint64_t srcvalue,srcvalue2; struct LP_utxoinfo *utxo,*tmp,*bestutxo = 0; int32_t bestsize,iambob = 0;
     if ( symbol == 0 || destsatoshis == 0 )
     {
         printf("LP_utxo_bestfit error symbol.%p %.8f\n",symbol,dstr(destsatoshis));
@@ -243,7 +243,28 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
             continue;
         if ( LP_isavailable(utxo) > 0 && LP_ismine(utxo) > 0 )
         {
-            if ( utxo->S.satoshis >= destsatoshis && (bestutxo == 0 || (bestutxo->S.satoshis < destsatoshis && utxo->S.satoshis >= destsatoshis) || (bestutxo->S.satoshis >= destsatoshis && utxo->S.satoshis < bestutxo->S.satoshis)) )
+            bestsize = 0;
+            if ( bestutxo == 0 )
+            {
+                if ( utxo->S.satoshis > destsatoshis/LP_MINCLIENTVOL )
+                    bestsize = 1;
+            }
+            else
+            {
+                if ( bestutxo->S.satoshis < destsatoshis )
+                {
+                    if ( utxo->S.satoshis > destsatoshis )
+                        bestsize = 1;
+                    else if ( utxo->S.satoshis > bestutxo->S.satoshis )
+                        bestsize = 1;
+                }
+                else
+                {
+                    if ( utxo->S.satoshis > destsatoshis && utxo->S.satoshis < bestutxo->S.satoshis )
+                        bestsize = 1;
+                }
+            }
+            if ( bestsize > 0 )
             {
                 if ( LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout) == 0 )
                 {
