@@ -411,6 +411,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     qp->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
     LP_query(ctx,myipaddr,mypubsock,"request",qp);
     LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_expiration = qp->timestamp + timeout;
+    printf("LP_trade %s/%s %.8f vol %.8f\n",qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis));
     return(LP_recent_swaps(0));
 }
 
@@ -905,6 +906,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     memset(pubkeys,0,sizeof(pubkeys));
     LP_txfees(&txfee,&desttxfee,base,rel);
     destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
+printf("call bestfit\n");
     if ( (autxo= LP_utxo_bestfit(rel,destsatoshis)) == 0 )
         return(clonestr("{\"error\":\"cant find alice utxo that is big enough\"}"));
     if ( destsatoshis < autxo->S.satoshis )
@@ -914,6 +916,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         printf("destsatoshis %.8f vs utxo %.8f this would have triggered an quote error -13\n",dstr(destsatoshis),dstr(autxo->payment.value));
         return(clonestr("{\"error\":\"cant find alice utxo that is small enough\"}"));
     }
+    printf("update metrics\n");
     LP_RTmetrics_update(base,rel);
     while ( 1 )
     {
@@ -929,6 +932,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
             return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
         maxiters = 200;
         qprice = 1. / SMALLVAL;
+printf("validate\n");
         for (i=0; i<maxiters; i++)
         {
             if ( (qprice= LP_quote_validate(autxo,0,&Q,0)) <= SMALLVAL )
