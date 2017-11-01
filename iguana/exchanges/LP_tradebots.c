@@ -142,9 +142,9 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
         jaddnum(json,"maxprice",bot->maxprice);
         jaddnum(json,"totalrelvolume",bot->totalrelvolume);
         jaddnum(json,"totalbasevolume",bot->totalbasevolume);
-        if ( (vol= bot->relsum) > SMALLVAL )
+        if ( (vol= bot->relsum) > SMALLVAL && bot->basesum > SMALLVAL )
         {
-            jaddnum(json,"aveprice",bot->basesum/vol);
+            jaddnum(json,"aveprice",vol/bot->basesum);
             jaddnum(json,"volume",vol);
         }
     }
@@ -157,9 +157,9 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
         jaddnum(json,"minprice",aveprice);
         jaddnum(json,"totalbasevolume",bot->totalrelvolume);
         jaddnum(json,"totalrelvolume",basevolume);
-        if ( (vol= bot->relsum) > SMALLVAL )
+        if ( (vol= bot->relsum) > SMALLVAL && bot->basesum > SMALLVAL )
         {
-            aveprice = LP_pricevol_invert(&basevolume,bot->basesum / vol,vol);
+            aveprice = LP_pricevol_invert(&basevolume,vol/bot->basesum,vol);
             jaddnum(json,"aveprice",aveprice);
             jaddnum(json,"volume",basevolume);
         }
@@ -279,9 +279,9 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                             if ( (pending= jobj(retjson2,"pending")) != 0 && juint(pending,"tradeid") == tradeid )
                             {
                                 bot->trades[bot->numtrades++] = LP_tradebot_pending(bot,pending,tradeid);
-                                if ( bot->relsum >= bot->totalrelvolume-SMALLVAL || bot->basesum >= bot->totalbasevolume-SMALLVAL )
+                                if ( bot->relsum >= 0.99*bot->totalrelvolume-SMALLVAL || bot->basesum >= 0.99*bot->totalbasevolume-SMALLVAL )
                                     bot->dead = (uint32_t)time(NULL);
-                                else if ( (bot->pendrelsum+bot->relsum) >= bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= bot->totalbasevolume-SMALLVAL )
+                                else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )
                                     bot->pause = (uint32_t)time(NULL);
                             } else printf("didnt get any trade pending %s %s\n\n",bot->name,retstr);
                             free_json(retjson2);
