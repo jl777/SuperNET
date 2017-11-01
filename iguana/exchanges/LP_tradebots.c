@@ -104,7 +104,7 @@ double LP_pricevol_invert(double *basevolumep,double maxprice,double relvolume)
     if ( maxprice > SMALLVAL && maxprice < SATOSHIDEN )
     {
         price = (1. / maxprice);
-        *basevolumep = (relvolume * price);
+        *basevolumep = (relvolume * maxprice);
         return(price);
     }
     return(0.);
