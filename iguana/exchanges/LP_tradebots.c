@@ -361,7 +361,7 @@ char *LP_tradebot_limitsell(void *ctx,int32_t pubsock,cJSON *argjson)
         relvolume = (price * basevolume);
         p = LP_pricevol_invert(&v,maxprice,relvolume);
         printf("minprice %.8f basevolume %.8f -> (%.8f %.8f) -> (%.8f %.8f)\n",price,basevolume,maxprice,relvolume,1./p,v);
-        return(LP_tradebot_buy(-1,rel,base,p,relvolume));
+        return(LP_tradebot_buy(-1,rel,base,p,v));
     }
     return(clonestr("{\"error\":\"invalid parameter\"}"));
 }
