@@ -179,10 +179,8 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
     array = cJSON_CreateArray();
     //LP_tradebot_calcstats(bot);
     for (i=0; i<bot->numtrades; i++)
-    {
         jaddi(array,LP_tradebot_tradejson(bot->trades[i],bot->dispdir));
-        jadd(json,"trades",array);
-    }
+    jadd(json,"trades",array);
     if ( bot->basesum > SMALLVAL && bot->relsum > SMALLVAL && bot->completed > 0 )
     {
         jaddnum(json,"completed",bot->completed);
