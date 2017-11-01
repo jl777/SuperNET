@@ -144,10 +144,13 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
         jaddnum(json,"stopped",bot->dead);
     if ( bot->dispdir > 0 )
     {
+        jaddstr(json,"action","buy");
         jaddstr(json,"base",bot->base);
         jaddstr(json,"rel",bot->rel);
         jaddnum(json,"maxprice",bot->maxprice);
         jaddnum(json,"totalrelvolume",bot->totalrelvolume);
+        LP_pricevol_invert(&basevolume,bot->maxprice,bot->totalrelvolume);
+        jaddnum(json,"totalbasevolume",basevolume);
         if ( (vol= bot->relsum) > SMALLVAL )
         {
             jaddnum(json,"aveprice",bot->basesum/vol);
@@ -156,11 +159,13 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
     }
     else
     {
+        jaddstr(json,"action","sell");
         jaddstr(json,"base",bot->rel);
         jaddstr(json,"rel",bot->base);
         aveprice = LP_pricevol_invert(&basevolume,bot->maxprice,bot->totalrelvolume);
         jaddnum(json,"minprice",aveprice);
         jaddnum(json,"totalbasevolume",basevolume);
+        jaddnum(json,"totalrelvolume",bot->totalrelvolume);
         if ( (vol= bot->relsum) > SMALLVAL )
         {
             aveprice = LP_pricevol_invert(&basevolume,bot->basesum / vol,vol);
@@ -432,7 +437,6 @@ char *LP_istradebots_command(void *ctx,int32_t pubsock,char *method,cJSON *argjs
     uint32_t botid;
     if ( strncmp("bot_",method,strlen("bot_")) != 0 )
         return(0);
-    printf("istradebots.(%s)\n",method);
     if ( strcmp(method,"bot_list") == 0 )
         return(LP_tradebot_list(ctx,pubsock,argjson));
     else if ( strcmp(method,"bot_buy") == 0 )
@@ -454,7 +458,6 @@ char *LP_istradebots_command(void *ctx,int32_t pubsock,char *method,cJSON *argjs
         else if ( strcmp(method,"bot_resume") == 0 )
             return(LP_tradebot_resume(ctx,pubsock,argjson,botid));
     }
-    printf("not tradebots\n");
     return(0);
 }
 
