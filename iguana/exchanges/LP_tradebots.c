@@ -257,17 +257,18 @@ void LP_tradebot_timeslice(struct LP_tradebot *bot)
         {
             //if ( (rand() % 100) == 0 )
             {
-                r = (double)(91 + (rand()%10)/100.);
+                r = (double)(91 + (rand()%10))/100.;
                 relvol = bot->totalrelvolume * 0.1 * r;
-                p = LP_pricevol_invert(&v,bot->maxprice,relvol);
+                r = (double)(96 + (rand()%5))/100.;
+                p = LP_pricevol_invert(&v,bot->maxprice * r,relvol);
                 if ( bot->dispdir > 0 )
                 {
-                    printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base);
+                    printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s, price %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base,bot->maxprice*r);
                 }
                 else
                 {
                     minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
-                    printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s min %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p);
+                    printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s price %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p);
                 }
                 if ( (rand() % 2) == 0 )
                 {
