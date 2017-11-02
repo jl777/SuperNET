@@ -38,7 +38,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_MAGICBITS 8
 
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
-#define LP_AUTOTRADE_TIMEOUT 15
+#define LP_AUTOTRADE_TIMEOUT 20
 #define ELECTRUM_TIMEOUT 10
 #define LP_ELECTRUM_KEEPALIVE 60
 #define LP_ELECTRUM_MAXERRORS 777
@@ -387,7 +387,7 @@ int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
 uint64_t LP_RTsmartbalance(struct iguana_info *coin);
 int32_t LP_getheight(struct iguana_info *coin);
-int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg);
+int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg);
 struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);

@@ -292,7 +292,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 if ( (double)up->U.value/targetval < LP_MINVOL-1 )
 
                 {
-                    if ( (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval2 * 1.01)) >= 0 )
+                    if ( (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,(targetval2+2*txfee) * 1.01)) >= 0 )
                     {
                         if ( up != 0 && (up2= utxos[mini]) != 0 )
                         {
@@ -304,7 +304,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                             }
                         }
                     } //else printf("cant find targetval2 %.8f\n",dstr(targetval2));
-                } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
+                } //else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
             } else if ( targetval != 0 && mini >= 0 )
                 printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
         } //else printf("no %s utxos pass LP_address_utxo_ptrs filter\n",coinaddr);
@@ -375,8 +375,12 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
                 //jaddnum(retjson,"quoteid",qp->R.quoteid);
                 // LP_addsig
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,utxo->S.otherpubkey));
-                LP_reserved_msg(base,rel,utxo->S.otherpubkey,jprint(retjson,0));
-                LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->desthash,jprint(retjson,0));
+                LP_reserved_msg(1,base,rel,utxo->S.otherpubkey,jprint(retjson,0));
+                sleep(1);
+                bits256 zero;
+                memset(zero.bytes,0,sizeof(zero));
+                LP_reserved_msg(1,base,rel,zero,jprint(retjson,0));
+                //LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->desthash,jprint(retjson,0));
                 free_json(retjson);
                 retval = 0;
             } else printf("error launching swaploop\n");
@@ -734,8 +738,12 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
                     // LP_addsig
                     //msg2 = clonestr(msg);
-                    LP_reserved_msg(Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
-                    LP_broadcast_message(LP_mypubsock,Q.srccoin,Q.destcoin,Q.desthash,jprint(retjson,0));
+                    LP_reserved_msg(1,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,clonestr(msg));
+                    sleep(1);
+                    bits256 zero;
+                    memset(zero.bytes,0,sizeof(zero));
+                    LP_reserved_msg(1,Q.srccoin,Q.destcoin,zero,msg);
+                    //LP_broadcast_message(LP_mypubsock,Q.srccoin,Q.destcoin,Q.desthash,jprint(retjson,0));
                     free_json(retjson);
                     return(retval);
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
@@ -803,7 +811,9 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                 {
                     item = jitem(asks,i);
                     price = jdouble(item,"price");
-                    price *= 1.005;
+                    if ( price/maxprice < .9 )
+                        price *= 1.025;
+                    else price *= 1.001;
                     pubkey = jbits256(item,"pubkey");
                     if ( bits256_nonz(destpubkey) != 0 && bits256_cmp(destpubkey,pubkey) != 0 )
                         continue;
@@ -824,8 +834,8 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                         {
                             bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
                             asatoshis = autxo->S.satoshis;
-                                LP_listunspent_query(base,coinaddr);
-                                LP_listunspent_both(base,coinaddr,1);
+                            LP_listunspent_query(base,coinaddr);
+                            //LP_listunspent_both(base,coinaddr,1);
                             for (j=0; j<maxiters; j++)
                             {
                                 if ( (bestutxo= LP_ordermatch_iter(utxos,max,ordermatchpricep,bestsatoshisp,bestdestsatoshisp,basecoin,coinaddr,asatoshis,price,txfee,desttxfee,pubp->pubkey,gui)) != 0 )
@@ -885,13 +895,13 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         timeout = LP_AUTOTRADE_TIMEOUT;
     if ( basecoin->electrum != 0 && relcoin->electrum != 0 )
     {
-        if ( timeout < 3*LP_AUTOTRADE_TIMEOUT )
-            timeout = 3*LP_AUTOTRADE_TIMEOUT;
+        if ( timeout < 2*LP_AUTOTRADE_TIMEOUT )
+            timeout = 2*LP_AUTOTRADE_TIMEOUT;
     }
     else if ( basecoin->electrum != 0 || relcoin->electrum != 0 )
     {
-        if ( timeout < 2*LP_AUTOTRADE_TIMEOUT )
-            timeout = 2*LP_AUTOTRADE_TIMEOUT;
+        if ( timeout < 1.5*LP_AUTOTRADE_TIMEOUT )
+            timeout = 1.5*LP_AUTOTRADE_TIMEOUT;
     }
     if ( time(NULL) < Alice_expiration )
         return(clonestr("{\"error\":\"only one pending request at a time\"}"));
@@ -915,7 +925,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     {
         destsatoshis -= 2*desttxfee;
         autxo->S.satoshis = destsatoshis;
-        printf("first path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->S.satoshis));
+        //printf("first path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->S.satoshis));
     }
     else if ( autxo->S.satoshis - 2*desttxfee < destsatoshis )
     {
@@ -965,6 +975,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
                 continue;
             else return(clonestr("{\"error\":\"cant ordermatch to destpubkey\"}"));
         }
+        printf("i.%d maxiters.%d qprice %.8f vs maxprice %.8f\n",i,maxiters,dstr(qprice),dstr(maxprice));
         return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid));
     }
     return(clonestr("{\"error\":\"cant get here\"}"));

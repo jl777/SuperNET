@@ -153,7 +153,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     struct iguana_info *coin,*ctmp; bits256 zero; char busaddr[64];
                     memset(zero.bytes,0,sizeof(zero));
                     //LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
-                    LP_reserved_msg("","",zero,jprint(LP_peerjson(peer),1));
+                    LP_reserved_msg(0,"","",zero,jprint(LP_peerjson(peer),1));
                     if ( 0 )
                     {
                         HASH_ITER(hh,LP_coins,coin,ctmp)

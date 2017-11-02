@@ -348,7 +348,7 @@ void LP_postutxos(char *symbol,char *coinaddr)
             //char str[65]; printf("utxoshash add %s\n",bits256_str(str,utxoshash));
             LP_utxos_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_pubsecp,G.LP_mypub25519,utxoshash);
             //printf("post (%s) -> %d\n",msg,LP_mypubsock);
-            LP_reserved_msg(symbol,symbol,zero,jprint(reqjson,1));
+            LP_reserved_msg(0,symbol,symbol,zero,jprint(reqjson,1));
         }
     }
 }
@@ -463,7 +463,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
         init_hexbytes_noT(pubsecpstr,G.LP_pubsecp,33);
         jaddstr(reqjson,"pubsecp",pubsecpstr);
         LP_price_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_pubsecp,G.LP_mypub25519,base,rel,price64);
-        LP_reserved_msg(base,rel,zero,jprint(reqjson,1));
+        LP_reserved_msg(0,base,rel,zero,jprint(reqjson,1));
         return(clonestr("{\"result\":\"success\"}"));
     } else return(clonestr("{\"error\":\"electrum node cant post bob asks\"}"));
 }
@@ -569,7 +569,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     timestamp = (uint32_t)time(NULL);
     jaddnum(reqjson,"timestamp",timestamp);
     LP_pubkey_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
-    LP_reserved_msg("","",zero,jprint(reqjson,1));
+    LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
 }
 
 char *LP_notify_recv(cJSON *argjson)
@@ -624,7 +624,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 jaddnum(req,"ht",height);
                 jadd64bits(req,"value",value);
                 //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
-                LP_reserved_msg("","",zero,jprint(req,1));
+                LP_reserved_msg(0,"","",zero,jprint(req,1));
 #endif
             }
         }
@@ -657,7 +657,7 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
     jaddstr(reqjson,"method","addr_unspents");
     jaddstr(reqjson,"coin",symbol);
     jaddstr(reqjson,"address",coinaddr);
-    LP_reserved_msg("","",zero,jprint(reqjson,1));
+    LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
 }
 
 void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_quoteinfo *qp)
@@ -684,9 +684,9 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     //printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
-    if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs)-2 )
+    if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )
     {
-        Reserved_msgs[num_Reserved_msgs++] = msg;
+        Reserved_msgs[1][num_Reserved_msgs[1]++] = msg;
         //Reserved_msgs[num_Reserved_msgs++] = msg2;
     }
     LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg2);

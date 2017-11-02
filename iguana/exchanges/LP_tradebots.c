@@ -257,9 +257,37 @@ struct LP_tradebot_trade *LP_tradebot_pending(struct LP_tradebot *bot,cJSON *pen
     return(tp);
 }
 
+double LP_orderbook_maxrel(char *base,char *rel,double maxprice)
+{
+    char *retstr; int32_t i,numasks; cJSON *retjson,*asks,*item; double maxvol,maxrel = 0.;
+    if ( (retstr= LP_orderbook(base,rel,0)) != 0 )
+    {
+        //printf("maxprice %.8f %s/%s\n",maxprice,base,rel);
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (asks= jarray(&numasks,retjson,"asks")) != 0 )
+            {
+                for (i=0; i<numasks; i++)
+                {
+                    item = jitem(asks,i);
+                    if ( jdouble(item,"price") > maxprice )
+                        break;
+                    maxvol = jdouble(item,"maxvolume");
+                    //printf("(%s) -> %.8f\n",jprint(item,0),maxvol);
+                    if ( maxvol > maxrel )
+                        maxrel = maxvol;
+                }
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    return(maxrel);
+}
+
 void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
 {
-    double remaining; int32_t i,maxiters = 10; uint32_t tradeid; bits256 destpubkey; char *retstr,*liststr; cJSON *retjson,*retjson2,*pending;
+    double remaining,maxrel; int32_t i,maxiters = 10; uint32_t tradeid; bits256 destpubkey; char *retstr,*liststr; cJSON *retjson,*retjson2,*pending;
     memset(destpubkey.bytes,0,sizeof(destpubkey));
     if ( bot->dead == 0 && bot->pause == 0 && bot->numtrades < sizeof(bot->trades)/sizeof(*bot->trades) )
     {
@@ -270,10 +298,15 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                 if ( jobj(retjson,"pending") == 0 )
                 {
                     remaining = bot->totalrelvolume - (bot->relsum + bot->pendrelsum);
-                    printf("try autobuy %s/%s remaining %.8f maxprice %.8f\n",bot->base,bot->rel,remaining,bot->maxprice);
+                    maxrel = LP_orderbook_maxrel(bot->base,bot->rel,bot->maxprice);
+                    printf("try autobuy %s/%s remaining %.8f maxprice %.8f maxrel %.8f\n",bot->base,bot->rel,remaining,bot->maxprice,maxrel);
+                    if ( maxrel < remaining )
+                        remaining = maxrel;
                     tradeid = rand();
                     for (i=1; i<=maxiters; i++)
                     {
+                        if ( remaining < 0.001 )
+                            break;
                         if ( (retstr= LP_autobuy(ctx,LP_myipaddr,LP_mypubsock,bot->base,bot->rel,bot->maxprice,remaining/i,0,0,G.gui,0,destpubkey,tradeid)) != 0 )
                         {
                             if ( (retjson2= cJSON_Parse(retstr)) != 0 )
@@ -285,7 +318,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                                         bot->dead = (uint32_t)time(NULL);
                                     else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )
                                         bot->pause = (uint32_t)time(NULL);
-                                    printf("issued bot trade.%u\n",tradeid);
+                                    printf("issued bot trade.%u %s\n",tradeid,retstr);
                                     free_json(retjson2);
                                     free(retstr);
                                     break;

@@ -175,7 +175,7 @@ void LP_RTmetrics_update(char *base,char *rel)
             char str[65]; printf("%s has %d pending swaps! which is more than %d\n",bits256_str(str,LP_RTmetrics.pending_pubkeys[i]),LP_RTmetrics.pending_swaps[i],LP_MAXPENDING_SWAPS);
             LP_RTmetrics_blacklistadd(LP_RTmetrics.pending_pubkeys[i]);
         }
-    printf("%d pubkeys have pending swaps, whitelist.%d blacklist.%d avoidtxids.%d\n",LP_RTmetrics.numpendings,LP_RTmetrics.numwhitelist,LP_RTmetrics.numblacklist,LP_RTmetrics.numavoidtxids);
+    //printf("%d pubkeys have pending swaps, whitelist.%d blacklist.%d avoidtxids.%d\n",LP_RTmetrics.numpendings,LP_RTmetrics.numwhitelist,LP_RTmetrics.numblacklist,LP_RTmetrics.numavoidtxids);
 }
 
 double _LP_RTmetric_calc(struct LP_metricinfo *mp,double bestprice,double maxprice,double relvolume)
