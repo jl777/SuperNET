@@ -315,7 +315,7 @@ void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid)
                 bot->pendbasesum -= tp->basevol, bot->basesum += tp->basevol;
                 bot->pendrelsum -= tp->relvol, bot->relsum += tp->relvol;
                 bot->numpending--, bot->completed++;
-                printf("bot.%u detected completion tradeid.%u aliceid.%llx r.%u q.%u\n",bot->id,tp->tradeid,(long long)tp->aliceid,tp->requestid,tp->quoteid);
+                printf("bot.%u detected completion tradeid.%u aliceid.%llx r.%u q.%u, numpending.%d completed.%d\n",bot->id,tp->tradeid,(long long)tp->aliceid,tp->requestid,tp->quoteid,bot->numpending,bot->completed);
                 tp->finished = (uint32_t)time(NULL);
                 break;
             }
