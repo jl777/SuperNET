@@ -18,7 +18,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// electrum keepalive
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -551,7 +550,7 @@ void LP_coinsloop(void *_coins)
                 {
                     if ( time(NULL) > ep->keepalive+LP_ELECTRUM_KEEPALIVE )
                     {
-                        printf("%s electrum.%p needs a keepalive: lag.%d\n",ep->symbol,ep,(int32_t)(time(NULL) - ep->keepalive));
+                        //printf("%s electrum.%p needs a keepalive: lag.%d\n",ep->symbol,ep,(int32_t)(time(NULL) - ep->keepalive));
                         if ( (retjson= electrum_donation(ep->symbol,ep,&retjson)) != 0 )
                             free_json(retjson);
                     }
