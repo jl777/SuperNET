@@ -353,7 +353,7 @@ void LP_tradebots_timeslice(void *ctx)
                 }
             }
         }
-        else //if ( bot->numpending == 0 )
+        else if ( bot->numpending == 0 )
             LP_tradebot_timeslice(ctx,bot);
     }
     lastnumfinished = LP_numfinished;

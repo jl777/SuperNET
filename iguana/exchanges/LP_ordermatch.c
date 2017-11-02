@@ -965,6 +965,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
                 continue;
             else return(clonestr("{\"error\":\"cant ordermatch to destpubkey\"}"));
         }
+        printf("i.%d maxiters.%d qprice %.8f vs maxprice %.8f\n",i,maxiters,dstr(qprice),dstr(maxprice));
         return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid));
     }
     return(clonestr("{\"error\":\"cant get here\"}"));
