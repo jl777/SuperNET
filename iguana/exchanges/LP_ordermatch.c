@@ -887,13 +887,13 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         timeout = LP_AUTOTRADE_TIMEOUT;
     if ( basecoin->electrum != 0 && relcoin->electrum != 0 )
     {
-        if ( timeout < 3*LP_AUTOTRADE_TIMEOUT )
-            timeout = 3*LP_AUTOTRADE_TIMEOUT;
+        if ( timeout < 2*LP_AUTOTRADE_TIMEOUT )
+            timeout = 2*LP_AUTOTRADE_TIMEOUT;
     }
     else if ( basecoin->electrum != 0 || relcoin->electrum != 0 )
     {
-        if ( timeout < 2*LP_AUTOTRADE_TIMEOUT )
-            timeout = 2*LP_AUTOTRADE_TIMEOUT;
+        if ( timeout < 1.5*LP_AUTOTRADE_TIMEOUT )
+            timeout = 1.5*LP_AUTOTRADE_TIMEOUT;
     }
     if ( time(NULL) < Alice_expiration )
         return(clonestr("{\"error\":\"only one pending request at a time\"}"));
