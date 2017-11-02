@@ -296,8 +296,8 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                 if ( jobj(retjson,"pending") == 0 )
                 {
                     remaining = bot->totalrelvolume - (bot->relsum + bot->pendrelsum);
-                    printf("try autobuy %s/%s remaining %.8f maxprice %.8f\n",bot->base,bot->rel,remaining,bot->maxprice);
                     maxrel = LP_orderbook_maxrel(bot->base,bot->rel,bot->maxprice);
+                    printf("try autobuy %s/%s remaining %.8f maxprice %.8f maxrel %.8f\n",bot->base,bot->rel,remaining,bot->maxprice,maxrel);
                     if ( maxrel < remaining )
                         remaining = maxrel;
                     tradeid = rand();
