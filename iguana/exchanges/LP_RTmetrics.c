@@ -233,6 +233,19 @@ void LP_RTmetric_calc(struct LP_metricinfo *sortbuf,int32_t ind,cJSON *item,doub
     sortbuf[ind].metric = _LP_RTmetric_calc(&sortbuf[ind],bestprice,maxprice,relvolume);
 }
 
+int _increasing_metrics(const void *a,const void *b)
+{
+#define ptr_a (*(struct LP_metricinfo **)a)
+#define ptr_b (*(struct LP_metricinfo **)b)
+    if ( ptr_b->metric > ptr_a->metric )
+        return(-1);
+    else if ( ptr_b->metric < ptr_a->metric )
+        return(1);
+    return(0);
+#undef ptr_a
+#undef ptr_b
+}
+
 cJSON *LP_RTmetrics_sort(char *base,char *rel,cJSON *rawasks,int32_t numasks,double maxprice,double relvolume)
 {
     cJSON *array=rawasks,*item; int32_t i,num,groupi; double price,prevdepth,bestprice; struct LP_metricinfo *sortbuf;
@@ -259,8 +272,9 @@ cJSON *LP_RTmetrics_sort(char *base,char *rel,cJSON *rawasks,int32_t numasks,dou
             item = jitem(rawasks,i);
             LP_RTmetric_calc(sortbuf,i,item,bestprice,maxprice,relvolume,prevdepth);
             prevdepth = jdouble(item,"depth");
+            printf("%.8f ",sortbuf[i].metric);
         }
-        revsortds(&sortbuf[0].metric,groupi+1,sizeof(*sortbuf));
+        qsort(&sortbuf[0].metric,groupi+1,sizeof(*sortbuf),_increasing_metrics);
         array = cJSON_CreateArray();
         for (i=0; i<=groupi; i++)
         {
