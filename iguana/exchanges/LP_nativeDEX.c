@@ -19,6 +19,7 @@
 //  marketmaker
 //
 // electrum keepalive
+// merge bots + portfoliot
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -825,7 +826,7 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],bindaddr2[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
+    char *myipaddr=0; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
@@ -910,15 +911,15 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         pubsock = -1;
         nanomsg_transportname(0,subaddr,myipaddr,mypubport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
-        nanomsg_transportname2(1,bindaddr2,myipaddr,mypubport);
+        //nanomsg_transportname2(1,bindaddr2,myipaddr,mypubport);
         valid = 0;
         if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
         {
             valid = 0;
             if ( nn_bind(pubsock,bindaddr) >= 0 )
                 valid++;
-            if ( nn_bind(pubsock,bindaddr2) >= 0 )
-                valid++;
+            //if ( nn_bind(pubsock,bindaddr2) >= 0 )
+            //    valid++;
             if ( valid > 0 )
             {
                 timeout = 1;
@@ -931,7 +932,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                     nn_close(pubsock), pubsock = -1;
             }
         } else printf("error getting pubsock %d\n",pubsock);
-        printf(">>>>>>>>> myipaddr.(%s %s) (%s) pullsock.%d valid.%d\n",bindaddr,bindaddr2,subaddr,pubsock,valid);
+        printf(">>>>>>>>> myipaddr.(%s) (%s) pullsock.%d valid.%d\n",bindaddr,subaddr,pubsock,valid);
         LP_mypubsock = pubsock;
     }
     printf("got %s, initpeers\n",myipaddr);
