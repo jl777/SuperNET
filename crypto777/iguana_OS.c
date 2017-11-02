@@ -901,11 +901,15 @@ void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep)
     return(buf);
 }
 
-void *OS_filestr(long *allocsizep,char *fname)
+void *OS_filestr(long *allocsizep,char *_fname)
 {
-    long filesize = 0; char *buf = 0;
+    long filesize = 0; char *fname,*buf = 0; void *retptr;
     *allocsizep = 0;
-    return(OS_loadfile(fname,&buf,&filesize,allocsizep));
+    fname = malloc(strlen(_fname)+1);
+    strcpy(fname,_fname);
+    retptr = OS_loadfile(fname,&buf,&filesize,allocsizep);
+    free(fname);
+    return(retptr);
 }
 
 // following functions cant be fully implemented in one or more OS
