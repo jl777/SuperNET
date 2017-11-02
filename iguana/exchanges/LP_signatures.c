@@ -684,9 +684,9 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     //printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
-    if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs)-2 )
+    if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )
     {
-        Reserved_msgs[num_Reserved_msgs++] = msg;
+        Reserved_msgs[1][num_Reserved_msgs[1]++] = msg;
         //Reserved_msgs[num_Reserved_msgs++] = msg2;
     }
     LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg2);
