@@ -514,6 +514,8 @@ void LP_coinsloop(void *_coins)
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
+            if ( coin->longestchain == 1 ) // special init value
+                coin->longestchain = LP_getheight(coin);
             if ( (ep= coin->electrum) != 0 )
             {
                 if ( (backupep= ep->prev) == 0 )
