@@ -18,8 +18,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// electrum keepalive
-// merge bots + portfoliot
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -494,7 +492,7 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
 
 void LP_coinsloop(void *_coins)
 {
-    struct LP_address *ap=0,*atmp; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
+    struct LP_address *ap=0,*atmp; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
     while ( 1 )
     {
         nonz = 0;
@@ -547,6 +545,16 @@ void LP_coinsloop(void *_coins)
                             }
                         }
                     }
+                }
+                while ( ep != 0 )
+                {
+                    if ( time(NULL) > ep->keepalive+LP_ELECTRUM_KEEPALIVE )
+                    {
+                        //printf("%s electrum.%p needs a keepalive: lag.%d\n",ep->symbol,ep,(int32_t)(time(NULL) - ep->keepalive));
+                        if ( (retjson= electrum_donation(ep->symbol,ep,&retjson)) != 0 )
+                            free_json(retjson);
+                    }
+                    ep = ep->prev;
                 }
                 continue;
             }

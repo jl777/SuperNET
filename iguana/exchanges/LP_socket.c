@@ -245,7 +245,7 @@ struct electrum_info
     struct electrum_info *prev;
     int32_t bufsize,sock,*heightp,numerrors;
     struct iguana_info *coin;
-    uint32_t stratumid,lasttime,pending,*heighttimep;
+    uint32_t stratumid,lasttime,keepalive,pending,*heighttimep;
     char ipaddr[64],symbol[16];
     uint16_t port;
     uint8_t buf[];
@@ -931,6 +931,7 @@ void LP_dedicatedloop(void *arg)
                 ep->sock = -1;
                 break;
             }
+            ep->keepalive = (uint32_t)time(NULL);
             if ( sitem->expiration != 0 )
                 sitem->expiration += (uint32_t)time(NULL);
             else sitem->expiration = (uint32_t)time(NULL) + ELECTRUM_TIMEOUT;
