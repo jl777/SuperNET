@@ -235,8 +235,8 @@ void LP_RTmetric_calc(struct LP_metricinfo *sortbuf,int32_t ind,cJSON *item,doub
 
 int _increasing_metrics(const void *a,const void *b)
 {
-#define ptr_a (*(struct LP_metricinfo **)a)
-#define ptr_b (*(struct LP_metricinfo **)b)
+#define ptr_a ((struct LP_metricinfo *)a)
+#define ptr_b ((struct LP_metricinfo *)b)
     if ( ptr_b->metric > ptr_a->metric )
         return(-1);
     else if ( ptr_b->metric < ptr_a->metric )
