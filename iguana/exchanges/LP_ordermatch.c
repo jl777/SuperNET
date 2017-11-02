@@ -738,7 +738,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
                     // LP_addsig
                     //msg2 = clonestr(msg);
-                    LP_reserved_msg(1,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
+                    LP_reserved_msg(1,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,clonestr(msg));
                     sleep(1);
                     bits256 zero;
                     memset(zero.bytes,0,sizeof(zero));
