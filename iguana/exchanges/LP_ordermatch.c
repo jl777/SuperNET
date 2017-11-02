@@ -915,7 +915,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     {
         destsatoshis -= 2*desttxfee;
         autxo->S.satoshis = destsatoshis;
-        printf("first path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->S.satoshis));
+        //printf("first path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->S.satoshis));
     }
     else if ( autxo->S.satoshis - 2*desttxfee < destsatoshis )
     {
