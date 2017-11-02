@@ -273,21 +273,23 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                     printf("try autobuy %s/%s remaining %.8f maxprice %.8f\n",bot->base,bot->rel,remaining,bot->maxprice);
                     tradeid = rand();
                     for (i=1; i<=maxiters; i++)
-                    if ( (retstr= LP_autobuy(ctx,LP_myipaddr,LP_mypubsock,bot->base,bot->rel,bot->maxprice,remaining/i,0,0,G.gui,0,destpubkey,tradeid)) != 0 )
                     {
-                        if ( (retjson2= cJSON_Parse(retstr)) != 0 )
+                        if ( (retstr= LP_autobuy(ctx,LP_myipaddr,LP_mypubsock,bot->base,bot->rel,bot->maxprice,remaining/i,0,0,G.gui,0,destpubkey,tradeid)) != 0 )
                         {
-                            if ( (pending= jobj(retjson2,"pending")) != 0 && juint(pending,"tradeid") == tradeid )
+                            if ( (retjson2= cJSON_Parse(retstr)) != 0 )
                             {
-                                bot->trades[bot->numtrades++] = LP_tradebot_pending(bot,pending,tradeid);
-                                if ( bot->relsum >= 0.99*bot->totalrelvolume-SMALLVAL || bot->basesum >= 0.99*bot->totalbasevolume-SMALLVAL )
-                                    bot->dead = (uint32_t)time(NULL);
-                                else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )
-                                    bot->pause = (uint32_t)time(NULL);
-                            } else printf("didnt get any trade pending %s %s\n\n",bot->name,retstr);
-                            free_json(retjson2);
-                        } else printf("iter.%d/%d %s\n",i,maxiters,retstr);
-                        free(retstr);
+                                if ( (pending= jobj(retjson2,"pending")) != 0 && juint(pending,"tradeid") == tradeid )
+                                {
+                                    bot->trades[bot->numtrades++] = LP_tradebot_pending(bot,pending,tradeid);
+                                    if ( bot->relsum >= 0.99*bot->totalrelvolume-SMALLVAL || bot->basesum >= 0.99*bot->totalbasevolume-SMALLVAL )
+                                        bot->dead = (uint32_t)time(NULL);
+                                    else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )
+                                        bot->pause = (uint32_t)time(NULL);
+                                } else printf("iter.%d/%d %.8f didnt get any trade pending %s %s\n\n",i,maxiters,remaining/i,bot->name,retstr);
+                                free_json(retjson2);
+                            } else printf("iter.%d/%d %.8f %s\n",i,maxiters,remaining/i,retstr);
+                            free(retstr);
+                        }
                     }
                 }
                 free_json(retjson);
