@@ -690,9 +690,12 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
         printf("%s ",activecoins[i]);
         LP_coinfind(activecoins[i]);
         LP_priceinfoadd(activecoins[i]);
-        if ( (coin= LP_coinfind(activecoins[i])) != 0 && LP_getheight(coin) <= 0 )
-            coin->inactive = (uint32_t)time(NULL);
-        LP_unspents_load(coin->symbol,coin->smartaddr);
+        if ( (coin= LP_coinfind(activecoins[i])) != 0 )
+        {
+            if ( LP_getheight(coin) <= 0 )
+                coin->inactive = (uint32_t)time(NULL);
+            LP_unspents_load(coin->symbol,coin->smartaddr);
+        }
     }
     if ( (n= cJSON_GetArraySize(coins)) > 0 )
     {
@@ -704,9 +707,12 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                 printf("%s ",jstr(item,"coin"));
                 LP_coincreate(item);
                 LP_priceinfoadd(jstr(item,"coin"));
-                if ( (coin= LP_coinfind(symbol)) != 0 && LP_getheight(coin) <= 0 )
-                    coin->inactive = (uint32_t)time(NULL);
-                LP_unspents_load(coin->symbol,coin->smartaddr);
+                if ( (coin= LP_coinfind(symbol)) != 0 )
+                {
+                    if ( LP_getheight(coin) <= 0 )
+                        coin->inactive = (uint32_t)time(NULL);
+                    LP_unspents_load(coin->symbol,coin->smartaddr);
+                }
             }
         }
     }
