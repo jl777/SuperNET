@@ -27,8 +27,8 @@
 #include "LP_include.h"
 portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex;
 int32_t LP_canbind;
-char *Broadcaststr,*Reserved_msgs[1000];
-int32_t num_Reserved_msgs,max_Reserved_msgs;
+char *Broadcaststr,*Reserved_msgs[2][1000];
+int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
 struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
@@ -237,7 +237,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                             memset(zero.bytes,0,sizeof(zero));
                             /*if ( (method= jstr(reqjson,"method")) != 0 && (strcmp(method,"request") == 0 || strcmp(method,"requested") == 0 || strcmp(method,"connect") == 0 || strcmp(method,"connected") == 0) )
                                     printf("broadcast.(%s)\n",Broadcaststr);*/
-                            LP_reserved_msg("","",zero,jprint(reqjson,0));
+                            LP_reserved_msg(0,"","",zero,jprint(reqjson,0));
                         }
                         retstr = clonestr("{\"result\":\"success\"}");
                         free_json(reqjson);
@@ -809,7 +809,7 @@ void LP_reserved_msgs(void *ignore)
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
     {
-        if ( num_Reserved_msgs > 0 )
+        if ( num_Reserved_msgs[0] > 0 || num_Reserved_msgs[1] > 0 )
         {
             flag = 0;
             if ( LP_mypubsock >= 0 )
@@ -823,9 +823,18 @@ void LP_reserved_msgs(void *ignore)
             if ( flag == 1 )
             {
                 portable_mutex_lock(&LP_reservedmutex);
-                num_Reserved_msgs--;
-                LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[num_Reserved_msgs]);
-                Reserved_msgs[num_Reserved_msgs] = 0;
+                if ( num_Reserved_msgs[1] > 0 )
+                {
+                    num_Reserved_msgs[1]--;
+                    LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[1][num_Reserved_msgs[1]]);
+                    Reserved_msgs[1][num_Reserved_msgs[1]] = 0;
+                }
+                else if ( num_Reserved_msgs[0] > 0 )
+                {
+                    num_Reserved_msgs[0]--;
+                    LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
+                    Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
+                }
                 portable_mutex_unlock(&LP_reservedmutex);
             }
         }
@@ -835,20 +844,20 @@ void LP_reserved_msgs(void *ignore)
     }
 }
 
-int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
+int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg)
 {
     int32_t n = 0;
     portable_mutex_lock(&LP_reservedmutex);
-    if ( num_Reserved_msgs < sizeof(Reserved_msgs)/sizeof(*Reserved_msgs) )
+    if ( num_Reserved_msgs[priority] < sizeof(Reserved_msgs[priority])/sizeof(*Reserved_msgs[priority]) )
     {
-        Reserved_msgs[num_Reserved_msgs++] = msg;
-        n = num_Reserved_msgs;
+        Reserved_msgs[priority][num_Reserved_msgs[priority]++] = msg;
+        n = num_Reserved_msgs[priority];
     } else LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
     portable_mutex_unlock(&LP_reservedmutex);
-    if ( num_Reserved_msgs > max_Reserved_msgs )
+    if ( num_Reserved_msgs[priority] > max_Reserved_msgs[priority] )
     {
-        max_Reserved_msgs = num_Reserved_msgs;
-        printf("New max_Reserved_msgs.%d\n",max_Reserved_msgs);
+        max_Reserved_msgs[priority] = num_Reserved_msgs[priority];
+        printf("New priority.%d max_Reserved_msgs.%d\n",priority,max_Reserved_msgs[priority]);
     }
     return(n);
 }

@@ -375,8 +375,12 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
                 //jaddnum(retjson,"quoteid",qp->R.quoteid);
                 // LP_addsig
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,utxo->S.otherpubkey));
-                LP_reserved_msg(base,rel,utxo->S.otherpubkey,jprint(retjson,0));
-                LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->desthash,jprint(retjson,0));
+                LP_reserved_msg(1,base,rel,utxo->S.otherpubkey,jprint(retjson,0));
+                sleep(1);
+                bits256 zero;
+                memset(zero.bytes,0,sizeof(zero));
+                LP_reserved_msg(1,base,rel,zero,jprint(retjson,0));
+                //LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->desthash,jprint(retjson,0));
                 free_json(retjson);
                 retval = 0;
             } else printf("error launching swaploop\n");
@@ -734,8 +738,12 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,price,msg);
                     // LP_addsig
                     //msg2 = clonestr(msg);
-                    LP_reserved_msg(Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
-                    LP_broadcast_message(LP_mypubsock,Q.srccoin,Q.destcoin,Q.desthash,jprint(retjson,0));
+                    LP_reserved_msg(1,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,msg);
+                    sleep(1);
+                    bits256 zero;
+                    memset(zero.bytes,0,sizeof(zero));
+                    LP_reserved_msg(1,Q.srccoin,Q.destcoin,zero,msg);
+                    //LP_broadcast_message(LP_mypubsock,Q.srccoin,Q.destcoin,Q.desthash,jprint(retjson,0));
                     free_json(retjson);
                     return(retval);
                 } else printf("warning swappending.%u swap.%p\n",butxo->T.swappending,butxo->S.swap);
