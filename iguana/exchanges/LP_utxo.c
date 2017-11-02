@@ -981,3 +981,42 @@ int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
     }
     return(num);
 }
+
+void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedflag)
+{
+    char fname[1024]; FILE *fp=0;
+    sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
+    if ( updatedflag == 0 && (fp= fopen(fname,"rb")) == 0 )
+        updatedflag = 1;
+    else if ( fp != 0 )
+        fclose(fp);
+    if ( updatedflag != 0 && (fp= fopen(fname,"wb")) != 0 )
+    {
+        fwrite(arraystr,1,strlen(arraystr),fp);
+        fclose(fp);
+    }
+}
+
+void LP_unspents_load(char *symbol,char *addr)
+{
+    char fname[1024],*arraystr; long fsize; struct iguana_info *coin; cJSON *retjson;
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
+        if ( (arraystr= OS_filestr(&fsize,fname)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(arraystr)) != 0 )
+            {
+                printf("PROCESS UNSPENTS %s\n",arraystr);
+                if ( electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1) == 0 )
+                    printf("error electrum_process_array\n");
+                else printf("processed %s\n",arraystr);
+                free_json(retjson);
+            }
+            free(arraystr);
+        }
+    }
+}
+
+
+

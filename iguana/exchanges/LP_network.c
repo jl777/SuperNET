@@ -98,17 +98,17 @@ int32_t nn_poll(struct nn_pollfd *fds, int nfds, int timeout)
 
 char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port);
+    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port);
     return(str);
 }
 
-char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
+/*char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port+10);
+    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port+10);
     return(str);
 }
 
-/*int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
+int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
 {
     int32_t sentbytes;
     if ( sock < 0 )
@@ -735,7 +735,7 @@ char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
     return(retstr);
 }
 
-uint16_t LP_psock_get(char *connectaddr,char *connectaddr2,char *publicaddr,int32_t ispaired)
+uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
 {
     uint16_t publicport = 0; char *retstr,*addr; cJSON *retjson; struct LP_peerinfo *peer,*tmp;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
@@ -750,8 +750,8 @@ uint16_t LP_psock_get(char *connectaddr,char *connectaddr2,char *publicaddr,int3
                     safecopy(publicaddr,addr,128);
                 if ( (addr= jstr(retjson,"connectaddr")) != 0 )
                     safecopy(connectaddr,addr,128);
-                if ( (addr= jstr(retjson,"connectaddr2")) != 0 )
-                    safecopy(connectaddr2,addr,128);
+                //if ( (addr= jstr(retjson,"connectaddr2")) != 0 )
+                //    safecopy(connectaddr2,addr,128);
                 if ( publicaddr[0] != 0 && connectaddr[0] != 0 )
                     publicport = juint(retjson,"publicport");
                 free_json(retjson);
@@ -767,9 +767,9 @@ uint16_t LP_psock_get(char *connectaddr,char *connectaddr2,char *publicaddr,int3
 
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
 {
-    int32_t nntype,pullsock,timeout; char bindaddr[128],bindaddr2[128],connectaddr[128],connectaddr2[128];
+    int32_t nntype,pullsock,timeout; char bindaddr[128],connectaddr[128];
     *mypullportp = mypullport;
-    connectaddr2[0] = 0;
+    //connectaddr2[0] = 0;
     if ( ispaired == 0 )
     {
         if ( LP_canbind != 0 )
@@ -780,7 +780,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
     {
         nanomsg_transportname(0,publicaddr,myipaddr,mypullport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypullport);
-        nanomsg_transportname2(1,bindaddr2,myipaddr,mypullport);
+        //nanomsg_transportname2(1,bindaddr2,myipaddr,mypullport);
     }
     else
     {
@@ -792,7 +792,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
         }
         while ( *mypullportp == 0 )
         {
-            if ( (*mypullportp= LP_psock_get(connectaddr,connectaddr2,publicaddr,ispaired)) != 0 )
+            if ( (*mypullportp= LP_psock_get(connectaddr,publicaddr,ispaired)) != 0 )
                 break;
             sleep(10);
             printf("try to get publicaddr again\n");
@@ -811,8 +811,8 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                 }
                 else
                 {
-                    if ( connectaddr2[0] != 0 && nn_connect(pullsock,connectaddr2) > 0 )
-                        printf("%s ",connectaddr2);
+                    //if ( connectaddr2[0] != 0 && nn_connect(pullsock,connectaddr2) > 0 )
+                    //    printf("%s ",connectaddr2);
                     printf("nntype.%d NN_PAIR.%d connect to %s connectsock.%d\n",nntype,NN_PAIR,connectaddr,pullsock);
                 }
             }
@@ -823,8 +823,8 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                     printf("bind to %s error for %s: %s\n",bindaddr,publicaddr,nn_strerror(nn_errno()));
                     exit(-1);
                 }
-                if ( nn_bind(pullsock,bindaddr2) >= 0 )
-                    printf("bound to %s\n",bindaddr2);
+                //if ( nn_bind(pullsock,bindaddr2) >= 0 )
+                //    printf("bound to %s\n",bindaddr2);
             }
             timeout = 1;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));

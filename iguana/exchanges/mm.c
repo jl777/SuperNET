@@ -882,6 +882,7 @@ int main(int argc, const char * argv[])
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/UNSPENTS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
 #ifdef FROM_JS
     argc = 2;
     retjson = cJSON_Parse("{\"client\":1,\"passphrase\":\"test\"}");

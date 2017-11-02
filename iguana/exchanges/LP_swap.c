@@ -262,7 +262,7 @@ int32_t LP_choosei_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 
 int32_t LP_choosei_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    int32_t otherchoosei=-1,i,len = 0; uint8_t pubkey33[33]; char str[65],str2[65];
+    int32_t otherchoosei=-1,i,len = 0; uint8_t pubkey33[33];
     if ( datalen == sizeof(otherchoosei)+sizeof(bits256)*2 )
     {
         len += iguana_rwnum(0,data,sizeof(otherchoosei),&otherchoosei);

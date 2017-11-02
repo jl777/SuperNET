@@ -528,21 +528,20 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
                             {
                                 if ( memcmp(rmd160,pubp->rmd160,20) != 0 )
                                 {
-                                    for (i=0; i<20; i++)
-                                        printf("%02x",pubp->rmd160[i]);
+                                    //for (i=0; i<20; i++)
+                                    //    printf("%02x",pubp->rmd160[i]);
                                     memcpy(pubp->rmd160,rmd160,sizeof(pubp->rmd160));
                                     memcpy(pubp->pubsecp,pubsecp,sizeof(pubp->pubsecp));
                                     memcpy(pubp->sig,sig,sizeof(pubp->sig));
                                     pubp->siglen = siglen;
-                                    char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
-                                    //pubp->timestamp = (uint32_t)time(NULL);
+                                    //char str[65]; printf(" -> rmd160.(%s) for %s (%s) sig.%s\n",hexstr,bits256_str(str,pubp->pubkey),pubsecpstr,sigstr);
                                 }
                                 pubp->timestamp = juint(item,"timestamp");
                                 retval = 0;
                             } else pubp->numerrors++;
                         }
                     }
-                    else
+                    else if ( 0 )
                     {
                         for (i=0; i<20; i++)
                             printf("%02x",rmd160[i]);

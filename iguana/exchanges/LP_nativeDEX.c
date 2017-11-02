@@ -19,6 +19,7 @@
 //  marketmaker
 //
 // electrum keepalive
+// merge bots + portfoliot
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -675,21 +676,30 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
-    int32_t i,n; cJSON *item;
+    int32_t i,n; cJSON *item; char *symbol; struct iguana_info *coin;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
         printf("%s ",activecoins[i]);
         LP_coinfind(activecoins[i]);
         LP_priceinfoadd(activecoins[i]);
+        if ( (coin= LP_coinfind(activecoins[i])) != 0 && LP_getheight(coin) <= 0 )
+            coin->inactive = (uint32_t)time(NULL);
+        LP_unspents_load(coin->symbol,coin->smartaddr);
     }
     if ( (n= cJSON_GetArraySize(coins)) > 0 )
     {
         for (i=0; i<n; i++)
         {
             item = jitem(coins,i);
-            printf("%s ",jstr(item,"coin"));
-            LP_coincreate(item);
-            LP_priceinfoadd(jstr(item,"coin"));
+            if ( (symbol= jstr(item,"coin")) != 0 )
+            {
+                printf("%s ",jstr(item,"coin"));
+                LP_coincreate(item);
+                LP_priceinfoadd(jstr(item,"coin"));
+                if ( (coin= LP_coinfind(symbol)) != 0 && LP_getheight(coin) <= 0 )
+                    coin->inactive = (uint32_t)time(NULL);
+                LP_unspents_load(coin->symbol,coin->smartaddr);
+            }
         }
     }
     printf("privkey updates\n");
@@ -825,7 +835,7 @@ int32_t LP_reserved_msg(char *base,char *rel,bits256 pubkey,char *msg)
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],bindaddr2[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
+    char *myipaddr=0; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
@@ -910,15 +920,15 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         pubsock = -1;
         nanomsg_transportname(0,subaddr,myipaddr,mypubport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
-        nanomsg_transportname2(1,bindaddr2,myipaddr,mypubport);
+        //nanomsg_transportname2(1,bindaddr2,myipaddr,mypubport);
         valid = 0;
         if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
         {
             valid = 0;
             if ( nn_bind(pubsock,bindaddr) >= 0 )
                 valid++;
-            if ( nn_bind(pubsock,bindaddr2) >= 0 )
-                valid++;
+            //if ( nn_bind(pubsock,bindaddr2) >= 0 )
+            //    valid++;
             if ( valid > 0 )
             {
                 timeout = 1;
@@ -931,7 +941,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                     nn_close(pubsock), pubsock = -1;
             }
         } else printf("error getting pubsock %d\n",pubsock);
-        printf(">>>>>>>>> myipaddr.(%s %s) (%s) pullsock.%d valid.%d\n",bindaddr,bindaddr2,subaddr,pubsock,valid);
+        printf(">>>>>>>>> myipaddr.(%s) (%s) pullsock.%d valid.%d\n",bindaddr,subaddr,pubsock,valid);
         LP_mypubsock = pubsock;
     }
     printf("got %s, initpeers\n",myipaddr);
@@ -993,7 +1003,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching queue_loop for port.%u\n",myport);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,ctx) != 0 )
     {
         printf("error launching prices_loop for port.%u\n",myport);
         exit(-1);
@@ -1026,11 +1036,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_swapsloop for port.%u\n",myport);
-        exit(-1);
-    }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradebot_timeslices,ctx) != 0 )
-    {
-        printf("error launching LP_tradebot_timeslices\n");
         exit(-1);
     }
     int32_t nonz;
@@ -1116,7 +1121,6 @@ void LP_fromjs_iter()
         {
             LP_notify_pubkeys(ctx,LP_mypubsock);
             LP_privkey_updates(ctx,LP_mypubsock,0);
-            prices_loop(0);
             if ( (retstr= basilisk_swapentry(0,0)) != 0 )
                 free(retstr);
         }
