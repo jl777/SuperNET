@@ -447,6 +447,8 @@ struct iguana_info *LP_coincreate(cJSON *item)
     }
     if ( 0 && coin != 0 && coin->inactive != 0 )
         printf("LPnode.%d %s inactive.%u %p vs %p\n",IAMLP,coin->symbol,coin->inactive,assetname,name);
+    if ( coin != 0 && LP_getheight(coin) <= 0 )
+        coin->inactive = (uint32_t)time(NULL);
     return(0);
 }
 
