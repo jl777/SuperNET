@@ -263,18 +263,18 @@ double LP_orderbook_maxrel(char *base,char *rel,double maxprice)
     if ( (retstr= LP_orderbook(base,rel,0)) != 0 )
     {
         
-        printf("maxprice %.8f %s/%s obook.(%s)\n",maxprice,base,rel,retstr);
+        printf("maxprice %.8f %s/%s\n",maxprice,base,rel);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (asks= jarray(&numasks,retjson,"asks")) != 0 )
             {
                 for (i=0; i<numasks; i++)
                 {
-                    item = jitem(retjson,i);
+                    item = jitem(asks,i);
                     if ( jdouble(item,"price") > maxprice )
                         break;
                     maxvol = jdouble(item,"maxvolume");
-                    printf("%.8f ",maxvol);
+                    printf("(%s) -> %.8f\n",jprint(item,0),maxvol);
                     if ( maxvol > maxrel )
                         maxrel = maxvol;
                 }
