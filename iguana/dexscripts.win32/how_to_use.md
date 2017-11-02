@@ -1,15 +1,15 @@
 ## DexScripts for Windows. How to use? ##
 
-**1. ** Before start you should put scripts and following binaries into one folder:
+**1.** Before start you should put scripts and following binaries into one folder:
  
 - curl.exe (required for all scripts)
 - marketmaker.exe
 - libcurl.dll (required to run marketmaker)
 - nanomsg.dll (required to run marketmaker)
 
-**2. ** Don't forget to put `coins.json` file into a same folder. This file is available it this repo.
+**2.** Don't forget to put `coins.json` file into a same folder. This file is available it this repo.
 
-**3. ** Type your passphrase into passphrase file in this folder (you should create file with name `passphrase` and without extension) and run `1-client.cmd`. This will run marketmaker. Next step is to obtain userpass needed for other scripts, you can simply copy and paste it from marketmaker output on startup into userpass file. 
+**3.** Type your passphrase into passphrase file in this folder (you should create file with name `passphrase` and without extension) and run `1-client.cmd`. This will run marketmaker. Next step is to obtain userpass needed for other scripts, you can simply copy and paste it from marketmaker output on startup into userpass file. 
 
 ![](./images/userpass.png)
 
