@@ -765,7 +765,7 @@ void LP_pubkeysloop(void *ctx)
     while ( 1 )
     {
         LP_counter += 100;
-        printf("LP_pubkeysloop %d\n",LP_counter);
+        //printf("LP_pubkeysloop %d\n",LP_counter);
         LP_notify_pubkeys(ctx,LP_mypubsock);
         sleep(60);
     }
