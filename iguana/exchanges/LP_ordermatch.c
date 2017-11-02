@@ -304,7 +304,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                             }
                         }
                     } //else printf("cant find targetval2 %.8f\n",dstr(targetval2));
-                } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
+                } //else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
             } else if ( targetval != 0 && mini >= 0 )
                 printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
         } //else printf("no %s utxos pass LP_address_utxo_ptrs filter\n",coinaddr);

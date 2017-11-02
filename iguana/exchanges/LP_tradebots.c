@@ -285,7 +285,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                                         bot->dead = (uint32_t)time(NULL);
                                     else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )
                                         bot->pause = (uint32_t)time(NULL);
-                                    printf("issued bot trade.%u\n",tradeid);
+                                    printf("issued bot trade.%u %s\n",tradeid,retstr);
                                     free_json(retjson2);
                                     free(retstr);
                                     break;
