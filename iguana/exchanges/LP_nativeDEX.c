@@ -676,21 +676,28 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
-    int32_t i,n; cJSON *item;
+    int32_t i,n; cJSON *item; char *symbol; struct iguana_info *coin;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
         printf("%s ",activecoins[i]);
         LP_coinfind(activecoins[i]);
         LP_priceinfoadd(activecoins[i]);
+        if ( (coin= LP_coinfind(activecoins[i])) != 0 && LP_getheight(coin) <= 0 )
+            coin->inactive = (uint32_t)time(NULL);
     }
     if ( (n= cJSON_GetArraySize(coins)) > 0 )
     {
         for (i=0; i<n; i++)
         {
             item = jitem(coins,i);
-            printf("%s ",jstr(item,"coin"));
-            LP_coincreate(item);
-            LP_priceinfoadd(jstr(item,"coin"));
+            if ( (symbol= jstr(item,"coin")) != 0 )
+            {
+                printf("%s ",jstr(item,"coin"));
+                LP_coincreate(item);
+                LP_priceinfoadd(jstr(item,"coin"));
+                if ( (coin= LP_coinfind(symbol)) != 0 && LP_getheight(coin) <= 0 )
+                    coin->inactive = (uint32_t)time(NULL);
+            }
         }
     }
     printf("privkey updates\n");
