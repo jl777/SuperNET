@@ -259,7 +259,7 @@ struct LP_tradebot_trade *LP_tradebot_pending(struct LP_tradebot *bot,cJSON *pen
 
 void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
 {
-    double remaining; uint32_t tradeid; bits256 destpubkey; char *retstr,*liststr; cJSON *retjson,*retjson2,*pending;
+    double remaining; int32_t i,maxiters = 10; uint32_t tradeid; bits256 destpubkey; char *retstr,*liststr; cJSON *retjson,*retjson2,*pending;
     memset(destpubkey.bytes,0,sizeof(destpubkey));
     if ( bot->dead == 0 && bot->pause == 0 && bot->numtrades < sizeof(bot->trades)/sizeof(*bot->trades) )
     {
@@ -272,7 +272,8 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                     remaining = bot->totalrelvolume - (bot->relsum + bot->pendrelsum);
                     printf("try autobuy %s/%s remaining %.8f maxprice %.8f\n",bot->base,bot->rel,remaining,bot->maxprice);
                     tradeid = rand();
-                    if ( (retstr= LP_autobuy(ctx,LP_myipaddr,LP_mypubsock,bot->base,bot->rel,bot->maxprice,remaining,0,0,G.gui,0,destpubkey,tradeid)) != 0 )
+                    for (i=1; i<=maxiters; i++)
+                    if ( (retstr= LP_autobuy(ctx,LP_myipaddr,LP_mypubsock,bot->base,bot->rel,bot->maxprice,remaining/i,0,0,G.gui,0,destpubkey,tradeid)) != 0 )
                     {
                         if ( (retjson2= cJSON_Parse(retstr)) != 0 )
                         {
@@ -285,7 +286,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                                     bot->pause = (uint32_t)time(NULL);
                             } else printf("didnt get any trade pending %s %s\n\n",bot->name,retstr);
                             free_json(retjson2);
-                        } else printf("%s\n",retstr);
+                        } else printf("iter.%d/%d %s\n",i,maxiters,retstr);
                         free(retstr);
                     }
                 }

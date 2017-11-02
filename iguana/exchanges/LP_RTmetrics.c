@@ -272,13 +272,13 @@ cJSON *LP_RTmetrics_sort(char *base,char *rel,cJSON *rawasks,int32_t numasks,dou
             item = jitem(rawasks,i);
             LP_RTmetric_calc(sortbuf,i,item,bestprice,maxprice,relvolume,prevdepth);
             prevdepth = jdouble(item,"depth");
-            printf("%.8f ",sortbuf[i].metric);
+            //printf("%.8f ",sortbuf[i].metric);
         }
         qsort(&sortbuf[0].metric,groupi+1,sizeof(*sortbuf),_increasing_metrics);
         array = cJSON_CreateArray();
         for (i=0; i<=groupi; i++)
         {
-            printf("(%d -> %d %.3f) ",i,sortbuf[i].ind,sortbuf[i].metric);
+            printf("(%d <- %d %.3f) ",i,sortbuf[i].ind,sortbuf[i].metric);
             item = jitem(rawasks,sortbuf[i].ind);
             jaddi(array,jduplicate(item));
         }
