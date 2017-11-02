@@ -410,8 +410,8 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             }
         } else printf("couldnt find electrum server for (%s %s) or no retjsonp.%p\n",method,params,retjsonp);
         ep = ep->prev;
-        if ( ep != 0 )
-            printf("using prev ep.%s\n",ep->symbol);
+        //if ( ep != 0 )
+        //    printf("using prev ep.%s\n",ep->symbol);
     }
     return(0);
 }
@@ -563,7 +563,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
+            //printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
             updatedflag = 0;
             if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
                 LP_postutxos(coin->symbol,addr), updatedflag = 1;
