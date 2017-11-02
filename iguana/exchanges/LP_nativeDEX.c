@@ -994,7 +994,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching queue_loop for port.%u\n",myport);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,ctx) != 0 )
     {
         printf("error launching prices_loop for port.%u\n",myport);
         exit(-1);
@@ -1027,11 +1027,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_swapsloop for port.%u\n",myport);
-        exit(-1);
-    }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradebot_timeslices,ctx) != 0 )
-    {
-        printf("error launching LP_tradebot_timeslices\n");
         exit(-1);
     }
     int32_t nonz;
@@ -1117,7 +1112,6 @@ void LP_fromjs_iter()
         {
             LP_notify_pubkeys(ctx,LP_mypubsock);
             LP_privkey_updates(ctx,LP_mypubsock,0);
-            prices_loop(0);
             if ( (retstr= basilisk_swapentry(0,0)) != 0 )
                 free(retstr);
         }

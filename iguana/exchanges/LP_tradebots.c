@@ -320,39 +320,36 @@ void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid)
     }
 }
 
-void LP_tradebot_timeslices(void *ctx)
+void LP_tradebots_timeslice(void *ctx)
 {
-    struct LP_tradebot_trade *tp; struct iguana_info *relcoin; struct LP_tradebot *bot,*tmp; int32_t i,lastnumfinished = 0;
-    while ( 1 )
+    static uint32_t lastnumfinished = 0;
+    struct LP_tradebot_trade *tp; struct iguana_info *relcoin; struct LP_tradebot *bot,*tmp; int32_t i;
+    DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
     {
-        DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
+        if ( (relcoin= LP_coinfind(bot->rel)) != 0 )
+            LP_listunspent_issue(bot->rel,relcoin->smartaddr,1);
+        if ( bot->numpending > 0 && LP_numfinished > lastnumfinished )
         {
-            if ( (relcoin= LP_coinfind(bot->rel)) != 0 )
-                LP_listunspent_issue(bot->rel,relcoin->smartaddr,1);
-            if ( bot->numpending > 0 && LP_numfinished > lastnumfinished )
+            // expire pending trades and see if any still need their requestid/quoteid
+            for (i=0; i<bot->numtrades; i++)
             {
-                // expire pending trades and see if any still need their requestid/quoteid
-                for (i=0; i<bot->numtrades; i++)
+                if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 )
                 {
-                    if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 )
+                    if ( time(NULL) > tp->started+INSTANTDEX_LOCKTIME*2 )
                     {
-                        if ( time(NULL) > tp->started+INSTANTDEX_LOCKTIME*2 )
-                        {
-                            bot->pendbasesum -= tp->basevol;
-                            bot->pendrelsum -= tp->relvol;
-                            bot->numpending--;
-                            tp->finished = (uint32_t)time(NULL);
-                            printf("%s trade.%d of %d expired\n",bot->name,i,bot->numtrades);
-                        }
+                        bot->pendbasesum -= tp->basevol;
+                        bot->pendrelsum -= tp->relvol;
+                        bot->numpending--;
+                        tp->finished = (uint32_t)time(NULL);
+                        printf("%s trade.%d of %d expired\n",bot->name,i,bot->numtrades);
                     }
                 }
             }
-            else if ( bot->numpending == 0 )
-                LP_tradebot_timeslice(ctx,bot);
         }
-        lastnumfinished = LP_numfinished;
-        sleep(60);
+        else if ( bot->numpending == 0 )
+            LP_tradebot_timeslice(ctx,bot);
     }
+    lastnumfinished = LP_numfinished;
 }
 
 char *LP_tradebot_list(void *ctx,int32_t pubsock,cJSON *argjson)
