@@ -761,13 +761,17 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 void LP_pubkeysloop(void *ctx)
 {
+    static uint32_t lasttime;
     sleep(10);
     while ( 1 )
     {
-        LP_counter += 100;
-        //printf("LP_pubkeysloop %d\n",LP_counter);
-        LP_notify_pubkeys(ctx,LP_mypubsock);
-        sleep(60);
+        if ( time(NULL) > lasttime+60 )
+        {
+            printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
+            LP_notify_pubkeys(ctx,LP_mypubsock);
+            lasttime = (uint32_t)time(NULL);
+        }
+        sleep(3);
     }
 }
 
