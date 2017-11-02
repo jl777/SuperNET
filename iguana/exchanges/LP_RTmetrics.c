@@ -190,18 +190,22 @@ double _LP_RTmetric_calc(struct LP_metricinfo *mp,double bestprice,double maxpri
     if ( relvolume < mp->minvol )
     {
         metric *= (mp->minvol / relvolume);
+        printf("relvolume < minvol %.8f\n",(mp->minvol / relvolume));
     }
     else if ( relvolume > mp->maxvol )
     {
         metric *= (relvolume / mp->maxvol);
+        printf("relvolume > minvol %.8f\n",(relvolume / mp->maxvol));
     }
     if ( relvolume < mp->balance/LP_MINVOL )
     {
         metric *= (mp->balance / relvolume);
+        printf("relvolume < balance %.8f\n",(mp->balance / relvolume));
     }
     else if ( relvolume > mp->balance/mp->numutxos )
     {
         metric *= (relvolume / (mp->balance/mp->numutxos));
+        printf("relvolume < ave %.8f\n",(relvolume / (mp->balance/mp->numutxos)));
     }
     if ( mp->age > LP_ORDERBOOK_DURATION*0.8 )
         metric *= 2;
