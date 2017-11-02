@@ -285,6 +285,10 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                                         bot->dead = (uint32_t)time(NULL);
                                     else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )
                                         bot->pause = (uint32_t)time(NULL);
+                                    printf("issued bot trade.%u\n",tradeid);
+                                    free_json(retjson2);
+                                    free(retstr);
+                                    break;
                                 } else printf("iter.%d/%d %.8f didnt get any trade pending %s %s\n\n",i,maxiters,remaining/i,bot->name,retstr);
                                 free_json(retjson2);
                             } else printf("iter.%d/%d %.8f %s\n",i,maxiters,remaining/i,retstr);
@@ -367,7 +371,7 @@ char *LP_tradebot_list(void *ctx,int32_t pubsock,cJSON *argjson)
 
 char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,double relvolume)
 {
-    struct LP_tradebot *bot; double shortfall; int32_t i,n; cJSON *array,*item,*retjson; uint64_t txfees,balance=0,abalance=0; struct iguana_info *basecoin,*relcoin;
+    struct LP_tradebot *bot; char *retstr; double shortfall; int32_t i,n; cJSON *array,*item,*retjson; uint64_t txfees,balance=0,abalance=0; struct iguana_info *basecoin,*relcoin;
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( basecoin == 0 || relcoin == 0 || basecoin->inactive != 0 || relcoin->inactive != 0 )
@@ -384,6 +388,8 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
         }
         free_json(array);
     }
+    if ( (retstr= LP_orderbook(base,rel,0)) != 0 )
+        free(retstr);
     txfees = 10 * relcoin->txfee;
     printf("%s inventory balance %.8f, relvolume %.8f + txfees %.8f\n",rel,dstr(abalance),relvolume,dstr(txfees));
     if ( dstr(abalance) < relvolume + dstr(txfees) )
