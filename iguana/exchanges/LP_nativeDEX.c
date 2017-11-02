@@ -767,7 +767,7 @@ void LP_pubkeysloop(void *ctx)
     {
         if ( time(NULL) > lasttime+60 )
         {
-            printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
+            //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
             LP_notify_pubkeys(ctx,LP_mypubsock);
             lasttime = (uint32_t)time(NULL);
         }
