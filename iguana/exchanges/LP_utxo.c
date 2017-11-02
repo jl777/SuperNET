@@ -981,3 +981,37 @@ int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
     }
     return(num);
 }
+
+void LP_unspents_cache(char *symbol,char *addr,char *arraystr)
+{
+    char fname[1024]; FILE *fp;
+    sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
+    if ( (fp= fopen(fname,"wb")) != 0 )
+    {
+        fwrite(arraystr,1,strlen(arraystr),fp);
+        fclose(fp);
+    }
+}
+
+void LP_unspents_load(char *symbol,char *addr)
+{
+    char fname[1024],*arraystr; long fsize; struct iguana_info *coin; cJSON *retjson;
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
+        if ( (arraystr= OS_filestr(&fsize,fname)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(arraystr)) != 0 )
+            {
+                if ( electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1) == 0 )
+                    printf("error electrum_process_array\n");
+                else printf("processed %s\n",arraystr);
+                free_json(retjson);
+            }
+            free(arraystr);
+        }
+    }
+}
+
+
+
