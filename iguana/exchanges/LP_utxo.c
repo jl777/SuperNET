@@ -984,11 +984,12 @@ int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
 
 void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedflag)
 {
-    char fname[1024]; FILE *fp;
+    char fname[1024]; FILE *fp=0;
     sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
     if ( updatedflag == 0 && (fp= fopen(fname,"rb")) == 0 )
         updatedflag = 1;
-    else fclose(fp);
+    else if ( fp != 0 )
+        fclose(fp);
     if ( updatedflag != 0 && (fp= fopen(fname,"wb")) != 0 )
     {
         fwrite(arraystr,1,strlen(arraystr),fp);
@@ -1006,6 +1007,7 @@ void LP_unspents_load(char *symbol,char *addr)
         {
             if ( (retjson= cJSON_Parse(arraystr)) != 0 )
             {
+                printf("PROCESS UNSPENTS %s\n",arraystr);
                 if ( electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1) == 0 )
                     printf("error electrum_process_array\n");
                 else printf("processed %s\n",arraystr);
