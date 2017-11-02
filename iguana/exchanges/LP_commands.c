@@ -337,6 +337,8 @@ bot_resume(botid)\n\
                     {
                         ptr->inactive = 0;
                         cJSON *array = cJSON_CreateArray();
+                        if ( ptr->smartaddr[0] != 0 )
+                            LP_unspents_load(coin,ptr->smartaddr);
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));
                     } else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
