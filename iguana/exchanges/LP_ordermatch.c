@@ -803,7 +803,9 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                 {
                     item = jitem(asks,i);
                     price = jdouble(item,"price");
-                    price *= 1.005;
+                    if ( price/maxprice < .9 )
+                        price *= 1.025;
+                    else price *= 1.001;
                     pubkey = jbits256(item,"pubkey");
                     if ( bits256_nonz(destpubkey) != 0 && bits256_cmp(destpubkey,pubkey) != 0 )
                         continue;
@@ -824,8 +826,8 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                         {
                             bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
                             asatoshis = autxo->S.satoshis;
-                                LP_listunspent_query(base,coinaddr);
-                                LP_listunspent_both(base,coinaddr,1);
+                            LP_listunspent_query(base,coinaddr);
+                            //LP_listunspent_both(base,coinaddr,1);
                             for (j=0; j<maxiters; j++)
                             {
                                 if ( (bestutxo= LP_ordermatch_iter(utxos,max,ordermatchpricep,bestsatoshisp,bestdestsatoshisp,basecoin,coinaddr,asatoshis,price,txfee,desttxfee,pubp->pubkey,gui)) != 0 )

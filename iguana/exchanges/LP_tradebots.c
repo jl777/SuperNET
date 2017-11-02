@@ -262,8 +262,7 @@ double LP_orderbook_maxrel(char *base,char *rel,double maxprice)
     char *retstr; int32_t i,numasks; cJSON *retjson,*asks,*item; double maxvol,maxrel = 0.;
     if ( (retstr= LP_orderbook(base,rel,0)) != 0 )
     {
-        
-        printf("maxprice %.8f %s/%s\n",maxprice,base,rel);
+        //printf("maxprice %.8f %s/%s\n",maxprice,base,rel);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (asks= jarray(&numasks,retjson,"asks")) != 0 )
@@ -274,7 +273,7 @@ double LP_orderbook_maxrel(char *base,char *rel,double maxprice)
                     if ( jdouble(item,"price") > maxprice )
                         break;
                     maxvol = jdouble(item,"maxvolume");
-                    printf("(%s) -> %.8f\n",jprint(item,0),maxvol);
+                    //printf("(%s) -> %.8f\n",jprint(item,0),maxvol);
                     if ( maxvol > maxrel )
                         maxrel = maxvol;
                 }
