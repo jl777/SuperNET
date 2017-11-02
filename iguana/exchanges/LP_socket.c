@@ -543,7 +543,7 @@ cJSON *electrum_address_getmempool(char *symbol,struct electrum_info *ep,cJSON *
 
 cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr,int32_t electrumflag)
 {
-    cJSON *retjson=0; char *retstr; struct LP_address *ap; struct iguana_info *coin; int32_t height,usecache=1;
+    cJSON *retjson=0; char *retstr; struct LP_address *ap; struct iguana_info *coin; int32_t updatedflag,height,usecache=1;
     if ( (coin= LP_coinfind(symbol)) == 0 )
         return(0);
     if ( ep == 0 || ep->heightp == 0 )
@@ -564,12 +564,13 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
             printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
+            updatedflag = 0;
             if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
-                LP_postutxos(coin->symbol,addr);
+                LP_postutxos(coin->symbol,addr), updatedflag = 1;
             if ( strcmp(addr,coin->smartaddr) == 0 )
             {
                 retstr = jprint(retjson,0);
-                LP_unspents_cache(coin->symbol,coin->smartaddr,retstr);
+                LP_unspents_cache(coin->symbol,coin->smartaddr,retstr,updatedflag);
                 free(retstr);
             }
             if ( ap != 0 )

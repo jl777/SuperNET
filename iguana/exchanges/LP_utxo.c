@@ -982,11 +982,14 @@ int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
     return(num);
 }
 
-void LP_unspents_cache(char *symbol,char *addr,char *arraystr)
+void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedflag)
 {
     char fname[1024]; FILE *fp;
     sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
-    if ( (fp= fopen(fname,"wb")) != 0 )
+    if ( updatedflag == 0 && (fp= fopen(fname,"rb")) == 0 )
+        updatedflag = 1;
+    else fclose(fp);
+    if ( updatedflag != 0 && (fp= fopen(fname,"wb")) != 0 )
     {
         fwrite(arraystr,1,strlen(arraystr),fp);
         fclose(fp);
