@@ -971,7 +971,13 @@ void LP_dedicatedloop(void *arg)
 
 cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
 {
-    struct electrum_info *ep; int32_t already; cJSON *retjson = cJSON_CreateObject();
+    struct electrum_info *ep; int32_t already; cJSON *retjson;
+    if ( ipaddr == 0 || ipaddr[0] == 0 || port == 0 )
+    {
+        coin->electrum = 0;
+        return(cJSON_Parse("{\"result\":\"success\",\"status\":\"electrum mode disabled, now in native coin mode\"}"));
+    }
+    retjson = cJSON_CreateObject();
     jaddstr(retjson,"ipaddr",ipaddr);
     jaddnum(retjson,"port",port);
     if ( (ep= LP_electrum_info(&already,coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10)) == 0 )
