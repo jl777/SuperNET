@@ -20,8 +20,10 @@
 
 struct LP_metricinfo
 {
+    double metric;
+    double price,balance,minvol;
     bits256 pubkey;
-    double metric,price,balance,minvol,maxvol;
+    double maxvol;
     int32_t ind,numutxos,age,pendingswaps;
 };
 
@@ -123,7 +125,7 @@ void LP_RTmetrics_swapsinfo(char *refbase,char *refrel,cJSON *swaps,int32_t nums
         quoteid = juint(item,"quoteid");
         LP_RTmetrics_pendingswap(srcpub);
         LP_RTmetrics_pendingswap(destpub);
-        if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
+        if ( 0 && (retstr= basilisk_swapentry(requestid,quoteid)) != 0 ) // no need for this
         {
             if ( (swapjson= cJSON_Parse(retstr)) != 0 )
             {
@@ -173,30 +175,37 @@ void LP_RTmetrics_update(char *base,char *rel)
             char str[65]; printf("%s has %d pending swaps! which is more than %d\n",bits256_str(str,LP_RTmetrics.pending_pubkeys[i]),LP_RTmetrics.pending_swaps[i],LP_MAXPENDING_SWAPS);
             LP_RTmetrics_blacklistadd(LP_RTmetrics.pending_pubkeys[i]);
         }
-    printf("%d pubkeys have pending swaps, whitelist.%d blacklist.%d avoidtxids.%d\n",LP_RTmetrics.numpendings,LP_RTmetrics.numwhitelist,LP_RTmetrics.numblacklist,LP_RTmetrics.numavoidtxids);
+    //printf("%d pubkeys have pending swaps, whitelist.%d blacklist.%d avoidtxids.%d\n",LP_RTmetrics.numpendings,LP_RTmetrics.numwhitelist,LP_RTmetrics.numblacklist,LP_RTmetrics.numavoidtxids);
 }
 
 double _LP_RTmetric_calc(struct LP_metricinfo *mp,double bestprice,double maxprice,double relvolume)
 {
-    int32_t n; double metric,origmetric = (bestprice / mp->price);
+    int32_t n; double metric,origmetric = (mp->price / bestprice);
     metric = origmetric;
     if ( mp->numutxos == 0 || relvolume == 0. || mp->maxvol == 0. || mp->balance == 0. )
+    {
+        //printf("skip i.%d as no info\n",mp->ind);
         return(metric * 100.);
+    }
     if ( relvolume < mp->minvol )
     {
         metric *= (mp->minvol / relvolume);
+        //printf("relvolume < minvol %.8f\n",(mp->minvol / relvolume));
     }
     else if ( relvolume > mp->maxvol )
     {
         metric *= (relvolume / mp->maxvol);
+        //printf("relvolume > minvol %.8f\n",(relvolume / mp->maxvol));
     }
     if ( relvolume < mp->balance/LP_MINVOL )
     {
         metric *= (mp->balance / relvolume);
+        //printf("relvolume < balance %.8f\n",(mp->balance / relvolume));
     }
     else if ( relvolume > mp->balance/mp->numutxos )
     {
         metric *= (relvolume / (mp->balance/mp->numutxos));
+        //printf("relvolume < ave %.8f\n",(relvolume / (mp->balance/mp->numutxos)));
     }
     if ( mp->age > LP_ORDERBOOK_DURATION*0.8 )
         metric *= 2;
@@ -205,8 +214,8 @@ double _LP_RTmetric_calc(struct LP_metricinfo *mp,double bestprice,double maxpri
     if ( (n= mp->pendingswaps) > 0 )
         while ( n-- > 0 )
             metric *= 1.1;
-    if ( metric != origmetric )
-        printf("price %.8f orig %.8f -> %.8f relvol %.8f min %.8f max %.8f bal %.8f age.%d pend.%d\n",mp->price,origmetric,metric,relvolume,mp->minvol,mp->maxvol,mp->balance,mp->age,mp->pendingswaps);
+    //if ( metric != origmetric )
+        printf("i.%d price %.8f orig %.8f -> %.8f relvol %.8f min %.8f max %.8f bal %.8f age.%d pend.%d\n",mp->ind,mp->price,origmetric,metric,relvolume,mp->minvol,mp->maxvol,mp->balance,mp->age,mp->pendingswaps);
     return(metric);
 }
 
@@ -224,9 +233,22 @@ void LP_RTmetric_calc(struct LP_metricinfo *sortbuf,int32_t ind,cJSON *item,doub
     sortbuf[ind].metric = _LP_RTmetric_calc(&sortbuf[ind],bestprice,maxprice,relvolume);
 }
 
+int _increasing_metrics(const void *a,const void *b)
+{
+#define ptr_a ((struct LP_metricinfo *)a)
+#define ptr_b ((struct LP_metricinfo *)b)
+    if ( ptr_b->metric > ptr_a->metric )
+        return(-1);
+    else if ( ptr_b->metric < ptr_a->metric )
+        return(1);
+    return(0);
+#undef ptr_a
+#undef ptr_b
+}
+
 cJSON *LP_RTmetrics_sort(char *base,char *rel,cJSON *rawasks,int32_t numasks,double maxprice,double relvolume)
 {
-    cJSON *array,*item; int32_t i,num,groupi; double price,prevdepth,bestprice; struct LP_metricinfo *sortbuf;
+    cJSON *array=rawasks,*item; int32_t i,num,groupi; double price,prevdepth,bestprice; struct LP_metricinfo *sortbuf;
     groupi = -1;
     bestprice = 0.;
     for (num=i=0; i<numasks; i++)
@@ -250,19 +272,20 @@ cJSON *LP_RTmetrics_sort(char *base,char *rel,cJSON *rawasks,int32_t numasks,dou
             item = jitem(rawasks,i);
             LP_RTmetric_calc(sortbuf,i,item,bestprice,maxprice,relvolume,prevdepth);
             prevdepth = jdouble(item,"depth");
+            //printf("%.8f ",sortbuf[i].metric);
         }
-        revsortds(&sortbuf[0].metric,groupi+1,sizeof(*sortbuf));
+        qsort(&sortbuf[0].metric,groupi+1,sizeof(*sortbuf),_increasing_metrics);
         array = cJSON_CreateArray();
         for (i=0; i<=groupi; i++)
         {
-            printf("(%d -> %d) ",i,sortbuf[i].ind);
+            printf("(%d <- %d %.3f) ",i,sortbuf[i].ind,sortbuf[i].metric);
             item = jitem(rawasks,sortbuf[i].ind);
             jaddi(array,jduplicate(item));
         }
-        free(sortbuf);
-        for (; i<num; i++)
+        for (; i<numasks; i++)
             jaddi(array,jduplicate(jitem(rawasks,i)));
         printf("new ask order for %d of %d, capped at num.%d\n",groupi,numasks,num);
-    } else array = rawasks;
+        free(sortbuf);
+    }
     return(array);
 }

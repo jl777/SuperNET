@@ -168,7 +168,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                 }
                 else
                 {
-                    printf("LP_address_utxo_ptrs skips %s %s payment %s/v%d is spent\n",coin->symbol,coinaddr,bits256_str(str,up->U.txid),up->U.vout);
+                    //printf("LP_address_utxo_ptrs skips %s %s payment %s/v%d is spent\n",coin->symbol,coinaddr,bits256_str(str,up->U.txid),up->U.vout);
                     up->spendheight = 1;
                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                         tx->outpoints[up->U.vout].spendheight = 1;
@@ -362,9 +362,31 @@ bits256 validate_merkle(int32_t pos,bits256 txid,cJSON *proofarray,int32_t proof
     return(hash);
 }
 
+bits256 LP_merkleroot(struct iguana_info *coin,struct electrum_info *ep,int32_t height)
+{
+    cJSON *hdrobj; bits256 merkleroot;
+    memset(merkleroot.bytes,0,sizeof(merkleroot));
+    if ( coin->cachedmerkleheight == height )
+        return(coin->cachedmerkle);
+    if ( (hdrobj= electrum_getheader(coin->symbol,ep,&hdrobj,height)) != 0 )
+    {
+        if ( jobj(hdrobj,"merkle_root") != 0 )
+        {
+            merkleroot = jbits256(hdrobj,"merkle_root");
+            if ( bits256_nonz(merkleroot) != 0 )
+            {
+                coin->cachedmerkle = merkleroot;
+                coin->cachedmerkleheight = height;
+            }
+        }
+        free_json(hdrobj);
+    } else printf("couldnt get header for ht.%d\n",height);
+    return(merkleroot);
+}
+
 int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256 txid,int32_t height)
 {
-    cJSON *merkobj,*merkles,*hdrobj; bits256 roothash,merkleroot; int32_t m,SPV = 0;
+    cJSON *merkobj,*merkles; bits256 roothash,merkleroot; int32_t m,SPV = 0;
     if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
     {
         char str[65],str2[65],str3[65];
@@ -373,20 +395,16 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
         if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 )
         {
             roothash = validate_merkle(jint(merkobj,"pos"),txid,merkles,m);
-            if ( (hdrobj= electrum_getheader(coin->symbol,ep,&hdrobj,height)) != 0 )
+            merkleroot = LP_merkleroot(coin,ep,height);
+            if ( bits256_nonz(merkleroot) != 0 )
             {
-                if ( jobj(hdrobj,"merkle_root") != 0 )
+                if ( bits256_cmp(merkleroot,roothash) == 0 )
                 {
-                    merkleroot = jbits256(hdrobj,"merkle_root");
-                    if ( bits256_cmp(merkleroot,roothash) == 0 )
-                    {
-                        SPV = height;
-                        //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
-                    }
-                    else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s (%s)\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot),jprint(hdrobj,0));
-                } else SPV = 0;
-                free_json(hdrobj);
-            } else printf("couldnt get header for ht.%d\n",height);
+                    SPV = height;
+                    //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
+                }
+                else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
+            } else SPV = 0;
         }
         if ( SPV < 0 )
         {
@@ -963,3 +981,42 @@ int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
     }
     return(num);
 }
+
+void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedflag)
+{
+    char fname[1024]; FILE *fp=0;
+    sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
+    if ( updatedflag == 0 && (fp= fopen(fname,"rb")) == 0 )
+        updatedflag = 1;
+    else if ( fp != 0 )
+        fclose(fp);
+    if ( updatedflag != 0 && (fp= fopen(fname,"wb")) != 0 )
+    {
+        fwrite(arraystr,1,strlen(arraystr),fp);
+        fclose(fp);
+    }
+}
+
+void LP_unspents_load(char *symbol,char *addr)
+{
+    char fname[1024],*arraystr; long fsize; struct iguana_info *coin; cJSON *retjson;
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
+        if ( (arraystr= OS_filestr(&fsize,fname)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(arraystr)) != 0 )
+            {
+                printf("PROCESS UNSPENTS %s\n",arraystr);
+                if ( electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1) == 0 )
+                    printf("error electrum_process_array\n");
+                else printf("processed %s\n",arraystr);
+                free_json(retjson);
+            }
+            free(arraystr);
+        }
+    }
+}
+
+
+

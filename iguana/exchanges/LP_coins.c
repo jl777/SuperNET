@@ -198,7 +198,7 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     if ( coin->userpass[0] != 0 )
     {
         jaddnum(item,"height",LP_getheight(coin));
-        balance = LP_smartbalance(coin);
+        balance = LP_RTsmartbalance(coin);
         jaddnum(item,"balance",dstr(balance));
         jaddnum(item,"KMDvalue",dstr(LP_KMDvalue(coin,balance)));
     }
@@ -389,9 +389,9 @@ struct iguana_info *LP_coinfind(char *symbol)
     if ( (coin= LP_coinadd(&cdata)) != 0 )
     {
         coin->inactive = isinactive * (uint32_t)time(NULL);
-        if ( strcmp(symbol,"KMD") == 0 )
+        /*if ( strcmp(symbol,"KMD") == 0 )
             coin->inactive = 0;
-        else if ( strcmp(symbol,"BTC") == 0 )
+        else*/ if ( strcmp(symbol,"BTC") == 0 )
         {
             coin->inactive = (uint32_t)time(NULL) * !IAMLP;
             printf("BTC inactive.%u\n",coin->inactive);

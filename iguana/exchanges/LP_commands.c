@@ -141,6 +141,14 @@ snapshot(coin, height)\n\
 snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
 stop()\n\
+bot_list()\n\
+bot_buy(base, rel, maxprice, relvolume) -> botid\n\
+bot_sell(base, rel, minprice, basevolume) -> botid\n\
+bot_settings(botid, newprice, newvolume)\n\
+bot_status(botid)\n\
+bot_stop(botid)\n\
+bot_pause(botid)\n\
+bot_resume(botid)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
@@ -190,6 +198,11 @@ stop()\n\
         {
             printf("DEBUG stop\n");
             exit(0);
+        }
+        else if ( strcmp(method,"millis") == 0 )
+        {
+            LP_millistats_update(0);
+            return(clonestr("{\"result\":\"success\"}"));
         }
         else if ( strcmp(method,"getmessages") == 0 )
         {
@@ -249,6 +262,8 @@ stop()\n\
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
             else return(basilisk_swaplist(0,0));
         }
+        else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
+            return(retstr);
         if ( base != 0 && rel != 0 )
         {
             double price,bid,ask;
@@ -290,7 +305,7 @@ stop()\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey"),0));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"sell") == 0 )
@@ -298,7 +313,7 @@ stop()\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey")));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey"),0));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
@@ -327,6 +342,8 @@ stop()\n\
                     {
                         ptr->inactive = 0;
                         cJSON *array = cJSON_CreateArray();
+                        if ( ptr->smartaddr[0] != 0 )
+                            LP_unspents_load(coin,ptr->smartaddr);
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));
                     } else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
@@ -503,12 +520,13 @@ stop()\n\
         return(jprint(LP_coinsjson(0),1));
     else if ( strcmp(method,"wantnotify") == 0 )
     {
-        bits256 pub;
+        bits256 pub; static uint32_t lastnotify;
         pub = jbits256(argjson,"pub");
         //char str[65]; printf("got wantnotify.(%s) vs %s\n",jprint(argjson,0),bits256_str(str,G.LP_mypub25519));
-        if ( bits256_cmp(pub,G.LP_mypub25519) == 0 )
+        if ( bits256_cmp(pub,G.LP_mypub25519) == 0 && time(NULL) > lastnotify+30 )
         {
-            printf("wantnotify for me!\n");
+            lastnotify = (uint32_t)time(NULL);
+            //printf("wantnotify for me!\n");
             LP_notify_pubkeys(ctx,LP_mypubsock);
         }
         retstr = clonestr("{\"result\":\"success\"}");
@@ -526,7 +544,7 @@ stop()\n\
                     LP_listunspent_issue(coin,coinaddr,1);
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                     {
-                        printf("network invoked\n");
+                        //printf("network invoked\n");
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                         //LP_smartutxos_push(ptr);
                     }
@@ -560,44 +578,14 @@ stop()\n\
         }
         retstr = clonestr("{\"result\":\"success\"}");
     }
-    //else if ( strcmp(method,"checktxid") == 0 )
-    //    retstr = LP_spentcheck(argjson);
-    //else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
-    //    return(clonestr("{\"result\":\"at least one of coins disabled\"}"));
-    //else if ( IAMLP == 0 && LP_isdisabled(jstr(argjson,"coin"),0) != 0 )
-    //    retstr = clonestr("{\"result\":\"coin is disabled\"}");
     else if ( strcmp(method,"encrypted") == 0 )
         retstr = clonestr("{\"result\":\"success\"}");
     else // psock requests/response
     {
         if ( IAMLP != 0 )
         {
-            /*if ( strcmp(method,"broadcast") == 0 )
-             {
-             bits256 zero; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
-             if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
-             {
-             Broadcaststr = jprint(reqjson,0);
-             if ( (cipherstr= jstr(reqjson,"cipher")) != 0 )
-             {
-             cipherlen = (int32_t)strlen(cipherstr) >> 1;
-             if ( cipherlen <= sizeof(cipher) )
-             {
-             decode_hex(cipher,cipherlen,cipherstr);
-             LP_queuesend(calc_crc32(0,&cipher[2],cipherlen-2),LP_mypubsock,base,rel,cipher,cipherlen);
-             } else retstr = clonestr("{\"error\":\"cipher too big\"}");
-             }
-             else
-             {
-             memset(zero.bytes,0,sizeof(zero));
-             //printf("broadcast.(%s)\n",Broadcaststr);
-             LP_reserved_msg(base!=0?base:jstr(argjson,"coin"),rel,zero,jprint(reqjson,0));
-             }
-             retstr = clonestr("{\"result\":\"success\"}");
-             } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
-             }
-             else*/ if ( strcmp(method,"psock") == 0 )
-             {
+            if ( strcmp(method,"psock") == 0 )
+            {
                  if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
                  {
                      if ( LP_mypeer != 0 )

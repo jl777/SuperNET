@@ -303,7 +303,7 @@ struct iguana_thread *iguana_launch(struct iguana_info *coin,char *name,iguana_f
         coin->Launched[t->type]++;
     retval = OS_thread_create(&t->handle,NULL,(void *)iguana_launcher,(void *)t);
     if ( retval != 0 )
-        printf("error launching %s\n",t->name);
+        printf("error launching %s retval.%d errno.%d\n",t->name,retval,errno);
     while ( (t= queue_dequeue(&TerminateQ)) != 0 )
     {
         if ( (rand() % 100000) == 0 && coin != 0 )

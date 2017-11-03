@@ -25,6 +25,7 @@ char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
     maxerrs = LP_MAXPEER_ERRORS;
     if ( peer == 0 || (peer->errors < maxerrs || peer->good >= LP_MINPEER_GOOD) )
     {
+        //printf("issue.(%s)\n",url);
         if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) == 0 )
         {
             if ( peer != 0 )
@@ -170,17 +171,189 @@ void LP_unspents_mark(char *symbol,cJSON *vins)
 
 char *NXTnodes[] = { "62.75.159.113", "91.44.203.238", "82.114.88.225", "78.63.207.76", "188.174.110.224", "91.235.72.49", "213.144.130.91", "209.222.98.250", "216.155.128.10", "178.33.203.157", "162.243.122.251", "69.163.47.173", "193.151.106.129", "78.94.2.74", "192.3.196.10", "173.33.112.87", "104.198.173.28", "35.184.154.126", "174.140.167.239", "23.88.113.131", "198.71.84.173", "178.150.207.53", "23.88.61.53", "192.157.233.106", "192.157.241.212", "23.89.192.88", "23.89.200.27", "192.157.241.139", "23.89.200.63", "23.89.192.98", "163.172.214.102", "176.9.85.5", "80.150.243.88", "80.150.243.92", "80.150.243.98", "109.70.186.198", "146.148.84.237", "104.155.56.82", "104.197.157.140", "37.48.73.249", "146.148.77.226", "84.57.170.200", "107.161.145.131", "80.150.243.97", "80.150.243.93", "80.150.243.100", "80.150.243.95", "80.150.243.91", "80.150.243.99", "80.150.243.96", "93.231.187.177", "212.237.23.85", "35.158.179.254", "46.36.66.41", "185.170.113.79", "163.172.68.112", "78.47.35.210", "77.90.90.75", "94.177.196.134", "212.237.22.215", "94.177.234.11", "167.160.180.199", "54.68.189.9", "94.159.62.14", "195.181.221.89", "185.33.145.94", "195.181.209.245", "195.181.221.38", "195.181.221.162", "185.33.145.12", "185.33.145.176", "178.79.128.235", "94.177.214.120", "94.177.199.41", "94.177.214.200", "94.177.213.201", "212.237.13.162", "195.181.221.236", "195.181.221.185", "185.28.103.187", "185.33.146.244", "217.61.123.71", "195.181.214.45", "195.181.212.99", "195.181.214.46", "195.181.214.215", "195.181.214.68", "217.61.123.118", "195.181.214.79", "217.61.123.14", "217.61.124.100", "195.181.214.111", "85.255.0.176", "81.2.254.116", "217.61.123.184", "195.181.212.231", "94.177.214.110", "195.181.209.164", "104.129.56.238", "85.255.13.64", "167.160.180.206", "217.61.123.226", "167.160.180.208", "93.186.253.127", "212.237.6.208", "94.177.207.190", "217.61.123.119", "85.255.1.245", "217.61.124.157", "37.59.57.141", "167.160.180.58", "104.223.53.14", "217.61.124.69", "195.181.212.103", "85.255.13.141", "104.207.133.204", "71.90.7.107", "107.150.18.108", "23.94.134.161", "80.150.243.13", "80.150.243.11", "185.81.165.52", "80.150.243.8" };
 
+static char *assetids[][4] =
+{
+    { "13502152099823770958", "SUPERNETx2", "10000", "10000" },
+    { "12071612744977229797", "SUPERNET", "10000", "10000" },
+    { "12071612744977229797", "UNITY", "10000", "10000" },
+    { "15344649963748848799", "DEX", "1", "100000000" },
+    { "6883271355794806507", "PANGEA", "10000", "10000" },
+    { "17911762572811467637", "JUMBLR", "10000", "10000" },
+    { "17083334802666450484", "BET", "10000", "10000" },
+    { "13476425053110940554", "CRYPTO", "1000", "100000" },
+    { "6932037131189568014", "HODL", "1", "100000000" },
+    { "3006420581923704757", "SHARK", "10000", "10000" },
+    { "17571711292785902558", "BOTS", "1", "100000000" },
+    { "10524562908394749924", "MGW", "1", "100000000" },
+};
+
+uint64_t LP_assetid_mult(int32_t *assetindp,char *name,uint64_t assetid)
+{
+    int32_t i; uint64_t mult = 0;
+    name[0] = 0;
+    *assetindp = -1;
+    for (i=0; i<sizeof(assetids)/sizeof(*assetids); i++)
+    {
+        if ( assetid == calc_nxt64bits(assetids[i][0]) )
+        {
+            *assetindp = i;
+            mult = atoi(assetids[i][3]);
+            strcpy(name,assetids[i][1]);
+            break;
+        }
+    }
+    return(mult);
+}
+
+cJSON *LP_NXT_message(char *method,uint64_t txnum,char *passphrase)
+{
+    char url[1024],*retstr; cJSON *retjson = 0;
+    sprintf(url,"http://127.0.0.1:7876/nxt?requestType=%s&transaction=%llu&secretPhrase=%s",method,(long long)txnum,passphrase);
+    //printf("issue.(%s)\n",url);
+    if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            
+        }
+        free(retstr);
+    }
+    return(retjson);
+}
+
+cJSON *LP_NXT_decrypt(uint64_t txnum,char *account,char *data,char *nonce,char *passphrase)
+{
+    char url[1024],*retstr; cJSON *retjson = 0;
+    if ( account != 0 && data != 0 && nonce != 0 && passphrase != 0 )
+    {
+        sprintf(url,"http://127.0.0.1:7876/nxt?requestType=readMessage&transaction=%llu&secretPhrase=%s",(long long)txnum,passphrase);
+        if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                
+            }
+            free(retstr);
+        }
+    }
+    return(retjson);
+}
+
+cJSON *LP_NXT_redeems()
+{
+    char url[1024],*retstr,*recv,*method,*msgstr,assetname[16]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
+    uint64_t txnum_marker = calc_nxt64bits("0");
+    uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143");
+char *passphrase = "";
+char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
+    memset(totals,0,sizeof(totals));
+    sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getBlockchainTransactions&account=%s",account);
+    //printf("calling (%s)\n",url);
+    if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (array= jarray(&numtx,retjson,"transactions")) != 0 )
+            {
+                for (i=0; i<numtx; i++)
+                {
+                    msgjson = encjson = decjson = 0;
+                    txnum = assetid = qty = 0;
+                    item = jitem(array,i);
+                    msgstr = jstr(item,"message");
+                    txnum = j64bits(item,"transaction");
+                    if ( txnum == txnum_marker )
+                        past_marker = 1;
+                    //printf("%d: %s\n",i,jprint(item,0));
+                    if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 )
+                    {
+                        if ( (attach= jobj(item,"attachment")) != 0 && jint(attach,"version.AssetTransfer") == 1 )
+                        {
+                            assetid = j64bits(attach,"asset");
+                            qty = j64bits(attach,"quantityQNT");
+                            //printf("txnum.%llu (%s)\n",(long long)txnum,jprint(attach,0));
+                            if ( (msgstr == 0 || msgstr[0] == 0) && jint(attach,"version.PrunablePlainMessage") == 1 )
+                            {
+                                method = "getPrunableMessage";
+                                if ( (msgjson= LP_NXT_message(method,txnum,"test")) != 0 )
+                                {
+                                    msgstr = jstr(msgjson,"message");
+                                    //printf("%d method.(%s) (%s)\n",i,method,msgstr);
+                                }
+                            }
+                            if ( msgstr == 0 || msgstr[0] == 0 )
+                                msgstr = jstr(attach,"message");
+                            if ( msgstr == 0 || msgstr[0] == 0 )
+                            {
+                                
+                                if ( (encjson= jobj(attach,"encryptedMessage")) != 0 )
+                                {
+                                    msgstr = "encryptedMessage";//jstr(encjson,"data");
+                                    if ( (decjson= LP_NXT_decrypt(txnum,account,jstr(encjson,"data"),jstr(encjson,"nonce"),passphrase)) != 0 )
+                                    {
+                                        //printf("%s\n",jprint(decjson,0));
+                                        msgstr = jstr(decjson,"decryptedMessage");
+                                    }
+
+                                }
+                            }
+                        }
+                        mult = LP_assetid_mult(&ind,assetname,assetid);
+                        if ( ind >= 0 )
+                            totals[ind] += qty * mult;
+                        if ( msgstr != 0 && assetname[0] != 0 && qty != 0 )
+                        {
+                            char validaddress[64]; int32_t z,n;
+                            n = (int32_t)strlen(msgstr);
+                            for (z=0; z<n; z++)
+                            {
+                                if ( msgstr[z] == 'R' )
+                                    break;
+                            }
+                            memset(validaddress,0,sizeof(validaddress));
+                            if ( n-z >= 34 )
+                                strncpy(validaddress,&msgstr[z],34);
+                            if ( strlen(validaddress) == 34 || strlen(validaddress) == 33 )
+                            {
+                                printf("%-4d: (%34s) <- %13.5f %10s tx.%llu past_marker.%d\n",i,validaddress,dstr(qty * mult),assetname,(long long)txnum,past_marker);
+                            } else printf("%-4d: (%34s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
+                            if ( past_marker == 0 )
+                            {
+                                
+                            }
+                        }
+                        if ( msgjson != 0 )
+                            free_json(msgjson);
+                        if ( decjson != 0 )
+                            free_json(decjson);
+                    }
+                    if ( txnum == txnum_marker2 )
+                        break;
+                }
+            }
+            //free_json(retjson);
+        }
+        free(retstr);
+    }
+    printf("\nTotal redeemed\n");
+    for (i=0; i<sizeof(totals)/sizeof(*totals); i++)
+    {
+        if ( totals[i] != 0 )
+            printf("%-10s %13.5f\n",assetids[i][1],dstr(totals[i]));
+    }
+    return(retjson);
+}
 
 cJSON *LP_assethbla(char *assetid)
 {
     char url[1024],*retstr; int32_t n; cJSON *array,*bid=0,*ask=0,*retjson;
-    sprintf(url,"http://%s:7876/nxt?=%%2Fnxt&requestType=getBidOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
+    sprintf(url,"http://%s:7876/nxt?requestType=getBidOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         bid = cJSON_Parse(retstr);
         free(retstr);
     }
-    sprintf(url,"http://%s:7876/nxt?=%%2Fnxt&requestType=getAskOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
+    sprintf(url,"http://%s:7876/nxt?requestType=getAskOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         ask = cJSON_Parse(retstr);
@@ -225,7 +398,7 @@ int32_t LP_getheight(struct iguana_info *coin)
     return(height);
 }
 
-uint64_t LP_smartbalance(struct iguana_info *coin)
+uint64_t LP_RTsmartbalance(struct iguana_info *coin)
 {
     cJSON *array,*item; char buf[512],*retstr; int32_t i,n; uint64_t valuesum,value;
     valuesum = 0;
@@ -522,7 +695,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
             }
             else if ( IAMLP == 0 )
             {
-                printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
+                //printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
                 LP_listunspent_query(coin->symbol,coin->smartaddr);
                 if ( fullflag != 0 )
                 {
@@ -690,7 +863,7 @@ char *LP_sendrawtransaction(char *symbol,char *signedtx)
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"sendrawtransaction",paramstr);
-        printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
+        //printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
         free(paramstr);
     }
     else

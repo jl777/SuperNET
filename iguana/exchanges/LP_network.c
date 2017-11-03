@@ -29,7 +29,7 @@ struct psock
 uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT;
 
 #ifdef FROM_JS
-/*
+
 int32_t nn_socket(int domain, int protocol)
 {
     return(0);
@@ -69,6 +69,7 @@ int32_t nn_shutdown(int s, int how)
 
 int32_t nn_send(int s, const void *buf, size_t len, int flags)
 {
+    printf("JS cant nn_send (%s)\n",(char *)buf);
     return(0);
 }
 
@@ -90,20 +91,20 @@ const char *nn_strerror(int errnum)
 int32_t nn_poll(struct nn_pollfd *fds, int nfds, int timeout)
 {
     return(0);
-}*/
+}
 
 
 #endif
 
 char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port);
+    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port);
     return(str);
 }
 
-char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
+/*char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port+10);
+    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port+10);
     return(str);
 }
 
@@ -123,7 +124,7 @@ int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
     if ( freeflag != 0 )
         free(msg);
     return(sentbytes);
-}
+}*/
 
 int32_t LP_sockcheck(int32_t sock)
 {
@@ -147,20 +148,72 @@ int32_t LP_Qenqueued,LP_Qerrors,LP_Qfound;
 void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,int32_t peerind)
 {
     struct LP_queue *ptr;
-    ptr = calloc(1,sizeof(*ptr) + msglen);
+    ptr = calloc(1,sizeof(*ptr) + msglen + sizeof(bits256));
     ptr->crc32 = crc32;
     ptr->sock = sock;
     ptr->peerind = peerind;
-    ptr->msglen = msglen;
-    memcpy(ptr->msg,msg,msglen);
+    ptr->msglen = (int32_t)(msglen + sizeof(bits256));
+    memcpy(ptr->msg,msg,msglen); // sizeof(bits256) at the end all zeroes
     DL_APPEND(LP_Q,ptr);
     LP_Qenqueued++;
     //printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
 }
 
+uint32_t _LP_magic_check(bits256 hash,bits256 magic)
+{
+    bits256 pubkey,shared;
+    pubkey = curve25519(magic,curve25519_basepoint9());
+    shared = curve25519(hash,pubkey);
+    return(shared.uints[1] & ((1 << LP_MAGICBITS)-1));
+}
+
+bits256 LP_calc_magic(uint8_t *msg,int32_t len)
+{
+    static uint32_t maxn,counter,nsum; static double sum;
+    bits256 magic,hash; int32_t n = 0; double millis;
+    vcalc_sha256(0,hash.bytes,msg,len);
+    millis = OS_milliseconds();
+    while ( 1 )
+    {
+        magic = rand256(1);
+        if ( _LP_magic_check(hash,magic) == LP_BARTERDEX_VERSION )
+            break;
+        n++;
+    }
+    sum += (OS_milliseconds() - millis);
+    nsum += n;
+    counter++;
+    if ( n > maxn || (rand() % 100) == 0 )
+    {
+        if ( n > maxn )
+        {
+            printf("LP_calc_magic maxn.%d <- %d\n",maxn,n);
+            maxn = n;
+        }
+        printf("millis %.3f ave %.3f, aveiters %.1f\n",OS_milliseconds() - millis,sum/counter,(double)nsum/counter);
+    }
+    return(magic);
+}
+
+int32_t LP_magic_check(uint8_t *msg,int32_t recvlen,char *remoteaddr)
+{
+    bits256 magic,hash; uint32_t val;
+    recvlen -= sizeof(bits256);
+    if ( recvlen > 0 )
+    {
+        vcalc_sha256(0,hash.bytes,msg,recvlen);
+        memcpy(magic.bytes,&msg[recvlen],sizeof(magic));
+        val = _LP_magic_check(hash,magic);
+        if ( val != LP_BARTERDEX_VERSION )
+            printf("magicval = %x from %s\n",val,remoteaddr);
+        return(val == LP_BARTERDEX_VERSION);
+    }
+    return(-1);
+}
+
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
 {
-    static uint32_t crcs[1024]; static unsigned long dup,total;
+    static uint32_t crcs[4096]; static unsigned long dup,total;
     int32_t i;
     *duplicatep = 0;
     if ( ind < 0 )
@@ -215,8 +268,11 @@ int32_t LP_peerindsock(int32_t *peerindp)
 void queue_loop(void *arg)
 {
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
+    strcpy(queue_loop_stats.name,"queue_loop");
+    queue_loop_stats.threshold = 500.;
     while ( 1 )
     {
+        LP_millistats_update(&queue_loop_stats);
         nonz = 0;
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = 0;
@@ -228,6 +284,9 @@ void queue_loop(void *arg)
             {
                 if ( LP_sockcheck(ptr->sock) > 0 )
                 {
+                    bits256 magic;
+                    magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
+                    memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
                     if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                         printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
                     ptr->sock = -1;
@@ -282,32 +341,7 @@ void queue_loop(void *arg)
 void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
     int32_t maxind,peerind = 0; //sentbytes,
-    if ( sock0 >= 0 || sock1 >= 0 )
-    {
-/*        if ( sock0 >= 0 && LP_sockcheck(sock0) > 0 )
-        {
-            if ( (sentbytes= nn_send(sock0,msg,msglen,0)) != msglen )
-                printf("_LP_queuesend0 sent %d instead of %d\n",sentbytes,msglen);
-            else
-            {
-printf("Q sent %u msglen.%d (%s)\n",crc32,msglen,msg);
-                sock0 = -1;
-            }
-        }
-        if ( sock1 >= 0 && LP_sockcheck(sock1) > 0 )
-        {
-            if ( (sentbytes= nn_send(sock1,msg,msglen,0)) != msglen )
-                printf("_LP_queuesend1 sent %d instead of %d\n",sentbytes,msglen);
-            else
-            {
-printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
-                sock1 = -1;
-            }
-        }
-        if ( sock0 < 0 && sock1 < 0 )
-            return;*/
-    }
-    else
+    if ( sock0 < 0 && sock1 < 0 )
     {
         if ( (maxind= LP_numpeers()) > 0 )
             peerind = (rand() % maxind) + 1;
@@ -326,19 +360,10 @@ printf("Q sent1 %u msglen.%d (%s)\n",crc32,msglen,msg);
 
 void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
 {
-    //struct iguana_info *coin; int32_t flag=0,socks[2];
     portable_mutex_lock(&LP_networkmutex);
     if ( pubsock >= 0 )
-    {
-        //socks[0] = socks[1] = -1;
-        //if ( rel != 0 && rel[0] != 0 && (coin= LP_coinfind(rel)) != 0 && coin->bussock >= 0 )
-        //    socks[flag++] = coin->bussock;
-        //if ( base != 0 && base[0] != 0 && (coin= LP_coinfind(base)) != 0 && coin->bussock >= 0 )
-        //    socks[flag++] = coin->bussock;
-        //if ( flag == 0 && pubsock >= 0 )
-            _LP_queuesend(crc32,pubsock,-1,msg,msglen,0);
-        //else _LP_queuesend(socks[0],socks[1],msg,msglen,0);
-    } else _LP_queuesend(crc32,-1,-1,msg,msglen,1);
+        _LP_queuesend(crc32,pubsock,-1,msg,msglen,0);
+    else _LP_queuesend(crc32,-1,-1,msg,msglen,1);
     portable_mutex_unlock(&LP_networkmutex);
 }
 
@@ -362,21 +387,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
         // add signature here
         msg = (void *)jprint(argjson,0);
         msglen = (int32_t)strlen((char *)msg) + 1;
-#ifdef FROM_JS
-        int32_t sentbytes,sock,peerind,maxind;
-        if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
-        else peerind = 1;
-        sock = LP_peerindsock(&peerind);
-        if ( sock >= 0 )
-        {
-            if ( (sentbytes= nn_send(sock,msg,msglen,0)) != msglen )
-                printf("LP_send sent %d instead of %d\n",sentbytes,msglen);
-            else printf("sent %d bytes of %d to sock.%d\n",sentbytes,msglen,sock);
-        } else printf("couldnt get valid sock\n");
-#else
         LP_queuesend(crc32,-1,base,rel,msg,msglen);
-#endif
     } else LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
     free(msg);
 }
@@ -466,8 +477,11 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
 {
     static struct nn_pollfd *pfds;
     int32_t i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];
+    strcpy(LP_psockloop_stats.name,"LP_psockloop");
+    LP_psockloop_stats.threshold = 200.;
     while ( 1 )
     {
+        LP_millistats_update(&LP_psockloop_stats);
         now = (uint32_t)time(NULL);
         if ( buf != 0 && ptr != 0 && sendsock >= 0 )
         {
@@ -727,7 +741,7 @@ char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
     return(retstr);
 }
 
-uint16_t LP_psock_get(char *connectaddr,char *connectaddr2,char *publicaddr,int32_t ispaired)
+uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
 {
     uint16_t publicport = 0; char *retstr,*addr; cJSON *retjson; struct LP_peerinfo *peer,*tmp;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
@@ -742,8 +756,8 @@ uint16_t LP_psock_get(char *connectaddr,char *connectaddr2,char *publicaddr,int3
                     safecopy(publicaddr,addr,128);
                 if ( (addr= jstr(retjson,"connectaddr")) != 0 )
                     safecopy(connectaddr,addr,128);
-                if ( (addr= jstr(retjson,"connectaddr2")) != 0 )
-                    safecopy(connectaddr2,addr,128);
+                //if ( (addr= jstr(retjson,"connectaddr2")) != 0 )
+                //    safecopy(connectaddr2,addr,128);
                 if ( publicaddr[0] != 0 && connectaddr[0] != 0 )
                     publicport = juint(retjson,"publicport");
                 free_json(retjson);
@@ -759,9 +773,9 @@ uint16_t LP_psock_get(char *connectaddr,char *connectaddr2,char *publicaddr,int3
 
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
 {
-    int32_t nntype,pullsock,timeout; char bindaddr[128],bindaddr2[128],connectaddr[128],connectaddr2[128];
+    int32_t nntype,pullsock,timeout; char bindaddr[128],connectaddr[128];
     *mypullportp = mypullport;
-    connectaddr2[0] = 0;
+    //connectaddr2[0] = 0;
     if ( ispaired == 0 )
     {
         if ( LP_canbind != 0 )
@@ -772,7 +786,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
     {
         nanomsg_transportname(0,publicaddr,myipaddr,mypullport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypullport);
-        nanomsg_transportname2(1,bindaddr2,myipaddr,mypullport);
+        //nanomsg_transportname2(1,bindaddr2,myipaddr,mypullport);
     }
     else
     {
@@ -784,7 +798,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
         }
         while ( *mypullportp == 0 )
         {
-            if ( (*mypullportp= LP_psock_get(connectaddr,connectaddr2,publicaddr,ispaired)) != 0 )
+            if ( (*mypullportp= LP_psock_get(connectaddr,publicaddr,ispaired)) != 0 )
                 break;
             sleep(10);
             printf("try to get publicaddr again\n");
@@ -803,8 +817,8 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                 }
                 else
                 {
-                    if ( connectaddr2[0] != 0 && nn_connect(pullsock,connectaddr2) > 0 )
-                        printf("%s ",connectaddr2);
+                    //if ( connectaddr2[0] != 0 && nn_connect(pullsock,connectaddr2) > 0 )
+                    //    printf("%s ",connectaddr2);
                     printf("nntype.%d NN_PAIR.%d connect to %s connectsock.%d\n",nntype,NN_PAIR,connectaddr,pullsock);
                 }
             }
@@ -815,8 +829,8 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                     printf("bind to %s error for %s: %s\n",bindaddr,publicaddr,nn_strerror(nn_errno()));
                     exit(-1);
                 }
-                if ( nn_bind(pullsock,bindaddr2) >= 0 )
-                    printf("bound to %s\n",bindaddr2);
+                //if ( nn_bind(pullsock,bindaddr2) >= 0 )
+                //    printf("bound to %s\n",bindaddr2);
             }
             timeout = 1;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));

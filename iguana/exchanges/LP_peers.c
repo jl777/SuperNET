@@ -56,7 +56,7 @@ char *LP_peers()
 
 struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t numpeers,int32_t numutxos,uint32_t sessionid)
 {
-    uint32_t ipbits; int32_t valid,pushsock,subsock,timeout; char checkip[64],subaddr2[64],pushaddr[64],pushaddr2[64],subaddr[64]; struct LP_peerinfo *peer = 0;
+    uint32_t ipbits; int32_t valid,pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
     printf("addpeer (%s:%u) pushport.%u subport.%u\n",ipaddr,port,pushport,subport);
 #ifdef LP_STRICTPEERS
     if ( strncmp("5.9.253",ipaddr,strlen("5.9.253")) != 0 )
@@ -90,19 +90,19 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
                 nanomsg_transportname(0,pushaddr,peer->ipaddr,pushport);
-                nanomsg_transportname2(0,pushaddr2,peer->ipaddr,pushport);
+                //nanomsg_transportname2(0,pushaddr2,peer->ipaddr,pushport);
                 valid = 0;
                 if ( nn_connect(pushsock,pushaddr) >= 0 )
                     valid++;
-                if ( nn_connect(pushsock,pushaddr2) >= 0 )
-                    valid++;
+                //if ( nn_connect(pushsock,pushaddr2) >= 0 )
+                //    valid++;
                 if ( valid > 0 )
                 {
                     timeout = 1;
                     nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                     //maxsize = 2 * 1024 * 1024;
                     //nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDBUF,&maxsize,sizeof(maxsize));
-                    printf("connected to push.(%s %s) pushsock.%d valid.%d\n",pushaddr,pushaddr2,pushsock,valid);
+                    printf("connected to push.(%s) pushsock.%d valid.%d\n",pushaddr,pushsock,valid);
                     peer->connected = (uint32_t)time(NULL);
                     peer->pushsock = pushsock;
                     if ( (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
@@ -111,20 +111,20 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                         nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                         nn_setsockopt(subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
                         nanomsg_transportname(0,subaddr,peer->ipaddr,subport);
-                        nanomsg_transportname2(0,subaddr2,peer->ipaddr,subport);
+                        //nanomsg_transportname2(0,subaddr2,peer->ipaddr,subport);
                         valid = 0;
                         if ( nn_connect(subsock,subaddr) >= 0 )
                             valid++;
-                        if ( nn_connect(subsock,subaddr2) >= 0 )
-                            valid++;
+                        //if ( nn_connect(subsock,subaddr2) >= 0 )
+                        //    valid++;
                         if ( valid > 0 )
                         {
                             peer->subsock = subsock;
-                            printf("connected to sub.(%s %s) subsock.%d valid.%d\n",subaddr,subaddr2,peer->subsock,valid);
+                            printf("connected to sub.(%s) subsock.%d valid.%d\n",subaddr,peer->subsock,valid);
                         }
                         else
                         {
-                            printf("error connecting to subsock.%d (%s %s)\n",subsock,subaddr,subaddr2);
+                            printf("error connecting to subsock.%d (%s)\n",subsock,subaddr);
                             nn_close(subsock);
                             subsock = -1;
                         }
@@ -134,7 +134,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                 {
                     nn_close(pushsock);
                     pushsock = -1;
-                    printf("error connecting to push.(%s %s)\n",pushaddr,pushaddr2);
+                    printf("error connecting to push.(%s)\n",pushaddr);
                 }
             } else printf("%s pushport.%u subport.%u pushsock.%d\n",ipaddr,pushport,subport,pushsock);
             if ( peer->pushsock >= 0 && peer->subsock >= 0 )
@@ -153,7 +153,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     struct iguana_info *coin,*ctmp; bits256 zero; char busaddr[64];
                     memset(zero.bytes,0,sizeof(zero));
                     //LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
-                    LP_reserved_msg("","",zero,jprint(LP_peerjson(peer),1));
+                    LP_reserved_msg(0,"","",zero,jprint(LP_peerjson(peer),1));
                     if ( 0 )
                     {
                         HASH_ITER(hh,LP_coins,coin,ctmp)

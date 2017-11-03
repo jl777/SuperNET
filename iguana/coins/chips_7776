@@ -1,0 +1,2 @@
+#!/bin/bash
+curl --url "http://127.0.0.1:7776" --data "{\"conf\":\"chips.conf\",\"path\":\"${HOME#"/"}/.chips\",\"prefetchlag\":-1,\"poll\":1,\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"CHIPS\",\"startpend\":64,\"endpend\":64,\"services\":0,\"maxpeers\":512,\"RELAY\":-1,\"VALIDATE\":0,\"portp2p\":57777,\"minconfirms\":1,\"pubval\":60,\"p2shval\":85,\"wifval\":188}"
