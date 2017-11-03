@@ -771,7 +771,6 @@ void stats_rpcloop(void *args)
         {
             LP_rpc_processreq((void *)&arg64);
             free(arg64ptr);
-            closesocket(sock);
             //char remoteaddr[64];
             //expand_ipbits(remoteaddr,ipbits);
             //printf("finished RPC request from (%s) %x\n",remoteaddr,ipbits);
@@ -782,6 +781,7 @@ void stats_rpcloop(void *args)
             // yes, small leak per command
         }
         close(bindsock);
+        closesocket(sock);
         bindsock = iguana_socket(1,"0.0.0.0",port);
     }
 }
