@@ -56,6 +56,7 @@ void LP_millistats_update(struct LP_millistats *mp)
         {
             printf("%s elapsed %.3f millis > threshold %.3f, ave %.3f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
         }
+        mp->lastmilli = millis;
     }
 }
 
