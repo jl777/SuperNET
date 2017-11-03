@@ -310,8 +310,6 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
     portable_mutex_unlock(&LP_commandmutex);
     if ( jsonstr != 0 && (void *)jsonstr != (void *)ptr && encrypted == 0 )
         free(jsonstr);
-    if ( ptr != 0 )
-        nn_freemsg(ptr), ptr = 0;
     return(retstr);
 }
 
@@ -323,21 +321,16 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
         while ( nonz < maxdepth && recvlen > 0 )
         {
             nonz++;
-#ifndef FROM_JS
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
             pfd.events = NN_POLLIN;
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
-#endif
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 methodstr[0] = 0;
-                if ( 1 )
+                if ( 0 )
                 {
-#ifdef FROM_JS
-                    printf("%s RECV.(%s)\n",typestr,(char *)ptr);
-#endif
                     cJSON *recvjson; char *mstr;//,*cstr;
                     if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
                     {
@@ -349,10 +342,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free_json(recvjson);
                     }
                 }
-#ifdef FROM_JS
-                else printf("%s got recv.%d\n",typestr,recvlen);
-#endif
-                int32_t validreq = 0; double millis = OS_milliseconds();
+                int32_t validreq = 0;
                 if ( strlen((char *)ptr)+sizeof(bits256) <= recvlen )
                 {
                     if ( LP_magic_check(ptr,recvlen,remoteaddr) <= 0 )
@@ -372,8 +362,6 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         Broadcaststr = 0;
                         if ( (argjson= cJSON_Parse(str)) != 0 )
                         {
-                            if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
-                                printf("self.(%s)\n",str);
                             portable_mutex_lock(&LP_commandmutex);
                             if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                             {
@@ -385,9 +373,9 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         }
                         free(str);
                     }
-                    if ( OS_milliseconds()-millis > 1000 )
-                        printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
                 }
+                if ( ptr != 0 )
+                    nn_freemsg(ptr), ptr = 0;
             }
         }
     }
@@ -713,9 +701,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 nonz++;
-#ifdef FROM_JS
-                if ( (rand() % 100) == 0 )
-#endif
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
                 LP_peer_pricesquery(peer);
@@ -728,9 +713,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             peer->diduquery = now;
             nonz++;
-#ifdef FROM_JS
-            if ( (rand() % 100) == 0 )
-#endif
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
             peer->needping = 0;
