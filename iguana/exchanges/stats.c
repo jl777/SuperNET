@@ -750,7 +750,7 @@ void stats_rpcloop(void *args)
         if ( bindsock < 0 )
         {
             while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
-                sleep(3);
+                usleep(10000);
             if ( counter++ < 1 )
                 printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
         }
