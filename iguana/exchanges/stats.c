@@ -219,7 +219,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                 return(-1);
             }
         }
-        if ( listen(sock,64) != 0 )
+        if ( listen(sock,512) != 0 )
         {
             printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
             if ( sock >= 0 )
@@ -764,7 +764,7 @@ void stats_rpcloop(void *args)
             continue;
         }
         close(bindsock);
-        bindsock = -1;
+        bindsock = iguana_socket(1,"0.0.0.0",port);
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         arg64 = ((uint64_t)ipbits << 32) | (sock & 0xffffffff);
         arg64ptr = malloc(sizeof(arg64));
