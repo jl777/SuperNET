@@ -29,7 +29,7 @@ struct LP_millistats
     double lastmilli,millisum,threshold;
     uint32_t count;
     char name[64];
-} LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloop_statsBTC,LP_coinsloop_statsKMD,LP_pubkeysloop_stats,LP_privkeysloop_stats,LP_swapsloop_stats;
+} LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloopBTC_stats,LP_coinsloopKMD_stats,LP_pubkeysloop_stats,LP_privkeysloop_stats,LP_swapsloop_stats;
 
 void LP_millistats_update(struct LP_millistats *mp)
 {
@@ -409,8 +409,11 @@ void command_rpcloop(void *myipaddr)
 {
     int32_t nonz = 0; void *ctx;
     ctx = bitcoin_ctx();
+    strcpy(command_rpcloop_stats.name,"command_rpcloop");
+    command_rpcloop_stats.threshold = 20.;
     while ( 1 )
     {
+        LP_millistats_update(&command_rpcloop_stats);
         nonz = LP_nanomsg_recvs(ctx);
         //if ( LP_mybussock >= 0 )
         //    nonz += LP_sock_check("BUS",ctx,origipaddr,-1,LP_mybussock);
@@ -523,8 +526,28 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
 void LP_coinsloop(void *_coins)
 {
     struct LP_address *ap=0,*atmp; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
+    if ( strcmp("BTC",coins) == 0 )
+    {
+        strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
+        LP_coinsloopBTC_stats.threshold = 20.;
+    }
+    else if ( strcmp("KMD",coins) == 0 )
+    {
+        strcpy(LP_coinsloopKMD_stats.name,"KMD coin loop");
+        LP_coinsloopKMD_stats.threshold = 20.;
+    }
+    else
+    {
+        strcpy(LP_coinsloop_stats.name,"other coins loop");
+        LP_coinsloop_stats.threshold = 20.;
+    }
     while ( 1 )
     {
+        if ( strcmp("BTC",coins) == 0 )
+            LP_millistats_update(&LP_coinsloopBTC_stats);
+        else if ( strcmp("KMD",coins) == 0 )
+            LP_millistats_update(&LP_coinsloopKMD_stats);
+        else LP_millistats_update(&LP_coinsloop_stats);
         nonz = 0;
         HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
         {

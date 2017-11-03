@@ -762,9 +762,9 @@ void stats_rpcloop(void *args)
             LP_rpc_processreq((void *)&arg64);
             free(arg64ptr);
             closesocket(sock);
-            char remoteaddr[64];
-            expand_ipbits(remoteaddr,ipbits);
-            printf("finished RPC request from (%s) %x\n",remoteaddr,ipbits);
+            //char remoteaddr[64];
+            //expand_ipbits(remoteaddr,ipbits);
+            //printf("finished RPC request from (%s) %x\n",remoteaddr,ipbits);
         }
         else if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_rpc_processreq,arg64ptr) != 0 )
         {
