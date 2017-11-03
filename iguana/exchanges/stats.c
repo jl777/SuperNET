@@ -732,29 +732,33 @@ void LP_rpc_processreq(void *_ptr)
 
 void stats_rpcloop(void *args)
 {
-    uint16_t port; int32_t sock,bindsock; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint64_t arg64; void *arg64ptr;
+    uint16_t port; int32_t sock,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint64_t arg64; void *arg64ptr;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
-    while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
+    /*while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
     {
         //if ( coin->MAXPEERS == 1 )
         //    break;
         //exit(-1);
         sleep(3);
     }
-    printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
-    while ( bindsock >= 0 )
+    printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);*/
+    while ( 1 )
     {
+        if ( bindsock < 0 )
+        {
+            while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
+                sleep(3);
+            printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
+        }
         clilen = sizeof(cli_addr);
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
             printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
             close(bindsock);
-            while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
-                sleep(3);
-            printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
+            bindsock = -1;
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
@@ -773,8 +777,10 @@ void stats_rpcloop(void *args)
         else if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_rpc_processreq,arg64ptr) != 0 )
         {
             printf("error launching rpc handler on port %d\n",port);
+            // yes, small leak per command
         }
-        // yes, small leak per command
+        close(bindsock);
+        bindsock = -1;
     }
 }
 
