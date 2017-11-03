@@ -286,11 +286,11 @@ int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits2
         if ( memcmp(pub33,pubsecp,33) != 0 || retval != 0 )
         {
             static uint32_t counter;
-            if ( counter++ < 10 )
+            if ( counter++ <= LP_MAXPUBKEY_ERRORS )
             {
                 if ( pubp != 0 )
                     pubp->numerrors++;
-                if ( pubp != 0 && pubp->numerrors > 1 )
+                if ( pubp != 0 && pubp->numerrors > LP_MAXPUBKEY_ERRORS/2 )
                     printf("LP_utxos_sigcheck failure.%d, probably from %s with older version\n",pubp!=0?pubp->numerrors:-1,bits256_str(str,pubkey));
             }
             retval = -1;

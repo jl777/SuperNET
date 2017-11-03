@@ -33,6 +33,32 @@ struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
 struct LP_pubkeyinfo *LP_pubkeyinfos;
+
+struct LP_millistats
+{
+    double lastmilli,millisum,threshold;
+    uint32_t count;
+    char name[64];
+} LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,stats_rpcloop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloop_statsBTC,LP_coinsloop_statsKMD,LP_pubkeysloop_stats,LP_privkeysloop_stats,LP_swapsloop_stats;
+
+void LP_millistats_update(struct LP_millistats *mp)
+{
+    double elapsed,millis;
+    if ( mp->lastmilli == 0. )
+        mp->lastmilli = OS_milliseconds();
+    else
+    {
+        mp->count++;
+        millis = OS_milliseconds();
+        elapsed = (millis - mp->lastmilli);
+        mp->millisum += elapsed;
+        if ( mp->threshold != 0. && elapsed > mp->threshold )
+        {
+            printf("%s elapsed %.3f millis > threshold %.3f, ave %.3f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
+        }
+    }
+}
+
 #include "LP_network.c"
 
 char *activecoins[] = { "BTC", "KMD" };
