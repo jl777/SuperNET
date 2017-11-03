@@ -763,6 +763,8 @@ void stats_rpcloop(void *args)
             bindsock = -1;
             continue;
         }
+        close(bindsock);
+        bindsock = -1;
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         arg64 = ((uint64_t)ipbits << 32) | (sock & 0xffffffff);
         arg64ptr = malloc(sizeof(arg64));
@@ -781,8 +783,6 @@ void stats_rpcloop(void *args)
             printf("error launching rpc handler on port %d\n",port);
             // yes, small leak per command
         }
-        close(bindsock);
-        bindsock = -1;
     }
 }
 
