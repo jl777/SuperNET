@@ -410,7 +410,7 @@ void command_rpcloop(void *myipaddr)
     int32_t nonz = 0; void *ctx;
     ctx = bitcoin_ctx();
     strcpy(command_rpcloop_stats.name,"command_rpcloop");
-    command_rpcloop_stats.threshold = 20.;
+    command_rpcloop_stats.threshold = 1000.;
     while ( 1 )
     {
         LP_millistats_update(&command_rpcloop_stats);
@@ -529,17 +529,17 @@ void LP_coinsloop(void *_coins)
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
-        LP_coinsloopBTC_stats.threshold = 20.;
+        LP_coinsloopBTC_stats.threshold = 200.;
     }
     else if ( strcmp("KMD",coins) == 0 )
     {
         strcpy(LP_coinsloopKMD_stats.name,"KMD coin loop");
-        LP_coinsloopKMD_stats.threshold = 20.;
+        LP_coinsloopKMD_stats.threshold = 200.;
     }
     else
     {
         strcpy(LP_coinsloop_stats.name,"other coins loop");
-        LP_coinsloop_stats.threshold = 20.;
+        LP_coinsloop_stats.threshold = 200.;
     }
     while ( 1 )
     {
@@ -817,9 +817,12 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 void LP_pubkeysloop(void *ctx)
 {
     static uint32_t lasttime;
+    strcpy(LP_pubkeysloop_stats.name,"LP_pubkeysloop");
+    LP_pubkeysloop_stats.threshold = 3100.;
     sleep(10);
     while ( 1 )
     {
+        LP_millistats_update(&LP_pubkeysloop_stats);
         if ( time(NULL) > lasttime+60 )
         {
             //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
@@ -832,9 +835,12 @@ void LP_pubkeysloop(void *ctx)
 
 void LP_privkeysloop(void *ctx)
 {
+    strcpy(LP_privkeysloop_stats.name,"LP_privkeysloop");
+    LP_privkeysloop_stats.threshold = (LP_ORDERBOOK_DURATION * .777 * 1000) + 1000;
     sleep(20);
     while ( 1 )
     {
+        LP_millistats_update(&LP_privkeysloop_stats);
         LP_counter += 1000;
         //printf("LP_privkeysloop %u\n",LP_counter);
         LP_privkey_updates(ctx,LP_mypubsock,0);
@@ -845,9 +851,12 @@ void LP_privkeysloop(void *ctx)
 void LP_swapsloop(void *ignore)
 {
     char *retstr;
+    strcpy(LP_swapsloop_stats.name,"LP_swapsloop");
+    LP_swapsloop_stats.threshold = 605000.;
     sleep(50);
     while ( 1 )
     {
+        LP_millistats_update(&LP_swapsloop_stats);
         LP_counter += 10000;
         //printf("LP_swapsloop %u\n",LP_counter);
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )

@@ -268,8 +268,11 @@ int32_t LP_peerindsock(int32_t *peerindp)
 void queue_loop(void *arg)
 {
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
+    strcpy(queue_loop_stats.name,"queue_loop");
+    queue_loop_stats.threshold = 20.;
     while ( 1 )
     {
+        LP_millistats_update(&queue_loop_stats);
         nonz = 0;
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = 0;

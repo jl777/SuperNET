@@ -589,8 +589,11 @@ int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *a
 void prices_loop(void *ctx)
 {
     char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256]; struct LP_priceinfo *btcpp;
+    strcpy(prices_loop_stats.name,"prices_loop");
+    prices_loop_stats.threshold = 61000.;
     while ( 1 )
     {
+        LP_millistats_update(&prices_loop_stats);
         LP_tradebots_timeslice(ctx);
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
         {
