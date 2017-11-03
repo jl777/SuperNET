@@ -24,16 +24,6 @@
 // BCH signing
 
 #include <stdio.h>
-#include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex;
-int32_t LP_canbind;
-char *Broadcaststr,*Reserved_msgs[2][1000];
-int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
-struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
-struct LP_forwardinfo *LP_forwardinfos;
-struct iguana_info *LP_coins;
-struct LP_pubkeyinfo *LP_pubkeyinfos;
-
 struct LP_millistats
 {
     double lastmilli,millisum,threshold;
@@ -59,6 +49,16 @@ void LP_millistats_update(struct LP_millistats *mp)
         mp->lastmilli = millis;
     }
 }
+
+#include "LP_include.h"
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex;
+int32_t LP_canbind;
+char *Broadcaststr,*Reserved_msgs[2][1000];
+int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
+struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
+struct LP_forwardinfo *LP_forwardinfos;
+struct iguana_info *LP_coins;
+struct LP_pubkeyinfo *LP_pubkeyinfos;
 
 #include "LP_network.c"
 
@@ -427,8 +427,11 @@ void command_rpcloop(void *myipaddr)
 
 void utxosQ_loop(void *myipaddr)
 {
+    strcpy(utxosQ_loop_stats.name,"utxosQ_loop");
+    utxosQ_loop_stats.threshold = 20.;
     while ( 1 )
     {
+        LP_millistats_update(&utxosQ_loop_stats);
         if ( LP_utxosQ_process() == 0 )
             usleep(10000);
     }
@@ -834,8 +837,11 @@ void LP_reserved_msgs(void *ignore)
 {
     bits256 zero; int32_t flag; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
+    strcpy(LP_reserved_msgs_stats.name,"LP_reserved_msgs");
+    LP_reserved_msgs_stats.threshold = 10.;
     while ( 1 )
     {
+        LP_millistats_update(&LP_reserved_msgs_stats);
         if ( num_Reserved_msgs[0] > 0 || num_Reserved_msgs[1] > 0 )
         {
             flag = 0;
