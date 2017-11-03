@@ -29,7 +29,7 @@ struct LP_millistats
     double lastmilli,millisum,threshold;
     uint32_t count;
     char name[64];
-} LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,stats_rpcloop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloop_statsBTC,LP_coinsloop_statsKMD,LP_pubkeysloop_stats,LP_privkeysloop_stats,LP_swapsloop_stats;
+} LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloop_statsBTC,LP_coinsloop_statsKMD,LP_pubkeysloop_stats,LP_privkeysloop_stats,LP_swapsloop_stats;
 
 void LP_millistats_update(struct LP_millistats *mp)
 {
@@ -838,7 +838,7 @@ void LP_reserved_msgs(void *ignore)
     bits256 zero; int32_t flag; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
     strcpy(LP_reserved_msgs_stats.name,"LP_reserved_msgs");
-    LP_reserved_msgs_stats.threshold = 10.;
+    LP_reserved_msgs_stats.threshold = 20.;
     while ( 1 )
     {
         LP_millistats_update(&LP_reserved_msgs_stats);

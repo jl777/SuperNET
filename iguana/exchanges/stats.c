@@ -728,7 +728,6 @@ void LP_rpc_processreq(void *_ptr)
     }
     free(space);
     free(jsonbuf);
-    closesocket(sock);
 }
 
 void stats_rpcloop(void *args)
@@ -755,7 +754,6 @@ void stats_rpcloop(void *args)
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
-        //printf("remote RPC request from (%s) %x\n",remoteaddr,ipbits);
         arg64 = ((uint64_t)ipbits << 32) | (sock & 0xffffffff);
         arg64ptr = malloc(sizeof(arg64));
         memcpy(arg64ptr,&arg64,sizeof(arg64));
@@ -763,6 +761,10 @@ void stats_rpcloop(void *args)
         {
             LP_rpc_processreq((void *)&arg64);
             free(arg64ptr);
+            closesocket(sock);
+            char remoteaddr[64];
+            expand_ipbits(remoteaddr,ipbits);
+            printf("finished RPC request from (%s) %x\n",remoteaddr,ipbits);
         }
         else if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_rpc_processreq,arg64ptr) != 0 )
         {
