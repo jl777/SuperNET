@@ -39,19 +39,19 @@ void LP_millistats_update(struct LP_millistats *mp)
     {
         if ( IAMLP != 0 )
         {
-            mp = &LP_psockloop_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
+            mp = &LP_psockloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
         }
-        mp = &LP_reserved_msgs_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
-        mp = &utxosQ_loop_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
-        mp = &command_rpcloop_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
-        mp = &queue_loop_stats, printf("%32s millis > threshold %8.2f, ave %8.2f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
-        mp = &prices_loop_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
-        mp = &LP_coinsloop_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
-        mp = &LP_coinsloopBTC_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
-        mp = &LP_coinsloopKMD_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
-        mp = &LP_pubkeysloop_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
-        mp = &LP_privkeysloop_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
-        mp = &LP_swapsloop_stats, printf("%32s millis > threshold %8.3f, ave %8.3f millis, count.%u | lag %.3f\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count,OS_milliseconds() - mp->lastmilli);
+        mp = &LP_reserved_msgs_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &utxosQ_loop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &command_rpcloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &queue_loop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &prices_loop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_coinsloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_coinsloopBTC_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_coinsloopKMD_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_pubkeysloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_privkeysloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_swapsloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
     }
     else
     {
@@ -65,7 +65,7 @@ void LP_millistats_update(struct LP_millistats *mp)
             mp->millisum += elapsed;
             if ( mp->threshold != 0. && elapsed > mp->threshold )
             {
-                printf("%32s elapsed %8.3f millis > threshold %8.3f, ave %8.3f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
+                printf("%32s elapsed %10.2 millis > threshold %10.2, ave %10.2 millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
             }
             mp->lastmilli = millis;
         }
