@@ -34,19 +34,37 @@ struct LP_millistats
 void LP_millistats_update(struct LP_millistats *mp)
 {
     double elapsed,millis;
-    if ( mp->lastmilli == 0. )
-        mp->lastmilli = OS_milliseconds();
+    if ( mp == 0 )
+    {
+        mp = &LP_psockloop_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_reserved_msgs_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &utxosQ_loop_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &command_rpcloop_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &queue_loop_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &prices_loop_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_coinsloop_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_coinsloopBTC_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_coinsloopKMD_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_pubkeysloop_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_privkeysloop_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_swapsloop_stats, printf("%s threshold %.3f, ave %.3f millis, count.%u\n",mp->name,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+    }
     else
     {
-        mp->count++;
-        millis = OS_milliseconds();
-        elapsed = (millis - mp->lastmilli);
-        mp->millisum += elapsed;
-        if ( mp->threshold != 0. && elapsed > mp->threshold )
+        if ( mp->lastmilli == 0. )
+            mp->lastmilli = OS_milliseconds();
+        else
         {
-            printf("%s elapsed %.3f millis > threshold %.3f, ave %.3f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
+            mp->count++;
+            millis = OS_milliseconds();
+            elapsed = (millis - mp->lastmilli);
+            mp->millisum += elapsed;
+            if ( mp->threshold != 0. && elapsed > mp->threshold )
+            {
+                printf("%s elapsed %.3f millis > threshold %.3f, ave %.3f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
+            }
+            mp->lastmilli = millis;
         }
-        mp->lastmilli = millis;
     }
 }
 
@@ -431,7 +449,7 @@ void command_rpcloop(void *myipaddr)
 void utxosQ_loop(void *myipaddr)
 {
     strcpy(utxosQ_loop_stats.name,"utxosQ_loop");
-    utxosQ_loop_stats.threshold = 20.;
+    utxosQ_loop_stats.threshold = 50.;
     while ( 1 )
     {
         LP_millistats_update(&utxosQ_loop_stats);
