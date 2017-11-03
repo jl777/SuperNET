@@ -893,7 +893,7 @@ void LP_reserved_msgs(void *ignore)
     bits256 zero; int32_t flag; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
     strcpy(LP_reserved_msgs_stats.name,"LP_reserved_msgs");
-    LP_reserved_msgs_stats.threshold = 20.;
+    LP_reserved_msgs_stats.threshold = 50.;
     while ( 1 )
     {
         LP_millistats_update(&LP_reserved_msgs_stats);

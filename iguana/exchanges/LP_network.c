@@ -269,7 +269,7 @@ void queue_loop(void *arg)
 {
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
     strcpy(queue_loop_stats.name,"queue_loop");
-    queue_loop_stats.threshold = 50.;
+    queue_loop_stats.threshold = 200.;
     while ( 1 )
     {
         LP_millistats_update(&queue_loop_stats);
@@ -478,7 +478,7 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
     static struct nn_pollfd *pfds;
     int32_t i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];
     strcpy(LP_psockloop_stats.name,"LP_psockloop");
-    LP_psockloop_stats.threshold = 110.;
+    LP_psockloop_stats.threshold = 200.;
     while ( 1 )
     {
         LP_millistats_update(&LP_psockloop_stats);
