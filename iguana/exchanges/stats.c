@@ -729,6 +729,7 @@ void LP_rpc_processreq(void *_ptr)
     free(space);
     free(jsonbuf);
     closesocket(sock);
+    free(_ptr);
 }
 
 void stats_rpcloop(void *args)
@@ -759,10 +760,10 @@ void stats_rpcloop(void *args)
         arg64 = ((uint64_t)ipbits << 32) | (sock & 0xffffffff);
         arg64ptr = malloc(sizeof(arg64));
         memcpy(arg64ptr,&arg64,sizeof(arg64));
-        if ( 1 )
+        if ( 0 )
         {
             LP_rpc_processreq((void *)&arg64);
-            free(arg64ptr);
+            //free(arg64ptr);
         }
         else if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_rpc_processreq,arg64ptr) != 0 )
         {
