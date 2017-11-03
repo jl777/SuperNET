@@ -737,7 +737,7 @@ void stats_rpcloop(void *args)
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
-    localhostbits = calc_ipbits("127.0.0.1");
+    localhostbits = (uint32_t)calc_ipbits("127.0.0.1");
     /*while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
     {
         //if ( coin->MAXPEERS == 1 )
@@ -783,7 +783,7 @@ void stats_rpcloop(void *args)
         {
             close(bindsock);
             bindsock = iguana_socket(1,"0.0.0.0",port);
-        } else printf("skip close and rebind\n");
+        } //else printf("skip close and rebind\n");
     }
 }
 
