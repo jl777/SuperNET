@@ -342,7 +342,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free_json(recvjson);
                     }
                 }
-                int32_t validreq = 0;
+                int32_t validreq = 1;
                 if ( strlen((char *)ptr)+sizeof(bits256) <= recvlen )
                 {
                     if ( LP_magic_check(ptr,recvlen,remoteaddr) <= 0 )
