@@ -54,7 +54,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define DPOW_MIN_ASSETCHAIN_SIGS 11
 #define LP_ENCRYPTED_MAXSIZE (4096 + 2 + crypto_box_NONCEBYTES + crypto_box_ZEROBYTES)
 
-#define LP_MAXPUBKEY_ERRORS 3
+#define LP_MAXPUBKEY_ERRORS 10
 #define PSOCK_KEEPALIVE 3600
 #define MAINLOOP_PERSEC 100
 #define MAX_PSOCK_PORT 60000

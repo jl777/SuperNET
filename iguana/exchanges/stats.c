@@ -219,7 +219,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                 return(-1);
             }
         }
-        if ( listen(sock,64) != 0 )
+        if ( listen(sock,512) != 0 )
         {
             printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
             if ( sock >= 0 )
@@ -728,34 +728,42 @@ void LP_rpc_processreq(void *_ptr)
     }
     free(space);
     free(jsonbuf);
-    closesocket(sock);
 }
 
 void stats_rpcloop(void *args)
 {
-    uint16_t port; int32_t sock,bindsock; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint64_t arg64; void *arg64ptr;
+    static uint32_t counter;
+    uint16_t port; int32_t sock,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint64_t arg64; void *arg64ptr;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
-    while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
+    /*while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
     {
         //if ( coin->MAXPEERS == 1 )
         //    break;
         //exit(-1);
         sleep(3);
     }
-    printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
-    while ( bindsock >= 0 )
+    printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);*/
+    while ( 1 )
     {
+        if ( bindsock < 0 )
+        {
+            while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
+                usleep(10000);
+            if ( counter++ < 1 )
+                printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
+        }
         clilen = sizeof(cli_addr);
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
-            //printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
+            printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
+            close(bindsock);
+            bindsock = -1;
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
-        //printf("remote RPC request from (%s) %x\n",remoteaddr,ipbits);
         arg64 = ((uint64_t)ipbits << 32) | (sock & 0xffffffff);
         arg64ptr = malloc(sizeof(arg64));
         memcpy(arg64ptr,&arg64,sizeof(arg64));
@@ -763,12 +771,18 @@ void stats_rpcloop(void *args)
         {
             LP_rpc_processreq((void *)&arg64);
             free(arg64ptr);
+            //char remoteaddr[64];
+            //expand_ipbits(remoteaddr,ipbits);
+            //printf("finished RPC request from (%s) %x\n",remoteaddr,ipbits);
         }
         else if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_rpc_processreq,arg64ptr) != 0 )
         {
             printf("error launching rpc handler on port %d\n",port);
+            // yes, small leak per command
         }
-        // yes, small leak per command
+        close(bindsock);
+        closesocket(sock);
+        bindsock = iguana_socket(1,"0.0.0.0",port);
     }
 }
 

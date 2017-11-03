@@ -1,0 +1,12 @@
+#!/bin/bash
+source userpass
+
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"pubkey\":\"b4a6361506d847817205a8e51374eb129fc33c3b5466235afdbc65f2291ffb4c\",\"method\":\"trust\",\"trust\":1}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"pubkey\":\"bd0c69da4ec3ed61613734f9f681f846fde5d8efc894c82dafbeeb7a01844872\",\"method\":\"trust\",\"trust\":1}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"pubkey\":\"8f7782b532808a30a1fe6ffc1fa3c55fea6d734f000763fa88d42ccfed60d213\",\"method\":\"trust\",\"trust\":1}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"pubkey\":\"d80a74847cd60899afdd673570f8b698e4089e5ad4d6e9e205b5e5891ec0c84f\",\"method\":\"trust\",\"trust\":1}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"pubkey\":\"322e236db07484b31aea9400a6f3f5ed972e29c6d4115c63aaedaa541d41e758\",\"method\":\"trust\",\"trust\":1}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"pubkey\":\"8579b74435093690d3d7680ecdac0dd1b892dc5ecd4fb603f0e22fd003176342\",\"method\":\"trust\",\"trust\":1}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"pubkey\":\"c4e3c95bd9612cce3fe1cfcc0a0e9c625bab7e4b83bc68f0ede73633e6a8c17f\",\"method\":\"trust\",\"trust\":1}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"pubkey\":\"43467b51e07fae3b19101fca7fe1bf250d34c8deecfd493c723f87d5eda1a64b\",\"method\":\"trust\",\"trust\":1}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"pubkey\":\"e900c42a0d883d098f382b59cf5655dd1d92b2c94f6580095a4f6382514f7a59\",\"method\":\"trust\",\"trust\":1}"

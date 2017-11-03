@@ -25,6 +25,7 @@ char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
     maxerrs = LP_MAXPEER_ERRORS;
     if ( peer == 0 || (peer->errors < maxerrs || peer->good >= LP_MINPEER_GOOD) )
     {
+        //printf("issue.(%s)\n",url);
         if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) == 0 )
         {
             if ( peer != 0 )

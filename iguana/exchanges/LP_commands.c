@@ -199,6 +199,11 @@ bot_resume(botid)\n\
             printf("DEBUG stop\n");
             exit(0);
         }
+        else if ( strcmp(method,"millis") == 0 )
+        {
+            LP_millistats_update(0);
+            return(clonestr("{\"result\":\"success\"}"));
+        }
         else if ( strcmp(method,"getmessages") == 0 )
         {
             if ( (retjson= LP_getmessages(jint(argjson,"firsti"),jint(argjson,"num"))) != 0 )
