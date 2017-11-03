@@ -732,6 +732,7 @@ void LP_rpc_processreq(void *_ptr)
 
 void stats_rpcloop(void *args)
 {
+    static uint32_t counter;
     uint16_t port; int32_t sock,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint64_t arg64; void *arg64ptr;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
@@ -750,7 +751,8 @@ void stats_rpcloop(void *args)
         {
             while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
                 sleep(3);
-            printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
+            if ( counter++ < 1 )
+                printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
         }
         clilen = sizeof(cli_addr);
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
