@@ -830,7 +830,7 @@ double _LP_getestimatedrate(struct iguana_info *coin)
                 coin->ratetime = (uint32_t)time(NULL);
             }
             free(retstr);
-        }
+        } else rate = coin->rate;
     } else rate = coin->rate;
     return(rate);
 }
