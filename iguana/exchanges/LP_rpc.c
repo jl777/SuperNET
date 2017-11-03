@@ -111,7 +111,7 @@ char *LP_apicall(struct iguana_info *coin,char *method,char *params)
     {
         if ( (retjson= electrum_submit(coin->symbol,coin->electrum,&retjson,method,params,ELECTRUM_TIMEOUT)) != 0 )
         {
-            retstr = jprint(retjson,0);
+            retstr = jprint(retjson,1);
             //printf("got.%p (%s)\n",retjson,retstr);
             return(retstr);
         } return(clonestr("{\"error\":\"electrum no response\"}"));
@@ -808,6 +808,8 @@ double _LP_getestimatedrate(struct iguana_info *coin)
         sprintf(buf,"[%d]",strcmp(coin->symbol,"BTC") == 0 ? 6 : 2);
         if ( (retstr= LP_apicall(coin,coin->electrum==0?"estimatefee" : "blockchain.estimatefee",buf)) != 0 )
         {
+            if ( coin->electrum != 0 )
+                printf("estimatefee.(%s)\n",retstr);
             if ( retstr[0] == '{' && (errjson= cJSON_Parse(retstr)) != 0 )
             {
                 if ( jobj(errjson,"error") != 0 )
