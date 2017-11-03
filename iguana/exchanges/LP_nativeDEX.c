@@ -883,6 +883,7 @@ void LP_swapsloop(void *ignore)
         //printf("LP_swapsloop %u\n",LP_counter);
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
+        LP_millistats_update(0);
         sleep(600);
     }
 }
