@@ -554,17 +554,17 @@ void LP_coinsloop(void *_coins)
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
-        LP_coinsloopBTC_stats.threshold = 200.;
+        LP_coinsloopBTC_stats.threshold = 2000.;
     }
     else if ( strcmp("KMD",coins) == 0 )
     {
         strcpy(LP_coinsloopKMD_stats.name,"KMD coin loop");
-        LP_coinsloopKMD_stats.threshold = 200.;
+        LP_coinsloopKMD_stats.threshold = 1000.;
     }
     else
     {
         strcpy(LP_coinsloop_stats.name,"other coins loop");
-        LP_coinsloop_stats.threshold = 200.;
+        LP_coinsloop_stats.threshold = 500.;
     }
     while ( 1 )
     {
@@ -843,7 +843,7 @@ void LP_pubkeysloop(void *ctx)
 {
     static uint32_t lasttime;
     strcpy(LP_pubkeysloop_stats.name,"LP_pubkeysloop");
-    LP_pubkeysloop_stats.threshold = 3100.;
+    LP_pubkeysloop_stats.threshold = 5000.;
     sleep(10);
     while ( 1 )
     {
@@ -861,7 +861,7 @@ void LP_pubkeysloop(void *ctx)
 void LP_privkeysloop(void *ctx)
 {
     strcpy(LP_privkeysloop_stats.name,"LP_privkeysloop");
-    LP_privkeysloop_stats.threshold = (LP_ORDERBOOK_DURATION * .777 * 1000) + 1000;
+    LP_privkeysloop_stats.threshold = (LP_ORDERBOOK_DURATION * .8 * 1000) + 10000;
     sleep(20);
     while ( 1 )
     {
