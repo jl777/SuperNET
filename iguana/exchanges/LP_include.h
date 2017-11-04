@@ -44,8 +44,8 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_ELECTRUM_MAXERRORS 777
 #define LP_MEMPOOL_TIMEINCR 10
 
-#define LP_OPTIONAL_PEERS 16
-#define LP_MAX_PEERS 100
+#define LP_MIN_PEERS 8
+#define LP_MAX_PEERS 32
 
 // RTmetrics
 #define LP_RTMETRICS_TOPGROUP 1.01
