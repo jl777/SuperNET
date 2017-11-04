@@ -662,11 +662,9 @@ void LP_rpc_processreq(void *_ptr)
     if ( recvlen > 0 )
     {
         jsonflag = postflag = 0;
-        //portable_mutex_lock(&LP_commandmutex);
+        portable_mutex_lock(&LP_commandmutex);
         retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,RPC_port);
-        //if ( strcmp("5.9.253.195",remoteaddr) == 0 )
-        //    printf("RPC.(%s)%s\n",jsonbuf,retstr);
-        //portable_mutex_unlock(&LP_commandmutex);
+        portable_mutex_unlock(&LP_commandmutex);
         if ( filetype[0] != 0 )
         {
             static cJSON *mimejson; char *tmp,*typestr=0; long tmpsize;
