@@ -523,7 +523,7 @@ bot_resume(botid)\n\
         bits256 pub; static uint32_t lastnotify;
         pub = jbits256(argjson,"pub");
         //char str[65]; printf("got wantnotify.(%s) vs %s\n",jprint(argjson,0),bits256_str(str,G.LP_mypub25519));
-        if ( bits256_cmp(pub,G.LP_mypub25519) == 0 && time(NULL) > lastnotify+30 )
+        if ( bits256_cmp(pub,G.LP_mypub25519) == 0 && time(NULL) > lastnotify+60 )
         {
             lastnotify = (uint32_t)time(NULL);
             //printf("wantnotify for me!\n");

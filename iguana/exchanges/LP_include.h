@@ -44,6 +44,9 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_ELECTRUM_MAXERRORS 777
 #define LP_MEMPOOL_TIMEINCR 10
 
+#define LP_OPTIONAL_PEERS 16
+#define LP_MAX_PEERS 100
+
 // RTmetrics
 #define LP_RTMETRICS_TOPGROUP 1.01
 #define LP_MAXPENDING_SWAPS 13
@@ -350,7 +353,7 @@ struct LP_pubkeyinfo
     bits256 pubkey;
     float matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
     //uint32_t timestamps[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
-    uint32_t timestamp,numerrors;
+    uint32_t timestamp,numerrors,lasttime;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };
