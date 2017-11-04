@@ -222,7 +222,7 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
                     {
                         numpeers = LP_numpeers();
-                        if ( IAMLP != 0 || (IAMLP == 0 && numpeers > LP_OPTIONAL_PEERS && (rand() % LP_MAX_PEERS) > numpeers) )
+                        if ( IAMLP != 0 || numpeers < LP_OPTIONAL_PEERS || (IAMLP == 0 && (rand() % LP_MAX_PEERS) > numpeers) )
                             peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jint(item,"numpeers"),jint(item,"numutxos"),juint(item,"session"));
                     }
                     if ( peer != 0 )
