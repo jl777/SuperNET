@@ -614,7 +614,7 @@ void LP_rpc_processreq(void *_ptr)
     if ( spawned > maxspawned )
     {
         printf("max rpc threads spawned and alive %d <- %d\n",maxspawned,spawned);
-        spawned = maxspawned;
+        maxspawned = spawned;
     }
     while ( remains > 0 )
     {

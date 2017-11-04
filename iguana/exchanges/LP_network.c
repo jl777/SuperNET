@@ -277,7 +277,7 @@ void queue_loop(void *arg)
         DL_FOREACH_SAFE(LP_garbage_collector,req,rtmp)
         {
             DL_DELETE(LP_garbage_collector,req);
-            printf("garbage collect ipbits.%x\n",req->ipbits);
+            //printf("garbage collect ipbits.%x\n",req->ipbits);
             free(req);
         }
         portable_mutex_unlock(&LP_networkmutex);
