@@ -81,6 +81,7 @@ struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
 struct LP_pubkeyinfo *LP_pubkeyinfos;
+struct rpcrequest_info *LP_garbage_collector;
 
 #include "LP_network.c"
 

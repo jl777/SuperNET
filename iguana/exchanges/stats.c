@@ -589,11 +589,12 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
 }
 
 uint16_t RPC_port;
-extern portable_mutex_t LP_commandmutex;
-struct rpcrequest_info { pthread_t T; int32_t sock; uint32_t ipbits; };
+extern portable_mutex_t LP_commandmutex,LP_networkmutex;
+extern struct rpcrequest_info *LP_garbage_collector;
 
 void LP_rpc_processreq(void *_ptr)
 {
+    static uint32_t spawned,maxspawned;
     char filetype[128],content_type[128];
     int32_t recvlen,flag,postflag=0,contentlen,remains,sock,numsent,jsonflag=0,hdrsize,len;
     char helpname[512],remoteaddr[64],*buf,*retstr,*space,*jsonbuf; struct rpcrequest_info *req = _ptr;
@@ -607,6 +608,14 @@ void LP_rpc_processreq(void *_ptr)
     jsonbuf = calloc(1,size);
     remains = size-1;
     buf = jsonbuf;
+    portable_mutex_lock(&LP_networkmutex);
+    spawned++;
+    portable_mutex_unlock(&LP_networkmutex);
+    if ( spawned > maxspawned )
+    {
+        printf("max rpc threads spawned and alive %d <- %d\n",maxspawned,spawned);
+        spawned = maxspawned;
+    }
     while ( remains > 0 )
     {
         //printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
@@ -726,7 +735,10 @@ void LP_rpc_processreq(void *_ptr)
     free(space);
     free(jsonbuf);
     closesocket(sock);
-    free(_ptr);
+    portable_mutex_lock(&LP_networkmutex);
+    DL_APPEND(LP_garbage_collector,req);
+    spawned--;
+    portable_mutex_unlock(&LP_networkmutex);
 }
 
 extern int32_t IAMLP;
