@@ -590,17 +590,17 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
 
 uint16_t RPC_port;
 extern portable_mutex_t LP_commandmutex;
+struct rpcrequest_info { pthread_t T; int32_t sock; uint32_t ipbits; };
 
 void LP_rpc_processreq(void *_ptr)
 {
-    uint64_t arg64 = *(uint64_t *)_ptr;
     char filetype[128],content_type[128];
     int32_t recvlen,flag,postflag=0,contentlen,remains,sock,numsent,jsonflag=0,hdrsize,len;
-    char helpname[512],remoteaddr[64],*buf,*retstr,*space,*jsonbuf;
+    char helpname[512],remoteaddr[64],*buf,*retstr,*space,*jsonbuf; struct rpcrequest_info *req = _ptr;
     uint32_t ipbits,i,size = 32*IGUANA_MAXPACKETSIZE + 512;
-    ipbits = (arg64 >> 32);
+    ipbits = req->ipbits;;
     expand_ipbits(remoteaddr,ipbits);
-    sock = (arg64 & 0xffffffff);
+    sock = req->sock;
     recvlen = flag = 0;
     retstr = 0;
     space = calloc(1,size);
@@ -652,7 +652,6 @@ void LP_rpc_processreq(void *_ptr)
             {
                 usleep(10000);
                 printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
-                //retstr = iguana_rpcparse(space,size,&postflag,jsonbuf);
                 if ( flag == 0 )
                     break;
             }
@@ -726,13 +725,15 @@ void LP_rpc_processreq(void *_ptr)
     }
     free(space);
     free(jsonbuf);
+    closesocket(sock);
+    free(_ptr);
 }
 
 extern int32_t IAMLP;
 void stats_rpcloop(void *args)
 {
     static uint32_t counter;
-    uint16_t port; int32_t sock,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; uint64_t arg64; void *arg64ptr;
+    uint16_t port; int32_t sock,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
@@ -764,19 +765,18 @@ void stats_rpcloop(void *args)
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
-        arg64 = ((uint64_t)ipbits << 32) | (sock & 0xffffffff);
-        arg64ptr = malloc(sizeof(arg64));
-        memcpy(arg64ptr,&arg64,sizeof(arg64));
-        if ( 1 )
+        req = calloc(1,sizeof(*req));
+        req->sock = sock;
+        req->ipbits = ipbits;
+        if ( 0 )
         {
-            LP_rpc_processreq((void *)&arg64);
-            free(arg64ptr);
-            closesocket(sock);
+            //LP_rpc_processreq((void *)&arg64);
+            //free(arg64ptr);
+            //closesocket(sock);
         }
-        else if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_rpc_processreq,arg64ptr) != 0 )
+        else if ( OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req) != 0 )
         {
             printf("error launching rpc handler on port %d\n",port);
-            // yes, small leak per command
         }
         /*if ( 0 && IAMLP != 0 && ipbits != localhostbits )
         {
