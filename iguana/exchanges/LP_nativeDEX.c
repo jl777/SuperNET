@@ -434,11 +434,11 @@ void command_rpcloop(void *myipaddr)
         if ( nonz == 0 )
         {
             if ( IAMLP != 0 )
-                usleep(1000);
-            else usleep(10000);
+                usleep(10000);
+            else usleep(50000);
         }
         else if ( IAMLP == 0 )
-            usleep(100);
+            usleep(1000);
     }
 }
 
