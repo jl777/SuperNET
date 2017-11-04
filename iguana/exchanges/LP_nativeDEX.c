@@ -17,7 +17,7 @@
 //
 //  LP_nativeDEX.c
 //  marketmaker
-//
+// bots to do bobs
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -669,7 +669,7 @@ void LP_coinsloop(void *_coins)
         if ( coins == 0 )
             return;
         if ( nonz == 0 )
-            usleep(1000);
+            usleep(100000);
     }
 }
 
@@ -876,15 +876,17 @@ void LP_swapsloop(void *ignore)
 
 void LP_reserved_msgs(void *ignore)
 {
-    bits256 zero; int32_t flag; struct nn_pollfd pfd;
+    bits256 zero; int32_t flag,nonz; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
     strcpy(LP_reserved_msgs_stats.name,"LP_reserved_msgs");
     LP_reserved_msgs_stats.threshold = 50.;
     while ( 1 )
     {
+        nonz = 0;
         LP_millistats_update(&LP_reserved_msgs_stats);
         if ( num_Reserved_msgs[0] > 0 || num_Reserved_msgs[1] > 0 )
         {
+            nonz++;
             flag = 0;
             if ( LP_mypubsock >= 0 )
             {
@@ -914,7 +916,9 @@ void LP_reserved_msgs(void *ignore)
         }
         if ( ignore == 0 )
             break;
-        usleep(3000);
+        if ( nonz != 0 )
+            usleep(3000);
+        else usleep(25000);
     }
 }
 
