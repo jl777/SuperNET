@@ -779,7 +779,7 @@ void stats_rpcloop(void *args)
             printf("error launching rpc handler on port %d\n",port);
             // yes, small leak per command
         }
-        ///if ( ipbits != localhostbits )
+        if ( ipbits != localhostbits )
         {
             close(bindsock);
             bindsock = iguana_socket(1,"0.0.0.0",port);
