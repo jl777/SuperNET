@@ -293,8 +293,6 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
             if ( dir > 0 )
                 newprice = (1. / price) * (1. + margin);
             else newprice = (price * (1. + margin));
-            
-            //newprice = 1. / (price * (1. - margin));
             if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
             {
                 LP_mypriceset(&changed,relpp->symbol,basepp->symbol,newprice);
@@ -468,7 +466,10 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         basepp = LP_priceinfofind(LP_autorefs[i].base);
         relpp = LP_priceinfofind(LP_autorefs[i].rel);
         if ( basepp != 0 && relpp != 0 )
-            LP_autopriceset(ctx,1,basepp,relpp,0,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
+        {
+            //printf("check ref-autoprice %s/%s\n",LP_autorefs[i].refbase,LP_autorefs[i].refrel);
+            LP_autopriceset(ctx,1,basepp,relpp,0.,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
+        }
     }
 }
 
@@ -597,6 +598,7 @@ void prices_loop(void *ctx)
         LP_tradebots_timeslice(ctx);
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
         {
+            printf("prices_loop BTC not in LP_priceinfofind\n");
             sleep(60);
             continue;
         }
