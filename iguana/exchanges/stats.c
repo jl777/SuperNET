@@ -730,6 +730,7 @@ void LP_rpc_processreq(void *_ptr)
     free(jsonbuf);
 }
 
+extern int32_t IAMLP;
 void stats_rpcloop(void *args)
 {
     static uint32_t counter;
@@ -779,7 +780,7 @@ void stats_rpcloop(void *args)
             printf("error launching rpc handler on port %d\n",port);
             // yes, small leak per command
         }
-        if ( ipbits != localhostbits )
+        if ( IAMLP != 0 && ipbits != localhostbits )
         {
             close(bindsock);
             bindsock = iguana_socket(1,"0.0.0.0",port);
