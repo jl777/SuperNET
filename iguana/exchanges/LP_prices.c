@@ -34,7 +34,7 @@ struct LP_priceinfo
     double factors[LP_MAXPRICEINFOS];
     //double maxprices[LP_MAXPRICEINFOS]; // autofill of base/rel
     //double relvols[LP_MAXPRICEINFOS];
-    FILE *fps[LP_MAXPRICEINFOS];
+    //FILE *fps[LP_MAXPRICEINFOS];
 } LP_priceinfos[LP_MAXPRICEINFOS];
 int32_t LP_numpriceinfos;
 
@@ -1033,10 +1033,10 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
     //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
     if ( LP_pricevalid(price) > 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
-        if ( (fp= basepp->fps[relpp->ind]) == 0 )
+        //if ( (fp= basepp->fps[relpp->ind]) == 0 )
         {
             LP_pricefname(fname,base,rel);
-            fp = basepp->fps[relpp->ind] = OS_appendfile(fname);
+            fp = OS_appendfile(fname); //basepp->fps[relpp->ind] =
         }
         if ( fp != 0 )
         {
@@ -1044,12 +1044,12 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             price64 = price * SATOSHIDEN;
             fwrite(&now,1,sizeof(now),fp);
             fwrite(&price64,1,sizeof(price64),fp);
-            fflush(fp);
+            fclose(fp);
         }
-        if ( (fp= relpp->fps[basepp->ind]) == 0 )
+        //if ( (fp= relpp->fps[basepp->ind]) == 0 )
         {
             sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,rel,base);
-            fp = relpp->fps[basepp->ind] = OS_appendfile(fname);
+            fp = OS_appendfile(fname); //relpp->fps[basepp->ind] =
         }
         if ( fp != 0 )
         {
@@ -1057,7 +1057,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             price64 = (1. / price) * SATOSHIDEN;
             fwrite(&now,1,sizeof(now),fp);
             fwrite(&price64,1,sizeof(price64),fp);
-            fflush(fp);
+            fclose(fp);
         }
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {
