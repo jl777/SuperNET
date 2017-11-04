@@ -697,7 +697,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( now > peer->lastpeers+60 || (rand() % 10000) == 0 )
+        if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (rand() % 100000) == 0 )
         {
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
@@ -722,7 +722,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+60 )
+        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+LP_ORDERBOOK_DURATION )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
             coin->lastpushtime = (uint32_t)time(NULL);
