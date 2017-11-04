@@ -219,7 +219,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                 return(-1);
             }
         }
-        if ( listen(sock,512) != 0 )
+        if ( listen(sock,1) != 0 )
         {
             printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
             if ( sock >= 0 )
@@ -730,13 +730,15 @@ void LP_rpc_processreq(void *_ptr)
     free(jsonbuf);
 }
 
+extern int32_t IAMLP;
 void stats_rpcloop(void *args)
 {
     static uint32_t counter;
-    uint16_t port; int32_t sock,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint64_t arg64; void *arg64ptr;
+    uint16_t port; int32_t sock,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; uint64_t arg64; void *arg64ptr;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
+    localhostbits = (uint32_t)calc_ipbits("127.0.0.1");
     /*while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
     {
         //if ( coin->MAXPEERS == 1 )
@@ -771,18 +773,18 @@ void stats_rpcloop(void *args)
         {
             LP_rpc_processreq((void *)&arg64);
             free(arg64ptr);
-            //char remoteaddr[64];
-            //expand_ipbits(remoteaddr,ipbits);
-            //printf("finished RPC request from (%s) %x\n",remoteaddr,ipbits);
+            closesocket(sock);
         }
         else if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_rpc_processreq,arg64ptr) != 0 )
         {
             printf("error launching rpc handler on port %d\n",port);
             // yes, small leak per command
         }
-        close(bindsock);
-        closesocket(sock);
-        bindsock = iguana_socket(1,"0.0.0.0",port);
+        if ( IAMLP != 0 && ipbits != localhostbits )
+        {
+            close(bindsock);
+            bindsock = iguana_socket(1,"0.0.0.0",port);
+        } //else printf("skip close and rebind\n");
     }
 }
 
