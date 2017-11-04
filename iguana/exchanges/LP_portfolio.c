@@ -298,7 +298,7 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
             if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
             {
                 LP_mypriceset(&changed,relpp->symbol,basepp->symbol,newprice);
-                //printf("autoprice changed.%d %s/%s <- %.8f\n",changed,basepp->symbol,relpp->symbol,price);
+                printf("autoprice changed.%d %s/%s <- %.8f\n",changed,basepp->symbol,relpp->symbol,price);
                 if ( changed != 0 || time(NULL) > lasttime+LP_ORDERBOOK_DURATION*.777)
                 {
                     lasttime = (uint32_t)time(NULL);
@@ -468,7 +468,10 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         basepp = LP_priceinfofind(LP_autorefs[i].base);
         relpp = LP_priceinfofind(LP_autorefs[i].rel);
         if ( basepp != 0 && relpp != 0 )
+        {
+            printf("check ref-autoprice %s/%s\n",LP_autorefs[i].refbase,LP_autorefs[i].refrel);
             LP_autopriceset(ctx,1,basepp,relpp,0,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
+        }
     }
 }
 

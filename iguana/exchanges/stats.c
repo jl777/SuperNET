@@ -780,11 +780,11 @@ void stats_rpcloop(void *args)
             printf("error launching rpc handler on port %d\n",port);
             // yes, small leak per command
         }
-        if ( 0 && IAMLP != 0 && ipbits != localhostbits )
+        /*if ( 0 && IAMLP != 0 && ipbits != localhostbits )
         {
             close(bindsock);
             bindsock = iguana_socket(1,"0.0.0.0",port);
-        } //else printf("skip close and rebind\n");
+        } //else printf("skip close and rebind\n");*/
     }
 }
 
