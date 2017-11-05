@@ -291,10 +291,9 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
                                     msgstr = "encryptedMessage";//jstr(encjson,"data");
                                     if ( (decjson= LP_NXT_decrypt(txnum,account,jstr(encjson,"data"),jstr(encjson,"nonce"),passphrase)) != 0 )
                                     {
-                                        //printf("%s\n",jprint(decjson,0));
+                                        printf("%s\n",jprint(decjson,0));
                                         msgstr = jstr(decjson,"decryptedMessage");
                                     }
-
                                 }
                             }
                         }
