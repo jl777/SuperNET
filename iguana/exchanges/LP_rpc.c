@@ -820,11 +820,21 @@ int32_t LP_importaddress(char *symbol,char *address)
 
 double _LP_getestimatedrate(struct iguana_info *coin)
 {
-    char buf[512],*retstr; cJSON *errjson; double rate = 0.00000020;
+    char buf[512],*retstr=0; int32_t numblocks; cJSON *errjson,*retjson; double rate = 0.00000020;
     if ( coin->rate < 0. || time(NULL) > coin->ratetime+30 )
     {
-        sprintf(buf,"[%d]",strcmp(coin->symbol,"BTC") == 0 ? 6 : 2);
-        if ( (retstr= LP_apicall(coin,coin->electrum==0?"estimatefee" : "blockchain.estimatefee",buf)) != 0 )
+        numblocks = strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
+        if ( coin->electrum == 0 )
+        {
+            sprintf(buf,"[%d]",numblocks);
+            retstr = LP_apicall(coin,"estimatefee",buf);
+        }
+        else
+        {
+            if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,numblocks)) != 0 )
+                retstr = jprint(retjson,1);
+        }
+        if ( retstr != 0 )
         {
             if ( retstr[0] == '{' && (errjson= cJSON_Parse(retstr)) != 0 )
             {
@@ -845,8 +855,7 @@ double _LP_getestimatedrate(struct iguana_info *coin)
                 coin->rate = rate;
                 coin->ratetime = (uint32_t)time(NULL);
             }
-            if ( coin->electrum == 0 )
-                free(retstr);
+            free(retstr);
         } else rate = coin->rate;
     } else rate = coin->rate;
     return(rate);
