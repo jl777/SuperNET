@@ -360,6 +360,9 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
     return(flag);
 }
 
+cJSON *electrum_version(char *symbol,struct electrum_info *ep,cJSON **retjsonp);
+cJSON *electrum_headers_subscribe(char *symbol,struct electrum_info *ep,cJSON **retjsonp);
+
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
@@ -393,6 +396,11 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
                         printf("error RE-connecting to %s:%u\n",ep->ipaddr,ep->port);
                     else
                     {
+                        cJSON *retjson;
+                        if ( (retjson= electrum_version(ep->symbol,ep,&retjson)) != 0 )
+                            printf("electrum_version %s\n",jprint(retjson,1));
+                        if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,&retjson)) != 0 )
+                            free_json(retjson);
                         printf("ep.%p %s numerrors.%d too big -> new %s:%u sock.%d\n",ep,ep->symbol,ep->numerrors,ep->ipaddr,ep->port,ep->sock);
                         ep->numerrors = 0;
                     }
