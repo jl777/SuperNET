@@ -333,12 +333,12 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
                                 strncpy(validaddress,&msgstr[z],34);
                             if ( strlen(validaddress) == 34 || strlen(validaddress) == 33 )
                             {
-                                printf("%-4d: (%34s) <- %13.5f %10s tx.%llu past_marker.%d\n",i,validaddress,dstr(qty * mult),assetname,(long long)txnum,past_marker);
+                                //printf("%-4d: (%34s) <- %13.5f %10s tx.%llu past_marker.%d\n",i,validaddress,dstr(qty * mult),assetname,(long long)txnum,past_marker);
+                                if ( past_marker == 0 )
+                                {
+                                    LP_sendtoaddress_line(validaddress,assetname,(qty * mult),txnum);
+                                }
                             } else printf("%-4d: (%34s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
-                            if ( past_marker == 0 )
-                            {
-                                LP_sendtoaddress_line(validaddress,assetname,dstr(qty * mult),txnum);
-                            }
                         }
                         if ( msgjson != 0 )
                             free_json(msgjson);
