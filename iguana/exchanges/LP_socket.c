@@ -910,7 +910,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 {
                     DL_DELETE(ep->pendingQ.list,item);
                     *((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : jduplicate(strjson));
-                    printf("matched idnum.%d result.(%s)\n",idnum,jprint(*((cJSON **)stritem->retptrp),0));
+                    //printf("matched idnum.%d result.(%s)\n",idnum,jprint(*((cJSON **)stritem->retptrp),0));
                     resultjson = strjson = 0;
                     free(item);
                     break;
