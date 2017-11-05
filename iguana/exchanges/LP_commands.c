@@ -342,9 +342,15 @@ bot_resume(botid)\n\
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
                         ptr->inactive = 0;
-                        cJSON *array = cJSON_CreateArray();
+                        cJSON *array;
                         if ( ptr->smartaddr[0] != 0 )
                             LP_unspents_load(coin,ptr->smartaddr);
+                        if ( LP_getheight(ptr) <= 0 )
+                        {
+                            ptr->inactive = (uint32_t)time(NULL);
+                            return(clonestr("{\"error\":\"coin cant be activated till synced\"}"));
+                        } else LP_unspents_load(coin,ptr->smartaddr);
+                        array = cJSON_CreateArray();
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));
                     } else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));

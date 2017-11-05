@@ -726,7 +726,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     {
         if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+10 )
         {
-            printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
+            //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
             coin->lastpushtime = (uint32_t)time(NULL);
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
@@ -759,7 +759,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
         {
             if ( LP_getheight(coin) <= 0 )
                 coin->inactive = (uint32_t)time(NULL);
-            LP_unspents_load(coin->symbol,coin->smartaddr);
+            else LP_unspents_load(coin->symbol,coin->smartaddr);
         }
     }
     if ( (n= cJSON_GetArraySize(coins)) > 0 )
@@ -776,7 +776,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                 {
                     if ( LP_getheight(coin) <= 0 )
                         coin->inactive = (uint32_t)time(NULL);
-                    LP_unspents_load(coin->symbol,coin->smartaddr);
+                    else LP_unspents_load(coin->symbol,coin->smartaddr);
                 }
             }
         }
