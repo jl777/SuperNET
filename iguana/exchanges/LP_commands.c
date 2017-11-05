@@ -142,6 +142,7 @@ snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
 stop()\n\
 bot_list()\n\
+bot_statuslist()\n\
 bot_buy(base, rel, maxprice, relvolume) -> botid\n\
 bot_sell(base, rel, minprice, basevolume) -> botid\n\
 bot_settings(botid, newprice, newvolume)\n\
