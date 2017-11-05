@@ -360,6 +360,35 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
     return(flag);
 }
 
+cJSON *electrum_version(char *symbol,struct electrum_info *ep,cJSON **retjsonp);
+cJSON *electrum_headers_subscribe(char *symbol,struct electrum_info *ep,cJSON **retjsonp);
+
+struct stritem *electrum_sitem(struct electrum_info *ep,char *stratumreq,int32_t timeout,cJSON **retjsonp)
+{
+    struct stritem *sitem = (struct stritem *)queueitem(stratumreq);
+    sitem->expiration = timeout;
+    sitem->DL.type = ep->stratumid++;
+    sitem->retptrp = (void **)retjsonp;
+    queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
+    return(sitem);
+}
+
+void electrum_initial_requests(struct electrum_info *ep)
+{
+    cJSON *retjson; char stratumreq[1024];
+    retjson = 0;
+    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"blockchain.headers.subscribe","[]");
+    electrum_sitem(ep,stratumreq,3,&retjson);
+    
+    retjson = 0;
+    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"server.version","[\"barterDEX\", [\"1.1\", \"1.1\"]]");
+    electrum_sitem(ep,stratumreq,3,&retjson);
+    
+    retjson = 0;
+    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"blockchain.estimatefee","[2]");
+    electrum_sitem(ep,stratumreq,3,&retjson);
+}
+
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
@@ -374,12 +403,13 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
 //printf("%s %s",symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
-            sitem = (struct stritem *)queueitem(stratumreq);
+            sitem = electrum_sitem(ep,stratumreq,timeout,retjsonp);
+           /*sitem = (struct stritem *)queueitem(stratumreq);
             sitem->expiration = timeout;
             sitem->DL.type = ep->stratumid++;
-            sitem->retptrp = (void **)retjsonp;
+            sitem->retptrp = (void **)retjsonp;*/
             portable_mutex_lock(&ep->mutex);
-            queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
+            //queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
             expiration = (uint32_t)time(NULL) + timeout + 1;
             while ( *retjsonp == 0 && time(NULL) <= expiration )
                 usleep(5000);
@@ -393,6 +423,8 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
                         printf("error RE-connecting to %s:%u\n",ep->ipaddr,ep->port);
                     else
                     {
+                        ep->stratumid = 0;
+                        electrum_initial_requests(ep);
                         printf("ep.%p %s numerrors.%d too big -> new %s:%u sock.%d\n",ep,ep->symbol,ep->numerrors,ep->ipaddr,ep->port,ep->sock);
                         ep->numerrors = 0;
                     }
@@ -591,7 +623,10 @@ cJSON *electrum_address_getbalance(char *symbol,struct electrum_info *ep,cJSON *
 cJSON *electrum_addpeer(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *endpoint) { return(electrum_strarg(symbol,ep,retjsonp,"server.add_peer",endpoint,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_sendrawtransaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *rawtx) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.transaction.broadcast",rawtx,ELECTRUM_TIMEOUT)); }
 
-cJSON *electrum_estimatefee(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t numblocks) { return(electrum_intarg(symbol,ep,retjsonp,"blockchain.estimatefee",numblocks,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_estimatefee(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t numblocks)
+{
+    return(electrum_intarg(symbol,ep,retjsonp,"blockchain.estimatefee",numblocks,ELECTRUM_TIMEOUT));
+}
 
 cJSON *electrum_getchunk(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t n) { return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.get_chunk",n,ELECTRUM_TIMEOUT)); }
 
@@ -833,7 +868,17 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
 int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 {
     cJSON *strjson,*errjson,*resultjson,*paramsjson; char *method; int32_t i,n,height; uint32_t idnum=0; struct stritem *stritem; struct iguana_info *coin; struct queueitem *tmp,*item = 0;
+    if ( str == 0 || len == 0 )
+        return(-1);
     ep->lasttime = (uint32_t)time(NULL);
+    /*if ( (strjson= cJSON_Parse(str)) == 0 )
+    {
+        strjson = cJSON_CreateObject();
+        resitem = cJSON_CreateObject();
+        jaddstr(resitem,"string",str);
+        jadd(strjson,"result",resitem);
+     printf("mapped.(%s) -> %s\n",str,jprint(strjson,0));
+     }*/
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
         resultjson = jobj(strjson,"result");
@@ -876,9 +921,9 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 stritem = (struct stritem *)item;
                 if ( item->type == idnum )
                 {
-                    //printf("matched idnum.%d result.%p\n",idnum,resultjson);
                     DL_DELETE(ep->pendingQ.list,item);
-                    *((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : strjson);
+                    *((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : jduplicate(strjson));
+                    //printf("matched idnum.%d result.(%s)\n",idnum,jprint(*((cJSON **)stritem->retptrp),0));
                     resultjson = strjson = 0;
                     free(item);
                     break;
@@ -907,14 +952,10 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 
 void LP_dedicatedloop(void *arg)
 {
-    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson; struct stritem *sitem; struct electrum_info *ep = arg;
+    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; struct stritem *sitem; struct electrum_info *ep = arg;
     if ( (coin= LP_coinfind(ep->symbol)) != 0 )
         ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
-    sleep(2);
-    if ( (retjson= electrum_version(ep->symbol,ep,&retjson)) != 0 )
-        printf("electrum_version %s\n",jprint(retjson,1));
-    if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,&retjson)) != 0 )
-        free_json(retjson);
+    electrum_initial_requests(ep);
     printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p %s ht.%d\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums,ep->symbol,*ep->heightp);
     while ( ep->sock >= 0 )
     {

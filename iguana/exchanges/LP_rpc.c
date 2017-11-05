@@ -187,6 +187,24 @@ static char *assetids[][4] =
     { "10524562908394749924", "MGW", "1", "100000000" },
 };
 
+void LP_sendtoaddress_line(char *validaddress,char *assetname,uint64_t satoshis,uint64_t txnum)
+{
+    char line[1024],lowerstr[64];
+    if ( strcmp(assetname,"SUPERNETx2") == 0 )
+    {
+        sprintf(line,"fiat/supernet sendtoaddress %s %.8f # txnum.%llu",validaddress,dstr(satoshis),(long long)txnum);
+        printf("%s\n",line);
+        sprintf(line,"fiat/revs sendtoaddress %s %.8f # txnum.%llu",validaddress,dstr(satoshis),(long long)txnum);
+    }
+    else
+    {
+        strcpy(lowerstr,assetname);
+        tolowercase(lowerstr);
+        sprintf(line,"fiat/%s sendtoaddress %s %.8f # txnum.%llu",lowerstr,validaddress,dstr(satoshis),(long long)txnum);
+    }
+    printf("%s\n",line);
+}
+
 uint64_t LP_assetid_mult(int32_t *assetindp,char *name,uint64_t assetid)
 {
     int32_t i; uint64_t mult = 0;
@@ -292,9 +310,9 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
                                     if ( (decjson= LP_NXT_decrypt(txnum,account,jstr(encjson,"data"),jstr(encjson,"nonce"),passphrase)) != 0 )
                                     {
                                         //printf("%s\n",jprint(decjson,0));
-                                        msgstr = jstr(decjson,"decryptedMessage");
+                                        if ( jstr(decjson,"decryptedMessage") != 0 )
+                                            msgstr = jstr(decjson,"decryptedMessage");
                                     }
-
                                 }
                             }
                         }
@@ -315,12 +333,12 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
                                 strncpy(validaddress,&msgstr[z],34);
                             if ( strlen(validaddress) == 34 || strlen(validaddress) == 33 )
                             {
-                                printf("%-4d: (%34s) <- %13.5f %10s tx.%llu past_marker.%d\n",i,validaddress,dstr(qty * mult),assetname,(long long)txnum,past_marker);
+                                //printf("%-4d: (%34s) <- %13.5f %10s tx.%llu past_marker.%d\n",i,validaddress,dstr(qty * mult),assetname,(long long)txnum,past_marker);
+                                if ( past_marker == 0 )
+                                {
+                                    LP_sendtoaddress_line(validaddress,assetname,(qty * mult),txnum);
+                                }
                             } else printf("%-4d: (%34s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
-                            if ( past_marker == 0 )
-                            {
-                                
-                            }
                         }
                         if ( msgjson != 0 )
                             free_json(msgjson);
@@ -802,14 +820,22 @@ int32_t LP_importaddress(char *symbol,char *address)
 
 double _LP_getestimatedrate(struct iguana_info *coin)
 {
-    char buf[512],*retstr; cJSON *errjson; double rate = 0.00000020;
+    char buf[512],*retstr=0; int32_t numblocks; cJSON *errjson,*retjson; double rate = 0.00000020;
     if ( coin->rate < 0. || time(NULL) > coin->ratetime+30 )
     {
-        sprintf(buf,"[%d]",strcmp(coin->symbol,"BTC") == 0 ? 6 : 2);
-        if ( (retstr= LP_apicall(coin,coin->electrum==0?"estimatefee" : "blockchain.estimatefee",buf)) != 0 )
+        numblocks = strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
+        if ( coin->electrum == 0 )
         {
-            if ( coin->electrum != 0 )
-                printf("estimatefee.(%s)\n",retstr);
+            sprintf(buf,"[%d]",numblocks);
+            retstr = LP_apicall(coin,"estimatefee",buf);
+        }
+        else
+        {
+            if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,numblocks)) != 0 )
+                retstr = jprint(retjson,1);
+        }
+        if ( retstr != 0 )
+        {
             if ( retstr[0] == '{' && (errjson= cJSON_Parse(retstr)) != 0 )
             {
                 if ( jobj(errjson,"error") != 0 )
