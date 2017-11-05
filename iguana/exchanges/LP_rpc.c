@@ -192,15 +192,15 @@ void LP_sendtoaddress_line(char *validaddress,char *assetname,uint64_t satoshis,
     char line[1024],lowerstr[64];
     if ( strcmp(assetname,"SUPERNETx2") == 0 )
     {
-        sprintf(line,"fiat/supernet sendtoaddress %s %.8f # txnum.%llu",validaddress,dstr(satoshis),(long long_txnum));
+        sprintf(line,"fiat/supernet sendtoaddress %s %.8f # txnum.%llu",validaddress,dstr(satoshis),(long long)txnum);
         printf("%s\n",line);
-        sprintf(line,"fiat/revs sendtoaddress %s %.8f # txnum.%llu",validaddress,dstr(satoshis),(long long_txnum);
+        sprintf(line,"fiat/revs sendtoaddress %s %.8f # txnum.%llu",validaddress,dstr(satoshis),(long long)txnum);
     }
     else
     {
         strcpy(lowerstr,assetname);
         tolowercase(lowerstr);
-        sprintf(line,"fiat/%s sendtoaddress %s %.8f # txnum.%llu",lowerstr,validaddress,dstr(satoshis),(long long_txnum);
+        sprintf(line,"fiat/%s sendtoaddress %s %.8f # txnum.%llu",lowerstr,validaddress,dstr(satoshis),(long long)txnum);
     }
     printf("%s\n",line);
 }
