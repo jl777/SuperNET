@@ -65,7 +65,8 @@ void LP_millistats_update(struct LP_millistats *mp)
             mp->millisum += elapsed;
             if ( mp->threshold != 0. && elapsed > mp->threshold )
             {
-                printf("%32s elapsed %10.2f millis > threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
+                if ( IAMLP == 0 )
+                    printf("%32s elapsed %10.2f millis > threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
             }
             mp->lastmilli = millis;
         }
@@ -446,7 +447,7 @@ void command_rpcloop(void *myipaddr)
 void utxosQ_loop(void *myipaddr)
 {
     strcpy(utxosQ_loop_stats.name,"utxosQ_loop");
-    utxosQ_loop_stats.threshold = 50.;
+    utxosQ_loop_stats.threshold = 150.;
     while ( 1 )
     {
         LP_millistats_update(&utxosQ_loop_stats);
@@ -723,7 +724,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+LP_ORDERBOOK_DURATION )
+        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+10 )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
             coin->lastpushtime = (uint32_t)time(NULL);
@@ -758,7 +759,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
         {
             if ( LP_getheight(coin) <= 0 )
                 coin->inactive = (uint32_t)time(NULL);
-            LP_unspents_load(coin->symbol,coin->smartaddr);
+            else LP_unspents_load(coin->symbol,coin->smartaddr);
         }
     }
     if ( (n= cJSON_GetArraySize(coins)) > 0 )
@@ -775,7 +776,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                 {
                     if ( LP_getheight(coin) <= 0 )
                         coin->inactive = (uint32_t)time(NULL);
-                    LP_unspents_load(coin->symbol,coin->smartaddr);
+                    else LP_unspents_load(coin->symbol,coin->smartaddr);
                 }
             }
         }
@@ -880,7 +881,7 @@ void LP_reserved_msgs(void *ignore)
     bits256 zero; int32_t flag,nonz; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
     strcpy(LP_reserved_msgs_stats.name,"LP_reserved_msgs");
-    LP_reserved_msgs_stats.threshold = 50.;
+    LP_reserved_msgs_stats.threshold = 150.;
     while ( 1 )
     {
         nonz = 0;
