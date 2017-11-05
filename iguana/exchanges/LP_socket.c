@@ -902,7 +902,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                     if ( resultjson != 0 )
                     {
                         tmpstr = jprint(resultjson,0);
-                        if ( (tmpjson= cJSON_Parse(tmpstr)) == 0 )
+                        if ( (tmpstr[0] != '[' && tmpstr[0] != '{') || (tmpjson= cJSON_Parse(tmpstr)) == 0  )
                         {
                             tmpjson = cJSON_CreateObject();
                             jadd(tmpjson,"result",jduplicate(resultjson));
