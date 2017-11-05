@@ -554,10 +554,11 @@ bot_resume(botid)\n\
                         //printf("network invoked\n");
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                         //LP_smartutxos_push(ptr);
+                        return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
                     }
                     else
                     {
-                        
+                        return(clonestr("{\"error\":\"not my address\"}"));
                     }
                 }
                 return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
