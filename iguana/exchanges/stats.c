@@ -745,7 +745,7 @@ extern int32_t IAMLP;
 void stats_rpcloop(void *args)
 {
     static uint32_t counter;
-    uint16_t port; int32_t sock,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req;
+    uint16_t port; int32_t retval,sock,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
@@ -780,21 +780,15 @@ void stats_rpcloop(void *args)
         req = calloc(1,sizeof(*req));
         req->sock = sock;
         req->ipbits = ipbits;
-        if ( 0 )
+        if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
-            //LP_rpc_processreq((void *)&arg64);
-            //free(arg64ptr);
-            //closesocket(sock);
-        }
-        else if ( OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req) != 0 )
-        {
-            printf("error launching rpc handler on port %d\n",port);
-        }
-        /*if ( 0 && IAMLP != 0 && ipbits != localhostbits )
-        {
-            close(bindsock);
-            bindsock = iguana_socket(1,"0.0.0.0",port);
-        } //else printf("skip close and rebind\n");*/
+            printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
+            if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
+            {
+                printf("error2 launching rpc handler on port %d, retval.%d\n",port,retval);
+                LP_rpc_processreq(req);
+            }
+       }
     }
 }
 
