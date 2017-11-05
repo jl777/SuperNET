@@ -187,6 +187,24 @@ static char *assetids[][4] =
     { "10524562908394749924", "MGW", "1", "100000000" },
 };
 
+void LP_sendtoaddress_line(char *validaddress,char *assetname,uint64_t satoshis)
+{
+    char line[1024],lowerstr[64];
+    if ( strcmp(assetname,"SUPERNETx2") == 0 )
+    {
+        sprintf(line,"fiat/supernet sendtoaddress %s %.8f",validaddress,dstr(satoshis));
+        printf("%s\n",line);
+        sprintf(line,"fiat/revs sendtoaddress %s %.8f",validaddress,dstr(satoshis));
+    }
+    else
+    {
+        strcpy(lowerstr,assetname);
+        tolowercase(lowerstr);
+        sprintf(line,"fiat/%s sendtoaddress %s %.8f",lowerstr,validaddress,dstr(satoshis));
+    }
+    printf("%s\n",line);
+}
+
 uint64_t LP_assetid_mult(int32_t *assetindp,char *name,uint64_t assetid)
 {
     int32_t i; uint64_t mult = 0;
@@ -319,7 +337,7 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
                             } else printf("%-4d: (%34s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
                             if ( past_marker == 0 )
                             {
-                                
+                                LP_sendtoaddress_line(validaddress,assetname,dstr(qty * mult));
                             }
                         }
                         if ( msgjson != 0 )
