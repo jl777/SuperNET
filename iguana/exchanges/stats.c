@@ -772,6 +772,8 @@ void stats_rpcloop(void *args)
         req = calloc(1,sizeof(*req));
         req->sock = sock;
         req->ipbits = ipbits;
+        LP_rpc_processreq(req);
+continue;
         if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
