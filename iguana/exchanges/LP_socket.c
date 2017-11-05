@@ -897,9 +897,9 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 stritem = (struct stritem *)item;
                 if ( item->type == idnum )
                 {
-                    //printf("matched idnum.%d result.%p\n",idnum,resultjson);
                     DL_DELETE(ep->pendingQ.list,item);
                     *((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : jduplicate(strjson));
+                    printf("matched idnum.%d result.(%s)\n",idnum,jprint(*((cJSON **)stritem->retptrp),0));
                     resultjson = strjson = 0;
                     free(item);
                     break;
@@ -916,6 +916,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                         *((cJSON **)stritem->retptrp) = errjson;
                     }
                     free(item);
+                    item = 0;
                 }
             }
         }
