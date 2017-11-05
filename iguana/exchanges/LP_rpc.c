@@ -826,8 +826,6 @@ double _LP_getestimatedrate(struct iguana_info *coin)
         sprintf(buf,"[%d]",strcmp(coin->symbol,"BTC") == 0 ? 6 : 2);
         if ( (retstr= LP_apicall(coin,coin->electrum==0?"estimatefee" : "blockchain.estimatefee",buf)) != 0 )
         {
-            if ( coin->electrum != 0 )
-                printf("estimatefee.(%s)\n",retstr);
             if ( retstr[0] == '{' && (errjson= cJSON_Parse(retstr)) != 0 )
             {
                 if ( jobj(errjson,"error") != 0 )
@@ -847,7 +845,8 @@ double _LP_getestimatedrate(struct iguana_info *coin)
                 coin->rate = rate;
                 coin->ratetime = (uint32_t)time(NULL);
             }
-            free(retstr);
+            if ( coin->electrum == 0 )
+                free(retstr);
         } else rate = coin->rate;
     } else rate = coin->rate;
     return(rate);
