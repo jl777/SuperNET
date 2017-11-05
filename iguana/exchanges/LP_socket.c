@@ -599,7 +599,10 @@ cJSON *electrum_address_getbalance(char *symbol,struct electrum_info *ep,cJSON *
 cJSON *electrum_addpeer(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *endpoint) { return(electrum_strarg(symbol,ep,retjsonp,"server.add_peer",endpoint,ELECTRUM_TIMEOUT)); }
 cJSON *electrum_sendrawtransaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *rawtx) { return(electrum_strarg(symbol,ep,retjsonp,"blockchain.transaction.broadcast",rawtx,ELECTRUM_TIMEOUT)); }
 
-cJSON *electrum_estimatefee(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t numblocks) { return(electrum_intarg(symbol,ep,retjsonp,"blockchain.estimatefee",numblocks,ELECTRUM_TIMEOUT)); }
+cJSON *electrum_estimatefee(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t numblocks)
+{
+    return(electrum_intarg(symbol,ep,retjsonp,"blockchain.estimatefee",numblocks,ELECTRUM_TIMEOUT));
+}
 
 cJSON *electrum_getchunk(char *symbol,struct electrum_info *ep,cJSON **retjsonp,int32_t n) { return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.get_chunk",n,ELECTRUM_TIMEOUT)); }
 
@@ -840,9 +843,19 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
 
 int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 {
-    cJSON *strjson,*errjson,*resultjson,*paramsjson; char *method; int32_t i,n,height; uint32_t idnum=0; struct stritem *stritem; struct iguana_info *coin; struct queueitem *tmp,*item = 0;
+    cJSON *strjson,*resitem,*errjson,*resultjson,*paramsjson; char *method; int32_t i,n,height; uint32_t idnum=0; struct stritem *stritem; struct iguana_info *coin; struct queueitem *tmp,*item = 0;
+    if ( str == 0 || len == 0 )
+        return(-1);
     ep->lasttime = (uint32_t)time(NULL);
-    if ( (strjson= cJSON_Parse(str)) != 0 )
+    if ( (strjson= cJSON_Parse(str)) == 0 )
+    {
+        strjson = cJSON_CreateObject();
+        resitem = cJSON_CreateObject();
+        jaddstr(resitem,"string",str);
+        jadd(strjson,"result",resitem);
+        printf("mapped.(%s) -> %s\n",str,jprint(strjson,0));
+    }
+    if ( 1 )
     {
         resultjson = jobj(strjson,"result");
         //printf("strjson.(%s)\n",jprint(strjson,0));
