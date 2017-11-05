@@ -899,8 +899,8 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 {
                     DL_DELETE(ep->pendingQ.list,item);
                     *((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : jduplicate(strjson));
-                    resultjson = strjson = 0;
                     printf("matched idnum.%d result.%p\n",idnum,resultjson);
+                    resultjson = strjson = 0;
                     free(item);
                     break;
                 }
@@ -936,6 +936,12 @@ void LP_dedicatedloop(void *arg)
         printf("electrum_version %s\n",jprint(retjson,1));
     if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,&retjson)) != 0 )
         free_json(retjson);
+    for (i=0; i<3; i++)
+    if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,2)) != 0 )
+    {
+        printf("estimate fee (%s)\n",jprint(retjson,0));
+        free_json(retjson);
+    }
     printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p %s ht.%d\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums,ep->symbol,*ep->heightp);
     while ( ep->sock >= 0 )
     {
