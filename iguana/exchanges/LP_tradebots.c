@@ -402,6 +402,16 @@ char *LP_tradebot_list(void *ctx,int32_t pubsock,cJSON *argjson)
     return(jprint(array,1));
 }
 
+char *LP_tradebot_statuslist(void *ctx,int32_t pubsock,cJSON *argjson)
+{
+    struct LP_tradebot *bot,*tmp; cJSON *array = cJSON_CreateArray();
+    DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
+    {
+        jaddi(array,LP_tradebot_json(bot));
+    }
+    return(jprint(array,1));
+}
+
 char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,double relvolume)
 {
     struct LP_tradebot *bot; char *retstr; double shortfall; int32_t i,n; cJSON *array,*item,*retjson; uint64_t txfees,balance=0,abalance=0; struct iguana_info *basecoin,*relcoin;
@@ -599,6 +609,8 @@ char *LP_istradebots_command(void *ctx,int32_t pubsock,char *method,cJSON *argjs
         return(0);
     if ( strcmp(method,"bot_list") == 0 )
         return(LP_tradebot_list(ctx,pubsock,argjson));
+    else if ( strcmp(method,"bot_statuslist") == 0 )
+        return(LP_tradebot_statuslist(ctx,pubsock,argjson));
     else if ( strcmp(method,"bot_buy") == 0 )
         return(LP_tradebot_limitbuy(ctx,pubsock,argjson));
     else if ( strcmp(method,"bot_sell") == 0 )

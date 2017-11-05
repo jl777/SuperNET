@@ -17,7 +17,7 @@
 //
 //  LP_nativeDEX.c
 //  marketmaker
-//
+// bots to do bobs
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -91,6 +91,7 @@ char LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
 char LP_gui[16] = { "cli" };
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
+    "24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
     //"51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
 };//"5.9.253.204" }; //
 
@@ -434,11 +435,11 @@ void command_rpcloop(void *myipaddr)
         if ( nonz == 0 )
         {
             if ( IAMLP != 0 )
-                usleep(1000);
-            else usleep(10000);
+                usleep(10000);
+            else usleep(50000);
         }
         else if ( IAMLP == 0 )
-            usleep(100);
+            usleep(1000);
     }
 }
 
@@ -669,7 +670,7 @@ void LP_coinsloop(void *_coins)
         if ( coins == 0 )
             return;
         if ( nonz == 0 )
-            usleep(1000);
+            usleep(100000);
     }
 }
 
@@ -697,7 +698,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( now > peer->lastpeers+60 || (rand() % 10000) == 0 )
+        if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (rand() % 100000) == 0 )
         {
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
@@ -722,7 +723,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+60 )
+        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+LP_ORDERBOOK_DURATION )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
             coin->lastpushtime = (uint32_t)time(NULL);
@@ -876,15 +877,17 @@ void LP_swapsloop(void *ignore)
 
 void LP_reserved_msgs(void *ignore)
 {
-    bits256 zero; int32_t flag; struct nn_pollfd pfd;
+    bits256 zero; int32_t flag,nonz; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
     strcpy(LP_reserved_msgs_stats.name,"LP_reserved_msgs");
     LP_reserved_msgs_stats.threshold = 50.;
     while ( 1 )
     {
+        nonz = 0;
         LP_millistats_update(&LP_reserved_msgs_stats);
         if ( num_Reserved_msgs[0] > 0 || num_Reserved_msgs[1] > 0 )
         {
+            nonz++;
             flag = 0;
             if ( LP_mypubsock >= 0 )
             {
@@ -914,7 +917,9 @@ void LP_reserved_msgs(void *ignore)
         }
         if ( ignore == 0 )
             break;
-        usleep(3000);
+        if ( nonz != 0 )
+            usleep(3000);
+        else usleep(25000);
     }
 }
 

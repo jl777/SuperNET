@@ -697,15 +697,14 @@ struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,d
 
 void LP_pubkeys_query()
 {
-    static uint32_t lasttime;
     uint8_t zeroes[20]; bits256 zero; cJSON *reqjson; struct LP_pubkeyinfo *pubp=0,*tmp;
     memset(zero.bytes,0,sizeof(zero));
     memset(zeroes,0,sizeof(zeroes));
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
     {
-        if ( memcmp(zeroes,pubp->rmd160,sizeof(pubp->rmd160)) == 0 && time(NULL) > lasttime+30 )
+        if ( memcmp(zeroes,pubp->rmd160,sizeof(pubp->rmd160)) == 0 && time(NULL) > pubp->lasttime+60 )
         {
-            lasttime = (uint32_t)time(NULL);
+            pubp->lasttime = (uint32_t)time(NULL);
             reqjson = cJSON_CreateObject();
             jaddstr(reqjson,"method","wantnotify");
             jaddbits256(reqjson,"pub",pubp->pubkey);

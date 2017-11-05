@@ -341,9 +341,10 @@ void queue_loop(void *arg)
         //if ( n != 0 )
         //    printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
-            usleep(5000);
+            usleep(25000);
         else if ( IAMLP == 0 )
-            usleep(1000);
+            usleep(10000);
+        else usleep(1000);
     }
 }
 
@@ -389,6 +390,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
     if ( IAMLP == 0 )
     {
         free(msg);
+//printf("broadcast %s\n",jstr(argjson,"method"));
         jdelete(argjson,"method");
         jaddstr(argjson,"method","broadcast");
         if ( jobj(argjson,"timestamp") == 0 )
