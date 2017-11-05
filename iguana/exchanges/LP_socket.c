@@ -373,6 +373,22 @@ struct stritem *electrum_sitem(struct electrum_info *ep,char *stratumreq,int32_t
     return(sitem);
 }
 
+void electrum_initial_requests(struct electrum_info *ep)
+{
+    cJSON *retjson; char stratumreq[1024];
+    retjson = 0;
+    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"blockchain.headers.subscribe","[]");
+    electrum_sitem(ep,stratumreq,3,&retjson);
+    
+    retjson = 0;
+    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"server.version","[\"barterDEX\", [\"1.1\", \"1.1\"]]");
+    electrum_sitem(ep,stratumreq,3,&retjson);
+    
+    retjson = 0;
+    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"blockchain.estimatefee","[2]");
+    electrum_sitem(ep,stratumreq,3,&retjson);
+}
+
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
@@ -407,11 +423,8 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
                         printf("error RE-connecting to %s:%u\n",ep->ipaddr,ep->port);
                     else
                     {
-                        cJSON *retjson;
-                        if ( (retjson= electrum_version(ep->symbol,ep,&retjson)) != 0 )
-                            printf("electrum_version %s\n",jprint(retjson,1));
-                        if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,&retjson)) != 0 )
-                            free_json(retjson);
+                        ep->stratumid = 0;
+                        electrum_initial_requests(ep);
                         printf("ep.%p %s numerrors.%d too big -> new %s:%u sock.%d\n",ep,ep->symbol,ep->numerrors,ep->ipaddr,ep->port,ep->sock);
                         ep->numerrors = 0;
                     }
@@ -939,26 +952,10 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 
 void LP_dedicatedloop(void *arg)
 {
-    char stratumreq[1024]; struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; cJSON *retjson=0; struct stritem *sitem; struct electrum_info *ep = arg;
+    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; struct stritem *sitem; struct electrum_info *ep = arg;
     if ( (coin= LP_coinfind(ep->symbol)) != 0 )
         ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
-    retjson = 0;
-    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"blockchain.headers.subscribe","[]");
-    electrum_sitem(ep,stratumreq,3,&retjson);
-  
-    retjson = 0;
-    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"server.version","[\"barterDEX\", [\"1.1\", \"1.1\"]]");
-    electrum_sitem(ep,stratumreq,3,&retjson);
-
-    retjson = 0;
-    sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,"blockchain.estimatefee","[2]");
-    electrum_sitem(ep,stratumreq,3,&retjson);
-
-
-    //if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,&retjson)) != 0 )
-    //    free_json(retjson);
-    //if ( (retjson= electrum_version(ep->symbol,ep,&retjson)) != 0 )
-    //    printf("electrum_version %s\n",jprint(retjson,1));
+    electrum_initial_requests(ep);
     printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p %s ht.%d\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums,ep->symbol,*ep->heightp);
     while ( ep->sock >= 0 )
     {
