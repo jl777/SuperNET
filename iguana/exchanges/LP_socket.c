@@ -843,19 +843,19 @@ struct electrum_info *LP_electrum_info(int32_t *alreadyp,char *symbol,char *ipad
 
 int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 {
-    cJSON *strjson,*resitem,*errjson,*resultjson,*paramsjson; char *method; int32_t i,n,height; uint32_t idnum=0; struct stritem *stritem; struct iguana_info *coin; struct queueitem *tmp,*item = 0;
+    cJSON *strjson,*errjson,*resultjson,*paramsjson; char *method; int32_t i,n,height; uint32_t idnum=0; struct stritem *stritem; struct iguana_info *coin; struct queueitem *tmp,*item = 0;
     if ( str == 0 || len == 0 )
         return(-1);
     ep->lasttime = (uint32_t)time(NULL);
-    if ( (strjson= cJSON_Parse(str)) == 0 )
+    /*if ( (strjson= cJSON_Parse(str)) == 0 )
     {
         strjson = cJSON_CreateObject();
         resitem = cJSON_CreateObject();
         jaddstr(resitem,"string",str);
         jadd(strjson,"result",resitem);
-        printf("mapped.(%s) -> %s\n",str,jprint(strjson,0));
-    }
-    if ( 1 )
+     printf("mapped.(%s) -> %s\n",str,jprint(strjson,0));
+     }*/
+    if ( (strjson= cJSON_Parse(str)) != 0 )
     {
         resultjson = jobj(strjson,"result");
         printf("strjson.(%s)\n",jprint(strjson,0));
@@ -899,7 +899,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 {
                     //printf("matched idnum.%d result.%p\n",idnum,resultjson);
                     DL_DELETE(ep->pendingQ.list,item);
-                    *((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : strjson);
+                    *((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : jduplicate(strjson));
                     resultjson = strjson = 0;
                     free(item);
                     break;
