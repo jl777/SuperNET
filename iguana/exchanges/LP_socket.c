@@ -937,10 +937,13 @@ void LP_dedicatedloop(void *arg)
     if ( (retjson= electrum_headers_subscribe(ep->symbol,ep,&retjson)) != 0 )
         free_json(retjson);
     for (i=0; i<3; i++)
-    if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,2)) != 0 )
     {
-        printf("estimate fee (%s)\n",jprint(retjson,0));
-        free_json(retjson);
+        printf("call estimatefee\n");
+        if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,2)) != 0 )
+        {
+            printf("estimate fee (%s)\n",jprint(retjson,0));
+            free_json(retjson);
+        } else printf("null value from electrum_estimatefee\n");
     }
     printf("LP_dedicatedloop ep.%p sock.%d for %s:%u num.%d %p %s ht.%d\n",ep,ep->sock,ep->ipaddr,ep->port,Num_electrums,&Num_electrums,ep->symbol,*ep->heightp);
     while ( ep->sock >= 0 )
