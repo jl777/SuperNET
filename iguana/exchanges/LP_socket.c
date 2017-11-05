@@ -892,15 +892,26 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
         portable_mutex_lock(&ep->pendingQ.mutex);
         if ( ep->pendingQ.list != 0 )
         {
+            cJSON *tmpjson; char *tmpstr;
             DL_FOREACH_SAFE(ep->pendingQ.list,item,tmp)
             {
                 stritem = (struct stritem *)item;
                 if ( item->type == idnum )
                 {
                     DL_DELETE(ep->pendingQ.list,item);
-                    *((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : jduplicate(strjson));
-                    printf("matched idnum.%d result.(%s)\n",idnum,jprint(*((cJSON **)stritem->retptrp),0));
-                    resultjson = strjson = 0;
+                    if ( resultjson != 0 )
+                    {
+                        tmpstr = jprint(resultjson,0);
+                        if ( (tmpjson= cJSON_Parse(tmpstr)) == 0 )
+                        {
+                            tmpjson = cJSON_CreateObject();
+                            jadd(tmpjson,"result",jduplicate(resultjson));
+                        }
+                        free(tmpstr);
+                    } else tmpjson = cJSON_CreateObject();
+                    //*((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : jduplicate(strjson));
+                    *((cJSON **)stritem->retptrp) = tmpjson;
+                    printf("matched idnum.%d result.(%s)\n",idnum,jprint(tmpjson,0));
                     free(item);
                     break;
                 }
