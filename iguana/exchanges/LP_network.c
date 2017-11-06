@@ -298,7 +298,7 @@ void queue_loop(void *arg)
     {
         LP_millistats_update(&queue_loop_stats);
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
-        n = nonz = 0;
+        n = nonz = flag = 0;
         DL_FOREACH_SAFE(LP_Q,ptr,tmp)
         {
             n++;
@@ -356,7 +356,7 @@ void queue_loop(void *arg)
         //    printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
             usleep(10000);
-        else printf("queue_loop nonz.%d flag.%d n.%d\n",nonz,flag,n);
+        else printf("queue_loop nonz.%d n.%d\n",nonz,n);
     }
 }
 

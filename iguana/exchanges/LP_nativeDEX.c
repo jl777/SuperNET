@@ -66,7 +66,7 @@ void LP_millistats_update(struct LP_millistats *mp)
             mp->millisum += elapsed;
             if ( mp->threshold != 0. && elapsed > mp->threshold )
             {
-                if ( IAMLP == 0 )
+                //if ( IAMLP == 0 )
                     printf("%32s elapsed %10.2f millis > threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
             }
             mp->lastmilli = millis;
