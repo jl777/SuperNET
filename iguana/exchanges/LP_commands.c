@@ -153,9 +153,12 @@ bot_resume(botid)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
-    base = jstr(argjson,"base");
-    rel = jstr(argjson,"rel");
-    coin = jstr(argjson,"coin");
+    if ( (base= jstr(argjson,"base")) == 0 )
+        base = "";
+    if ((rel= jstr(argjson,"rel")) == 0 )
+        rel = "";
+    if ( (coin= jstr(argjson,"coin")) == 0 )
+        coin = "";
     if ( G.USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 ) // protected localhost
     {
         if ( G.USERPASS_COUNTER == 0 )
