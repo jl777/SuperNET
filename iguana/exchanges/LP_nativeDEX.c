@@ -453,7 +453,7 @@ void utxosQ_loop(void *myipaddr)
     {
         LP_millistats_update(&utxosQ_loop_stats);
         if ( LP_utxosQ_process() == 0 )
-            usleep(10000);
+            usleep(50000);
     }
 }
 
