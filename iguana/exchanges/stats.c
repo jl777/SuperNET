@@ -589,7 +589,7 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
 }
 
 uint16_t RPC_port;
-extern portable_mutex_t LP_commandmutex,LP_networkmutex;
+extern portable_mutex_t LP_commandmutex,LP_gcmutex;
 extern struct rpcrequest_info *LP_garbage_collector;
 
 void LP_rpc_processreq(void *_ptr)
@@ -608,9 +608,7 @@ void LP_rpc_processreq(void *_ptr)
     jsonbuf = calloc(1,size);
     remains = size-1;
     buf = jsonbuf;
-    portable_mutex_lock(&LP_networkmutex);
     spawned++;
-    portable_mutex_unlock(&LP_networkmutex);
     if ( spawned > maxspawned )
     {
         printf("max rpc threads spawned and alive %d <- %d\n",maxspawned,spawned);
@@ -735,10 +733,10 @@ void LP_rpc_processreq(void *_ptr)
     free(space);
     free(jsonbuf);
     closesocket(sock);
-    portable_mutex_lock(&LP_networkmutex);
+    portable_mutex_lock(&LP_gcmutex);
     DL_APPEND(LP_garbage_collector,req);
     spawned--;
-    portable_mutex_unlock(&LP_networkmutex);
+    portable_mutex_unlock(&LP_gcmutex);
 }
 
 extern int32_t IAMLP;
@@ -779,13 +777,13 @@ continue;
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
             close(bindsock);
             bindsock = -1;
-            portable_mutex_lock(&LP_networkmutex);
+            portable_mutex_lock(&LP_gcmutex);
             DL_FOREACH_SAFE(LP_garbage_collector,req2,rtmp)
             {
                 DL_DELETE(LP_garbage_collector,req2);
                 free(req2);
             }
-            portable_mutex_unlock(&LP_networkmutex);
+            portable_mutex_unlock(&LP_gcmutex);
             if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
             {
                 printf("error2 launching rpc handler on port %d, retval.%d\n",port,retval);
