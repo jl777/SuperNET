@@ -649,8 +649,8 @@ char *basilisk_swap_bobtxspend(int32_t dustcombine,bits256 *signedtxidp,uint64_t
             if ( more != 0 )
             {
                 printf("%s dustcombine.%d -> %.8f (%s) + (%s)\n",coin->symbol,dustcombine,dstr(more),items[0] != 0 ? jprint(items[0],0) : "",items[1] != 0 ? jprint(items[1],0) : "");
-memset(items,0,sizeof(items));
-more = 0 ;
+//memset(items,0,sizeof(items));
+//more = 0 ;
             }
             value += more;
             dustcombine = (items[0] != 0) + (items[1] != 0);
