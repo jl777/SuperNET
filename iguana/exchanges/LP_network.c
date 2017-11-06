@@ -305,7 +305,7 @@ void queue_loop(void *arg)
             flag = 0;
             if ( ptr->sock >= 0 )
             {
-                //if ( LP_sockcheck(ptr->sock) > 0 )
+                if ( LP_sockcheck(ptr->sock) > 0 )
                 {
                     bits256 magic;
                     magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
