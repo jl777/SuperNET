@@ -274,7 +274,7 @@ void gc_loop(void *arg)
     {
         flag = 0;
         LP_millistats_update(&LP_gcloop_stats);
-        portable_mutex_lock(&LP_gcmutex);
+        //portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(LP_garbage_collector,req,rtmp)
         {
             DL_DELETE(LP_garbage_collector,req);
@@ -282,7 +282,7 @@ void gc_loop(void *arg)
             free(req);
             flag++;
         }
-        portable_mutex_unlock(&LP_gcmutex);
+        //portable_mutex_unlock(&LP_gcmutex);
         if ( flag == 0 )
             usleep(5000);
         else printf("gc_loop.%d\n",flag);

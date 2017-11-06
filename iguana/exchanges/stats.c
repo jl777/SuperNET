@@ -733,10 +733,10 @@ void LP_rpc_processreq(void *_ptr)
     free(space);
     free(jsonbuf);
     closesocket(sock);
-    portable_mutex_lock(&LP_gcmutex);
+    //portable_mutex_lock(&LP_gcmutex);
     DL_APPEND(LP_garbage_collector,req);
     spawned--;
-    portable_mutex_unlock(&LP_gcmutex);
+    //portable_mutex_unlock(&LP_gcmutex);
 }
 
 extern int32_t IAMLP;
