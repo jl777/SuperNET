@@ -140,7 +140,7 @@ struct LP_queue
 {
     struct LP_queue *next,*prev;
     int32_t sock,peerind,msglen;
-    uint32_t starttime,crc32;
+    uint32_t starttime,crc32,notready;
     uint8_t msg[];
 } *LP_Q;
 int32_t LP_Qenqueued,LP_Qerrors,LP_Qfound;
@@ -305,18 +305,26 @@ void queue_loop(void *arg)
             flag = 0;
             if ( ptr->sock >= 0 )
             {
-                if ( LP_sockcheck(ptr->sock) > 0 )
+                if ( ptr->notready == 0 || (rand() % ptr->notready) == 0 )
                 {
-                    bits256 magic;
-                    magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
-                    memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
-                    if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
-                        printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                    else flag++;
-                    ptr->sock = -1;
-                    if ( ptr->peerind > 0 )
-                        ptr->starttime = (uint32_t)time(NULL);
-                } //else printf("sock not ready to send.%d\n",ptr->msglen);
+                    if ( LP_sockcheck(ptr->sock) > 0 )
+                    {
+                        bits256 magic;
+                        magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
+                        memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
+                        if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
+                            printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
+                        else flag++;
+                        ptr->sock = -1;
+                        if ( ptr->peerind > 0 )
+                            ptr->starttime = (uint32_t)time(NULL);
+                    }
+                    else
+                    {
+                        if ( ptr->notready++ > 1000 )
+                            flag = 1;
+                    }
+                }
             }
             else if ( 0 && time(NULL) > ptr->starttime+13 )
             {
@@ -352,11 +360,9 @@ void queue_loop(void *arg)
         }
         if ( arg == 0 )
             break;
-        //if ( n != 0 )
-        //    printf("LP_Q.[%d]\n",n);
-        if ( n != 0 )
+        if ( n+nonz != 0 )
             printf("queue_loop nonz.%d n.%d\n",nonz,n);
-        usleep(50000);
+        else usleep(50000);
     }
 }
 
