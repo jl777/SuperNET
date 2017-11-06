@@ -44,6 +44,12 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_ELECTRUM_MAXERRORS 777
 #define LP_MEMPOOL_TIMEINCR 10
 
+#define LP_MIN_PEERS 8
+#define LP_MAX_PEERS 32
+
+#define LP_MAXDESIRED_UTXOS 128
+#define LP_MINDESIRED_UTXOS 64
+
 // RTmetrics
 #define LP_RTMETRICS_TOPGROUP 1.01
 #define LP_MAXPENDING_SWAPS 13
@@ -54,7 +60,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define DPOW_MIN_ASSETCHAIN_SIGS 11
 #define LP_ENCRYPTED_MAXSIZE (4096 + 2 + crypto_box_NONCEBYTES + crypto_box_ZEROBYTES)
 
-#define LP_MAXPUBKEY_ERRORS 3
+#define LP_MAXPUBKEY_ERRORS 10
 #define PSOCK_KEEPALIVE 3600
 #define MAINLOOP_PERSEC 100
 #define MAX_PSOCK_PORT 60000
@@ -247,7 +253,7 @@ struct iguana_info
     UT_hash_handle hh;
     portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
-    int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
+    int32_t numutxos,longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
     uint32_t importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
@@ -350,7 +356,7 @@ struct LP_pubkeyinfo
     bits256 pubkey;
     float matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
     //uint32_t timestamps[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
-    uint32_t timestamp,numerrors;
+    uint32_t timestamp,numerrors,lasttime;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };

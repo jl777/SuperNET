@@ -111,8 +111,8 @@ getrawtransaction(coin, txid)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
 lastnonce()\n\
-buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, pubkey="")\n\
-sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce, pubkey="")\n\
+buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
+sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
 withdraw(coin, outputs[])\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus()\n\
@@ -142,6 +142,7 @@ snapshot_balance(coin, height, addresses[])\n\
 dividends(coin, height, <args>)\n\
 stop()\n\
 bot_list()\n\
+bot_statuslist()\n\
 bot_buy(base, rel, maxprice, relvolume) -> botid\n\
 bot_sell(base, rel, minprice, basevolume) -> botid\n\
 bot_settings(botid, newprice, newvolume)\n\
@@ -152,9 +153,12 @@ bot_resume(botid)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
-    base = jstr(argjson,"base");
-    rel = jstr(argjson,"rel");
-    coin = jstr(argjson,"coin");
+    if ( (base= jstr(argjson,"base")) == 0 )
+        base = "";
+    if ((rel= jstr(argjson,"rel")) == 0 )
+        rel = "";
+    if ( (coin= jstr(argjson,"coin")) == 0 )
+        coin = "";
     if ( G.USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 ) // protected localhost
     {
         if ( G.USERPASS_COUNTER == 0 )
@@ -186,7 +190,7 @@ bot_resume(botid)\n\
         {
             if ( jobj(argjson,"method2") == 0 )
             {
-                LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
+                LP_broadcast_message(LP_mypubsock,base!=0?base:coin,rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
             }
             return(clonestr("{\"result\":\"success\"}"));
         }
@@ -198,6 +202,11 @@ bot_resume(botid)\n\
         {
             printf("DEBUG stop\n");
             exit(0);
+        }
+        else if ( strcmp(method,"millis") == 0 )
+        {
+            LP_millistats_update(0);
+            return(clonestr("{\"result\":\"success\"}"));
         }
         else if ( strcmp(method,"getmessages") == 0 )
         {
@@ -251,15 +260,15 @@ bot_resume(botid)\n\
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
                 return(basilisk_swapentry(requestid,quoteid));
-            else if ( coin != 0 && coin[0] != 0 )
+            else if ( coin[0] != 0 )
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
-            else if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
+            else if ( base[0] != 0 && rel[0] != 0 )
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
             else return(basilisk_swaplist(0,0));
         }
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
-        if ( base != 0 && rel != 0 )
+        if ( base[0] != 0 && rel[0] != 0 )
         {
             double price,bid,ask;
             if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
@@ -300,7 +309,7 @@ bot_resume(botid)\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey"),0));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"sell") == 0 )
@@ -308,18 +317,18 @@ bot_resume(botid)\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey"),0));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
-        else if ( rel != 0 && strcmp(method,"bestfit") == 0 )
+        else if ( rel[0] != 0 && strcmp(method,"bestfit") == 0 )
         {
             double relvolume;
             if ( (relvolume= jdouble(argjson,"relvolume")) > SMALLVAL )
                 return(LP_bestfit(rel,relvolume));
             else return(clonestr("{\"error\":\"no relvolume set\"}"));
         }
-        else if ( (coin= jstr(argjson,"coin")) != 0 )
+        else if ( coin[0] != 0 )
         {
             if ( strcmp(method,"enable") == 0 )
             {
@@ -336,9 +345,15 @@ bot_resume(botid)\n\
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
                         ptr->inactive = 0;
-                        cJSON *array = cJSON_CreateArray();
+                        cJSON *array;
                         if ( ptr->smartaddr[0] != 0 )
                             LP_unspents_load(coin,ptr->smartaddr);
+                        if ( LP_getheight(ptr) <= 0 )
+                        {
+                            ptr->inactive = (uint32_t)time(NULL);
+                            return(clonestr("{\"error\":\"coin cant be activated till synced\"}"));
+                        } else LP_unspents_load(coin,ptr->smartaddr);
+                        array = cJSON_CreateArray();
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));
                     } else return(clonestr("{\"error\":\"coin port conflicts with existing coin\"}"));
@@ -491,14 +506,14 @@ bot_resume(botid)\n\
     }
     else if ( strcmp(method,"balance") == 0 )
     {
-        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        if ( (ptr= LP_coinsearch(coin)) != 0 )
             return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
         else return(clonestr("{\"error\":\"cant find coind\"}"));
     }
     else if ( strcmp(method,"pricearray") == 0 )
     {
         uint32_t firsttime;
-        if ( base != 0 && rel != 0 )
+        if ( base[0] != 0 && rel[0] != 0 )
         {
             if ( (firsttime= juint(argjson,"firsttime")) < time(NULL)-30*24*3600 )
                 firsttime = (uint32_t)(time(NULL)-30*24*3600);
@@ -518,7 +533,7 @@ bot_resume(botid)\n\
         bits256 pub; static uint32_t lastnotify;
         pub = jbits256(argjson,"pub");
         //char str[65]; printf("got wantnotify.(%s) vs %s\n",jprint(argjson,0),bits256_str(str,G.LP_mypub25519));
-        if ( bits256_cmp(pub,G.LP_mypub25519) == 0 && time(NULL) > lastnotify+30 )
+        if ( bits256_cmp(pub,G.LP_mypub25519) == 0 && time(NULL) > lastnotify+60 )
         {
             lastnotify = (uint32_t)time(NULL);
             //printf("wantnotify for me!\n");
@@ -528,7 +543,7 @@ bot_resume(botid)\n\
     }
     else if ( strcmp(method,"listunspent") == 0 )
     {
-        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        if ( (ptr= LP_coinsearch(coin)) != 0 )
         {
             char *coinaddr;
             if ( (coinaddr= jstr(argjson,"address")) != 0 )
@@ -542,10 +557,11 @@ bot_resume(botid)\n\
                         //printf("network invoked\n");
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                         //LP_smartutxos_push(ptr);
+                        return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
                     }
                     else
                     {
-                        
+                        return(clonestr("{\"error\":\"not my address\"}"));
                     }
                 }
                 return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
@@ -555,7 +571,7 @@ bot_resume(botid)\n\
     else if ( strcmp(method,"addr_unspents") == 0 )
     {
         //printf("GOT ADDR_UNSPENTS %s %s\n",jstr(argjson,"coin"),jstr(argjson,"address"));
-        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        if ( (ptr= LP_coinsearch(coin)) != 0 )
         {
             char *coinaddr;
             if ( (coinaddr= jstr(argjson,"address")) != 0 )

@@ -140,7 +140,7 @@ struct LP_queue
 {
     struct LP_queue *next,*prev;
     int32_t sock,peerind,msglen;
-    uint32_t starttime,crc32;
+    uint32_t starttime,crc32,notready;
     uint8_t msg[];
 } *LP_Q;
 int32_t LP_Qenqueued,LP_Qerrors,LP_Qfound;
@@ -265,32 +265,66 @@ int32_t LP_peerindsock(int32_t *peerindp)
     return(-1);
 }
 
+void gc_loop(void *arg)
+{
+    struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
+    strcpy(LP_gcloop_stats.name,"gc_loop");
+    LP_gcloop_stats.threshold = 1100.;
+    while ( 1 )
+    {
+        flag = 0;
+        LP_millistats_update(&LP_gcloop_stats);
+        portable_mutex_lock(&LP_gcmutex);
+        DL_FOREACH_SAFE(LP_garbage_collector,req,rtmp)
+        {
+            DL_DELETE(LP_garbage_collector,req);
+            //printf("garbage collect ipbits.%x\n",req->ipbits);
+            free(req);
+            flag++;
+        }
+        portable_mutex_unlock(&LP_gcmutex);
+        if ( 0 && flag != 0 )
+            printf("gc_loop.%d\n",flag);
+        sleep(1);
+    }
+}
+
 void queue_loop(void *arg)
 {
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
+    strcpy(queue_loop_stats.name,"queue_loop");
+    queue_loop_stats.threshold = 1000.;
     while ( 1 )
     {
-        nonz = 0;
+        LP_millistats_update(&queue_loop_stats);
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
-        n = 0;
+        n = nonz = flag = 0;
         DL_FOREACH_SAFE(LP_Q,ptr,tmp)
         {
             n++;
             flag = 0;
             if ( ptr->sock >= 0 )
             {
-                if ( LP_sockcheck(ptr->sock) > 0 )
+                if ( ptr->notready == 0 || (rand() % ptr->notready) == 0 )
                 {
-                    bits256 magic;
-                    magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
-                    memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
-                    if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
-                        printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                    ptr->sock = -1;
-                    if ( ptr->peerind > 0 )
-                        ptr->starttime = (uint32_t)time(NULL);
-                    else flag = 1;
-                } //else printf("sock not ready to send.%d\n",ptr->msglen);
+                    if ( LP_sockcheck(ptr->sock) > 0 )
+                    {
+                        bits256 magic;
+                        magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
+                        memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
+                        if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
+                            printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
+                        else flag++;
+                        ptr->sock = -1;
+                        if ( ptr->peerind > 0 )
+                            ptr->starttime = (uint32_t)time(NULL);
+                    }
+                    else
+                    {
+                        if ( ptr->notready++ > 1000 )
+                            flag = 1;
+                    }
+                }
             }
             else if ( 0 && time(NULL) > ptr->starttime+13 )
             {
@@ -300,7 +334,7 @@ void queue_loop(void *arg)
                     LP_Qfound++;
                     if ( (LP_Qfound % 100) == 0 )
                         printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
-                    flag = 1;
+                    flag++;
                 }
                 else if ( 0 ) // too much beyond duplicate filter when network is busy
                 {
@@ -309,7 +343,7 @@ void queue_loop(void *arg)
                     if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
                     {
                         printf("%d no more peers to try at peerind.%d %p Q_LP.%p\n",n,ptr->peerind,ptr,LP_Q);
-                        flag = 1;
+                        flag++;
                         LP_Qerrors++;
                      }
                 }
@@ -326,12 +360,12 @@ void queue_loop(void *arg)
         }
         if ( arg == 0 )
             break;
-        //if ( n != 0 )
-        //    printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
-            usleep(5000);
-        else if ( IAMLP == 0 )
-            usleep(1000);
+        {
+            if ( IAMLP == 0 )
+                usleep(50000);
+            else usleep(10000);
+        }
     }
 }
 
@@ -377,6 +411,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
     if ( IAMLP == 0 )
     {
         free(msg);
+//printf("broadcast %s\n",jstr(argjson,"method"));
         jdelete(argjson,"method");
         jaddstr(argjson,"method","broadcast");
         if ( jobj(argjson,"timestamp") == 0 )
@@ -474,8 +509,11 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
 {
     static struct nn_pollfd *pfds;
     int32_t i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];
+    strcpy(LP_psockloop_stats.name,"LP_psockloop");
+    LP_psockloop_stats.threshold = 200.;
     while ( 1 )
     {
+        LP_millistats_update(&LP_psockloop_stats);
         now = (uint32_t)time(NULL);
         if ( buf != 0 && ptr != 0 && sendsock >= 0 )
         {

@@ -18,14 +18,65 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// autoadd dust utxo to vin for initial atomic tx
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 // BCH signing
 
 #include <stdio.h>
+struct LP_millistats
+{
+    double lastmilli,millisum,threshold;
+    uint32_t count;
+    char name[64];
+} LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloopBTC_stats,LP_coinsloopKMD_stats,LP_pubkeysloop_stats,LP_privkeysloop_stats,LP_swapsloop_stats,LP_gcloop_stats;
+extern int32_t IAMLP;
+
+void LP_millistats_update(struct LP_millistats *mp)
+{
+    double elapsed,millis;
+    if ( mp == 0 )
+    {
+        if ( IAMLP != 0 )
+        {
+            mp = &LP_psockloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        }
+        mp = &LP_reserved_msgs_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &utxosQ_loop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &command_rpcloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &queue_loop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &prices_loop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_coinsloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_coinsloopBTC_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_coinsloopKMD_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_pubkeysloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_privkeysloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_swapsloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_gcloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+    }
+    else
+    {
+        if ( mp->lastmilli == 0. )
+            mp->lastmilli = OS_milliseconds();
+        else
+        {
+            mp->count++;
+            millis = OS_milliseconds();
+            elapsed = (millis - mp->lastmilli);
+            mp->millisum += elapsed;
+            if ( mp->threshold != 0. && elapsed > mp->threshold )
+            {
+                //if ( IAMLP == 0 )
+                    printf("%32s elapsed %10.2f millis > threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
+            }
+            mp->lastmilli = millis;
+        }
+    }
+}
+
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[2][1000];
 int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
@@ -33,6 +84,8 @@ struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
 struct LP_pubkeyinfo *LP_pubkeyinfos;
+struct rpcrequest_info *LP_garbage_collector;
+
 #include "LP_network.c"
 
 char *activecoins[] = { "BTC", "KMD" };
@@ -40,7 +93,11 @@ char GLOBAL_DBDIR[] = { "DB" };
 char LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
 char LP_gui[16] = { "cli" };
 
-char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", };//"5.9.253.204" }; //
+char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
+    "24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
+    //"51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
+};//"5.9.253.204" }; //
+
 
 //uint32_t LP_deadman_switch;
 uint16_t LP_fixed_pairport,LP_publicport;
@@ -165,6 +222,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
     if ( duplicate != 0 )
         dup++;
     else uniq++;
+    portable_mutex_lock(&LP_commandmutex);
     if ( (rand() % 10000) == 0 )
         printf("%s dup.%d (%u / %u) %.1f%% encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,duplicate,dup,dup+uniq,(double)100*dup/(dup+uniq),encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
     if ( duplicate == 0 )
@@ -245,21 +303,18 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 }
                 else
                 {
-                    portable_mutex_lock(&LP_commandmutex);
                     if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                     {
                     }
-                    portable_mutex_unlock(&LP_commandmutex);
                     //printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
                 }
                 free_json(argjson);
             }
         }
     } //else printf("DUPLICATE.(%s)\n",(char *)ptr);
+    portable_mutex_unlock(&LP_commandmutex);
     if ( jsonstr != 0 && (void *)jsonstr != (void *)ptr && encrypted == 0 )
         free(jsonstr);
-    if ( ptr != 0 )
-        nn_freemsg(ptr), ptr = 0;
     return(retstr);
 }
 
@@ -271,21 +326,16 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
         while ( nonz < maxdepth && recvlen > 0 )
         {
             nonz++;
-#ifndef FROM_JS
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
             pfd.events = NN_POLLIN;
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
-#endif
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 methodstr[0] = 0;
-                if ( 1 )
+                if ( 0 )
                 {
-#ifdef FROM_JS
-                    printf("%s RECV.(%s)\n",typestr,(char *)ptr);
-#endif
                     cJSON *recvjson; char *mstr;//,*cstr;
                     if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
                     {
@@ -297,10 +347,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free_json(recvjson);
                     }
                 }
-#ifdef FROM_JS
-                else printf("%s got recv.%d\n",typestr,recvlen);
-#endif
-                int32_t validreq = 0; double millis = OS_milliseconds();
+                int32_t validreq = 0;
                 if ( strlen((char *)ptr)+sizeof(bits256) <= recvlen )
                 {
                     if ( LP_magic_check(ptr,recvlen,remoteaddr) <= 0 )
@@ -320,22 +367,20 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         Broadcaststr = 0;
                         if ( (argjson= cJSON_Parse(str)) != 0 )
                         {
-                            if ( jobj(argjson,"method") != 0 && strcmp("connect",jstr(argjson,"method")) == 0 )
-                                printf("self.(%s)\n",str);
+                            portable_mutex_lock(&LP_commandmutex);
                             if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                             {
-                                portable_mutex_lock(&LP_commandmutex);
                                 if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
                                     free(retstr);
-                                portable_mutex_unlock(&LP_commandmutex);
                             }
+                            portable_mutex_unlock(&LP_commandmutex);
                             free_json(argjson);
                         }
                         free(str);
                     }
-                    if ( OS_milliseconds()-millis > 1000 )
-                        printf("%.3f LP_process_message (%s)\n",OS_milliseconds()-millis,methodstr);
                 }
+                if ( ptr != 0 )
+                    nn_freemsg(ptr), ptr = 0;
             }
         }
     }
@@ -382,28 +427,34 @@ void command_rpcloop(void *myipaddr)
 {
     int32_t nonz = 0; void *ctx;
     ctx = bitcoin_ctx();
+    strcpy(command_rpcloop_stats.name,"command_rpcloop");
+    command_rpcloop_stats.threshold = 1000.;
     while ( 1 )
     {
+        LP_millistats_update(&command_rpcloop_stats);
         nonz = LP_nanomsg_recvs(ctx);
         //if ( LP_mybussock >= 0 )
         //    nonz += LP_sock_check("BUS",ctx,origipaddr,-1,LP_mybussock);
         if ( nonz == 0 )
         {
             if ( IAMLP != 0 )
-                usleep(1000);
-            else usleep(10000);
+                usleep(10000);
+            else usleep(50000);
         }
         else if ( IAMLP == 0 )
-            usleep(100);
+            usleep(1000);
     }
 }
 
 void utxosQ_loop(void *myipaddr)
 {
+    strcpy(utxosQ_loop_stats.name,"utxosQ_loop");
+    utxosQ_loop_stats.threshold = 150.;
     while ( 1 )
     {
+        LP_millistats_update(&utxosQ_loop_stats);
         if ( LP_utxosQ_process() == 0 )
-            usleep(10000);
+            usleep(50000);
     }
 }
 
@@ -493,8 +544,28 @@ int32_t LP_utxos_sync(struct LP_peerinfo *peer)
 void LP_coinsloop(void *_coins)
 {
     struct LP_address *ap=0,*atmp; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
+    if ( strcmp("BTC",coins) == 0 )
+    {
+        strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
+        LP_coinsloopBTC_stats.threshold = 2000.;
+    }
+    else if ( strcmp("KMD",coins) == 0 )
+    {
+        strcpy(LP_coinsloopKMD_stats.name,"KMD coin loop");
+        LP_coinsloopKMD_stats.threshold = 1000.;
+    }
+    else
+    {
+        strcpy(LP_coinsloop_stats.name,"other coins loop");
+        LP_coinsloop_stats.threshold = 500.;
+    }
     while ( 1 )
     {
+        if ( strcmp("BTC",coins) == 0 )
+            LP_millistats_update(&LP_coinsloopBTC_stats);
+        else if ( strcmp("KMD",coins) == 0 )
+            LP_millistats_update(&LP_coinsloopKMD_stats);
+        else LP_millistats_update(&LP_coinsloop_stats);
         nonz = 0;
         HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
         {
@@ -602,7 +673,7 @@ void LP_coinsloop(void *_coins)
         if ( coins == 0 )
             return;
         if ( nonz == 0 )
-            usleep(1000);
+            usleep(100000);
     }
 }
 
@@ -630,14 +701,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( IAMLP == 0 )
                 continue;
         }
-        if ( now > peer->lastpeers+60 || (rand() % 10000) == 0 )
+        if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (rand() % 100000) == 0 )
         {
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 nonz++;
-#ifdef FROM_JS
-                if ( (rand() % 100) == 0 )
-#endif
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 peer->diduquery = 0;
                 LP_peer_pricesquery(peer);
@@ -650,9 +718,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         {
             peer->diduquery = now;
             nonz++;
-#ifdef FROM_JS
-            if ( (rand() % 100) == 0 )
-#endif
             if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
                 free(retstr);
             peer->needping = 0;
@@ -661,7 +726,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     }
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+60 )
+        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+LP_ORDERBOOK_DURATION )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
             coin->lastpushtime = (uint32_t)time(NULL);
@@ -696,7 +761,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
         {
             if ( LP_getheight(coin) <= 0 )
                 coin->inactive = (uint32_t)time(NULL);
-            LP_unspents_load(coin->symbol,coin->smartaddr);
+            else LP_unspents_load(coin->symbol,coin->smartaddr);
         }
     }
     if ( (n= cJSON_GetArraySize(coins)) > 0 )
@@ -713,7 +778,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                 {
                     if ( LP_getheight(coin) <= 0 )
                         coin->inactive = (uint32_t)time(NULL);
-                    LP_unspents_load(coin->symbol,coin->smartaddr);
+                    else LP_unspents_load(coin->symbol,coin->smartaddr);
                 }
             }
         }
@@ -764,9 +829,12 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 void LP_pubkeysloop(void *ctx)
 {
     static uint32_t lasttime;
+    strcpy(LP_pubkeysloop_stats.name,"LP_pubkeysloop");
+    LP_pubkeysloop_stats.threshold = 5000.;
     sleep(10);
     while ( 1 )
     {
+        LP_millistats_update(&LP_pubkeysloop_stats);
         if ( time(NULL) > lasttime+60 )
         {
             //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
@@ -779,9 +847,12 @@ void LP_pubkeysloop(void *ctx)
 
 void LP_privkeysloop(void *ctx)
 {
+    strcpy(LP_privkeysloop_stats.name,"LP_privkeysloop");
+    LP_privkeysloop_stats.threshold = (LP_ORDERBOOK_DURATION * .8 * 1000) + 10000;
     sleep(20);
     while ( 1 )
     {
+        LP_millistats_update(&LP_privkeysloop_stats);
         LP_counter += 1000;
         //printf("LP_privkeysloop %u\n",LP_counter);
         LP_privkey_updates(ctx,LP_mypubsock,0);
@@ -792,25 +863,34 @@ void LP_privkeysloop(void *ctx)
 void LP_swapsloop(void *ignore)
 {
     char *retstr;
+    strcpy(LP_swapsloop_stats.name,"LP_swapsloop");
+    LP_swapsloop_stats.threshold = 605000.;
     sleep(50);
     while ( 1 )
     {
+        LP_millistats_update(&LP_swapsloop_stats);
         LP_counter += 10000;
         //printf("LP_swapsloop %u\n",LP_counter);
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
+        LP_millistats_update(0);
         sleep(600);
     }
 }
 
 void LP_reserved_msgs(void *ignore)
 {
-    bits256 zero; int32_t flag; struct nn_pollfd pfd;
+    bits256 zero; int32_t flag,nonz; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
+    strcpy(LP_reserved_msgs_stats.name,"LP_reserved_msgs");
+    LP_reserved_msgs_stats.threshold = 150.;
     while ( 1 )
     {
+        nonz = 0;
+        LP_millistats_update(&LP_reserved_msgs_stats);
         if ( num_Reserved_msgs[0] > 0 || num_Reserved_msgs[1] > 0 )
         {
+            nonz++;
             flag = 0;
             if ( LP_mypubsock >= 0 )
             {
@@ -840,7 +920,9 @@ void LP_reserved_msgs(void *ignore)
         }
         if ( ignore == 0 )
             break;
-        usleep(3000);
+        if ( nonz != 0 )
+            usleep(3000);
+        else usleep(25000);
     }
 }
 
@@ -853,12 +935,12 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
         Reserved_msgs[priority][num_Reserved_msgs[priority]++] = msg;
         n = num_Reserved_msgs[priority];
     } else LP_broadcast_message(LP_mypubsock,base,rel,pubkey,msg);
-    portable_mutex_unlock(&LP_reservedmutex);
     if ( num_Reserved_msgs[priority] > max_Reserved_msgs[priority] )
     {
         max_Reserved_msgs[priority] = num_Reserved_msgs[priority];
         printf("New priority.%d max_Reserved_msgs.%d\n",priority,max_Reserved_msgs[priority]);
     }
+    portable_mutex_unlock(&LP_reservedmutex);
     return(n);
 }
 
@@ -914,6 +996,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_swaplistmutex);
     portable_mutex_init(&LP_cachemutex);
     portable_mutex_init(&LP_networkmutex);
+    portable_mutex_init(&LP_gcmutex);
     portable_mutex_init(&LP_forwardmutex);
     portable_mutex_init(&LP_psockmutex);
     portable_mutex_init(&LP_coinmutex);
@@ -1030,6 +1113,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)queue_loop,(void *)myipaddr) != 0 )
     {
         printf("error launching queue_loop for port.%u\n",myport);
+        exit(-1);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)gc_loop,(void *)myipaddr) != 0 )
+    {
+        printf("error launching gc_loop for port.%u\n",myport);
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,ctx) != 0 )
