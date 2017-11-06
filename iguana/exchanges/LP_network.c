@@ -293,7 +293,7 @@ void queue_loop(void *arg)
 {
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
     strcpy(queue_loop_stats.name,"queue_loop");
-    queue_loop_stats.threshold = 11.;
+    queue_loop_stats.threshold = 51.;
     while ( 1 )
     {
         LP_millistats_update(&queue_loop_stats);
@@ -354,9 +354,9 @@ void queue_loop(void *arg)
             break;
         //if ( n != 0 )
         //    printf("LP_Q.[%d]\n",n);
-        if ( nonz == 0 )
-            usleep(10000);
-        else printf("queue_loop nonz.%d n.%d\n",nonz,n);
+        if ( n != 0 )
+            printf("queue_loop nonz.%d n.%d\n",nonz,n);
+        usleep(50000);
     }
 }
 
