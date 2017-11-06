@@ -283,7 +283,7 @@ void gc_loop(void *arg)
             flag++;
         }
         portable_mutex_unlock(&LP_gcmutex);
-        if ( flag != 0 )
+        if ( 0 && flag != 0 )
             printf("gc_loop.%d\n",flag);
         sleep(1);
     }
@@ -293,7 +293,7 @@ void queue_loop(void *arg)
 {
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
     strcpy(queue_loop_stats.name,"queue_loop");
-    queue_loop_stats.threshold = 51.;
+    queue_loop_stats.threshold = 100.;
     while ( 1 )
     {
         LP_millistats_update(&queue_loop_stats);
@@ -360,9 +360,12 @@ void queue_loop(void *arg)
         }
         if ( arg == 0 )
             break;
-        if ( nonz != 0 )
-            printf("queue_loop nonz.%d n.%d\n",nonz,n);
-        else usleep(50000);
+        if ( nonz == 0 )
+        {
+            if ( IAMLP == 0 )
+                usleep(50000);
+            else usleep(10000);
+        }
     }
 }
 
