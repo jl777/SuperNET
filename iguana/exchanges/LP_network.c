@@ -265,23 +265,37 @@ int32_t LP_peerindsock(int32_t *peerindp)
     return(-1);
 }
 
-void queue_loop(void *arg)
+void gc_loop(void *arg)
 {
-    struct rpcrequest_info *req,*rtmp; struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
-    strcpy(queue_loop_stats.name,"queue_loop");
-    queue_loop_stats.threshold = 500.;
+    struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
+    strcpy(queue_loop_stats.name,"gc_loop");
+    queue_loop_stats.threshold = 50.;
     while ( 1 )
     {
-        LP_millistats_update(&queue_loop_stats);
+        flag = 0;
+        LP_millistats_update(&LP_gcloop_stats);
         portable_mutex_lock(&LP_networkmutex);
         DL_FOREACH_SAFE(LP_garbage_collector,req,rtmp)
         {
             DL_DELETE(LP_garbage_collector,req);
             //printf("garbage collect ipbits.%x\n",req->ipbits);
             free(req);
+            flag++;
         }
         portable_mutex_unlock(&LP_networkmutex);
+        if ( flag == 0 )
+            usleep(25000);
+    }
+}
 
+void queue_loop(void *arg)
+{
+    struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
+    strcpy(queue_loop_stats.name,"queue_loop");
+    queue_loop_stats.threshold = 500.;
+    while ( 1 )
+    {
+        LP_millistats_update(&queue_loop_stats);
         nonz = 0;
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = 0;
@@ -291,7 +305,7 @@ void queue_loop(void *arg)
             flag = 0;
             if ( ptr->sock >= 0 )
             {
-                if ( LP_sockcheck(ptr->sock) > 0 )
+                //if ( LP_sockcheck(ptr->sock) > 0 )
                 {
                     bits256 magic;
                     magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
