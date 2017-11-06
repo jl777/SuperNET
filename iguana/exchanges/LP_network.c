@@ -283,9 +283,9 @@ void gc_loop(void *arg)
             flag++;
         }
         portable_mutex_unlock(&LP_gcmutex);
-        if ( flag == 0 )
-            sleep(1);
-        else printf("gc_loop.%d\n",flag);
+        if ( flag != 0 )
+            printf("gc_loop.%d\n",flag);
+        sleep(1);
     }
 }
 
