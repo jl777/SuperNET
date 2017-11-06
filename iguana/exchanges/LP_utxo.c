@@ -1061,9 +1061,7 @@ void LP_unspents_load(char *symbol,char *addr)
             if ( (retjson= cJSON_Parse(arraystr)) != 0 )
             {
                 printf("PROCESS UNSPENTS %s\n",arraystr);
-                if ( electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1) == 0 )
-                    printf("error electrum_process_array\n");
-                else printf("processed %s\n",arraystr);
+                electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1);
                 free_json(retjson);
             }
             free(arraystr);

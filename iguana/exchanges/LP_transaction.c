@@ -720,6 +720,7 @@ char *basilisk_swap_bobtxspend(int32_t dustcombine,bits256 *signedtxidp,uint64_t
         V[i+1].suppress_pubkeys = 0;
         V[i+1].ignore_cltverr = 0;
         V[i+1].N = V[i+1].M = 1;
+        jaddistr(privkeys,wifstr);
     }
     if ( redeemlen != 0 )
         memcpy(V[0].p2shscript,redeemscript,redeemlen), V[0].p2shlen = redeemlen;
