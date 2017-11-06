@@ -190,7 +190,7 @@ bot_resume(botid)\n\
         {
             if ( jobj(argjson,"method2") == 0 )
             {
-                LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
+                LP_broadcast_message(LP_mypubsock,base!=0?base:coin,rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
             }
             return(clonestr("{\"result\":\"success\"}"));
         }
@@ -328,7 +328,7 @@ bot_resume(botid)\n\
                 return(LP_bestfit(rel,relvolume));
             else return(clonestr("{\"error\":\"no relvolume set\"}"));
         }
-        else if ( (coin= jstr(argjson,"coin")) != 0 )
+        else if ( coin[0] != 0 )
         {
             if ( strcmp(method,"enable") == 0 )
             {
@@ -506,7 +506,7 @@ bot_resume(botid)\n\
     }
     else if ( strcmp(method,"balance") == 0 )
     {
-        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        if ( (ptr= LP_coinsearch(coin)) != 0 )
             return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
         else return(clonestr("{\"error\":\"cant find coind\"}"));
     }
@@ -543,7 +543,7 @@ bot_resume(botid)\n\
     }
     else if ( strcmp(method,"listunspent") == 0 )
     {
-        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        if ( (ptr= LP_coinsearch(coin)) != 0 )
         {
             char *coinaddr;
             if ( (coinaddr= jstr(argjson,"address")) != 0 )
@@ -571,7 +571,7 @@ bot_resume(botid)\n\
     else if ( strcmp(method,"addr_unspents") == 0 )
     {
         //printf("GOT ADDR_UNSPENTS %s %s\n",jstr(argjson,"coin"),jstr(argjson,"address"));
-        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        if ( (ptr= LP_coinsearch(coin)) != 0 )
         {
             char *coinaddr;
             if ( (coinaddr= jstr(argjson,"address")) != 0 )
