@@ -269,7 +269,7 @@ void gc_loop(void *arg)
 {
     struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
     strcpy(queue_loop_stats.name,"gc_loop");
-    queue_loop_stats.threshold = 6.;
+    queue_loop_stats.threshold = 12.;
     while ( 1 )
     {
         flag = 0;
