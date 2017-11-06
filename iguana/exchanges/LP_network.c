@@ -360,7 +360,7 @@ void queue_loop(void *arg)
         }
         if ( arg == 0 )
             break;
-        if ( n+nonz != 0 )
+        if ( nonz != 0 )
             printf("queue_loop nonz.%d n.%d\n",nonz,n);
         else usleep(50000);
     }
