@@ -111,8 +111,8 @@ getrawtransaction(coin, txid)\n\
 inventory(coin)\n\
 bestfit(rel, relvolume)\n\
 lastnonce()\n\
-buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, pubkey="")\n\
-sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce, pubkey="")\n\
+buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
+sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
 withdraw(coin, outputs[])\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus()\n\
@@ -306,7 +306,7 @@ bot_resume(botid)\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey"),0));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
             else if ( strcmp(method,"sell") == 0 )
@@ -314,7 +314,7 @@ bot_resume(botid)\n\
                 //*
                 if ( price > SMALLVAL )
                 {
-                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"pubkey"),0));
+                    return(LP_autobuy(ctx,myipaddr,pubsock,rel,base,1./price,jdouble(argjson,"basevolume"),jint(argjson,"timeout"),jint(argjson,"duration"),jstr(argjson,"gui"),juint(argjson,"nonce"),jbits256(argjson,"destpubkey"),0));
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
