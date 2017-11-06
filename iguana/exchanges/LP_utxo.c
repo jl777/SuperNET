@@ -970,6 +970,7 @@ uint64_t LP_dustcombine(cJSON *items[2],int32_t dustcombine,struct iguana_info *
     struct LP_address *ap=0; struct LP_address_utxo *up,*tmp,*min0,*min1; cJSON *txobj;
     if ( coin == 0 || coin->electrum != 0 || dustcombine <= 0 || dustcombine > 2 )
         return(0);
+return(0);
     min1 = min0 = 0;
     if ( (ap= _LP_addressfind(coin,coin->smartaddr)) != 0 )
     {
