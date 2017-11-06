@@ -268,8 +268,8 @@ int32_t LP_peerindsock(int32_t *peerindp)
 void gc_loop(void *arg)
 {
     struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
-    strcpy(queue_loop_stats.name,"gc_loop");
-    queue_loop_stats.threshold = 1001.;
+    strcpy(LP_gcloop_stats.name,"gc_loop");
+    LP_gcloop_stats.threshold = 1001.;
     while ( 1 )
     {
         flag = 0;
