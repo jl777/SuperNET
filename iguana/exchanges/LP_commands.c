@@ -153,9 +153,12 @@ bot_resume(botid)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
-    base = jstr(argjson,"base");
-    rel = jstr(argjson,"rel");
-    coin = jstr(argjson,"coin");
+    if ( (base= jstr(argjson,"base")) == 0 )
+        base = "";
+    if ((rel= jstr(argjson,"rel")) == 0 )
+        rel = "";
+    if ( (coin= jstr(argjson,"coin")) == 0 )
+        coin = "";
     if ( G.USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 ) // protected localhost
     {
         if ( G.USERPASS_COUNTER == 0 )
@@ -187,7 +190,7 @@ bot_resume(botid)\n\
         {
             if ( jobj(argjson,"method2") == 0 )
             {
-                LP_broadcast_message(LP_mypubsock,base!=0?base:jstr(argjson,"coin"),rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
+                LP_broadcast_message(LP_mypubsock,base!=0?base:coin,rel,jbits256(argjson,"pubkey"),jprint(argjson,0));
             }
             return(clonestr("{\"result\":\"success\"}"));
         }
@@ -257,15 +260,15 @@ bot_resume(botid)\n\
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
                 return(basilisk_swapentry(requestid,quoteid));
-            else if ( coin != 0 && coin[0] != 0 )
+            else if ( coin[0] != 0 )
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
-            else if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
+            else if ( base[0] != 0 && rel[0] != 0 )
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
             else return(basilisk_swaplist(0,0));
         }
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
-        if ( base != 0 && rel != 0 )
+        if ( base[0] != 0 && rel[0] != 0 )
         {
             double price,bid,ask;
             if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
@@ -318,14 +321,14 @@ bot_resume(botid)\n\
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
-        else if ( rel != 0 && strcmp(method,"bestfit") == 0 )
+        else if ( rel[0] != 0 && strcmp(method,"bestfit") == 0 )
         {
             double relvolume;
             if ( (relvolume= jdouble(argjson,"relvolume")) > SMALLVAL )
                 return(LP_bestfit(rel,relvolume));
             else return(clonestr("{\"error\":\"no relvolume set\"}"));
         }
-        else if ( (coin= jstr(argjson,"coin")) != 0 )
+        else if ( coin[0] != 0 )
         {
             if ( strcmp(method,"enable") == 0 )
             {
@@ -503,14 +506,14 @@ bot_resume(botid)\n\
     }
     else if ( strcmp(method,"balance") == 0 )
     {
-        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        if ( (ptr= LP_coinsearch(coin)) != 0 )
             return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
         else return(clonestr("{\"error\":\"cant find coind\"}"));
     }
     else if ( strcmp(method,"pricearray") == 0 )
     {
         uint32_t firsttime;
-        if ( base != 0 && rel != 0 )
+        if ( base[0] != 0 && rel[0] != 0 )
         {
             if ( (firsttime= juint(argjson,"firsttime")) < time(NULL)-30*24*3600 )
                 firsttime = (uint32_t)(time(NULL)-30*24*3600);
@@ -540,7 +543,7 @@ bot_resume(botid)\n\
     }
     else if ( strcmp(method,"listunspent") == 0 )
     {
-        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        if ( (ptr= LP_coinsearch(coin)) != 0 )
         {
             char *coinaddr;
             if ( (coinaddr= jstr(argjson,"address")) != 0 )
@@ -568,7 +571,7 @@ bot_resume(botid)\n\
     else if ( strcmp(method,"addr_unspents") == 0 )
     {
         //printf("GOT ADDR_UNSPENTS %s %s\n",jstr(argjson,"coin"),jstr(argjson,"address"));
-        if ( (ptr= LP_coinsearch(jstr(argjson,"coin"))) != 0 )
+        if ( (ptr= LP_coinsearch(coin)) != 0 )
         {
             char *coinaddr;
             if ( (coinaddr= jstr(argjson,"address")) != 0 )
