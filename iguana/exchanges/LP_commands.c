@@ -260,15 +260,15 @@ bot_resume(botid)\n\
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
                 return(basilisk_swapentry(requestid,quoteid));
-            else if ( coin != 0 && coin[0] != 0 )
+            else if ( coin[0] != 0 )
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
-            else if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
+            else if ( base[0] != 0 && rel[0] != 0 )
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
             else return(basilisk_swaplist(0,0));
         }
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
-        if ( base != 0 && rel != 0 )
+        if ( base[0] != 0 && rel[0] != 0 )
         {
             double price,bid,ask;
             if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
@@ -321,7 +321,7 @@ bot_resume(botid)\n\
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
-        else if ( rel != 0 && strcmp(method,"bestfit") == 0 )
+        else if ( rel[0] != 0 && strcmp(method,"bestfit") == 0 )
         {
             double relvolume;
             if ( (relvolume= jdouble(argjson,"relvolume")) > SMALLVAL )
@@ -513,7 +513,7 @@ bot_resume(botid)\n\
     else if ( strcmp(method,"pricearray") == 0 )
     {
         uint32_t firsttime;
-        if ( base != 0 && rel != 0 )
+        if ( base[0] != 0 && rel[0] != 0 )
         {
             if ( (firsttime= juint(argjson,"firsttime")) < time(NULL)-30*24*3600 )
                 firsttime = (uint32_t)(time(NULL)-30*24*3600);

@@ -907,7 +907,7 @@ int main(int argc, const char * argv[])
         } //else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
         while ( (1) )
-            sleep(1);
+            sleep(100000);
         profitmargin = jdouble(retjson,"profitmargin");
         minask = jdouble(retjson,"minask");
         maxbid = jdouble(retjson,"maxbid");
