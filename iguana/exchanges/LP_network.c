@@ -269,7 +269,7 @@ void gc_loop(void *arg)
 {
     struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
     strcpy(queue_loop_stats.name,"gc_loop");
-    queue_loop_stats.threshold = 27.;
+    queue_loop_stats.threshold = 26.;
     while ( 1 )
     {
         flag = 0;
@@ -292,7 +292,7 @@ void queue_loop(void *arg)
 {
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
     strcpy(queue_loop_stats.name,"queue_loop");
-    queue_loop_stats.threshold = 500.;
+    queue_loop_stats.threshold = 50.;
     while ( 1 )
     {
         LP_millistats_update(&queue_loop_stats);
