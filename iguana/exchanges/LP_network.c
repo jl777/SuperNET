@@ -269,7 +269,7 @@ void gc_loop(void *arg)
 {
     struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
     strcpy(queue_loop_stats.name,"gc_loop");
-    queue_loop_stats.threshold = 26.;
+    queue_loop_stats.threshold = 6.;
     while ( 1 )
     {
         flag = 0;
@@ -284,7 +284,8 @@ void gc_loop(void *arg)
         }
         portable_mutex_unlock(&LP_networkmutex);
         if ( flag == 0 )
-            usleep(25000);
+            usleep(5000);
+        else printf("gc_loop.%d\n",flag);
     }
 }
 
@@ -292,15 +293,15 @@ void queue_loop(void *arg)
 {
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
     strcpy(queue_loop_stats.name,"queue_loop");
-    queue_loop_stats.threshold = 50.;
+    queue_loop_stats.threshold = 11.;
     while ( 1 )
     {
         LP_millistats_update(&queue_loop_stats);
-        nonz = 0;
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
-        n = 0;
+        n = nonz = 0;
         DL_FOREACH_SAFE(LP_Q,ptr,tmp)
         {
+            nonz = 0;
             n++;
             flag = 0;
             if ( ptr->sock >= 0 )
@@ -348,6 +349,7 @@ void queue_loop(void *arg)
                 portable_mutex_unlock(&LP_networkmutex);
                 free(ptr);
                 ptr = 0;
+                break;
             }
         }
         if ( arg == 0 )
@@ -355,10 +357,7 @@ void queue_loop(void *arg)
         //if ( n != 0 )
         //    printf("LP_Q.[%d]\n",n);
         if ( nonz == 0 )
-            usleep(25000);
-        else if ( IAMLP == 0 )
             usleep(10000);
-        else usleep(1000);
     }
 }
 
