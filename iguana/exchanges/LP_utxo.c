@@ -957,6 +957,58 @@ int32_t LP_inventory_prevent(int32_t iambob,char *symbol,bits256 txid,int32_t vo
     return(0);
 }
 
+cJSON *LP_dustcombine_item(struct LP_address_utxo *up)
+{
+    cJSON *item = cJSON_CreateObject();
+    jaddbits256(item,"txid",up->U.txid);
+    jaddnum(item,"vout",up->U.vout);
+    return(item);
+}
+
+uint64_t LP_dustcombine(cJSON *items[2],int32_t dustcombine,struct iguana_info *coin)
+{
+    struct LP_address *ap=0; struct LP_address_utxo *up,*tmp,*min0,*min1; cJSON *txobj;
+    if ( coin == 0 || coin->electrum != 0 || dustcombine <= 0 || dustcombine > 2 )
+        return(0);
+    min1 = min0 = 0;
+    if ( (ap= _LP_addressfind(coin,coin->smartaddr)) != 0 )
+    {
+        DL_FOREACH_SAFE(ap->utxos,up,tmp)
+        {
+            if ( up->spendheight <= 0 && up->U.height > 0 && up->U.value != 0 )
+            {
+                if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,up->U.txid,up->U.vout)) == 0 )
+                    up->spendheight = 1;
+                else
+                {
+                    free_json(txobj);
+                    if ( LP_inventory_prevent(0,coin->symbol,up->U.txid,up->U.vout) == 0 && LP_inventory_prevent(1,coin->symbol,up->U.txid,up->U.vout) == 0 )
+                    {
+                        if ( min1 == 0 || up->U.value < min1->U.value )
+                        {
+                            if ( min0 == 0 || up->U.value < min0->U.value )
+                            {
+                                min1 = min0;
+                                min0 = up;
+                            } else min1 = up;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if ( min0 != 0 )
+    {
+        items[0] = LP_dustcombine_item(min0);
+        if ( dustcombine == 2 && min1 != 0 )
+        {
+            items[1] = LP_dustcombine_item(min1);
+            return(min0->U.value + min1->U.value);
+        } else return(min0->U.value);
+    }
+    return(0);
+}
+
 int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
 {
     int32_t i,ht,num = 0; struct LP_transaction *tx,*tmp;

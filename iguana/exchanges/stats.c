@@ -598,7 +598,7 @@ void LP_rpc_processreq(void *_ptr)
     char filetype[128],content_type[128];
     int32_t recvlen,flag,postflag=0,contentlen,remains,sock,numsent,jsonflag=0,hdrsize,len;
     char helpname[512],remoteaddr[64],*buf,*retstr,*space,*jsonbuf; struct rpcrequest_info *req = _ptr;
-    uint32_t ipbits,i,size = 32*IGUANA_MAXPACKETSIZE + 512;
+    uint32_t ipbits,i,size = IGUANA_MAXPACKETSIZE + 512;
     ipbits = req->ipbits;;
     expand_ipbits(remoteaddr,ipbits);
     sock = req->sock;

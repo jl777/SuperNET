@@ -17,7 +17,8 @@
 //
 //  LP_nativeDEX.c
 //  marketmaker
-// bots to do bobs
+//
+// autoadd dust utxo to vin for initial atomic tx
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
