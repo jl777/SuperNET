@@ -740,29 +740,33 @@ void LP_rpc_processreq(void *_ptr)
 }
 
 extern int32_t IAMLP;
-int32_t LP_bindsock = -1;
+int32_t LP_bindsock_reset,LP_bindsock = -1;
 
 void stats_rpcloop(void *args)
 {
-    static uint32_t counter;
-    uint16_t port; int32_t retval,sock; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
+    uint16_t port; int32_t retval,sock,initial_bindsock_reset; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
     localhostbits = (uint32_t)calc_ipbits("127.0.0.1");
-    while ( 1 )
+    initial_bindsock_reset = LP_bindsock_reset;
+    while ( LP_bindsock_reset == initial_bindsock_reset )
     {
         //printf("LP_bindsock.%d\n",LP_bindsock);
         if ( LP_bindsock < 0 )
         {
             while ( (LP_bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
                 usleep(10000);
-            if ( counter++ < 1 )
+#ifndef _WIN32
+            fcntl(LP_bindsock, F_SETFL, fcntl(LP_bindsock, F_GETFL, 0) | O_NONBLOCK);
+#endif
+            //if ( counter++ < 1 )
                 printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,LP_bindsock);
         }
         //printf("after LP_bindsock.%d\n",LP_bindsock);
         clilen = sizeof(cli_addr);
         sock = accept(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen);
+#ifdef _WIN32
         if ( sock < 0 )
         {
             printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
@@ -770,12 +774,23 @@ void stats_rpcloop(void *args)
             LP_bindsock = -1;
             continue;
         }
+#else
+        if ( sock < 0 )
+        {
+            //fprintf(stderr,".");
+            if ( IAMLP == 0 )
+                usleep(50000);
+            else usleep(2500);
+            continue;
+        }
+#endif
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         req = calloc(1,sizeof(*req));
         req->sock = sock;
         req->ipbits = ipbits;
         LP_rpc_processreq(req);
 continue;
+        // this leads to cant open file errors
         if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
@@ -795,6 +810,7 @@ continue;
             }
        }
     }
+    printf("i got killed\n");
 }
 
 #ifndef FROM_MARKETMAKER

@@ -93,6 +93,14 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
+char *issue_hello(uint16_t port)
+{
+    char url[512];
+    sprintf(url,"http://127.0.0.1:%u/api/stats/hello",port);
+    //printf("getutxo.(%s)\n",url);
+    return(issue_curlt(url,60)); // might be starting a trade
+}
+
 char *issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
 {
     char url[512],*retstr;
