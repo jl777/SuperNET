@@ -292,7 +292,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
     uint64_t val,val2=0,tmpsatoshis,txfee; int32_t spendvini,numconfirms,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )//|| sessionid == 0 )
     {
-        char str[65],str2[65]; printf("REJECT %s iambob.%d %s utxoadd.(%.8f %.8f) %s/v%d %s/v%d\n",coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2);
+        char str[65],str2[65]; printf("REJECT (%s) iambob.%d %s utxoadd.(%.8f %.8f) %s/v%d %s/v%d\n",coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2);
         printf("session.%u addutxo %d %d %d %d %d %d %d %d\n",sessionid,symbol == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
         return(0);
     }

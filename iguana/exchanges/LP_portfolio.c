@@ -222,7 +222,7 @@ struct LP_autoprice_ref
 int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
 {
     //curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"MNZ\",\"rel\":\"KMD\",\"offset\":0.1,\"refbase\":\"KMD\",\refrel\":\"BTC\",\"factor\":15000,\"margin\":0.01}"
-    struct LP_priceinfo *basepp,*relpp; int32_t i; char *refbase,*refrel; double minprice,margin,offset,factor;
+    struct LP_priceinfo *basepp,*relpp; int32_t i; char *refbase,*refrel; double minprice,margin,offset,factor,fixedprice;
     //printf("autoprice.(%s %s) %s\n",base,rel,jprint(argjson,0));
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
@@ -232,6 +232,8 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
         margin = jdouble(argjson,"margin");
         offset = jdouble(argjson,"offset");
         factor = jdouble(argjson,"factor");
+        fixedprice = jdouble(argjson,"fixed");
+        basepp->fixedprices[relpp->ind] = fixedprice;
         basepp->minprices[relpp->ind] = minprice;
         basepp->margins[relpp->ind] = margin;
         basepp->offsets[relpp->ind] = offset;
@@ -267,9 +269,16 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
 void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel)
 {
     static uint32_t lasttime;
-    double margin,minprice,newprice,oppomargin,factor,offset; double bid,ask; int32_t changed;
+    double margin,minprice,newprice,oppomargin,fixedprice,factor,offset; double bid,ask; int32_t changed;
     margin = basepp->margins[relpp->ind];
     oppomargin = relpp->margins[basepp->ind];
+    if ( (fixedprice= relpp->fixedprices[basepp->ind]) > SMALLVAL )
+    {
+        LP_mypriceset(&changed,relpp->symbol,basepp->symbol,fixedprice);
+        printf("autoprice FIXED %s/%s <- %.8f\n",basepp->symbol,relpp->symbol,fixedprice);
+        LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,fixedprice);
+        return;
+    }
     if ( margin != 0. || oppomargin != 0. )
     {
         offset = basepp->offsets[relpp->ind];
