@@ -1166,7 +1166,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
     }
-    int32_t nonz;
+    int32_t nonz; uint32_t lasthello = 0;
     while ( 1 )
     {
         nonz = 0;
@@ -1182,7 +1182,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000);
         else if ( IAMLP == 0 )
             usleep(1000);
-        if ( (rand() % 10000) == 0 )
+        if ( time(NULL) > lasthello+60 )
         {
             char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
             allgood = 0;
@@ -1191,13 +1191,14 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"got hello") == 0 )
-                        allgood = 1, printf("allgood.(%s)\n",retstr);
+                        allgood = 1;
                     else printf("strange return.(%s)\n",jprint(retjson,0));
                     free_json(retjson);
                 } else printf("couldnt parse hello return.(%s)\n",retstr);
                 free(retstr);
             } else printf("issue_hello NULL return\n");
-            if ( allgood == 0 )
+            lasthello = (uint32_t)time(NULL);
+            if ( 1 || allgood == 0 )
             {
                 printf("RPC port got stuck, start a new thread\n");
                 LP_bindsock = -1;

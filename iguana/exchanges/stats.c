@@ -796,6 +796,7 @@ continue;
             }
        }
     }
+    printf("i got killed\n");
 }
 
 #ifndef FROM_MARKETMAKER
