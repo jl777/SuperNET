@@ -602,7 +602,7 @@ void LP_coinsloop(void *_coins)
                             {
                                 nonz++;
                                 up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
-                                if ( 0 && up->SPV > 0 )
+                                if ( 1 && up->SPV > 0 )
                                     printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
                             }
                             else if ( up->SPV == -1 )
