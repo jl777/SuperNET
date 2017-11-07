@@ -905,7 +905,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
                     }
                 } else utxos[j] = 0;
             }
-        }
+        } else utxos[j] = 0;
     }
     if ( bits256_nonz(utxotxid) != 0 && numpre == 0 )
     {
@@ -1011,6 +1011,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     else if ( coin->numutxos >= LP_MINDESIRED_UTXOS )
         dustcombine = 2;
     else dustcombine = 1;
+dustcombine = 2;
     amount = txfee;
     for (i=0; i<numvouts; i++)
     {
@@ -1775,7 +1776,7 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
     {
         printf("generate fee %.8f\n",dstr(strcmp(swap->myfee.coin->symbol,"BTC") == 0 ? LP_MIN_TXFEE : swap->myfee.coin->txfee));
         bitcoin_address(coinaddr,swap->alicecoin.taddr,swap->alicecoin.pubtype,swap->changermd160,20);
-        if ( basilisk_rawtx_gen(swap->ctx,"myfee",swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,strcmp(swap->myfee.coin->symbol,"BTC") == 0 ? LP_MIN_TXFEE : swap->myfee.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr) == 0 )
+        if ( basilisk_rawtx_gen(swap->ctx,"myfee",swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,swap->myfee.I.locktime,swap->myfee.spendscript,swap->myfee.I.spendlen,strcmp(swap->myfee.coin->symbol,"BTC") == 0 ? LP_MIN_TXFEE : swap->myfee.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr) == 0 )
         {
             printf("rawtxsend %s %.8f\n",swap->myfee.coin->symbol,dstr(strcmp(swap->myfee.coin->symbol,"BTC") == 0 ? LP_MIN_TXFEE : swap->myfee.coin->txfee));
             swap->I.statebits |= LP_swapdata_rawtxsend(pairsock,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
