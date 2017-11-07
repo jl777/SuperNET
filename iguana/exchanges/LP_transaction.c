@@ -854,7 +854,7 @@ int64_t LP_komodo_interest(bits256 txid,int64_t value)
 
 int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_t amount,struct vin_info *V,struct LP_address_utxo **utxos,int32_t numunspents,int32_t suppress_pubkeys,int32_t ignore_cltverr,bits256 privkey,cJSON *privkeys,cJSON *vins,uint8_t *script,int32_t scriptlen,bits256 utxotxid,int32_t utxovout,int32_t dustcombine)
 {
-    char wifstr[128],spendscriptstr[128],str[65]; int32_t i,j,n,numpre,ind,abovei,belowi,maxmode=0; struct vin_info *vp; cJSON *txobj; struct LP_address_utxo *up,*min0,*min1,*preselected[3]; int64_t value,interest,interestsum,above,below,remains = amount,total = 0;
+    char wifstr[128],spendscriptstr[128],str[65]; int32_t i,j,n,numpre,ind,abovei,belowi,maxmode=0; struct vin_info *vp; cJSON *txobj; struct LP_address_utxo *up,*min0,*min1,*preselected[3]; struct electrum_info *ep,*backupep; int64_t value,interest,interestsum,above,below,remains = amount,total = 0;
     *totalp = 0;
     interestsum = 0;
     init_hexbytes_noT(spendscriptstr,script,scriptlen);
@@ -916,10 +916,12 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
             return(0);
         }
     }
-    if ( dustcombine >= 1 && min0 != 0 && min0->U.value < SATOSHIDEN )
+    if ( dustcombine >= 1 && min0 != 0 && min0->U.value < SATOSHIDEN && (coin->electrum == 0 || min0->SPV > 0) )
         preselected[numpre++] = min0;
-    if ( dustcombine >= 2 && min1 != 0 && min1->U.value < SATOSHIDEN )
+    else min0 = 0;
+    if ( dustcombine >= 2 && min1 != 0 && min1->U.value < SATOSHIDEN && (coin->electrum == 0 || min1->SPV > 0) )
         preselected[numpre++] = min1;
+    else min1 = 0;
     printf("dustcombine.%d numpre.%d min0.%p min1.%p numutxos.%d\n",dustcombine,numpre,min0,min1,numunspents);
     for (i=0; i<numunspents+numpre; i++)
     {
@@ -948,7 +950,23 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
             up = utxos[ind];
             utxos[ind] = utxos[--numunspents];
             utxos[numunspents] = 0;
+            for (j=0; j<numpre; j++)
+                if ( up == preselected[j] )
+                    break;
+            if ( j < numpre )
+                continue;
+            if ( (ep= coin->electrum) != 0 && up->SPV <= 0 )
+            {
+                if ( up->SPV < 0 )
+                    continue;
+                if ( (backupep= ep->prev) == 0 )
+                    backupep = ep;
+                up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                if ( up->SPV <= 0 )
+                    continue;
+            }
         }
+        
         up->spendheight = 1;
         total += up->U.value;
         remains -= up->U.value;
