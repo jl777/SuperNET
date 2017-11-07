@@ -949,6 +949,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
             utxos[ind] = utxos[--numunspents];
             utxos[numunspents] = 0;
         }
+        up->spendheight = 1;
         total += up->U.value;
         remains -= up->U.value;
         if ( up->U.height < 7777777 && strcmp(coin->symbol,"KMD") == 0 )
