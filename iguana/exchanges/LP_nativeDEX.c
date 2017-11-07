@@ -595,7 +595,7 @@ void LP_coinsloop(void *_coins)
                     backupep = ep;
                 HASH_ITER(hh,coin->addresses,ap,atmp)
                 {
-                    break;
+                    break; // causes timeouts probably due to too much usage, SPV validation done on tx spending
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
                     {
                         if ( up->U.height > 0 && up->spendheight < 0 )

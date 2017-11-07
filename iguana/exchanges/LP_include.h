@@ -408,6 +408,7 @@ struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coina
 int32_t LP_destaddr(char *destaddr,cJSON *item);
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration);
 char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey);
+int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid);
 cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJSON *txobj);
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
