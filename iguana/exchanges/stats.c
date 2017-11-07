@@ -26,6 +26,7 @@
 #include <sys/types.h>          /* See NOTES */
 #define _GNU_SOURCE             /* See feature_test_macros(7) */
 #include <sys/socket.h>
+int32_t accept4(int fildes, struct sockaddr *sock_addr, socklen_t *sock_addr_size, int flags);
 #include "../../crypto777/OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define STATS_DESTDIR "/var/www/html"
@@ -747,7 +748,7 @@ int32_t LP_bindsock_reset,LP_bindsock = -1;
 
 void stats_rpcloop(void *args)
 {
-    uint16_t port; int32_t retval,sock,initial_bindsock_reset; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits,counter=0; struct rpcrequest_info *req,*req2,*rtmp;
+    uint16_t port; int32_t retval,sock,initial_bindsock_reset; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
@@ -760,7 +761,7 @@ void stats_rpcloop(void *args)
         {
             while ( (LP_bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
                 usleep(10000);
-            if ( counter++ < 1 )
+            //if ( counter++ < 1 )
                 printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,LP_bindsock);
         }
         //printf("after LP_bindsock.%d\n",LP_bindsock);
@@ -774,6 +775,7 @@ void stats_rpcloop(void *args)
         sock = accept4(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen,SOCK_NONBLOCK);
         if ( sock < 0 )
         {
+            fprintf(stderr,".");
             usleep(50000);
             continue;
         }
