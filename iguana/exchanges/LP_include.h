@@ -49,6 +49,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 #define LP_MAXDESIRED_UTXOS 128
 #define LP_MINDESIRED_UTXOS 32
+#define LP_DUSTCOMBINE_THRESHOLD 1000000
 
 // RTmetrics
 #define LP_RTMETRICS_TOPGROUP 1.01
