@@ -595,6 +595,7 @@ void LP_coinsloop(void *_coins)
                     backupep = ep;
                 HASH_ITER(hh,coin->addresses,ap,atmp)
                 {
+                    break;
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
                     {
                         if ( up->U.height > 0 && up->spendheight < 0 )
