@@ -777,7 +777,7 @@ void stats_rpcloop(void *args)
 #else
         if ( sock < 0 )
         {
-            fprintf(stderr,".");
+            //fprintf(stderr,".");
             usleep(50000);
             continue;
         }
