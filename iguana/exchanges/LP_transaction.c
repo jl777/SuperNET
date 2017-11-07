@@ -1776,12 +1776,16 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
 
 int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
+    int32_t diff;
     if ( LP_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->otherfee,0,data,datalen,0) == 0 )
     {
         printf("otherfee amount %.8f -> %s vs %s locktime %u vs %u\n",dstr(swap->otherfee.I.amount),swap->otherfee.p2shaddr,swap->otherfee.I.destaddr,swap->otherfee.I.locktime,swap->I.started+1);
         if ( strcmp(swap->otherfee.I.destaddr,swap->otherfee.p2shaddr) == 0 )
         {
-            if ( swap->otherfee.I.locktime == swap->I.started+1 )
+            diff = swap->otherfee.I.locktime - (swap->I.started+1);
+            if ( diff < 0 )
+                diff = -diff;
+            if ( diff < 30 )
                 printf("dexfee verified\n");
             else printf("locktime mismatch in otherfee, reject %u vs %u\n",swap->otherfee.I.locktime,swap->I.started+1);
             return(0);
