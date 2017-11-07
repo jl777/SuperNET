@@ -1179,13 +1179,13 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000);
         else if ( IAMLP == 0 )
             usleep(1000);
-        if ( (rand() % 10000) == 0 )
+        /*if ( (rand() % 1000) == 0 )
         {
             int32_t sock = LP_bindsock;
             printf("bindsock reset test\n");
             LP_bindsock = -1;
             closesocket(sock);
-        }
+        }*/
     }
 #endif
 }

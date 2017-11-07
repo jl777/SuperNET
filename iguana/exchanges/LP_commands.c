@@ -375,7 +375,10 @@ bot_resume(botid)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     ptr->inactive = 0;
-                    return(jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1));
+                    retstr = jprint(LP_electrumserver(ptr,jstr(argjson,"ipaddr"),juint(argjson,"port")),1);
+                    if ( ptr->electrum != 0 && (retjson= electrum_address_listunspent(ptr->symbol,ptr->electrum,&retjson,ptr->smartaddr,2)) != 0 )
+                        free_json(retjson);
+                    return(retstr);
                 } else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             else if ( strcmp(method,"sendrawtransaction") == 0 )
