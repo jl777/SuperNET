@@ -23,10 +23,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <sys/types.h>          /* See NOTES */
-#define _GNU_SOURCE             /* See feature_test_macros(7) */
-#include <sys/socket.h>
-int32_t accept4(int fildes, struct sockaddr *sock_addr, socklen_t *sock_addr_size, int flags);
 #include "../../crypto777/OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define STATS_DESTDIR "/var/www/html"
@@ -761,26 +757,23 @@ void stats_rpcloop(void *args)
         {
             while ( (LP_bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
                 usleep(10000);
+#ifndef _WIN32
+            fcntl(LP_bindsock, F_SETFL, fcntl(LP_bindsock, F_GETFL, 0) | O_NONBLOCK);
+#endif
             //if ( counter++ < 1 )
                 printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,LP_bindsock);
         }
         //printf("after LP_bindsock.%d\n",LP_bindsock);
         clilen = sizeof(cli_addr);
+        sock = accept(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen);
 #ifdef _WIN32
-        sock = accept(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen);
-#else
-#ifdef __APPLE__
-        sock = accept(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen);
-#else
-        sock = accept4(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen,SOCK_NONBLOCK);
         if ( sock < 0 )
         {
             fprintf(stderr,".");
             usleep(50000);
             continue;
         }
-#endif
-#endif
+#else
         if ( sock < 0 )
         {
             printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
@@ -788,6 +781,7 @@ void stats_rpcloop(void *args)
             LP_bindsock = -1;
             continue;
         }
+#endif
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         req = calloc(1,sizeof(*req));
         req->sock = sock;
