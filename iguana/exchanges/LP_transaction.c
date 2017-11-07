@@ -1194,6 +1194,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
     argjson = cJSON_CreateObject();
     jaddbits256(argjson,"utxotxid",rawtx->utxotxid);
     jaddnum(argjson,"utxovout",rawtx->utxovout);
+    jaddnum(argjson,"locktime",locktime);
     jadd64bits(argjson,"txfee",txfee);
     outputs = cJSON_CreateArray();
     item = cJSON_CreateObject();
