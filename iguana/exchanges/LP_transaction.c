@@ -892,7 +892,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
                         } else min1 = up;
                     }
                 } else utxos[j] = 0;
-                if ( utxos[j] != 0 )
+                if ( 0 && utxos[j] != 0 )
                     printf("gettxout j.%d %s/v%d (%s)\n",j,bits256_str(str,up->U.txid),up->U.vout,jprint(txobj,0));
                 free_json(txobj);
             }
