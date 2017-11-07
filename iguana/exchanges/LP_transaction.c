@@ -1011,7 +1011,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     else if ( coin->numutxos >= LP_MINDESIRED_UTXOS )
         dustcombine = 2;
     else dustcombine = 1;
-dustcombine = 2;
+dustcombine = 0;
     amount = txfee;
     for (i=0; i<numvouts; i++)
     {
