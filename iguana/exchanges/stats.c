@@ -751,7 +751,7 @@ void stats_rpcloop(void *args)
     localhostbits = (uint32_t)calc_ipbits("127.0.0.1");
     while ( 1 )
     {
-        printf("LP_bindsock.%d\n",LP_bindsock);
+        //printf("LP_bindsock.%d\n",LP_bindsock);
         if ( LP_bindsock < 0 )
         {
             while ( (LP_bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
