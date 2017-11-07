@@ -694,14 +694,6 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     jaddistr(privkeys,wifstr);
     V[0].suppress_pubkeys = suppress_pubkeys;
     V[0].ignore_cltverr = ignore_cltverr;
-    /*for (i=0; i<dustcombine; i++) // must be simple standard vin
-    {
-        V[i+1].signers[0].privkey = privkey;
-        V[i+1].suppress_pubkeys = 0;
-        V[i+1].ignore_cltverr = 0;
-        V[i+1].N = V[i+1].M = 1;
-        jaddistr(privkeys,wifstr);
-    }*/
     if ( redeemlen != 0 )
         memcpy(V[0].p2shscript,redeemscript,redeemlen), V[0].p2shlen = redeemlen;
     txobj = bitcoin_txcreate(symbol,isPoS,locktime,1,timestamp);
@@ -732,9 +724,6 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     jaddnum(item,"suppress",suppress_pubkeys);
     jaddnum(item,"sequence",sequenceid);
     jaddi(vins,item);
-    //for (i=0; i<dustcombine; i++)
-    //    if ( items[i] != 0 )
-    //        jaddi(vins,items[i]);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",vins);
     if ( destaddr == 0 )
@@ -1811,7 +1800,7 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
             diff = swap->otherfee.I.locktime - (swap->I.started+1);
             if ( diff < 0 )
                 diff = -diff;
-            if ( diff < 30 )
+            if ( diff == 0 )
                 printf("dexfee verified\n");
             else printf("locktime mismatch in otherfee, reject %u vs %u\n",swap->otherfee.I.locktime,swap->I.started+1);
             return(0);
