@@ -892,7 +892,6 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
             }
             else
             {
-                free_json(txobj);
                 if ( LP_inventory_prevent(1,coin->symbol,up->U.txid,up->U.vout) == 0 )
                 {
                     if ( min1 == 0 || up->U.value < min1->U.value )
@@ -904,6 +903,9 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
                         } else min1 = up;
                     }
                 } else utxos[j] = 0;
+                if ( utxos[j] != 0 )
+                    printf("gettxout j.%d (%s)\n",j,jprint(txobj,0));
+                free_json(txobj);
             }
         } else utxos[j] = 0;
     }
@@ -976,7 +978,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         vp->suppress_pubkeys = suppress_pubkeys;
         vp->ignore_cltverr = ignore_cltverr;
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
-        if ( remains <= 0 && i >= numpre )
+        if ( remains <= 0 && i >= numpre-1 )
             break;
         if ( numunspents == 0 )
         {
