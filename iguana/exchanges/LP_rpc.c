@@ -578,7 +578,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
                     return(retjson);
             }
         }
-        printf("couldnt find %s/v%d\n",bits256_str(str,txid),vout);
+        printf("couldnt find %s (%s) %s/v%d\n",symbol,coinaddr,bits256_str(str,txid),vout);
         return(cJSON_Parse("{\"error\":\"couldnt get tx\"}"));
     }
 }
