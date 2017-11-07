@@ -18,11 +18,9 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// selftest and fix rpc port
-// verify portfolio, interest to KMD withdraw
+// BCH signing
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
-// BCH signing
 
 #include <stdio.h>
 struct LP_millistats
@@ -1200,7 +1198,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             lasthello = (uint32_t)time(NULL);
             if ( allgood == 0 )
             {
-                printf("RPC port got stuck, start a new thread\n");
+                printf("RPC port got stuck, close bindsocket\n");
                 LP_bindsock = -1;
                 closesocket(sock);
             }
