@@ -29,6 +29,7 @@ struct LP_priceinfo
     double relvals[LP_MAXPRICEINFOS];
     double myprices[LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS]; // autoprice
+    double fixedprices[LP_MAXPRICEINFOS]; // fixedprices
     double margins[LP_MAXPRICEINFOS];
     double offsets[LP_MAXPRICEINFOS];
     double factors[LP_MAXPRICEINFOS];
