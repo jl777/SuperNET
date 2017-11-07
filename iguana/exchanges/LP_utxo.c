@@ -965,13 +965,13 @@ cJSON *LP_dustcombine_item(struct LP_address_utxo *up)
     return(item);
 }
 
-uint64_t LP_dustcombine(cJSON *items[2],int32_t dustcombine,struct iguana_info *coin)
+uint64_t LP_dustcombine(struct LP_address_utxo *ups[2],int32_t dustcombine,struct iguana_info *coin)
 {
     struct LP_address *ap=0; struct LP_address_utxo *up,*tmp,*min0,*min1; cJSON *txobj;
     if ( coin == 0 || coin->electrum != 0 || dustcombine <= 0 || dustcombine > 2 )
         return(0);
     min1 = min0 = 0;
-    printf("LP_dustcombine\n");
+    ups[0] = ups[1] = 0;
     if ( (ap= _LP_addressfind(coin,coin->smartaddr)) != 0 )
     {
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -983,7 +983,7 @@ uint64_t LP_dustcombine(cJSON *items[2],int32_t dustcombine,struct iguana_info *
                 else
                 {
                     free_json(txobj);
-                    if ( LP_inventory_prevent(0,coin->symbol,up->U.txid,up->U.vout) == 0 && LP_inventory_prevent(1,coin->symbol,up->U.txid,up->U.vout) == 0 )
+                    if ( LP_inventory_prevent(1,coin->symbol,up->U.txid,up->U.vout) == 0 )
                     {
                         if ( min1 == 0 || up->U.value < min1->U.value )
                         {
@@ -1000,10 +1000,10 @@ uint64_t LP_dustcombine(cJSON *items[2],int32_t dustcombine,struct iguana_info *
     }
     if ( min0 != 0 )
     {
-        items[0] = LP_dustcombine_item(min0);
+        ups[0] = min0;
         if ( dustcombine == 2 && min1 != 0 )
         {
-            items[1] = LP_dustcombine_item(min1);
+            ups[1] = min1;
             return(min0->U.value + min1->U.value);
         } else return(min0->U.value);
     }
