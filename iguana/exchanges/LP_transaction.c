@@ -865,7 +865,7 @@ int64_t LP_komodo_interest(bits256 txid,int64_t value)
 
 int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_t amount,struct vin_info *V,struct LP_address_utxo **utxos,int32_t numunspents,int32_t suppress_pubkeys,int32_t ignore_cltverr,bits256 privkey,cJSON *privkeys,cJSON *vins,uint8_t *script,int32_t scriptlen,bits256 utxotxid,int32_t utxovout,int32_t dustcombine)
 {
-    char wifstr[128],spendscriptstr[128]; int32_t i,j,n,numpre,ind,abovei,belowi,maxmode=0; struct vin_info *vp; cJSON *txobj; struct LP_address_utxo *up,*min0,*min1,*preselected[3]; int64_t interest,interestsum,above,below,remains = amount,total = 0;
+    char wifstr[128],spendscriptstr[128]; int32_t i,j,n,numpre,ind,abovei,belowi,maxmode=0; struct vin_info *vp; cJSON *txobj; struct LP_address_utxo *up,*min0,*min1,*preselected[3]; int64_t value,interest,interestsum,above,below,remains = amount,total = 0;
     *totalp = 0;
     interestsum = 0;
     init_hexbytes_noT(spendscriptstr,script,scriptlen);
@@ -879,6 +879,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         if ( utxovout == up->U.vout && bits256_cmp(utxotxid,up->U.txid) == 0 )
         {
             preselected[numpre++] = up;
+            printf("found utxotxid in slot.%d\n",j);
             utxos[j] = 0;
             continue;
         }
@@ -904,6 +905,24 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
                     }
                 } else utxos[j] = 0;
             }
+        }
+    }
+    if ( bits256_nonz(utxotxid) != 0 && numpre == 0 )
+    {
+        up = LP_address_utxofind(coin,coin->smartaddr,utxotxid,utxovout);
+        printf("have utxotxid but wasnt found up.%p\n",up);
+        if ( up == 0 )
+        {
+            value = LP_txvalue(coin->smartaddr,coin->symbol,utxotxid,utxovout);
+            LP_address_utxoadd("withdraw",coin,coin->smartaddr,utxotxid,utxovout,value,1,-1);
+            printf("added after not finding\n");
+        }
+        if ( (up= LP_address_utxofind(coin,coin->smartaddr,utxotxid,utxovout)) != 0 )
+            preselected[numpre++] = up;
+        else
+        {
+            printf("couldnt add address_utxo after not finding\n");
+            return(0);
         }
     }
     if ( dustcombine >= 1 && min0 != 0 )
