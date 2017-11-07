@@ -595,23 +595,33 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            //printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
-            updatedflag = 0;
-            if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
-                LP_postutxos(coin->symbol,addr), updatedflag = 1;
-            if ( strcmp(addr,coin->smartaddr) == 0 )
+            if ( jobj(retjson,"error") == 0 && is_cJSON_Array(retjson) != 0 )
             {
-                retstr = jprint(retjson,0);
-                LP_unspents_cache(coin->symbol,coin->smartaddr,retstr,1);
-                free(retstr);
+                //printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
+                updatedflag = 0;
+                if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
+                    LP_postutxos(coin->symbol,addr), updatedflag = 1;
+                if ( strcmp(addr,coin->smartaddr) == 0 )
+                {
+                    retstr = jprint(retjson,0);
+                    LP_unspents_cache(coin->symbol,coin->smartaddr,retstr,1);
+                    free(retstr);
+                }
+                if ( ap != 0 )
+                {
+                    ap->unspenttime = (uint32_t)time(NULL);
+                    ap->unspentheight = height;
+                }
             }
-            if ( ap != 0 )
+            else
             {
-                ap->unspenttime = (uint32_t)time(NULL);
-                ap->unspentheight = height;
+                free_json(retjson);
+                retjson = 0;
             }
         }
-    } else retjson = LP_address_utxos(coin,addr,1);
+    }
+    if ( retjson == 0 )
+        retjson = LP_address_utxos(coin,addr,1);
     return(retjson);
 }
 
