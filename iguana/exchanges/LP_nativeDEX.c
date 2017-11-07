@@ -623,7 +623,7 @@ void LP_coinsloop(void *_coins)
                 if ( time(NULL) > coin->lastunspent+30 )
                 {
                     printf("call electrum listunspent.%s\n",coin->symbol);
-                    if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,1)) != 0 )
+                    if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,2)) != 0 )
                         free_json(retjson);
                     coin->lastunspent = (uint32_t)time(NULL);
                 }
