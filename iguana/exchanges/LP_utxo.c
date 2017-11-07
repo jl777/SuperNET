@@ -472,13 +472,38 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
 
 cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
-    cJSON *array,*retjson; int32_t i,n; uint64_t balance = 0;
-    if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
+    cJSON *array,*retjson,*item; int32_t i,n; uint64_t balance = 0;
+    if ( coin->electrum == 0 )
     {
-        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        if ( (array= LP_listunspent(coin->symbol,coinaddr)) != 0 )
         {
-            for (i=0; i<n; i++)
-                balance += j64bits(jitem(array,i),"value");
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    balance += LP_value_extract(item,1);
+                }
+            }
+        }
+    }
+    else
+    {
+        if ( strcmp(coin->smartaddr,coinaddr) == 0 )
+            balance = LP_unspents_load(coin->symbol,coinaddr);
+        else
+        {
+            if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
+            {
+                if ( (n= cJSON_GetArraySize(array)) > 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(array,i);
+                        balance += j64bits(item,"value");
+                    }
+                }
+            }
         }
     }
     retjson = cJSON_CreateObject();
@@ -1062,9 +1087,9 @@ void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedfla
     }
 }
 
-void LP_unspents_load(char *symbol,char *addr)
+uint64_t LP_unspents_load(char *symbol,char *addr)
 {
-    char fname[1024],*arraystr; long fsize; struct iguana_info *coin; cJSON *retjson;
+    char fname[1024],*arraystr; uint64_t balance = 0; int32_t i,n; long fsize; struct iguana_info *coin; cJSON *retjson,*item;
     if ( (coin= LP_coinfind(symbol)) != 0 )
     {
         sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
@@ -1072,13 +1097,22 @@ void LP_unspents_load(char *symbol,char *addr)
         {
             if ( (retjson= cJSON_Parse(arraystr)) != 0 )
             {
-                printf("PROCESS UNSPENTS %s\n",arraystr);
+                //printf("PROCESS UNSPENTS %s\n",arraystr);
+                if ( (n= cJSON_GetArraySize(retjson)) > 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(retjson,i);
+                        balance += j64bits(item,"value");
+                    }
+                }
                 electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1);
                 free_json(retjson);
             }
             free(arraystr);
         }
     }
+    return(balance);
 }
 
 
