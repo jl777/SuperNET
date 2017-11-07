@@ -19,8 +19,6 @@
 //  marketmaker
 //
 // selftest and fix rpc port
-// quotevalidate to do SPV
-// autoadd dust utxo to vin for initial atomic tx
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -621,6 +619,12 @@ void LP_coinsloop(void *_coins)
                             }
                         }
                     }
+                }
+                if ( time(NULL) > coin->lastunspent+30 )
+                {
+                    if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,1)) != 0 )
+                        free_json(retjson);
+                    coin->lastunspent = (uint32_t)time(NULL);
                 }
                 while ( ep != 0 )
                 {
