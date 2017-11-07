@@ -741,6 +741,7 @@ void LP_rpc_processreq(void *_ptr)
 
 extern int32_t IAMLP;
 int32_t LP_bindsock = -1;
+
 void stats_rpcloop(void *args)
 {
     //static uint32_t counter;
@@ -759,6 +760,7 @@ void stats_rpcloop(void *args)
             //if ( counter++ < 1 )
                 printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,LP_bindsock);
         }
+        printf("after LP_bindsock.%d\n",LP_bindsock);
         clilen = sizeof(cli_addr);
         sock = accept(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
