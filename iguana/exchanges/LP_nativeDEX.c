@@ -1198,7 +1198,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                 free(retstr);
             } else printf("issue_hello NULL return\n");
             lasthello = (uint32_t)time(NULL);
-            if ( 1 || allgood == 0 )
+            if ( allgood == 0 )
             {
                 printf("RPC port got stuck, start a new thread\n");
                 LP_bindsock = -1;
