@@ -19,8 +19,6 @@
 //  marketmaker
 //
 // selftest and fix rpc port
-// quotevalidate to do SPV
-// autoadd dust utxo to vin for initial atomic tx
 // verify portfolio, interest to KMD withdraw
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -595,7 +593,7 @@ void LP_coinsloop(void *_coins)
                     backupep = ep;
                 HASH_ITER(hh,coin->addresses,ap,atmp)
                 {
-                    break;
+                    break; // causes timeouts probably due to too much usage, SPV validation done on tx spending
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
                     {
                         if ( up->U.height > 0 && up->spendheight < 0 )
@@ -622,12 +620,19 @@ void LP_coinsloop(void *_coins)
                         }
                     }
                 }
+                if ( time(NULL) > coin->lastunspent+30 )
+                {
+                    //printf("call electrum listunspent.%s\n",coin->symbol);
+                    if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,2)) != 0 )
+                        free_json(retjson);
+                    coin->lastunspent = (uint32_t)time(NULL);
+                }
                 while ( ep != 0 )
                 {
                     if ( time(NULL) > ep->keepalive+LP_ELECTRUM_KEEPALIVE )
                     {
                         //printf("%s electrum.%p needs a keepalive: lag.%d\n",ep->symbol,ep,(int32_t)(time(NULL) - ep->keepalive));
-                        if ( (retjson= electrum_donation(ep->symbol,ep,&retjson)) != 0 )
+                        if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,1)) != 0 )
                             free_json(retjson);
                     }
                     ep = ep->prev;
@@ -1174,6 +1179,13 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000);
         else if ( IAMLP == 0 )
             usleep(1000);
+        /*if ( (rand() % 1000) == 0 )
+        {
+            int32_t sock = LP_bindsock;
+            printf("bindsock reset test\n");
+            LP_bindsock = -1;
+            closesocket(sock);
+        }*/
     }
 #endif
 }

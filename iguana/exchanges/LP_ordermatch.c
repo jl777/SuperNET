@@ -246,7 +246,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
             //printf("nearest i.%d target %.8f val %.8f dist %.8f mindist %.8f mini.%d spent.%d\n",i,dstr(targetval),dstr(up->U.value),dstr(dist),dstr(mindist),mini,up->spendheight);
             if ( up->spendheight <= 0 )
             {
-                if ( (coin->electrum == 0 || up->SPV > 0) && dist >= 0 && dist < mindist )
+                if ( dist >= 0 && dist < mindist ) //(coin->electrum == 0 || up->SPV > 0) &&
                 {
                     //printf("(%.8f %.8f %.8f).%d ",dstr(up->U.value),dstr(dist),dstr(mindist),mini);
                     mini = i;
@@ -594,6 +594,26 @@ int32_t LP_aliceonly(char *symbol)
     else return(0);
 }
 
+int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
+{
+    struct electrum_info *ep,*backupep; struct LP_address_utxo *up; struct iguana_info *coin;
+    coin = LP_coinfind(symbol);
+    if ( coin != 0 && (ep= coin->electrum) != 0 )
+    {
+        if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
+        {
+            if ( up->SPV < 0 )
+                return(-1);
+            if ( (backupep= ep->prev) == 0 )
+                backupep = ep;
+            up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+            if ( up->SPV <= 0 )
+                return(-1);
+        }
+    }
+    return(0);
+}
+
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
     char *method,*msg,*retstr,str[65]; int32_t DEXselector = 0; uint64_t value,value2; cJSON *retjson; double qprice,price,bid,ask; struct LP_utxoinfo A,B,*autxo,*butxo; struct iguana_info *coin; struct LP_address_utxo *utxos[1000]; struct LP_quoteinfo Q; int32_t retval = -1,recalc,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
@@ -605,8 +625,28 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_tradecommand_log(argjson);
         //printf("LP_tradecommand: check received method %s aliceid.%llx\n",method,(long long)Q.aliceid);
         retval = 1;
+        if ( LP_validSPV(Q.destcoin,Q.destaddr,Q.desttxid,Q.destvout) < 0 )
+        {
+            printf("%s dest %s failed SPV check\n",Q.destcoin,bits256_str(str,Q.desttxid));
+            return(retval);
+        }
+        else if (LP_validSPV(Q.destcoin,Q.destaddr,Q.feetxid,Q.feevout) < 0 )
+        {
+            printf("%s dexfee %s failed SPV check\n",Q.destcoin,bits256_str(str,Q.feetxid));
+            return(retval);
+        }
         if ( strcmp(method,"reserved") == 0 )
         {
+            if ( LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid,Q.vout) < 0 )
+            {
+                printf("%s src %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid));
+                return(retval);
+            }
+            else if (LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid2,Q.vout2) < 0 )
+            {
+                printf("%s src2 %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid2));
+                return(retval);
+            }
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && LP_alice_eligible() > 0 )
             {
                 printf("alice %s received RESERVED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
@@ -620,7 +660,17 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         {
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
-                //printf("alice %s received CONNECTED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
+                if ( LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid,Q.vout) < 0 )
+                {
+                    printf("%s src %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid));
+                    return(retval);
+                }
+                else if (LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid2,Q.vout2) < 0 )
+                {
+                    printf("%s src2 %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid2));
+                    return(retval);
+                }
+               //printf("alice %s received CONNECTED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
                 if ( (retstr= LP_connectedalice(argjson)) != 0 )
                     free(retstr);
             }

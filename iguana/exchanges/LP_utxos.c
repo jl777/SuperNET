@@ -826,6 +826,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
     G.LP_sessionid = (uint32_t)time(NULL);
     safecopy(G.gui,gui,sizeof(G.gui));
     G.USERPASS_COUNTER = counter;
+    G.initializing = 0;
     return(0);
 }
 
