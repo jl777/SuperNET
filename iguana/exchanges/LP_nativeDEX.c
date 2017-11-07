@@ -1179,6 +1179,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000);
         else if ( IAMLP == 0 )
             usleep(1000);
+        if ( (rand() % 10000) == 0 )
+        {
+            printf("rpc port reset test\n");
+            closesocket(LP_bindsock);
+            LP_bindsock = -1;
+        }
     }
 #endif
 }

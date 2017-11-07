@@ -743,7 +743,7 @@ extern int32_t IAMLP;
 int32_t LP_bindsock = -1;
 void stats_rpcloop(void *args)
 {
-    static uint32_t counter;
+    //static uint32_t counter;
     uint16_t port; int32_t retval,sock; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
@@ -755,7 +755,7 @@ void stats_rpcloop(void *args)
         {
             while ( (LP_bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
                 usleep(10000);
-            if ( counter++ < 1 )
+            //if ( counter++ < 1 )
                 printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,LP_bindsock);
         }
         clilen = sizeof(cli_addr);
@@ -763,7 +763,7 @@ void stats_rpcloop(void *args)
         if ( sock < 0 )
         {
             printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
-            close(LP_bindsock);
+            closesocket(LP_bindsock);
             LP_bindsock = -1;
             continue;
         }
@@ -776,7 +776,7 @@ continue;
         if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
-            close(LP_bindsock);
+            closesocket(LP_bindsock);
             LP_bindsock = -1;
             portable_mutex_lock(&LP_gcmutex);
             DL_FOREACH_SAFE(LP_garbage_collector,req2,rtmp)
