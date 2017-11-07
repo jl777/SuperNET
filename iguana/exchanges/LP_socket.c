@@ -602,7 +602,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
             if ( strcmp(addr,coin->smartaddr) == 0 )
             {
                 retstr = jprint(retjson,0);
-                LP_unspents_cache(coin->symbol,coin->smartaddr,retstr,updatedflag);
+                LP_unspents_cache(coin->symbol,coin->smartaddr,retstr,1);
                 free(retstr);
             }
             if ( ap != 0 )
