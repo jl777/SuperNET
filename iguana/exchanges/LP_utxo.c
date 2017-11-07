@@ -970,8 +970,8 @@ uint64_t LP_dustcombine(cJSON *items[2],int32_t dustcombine,struct iguana_info *
     struct LP_address *ap=0; struct LP_address_utxo *up,*tmp,*min0,*min1; cJSON *txobj;
     if ( coin == 0 || coin->electrum != 0 || dustcombine <= 0 || dustcombine > 2 )
         return(0);
-return(0);
     min1 = min0 = 0;
+    printf("LP_dustcombine\n");
     if ( (ap= _LP_addressfind(coin,coin->smartaddr)) != 0 )
     {
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -1061,9 +1061,7 @@ void LP_unspents_load(char *symbol,char *addr)
             if ( (retjson= cJSON_Parse(arraystr)) != 0 )
             {
                 printf("PROCESS UNSPENTS %s\n",arraystr);
-                if ( electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1) == 0 )
-                    printf("error electrum_process_array\n");
-                else printf("processed %s\n",arraystr);
+                electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1);
                 free_json(retjson);
             }
             free(arraystr);

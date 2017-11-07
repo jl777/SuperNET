@@ -1024,7 +1024,8 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
     struct electrum_info *ep; int32_t already; cJSON *retjson;
     if ( ipaddr == 0 || ipaddr[0] == 0 || port == 0 )
     {
-        coin->electrum = 0;
+        //coin->electrum = 0;
+        printf("would have disabled %s electrum here\n",coin->symbol);
         return(cJSON_Parse("{\"result\":\"success\",\"status\":\"electrum mode disabled, now in native coin mode\"}"));
     }
     retjson = cJSON_CreateObject();

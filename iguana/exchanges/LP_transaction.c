@@ -647,7 +647,11 @@ char *basilisk_swap_bobtxspend(int32_t dustcombine,bits256 *signedtxidp,uint64_t
             memset(items,0,sizeof(items));
             more = LP_dustcombine(items,dustcombine,coin);
             if ( more != 0 )
+            {
                 printf("%s dustcombine.%d -> %.8f (%s) + (%s)\n",coin->symbol,dustcombine,dstr(more),items[0] != 0 ? jprint(items[0],0) : "",items[1] != 0 ? jprint(items[1],0) : "");
+memset(items,0,sizeof(items));
+more = 0 ;
+            }
             value += more;
             dustcombine = (items[0] != 0) + (items[1] != 0);
         }
@@ -716,6 +720,7 @@ char *basilisk_swap_bobtxspend(int32_t dustcombine,bits256 *signedtxidp,uint64_t
         V[i+1].suppress_pubkeys = 0;
         V[i+1].ignore_cltverr = 0;
         V[i+1].N = V[i+1].M = 1;
+        jaddistr(privkeys,wifstr);
     }
     if ( redeemlen != 0 )
         memcpy(V[0].p2shscript,redeemscript,redeemlen), V[0].p2shlen = redeemlen;
