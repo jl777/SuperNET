@@ -620,13 +620,6 @@ void LP_coinsloop(void *_coins)
                         }
                     }
                 }
-                if ( time(NULL) > coin->lastunspent+30 )
-                {
-                    //printf("call electrum listunspent.%s\n",coin->symbol);
-                    if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,2)) != 0 )
-                        free_json(retjson);
-                    coin->lastunspent = (uint32_t)time(NULL);
-                }
                 while ( ep != 0 )
                 {
                     if ( time(NULL) > ep->keepalive+LP_ELECTRUM_KEEPALIVE )
@@ -836,13 +829,23 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 void LP_pubkeysloop(void *ctx)
 {
-    static uint32_t lasttime;
+    static uint32_t lasttime; cJSON *retjson; struct iguana_info *coin,*tmp;
     strcpy(LP_pubkeysloop_stats.name,"LP_pubkeysloop");
     LP_pubkeysloop_stats.threshold = 5000.;
     sleep(10);
     while ( 1 )
     {
         LP_millistats_update(&LP_pubkeysloop_stats);
+        HASH_ITER(hh,LP_coins,coin,tmp) // firstrefht,firstscanht,lastscanht
+        {
+            if ( coin->electrum != 0 && time(NULL) > coin->lastunspent+30 )
+            {
+                //printf("call electrum listunspent.%s\n",coin->symbol);
+                if ( (retjson= electrum_address_listunspent(coin->symbol,coin->electrum,&retjson,coin->smartaddr,2)) != 0 )
+                    free_json(retjson);
+                coin->lastunspent = (uint32_t)time(NULL);
+            }
+        }
         if ( time(NULL) > lasttime+60 )
         {
             //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
@@ -1179,13 +1182,27 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000);
         else if ( IAMLP == 0 )
             usleep(1000);
-        /*if ( (rand() % 10000) == 0 )
+        if ( (rand() % 10000) == 0 )
         {
-            int32_t sock = LP_bindsock;
-            printf("bindsock reset test\n");
-            LP_bindsock = -1;
-            closesocket(sock);
-        }*/
+            char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
+            allgood = 0;
+            if ( (retstr= issue_hello(myport)) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"") == 0 )
+                        allgood = 1, printf("allgood.(%s)\n",retstr);
+                    free_json(retjson);
+                } else printf("couldnt parse hello return.(%s)\n",retstr);
+                free(retstr);
+            } else printf("issue_hello NULL return\n");
+            if ( allgood == 0 )
+            {
+                printf("RPC port got stuck, kick it\n");
+                LP_bindsock = -1;
+                closesocket(sock);
+            }
+        }
     }
 #endif
 }
