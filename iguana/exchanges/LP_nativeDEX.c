@@ -1192,11 +1192,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                 {
                     if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"") == 0 )
                         allgood = 1, printf("allgood.(%s)\n",retstr);
+                    else printf("strange return.(%s)\n",jprint(retjson,0));
                     free_json(retjson);
                 } else printf("couldnt parse hello return.(%s)\n",retstr);
                 free(retstr);
             } else printf("issue_hello NULL return\n");
-            if ( allgood == 0 )
+            if ( 0 && allgood == 0 )
             {
                 printf("RPC port got stuck, kick it\n");
                 LP_bindsock = -1;
