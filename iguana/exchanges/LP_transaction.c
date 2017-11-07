@@ -986,7 +986,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         printf("LP_createrawtransaction: illegal coin.%p outputs.%p or arraysize.%d, error\n",coin,outputs,numvouts);
         return(0);
     }
-    if ( coin->electrum != 0 || coin->numutxos < LP_MINDESIRED_UTXOS )
+    if ( coin->numutxos < LP_MINDESIRED_UTXOS )
         dustcombine = 0;
     else if ( coin->numutxos >= LP_MINDESIRED_UTXOS )
         dustcombine = 2;
