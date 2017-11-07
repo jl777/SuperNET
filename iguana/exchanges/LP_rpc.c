@@ -96,7 +96,7 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
 char *issue_hello(uint16_t port)
 {
     char url[512];
-    sprintf(url,"http://127.0.0.1:%u/api/stats/getprices",port);
+    sprintf(url,"http://127.0.0.1:%u/api/stats/hello",port);
     //printf("getutxo.(%s)\n",url);
     return(LP_issue_curl("hello","127.0.0.1",port,url));
 }
