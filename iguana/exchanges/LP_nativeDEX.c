@@ -1203,12 +1203,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                 printf("RPC port got stuck, start a new thread\n");
                 LP_bindsock = -1;
                 closesocket(sock);
-                LP_bindsock_reset++;
-                if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
-                {
-                    printf("error launching stats rpcloop for port.%u\n",myport);
-                    exit(-1);
-                }
             }
         }
     }

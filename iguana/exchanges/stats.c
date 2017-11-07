@@ -23,6 +23,9 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <sys/types.h>          /* See NOTES */
+#define _GNU_SOURCE             /* See feature_test_macros(7) */
+#include <sys/socket.h>
 #include "../../crypto777/OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define STATS_DESTDIR "/var/www/html"
@@ -762,7 +765,20 @@ void stats_rpcloop(void *args)
         }
         //printf("after LP_bindsock.%d\n",LP_bindsock);
         clilen = sizeof(cli_addr);
+#ifdef _WIN32
         sock = accept(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen);
+#else
+#ifdef __APPLE__
+        sock = accept(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen);
+#else
+        sock = accept4(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen,SOCK_NONBLOCK);
+        if ( sock < 0 )
+        {
+            usleep(50000);
+            continue;
+        }
+#endif
+#endif
         if ( sock < 0 )
         {
             printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
