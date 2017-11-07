@@ -929,6 +929,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         preselected[numpre++] = min0;
     if ( dustcombine >= 2 && min1 != 0 )
         preselected[numpre++] = min1;
+    printf("dustcombine.%d numpre.%d min0.%p min1.%p numutxos.%d\n",dustcombine,numpre,min0,min1,numunspents);
     for (i=0; i<numunspents; i++)
     {
         if ( i < numpre )
