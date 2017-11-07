@@ -740,17 +740,17 @@ void LP_rpc_processreq(void *_ptr)
 }
 
 extern int32_t IAMLP;
-int32_t LP_bindsock = -1;
+int32_t LP_bindsock_reset,LP_bindsock = -1;
 
 void stats_rpcloop(void *args)
 {
-    static uint32_t counter;
-    uint16_t port; int32_t retval,sock; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
+    uint16_t port; int32_t retval,sock,initial_bindsock_reset; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits,counter=0; struct rpcrequest_info *req,*req2,*rtmp;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
     localhostbits = (uint32_t)calc_ipbits("127.0.0.1");
-    while ( 1 )
+    initial_bindsock_reset = LP_bindsock_reset;
+    while ( LP_bindsock_reset == initial_bindsock_reset )
     {
         //printf("LP_bindsock.%d\n",LP_bindsock);
         if ( LP_bindsock < 0 )
@@ -776,6 +776,7 @@ void stats_rpcloop(void *args)
         req->ipbits = ipbits;
         LP_rpc_processreq(req);
 continue;
+        // this leads to cant open file errors
         if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);

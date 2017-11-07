@@ -1190,18 +1190,24 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"") == 0 )
+                    if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"got hello") == 0 )
                         allgood = 1, printf("allgood.(%s)\n",retstr);
                     else printf("strange return.(%s)\n",jprint(retjson,0));
                     free_json(retjson);
                 } else printf("couldnt parse hello return.(%s)\n",retstr);
                 free(retstr);
             } else printf("issue_hello NULL return\n");
-            if ( 0 && allgood == 0 )
+            if ( allgood == 0 )
             {
-                printf("RPC port got stuck, kick it\n");
+                printf("RPC port got stuck, start a new thread\n");
                 LP_bindsock = -1;
                 closesocket(sock);
+                LP_bindsock_reset++;
+                if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+                {
+                    printf("error launching stats rpcloop for port.%u\n",myport);
+                    exit(-1);
+                }
             }
         }
     }
