@@ -769,16 +769,16 @@ void stats_rpcloop(void *args)
 #ifdef _WIN32
         if ( sock < 0 )
         {
-            fprintf(stderr,".");
-            usleep(50000);
+            printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
+            closesocket(LP_bindsock);
+            LP_bindsock = -1;
             continue;
         }
 #else
         if ( sock < 0 )
         {
-            printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
-            closesocket(LP_bindsock);
-            LP_bindsock = -1;
+            fprintf(stderr,".");
+            usleep(50000);
             continue;
         }
 #endif
