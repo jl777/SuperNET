@@ -724,7 +724,7 @@ void LP_rpc_processreq(void *_ptr)
                 remains -= numsent;
                 i += numsent;
                 if ( remains > 0 )
-                    printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
+                    printf("iguana sent.%d remains.%d of recvlen.%d (%s)\n",numsent,remains,recvlen,jsonbuf);
             }
         }
         if ( retstr != space)
