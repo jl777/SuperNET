@@ -333,6 +333,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 methodstr[0] = 0;
+                printf("%s.(%s)\n",typestr,(char *)ptr);
                 if ( 0 )
                 {
                     cJSON *recvjson; char *mstr;//,*cstr;
