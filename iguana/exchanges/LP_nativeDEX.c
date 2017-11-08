@@ -659,7 +659,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( (height= LP_getheight(coin)) > coin->longestchain )
             {
                 coin->longestchain = height;
-                if ( coin->firstrefht != 0 )
+                if ( 0 && coin->firstrefht != 0 )
                     printf(">>>>>>>>>> set %s longestchain %d (ref.%d [%d, %d])\n",coin->symbol,height,coin->firstrefht,coin->firstscanht,coin->lastscanht);
             } //else LP_mempoolscan(coin->symbol,zero);
             coin->lastgetinfo = (uint32_t)time(NULL);
