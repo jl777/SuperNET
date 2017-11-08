@@ -922,7 +922,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     if ( dustcombine >= 2 && min1 != 0 && min1->U.value < LP_DUSTCOMBINE_THRESHOLD && (coin->electrum == 0 || min1->SPV > 0) )
         preselected[numpre++] = min1;
     else min1 = 0;
-    printf("dustcombine.%d numpre.%d min0.%p min1.%p numutxos.%d amount %.8f\n",dustcombine,numpre,min0,min1,numunspents);
+    printf("dustcombine.%d numpre.%d min0.%p min1.%p numutxos.%d amount %.8f\n",dustcombine,numpre,min0,min1,numunspents,dstr(amount));
     for (i=0; i<numunspents+numpre; i++)
     {
         if ( i < numpre )
@@ -1032,6 +1032,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 return(0);
             }
             amount += value;
+            printf("vout.%d %.8f -> total %.8f\n",i,dstr(value),dstr(amount));
         }
         else
         {
