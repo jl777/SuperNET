@@ -1087,13 +1087,19 @@ void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedfla
     }
 }
 
+char *LP_unspents_filestr(char *symbol,char *addr)
+{
+    char fname[1024]; long fsize;
+    sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
+    return(OS_filestr(&fsize,fname));
+}
+
 uint64_t LP_unspents_load(char *symbol,char *addr)
 {
-    char fname[1024],*arraystr; uint64_t balance = 0; int32_t i,n; long fsize; struct iguana_info *coin; cJSON *retjson,*item;
+    char *arraystr; uint64_t balance = 0; int32_t i,n; cJSON *retjson,*item; struct iguana_info *coin;
     if ( (coin= LP_coinfind(symbol)) != 0 )
     {
-        sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
-        if ( (arraystr= OS_filestr(&fsize,fname)) != 0 )
+        if ( (arraystr= LP_unspents_filestr(symbol,addr)) != 0 )
         {
             if ( (retjson= cJSON_Parse(arraystr)) != 0 )
             {
