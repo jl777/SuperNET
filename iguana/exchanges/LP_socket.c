@@ -408,12 +408,12 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             sitem->expiration = timeout;
             sitem->DL.type = ep->stratumid++;
             sitem->retptrp = (void **)retjsonp;*/
-            portable_mutex_lock(&ep->mutex);
+            //portable_mutex_lock(&ep->mutex);
             //queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
             expiration = (uint32_t)time(NULL) + timeout + 1;
             while ( *retjsonp == 0 && time(NULL) <= expiration )
                 usleep(5000);
-            portable_mutex_unlock(&ep->mutex);
+            //portable_mutex_unlock(&ep->mutex);
             if ( *retjsonp == 0 || jobj(*retjsonp,"error") != 0 )
             {
                 if ( ++ep->numerrors >= LP_ELECTRUM_MAXERRORS )
@@ -591,27 +591,44 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
             usecache = 0;
     }
     //printf("electrum.%s/%s listunspent last.(%s lag %d)\n",ep->symbol,coin->symbol,coin->lastunspent,(int32_t)(time(NULL) - coin->unspenttime));
-    if ( usecache == 0 )
+    if ( usecache == 0 || electrumflag > 1 )
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
-            //printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
-            updatedflag = 0;
-            if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
-                LP_postutxos(coin->symbol,addr), updatedflag = 1;
-            if ( strcmp(addr,coin->smartaddr) == 0 )
+            if ( jobj(retjson,"error") == 0 && is_cJSON_Array(retjson) != 0 )
             {
-                retstr = jprint(retjson,0);
-                LP_unspents_cache(coin->symbol,coin->smartaddr,retstr,updatedflag);
-                free(retstr);
+                if ( 0 && electrumflag > 1 )
+                    printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
+                updatedflag = 0;
+                if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
+                    LP_postutxos(coin->symbol,addr), updatedflag = 1;
+                if ( strcmp(addr,coin->smartaddr) == 0 )
+                {
+                    retstr = jprint(retjson,0);
+                    LP_unspents_cache(coin->symbol,coin->smartaddr,retstr,1);
+                    free(retstr);
+                }
+                if ( ap != 0 )
+                {
+                    ap->unspenttime = (uint32_t)time(NULL);
+                    ap->unspentheight = height;
+                }
             }
-            if ( ap != 0 )
+            else
             {
-                ap->unspenttime = (uint32_t)time(NULL);
-                ap->unspentheight = height;
+                free_json(retjson);
+                retjson = 0;
             }
         }
-    } else retjson = LP_address_utxos(coin,addr,1);
+    }
+    if ( retjson == 0 )
+    {
+        if ( strcmp(addr,coin->smartaddr) == 0 && (retstr= LP_unspents_filestr(symbol,coin->smartaddr)) != 0 )
+        {
+            retjson = LP_address_utxos(coin,addr,1);
+            free(retstr);
+        } else retjson = LP_address_utxos(coin,addr,1);
+    }
     return(retjson);
 }
 
@@ -1024,7 +1041,8 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
     struct electrum_info *ep; int32_t already; cJSON *retjson;
     if ( ipaddr == 0 || ipaddr[0] == 0 || port == 0 )
     {
-        coin->electrum = 0;
+        //coin->electrum = 0;
+        printf("would have disabled %s electrum here\n",coin->symbol);
         return(cJSON_Parse("{\"result\":\"success\",\"status\":\"electrum mode disabled, now in native coin mode\"}"));
     }
     retjson = cJSON_CreateObject();
@@ -1044,7 +1062,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
         }
         else
         {
-            printf("launched electrum.(%s:%u)\n",ep->ipaddr,ep->port);
+            printf("launched %s electrum.(%s:%u)\n",coin->symbol,ep->ipaddr,ep->port);
             jaddstr(retjson,"result","success");
             ep->prev = coin->electrum;
             coin->electrum = ep;

@@ -69,12 +69,12 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
             printf("stats_JSON no method: (%s) (%s:%u)\n",jprint(argjson,0),ipaddr,argport);
         return(0);
     }
-    /*if ( strcmp(method,"hello") == 0 )
-     {
-     //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
-     return(0);
-     }
-     else*/ if ( strcmp(method,"sendmessage") == 0 && jobj(argjson,"userpass") == 0 )
+    if ( strcmp(method,"hello") == 0 )
+    {
+        //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
+        return(clonestr("{\"result\":\"success\",\"status\":\"got hello\"}"));
+    }
+    else if ( strcmp(method,"sendmessage") == 0 && jobj(argjson,"userpass") == 0 )
      {
          static char *laststr;
          char *newstr; bits256 pubkey = jbits256(argjson,"pubkey");
@@ -557,7 +557,9 @@ bot_resume(botid)\n\
                         //printf("network invoked\n");
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                         //LP_smartutxos_push(ptr);
-                        return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
+                        if ( ptr->electrum != 0 )
+                            return(LP_unspents_filestr(coin,ptr->smartaddr));
+                        else return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
                     }
                     else
                     {

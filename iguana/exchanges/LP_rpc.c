@@ -93,6 +93,14 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
 
+char *issue_hello(uint16_t port)
+{
+    char url[512];
+    sprintf(url,"http://127.0.0.1:%u/api/stats/hello",port);
+    //printf("getutxo.(%s)\n",url);
+    return(issue_curlt(url,60)); // might be starting a trade
+}
+
 char *issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
 {
     char url[512],*retstr;
@@ -578,7 +586,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
                     return(retjson);
             }
         }
-        printf("couldnt find %s/v%d\n",bits256_str(str,txid),vout);
+        printf("couldnt find %s (%s) %s/v%d\n",symbol,coinaddr,bits256_str(str,txid),vout);
         return(cJSON_Parse("{\"error\":\"couldnt get tx\"}"));
     }
 }
@@ -686,7 +694,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             return(bitcoin_json(coin,"listunspent",buf));
         } else return(LP_address_utxos(coin,coinaddr,0));
-    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
+    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,2));
 }
 
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
