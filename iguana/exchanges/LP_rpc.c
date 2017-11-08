@@ -22,6 +22,8 @@ char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
 {
     char *retstr = 0; int32_t maxerrs; struct LP_peerinfo *peer = 0;
     peer = LP_peerfind((uint32_t)calc_ipbits(destip),port);
+    if ( strcmp(destip,"127.0.0.1") != 0 )
+        port--;
     maxerrs = LP_MAXPEER_ERRORS;
     if ( peer == 0 || (peer->errors < maxerrs || peer->good >= LP_MINPEER_GOOD) )
     {
