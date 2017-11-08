@@ -597,14 +597,15 @@ void LP_coinsloop(void *_coins)
 
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport)
 {
-    static uint32_t counter,numpeers;
-    struct iguana_info *coin,*ctmp; char *origipaddr; struct LP_peerinfo *peer,*tmp; uint32_t now; int32_t needpings,height,nonz = 0;
-    now = (uint32_t)time(NULL);
+    static uint32_t counter;//,numpeers;
+    struct iguana_info *coin,*ctmp; char *origipaddr; int32_t height,nonz = 0;//struct LP_peerinfo *peer,*tmp; uint32_t now;
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
     if ( mypeer == 0 )
         myipaddr = "127.0.0.1";
-    numpeers = LP_numpeers();
+    /*
+     now = (uint32_t)time(NULL);
+     numpeers = LP_numpeers();
     needpings = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
@@ -624,7 +625,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             if ( strcmp(peer->ipaddr,myipaddr) != 0 )
             {
                 nonz++;
-                issue_LP_getpeers(peer->ipaddr,peer->port);
+                //issue_LP_getpeers(peer->ipaddr,peer->port);
                 //LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
                 //if ( peer->diduquery == 0 )
                 //    LP_peer_pricesquery(peer);
@@ -633,7 +634,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             }
             peer->lastpeers = now;
         }
-        /*if ( peer->needping != 0 )
+        if ( peer->needping != 0 )
         {
             peer->diduquery = now;
             nonz++;
@@ -641,8 +642,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 free(retstr);
             peer->needping = 0;
             needpings++;
-        }*/
-    }
+        }
+    }*/
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+LP_ORDERBOOK_DURATION )
@@ -1092,6 +1093,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
     }
+    LP_reserved_msg(0,"","",G.LP_mypub25519,clonestr("{\"method\":\"getpeers\"}"));
     int32_t nonz; //uint32_t lasthello = 0;
     while ( 1 )
     {

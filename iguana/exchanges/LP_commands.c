@@ -550,8 +550,12 @@ bot_resume(botid)\n\
         return(LP_notify_recv(argjson));
     else if ( strcmp(method,"getpeers") == 0 )
     {
-        bits256 zero; memset(zero.bytes,0,sizeof(zero));
-        LP_reserved_msg(0,"","",zero,LP_peers());
+        if ( IAMLP != 0 )
+        {
+            printf("send peers list\n");
+            bits256 zero; memset(zero.bytes,0,sizeof(zero));
+            LP_reserved_msg(0,"","",zero,LP_peers());
+        }
         retstr = clonestr("{\"result\":\"success\"}");
     }
     // end received response
