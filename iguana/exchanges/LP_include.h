@@ -34,7 +34,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #endif
 //#define LP_STRICTPEERS
 
-#define LP_BARTERDEX_VERSION 0
+#define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 8
 
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
@@ -59,7 +59,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_COMMAND_RECVSOCK NN_PULL
 
 #define DPOW_MIN_ASSETCHAIN_SIGS 11
-#define LP_ENCRYPTED_MAXSIZE (4096 + 2 + crypto_box_NONCEBYTES + crypto_box_ZEROBYTES)
+#define LP_ENCRYPTED_MAXSIZE (16384 + 2 + crypto_box_NONCEBYTES + crypto_box_ZEROBYTES)
 
 #define LP_MAXPUBKEY_ERRORS 10
 #define PSOCK_KEEPALIVE 3600
@@ -314,7 +314,7 @@ struct LP_peerinfo
     UT_hash_handle hh;
     uint64_t ip_port;
     uint32_t ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
-    int32_t pushsock,subsock;
+    int32_t pushsock,subsock,isLP;
     uint16_t port;
     char ipaddr[64];
 };
@@ -425,6 +425,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 void LP_postutxos(char *symbol,char *coinaddr);
 int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag);
 uint16_t LP_randpeer(char *destip);
+char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired);
 char *LP_unspents_filestr(char *symbol,char *addr);
 cJSON *bitcoin_data2json(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,bits256 *txidp,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,uint8_t *serialized,int32_t len,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash);
 //int32_t LP_butxo_findeither(bits256 txid,int32_t vout);

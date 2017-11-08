@@ -922,7 +922,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     if ( dustcombine >= 2 && min1 != 0 && min1->U.value < LP_DUSTCOMBINE_THRESHOLD && (coin->electrum == 0 || min1->SPV > 0) )
         preselected[numpre++] = min1;
     else min1 = 0;
-    printf("dustcombine.%d numpre.%d min0.%p min1.%p numutxos.%d\n",dustcombine,numpre,min0,min1,numunspents);
+    printf("dustcombine.%d numpre.%d min0.%p min1.%p numutxos.%d amount %.8f\n",dustcombine,numpre,min0,min1,numunspents,dstr(amount));
     for (i=0; i<numunspents+numpre; i++)
     {
         if ( i < numpre )
@@ -962,6 +962,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         up->spendheight = 1;
         total += up->U.value;
         remains -= up->U.value;
+        interest = 0;
         if ( up->U.height < 7777777 && strcmp(coin->symbol,"KMD") == 0 )
         {
             if ( (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
@@ -970,6 +971,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
                 char str[65]; printf("%s/%d %.8f interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
             }
         }
+        printf("vini.%d value %.8f, total %.8f remains %.8f interest %.8f sum %.8f\n",n,dstr(up->U.value),dstr(total),dstr(remains),dstr(interest),dstr(interestsum));
         vp = &V[n++];
         vp->N = vp->M = 1;
         vp->signers[0].privkey = privkey;
@@ -1030,6 +1032,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 return(0);
             }
             amount += value;
+            printf("vout.%d %.8f -> total %.8f\n",i,dstr(value),dstr(amount));
         }
         else
         {
@@ -1053,7 +1056,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     suppress_pubkeys = 1;
     scriptlen = bitcoin_standardspend(script,0,G.LP_myrmd160);
     numvins = LP_vins_select(ctx,coin,&total,amount,V,utxos,numutxos,suppress_pubkeys,ignore_cltverr,privkey,privkeys,vins,script,scriptlen,utxotxid,utxovout,dustcombine);
-    if ( total < amount )
+    if ( numvins <= 0 || total < amount )
     {
         printf("change %.8f = total %.8f - amount %.8f, adjust %.8f numvouts.%d, txfee %.8f\n",dstr(change),dstr(total),dstr(amount),dstr(adjust),numvouts,dstr(txfee));
         printf("not enough inputs for amount %.8f < %.8f txfee %.8f\n",dstr(total),dstr(amount),dstr(txfee));

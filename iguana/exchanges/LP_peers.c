@@ -31,7 +31,7 @@ struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port)
 cJSON *LP_peerjson(struct LP_peerinfo *peer)
 {
     cJSON *item = cJSON_CreateObject();
-    jaddstr(item,"ipaddr",peer->ipaddr);
+    jaddstr(item,"isLP",peer->ipaddr);
     jaddnum(item,"port",peer->port);
     if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
     {
@@ -49,15 +49,15 @@ char *LP_peers()
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         //if ( peer->errors < LP_MAXPEER_ERRORS )
+        if ( peer->isLP != 0 )
             jaddi(peersjson,LP_peerjson(peer));
     }
     return(jprint(peersjson,1));
 }
 
-struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t numpeers,int32_t numutxos,uint32_t sessionid)
+struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t isLP,uint32_t sessionid)
 {
     uint32_t ipbits; int32_t valid,pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
-    printf("addpeer (%s:%u) pushport.%u subport.%u\n",ipaddr,port,pushport,subport);
 #ifdef LP_STRICTPEERS
     if ( strncmp("5.9.253",ipaddr,strlen("5.9.253")) != 0 )
         return(0);
@@ -68,6 +68,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     {
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
+            peer->isLP = isLP;
             /*if ( numpeers > peer->numpeers )
                 peer->numpeers = numpeers;
             if ( numutxos > peer->numutxos )
@@ -77,6 +78,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
         }
         else
         {
+            printf("addpeer (%s:%u) pushport.%u subport.%u\n",ipaddr,port,pushport,subport);
             peer = calloc(1,sizeof(*peer));
             if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
                 peer->sessionid = G.LP_sessionid;
@@ -145,15 +147,15 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                 if ( mypeer != 0 )
                 {
                     mypeer->numpeers++;
-                    printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d other.(%d %d)\n",ipaddr,mypeer->numpeers,mypubsock,numpeers,numutxos);
+                    printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d other.(%d)\n",ipaddr,mypeer->numpeers,mypubsock,isLP);
                 } else peer->numpeers = 1; // will become mypeer
                 portable_mutex_unlock(&LP_peermutex);
                 if ( IAMLP != 0 && mypubsock >= 0 )
                 {
-                    struct iguana_info *coin,*ctmp; bits256 zero; char busaddr[64];
-                    memset(zero.bytes,0,sizeof(zero));
+                    struct iguana_info *coin,*ctmp; char busaddr[64]; //
+                    //memset(zero.bytes,0,sizeof(zero));
                     //LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
-                    LP_reserved_msg(0,"","",zero,jprint(LP_peerjson(peer),1));
+                    //LP_reserved_msg(0,"","",zero,jprint(LP_peerjson(peer),1));
                     if ( 0 )
                     {
                         HASH_ITER(hh,LP_coins,coin,ctmp)
@@ -202,71 +204,6 @@ int32_t LP_coinbus(uint16_t coin_busport)
     return(bussock);
 }
 
-int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
-{
-    struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t numpeers,i,n=0;
-    if ( (array= cJSON_Parse(retstr)) != 0 )
-    {
-        if ( (n= cJSON_GetArraySize(array)) > 0 )
-        {
-            for (i=0; i<n; i++)
-            {
-                item = jitem(array,i);
-                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
-                {
-                    if ( (pushport= juint(item,"push")) == 0 )
-                        pushport = argport + 1;
-                    if ( (subport= juint(item,"sub")) == 0 )
-                        subport = argport + 2;
-                    argipbits = (uint32_t)calc_ipbits(argipaddr);
-                    if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
-                    {
-                        numpeers = LP_numpeers();
-                        if ( IAMLP != 0 || numpeers < LP_MIN_PEERS || (IAMLP == 0 && (rand() % LP_MAX_PEERS) > numpeers) )
-                            peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jint(item,"numpeers"),jint(item,"numutxos"),juint(item,"session"));
-                    }
-                    if ( peer != 0 )
-                    {
-                        peer->lasttime = now;
-                        if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers != n )
-                            peer->numpeers = n;
-                    }
-                }
-            }
-        }
-        free_json(array);
-    }
-    return(n);
-}
-
-void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport)
-{
-    char *retstr; struct LP_peerinfo *peer,*tmp; bits256 zero; uint32_t now,flag = 0;
-    peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
-    if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,mypeer!=0?mypeer->numpeers:0)) != 0 )
-    {
-        //printf("got.(%s)\n",retstr);
-        now = (uint32_t)time(NULL);
-        LP_peersparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
-        free(retstr);
-        if ( IAMLP != 0 )
-        {
-            HASH_ITER(hh,LP_peerinfos,peer,tmp)
-            {
-                if ( peer->lasttime != now )
-                {
-                    printf("{%s:%u}.%d ",peer->ipaddr,peer->port,peer->lasttime - now);
-                    flag++;
-                    memset(&zero,0,sizeof(zero));
-                    if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->numpeers,peer->sessionid,0,zero)) != 0 )
-                        free(retstr);
-                }
-            }
-            if ( flag != 0 )
-                printf(" <- missing peers\n");
-        }
-    }
-}
 
 int32_t LP_numpeers()
 {
