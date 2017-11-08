@@ -711,7 +711,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
     int32_t i,j; uint32_t r;
     if ( IAMLP != 0 )
     {
-        LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,0,0,0,G.LP_sessionid);
+        LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,0,0,1,G.LP_sessionid);
         if ( myipaddr == 0 || mypeer == 0 )
         {
             printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
@@ -768,7 +768,7 @@ void LP_pubkeysloop(void *ctx)
         }
         if ( time(NULL) > lasttime+LP_ORDERBOOK_DURATION*0.5 )
         {
-            //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
+            printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
             LP_notify_pubkeys(ctx,LP_mypubsock);
             lasttime = (uint32_t)time(NULL);
         }
