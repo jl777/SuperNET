@@ -704,7 +704,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
     printf("privkey updates\n");
 }
 
-void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,char *seednode)
+void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,char *seednode,uint16_t pushport,uint16_t subport)
 {
     int32_t i,j; uint32_t r;
     if ( IAMLP != 0 )
@@ -719,12 +719,9 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         {
             for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
             {
-                //if ( (rand() % 100) > 25 )
-                //    continue;
-                issue_LP_getpeers(default_LPnodes[i],myport);
-                //LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,mypeer->ipaddr,myport);
+                LP_addpeer(mypeer,pubsock,default_LPnodes[i],myport,pushport,subport,0,0,G.LP_sessionid);
             }
-        } else issue_LP_getpeers(seednode,myport); //LP_peersquery(mypeer,pubsock,seednode,myport,mypeer->ipaddr,myport);
+        } else LP_addpeer(mypeer,pubsock,seednode,myport,pushport,subport,0,0,G.LP_sessionid);
     }
     else
     {
@@ -735,15 +732,16 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         }
         if ( seednode == 0 || seednode[0] == 0 )
         {
+            LP_addpeer(mypeer,pubsock,"5.9.253.195",myport,pushport,subport,0,0,G.LP_sessionid);
             OS_randombytes((void *)&r,sizeof(r));
-            issue_LP_getpeers("5.9.253.195",myport);
             for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
             {
                 i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
-                issue_LP_getpeers(default_LPnodes[i],myport);
+                LP_addpeer(mypeer,pubsock,default_LPnodes[i],myport,pushport,subport,0,0,G.LP_sessionid);
+                //issue_LP_getpeers(default_LPnodes[i],myport);
                 //LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport);
             }
-        } else issue_LP_getpeers(seednode,myport); //LP_peersquery(mypeer,pubsock,seednode,myport,"127.0.0.1",myport);
+        } else LP_addpeer(mypeer,pubsock,seednode,myport,pushport,subport,0,0,G.LP_sessionid);
     }
 }
 
@@ -988,7 +986,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         LP_mypubsock = pubsock;
     }
     printf("got %s, initpeers\n",myipaddr);
-    LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"));
+    LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),mypullport,mypubport);
     RPC_port = myport;
     printf("get public socket\n");
     LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
