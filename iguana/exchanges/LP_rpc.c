@@ -51,17 +51,6 @@ char *LP_isitme(char *destip,uint16_t destport)
     } else return(0);
 }
 
-void LP_peer_request(char *destip,uint16_t destport,cJSON *argjson)
-{
-    struct LP_peerinfo *peer; uint8_t *msg; int32_t msglen; uint32_t crc32;
-    peer = LP_peerfind((uint32_t)calc_ipbits(destip),destport);
-    msg = (void *)jprint(argjson,0);
-    msglen = (int32_t)strlen((char *)msg) + 1;
-    crc32 = calc_crc32(0,&msg[2],msglen - 2);
-    LP_queuesend(crc32,peer->pushsock,"","",msg,msglen);
-    free_json(argjson);
-}
-
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
 {
     char url[512],*retstr;
@@ -70,18 +59,6 @@ char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
     printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
     return(retstr);
-}
-
-void issue_LP_getpeers(char *destip,uint16_t destport)
-{
-    cJSON *reqjson = cJSON_CreateObject();
-    jaddstr(reqjson,"method","getpeers");
-    LP_peer_request(destip,destport,reqjson);
-    /*char url[512],*retstr; 
-     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d",destip,destport,ipaddr,port,numpeers);
-    retstr = LP_issue_curl("getpeers",destip,port,url);
-    //printf("%s -> getpeers.(%s)\n",destip,retstr);
-    return(retstr);*/
 }
 
 char *LP_apicall(struct iguana_info *coin,char *method,char *params)
