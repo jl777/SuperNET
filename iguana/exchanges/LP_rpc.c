@@ -27,7 +27,7 @@ char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
     maxerrs = LP_MAXPEER_ERRORS;
     if ( peer == 0 || (peer->errors < maxerrs || peer->good >= LP_MINPEER_GOOD) )
     {
-        //printf("issue.(%s)\n",url);
+        printf("issue.(%s)\n",url);
         if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) == 0 )
         {
             if ( peer != 0 )
@@ -51,65 +51,37 @@ char *LP_isitme(char *destip,uint16_t destport)
     } else return(0);
 }
 
-char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers)
+void LP_peer_request(char *destip,uint16_t destport,cJSON *argjson)
+{
+    struct LP_peerinfo *peer; uint8_t *msg; int32_t msglen; uint32_t crc32;
+    peer = LP_peerfind((uint32_t)calc_ipbits(destip),destport);
+    msg = (void *)jprint(argjson,0);
+    msglen = (int32_t)strlen((char *)msg) + 1;
+    crc32 = calc_crc32(0,&msg[2],msglen - 2);
+    LP_queuesend(crc32,peer->pushsock,"","",msg,msglen);
+    free_json(argjson);
+}
+
+char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
 {
     char url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d",destip,destport,ipaddr,port,numpeers);
+    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport-1,ispaired);
+    //return(LP_issue_curl("psock",destip,destport,url));
+    retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
+    printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
+    return(retstr);
+}
+
+void issue_LP_getpeers(char *destip,uint16_t destport)
+{
+    cJSON *reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","getpeers");
+    LP_peer_request(destip,destport,reqjson);
+    /*char url[512],*retstr; 
+     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d",destip,destport,ipaddr,port,numpeers);
     retstr = LP_issue_curl("getpeers",destip,port,url);
     //printf("%s -> getpeers.(%s)\n",destip,retstr);
-    return(retstr);
-}
-
-char *issue_LP_uitem(char *destip,uint16_t destport,char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t height,uint64_t value)
-{
-    char url[512],*retstr,str[65];
-    if ( (retstr= LP_isitme(destip,destport)) != 0 )
-        return(retstr);
-    sprintf(url,"http://%s:%u/api/stats/uitem?coin=%s&coinaddr=%s&txid=%s&vout=%d&ht=%d&value=%llu",destip,destport,symbol,coinaddr,bits256_str(str,txid),vout,height,(long long)value);
-    retstr = LP_issue_curl("uitem",destip,destport,url);
-    //printf("uitem.(%s)\n",retstr);
-    return(retstr);
-}
-
-char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,uint32_t sessionid,char *rmd160str,bits256 pub)
-{
-    char url[512],*retstr,str[65];
-    if ( (retstr= LP_isitme(destip,destport)) != 0 )
-        return(retstr);
-    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&numpeers=%d&session=%u",destip,destport,ipaddr,port,numpeers,sessionid);
-    if ( rmd160str != 0 && bits256_nonz(pub) != 0 )
-    {
-        sprintf(url+strlen(url),"&rmd160=%s&pub=%s",rmd160str,bits256_str(str,pub));
-        //printf("SEND (%s)\n",url);
-    }
-    return(LP_issue_curl("notify",destip,destport,url));
-    //return(issue_curlt(url,LP_HTTP_TIMEOUT));
-}
-
-char *issue_LP_getprices(char *destip,uint16_t destport)
-{
-    char url[512];
-    sprintf(url,"http://%s:%u/api/stats/getprices",destip,destport);
-    //printf("getutxo.(%s)\n",url);
-    return(LP_issue_curl("getprices",destip,destport,url));
-    //return(issue_curlt(url,LP_HTTP_TIMEOUT));
-}
-
-char *issue_hello(uint16_t port)
-{
-    char url[512];
-    sprintf(url,"http://127.0.0.1:%u/api/stats/hello",port);
-    //printf("getutxo.(%s)\n",url);
-    return(issue_curlt(url,600)); // might be starting a trade
-}
-
-char *issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
-{
-    char url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/listunspent?coin=%s&address=%s",destip,destport,symbol,coinaddr);
-    retstr = LP_issue_curl("listunspent",destip,destport,url);
-    //printf("listunspent.(%s) -> (%s)\n",url,retstr);
-    return(retstr);
+    return(retstr);*/
 }
 
 char *LP_apicall(struct iguana_info *coin,char *method,char *params)
@@ -701,7 +673,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
 
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
 {
-    struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0,destip[64]; uint16_t destport;
+    struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     if ( (coin= LP_coinfind(symbol)) != 0 )
@@ -726,7 +698,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
             {
                 //printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
                 LP_listunspent_query(coin->symbol,coin->smartaddr);
-                if ( fullflag != 0 )
+                /*if ( fullflag != 0 )
                 {
                     if ( (destport= LP_randpeer(destip)) > 0 )
                     {
@@ -734,7 +706,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
                         //printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
                         retjson = cJSON_Parse(retstr);
                     } else printf("LP_listunspent_issue couldnt get a random peer?\n");
-                }
+                }*/
             }
             if ( retjson != 0 )
             {

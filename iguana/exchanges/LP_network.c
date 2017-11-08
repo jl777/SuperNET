@@ -763,15 +763,6 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
  both are combined in LP_psock_get
 
 */
-char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
-{
-    char url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport,ispaired);
-    //return(LP_issue_curl("psock",destip,destport,url));
-    retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
-    printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
-    return(retstr);
-}
 
 uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
 {

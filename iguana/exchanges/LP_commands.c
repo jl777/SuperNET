@@ -74,7 +74,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
         //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
         return(clonestr("{\"result\":\"success\",\"status\":\"got hello\"}"));
     }
-    else if ( strcmp(method,"sendmessage") == 0 && jobj(argjson,"userpass") == 0 )
+    /*else if ( strcmp(method,"sendmessage") == 0 && jobj(argjson,"userpass") == 0 )
      {
          static char *laststr;
          char *newstr; bits256 pubkey = jbits256(argjson,"pubkey");
@@ -91,7 +91,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
                  retstr = clonestr(laststr);
              }
          } else retstr = clonestr("{\"error\":\"duplicate message\"}");
-     }
+     }*/
     //else if ( strcmp(method,"nn_tests") == 0 )
     //    return(clonestr("{\"result\":\"success\"}"));
      else if ( strcmp(method,"help") == 0 )
@@ -132,9 +132,9 @@ trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
 balance(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices(base, rel)\n\
-sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
-getmessages(firsti=0, num=100)\n\
-deletemessages(firsti=0, num=100)\n\
+//sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
+//getmessages(firsti=0, num=100)\n\
+//deletemessages(firsti=0, num=100)\n\
 secretaddresses(prefix='secretaddress', passphrase, num=10, pubtype=60, taddr=0)\n\
 electrum(coin, ipaddr, port)\n\
 snapshot(coin, height)\n\
@@ -186,7 +186,7 @@ bot_resume(botid)\n\
                 return(jprint(retjson,1));
             }
         }
-        else if ( strcmp(method,"sendmessage") == 0 )
+        /*else if ( strcmp(method,"sendmessage") == 0 )
         {
             if ( jobj(argjson,"method2") == 0 )
             {
@@ -194,6 +194,17 @@ bot_resume(botid)\n\
             }
             return(clonestr("{\"result\":\"success\"}"));
         }
+        else if ( strcmp(method,"getmessages") == 0 )
+        {
+            if ( (retjson= LP_getmessages(jint(argjson,"firsti"),jint(argjson,"num"))) != 0 )
+                return(jprint(retjson,1));
+            else return(clonestr("{\"error\":\"null messages\"}"));
+        }
+        else if ( strcmp(method,"deletemessages") == 0 )
+        {
+            LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
+            return(clonestr("{\"result\":\"success\"}"));
+        }*/
         else if ( strcmp(method,"recentswaps") == 0 )
         {
             return(LP_recent_swaps(jint(argjson,"limit")));
@@ -208,17 +219,12 @@ bot_resume(botid)\n\
             LP_millistats_update(0);
             return(clonestr("{\"result\":\"success\"}"));
         }
-        else if ( strcmp(method,"getmessages") == 0 )
-        {
-            if ( (retjson= LP_getmessages(jint(argjson,"firsti"),jint(argjson,"num"))) != 0 )
-                return(jprint(retjson,1));
-            else return(clonestr("{\"error\":\"null messages\"}"));
-        }
-        else if ( strcmp(method,"deletemessages") == 0 )
-        {
-            LP_deletemessages(jint(argjson,"firsti"),jint(argjson,"num"));
-            return(clonestr("{\"result\":\"success\"}"));
-        }
+        else if ( strcmp(method,"getprices") == 0 )
+            return(LP_prices());
+        else if ( strcmp(method,"getpeers") == 0 )
+            return(LP_peers());
+        else if ( strcmp(method,"getcoins") == 0 )
+            return(jprint(LP_coinsjson(0),1));
         else if ( strcmp(method,"notarizations") == 0 )
         {
             int32_t height,bestheight;
@@ -290,8 +296,20 @@ bot_resume(botid)\n\
             }
             else if ( strcmp(method,"pricearray") == 0 )
             {
-                return(jprint(LP_pricearray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
+                uint32_t firsttime;
+                if ( base[0] != 0 && rel[0] != 0 )
+                {
+                    if ( (firsttime= juint(argjson,"firsttime")) < time(NULL)-30*24*3600 )
+                        firsttime = (uint32_t)(time(NULL)-30*24*3600);
+                    return(jprint(LP_pricearray(base,rel,firsttime,juint(argjson,"lasttime"),jint(argjson,"timescale")),1));
+                } else return(clonestr("{\"error\":\"pricearray needs base and rel\"}"));
             }
+            /*else if ( strcmp(method,"pricearray") == 0 )
+            {
+                return(jprint(LP_pricearray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
+            }*/
+            else if ( strcmp(method,"orderbook") == 0 )
+                return(LP_orderbook(base,rel,jint(argjson,"duration")));
             else if ( strcmp(method,"myprice") == 0 )
             {
                 if ( LP_myprice(&bid,&ask,base,rel) > SMALLVAL )
@@ -369,6 +387,41 @@ bot_resume(botid)\n\
                     jaddi(array,LP_coinjson(ptr,0));
                     return(jprint(array,1));
                 } else return(clonestr("{\"error\":\"couldnt find coin\"}"));
+            }
+            else if ( strcmp(method,"listunspent") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                {
+                    char *coinaddr;
+                    if ( (coinaddr= jstr(argjson,"address")) != 0 )
+                    {
+                        if ( coinaddr[0] != 0 )
+                        {
+                            LP_address(ptr,coinaddr);
+                            LP_listunspent_issue(coin,coinaddr,1);
+                            if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
+                            {
+                                //printf("network invoked\n");
+                                LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
+                                //LP_smartutxos_push(ptr);
+                                if ( ptr->electrum != 0 )
+                                    return(LP_unspents_filestr(coin,ptr->smartaddr));
+                                else return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
+                            }
+                            else
+                            {
+                                return(clonestr("{\"error\":\"not my address\"}"));
+                            }
+                        }
+                        return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
+                    } else return(clonestr("{\"error\":\"no address specified\"}"));
+                } else return(clonestr("{\"error\":\"cant find coind\"}"));
+            }
+            else if ( strcmp(method,"balance") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 )
+                    return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
+                else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             else if ( strcmp(method,"electrum") == 0 )
             {
@@ -497,37 +550,12 @@ bot_resume(botid)\n\
         return(LP_notify_recv(argjson));
     // end received response
     
-    // public access, even from http
     else if ( strcmp(method,"tradestatus") == 0 )
     {
         LP_tradecommand_log(argjson);
         printf("GOT TRADESTATUS! %s\n",jprint(argjson,0));
         retstr = clonestr("{\"result\":\"success\"}");
     }
-    else if ( strcmp(method,"balance") == 0 )
-    {
-        if ( (ptr= LP_coinsearch(coin)) != 0 )
-            return(jprint(LP_address_balance(ptr,jstr(argjson,"address"),1),1));
-        else return(clonestr("{\"error\":\"cant find coind\"}"));
-    }
-    else if ( strcmp(method,"pricearray") == 0 )
-    {
-        uint32_t firsttime;
-        if ( base[0] != 0 && rel[0] != 0 )
-        {
-            if ( (firsttime= juint(argjson,"firsttime")) < time(NULL)-30*24*3600 )
-                firsttime = (uint32_t)(time(NULL)-30*24*3600);
-            return(jprint(LP_pricearray(base,rel,firsttime,juint(argjson,"lasttime"),jint(argjson,"timescale")),1));
-        } else return(clonestr("{\"error\":\"pricearray needs base and rel\"}"));
-    }
-    else if ( strcmp(method,"getprices") == 0 )
-        return(LP_prices());
-    else if ( strcmp(method,"orderbook") == 0 )
-        return(LP_orderbook(base,rel,jint(argjson,"duration")));
-    else if ( strcmp(method,"getpeers") == 0 )
-        return(LP_peers());
-    else if ( strcmp(method,"getcoins") == 0 )
-        return(jprint(LP_coinsjson(0),1));
     else if ( strcmp(method,"wantnotify") == 0 )
     {
         bits256 pub; static uint32_t lastnotify;
@@ -540,35 +568,6 @@ bot_resume(botid)\n\
             LP_notify_pubkeys(ctx,LP_mypubsock);
         }
         retstr = clonestr("{\"result\":\"success\"}");
-    }
-    else if ( strcmp(method,"listunspent") == 0 )
-    {
-        if ( (ptr= LP_coinsearch(coin)) != 0 )
-        {
-            char *coinaddr;
-            if ( (coinaddr= jstr(argjson,"address")) != 0 )
-            {
-                if ( coinaddr[0] != 0 )
-                {
-                    LP_address(ptr,coinaddr);
-                    LP_listunspent_issue(coin,coinaddr,1);
-                    if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
-                    {
-                        //printf("network invoked\n");
-                        LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
-                        //LP_smartutxos_push(ptr);
-                        if ( ptr->electrum != 0 )
-                            return(LP_unspents_filestr(coin,ptr->smartaddr));
-                        else return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
-                    }
-                    else
-                    {
-                        return(clonestr("{\"error\":\"not my address\"}"));
-                    }
-                }
-                return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
-            } else return(clonestr("{\"error\":\"no address specified\"}"));
-        } else return(clonestr("{\"error\":\"cant find coind\"}"));
     }
     else if ( strcmp(method,"addr_unspents") == 0 )
     {

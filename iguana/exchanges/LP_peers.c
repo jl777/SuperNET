@@ -239,35 +239,6 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
     return(n);
 }
 
-void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport)
-{
-    char *retstr; struct LP_peerinfo *peer,*tmp; bits256 zero; uint32_t now,flag = 0;
-    peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
-    if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,mypeer!=0?mypeer->numpeers:0)) != 0 )
-    {
-        //printf("got.(%s)\n",retstr);
-        now = (uint32_t)time(NULL);
-        LP_peersparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
-        free(retstr);
-        if ( IAMLP != 0 )
-        {
-            HASH_ITER(hh,LP_peerinfos,peer,tmp)
-            {
-                if ( peer->lasttime != now )
-                {
-                    printf("{%s:%u}.%d ",peer->ipaddr,peer->port,peer->lasttime - now);
-                    flag++;
-                    memset(&zero,0,sizeof(zero));
-                    if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->numpeers,peer->sessionid,0,zero)) != 0 )
-                        free(retstr);
-                }
-            }
-            if ( flag != 0 )
-                printf(" <- missing peers\n");
-        }
-    }
-}
-
 int32_t LP_numpeers()
 {
     struct LP_peerinfo *peer,*tmp; int32_t numpeers = 0;

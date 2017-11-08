@@ -314,7 +314,7 @@ char *LP_prices()
     return(jprint(array,1));
 }
 
-void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
+/*void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
 {
     struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid,mismatch; char *base,*rel,*hexstr; double askprice; uint32_t now;
     now = (uint32_t)time(NULL);
@@ -382,7 +382,7 @@ void LP_peer_pricesquery(struct LP_peerinfo *peer)
     {
         //printf("%s needs ping\n",peer->ipaddr);
     }
-}
+}*/
 
 double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,int32_t vout)
 {
