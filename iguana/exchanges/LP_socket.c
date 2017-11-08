@@ -622,7 +622,13 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
         }
     }
     if ( retjson == 0 )
-        retjson = LP_address_utxos(coin,addr,1);
+    {
+        if ( strcmp(addr,coin->smartaddr) == 0 && (retstr= LP_unspents_filestr(symbol,coin->smartaddr)) != 0 )
+        {
+            retjson = LP_address_utxos(coin,addr,1);
+            free(retstr);
+        } else retjson = LP_address_utxos(coin,addr,1);
+    }
     return(retjson);
 }
 
