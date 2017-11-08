@@ -1181,7 +1181,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000);
         else if ( IAMLP == 0 )
             usleep(1000);
-        if ( time(NULL) > lasthello+60 )
+        if ( IAMLP != 0 && time(NULL) > lasthello+600 )
         {
             char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
             allgood = 0;
@@ -1199,16 +1199,19 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             lasthello = (uint32_t)time(NULL);
             if ( allgood == 0 )
             {
-                printf("RPC port got stuck, close bindsocket\n");
-                LP_bindsock = -1;
-                closesocket(sock);
-                LP_bindsock_reset++;
-                sleep(10);
-                printf("launch new rpcloop\n");
-                if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+                printf("RPC port got stuck, would have close bindsocket\n");
+                if ( 0 )
                 {
-                    printf("error launching stats rpcloop for port.%u\n",myport);
-                    exit(-1);
+                    LP_bindsock = -1;
+                    closesocket(sock);
+                    LP_bindsock_reset++;
+                    sleep(10);
+                    printf("launch new rpcloop\n");
+                    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+                    {
+                        printf("error launching stats rpcloop for port.%u\n",myport);
+                        exit(-1);
+                    }
                 }
             }
         }
