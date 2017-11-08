@@ -444,7 +444,7 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
         jaddstr(retjson,"error","not enough funds");
         jaddstr(retjson,"coin",rel);
         jaddnum(retjson,"abalance",dstr(abalance));
-        jaddnum(retjson,"balance",dstr(abalance));
+        jaddnum(retjson,"balance",dstr(balance));
         jaddnum(retjson,"relvolume",relvolume);
         jaddnum(retjson,"txfees",dstr(txfees));
         shortfall = (relvolume + dstr(txfees)) - dstr(balance);
