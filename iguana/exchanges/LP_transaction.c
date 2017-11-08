@@ -922,7 +922,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     if ( dustcombine >= 2 && min1 != 0 && min1->U.value < LP_DUSTCOMBINE_THRESHOLD && (coin->electrum == 0 || min1->SPV > 0) )
         preselected[numpre++] = min1;
     else min1 = 0;
-    printf("dustcombine.%d numpre.%d min0.%p min1.%p numutxos.%d\n",dustcombine,numpre,min0,min1,numunspents);
+    printf("dustcombine.%d numpre.%d min0.%p min1.%p numutxos.%d amount %.8f\n",dustcombine,numpre,min0,min1,numunspents);
     for (i=0; i<numunspents+numpre; i++)
     {
         if ( i < numpre )
@@ -962,6 +962,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         up->spendheight = 1;
         total += up->U.value;
         remains -= up->U.value;
+        interest = 0;
         if ( up->U.height < 7777777 && strcmp(coin->symbol,"KMD") == 0 )
         {
             if ( (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
@@ -970,6 +971,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
                 char str[65]; printf("%s/%d %.8f interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
             }
         }
+        printf("vini.%d value %.8f, total %.8f remains %.8f interest %.8f sum %.8f\n",n,dstr(up->U.value),dstr(total),dstr(remains),dstr(interest),dstr(interestsum));
         vp = &V[n++];
         vp->N = vp->M = 1;
         vp->signers[0].privkey = privkey;
