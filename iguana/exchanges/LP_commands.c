@@ -34,10 +34,10 @@ char *LP_numutxos()
 
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*ipaddr,*userpass,*base,*rel,*coin,*retstr = 0; uint16_t argport=0,pushport,subport; int32_t changed,otherpeers,flag = 0; struct LP_peerinfo *peer; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
+    char *method,*userpass,*base,*rel,*coin,*retstr = 0; int32_t changed,flag = 0; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
     //printf("stats_JSON(%s)\n",jprint(argjson,0));
     method = jstr(argjson,"method");
-    if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (method == 0 || strcmp(method,"electrum") != 0) )
+    /*if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (method == 0 || strcmp(method,"electrum") != 0) )
     {
         if ( strcmp(ipaddr,"127.0.0.1") != 0 && argport >= 1000 )
         {
@@ -50,23 +50,18 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
             {
                 if ( 0 && (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
                     peer->numpeers = otherpeers;
-                /*if ( 0 && (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
-                 {
-                 printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer != 0 ? LP_mypeer->numutxos:0);
-                 peer->numutxos = othernumutxos;
-                 }*/
                 if ( peer->sessionid == 0 )
                     peer->sessionid = juint(argjson,"session");
                 //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
             } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jint(argjson,"numpeers"),jint(argjson,"numutxos"),juint(argjson,"session"));
         }
-    }
+    }*/
     if ( method == 0 )
     {
         if ( is_cJSON_Array(argjson) != 0 )
             printf("RAWARRAY command? %s\n",jprint(argjson,0));
         if ( flag == 0 || jobj(argjson,"result") != 0 )
-            printf("stats_JSON no method: (%s) (%s:%u)\n",jprint(argjson,0),ipaddr,argport);
+            printf("stats_JSON no method: (%s)\n",jprint(argjson,0));
         return(0);
     }
     if ( strcmp(method,"hello") == 0 )
@@ -551,8 +546,8 @@ bot_resume(botid)\n\
     else if ( strcmp(method,"getpeers") == 0 )
     {
         char *tmpstr;
-        if ( (tmpstr= jstr(argjson,"ipaddr")) != 0 )
-            LP_addpeer(LP_mypeer,LP_mypubsock,tmpstr,RPC_port,RPC_port+10,RPC_port+20,0,0,G.LP_sessionid);
+        if ( (tmpstr= jstr(argjson,"LPnode")) != 0 )
+            LP_addpeer(LP_mypeer,LP_mypubsock,tmpstr,RPC_port,RPC_port+10,RPC_port+20,1,G.LP_sessionid);
         if ( IAMLP != 0 )
         {
             printf("send peers list\n");

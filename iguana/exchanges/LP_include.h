@@ -314,7 +314,7 @@ struct LP_peerinfo
     UT_hash_handle hh;
     uint64_t ip_port;
     uint32_t ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
-    int32_t pushsock,subsock;
+    int32_t pushsock,subsock,isLP;
     uint16_t port;
     char ipaddr[64];
 };

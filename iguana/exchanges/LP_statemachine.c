@@ -133,6 +133,42 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
     return(fp);
 }
 #ifdef oldway
+int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
+{
+    struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t numpeers,i,n=0;
+    if ( (array= cJSON_Parse(retstr)) != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
+                {
+                    if ( (pushport= juint(item,"push")) == 0 )
+                        pushport = argport + 1;
+                    if ( (subport= juint(item,"sub")) == 0 )
+                        subport = argport + 2;
+                    argipbits = (uint32_t)calc_ipbits(argipaddr);
+                    if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
+                    {
+                        numpeers = LP_numpeers();
+                        if ( IAMLP != 0 || numpeers < LP_MIN_PEERS || (IAMLP == 0 && (rand() % LP_MAX_PEERS) > numpeers) )
+                            peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jint(item,"numpeers"),jint(item,"numutxos"),juint(item,"session"));
+                    }
+                    if ( peer != 0 )
+                    {
+                        peer->lasttime = now;
+                        if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers != n )
+                            peer->numpeers = n;
+                    }
+                }
+            }
+        }
+        free_json(array);
+    }
+    return(n);
+}
 void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport)
 {
     char *retstr; struct LP_peerinfo *peer,*tmp; bits256 zero; uint32_t now,flag = 0;
