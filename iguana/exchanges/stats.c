@@ -744,7 +744,7 @@ extern int32_t IAMLP;
 
 void stats_rpcloop(void *args)
 {
-    uint16_t port; int32_t retval,sock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
+    uint16_t port; int32_t retval,sock=-1,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     RPC_port = port;
@@ -754,25 +754,25 @@ void stats_rpcloop(void *args)
     while ( 1 )//LP_bindsock_reset == initial_bindsock_reset )
     {
         //printf("LP_bindsock.%d\n",LP_bindsock);
-        if ( sock < 0 )
+        if ( bindsock < 0 )
         {
-            while ( (sock= iguana_socket(1,"0.0.0.0",port)) < 0 )
+            while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
                 usleep(10000);
 #ifndef _WIN32
-            //fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
+            //fcntl(bindsock, F_SETFL, fcntl(bindsock, F_GETFL, 0) | O_NONBLOCK);
 #endif
             //if ( counter++ < 1 )
-                printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,sock);
+                printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
         }
         //printf("after sock.%d\n",sock);
         clilen = sizeof(cli_addr);
-        sock = accept(sock,(struct sockaddr *)&cli_addr,&clilen);
+        sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
 //#ifdef _WIN32
         if ( sock < 0 )
         {
-            printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
-            closesocket(sock);
-            sock = -1;
+            printf("iguana_rpcloop ERROR on accept port.%u usock.%d errno %d %s\n",port,sock,errno,strerror(errno));
+            closesocket(bindsock);
+            bindsock = -1;
             continue;
         }
 /*#else
