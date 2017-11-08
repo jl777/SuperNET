@@ -183,7 +183,7 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
     sum += (OS_milliseconds() - millis);
     nsum += n;
     counter++;
-    if ( n > maxn || (rand() % 100) == 0 )
+    if ( n > maxn || (rand() % 10000) == 0 )
     {
         if ( n > maxn )
         {
