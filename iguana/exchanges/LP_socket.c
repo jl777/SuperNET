@@ -1081,7 +1081,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
         kickval = electrum_kickstart(ep);
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"status","already there");
-        jaddstr(retjson,"restart",kickval);
+        jaddnum(retjson,"restart",kickval);
     }
     //printf("(%s)\n",jprint(retjson,0));
     return(retjson);
