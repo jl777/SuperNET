@@ -1181,7 +1181,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000);
         else if ( IAMLP == 0 )
             usleep(1000);
-        if ( time(NULL) > lasthello+60 )
+        if ( time(NULL) > lasthello+600 )
         {
             char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
             allgood = 0;
