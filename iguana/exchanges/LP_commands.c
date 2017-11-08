@@ -550,6 +550,9 @@ bot_resume(botid)\n\
         return(LP_notify_recv(argjson));
     else if ( strcmp(method,"getpeers") == 0 )
     {
+        char *tmpstr;
+        if ( (tmpstr= jstr(argjson,"ipaddr")) != 0 )
+            LP_addpeer(LP_mypeer,LP_mypubsock,tmpstr,RPC_port,RPC_port+10,RPC_port+20,0,0,G.LP_sessionid);
         if ( IAMLP != 0 )
         {
             printf("send peers list\n");
