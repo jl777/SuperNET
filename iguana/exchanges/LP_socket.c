@@ -124,9 +124,9 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 #endif
     if ( bindflag == 0 )
     {
-        printf("call connect sock.%d\n",sock);
+        //printf("call connect sock.%d\n",sock);
         result = connect(sock,(struct sockaddr *)&saddr,addrlen);
-        printf("called connect result.%d\n",result);
+        //printf("called connect result.%d\n",result);
         timeout.tv_sec = 2;
         timeout.tv_usec = 0;
         setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
