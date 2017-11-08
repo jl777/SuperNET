@@ -569,17 +569,22 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     timestamp = (uint32_t)time(NULL);
     jaddnum(reqjson,"timestamp",timestamp);
     LP_pubkey_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
+    if ( IAMLP != 0 )
+        jaddstr(reqjson,"isLP",LP_myipaddr);
+    jaddnum(reqjson,"session",G.LP_sessionid);
     LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
 }
 
 char *LP_notify_recv(cJSON *argjson)
 {
-    bits256 pub; struct LP_pubkeyinfo *pubp;
+    bits256 pub; struct LP_pubkeyinfo *pubp; char *ipaddr;
     pub = jbits256(argjson,"pub");
     if ( bits256_nonz(pub) != 0 )
     {
         if ( (pubp= LP_pubkeyadd(pub)) != 0 )
             LP_pubkey_sigcheck(pubp,argjson);
+        if ( (ipaddr= jstr(argjson,"isLP")) != 0 )
+            LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,RPC_port,RPC_port+10,RPC_port+20,1,juint(argjson,"session"));
         //char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);
     }
     return(clonestr("{\"result\":\"success\",\"notify\":\"received\"}"));

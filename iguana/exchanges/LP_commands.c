@@ -543,19 +543,19 @@ bot_resume(botid)\n\
         return(LP_uitem_recv(argjson));
     else if ( strcmp(method,"notify") == 0 )
         return(LP_notify_recv(argjson));
-    else if ( strcmp(method,"getpeers") == 0 )
+    /*else if ( strcmp(method,"getpeers") == 0 )
     {
         char *tmpstr;
         if ( (tmpstr= jstr(argjson,"LPnode")) != 0 )
             LP_addpeer(LP_mypeer,LP_mypubsock,tmpstr,RPC_port,RPC_port+10,RPC_port+20,1,G.LP_sessionid);
         if ( IAMLP != 0 )
         {
-            printf("send peers list\n");
+            printf("send peers list %s\n",LP_peers());
             bits256 zero; memset(zero.bytes,0,sizeof(zero));
             LP_reserved_msg(0,"","",zero,LP_peers());
         }
         retstr = clonestr("{\"result\":\"success\"}");
-    }
+    }*/
     // end received response
     
     else if ( strcmp(method,"tradestatus") == 0 )
