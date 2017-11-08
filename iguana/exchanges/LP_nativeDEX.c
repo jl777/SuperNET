@@ -1093,14 +1093,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
     }
+    char request[128];
     if ( IAMLP == 0 )
-        LP_reserved_msg(0,"","",G.LP_mypub25519,clonestr("{\"method\":\"getpeers\"}"));
-    else
-    {
-        char request[128];
-        sprintf(request,"{\"method\":\"getpeers\",\"LPnode\":\"%s\"}",myipaddr);
-        LP_reserved_msg(0,"","",G.LP_mypub25519,clonestr(request));
-    }
+        sprintf(request,"{\"method\":\"getpeers\",\"timestamp\":%u}",(uint32_t)time(NULL));
+    else sprintf(request,"{\"method\":\"getpeers\",\"LPnode\":\"%s\",\"timestamp\":%u}",myipaddr,(uint32_t)time(NULL));
+    LP_reserved_msg(0,"","",G.LP_mypub25519,clonestr(request));    
     int32_t nonz; //uint32_t lasthello = 0;
     while ( 1 )
     {
