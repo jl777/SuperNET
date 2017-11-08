@@ -219,7 +219,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                 return(-1);
             }
         }
-        if ( listen(sock,64) != 0 )
+        if ( listen(sock,1) != 0 )
         {
             printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
             if ( sock >= 0 )
@@ -669,7 +669,7 @@ void LP_rpc_processreq(void *_ptr)
     {
         jsonflag = postflag = 0;
         portable_mutex_lock(&LP_commandmutex);
-        retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,RPC_port);
+        retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,req->port);
         portable_mutex_unlock(&LP_commandmutex);
         if ( filetype[0] != 0 )
         {
@@ -747,7 +747,6 @@ void stats_rpcloop(void *args)
     uint16_t port; int32_t retval,sock=-1,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
-    RPC_port = port;
     printf("Start stats_rpcloop.%u\n",port);
     localhostbits = (uint32_t)calc_ipbits("127.0.0.1");
     //initial_bindsock_reset = LP_bindsock_reset;
@@ -786,9 +785,15 @@ void stats_rpcloop(void *args)
         }
 #endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
+        if ( port == RPC_port && ipbits != localhostbits )
+        {
+            closesocket(sock);
+            continue;
+        }
         req = calloc(1,sizeof(*req));
         req->sock = sock;
         req->ipbits = ipbits;
+        req->port = port;
         LP_rpc_processreq(req);
 continue;
         // this leads to cant open file errors

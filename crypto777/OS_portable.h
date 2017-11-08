@@ -149,6 +149,7 @@ struct rpcrequest_info
     pthread_t T;
     int32_t sock;
     uint32_t ipbits;
+    uint16_t port,pad;
 };
 
 struct OS_mappedptr

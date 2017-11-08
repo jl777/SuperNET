@@ -988,6 +988,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
     printf("got %s, initpeers\n",myipaddr);
     LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"));
+    RPC_port = myport;
     printf("get public socket\n");
     LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     strcpy(LP_publicaddr,pushaddr);
