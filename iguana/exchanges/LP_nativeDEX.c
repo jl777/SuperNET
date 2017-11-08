@@ -707,8 +707,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             {
                 nonz++;
                 LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
-                peer->diduquery = 0;
-                LP_peer_pricesquery(peer);
+                if ( peer->diduquery == 0 )
+                    LP_peer_pricesquery(peer);
                 LP_utxos_sync(peer);
                 needpings++;
             }
