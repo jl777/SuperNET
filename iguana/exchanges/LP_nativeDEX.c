@@ -736,6 +736,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         if ( seednode == 0 || seednode[0] == 0 )
         {
             OS_randombytes((void *)&r,sizeof(r));
+            issue_LP_getpeers("5.9.253.195",myport);
             for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
             {
                 i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
