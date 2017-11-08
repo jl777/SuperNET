@@ -18,6 +18,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// bot status 1600% ?
 // BCH signing
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -1201,6 +1202,14 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                 printf("RPC port got stuck, close bindsocket\n");
                 LP_bindsock = -1;
                 closesocket(sock);
+                LP_bindsock_reset++;
+                sleep(10);
+                printf("launch new rpcloop\n");
+                if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+                {
+                    printf("error launching stats rpcloop for port.%u\n",myport);
+                    exit(-1);
+                }
             }
         }
     }

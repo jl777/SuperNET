@@ -1040,7 +1040,7 @@ bits256 LP_getbestblockhash(struct iguana_info *coin)
                 decode_hex(blockhash.bytes,sizeof(blockhash),retstr);
             free(retstr);
         }
-    }
+    } else printf("electrum mode doesnt support block level scanning\n");
     return(blockhash);
 }
 

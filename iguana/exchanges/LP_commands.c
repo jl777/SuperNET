@@ -99,7 +99,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
 available localhost RPC commands: \n \
 pricearray(base, rel, starttime=0, endtime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 setprice(base, rel, price)\n\
-autoprice(base, rel, minprice, margin, refbase, refrel, factor, offset)*\n\
+autoprice(base, rel, fixed, minprice, margin, refbase, refrel, factor, offset)*\n\
 goal(coin=*, val=<autocalc>)\n\
 myprice(base, rel)\n\
 enable(coin)\n\
