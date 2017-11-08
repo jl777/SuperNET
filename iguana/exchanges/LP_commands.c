@@ -543,6 +543,8 @@ bot_resume(botid)\n\
         return(LP_uitem_recv(argjson));
     else if ( strcmp(method,"notify") == 0 )
         return(LP_notify_recv(argjson));
+    else if ( strcmp(method,"getpeers") == 0 )
+        retstr = clonestr("{\"error\":\"deprecated\"}");
     /*else if ( strcmp(method,"getpeers") == 0 )
     {
         char *tmpstr;
