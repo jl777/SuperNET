@@ -438,14 +438,18 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
     if ( dstr(abalance) < relvolume + dstr(txfees) )
     {
         retjson = cJSON_CreateObject();
+        if ( relcoin->electrum != 0 )
+            balance = LP_unspents_load(relcoin->symbol,relcoin->smartaddr);
+        else balance = LP_RTsmartbalance(relcoin);
         jaddstr(retjson,"error","not enough funds");
         jaddstr(retjson,"coin",rel);
-        jaddnum(retjson,"balance",dstr(abalance));
+        jaddnum(retjson,"abalance",dstr(abalance));
+        jaddnum(retjson,"balance",dstr(balance));
         jaddnum(retjson,"relvolume",relvolume);
         jaddnum(retjson,"txfees",dstr(txfees));
         shortfall = (relvolume + dstr(txfees)) - dstr(balance);
         jaddnum(retjson,"shortfall",shortfall);
-        if ( (balance= LP_RTsmartbalance(relcoin)) > abalance+SATOSHIDEN*(shortfall+relvolume/77.) )
+        if ( balance > (relvolume + 10*relvolume/777.) )
         {
             char *withdrawstr; cJSON *outputjson,*withdrawjson,*outputs,*item;
             outputjson = cJSON_CreateObject();
