@@ -758,7 +758,7 @@ void stats_rpcloop(void *args)
             while ( (LP_bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
                 usleep(10000);
 #ifndef _WIN32
-            fcntl(LP_bindsock, F_SETFL, fcntl(LP_bindsock, F_GETFL, 0) | O_NONBLOCK);
+            //fcntl(LP_bindsock, F_SETFL, fcntl(LP_bindsock, F_GETFL, 0) | O_NONBLOCK);
 #endif
             //if ( counter++ < 1 )
                 printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,LP_bindsock);
@@ -766,7 +766,7 @@ void stats_rpcloop(void *args)
         //printf("after LP_bindsock.%d\n",LP_bindsock);
         clilen = sizeof(cli_addr);
         sock = accept(LP_bindsock,(struct sockaddr *)&cli_addr,&clilen);
-#ifdef _WIN32
+//#ifdef _WIN32
         if ( sock < 0 )
         {
             printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
@@ -774,7 +774,7 @@ void stats_rpcloop(void *args)
             LP_bindsock = -1;
             continue;
         }
-#else
+/*#else
         if ( sock < 0 )
         {
             //fprintf(stderr,".");
@@ -783,7 +783,7 @@ void stats_rpcloop(void *args)
             else usleep(2500);
             continue;
         }
-#endif
+#endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         req = calloc(1,sizeof(*req));
         req->sock = sock;
