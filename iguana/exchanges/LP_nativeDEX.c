@@ -333,7 +333,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 methodstr[0] = 0;
-                printf("%s.(%s)\n",typestr,(char *)ptr);
+                //printf("%s.(%s)\n",typestr,(char *)ptr);
                 if ( 0 )
                 {
                     cJSON *recvjson; char *mstr;//,*cstr;
@@ -766,7 +766,7 @@ void LP_pubkeysloop(void *ctx)
                 coin->lastunspent = (uint32_t)time(NULL);
             }
         }
-        if ( time(NULL) > lasttime+60 )
+        if ( time(NULL) > lasttime+LP_ORDERBOOK_DURATION*0.5 )
         {
             //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
             LP_notify_pubkeys(ctx,LP_mypubsock);
