@@ -41,7 +41,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_AUTOTRADE_TIMEOUT 20
 #define ELECTRUM_TIMEOUT 5
 #define LP_ELECTRUM_KEEPALIVE 60
-#define LP_ELECTRUM_MAXERRORS 7
+#define LP_ELECTRUM_MAXERRORS 777
 #define LP_MEMPOOL_TIMEINCR 10
 
 #define LP_MIN_PEERS 8
