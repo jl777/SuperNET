@@ -389,6 +389,25 @@ void electrum_initial_requests(struct electrum_info *ep)
     electrum_sitem(ep,stratumreq,3,&retjson);
 }
 
+int32_t electrum_kickstart(struct electrum_info *ep)
+{
+    closesocket(ep->sock), ep->sock = -1;
+    sleep(1);
+    if ( (ep->sock= LP_socket(0,ep->ipaddr,ep->port)) < 0 )
+    {
+        printf("error RE-connecting to %s:%u\n",ep->ipaddr,ep->port);
+        return(-1);
+    }
+    else
+    {
+        ep->stratumid = 0;
+        electrum_initial_requests(ep);
+        printf("RECONNECT ep.%p %s numerrors.%d too big -> new %s:%u sock.%d\n",ep,ep->symbol,ep->numerrors,ep->ipaddr,ep->port,ep->sock);
+        ep->numerrors = 0;
+    }
+    return(0);
+}
+
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
@@ -417,20 +436,9 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             if ( *retjsonp == 0 || jobj(*retjsonp,"error") != 0 )
             {
                 if ( ++ep->numerrors >= LP_ELECTRUM_MAXERRORS )
-                {
-                    closesocket(ep->sock), ep->sock = -1;
-                    if ( (ep->sock= LP_socket(0,ep->ipaddr,ep->port)) < 0 )
-                        printf("error RE-connecting to %s:%u\n",ep->ipaddr,ep->port);
-                    else
-                    {
-                        ep->stratumid = 0;
-                        electrum_initial_requests(ep);
-                        printf("ep.%p %s numerrors.%d too big -> new %s:%u sock.%d\n",ep,ep->symbol,ep->numerrors,ep->ipaddr,ep->port,ep->sock);
-                        ep->numerrors = 0;
-                    }
-                }
+                    electrum_kickstart(ep);
             } else if ( ep->numerrors > 0 )
-                ep->numerrors++;
+                ep->numerrors--;
             if ( ep->prev == 0 )
             {
                 if ( *retjsonp == 0 )
@@ -1038,7 +1046,7 @@ void LP_dedicatedloop(void *arg)
 
 cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
 {
-    struct electrum_info *ep; int32_t already; cJSON *retjson;
+    struct electrum_info *ep; int32_t kickval,already; cJSON *retjson;
     if ( ipaddr == 0 || ipaddr[0] == 0 || port == 0 )
     {
         //coin->electrum = 0;
@@ -1070,8 +1078,10 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
     }
     else
     {
+        kickval = electrum_kickstart(ep);
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"status","already there");
+        jaddstr(retjson,"restart",kickval);
     }
     //printf("(%s)\n",jprint(retjson,0));
     return(retjson);
