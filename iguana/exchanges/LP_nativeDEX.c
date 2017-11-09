@@ -716,7 +716,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
     int32_t i,j; uint32_t r;
     if ( IAMLP != 0 )
     {
-        LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,0,0,1,G.LP_sessionid);
+        LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,pushport,subport,1,G.LP_sessionid);
         if ( myipaddr == 0 || mypeer == 0 )
         {
             printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
@@ -739,9 +739,9 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         }
         if ( seednode == 0 || seednode[0] == 0 )
         {
-            LP_addpeer(mypeer,pubsock,"51.15.86.136",myport,pushport,subport,0,G.LP_sessionid);
+            //LP_addpeer(mypeer,pubsock,"51.15.86.136",myport,pushport,subport,0,G.LP_sessionid);
             OS_randombytes((void *)&r,sizeof(r));
-            r = 0;
+            //r = 0;
             for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
             {
                 i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
