@@ -242,8 +242,8 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
         {
             if ( fixedprice > SMALLVAL )
             {
-                refbase = base;
-                refrel = rel;
+                refbase = rel;
+                refrel = base;
             }
             for (i=0; i<num_LP_autorefs; i++)
             {
@@ -261,7 +261,7 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
                 safecopy(LP_autorefs[num_LP_autorefs].refrel,refrel,sizeof(LP_autorefs[num_LP_autorefs].refrel));
                 safecopy(LP_autorefs[num_LP_autorefs].base,base,sizeof(LP_autorefs[num_LP_autorefs].base));
                 safecopy(LP_autorefs[num_LP_autorefs].rel,rel,sizeof(LP_autorefs[num_LP_autorefs].rel));
-                printf("%d Using ref %s/%s for %s/%s factor %.8f, offset %.8f, margin %.8f\n",num_LP_autorefs,refbase,refrel,base,rel,factor,offset,margin);
+                printf("%d Using ref %s/%s for %s/%s factor %.8f, offset %.8f, margin %.8f fixed %.8f\n",num_LP_autorefs,refbase,refrel,base,rel,factor,offset,margin,fixedprice);
                 num_LP_autorefs++;
             }
         }
