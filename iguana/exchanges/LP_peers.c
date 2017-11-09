@@ -206,11 +206,15 @@ int32_t LP_coinbus(uint16_t coin_busport)
     return(bussock);
 }
 
-void LP_peer_recv(char *ipaddr)
+void LP_peer_recv(char *ipaddr,int32_t ismine)
 {
     struct LP_peerinfo *peer;
     if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),RPC_port)) != 0 )
+    {
         peer->numrecv++;
+        if ( ismine != 0 )
+            peer->recvtime = (uint32_t)time(NULL);
+    }
 }
 
 int32_t LP_numpeers()
@@ -251,15 +255,23 @@ uint16_t LP_randpeer(char *destip)
 
 uint16_t LP_rarestpeer(char *destip)
 {
-    struct LP_peerinfo *peer,*tmp,*rarest = 0;
+    struct LP_peerinfo *peer,*tmp,*rarest = 0; int32_t iter; uint32_t now;
+    now = (uint32_t)time(NULL);
     destip[0] = 0;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    for (iter=0; iter<2; iter++)
     {
-        if ( peer->isLP != 0 )
+        HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            if ( rarest == 0 || peer->numrecv < rarest->numrecv )
-                rarest = peer;
+            if ( iter == 0 && peer->recvtime < now-3600 )
+                continue;
+            if ( peer->isLP != 0 )
+            {
+                if ( rarest == 0 || peer->numrecv < rarest->numrecv )
+                    rarest = peer;
+            }
         }
+        if ( rarest != 0 )
+            break;
     }
     if ( rarest == 0 )
         LP_randpeer(destip);

@@ -21,6 +21,7 @@
 // detecting new deposits in inventory
 // BTC swaps
 // bot progress
+// will stale peers ever die?
 // swap started event for bot
 // lack of full depth
 // withdraw too big
