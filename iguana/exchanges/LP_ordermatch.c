@@ -968,15 +968,15 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     destsatoshis = SATOSHIDEN * relvolume;
     if ( (autxo= LP_utxo_bestfit(rel,destsatoshis + 2*desttxfee)) == 0 )
         return(clonestr("{\"error\":\"cant find alice utxo that is big enough\"}"));
-    if ( destsatoshis - 2*desttxfee < autxo->S.satoshis )
+    if ( destsatoshis - 0*desttxfee < autxo->S.satoshis )
     {
-        destsatoshis -= 2*desttxfee;
+        //destsatoshis -= 2*desttxfee;
         autxo->S.satoshis = destsatoshis;
         //printf("first path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->S.satoshis));
     }
-    else if ( autxo->S.satoshis - 2*desttxfee < destsatoshis )
+    else if ( autxo->S.satoshis - 0*desttxfee < destsatoshis )
     {
-        autxo->S.satoshis -= 2*desttxfee;
+        autxo->S.satoshis -= 0*desttxfee;
         destsatoshis = autxo->S.satoshis;
         printf("second path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->S.satoshis));
     }
