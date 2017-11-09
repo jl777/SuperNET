@@ -87,6 +87,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             strcpy(peer->ipaddr,ipaddr);
             //peer->profitmargin = profitmargin;
             peer->ipbits = ipbits;
+            peer->isLP = isLP;
             peer->port = port;
             peer->ip_port = ((uint64_t)port << 32) | ipbits;
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )

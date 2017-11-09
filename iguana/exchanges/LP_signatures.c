@@ -571,12 +571,9 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     LP_pubkey_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
     if ( IAMLP != 0 )
     {
-        if ( (rand() % 2) == 0 )
-            LP_randpeer(LPipaddr);
-        else strcpy(LPipaddr,LP_myipaddr);
-        if ( LPipaddr[0] == 0 )
-            strcpy(LPipaddr,LP_myipaddr);
-        jaddstr(reqjson,"isLP",LPipaddr);
+        if ( LP_randpeer(LPipaddr) != 0 )
+            jaddstr(reqjson,"isLP",LPipaddr);
+        else printf("no LPipaddr\n");
     }
     jaddnum(reqjson,"session",G.LP_sessionid);
     LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
