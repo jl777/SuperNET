@@ -77,7 +77,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_MIN_TXFEE 10000
 #define LP_MINVOL 20
 #define LP_MINCLIENTVOL 1000
-#define LP_MINSIZE_TXFEEMULT 10
+#define LP_MINSIZE_TXFEEMULT 3
 #define LP_REQUIRED_TXFEE 0.8
 
 #define LP_DEXFEE(destsatoshis) ((destsatoshis) / INSTANTDEX_INSURANCEDIV)
