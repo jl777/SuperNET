@@ -593,8 +593,8 @@ char *LP_notify_recv(cJSON *argjson)
             LP_pubkey_sigcheck(pubp,argjson);
         if ( (ipaddr= jstr(argjson,"isLP")) != 0 )
         {
-            //printf("notify got isLP %s\n",ipaddr);
-            LP_peer_recv(ipaddr,jint(argjson,ismine));
+            //printf("notify got isLP %s %d\n",ipaddr,jint(argjson,"isming"));
+            LP_peer_recv(ipaddr,jint(argjson,"ismine"));
             if ( IAMLP != 0 && G.LP_IAMLP == 0 && strcmp(ipaddr,LP_myipaddr) == 0 )
             {
                 if ( bits256_cmp(pub,G.LP_mypub25519) != 0 )
