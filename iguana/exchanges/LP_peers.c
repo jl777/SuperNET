@@ -79,7 +79,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
         }
         else
         {
-            printf("addpeer (%s:%u) pushport.%u subport.%u\n",ipaddr,port,pushport,subport);
+            //printf("addpeer (%s:%u) pushport.%u subport.%u\n",ipaddr,port,pushport,subport);
             peer = calloc(1,sizeof(*peer));
             if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
                 peer->sessionid = G.LP_sessionid;
@@ -143,7 +143,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             } else printf("%s pushport.%u subport.%u pushsock.%d\n",ipaddr,pushport,subport,pushsock);
             if ( peer->pushsock >= 0 && peer->subsock >= 0 )
             {
-                printf("add peer %s\n",peer->ipaddr);
+                //printf("add peer %s\n",peer->ipaddr);
                 portable_mutex_lock(&LP_peermutex);
                 HASH_ADD(hh,LP_peerinfos,ip_port,sizeof(peer->ip_port),peer);
                 if ( mypeer != 0 )
