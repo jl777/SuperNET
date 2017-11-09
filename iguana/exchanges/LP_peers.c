@@ -262,7 +262,7 @@ uint16_t LP_rarestpeer(char *destip)
     {
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            if ( iter == 0 && peer->recvtime < now-3600 )
+            if ( iter == 0 && peer->recvtime < now-3600*24 )
                 continue;
             if ( peer->isLP != 0 )
             {
