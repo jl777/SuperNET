@@ -187,7 +187,7 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
     {
         if ( n > maxn )
         {
-            printf("LP_calc_magic maxn.%d <- %d\n",maxn,n);
+            printf("LP_calc_magic maxn.%d <- %d   | ",maxn,n);
             maxn = n;
         }
         printf("millis %.3f ave %.3f, aveiters %.1f\n",OS_milliseconds() - millis,sum/counter,(double)nsum/counter);
