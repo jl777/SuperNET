@@ -19,6 +19,8 @@
 //  marketmaker
 //
 // dynamic adding of new LP node
+// swap started event for bot
+// lack of full depth
 // withdraw too big
 // bot status 1600% ?
 // BCH signing
