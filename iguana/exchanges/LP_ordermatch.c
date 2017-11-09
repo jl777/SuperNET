@@ -817,6 +817,7 @@ struct LP_utxoinfo *LP_ordermatch_iter(struct LP_address_utxo **utxos,int32_t ma
 {
     uint64_t basesatoshis; struct LP_utxoinfo *bestutxo;
     basesatoshis = LP_basesatoshis(dstr(asatoshis),price,txfee,desttxfee);
+    printf("basesatoshis %.8f price %.8f txfee %.8f desttxfee %.8f\n",dstr(basesatoshis),price,dstr(txfee),dstr(desttxfee));
     if ( basesatoshis != 0 && (bestutxo= LP_address_utxopair(0,utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,desttxfee)) != 0 )
     {
         bestutxo->pubkey = pubkey;
@@ -866,7 +867,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                         continue;
                     if ( LP_RTmetrics_blacklisted(pubkey) >= 0 )
                         continue;
-printf("[%d/%d] %s pubcmp %d price %.8f vs maxprice %.8f\n",i,numasks,jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519),price,maxprice);
+printf("[%d/%d] %s pubcmp %d price %.8f vs maxprice %.8f asatoshis %.8f\n",i,numasks,jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519),price,maxprice,dstr(autxo->S.satoshis));
                     if ( LP_pricevalid(price) > 0 && price <= maxprice )
                     {
                         if ( bits256_nonz(destpubkey) == 0 )
