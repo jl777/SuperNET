@@ -18,6 +18,11 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// dynamic adding of new LP node
+// BTC swaps
+// swap started event for bot
+// lack of full depth
+// withdraw too big
 // bot status 1600% ?
 // BCH signing
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
@@ -93,8 +98,8 @@ char LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
 char LP_gui[16] = { "cli" };
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
-    "24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
-    //"51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
+    //"24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
+    "51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
 };//"5.9.253.204" }; //
 
 
@@ -734,8 +739,9 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         }
         if ( seednode == 0 || seednode[0] == 0 )
         {
-            LP_addpeer(mypeer,pubsock,"5.9.253.195",myport,pushport,subport,0,G.LP_sessionid);
+            LP_addpeer(mypeer,pubsock,"51.15.86.136",myport,pushport,subport,0,G.LP_sessionid);
             OS_randombytes((void *)&r,sizeof(r));
+            r = 0;
             for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
             {
                 i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
