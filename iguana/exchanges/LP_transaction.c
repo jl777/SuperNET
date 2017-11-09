@@ -965,7 +965,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         interest = 0;
         if ( up->U.height < 7777777 && strcmp(coin->symbol,"KMD") == 0 )
         {
-            if ( (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
+            if ( 0 && (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
             {
                 interestsum += interest;
                 char str[65]; printf("%s/%d %.8f interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
