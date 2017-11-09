@@ -537,11 +537,11 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                         height = jint(item,"height");
                     }
                     satoshis = LP_txvalue(destaddr,coin->symbol,txid,vout);
-                    if ( satoshis != 0 && satoshis != value )
-                        printf("%s %s unexpected privkey_init value mismatch %.8f vs %.8f (%s) %.8f %.8f\n",coin->symbol,coin->smartaddr,dstr(satoshis),dstr(value),jprint(item,0),jdouble(item,"amount"),jdouble(item,"interest"));
+                    //if ( satoshis != 0 && satoshis != value )
+                        printf("%s %s  privkey_init value  %.8f vs %.8f (%s) %.8f %.8f\n",coin->symbol,coin->smartaddr,dstr(satoshis),dstr(value),jprint(item,0),jdouble(item,"amount"),jdouble(item,"interest"));
                     if ( LP_inventory_prevent(iambob,coin->symbol,txid,vout) == 0 && height > 0 )
                     {
-                        //printf("%s\n",jprint(item,0));
+                        printf("PREVENT %s\n",jprint(item,0));
                         values[i] = satoshis;
                         //flag += LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
                     } else used++;
