@@ -356,6 +356,7 @@ void queue_loop(void *arg)
                 portable_mutex_unlock(&LP_networkmutex);
                 free(ptr);
                 ptr = 0;
+                break;
             }
         }
         if ( arg == 0 )
