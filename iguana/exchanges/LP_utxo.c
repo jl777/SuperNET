@@ -118,22 +118,22 @@ struct LP_utxoinfo *LP_allocated(bits256 txid,int32_t vout)
     struct LP_utxoinfo *utxo;
     if ( (utxo= _LP_utxofind(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
     {
-        char str[65]; printf("%s/v%d not available\n",bits256_str(str,txid),vout);
+        //char str[65]; printf("%s/v%d not available\n",bits256_str(str,txid),vout);
         return(utxo);
     }
     if ( (utxo= _LP_utxo2find(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
     {
-        char str[65]; printf("%s/v%d not available2\n",bits256_str(str,txid),vout);
+        //char str[65]; printf("%s/v%d not available2\n",bits256_str(str,txid),vout);
         return(utxo);
     }
     if ( (utxo= _LP_utxofind(1,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
     {
-        char str[65]; printf("%s/v%d not available\n",bits256_str(str,txid),vout);
+        //char str[65]; printf("%s/v%d not available\n",bits256_str(str,txid),vout);
         return(utxo);
     }
     if ( (utxo= _LP_utxo2find(1,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
     {
-        char str[65]; printf("%s/v%d not available2\n",bits256_str(str,txid),vout);
+        //char str[65]; printf("%s/v%d not available2\n",bits256_str(str,txid),vout);
         return(utxo);
     }
     return(0);
@@ -179,7 +179,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( up->SPV < 0 || up->U.height == 0 )
                 {
-                    //printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str,up->U.txid),up->U.vout,up->SPV,up->U.height);
+printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str,up->U.txid),up->U.vout,up->SPV,up->U.height);
                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                         tx->outpoints[up->U.vout].spendheight = 1;
                     continue;
@@ -912,22 +912,22 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                 {
                     if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts && tx->outpoints[vout].spendheight > 0 )
                     {
-                        printf("txid spent\n");
+                        //printf("txid spent\n");
                         return(0);
                     }
                     if ( (tx= LP_transactionfind(coin,txid2)) != 0 && vout2 < tx->numvouts && tx->outpoints[vout2].spendheight > 0 )
                     {
-                        printf("txid2 spent\n");
+                        //printf("txid2 spent\n");
                         return(0);
                     }
                     if ( (up= LP_address_utxofind(coin,destaddr,txid,vout)) != 0 && up->spendheight > 0 )
                     {
-                        printf("txid %s spentB\n",destaddr);
+                        //printf("txid %s spentB\n",destaddr);
                         return(0);
                     }
                     if ( (up= LP_address_utxofind(coin,destaddr,txid2,vout2)) != 0 && up->spendheight > 0 )
                     {
-                        printf("txid2 %s spentB\n",destaddr);
+                        //printf("txid2 %s spentB\n",destaddr);
                         return(0);
                     }
                 }
@@ -976,10 +976,14 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
 
 int32_t LP_inventory_prevent(int32_t iambob,char *symbol,bits256 txid,int32_t vout)
 {
-    struct LP_utxoinfo *utxo; struct LP_transaction *tx; struct iguana_info *coin;
+    struct LP_address_utxo *up; struct LP_utxoinfo *utxo; struct LP_transaction *tx; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(symbol)) == 0 )
+        return(1);
+    if ( LP_allocated(txid,vout) != 0 )
+        return(1);
     if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 || (utxo= LP_utxo2find(iambob,txid,vout)) != 0 )
     {
-        if ( (coin= LP_coinfind(symbol)) != 0 && (tx= LP_transactionfind(coin,txid)) != 0 )
+        if ( coin != 0 && (tx= LP_transactionfind(coin,txid)) != 0 )
         {
             if ( tx->outpoints[vout].spendheight > 0 )
                 utxo->T.spentflag = tx->outpoints[vout].spendheight;
@@ -991,6 +995,8 @@ int32_t LP_inventory_prevent(int32_t iambob,char *symbol,bits256 txid,int32_t vo
             return(1);
         }
     }
+    if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) != 0 && up->spendheight > 0 )
+        return(1);
     return(0);
 }
 

@@ -996,15 +996,31 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
 {
     //FILE *fp; char fname[512];
     uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag=-2,x = -1; struct iguana_info *coin;
-    swap->I.Atxfee = qp->desttxfee;
-    swap->I.Btxfee = qp->txfee;
+    if ( (swap->I.Atxfee= qp->desttxfee) < 0 )
+    {
+        printf("bitcoin_swapinit %s Atxfee %.8f rejected\n",swap->I.req.dest,dstr(swap->I.Atxfee));
+        return(0);
+    }
+    if ( (swap->I.Btxfee= qp->txfee) < 0 )
+    {
+        printf("bitcoin_swapinit %s Btxfee %.8f rejected\n",swap->I.req.src,dstr(swap->I.Btxfee));
+        return(0);
+    }
     swap->I.putduration = swap->I.callduration = INSTANTDEX_LOCKTIME;
     if ( optionduration < 0 )
         swap->I.putduration -= optionduration;
     else if ( optionduration > 0 )
         swap->I.callduration += optionduration;
-    swap->I.bobsatoshis = swap->I.req.srcamount;
-    swap->I.alicesatoshis = swap->I.req.destamount;
+    if ( (swap->I.bobsatoshis= swap->I.req.srcamount) <= 0 )
+    {
+        printf("bitcoin_swapinit %s bobsatoshis %.8f rejected\n",swap->I.req.src,dstr(swap->I.bobsatoshis));
+        return(0);
+    }
+    if ( (swap->I.alicesatoshis= swap->I.req.destamount) <= 0 )
+    {
+        printf("bitcoin_swapinit %s alicesatoshis %.8f rejected\n",swap->I.req.dest,dstr(swap->I.alicesatoshis));
+        return(0);
+    }
     if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
         swap->I.bobinsurance = LP_MIN_TXFEE;
     if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )

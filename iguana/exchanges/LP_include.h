@@ -39,7 +39,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
 #define LP_AUTOTRADE_TIMEOUT 30
-#define ELECTRUM_TIMEOUT 5
+#define ELECTRUM_TIMEOUT 15
 #define LP_ELECTRUM_KEEPALIVE 60
 #define LP_ELECTRUM_MAXERRORS 777
 #define LP_MEMPOOL_TIMEINCR 10
@@ -163,7 +163,7 @@ struct basilisk_rawtxinfo
 {
     char destaddr[64],coinstr[16];
     bits256 txid,signedtxid,actualtxid;
-    uint64_t amount,change,inputsum;
+    int64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
     uint32_t locktime,crcs[2];
     uint8_t addrtype,pubkey33[33],rmd160[20];
@@ -172,7 +172,7 @@ struct basilisk_rawtxinfo
 struct basilisk_request
 {
     uint32_t requestid,timestamp,quoteid,quotetime; // 0 to 15
-    uint64_t srcamount,unused; // 16 to 31
+    int64_t srcamount,unused; // 16 to 31
     bits256 srchash; // 32 to 63
     bits256 desthash;
     char src[8],dest[8];
@@ -199,7 +199,7 @@ struct basilisk_swapinfo
     bits256 myhash,otherhash,orderhash;
     uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,putduration,callduration;
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed,bobspent,alicespent,pad,aliceistrusted,bobistrusted,otheristrusted,otherstrust,alicemaxconfirms,bobmaxconfirms;
-    uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance,Atxfee,Btxfee;
+    int64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance,Atxfee,Btxfee;
     
     bits256 myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
     uint32_t crcs_mypub[2],crcs_mychoosei[2],crcs_myprivs[2],crcs_mypriv[2];
@@ -313,7 +313,7 @@ struct LP_peerinfo
 {
     UT_hash_handle hh;
     uint64_t ip_port;
-    uint32_t ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
+    uint32_t recvtime,numrecv,ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
     int32_t pushsock,subsock,isLP;
     uint16_t port;
     char ipaddr[64];
@@ -392,6 +392,7 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
+void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid,uint32_t quoteid);
 uint64_t LP_RTsmartbalance(struct iguana_info *coin);
 int32_t LP_getheight(struct iguana_info *coin);
 int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg);

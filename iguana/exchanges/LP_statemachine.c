@@ -132,6 +132,82 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
                  }*/
     return(fp);
 }
+/*if ( IAMLP != 0 && time(NULL) > lasthello+600 )
+ {
+ char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
+ allgood = 0;
+ if ( (retstr= issue_hello(myport)) != 0 )
+ {
+ if ( (retjson= cJSON_Parse(retstr)) != 0 )
+ {
+ if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"got hello") == 0 )
+ allgood = 1;
+ else printf("strange return.(%s)\n",jprint(retjson,0));
+ free_json(retjson);
+ } else printf("couldnt parse hello return.(%s)\n",retstr);
+ free(retstr);
+ } else printf("issue_hello NULL return\n");
+ lasthello = (uint32_t)time(NULL);
+ if ( allgood == 0 )
+ {
+ printf("RPC port got stuck, would have close bindsocket\n");
+ if ( 0 )
+ {
+ LP_bindsock = -1;
+ closesocket(sock);
+ LP_bindsock_reset++;
+ sleep(10);
+ printf("launch new rpcloop\n");
+ if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+ {
+ printf("error launching stats rpcloop for port.%u\n",myport);
+ exit(-1);
+ }
+ }
+ }
+ }*/
+/*
+ now = (uint32_t)time(NULL);
+ numpeers = LP_numpeers();
+ needpings = 0;
+ HASH_ITER(hh,LP_peerinfos,peer,tmp)
+ {
+ if ( peer->errors >= LP_MAXPEER_ERRORS )
+ {
+ if ( (rand() % 10000) == 0 )
+ {
+ peer->errors--;
+ if ( peer->errors < LP_MAXPEER_ERRORS )
+ peer->diduquery = 0;
+ }
+ if ( IAMLP == 0 )
+ continue;
+ }
+ if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (rand() % 100000) == 0 )
+ {
+ if ( strcmp(peer->ipaddr,myipaddr) != 0 )
+ {
+ nonz++;
+ //issue_LP_getpeers(peer->ipaddr,peer->port);
+ //LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+ //if ( peer->diduquery == 0 )
+ //    LP_peer_pricesquery(peer);
+ //LP_utxos_sync(peer);
+ needpings++;
+ }
+ peer->lastpeers = now;
+ }
+ if ( peer->needping != 0 )
+ {
+ peer->diduquery = now;
+ nonz++;
+ if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
+ free(retstr);
+ peer->needping = 0;
+ needpings++;
+ }
+ }*/
+
 #ifdef oldway
 int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {

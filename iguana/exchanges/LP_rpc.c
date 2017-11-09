@@ -18,7 +18,7 @@
 //  marketmaker
 //
 
-char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
+/*char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
 {
     char *retstr = 0; int32_t maxerrs; struct LP_peerinfo *peer = 0;
     peer = LP_peerfind((uint32_t)calc_ipbits(destip),port);
@@ -40,7 +40,7 @@ char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
             peer->good++;
     }
     return(retstr);
-}
+}*/
 
 char *LP_isitme(char *destip,uint16_t destport)
 {
@@ -49,16 +49,6 @@ char *LP_isitme(char *destip,uint16_t destport)
         //printf("no need to notify ourselves\n");
         return(clonestr("{\"result\":\"success\"}"));
     } else return(0);
-}
-
-char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
-{
-    char url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport-1,ispaired);
-    //return(LP_issue_curl("psock",destip,destport,url));
-    retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
-    printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
-    return(retstr);
 }
 
 char *LP_apicall(struct iguana_info *coin,char *method,char *params)
@@ -645,7 +635,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             return(bitcoin_json(coin,"listunspent",buf));
         } else return(LP_address_utxos(coin,coinaddr,0));
-    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,2));
+    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
 }
 
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
