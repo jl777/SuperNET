@@ -268,7 +268,6 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
             {
                 if ( LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout) == 0 )
                 {
-                    printf("not elibible\n");
                     //if ( utxo->T.spentflag == 0 )
                     //    utxo->T.spentflag = (uint32_t)time(NULL);
                     continue;

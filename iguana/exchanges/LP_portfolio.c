@@ -280,7 +280,7 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
     if ( (fixedprice= basepp->fixedprices[relpp->ind]) > SMALLVAL )
     {
         LP_mypriceset(&changed,relpp->symbol,basepp->symbol,fixedprice);
-        printf("autoprice FIXED %s/%s <- %.8f\n",basepp->symbol,relpp->symbol,fixedprice);
+        //printf("autoprice FIXED %s/%s <- %.8f\n",basepp->symbol,relpp->symbol,fixedprice);
         LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,fixedprice);
         return;
     }
