@@ -18,9 +18,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// detecting new deposits in inventory
-// bot progress
-// swap started event for bot
 // bot status 1600% ?
 
 // BCH signing
