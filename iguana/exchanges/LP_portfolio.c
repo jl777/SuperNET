@@ -242,8 +242,8 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
         {
             if ( fixedprice > SMALLVAL )
             {
-                refbase = rel;
-                refrel = base;
+                refbase = base;
+                refrel = rel;
             }
             for (i=0; i<num_LP_autorefs; i++)
             {
@@ -287,7 +287,7 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
     else if ( (fixedprice= basepp->fixedprices[relpp->ind]) > SMALLVAL )
     {
         LP_mypriceset(&changed,basepp->symbol,relpp->symbol,fixedprice);
-        printf("autoprice FIXED %s/%s <- %.8f\n",basepp->symbol,relpp->symbol,fixedprice);
+        printf("autoprice FIXED2 %s/%s <- %.8f\n",basepp->symbol,relpp->symbol,fixedprice);
         LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,basepp->symbol,relpp->symbol,fixedprice);
         return;
     }
