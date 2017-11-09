@@ -716,7 +716,7 @@ void LP_pubkeysloop(void *ctx)
 {
     static uint32_t lasttime; cJSON *retjson; struct iguana_info *coin,*tmp;
     strcpy(LP_pubkeysloop_stats.name,"LP_pubkeysloop");
-    LP_pubkeysloop_stats.threshold = 5000.;
+    LP_pubkeysloop_stats.threshold = 15000.;
     sleep(10);
     while ( 1 )
     {
