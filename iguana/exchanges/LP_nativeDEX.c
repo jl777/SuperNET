@@ -90,18 +90,6 @@ struct iguana_info *LP_coins;
 struct LP_pubkeyinfo *LP_pubkeyinfos;
 struct rpcrequest_info *LP_garbage_collector;
 
-#include "LP_network.c"
-
-char *activecoins[] = { "BTC", "KMD" };
-char GLOBAL_DBDIR[] = { "DB" };
-char LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
-char LP_gui[16] = { "cli" };
-
-char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
-    //"24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
-    "51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
-};//"5.9.253.204" }; //
-
 
 //uint32_t LP_deadman_switch;
 uint16_t LP_fixed_pairport,LP_publicport;
@@ -125,6 +113,19 @@ struct LP_globals
     char USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[16];
     struct LP_privkey LP_privkeys[100];
 } G;
+
+#include "LP_network.c"
+
+char *activecoins[] = { "BTC", "KMD" };
+char GLOBAL_DBDIR[] = { "DB" };
+char LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
+char LP_gui[16] = { "cli" };
+
+char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
+    //"24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
+    "51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
+};//"5.9.253.204" }; //
+
 
 // stubs
 
