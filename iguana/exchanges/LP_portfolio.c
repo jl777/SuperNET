@@ -481,7 +481,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         relpp = LP_priceinfofind(LP_autorefs[i].rel);
         if ( basepp != 0 && relpp != 0 )
         {
-            //printf("check ref-autoprice %s/%s\n",LP_autorefs[i].refbase,LP_autorefs[i].refrel);
+            printf("check ref-autoprice %s/%s\n",LP_autorefs[i].refbase,LP_autorefs[i].refrel);
             LP_autopriceset(ctx,1,basepp,relpp,0.,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
         }
     }
@@ -646,7 +646,7 @@ void prices_loop(void *ctx)
             }
             free(retstr);
         }
-        sleep(120);
+        sleep(10);
     }
 }
 
