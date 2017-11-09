@@ -1016,7 +1016,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         printf("bitcoin_swapinit %s bobsatoshis %.8f rejected\n",swap->I.req.src,dstr(swap->I.bobsatoshis));
         return(0);
     }
-    swap->I.alicesatoshis = swap->I.req.destamount;
+    if ( (swap->I.alicesatoshis= swap->I.req.destamount) <= 0 )
     {
         printf("bitcoin_swapinit %s alicesatoshis %.8f rejected\n",swap->I.req.dest,dstr(swap->I.alicesatoshis));
         return(0);
