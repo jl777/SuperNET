@@ -589,7 +589,15 @@ char *LP_notify_recv(cJSON *argjson)
             LP_pubkey_sigcheck(pubp,argjson);
         if ( (ipaddr= jstr(argjson,"isLP")) != 0 )
         {
-            //printf("notify from isLP %s\n",ipaddr);
+            printf("notify got isLP %s\n",ipaddr);
+            if ( strcmp(ipaddr,LP_myipaddr) == 0 )
+            {
+                if ( bits256_cmp(pub,G.LP_mypub25519) != 0 )
+                {
+                    char str[65]; printf("that's me! and it is from %s which isnt me\n",bits256_str(str,pub));
+                    G.LP_IAMLP = 1;
+                }
+            }
             LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,RPC_port,RPC_port+10,RPC_port+20,1,juint(argjson,"session"));
         }
         //char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);

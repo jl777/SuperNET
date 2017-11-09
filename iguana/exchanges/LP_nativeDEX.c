@@ -121,7 +121,7 @@ struct LP_globals
     uint64_t LP_skipstatus[10000];
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
     uint32_t LP_sessionid,counter;
-    int32_t LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
+    int32_t LP_IAMLP,LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
     char USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[16];
     struct LP_privkey LP_privkeys[100];
 } G;
