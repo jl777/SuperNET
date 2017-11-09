@@ -27,7 +27,7 @@ struct LP_tradebot_trade
     uint64_t aliceid;
     int32_t dispdir;
     uint32_t started,finished,requestid,quoteid,tradeid;
-    char base[32],rel[32];
+    char base[32],rel[32],event[32];
 };
 
 struct LP_tradebot
@@ -100,11 +100,15 @@ cJSON *LP_tradebot_tradejson(struct LP_tradebot_trade *tp,int32_t dispflag)
     double price,basevol; cJSON *item = cJSON_CreateObject();
     if ( tp == 0 )
         return(cJSON_Parse("{}"));
+    if ( tp->event[0] != 0 )
+        jaddstr(item,"status",tp->event);
     if ( tp->requestid != 0 && tp->quoteid != 0 )
     {
         jaddnum(item,"requestid",tp->requestid);
         jaddnum(item,"quoteid",tp->quoteid);
     } else jaddnum(item,"tradeid",tp->tradeid);
+    if ( tp->aliceid != 0 )
+        jadd64bits(item,"aliceid",tp->aliceid);
     if ( tp->basevol > SMALLVAL && tp->relvol > SMALLVAL )
     {
         if ( dispflag > 0 )
@@ -336,6 +340,28 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
     }
     else if ( bot->pause == 0 )
         bot->pause = (uint32_t)time(NULL);
+}
+
+void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid,uint32_t quoteid)
+{
+    struct LP_tradebot *bot,*tmp; int32_t i; struct LP_tradebot_trade *tp;
+    DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
+    {
+        for (i=0; i<bot->numtrades; i++)
+        {
+            if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->tradeid == tradeid )
+            {
+                tp->aliceid = aliceid;
+                if ( requestid != 0 && quoteid != 0 )
+                {
+                    tp->requestid = requestid;
+                    tp->quoteid = quoteid;
+                }
+                strcpy(tp->event,event);
+                break;
+            }
+        }
+    }
 }
 
 void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid)
