@@ -166,6 +166,47 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
  }
  }
  }*/
+/*
+ now = (uint32_t)time(NULL);
+ numpeers = LP_numpeers();
+ needpings = 0;
+ HASH_ITER(hh,LP_peerinfos,peer,tmp)
+ {
+ if ( peer->errors >= LP_MAXPEER_ERRORS )
+ {
+ if ( (rand() % 10000) == 0 )
+ {
+ peer->errors--;
+ if ( peer->errors < LP_MAXPEER_ERRORS )
+ peer->diduquery = 0;
+ }
+ if ( IAMLP == 0 )
+ continue;
+ }
+ if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (rand() % 100000) == 0 )
+ {
+ if ( strcmp(peer->ipaddr,myipaddr) != 0 )
+ {
+ nonz++;
+ //issue_LP_getpeers(peer->ipaddr,peer->port);
+ //LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+ //if ( peer->diduquery == 0 )
+ //    LP_peer_pricesquery(peer);
+ //LP_utxos_sync(peer);
+ needpings++;
+ }
+ peer->lastpeers = now;
+ }
+ if ( peer->needping != 0 )
+ {
+ peer->diduquery = now;
+ nonz++;
+ if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
+ free(retstr);
+ peer->needping = 0;
+ needpings++;
+ }
+ }*/
 
 #ifdef oldway
 int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)

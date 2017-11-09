@@ -122,9 +122,9 @@ char GLOBAL_DBDIR[] = { "DB" };
 char LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
 char LP_gui[16] = { "cli" };
 
-char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
+char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", //"5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
     //"24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
-    "51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
+    "51.15.203.171", "51.15.86.136", //"51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
 };//"5.9.253.204" }; //
 
 
@@ -610,47 +610,6 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
         origipaddr = "127.0.0.1";
     if ( mypeer == 0 )
         myipaddr = "127.0.0.1";
-    /*
-     now = (uint32_t)time(NULL);
-     numpeers = LP_numpeers();
-    needpings = 0;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        if ( peer->errors >= LP_MAXPEER_ERRORS )
-        {
-            if ( (rand() % 10000) == 0 )
-            {
-                peer->errors--;
-                if ( peer->errors < LP_MAXPEER_ERRORS )
-                    peer->diduquery = 0;
-            }
-            if ( IAMLP == 0 )
-                continue;
-        }
-        if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (rand() % 100000) == 0 )
-        {
-            if ( strcmp(peer->ipaddr,myipaddr) != 0 )
-            {
-                nonz++;
-                //issue_LP_getpeers(peer->ipaddr,peer->port);
-                //LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
-                //if ( peer->diduquery == 0 )
-                //    LP_peer_pricesquery(peer);
-                //LP_utxos_sync(peer);
-                needpings++;
-            }
-            peer->lastpeers = now;
-        }
-        if ( peer->needping != 0 )
-        {
-            peer->diduquery = now;
-            nonz++;
-            if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
-                free(retstr);
-            peer->needping = 0;
-            needpings++;
-        }
-    }*/
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+LP_ORDERBOOK_DURATION )
