@@ -571,7 +571,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     LP_pubkey_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
     if ( IAMLP != 0 )
     {
-        if ( LP_randpeer(LPipaddr) != 0 )
+        if ( LP_rarestpeer(LPipaddr) != 0 )
             jaddstr(reqjson,"isLP",LPipaddr);
         else printf("no LPipaddr\n");
     }
@@ -589,8 +589,9 @@ char *LP_notify_recv(cJSON *argjson)
             LP_pubkey_sigcheck(pubp,argjson);
         if ( (ipaddr= jstr(argjson,"isLP")) != 0 )
         {
-            printf("notify got isLP %s\n",ipaddr);
-            if ( strcmp(ipaddr,LP_myipaddr) == 0 )
+            //printf("notify got isLP %s\n",ipaddr);
+            LP_peer_recv(ipaddr);
+            if ( IAMLP != 0 && G.LP_IAMLP == 0 && strcmp(ipaddr,LP_myipaddr) == 0 )
             {
                 if ( bits256_cmp(pub,G.LP_mypub25519) != 0 )
                 {

@@ -18,8 +18,9 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// dynamic adding of new LP node
+// detecting new deposits in inventory
 // BTC swaps
+// bot progress
 // swap started event for bot
 // lack of full depth
 // withdraw too big
@@ -1100,12 +1101,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
     }
-    /*char request[128];
-    if ( IAMLP == 0 )
-        sprintf(request,"{\"method\":\"getpeers\",\"timestamp\":%u}",(uint32_t)time(NULL));
-    else sprintf(request,"{\"method\":\"getpeers\",\"LPnode\":\"%s\",\"timestamp\":%u}",myipaddr,(uint32_t)time(NULL));
-    LP_reserved_msg(0,"","",G.LP_mypub25519,clonestr(request));    */
-    int32_t nonz; //uint32_t lasthello = 0;
+    int32_t nonz;
     while ( 1 )
     {
         nonz = 0;
@@ -1121,40 +1117,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000);
         else if ( IAMLP == 0 )
             usleep(1000);
-        /*if ( IAMLP != 0 && time(NULL) > lasthello+600 )
-        {
-            char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
-            allgood = 0;
-            if ( (retstr= issue_hello(myport)) != 0 )
-            {
-                if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-                    if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"got hello") == 0 )
-                        allgood = 1;
-                    else printf("strange return.(%s)\n",jprint(retjson,0));
-                    free_json(retjson);
-                } else printf("couldnt parse hello return.(%s)\n",retstr);
-                free(retstr);
-            } else printf("issue_hello NULL return\n");
-            lasthello = (uint32_t)time(NULL);
-            if ( allgood == 0 )
-            {
-                printf("RPC port got stuck, would have close bindsocket\n");
-                if ( 0 )
-                {
-                    LP_bindsock = -1;
-                    closesocket(sock);
-                    LP_bindsock_reset++;
-                    sleep(10);
-                    printf("launch new rpcloop\n");
-                    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
-                    {
-                        printf("error launching stats rpcloop for port.%u\n",myport);
-                        exit(-1);
-                    }
-                }
-            }
-        }*/
     }
 #endif
 }

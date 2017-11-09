@@ -132,6 +132,41 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
                  }*/
     return(fp);
 }
+/*if ( IAMLP != 0 && time(NULL) > lasthello+600 )
+ {
+ char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
+ allgood = 0;
+ if ( (retstr= issue_hello(myport)) != 0 )
+ {
+ if ( (retjson= cJSON_Parse(retstr)) != 0 )
+ {
+ if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"got hello") == 0 )
+ allgood = 1;
+ else printf("strange return.(%s)\n",jprint(retjson,0));
+ free_json(retjson);
+ } else printf("couldnt parse hello return.(%s)\n",retstr);
+ free(retstr);
+ } else printf("issue_hello NULL return\n");
+ lasthello = (uint32_t)time(NULL);
+ if ( allgood == 0 )
+ {
+ printf("RPC port got stuck, would have close bindsocket\n");
+ if ( 0 )
+ {
+ LP_bindsock = -1;
+ closesocket(sock);
+ LP_bindsock_reset++;
+ sleep(10);
+ printf("launch new rpcloop\n");
+ if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+ {
+ printf("error launching stats rpcloop for port.%u\n",myport);
+ exit(-1);
+ }
+ }
+ }
+ }*/
+
 #ifdef oldway
 int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {
