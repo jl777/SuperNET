@@ -1115,6 +1115,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
             jaddstr(item,"method","tradestatus");
+            jaddstr(item,"gui",G.gui);
             itemstr = jprint(item,0);
             fprintf(fp,"%s\n",itemstr);
             LP_tradecommand_log(item);
