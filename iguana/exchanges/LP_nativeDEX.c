@@ -19,6 +19,7 @@
 //  marketmaker
 //
 // dynamic adding of new LP node
+// BTC swaps
 // swap started event for bot
 // lack of full depth
 // withdraw too big
@@ -740,6 +741,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         {
             LP_addpeer(mypeer,pubsock,"51.15.86.136",myport,pushport,subport,0,G.LP_sessionid);
             OS_randombytes((void *)&r,sizeof(r));
+            r = 0;
             for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
             {
                 i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
