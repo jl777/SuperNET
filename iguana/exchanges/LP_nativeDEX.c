@@ -19,7 +19,6 @@
 //  marketmaker
 //
 // detecting new deposits in inventory
-// BTC swaps
 // bot progress
 // swap started event for bot
 // bot status 1600% ?
