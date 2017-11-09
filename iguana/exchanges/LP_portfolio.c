@@ -608,6 +608,7 @@ void prices_loop(void *ctx)
     prices_loop_stats.threshold = 91000.;
     while ( 1 )
     {
+        printf("prices loop autoprices.%d autorefs.%d\n",LP_autoprices,num_LP_autorefs);
         LP_millistats_update(&prices_loop_stats);
         LP_tradebots_timeslice(ctx);
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
