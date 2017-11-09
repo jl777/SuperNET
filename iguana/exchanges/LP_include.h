@@ -163,7 +163,7 @@ struct basilisk_rawtxinfo
 {
     char destaddr[64],coinstr[16];
     bits256 txid,signedtxid,actualtxid;
-    uint64_t amount,change,inputsum;
+    int64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
     uint32_t locktime,crcs[2];
     uint8_t addrtype,pubkey33[33],rmd160[20];
@@ -172,7 +172,7 @@ struct basilisk_rawtxinfo
 struct basilisk_request
 {
     uint32_t requestid,timestamp,quoteid,quotetime; // 0 to 15
-    uint64_t srcamount,unused; // 16 to 31
+    int64_t srcamount,unused; // 16 to 31
     bits256 srchash; // 32 to 63
     bits256 desthash;
     char src[8],dest[8];
@@ -199,7 +199,7 @@ struct basilisk_swapinfo
     bits256 myhash,otherhash,orderhash;
     uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,putduration,callduration;
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed,bobspent,alicespent,pad,aliceistrusted,bobistrusted,otheristrusted,otherstrust,alicemaxconfirms,bobmaxconfirms;
-    uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance,Atxfee,Btxfee;
+    int64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance,Atxfee,Btxfee;
     
     bits256 myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
     uint32_t crcs_mypub[2],crcs_mychoosei[2],crcs_myprivs[2],crcs_mypriv[2];
