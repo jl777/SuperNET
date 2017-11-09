@@ -21,9 +21,8 @@
 // detecting new deposits in inventory
 // BTC swaps
 // bot progress
-// will stale peers ever die?
+// will stale peers ever die? <- after a day it should
 // swap started event for bot
-// lack of full depth
 // withdraw too big
 // bot status 1600% ?
 // BCH signing
