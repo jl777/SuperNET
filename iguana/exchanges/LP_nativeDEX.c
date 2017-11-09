@@ -21,9 +21,7 @@
 // detecting new deposits in inventory
 // BTC swaps
 // bot progress
-// will stale peers ever die? <- after a day it should
 // swap started event for bot
-// withdraw too big
 // bot status 1600% ?
 // BCH signing
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
