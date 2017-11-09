@@ -68,7 +68,8 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     {
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
-            peer->isLP = isLP;
+            if ( isLP != 0 )
+                peer->isLP = isLP;
             /*if ( numpeers > peer->numpeers )
                 peer->numpeers = numpeers;
             if ( numutxos > peer->numutxos )
