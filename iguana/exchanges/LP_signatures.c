@@ -629,17 +629,6 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 vout = jint(item,"tx_pos");
                 value = j64bits(item,"value");
                 height = jint(item,"height");
-#ifdef FROM_JS
-                //if ( 0 && (rand() % 100) == 0 && IAMLP == 0 )
-                {
-                    struct LP_peerinfo *peer,*tmp; char *retstr; 
-                    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-                    {
-                        if ( (retstr= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,vout,height,value)) != 0 )
-                            free(retstr);
-                    }
-                }
-#else
                 req = cJSON_CreateObject();
                 jaddstr(req,"method","uitem");
                 jaddstr(req,"coin",coin->symbol);
@@ -650,7 +639,6 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 jadd64bits(req,"value",value);
                 //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
                 LP_reserved_msg(0,"","",zero,jprint(req,1));
-#endif
             }
         }
         free_json(array);
