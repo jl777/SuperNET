@@ -359,10 +359,14 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,struct LP_utxoinfo *utxo,cJ
     privkey = LP_privkey(utxo->coinaddr,coin->taddr);
     if ( bits256_nonz(privkey) != 0 && bits256_cmp(G.LP_mypub25519,qp->srchash) == 0 ) //qp->quotetime >= qp->timestamp-3 && qp->quotetime <= utxo->T.swappending &&
     {
+        LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis-2*qp->txfee,rel,qp->destsatoshis-2*qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
+        if ( (swap= LP_swapinit(1,0,privkey,&qp->R,qp)) == 0 )
+        {
+            printf("cant initialize swap\n");
+            return(-1);
+        }
         if ( (pair= LP_nanobind(ctx,pairstr)) >= 0 )
         {
-            LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis-2*qp->txfee,rel,qp->destsatoshis-2*qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
-            swap = LP_swapinit(1,0,privkey,&qp->R,qp);
             swap->N.pair = pair;
             utxo->S.swap = swap;
             swap->utxo = utxo;
@@ -502,6 +506,13 @@ char *LP_connectedalice(cJSON *argjson) // alice
     if ( bits256_nonz(Q.privkey) != 0 )//&& Q.quotetime >= Q.timestamp-3 )
     {
         retjson = cJSON_CreateObject();
+        LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-2*Q.txfee,Q.destcoin,Q.destsatoshis-2*Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
+        if ( (swap= LP_swapinit(0,0,Q.privkey,&Q.R,&Q)) == 0 )
+        {
+            jaddstr(retjson,"error","couldnt swapinit");
+            LP_availableset(autxo);
+            return(jprint(retjson,1));
+        }
         if ( (pairstr= jstr(argjson,"pair")) == 0 || (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
             jaddstr(retjson,"error","couldnt create pairsock");
         else if ( nn_connect(pairsock,pairstr) >= 0 )
@@ -509,8 +520,6 @@ char *LP_connectedalice(cJSON *argjson) // alice
             //timeout = 1;
             //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-2*Q.txfee,Q.destcoin,Q.destsatoshis-2*Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
-            swap = LP_swapinit(0,0,Q.privkey,&Q.R,&Q);
             swap->tradeid = Q.tradeid;
             swap->N.pair = pairsock;
             autxo->S.swap = swap;
