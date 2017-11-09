@@ -272,6 +272,12 @@ bot_resume(botid)\n\
         if ( base[0] != 0 && rel[0] != 0 )
         {
             double price,bid,ask;
+            if ( strcmp(method,"autoprice") == 0 )
+            {
+                if ( LP_autoprice(base,rel,argjson) < 0 )
+                    return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
+                else return(clonestr("{\"result\":\"success\"}"));
+            }
             if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             price = jdouble(argjson,"price");
@@ -282,12 +288,6 @@ bot_resume(botid)\n\
                 //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
                 //    return(clonestr("{\"error\":\"couldnt set price\"}"));
                 else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
-            }
-            else if ( strcmp(method,"autoprice") == 0 )
-            {
-                if ( LP_autoprice(base,rel,argjson) < 0 )
-                    return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
-                else return(clonestr("{\"result\":\"success\"}"));
             }
             else if ( strcmp(method,"pricearray") == 0 )
             {
@@ -592,7 +592,9 @@ bot_resume(botid)\n\
                     LP_address(ptr,coinaddr);
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                     {
-                        //printf("ADDR_UNSPENTS %s %s is my address being asked for!\n",ptr->symbol,coinaddr);
+                        printf("ADDR_UNSPENTS %s %s is my address being asked for!\n",ptr->symbol,coinaddr);
+                        if ( ptr->lastpushtime > 0 && ptr->addr_listunspent_requested > (uint32_t)time(NULL)-10 )
+                            ptr->lastpushtime -= LP_ORDERBOOK_DURATION*0.1;
                         ptr->addr_listunspent_requested = (uint32_t)time(NULL);
                     }
                 }

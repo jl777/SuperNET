@@ -68,7 +68,8 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     {
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
-            peer->isLP = isLP;
+            if ( isLP != 0 )
+                peer->isLP = isLP;
             /*if ( numpeers > peer->numpeers )
                 peer->numpeers = numpeers;
             if ( numutxos > peer->numutxos )
@@ -78,7 +79,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
         }
         else
         {
-            printf("addpeer (%s:%u) pushport.%u subport.%u\n",ipaddr,port,pushport,subport);
+            //printf("addpeer (%s:%u) pushport.%u subport.%u\n",ipaddr,port,pushport,subport);
             peer = calloc(1,sizeof(*peer));
             if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
                 peer->sessionid = G.LP_sessionid;
@@ -87,6 +88,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             strcpy(peer->ipaddr,ipaddr);
             //peer->profitmargin = profitmargin;
             peer->ipbits = ipbits;
+            peer->isLP = isLP;
             peer->port = port;
             peer->ip_port = ((uint64_t)port << 32) | ipbits;
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
@@ -104,7 +106,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                     //maxsize = 2 * 1024 * 1024;
                     //nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDBUF,&maxsize,sizeof(maxsize));
-                    printf("connected to push.(%s) pushsock.%d valid.%d\n",pushaddr,pushsock,valid);
+                    printf("connected to push.(%s) pushsock.%d valid.%d  | ",pushaddr,pushsock,valid);
                     peer->connected = (uint32_t)time(NULL);
                     peer->pushsock = pushsock;
                     if ( (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
@@ -141,7 +143,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             } else printf("%s pushport.%u subport.%u pushsock.%d\n",ipaddr,pushport,subport,pushsock);
             if ( peer->pushsock >= 0 && peer->subsock >= 0 )
             {
-                printf("add peer %s\n",peer->ipaddr);
+                //printf("add peer %s\n",peer->ipaddr);
                 portable_mutex_lock(&LP_peermutex);
                 HASH_ADD(hh,LP_peerinfos,ip_port,sizeof(peer->ip_port),peer);
                 if ( mypeer != 0 )
@@ -204,13 +206,24 @@ int32_t LP_coinbus(uint16_t coin_busport)
     return(bussock);
 }
 
+void LP_peer_recv(char *ipaddr,int32_t ismine)
+{
+    struct LP_peerinfo *peer;
+    if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),RPC_port)) != 0 )
+    {
+        peer->numrecv++;
+        if ( ismine != 0 )
+            peer->recvtime = (uint32_t)time(NULL);
+    }
+}
 
 int32_t LP_numpeers()
 {
     struct LP_peerinfo *peer,*tmp; int32_t numpeers = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        numpeers++;
+        if ( peer->isLP != 0 )
+            numpeers++;
     }
     return(numpeers);
 }
@@ -218,23 +231,51 @@ int32_t LP_numpeers()
 uint16_t LP_randpeer(char *destip)
 {
     struct LP_peerinfo *peer,*tmp; uint16_t port = 0; int32_t n,r,numpeers = 0;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        numpeers++;
-    }
+    destip[0] = 0;
+    numpeers = LP_numpeers();
     if ( numpeers > 0 )
     {
         r = rand() % numpeers;
         n = 0;
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            if ( n++ == r )
+            if ( peer->isLP != 0 )
             {
-                strcpy(destip,peer->ipaddr);
-                port = peer->port;
-                break;
+                if ( n++ == r )
+                {
+                    strcpy(destip,peer->ipaddr);
+                    port = peer->port;
+                    break;
+                }
             }
         }
     }
     return(port);
 }
+
+uint16_t LP_rarestpeer(char *destip)
+{
+    struct LP_peerinfo *peer,*tmp,*rarest = 0; int32_t iter; uint32_t now;
+    now = (uint32_t)time(NULL);
+    destip[0] = 0;
+    for (iter=0; iter<2; iter++)
+    {
+        HASH_ITER(hh,LP_peerinfos,peer,tmp)
+        {
+            if ( iter == 0 && peer->recvtime < now-3600*24 )
+                continue;
+            if ( peer->isLP != 0 )
+            {
+                if ( rarest == 0 || peer->numrecv < rarest->numrecv )
+                    rarest = peer;
+            }
+        }
+        if ( rarest != 0 )
+            break;
+    }
+    if ( rarest == 0 )
+        LP_randpeer(destip);
+    else strcpy(destip,rarest->ipaddr);
+    return(rarest != 0 ? rarest->port : RPC_port);
+}
+

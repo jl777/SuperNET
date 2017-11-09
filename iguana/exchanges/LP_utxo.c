@@ -179,7 +179,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( up->SPV < 0 || up->U.height == 0 )
                 {
-                    //printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str,up->U.txid),up->U.vout,up->SPV,up->U.height);
+printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str,up->U.txid),up->U.vout,up->SPV,up->U.height);
                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                         tx->outpoints[up->U.vout].spendheight = 1;
                     continue;
@@ -912,22 +912,22 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                 {
                     if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts && tx->outpoints[vout].spendheight > 0 )
                     {
-                        printf("txid spent\n");
+                        //printf("txid spent\n");
                         return(0);
                     }
                     if ( (tx= LP_transactionfind(coin,txid2)) != 0 && vout2 < tx->numvouts && tx->outpoints[vout2].spendheight > 0 )
                     {
-                        printf("txid2 spent\n");
+                        //printf("txid2 spent\n");
                         return(0);
                     }
                     if ( (up= LP_address_utxofind(coin,destaddr,txid,vout)) != 0 && up->spendheight > 0 )
                     {
-                        printf("txid %s spentB\n",destaddr);
+                        //printf("txid %s spentB\n",destaddr);
                         return(0);
                     }
                     if ( (up= LP_address_utxofind(coin,destaddr,txid2,vout2)) != 0 && up->spendheight > 0 )
                     {
-                        printf("txid2 %s spentB\n",destaddr);
+                        //printf("txid2 %s spentB\n",destaddr);
                         return(0);
                     }
                 }

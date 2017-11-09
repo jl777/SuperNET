@@ -187,7 +187,7 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
     {
         if ( n > maxn )
         {
-            printf("LP_calc_magic maxn.%d <- %d\n",maxn,n);
+            printf("LP_calc_magic maxn.%d <- %d   | ",maxn,n);
             maxn = n;
         }
         printf("millis %.3f ave %.3f, aveiters %.1f\n",OS_milliseconds() - millis,sum/counter,(double)nsum/counter);
@@ -408,7 +408,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
     msglen = (int32_t)strlen((char *)msg) + 1;
     if ( crc32 == 0 )
         crc32 = calc_crc32(0,&msg[2],msglen - 2);
-    if ( IAMLP == 0 )
+    if ( G.LP_IAMLP == 0 )
     {
         free(msg);
 //printf("broadcast %s\n",jstr(argjson,"method"));
@@ -763,6 +763,16 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
  both are combined in LP_psock_get
 
 */
+
+char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
+{
+    char url[512],*retstr;
+    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport-1,ispaired);
+    //return(LP_issue_curl("psock",destip,destport,url));
+    retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
+    printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
+    return(retstr);
+}
 
 uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
 {

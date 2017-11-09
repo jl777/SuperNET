@@ -965,7 +965,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         interest = 0;
         if ( up->U.height < 7777777 && strcmp(coin->symbol,"KMD") == 0 )
         {
-            if ( (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
+            if ( 0 && (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
             {
                 interestsum += interest;
                 char str[65]; printf("%s/%d %.8f interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
@@ -1059,7 +1059,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     if ( numvins <= 0 || total < amount )
     {
         printf("change %.8f = total %.8f - amount %.8f, adjust %.8f numvouts.%d, txfee %.8f\n",dstr(change),dstr(total),dstr(amount),dstr(adjust),numvouts,dstr(txfee));
-        printf("not enough inputs for amount %.8f < %.8f txfee %.8f\n",dstr(total),dstr(amount),dstr(txfee));
+        printf("not enough inputs  %.8f < for amount %.8f txfee %.8f\n",dstr(total),dstr(amount),dstr(txfee));
         return(0);
     }
     change = (total - amount);

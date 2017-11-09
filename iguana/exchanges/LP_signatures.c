@@ -448,7 +448,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 {
     struct iguana_info *basecoin,*relcoin; char pubsecpstr[67]; uint32_t timestamp; uint64_t price64; bits256 zero; cJSON *reqjson = cJSON_CreateObject();
     // LP_addsig
-    if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 && basecoin->electrum == 0 && relcoin->electrum == 0 )
+    if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 && basecoin->electrum == 0 )//&& relcoin->electrum == 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
         jaddbits256(reqjson,"pubkey",G.LP_mypub25519);
@@ -559,7 +559,7 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
 
 void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 {
-    bits256 zero; uint32_t timestamp; char secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
+    bits256 zero; uint32_t timestamp; char LPipaddr[64],secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
     memset(zero.bytes,0,sizeof(zero));
     jaddstr(reqjson,"method","notify");
     jaddstr(reqjson,"rmd160",G.LP_myrmd160str);
@@ -570,7 +570,15 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     jaddnum(reqjson,"timestamp",timestamp);
     LP_pubkey_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
     if ( IAMLP != 0 )
-        jaddstr(reqjson,"isLP",LP_myipaddr);
+    {
+        if ( LP_rarestpeer(LPipaddr) != 0 )
+        {
+            jaddstr(reqjson,"isLP",LPipaddr);
+            if ( strcmp(LPipaddr,LP_myipaddr) == 0 )
+                jaddnum(reqjson,"ismine",1);
+        }
+        else printf("no LPipaddr\n");
+    }
     jaddnum(reqjson,"session",G.LP_sessionid);
     LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
 }
@@ -585,7 +593,16 @@ char *LP_notify_recv(cJSON *argjson)
             LP_pubkey_sigcheck(pubp,argjson);
         if ( (ipaddr= jstr(argjson,"isLP")) != 0 )
         {
-            //printf("notify from isLP %s\n",ipaddr);
+            //printf("notify got isLP %s %d\n",ipaddr,jint(argjson,"ismine"));
+            LP_peer_recv(ipaddr,jint(argjson,"ismine"));
+            if ( IAMLP != 0 && G.LP_IAMLP == 0 && strcmp(ipaddr,LP_myipaddr) == 0 )
+            {
+                if ( bits256_cmp(pub,G.LP_mypub25519) != 0 )
+                {
+                    char str[65]; printf("that's me! and it is from %s which isnt me\n",bits256_str(str,pub));
+                    G.LP_IAMLP = 1;
+                }
+            }
             LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,RPC_port,RPC_port+10,RPC_port+20,1,juint(argjson,"session"));
         }
         //char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);
@@ -612,17 +629,6 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 vout = jint(item,"tx_pos");
                 value = j64bits(item,"value");
                 height = jint(item,"height");
-#ifdef FROM_JS
-                //if ( 0 && (rand() % 100) == 0 && IAMLP == 0 )
-                {
-                    struct LP_peerinfo *peer,*tmp; char *retstr; 
-                    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-                    {
-                        if ( (retstr= issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,vout,height,value)) != 0 )
-                            free(retstr);
-                    }
-                }
-#else
                 req = cJSON_CreateObject();
                 jaddstr(req,"method","uitem");
                 jaddstr(req,"coin",coin->symbol);
@@ -633,7 +639,6 @@ void LP_smartutxos_push(struct iguana_info *coin)
                 jadd64bits(req,"value",value);
                 //printf("ADDR_UNSPENTS[] <- %s\n",jprint(req,0));
                 LP_reserved_msg(0,"","",zero,jprint(req,1));
-#endif
             }
         }
         free_json(array);

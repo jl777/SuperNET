@@ -18,12 +18,12 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// dynamic adding of new LP node
+// detecting new deposits in inventory
 // BTC swaps
+// bot progress
 // swap started event for bot
-// lack of full depth
-// withdraw too big
 // bot status 1600% ?
+
 // BCH signing
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -90,18 +90,6 @@ struct iguana_info *LP_coins;
 struct LP_pubkeyinfo *LP_pubkeyinfos;
 struct rpcrequest_info *LP_garbage_collector;
 
-#include "LP_network.c"
-
-char *activecoins[] = { "BTC", "KMD" };
-char GLOBAL_DBDIR[] = { "DB" };
-char LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
-char LP_gui[16] = { "cli" };
-
-char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
-    //"24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
-    "51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
-};//"5.9.253.204" }; //
-
 
 //uint32_t LP_deadman_switch;
 uint16_t LP_fixed_pairport,LP_publicport;
@@ -121,10 +109,23 @@ struct LP_globals
     uint64_t LP_skipstatus[10000];
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
     uint32_t LP_sessionid,counter;
-    int32_t LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
+    int32_t LP_IAMLP,LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
     char USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[16];
     struct LP_privkey LP_privkeys[100];
 } G;
+
+#include "LP_network.c"
+
+char *activecoins[] = { "BTC", "KMD" };
+char GLOBAL_DBDIR[] = { "DB" };
+char LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
+char LP_gui[16] = { "cli" };
+
+char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", //"5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
+    //"24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
+    "51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
+};//"5.9.253.204" }; //
+
 
 // stubs
 
@@ -469,17 +470,17 @@ void LP_coinsloop(void *_coins)
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
-        LP_coinsloopBTC_stats.threshold = 2000.;
+        LP_coinsloopBTC_stats.threshold = 20000.;
     }
     else if ( strcmp("KMD",coins) == 0 )
     {
         strcpy(LP_coinsloopKMD_stats.name,"KMD coin loop");
-        LP_coinsloopKMD_stats.threshold = 1000.;
+        LP_coinsloopKMD_stats.threshold = 10000.;
     }
     else
     {
         strcpy(LP_coinsloop_stats.name,"other coins loop");
-        LP_coinsloop_stats.threshold = 500.;
+        LP_coinsloop_stats.threshold = 5000.;
     }
     while ( 1 )
     {
@@ -602,63 +603,23 @@ void LP_coinsloop(void *_coins)
 
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport)
 {
-    static uint32_t counter;//,numpeers;
-    struct iguana_info *coin,*ctmp; char *origipaddr; int32_t height,nonz = 0;//struct LP_peerinfo *peer,*tmp; uint32_t now;
+    static uint32_t counter;
+    struct iguana_info *coin,*ctmp; char *origipaddr; uint32_t now; int32_t height,nonz = 0;
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
     if ( mypeer == 0 )
         myipaddr = "127.0.0.1";
-    /*
-     now = (uint32_t)time(NULL);
-     numpeers = LP_numpeers();
-    needpings = 0;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        if ( peer->errors >= LP_MAXPEER_ERRORS )
-        {
-            if ( (rand() % 10000) == 0 )
-            {
-                peer->errors--;
-                if ( peer->errors < LP_MAXPEER_ERRORS )
-                    peer->diduquery = 0;
-            }
-            if ( IAMLP == 0 )
-                continue;
-        }
-        if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (rand() % 100000) == 0 )
-        {
-            if ( strcmp(peer->ipaddr,myipaddr) != 0 )
-            {
-                nonz++;
-                //issue_LP_getpeers(peer->ipaddr,peer->port);
-                //LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
-                //if ( peer->diduquery == 0 )
-                //    LP_peer_pricesquery(peer);
-                //LP_utxos_sync(peer);
-                needpings++;
-            }
-            peer->lastpeers = now;
-        }
-        if ( peer->needping != 0 )
-        {
-            peer->diduquery = now;
-            nonz++;
-            if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
-                free(retstr);
-            peer->needping = 0;
-            needpings++;
-        }
-    }*/
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
-        if ( coin->addr_listunspent_requested != 0 && time(NULL) > coin->lastpushtime+LP_ORDERBOOK_DURATION )
+        now = (uint32_t)time(NULL);
+        if ( (coin->addr_listunspent_requested != 0 && now > coin->lastpushtime+LP_ORDERBOOK_DURATION*.5) || now > coin->lastpushtime+LP_ORDERBOOK_DURATION*5 )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
-            coin->lastpushtime = (uint32_t)time(NULL);
+            coin->lastpushtime = (uint32_t)now;
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
         }
-        if ( coin->electrum == 0 && coin->inactive == 0 && time(NULL) > coin->lastgetinfo+LP_GETINFO_INCR )
+        if ( coin->electrum == 0 && coin->inactive == 0 && now > coin->lastgetinfo+LP_GETINFO_INCR )
         {
             nonz++;
             if ( (height= LP_getheight(coin)) > coin->longestchain )
@@ -667,7 +628,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 if ( 0 && coin->firstrefht != 0 )
                     printf(">>>>>>>>>> set %s longestchain %d (ref.%d [%d, %d])\n",coin->symbol,height,coin->firstrefht,coin->firstscanht,coin->lastscanht);
             } //else LP_mempoolscan(coin->symbol,zero);
-            coin->lastgetinfo = (uint32_t)time(NULL);
+            coin->lastgetinfo = (uint32_t)now;
         }
     }
     counter++;
@@ -716,7 +677,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
     int32_t i,j; uint32_t r;
     if ( IAMLP != 0 )
     {
-        LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,0,0,1,G.LP_sessionid);
+        LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,pushport,subport,1,G.LP_sessionid);
         if ( myipaddr == 0 || mypeer == 0 )
         {
             printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
@@ -739,9 +700,9 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         }
         if ( seednode == 0 || seednode[0] == 0 )
         {
-            LP_addpeer(mypeer,pubsock,"51.15.86.136",myport,pushport,subport,0,G.LP_sessionid);
+            //LP_addpeer(mypeer,pubsock,"51.15.86.136",myport,pushport,subport,0,G.LP_sessionid);
             OS_randombytes((void *)&r,sizeof(r));
-            r = 0;
+            //r = 0;
             for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
             {
                 i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
@@ -757,7 +718,7 @@ void LP_pubkeysloop(void *ctx)
 {
     static uint32_t lasttime; cJSON *retjson; struct iguana_info *coin,*tmp;
     strcpy(LP_pubkeysloop_stats.name,"LP_pubkeysloop");
-    LP_pubkeysloop_stats.threshold = 5000.;
+    LP_pubkeysloop_stats.threshold = 15000.;
     sleep(10);
     while ( 1 )
     {
@@ -1099,12 +1060,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for port.%u\n",myport);
         exit(-1);
     }
-    /*char request[128];
-    if ( IAMLP == 0 )
-        sprintf(request,"{\"method\":\"getpeers\",\"timestamp\":%u}",(uint32_t)time(NULL));
-    else sprintf(request,"{\"method\":\"getpeers\",\"LPnode\":\"%s\",\"timestamp\":%u}",myipaddr,(uint32_t)time(NULL));
-    LP_reserved_msg(0,"","",G.LP_mypub25519,clonestr(request));    */
-    int32_t nonz; //uint32_t lasthello = 0;
+    int32_t nonz;
     while ( 1 )
     {
         nonz = 0;
@@ -1120,40 +1076,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000);
         else if ( IAMLP == 0 )
             usleep(1000);
-        /*if ( IAMLP != 0 && time(NULL) > lasthello+600 )
-        {
-            char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
-            allgood = 0;
-            if ( (retstr= issue_hello(myport)) != 0 )
-            {
-                if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-                    if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"got hello") == 0 )
-                        allgood = 1;
-                    else printf("strange return.(%s)\n",jprint(retjson,0));
-                    free_json(retjson);
-                } else printf("couldnt parse hello return.(%s)\n",retstr);
-                free(retstr);
-            } else printf("issue_hello NULL return\n");
-            lasthello = (uint32_t)time(NULL);
-            if ( allgood == 0 )
-            {
-                printf("RPC port got stuck, would have close bindsocket\n");
-                if ( 0 )
-                {
-                    LP_bindsock = -1;
-                    closesocket(sock);
-                    LP_bindsock_reset++;
-                    sleep(10);
-                    printf("launch new rpcloop\n");
-                    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
-                    {
-                        printf("error launching stats rpcloop for port.%u\n",myport);
-                        exit(-1);
-                    }
-                }
-            }
-        }*/
     }
 #endif
 }
