@@ -272,6 +272,12 @@ bot_resume(botid)\n\
         if ( base[0] != 0 && rel[0] != 0 )
         {
             double price,bid,ask;
+            if ( strcmp(method,"autoprice") == 0 )
+            {
+                if ( LP_autoprice(base,rel,argjson) < 0 )
+                    return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
+                else return(clonestr("{\"result\":\"success\"}"));
+            }
             if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
                 return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
             price = jdouble(argjson,"price");
@@ -282,12 +288,6 @@ bot_resume(botid)\n\
                 //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
                 //    return(clonestr("{\"error\":\"couldnt set price\"}"));
                 else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
-            }
-            else if ( strcmp(method,"autoprice") == 0 )
-            {
-                if ( LP_autoprice(base,rel,argjson) < 0 )
-                    return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
-                else return(clonestr("{\"result\":\"success\"}"));
             }
             else if ( strcmp(method,"pricearray") == 0 )
             {
