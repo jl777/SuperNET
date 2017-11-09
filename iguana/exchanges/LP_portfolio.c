@@ -647,7 +647,7 @@ void prices_loop(void *ctx)
             }
             free(retstr);
         }
-        sleep(10);
+        sleep(30);
     }
 }
 

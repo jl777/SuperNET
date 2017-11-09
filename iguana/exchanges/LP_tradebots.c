@@ -611,7 +611,7 @@ char *LP_tradebot_resume(void *ctx,int32_t pubsock,cJSON *argjson,uint32_t botid
 char *LP_istradebots_command(void *ctx,int32_t pubsock,char *method,cJSON *argjson)
 {
     uint32_t botid;
-    printf("LP_istradebots_command check %s\n",method);
+    //printf("LP_istradebots_command check %s\n",method);
     if ( strncmp("bot_",method,strlen("bot_")) != 0 )
         return(0);
     if ( strcmp(method,"bot_list") == 0 )
