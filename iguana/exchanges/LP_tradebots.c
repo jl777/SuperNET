@@ -414,7 +414,7 @@ char *LP_tradebot_statuslist(void *ctx,int32_t pubsock,cJSON *argjson)
 
 char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,double relvolume)
 {
-    struct LP_tradebot *bot; char *retstr; double shortfall; int32_t i,n; cJSON *array,*item,*retjson; uint64_t txfees,balance=0,abalance=0; struct iguana_info *basecoin,*relcoin;
+    struct LP_tradebot *bot; char *retstr; double shortfall; int32_t i,n; cJSON *array,*item,*retjson; uint64_t sum,txfee,txfees,balance=0,abalance=0; struct iguana_info *basecoin,*relcoin;
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( basecoin == 0 || relcoin == 0 || basecoin->inactive != 0 || relcoin->inactive != 0 )
@@ -433,7 +433,8 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
     }
     if ( (retstr= LP_orderbook(base,rel,0)) != 0 )
         free(retstr);
-    txfees = 10 * relcoin->txfee;
+    txfee = LP_txfeecalc(relcoin,0,0);
+    txfees = 10 * txfee;
     printf("%s inventory balance %.8f, relvolume %.8f + txfees %.8f\n",rel,dstr(abalance),relvolume,dstr(txfees));
     if ( dstr(abalance) < relvolume + dstr(txfees) )
     {
@@ -449,22 +450,23 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
         jaddnum(retjson,"txfees",dstr(txfees));
         shortfall = (relvolume + dstr(txfees)) - dstr(balance);
         jaddnum(retjson,"shortfall",shortfall);
-        if ( balance > (relvolume + 10*relvolume/777.) )
+        sum = (relvolume+2*dstr(txfees)) + 3 * ((relvolume+2*dstr(txfees))/777);
+        if ( balance >= sum+txfee )
         {
             char *withdrawstr; cJSON *outputjson,*withdrawjson,*outputs,*item;
             outputjson = cJSON_CreateObject();
             outputs = cJSON_CreateArray();
             item = cJSON_CreateObject();
-            jaddnum(item,relcoin->smartaddr,relvolume+dstr(txfees));
+            jaddnum(item,relcoin->smartaddr,relvolume+2*dstr(txfees));
             jaddi(outputs,item);
             item = cJSON_CreateObject();
-            jaddnum(item,relcoin->smartaddr,(relvolume+dstr(txfees))/777);
+            jaddnum(item,relcoin->smartaddr,(relvolume+2*dstr(txfees))/777);
             jaddi(outputs,item);
             item = cJSON_CreateObject();
-            jaddnum(item,relcoin->smartaddr,(relvolume+dstr(txfees))/777);
+            jaddnum(item,relcoin->smartaddr,(relvolume+2*dstr(txfees))/777);
             jaddi(outputs,item);
             item = cJSON_CreateObject();
-            jaddnum(item,relcoin->smartaddr,(relvolume+dstr(txfees))/777);
+            jaddnum(item,relcoin->smartaddr,(relvolume+2*dstr(txfees))/777);
             jaddi(outputs,item);
             jadd(outputjson,"outputs",outputs);
             if ( (withdrawstr= LP_withdraw(relcoin,outputjson)) != 0 )
