@@ -448,8 +448,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 {
     struct iguana_info *basecoin,*relcoin; char pubsecpstr[67]; uint32_t timestamp; uint64_t price64; bits256 zero; cJSON *reqjson = cJSON_CreateObject();
     // LP_addsig
-    printf("base %s, rel %s %.8f\n",base,rel,price);
-    if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 && relcoin->electrum == 0 )//&& basecoin->electrum == 0 )
+    if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 && basecoin->electrum == 0 )//&& relcoin->electrum == 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
         jaddbits256(reqjson,"pubkey",G.LP_mypub25519);
