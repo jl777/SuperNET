@@ -210,7 +210,8 @@ int32_t LP_numpeers()
     struct LP_peerinfo *peer,*tmp; int32_t numpeers = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        numpeers++;
+        if ( peer->isLP != 0 )
+            numpeers++;
     }
     return(numpeers);
 }
@@ -218,21 +219,22 @@ int32_t LP_numpeers()
 uint16_t LP_randpeer(char *destip)
 {
     struct LP_peerinfo *peer,*tmp; uint16_t port = 0; int32_t n,r,numpeers = 0;
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        numpeers++;
-    }
+    destip[0] = 0;
+    numpeers = LP_numpeers();
     if ( numpeers > 0 )
     {
         r = rand() % numpeers;
         n = 0;
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            if ( n++ == r )
+            if ( peer->isLP != 0 )
             {
-                strcpy(destip,peer->ipaddr);
-                port = peer->port;
-                break;
+                if ( n++ == r )
+                {
+                    strcpy(destip,peer->ipaddr);
+                    port = peer->port;
+                    break;
+                }
             }
         }
     }

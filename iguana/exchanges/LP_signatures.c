@@ -559,7 +559,7 @@ int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
 
 void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 {
-    bits256 zero; uint32_t timestamp; char secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
+    bits256 zero; uint32_t timestamp; char LPipaddr[64],secpstr[67]; cJSON *reqjson = cJSON_CreateObject();
     memset(zero.bytes,0,sizeof(zero));
     jaddstr(reqjson,"method","notify");
     jaddstr(reqjson,"rmd160",G.LP_myrmd160str);
@@ -570,7 +570,10 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
     jaddnum(reqjson,"timestamp",timestamp);
     LP_pubkey_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_mypub25519,G.LP_myrmd160,G.LP_pubsecp);
     if ( IAMLP != 0 )
-        jaddstr(reqjson,"isLP",LP_myipaddr);
+    {
+        if ( LP_randpeer(LPipaddr) != 0 )
+            jaddstr(reqjson,"isLP",LPipaddr);
+    }
     jaddnum(reqjson,"session",G.LP_sessionid);
     LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
 }
