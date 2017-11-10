@@ -822,6 +822,7 @@ continue;
 #ifndef FROM_MARKETMAKER
 
 portable_mutex_t LP_commandmutex;
+uint16_t LP_RPCPORT;
 
 void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
@@ -1133,6 +1134,7 @@ char *stats_update(FILE *logfp,char *destdir,char *statefname,char *komodofname)
     return(jprint(retjson,1));
 }
 
+#ifndef FROM_PRIVATEBET
 int main(int argc, const char * argv[])
 {
     struct tai T; uint32_t timestamp; struct DEXstats_disp prices[365]; int32_t i,n,seconds,leftdatenum; FILE *fp,*logfp; char *filestr,*retstr,*statefname,logfname[512],komodofile[512]; uint16_t port = LP_RPCPORT;
@@ -1182,4 +1184,5 @@ int main(int argc, const char * argv[])
     }
     return 0;
 }
+#endif
 #endif
