@@ -89,14 +89,14 @@ int32_t LP_cacheitem(struct iguana_info *coin,struct LP_transaction *tx,long rem
     {
         printf("offset.%d txlen.%d remains.%ld\n",offset,tx->len,remains);
         serialized = &((uint8_t *)tx)[offset];
-        hash = bits256_doublesha256(0,tx->serialized,tx->len);
+        hash = bits256_doublesha256(0,serialized,tx->len);
         if ( bits256_cmp(hash,tx->txid) == 0 )
         {
             printf("%s validated in cache\n",bits256_str(str,hash));
             n = tx->len;
             while ( (n & 7) != 0 )
                 n++;
-            if ( (txobj= LP_cache_transaction(coin,tx->txid,tx->serialized,tx->len)) != 0 )
+            if ( (txobj= LP_cache_transaction(coin,tx->txid,serialized,tx->len)) != 0 )
                 free_json(txobj);
             return(offset + n);
         }
