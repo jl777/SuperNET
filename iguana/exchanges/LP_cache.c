@@ -60,21 +60,39 @@ cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seria
     return(txobj);
 }
 
-/*struct LP_transaction
+void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t height)
 {
-    UT_hash_handle hh;
-    bits256 txid;
-    int32_t height,numvouts,numvins,len,SPV;
-    uint8_t *serialized;
-    struct LP_outpoint outpoints[];
-};*/
+    struct LP_transaction TX; struct LP_transaction *tx = 0;
+    if ( coin->cachefp != 0 && (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 && tx->len > 0 ) //strcmp(coin->smartaddr,coinaddr) == 0 &&
+    {
+        char str[65]; printf("store %s %s.[%d]\n",coin->symbol,bits256_str(str,txid),tx->len);
+        TX = *tx;
+        memset(&TX.hh,0,sizeof(TX.hh));
+        TX.serialized = 0;
+        TX.SPV = height;
+        fwrite(&TX,1,sizeof(TX),coin->cachefp);
+        if ( tx->numvouts > 0 )
+            fwrite(TX.outpoints,tx->numvouts,sizeof(*TX.outpoints),coin->cachefp);
+        fwrite(tx->serialized,1,tx->len,coin->cachefp);
+        fflush(coin->cachefp);
+    }
+}
+
+/*struct LP_transaction
+ {
+ UT_hash_handle hh;
+ bits256 txid;
+ int32_t height,numvouts,numvins,len,SPV;
+ uint8_t *serialized;
+ struct LP_outpoint outpoints[];
+ };*/
 
 int32_t LP_cacheitem(struct iguana_info *coin,uint8_t *ptr,long remains)
 {
     return(-1);
 }
 
-void *LP_cacheptr(FILE **wfp,long *fsizep,struct iguana_info *coin)
+void *LP_cacheptrs_init(FILE **wfp,long *fsizep,struct iguana_info *coin)
 {
     char fname[1024]; long n,len = 0; uint8_t *ptr = 0;
     sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
@@ -93,30 +111,6 @@ void *LP_cacheptr(FILE **wfp,long *fsizep,struct iguana_info *coin)
         }
     }
     return(ptr);
-}
-
-int32_t LP_SPV_load(struct iguana_info *coin,bits256 txid,int32_t height)
-{
-   // struct LP_transaction *tp;
-    return(-1);
-}
-
-
-void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t height)
-{
-    struct LP_transaction TX; struct LP_transaction *tx = 0;
-    if ( coin->cachefp != 0 && (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 && tx->len > 0 ) //strcmp(coin->smartaddr,coinaddr) == 0 &&
-    {
-        char str[65]; printf("store %s %s.[%d]\n",coin->symbol,bits256_str(str,txid),tx->len);
-        TX = *tx;
-        memset(&TX.hh,0,sizeof(TX.hh));
-        TX.serialized = 0;
-        fwrite(&TX,1,sizeof(TX),coin->cachefp);
-        if ( tx->numvouts > 0 )
-            fwrite(TX.outpoints,tx->numvouts,sizeof(*TX.outpoints),coin->cachefp);
-        fwrite(tx->serialized,1,tx->len,coin->cachefp);
-        fflush(coin->cachefp);
-    }
 }
 
 bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
@@ -189,7 +183,7 @@ bits256 LP_merkleroot(struct iguana_info *coin,struct electrum_info *ep,int32_t 
 
 int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height)
 {
-    struct LP_transaction *tx; cJSON *merkobj,*merkles; bits256 roothash,merkleroot; int32_t m,SPV = 0;
+    struct LP_transaction *tx=0; cJSON *merkobj,*merkles; bits256 roothash,merkleroot; int32_t m,SPV = 0;
     if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->height == height && tx->SPV > 0 )
         return(tx->SPV);
     if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
@@ -206,6 +200,8 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
                 if ( bits256_cmp(merkleroot,roothash) == 0 )
                 {
                     SPV = height;
+                    if ( tx != 0 )
+                        tx->SPV = height;
                     LP_SPV_store(coin,coinaddr,txid,height);
                     //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
                 }

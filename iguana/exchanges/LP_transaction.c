@@ -475,11 +475,12 @@ int64_t iguana_lockval(int32_t finalized,int64_t locktime)
 
 int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson,int32_t zcash)
 {
-    uint8_t *serialized,*serialized2,*serialized3,*serialized4,*extraspace,pubkeys[64][33]; int32_t finalized,i,len,n,z,plen,maxsize,complete = 0,extralen = 100000; char *privkeystr,*signedtx = 0; bits256 privkeys[1024],privkey,txid; cJSON *item; cJSON *txobj = 0;
+    uint8_t *serialized,*serialized2,*serialized3,*serialized4,*extraspace,pubkeys[64][33]; int32_t finalized,i,len,n,z,plen,maxsize,complete = 0,extralen = 100000; char *privkeystr,*signedtx = 0; bits256 *privkeys,privkey,txid; cJSON *item; cJSON *txobj = 0;
     maxsize = 1000000;
     memset(privkey.bytes,0,sizeof(privkey));
     if ( rawtx != 0 && rawtx[0] != 0 && (len= (int32_t)strlen(rawtx)>>1) < maxsize )
     {
+        privkeys = calloc(numinputs,sizeof(*privkeys));
         serialized = malloc(maxsize);
         serialized2 = malloc(maxsize);
         serialized3 = malloc(maxsize);
@@ -595,6 +596,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
             } else printf("rwmsgtx error\n");
         } else printf("no inputs in vins.(%s)\n",vins!=0?jprint(vins,0):"null");
         free(extraspace);
+        free(privkeys);
         free(serialized), free(serialized2), free(serialized3), free(serialized4);
     } else return(-1);
     if ( txobj != 0 )
