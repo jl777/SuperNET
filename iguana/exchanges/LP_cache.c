@@ -131,6 +131,7 @@ void LP_cacheptrs_init(struct iguana_info *coin)
     char fname[1024]; FILE *fp; int32_t tflag=0; long n,fsize=0,len = 0;
     sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
     fp = fopen(fname,"rb");
+    printf("load %s\n",fname);
     if ( fp != 0 )
     {
         fseek(fp,0,SEEK_END);
@@ -145,8 +146,9 @@ void LP_cacheptrs_init(struct iguana_info *coin)
                 break;
             }
             len += n;
-            printf("len.%ld n.%ld\n",len,n);
+            printf("%s len.%ld n.%ld\n",fname,len,n);
         }
+        fclose(fp);
     } else printf("couldnt find.(%s)\n",fname);
     if ( tflag != 0 )
         OS_truncate(fname,len);
