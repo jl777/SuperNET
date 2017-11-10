@@ -1078,11 +1078,18 @@ int32_t LP_undospends(struct iguana_info *coin,int32_t lastheight)
     return(num);
 }
 
+char *LP_unspents_filestr(char *symbol,char *addr)
+{
+    char fname[1024]; long fsize;
+    sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
+    return(OS_filestr(&fsize,fname));
+}
+
 void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedflag)
 {
     char fname[1024]; FILE *fp=0;
     sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
-    printf("unspents cache.(%s)\n",fname);
+    printf("unspents cache.(%s) for %s %s\n",fname,symbol,addr);
     if ( updatedflag == 0 && (fp= fopen(fname,"rb")) == 0 )
         updatedflag = 1;
     else if ( fp != 0 )
@@ -1092,13 +1099,6 @@ void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedfla
         fwrite(arraystr,1,strlen(arraystr),fp);
         fclose(fp);
     }
-}
-
-char *LP_unspents_filestr(char *symbol,char *addr)
-{
-    char fname[1024]; long fsize;
-    sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
-    return(OS_filestr(&fsize,fname));
 }
 
 uint64_t LP_unspents_load(char *symbol,char *addr)
