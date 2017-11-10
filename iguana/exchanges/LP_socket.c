@@ -407,8 +407,6 @@ int32_t electrum_kickstart(struct electrum_info *ep)
     return(0);
 }
 
-int32_t zeroval() { return(0); }
-
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
@@ -419,9 +417,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
     {
         if ( strcmp(ep->symbol,symbol) != 0 )
         {
-            printf("ep.%p %s %s:%u called for [%s]???\n",ep,ep->symbol,ep->ipaddr,ep->port,symbol);
-            int32_t i = 1 / zeroval();
-            printf("it should be dead already.%d\n",i);
+            printf("electrum_submit ep.%p %s %s:%u called for [%s]???\n",ep,ep->symbol,ep->ipaddr,ep->port,symbol);
         }
         if ( ep != 0 && ep->sock >= 0 && retjsonp != 0 )
         {
