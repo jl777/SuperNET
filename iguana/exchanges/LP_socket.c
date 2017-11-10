@@ -423,19 +423,19 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-//printf("%s %s",symbol,stratumreq);
+printf("%s %s",symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = electrum_sitem(ep,stratumreq,timeout,retjsonp);
            /*sitem = (struct stritem *)queueitem(stratumreq);
             sitem->expiration = timeout;
             sitem->DL.type = ep->stratumid++;
             sitem->retptrp = (void **)retjsonp;*/
-portable_mutex_lock(&ep->mutex);
+//portable_mutex_lock(&ep->mutex);
             //queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
             expiration = (uint32_t)time(NULL) + timeout + 1;
             while ( *retjsonp == 0 && time(NULL) <= expiration )
-                usleep(5000);
-portable_mutex_unlock(&ep->mutex);
+                usleep(15000);
+//portable_mutex_unlock(&ep->mutex);
             if ( *retjsonp == 0 || jobj(*retjsonp,"error") != 0 )
             {
                 if ( ++ep->numerrors >= LP_ELECTRUM_MAXERRORS )
@@ -897,15 +897,8 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     cJSON *strjson,*errjson,*resultjson,*paramsjson; char *method; int32_t i,n,height; uint32_t idnum=0; struct stritem *stritem; struct iguana_info *coin; struct queueitem *tmp,*item = 0;
     if ( str == 0 || len == 0 )
         return(-1);
+    printf("RECV.(%s)\n",str);
     ep->lasttime = (uint32_t)time(NULL);
-    /*if ( (strjson= cJSON_Parse(str)) == 0 )
-    {
-        strjson = cJSON_CreateObject();
-        resitem = cJSON_CreateObject();
-        jaddstr(resitem,"string",str);
-        jadd(strjson,"result",resitem);
-     printf("mapped.(%s) -> %s\n",str,jprint(strjson,0));
-     }*/
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
         resultjson = jobj(strjson,"result");
