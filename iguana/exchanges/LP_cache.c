@@ -90,7 +90,11 @@ void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t h
 int32_t LP_cacheitem(struct iguana_info *coin,struct LP_transaction *tx,long remains)
 {
     int32_t offset;
-    
+    offset = sizeof(*tx) + tx->numvouts*sizeof(*tx->outpoints);
+    if ( offset+tx->len <= remains )
+    {
+        return(0);
+    }
     return(-1);
 }
 

@@ -247,7 +247,10 @@ int32_t iguana_msgtx_Vset(uint8_t *serialized,int32_t maxlen,struct iguana_msgtx
 
 int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLockTime,struct vin_info *V,int32_t numvins)
 {
-    uint8_t script[IGUANA_MAXSCRIPTSIZE],*activescript,savescript[IGUANA_MAXSCRIPTSIZE]; char str[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t vini,scriptlen,activescriptlen,savelen,errs = 0; cJSON *spendscript,*item=0;
+    uint8_t *script,*activescript,*savescript; char *str; int32_t vini,scriptlen,activescriptlen,savelen,errs = 0; cJSON *spendscript,*item=0;
+    script = calloc(1,IGUANA_MAXSCRIPTSIZE);
+    savescript = calloc(1,IGUANA_MAXSCRIPTSIZE);
+    str = calloc(1,IGUANA_MAXSCRIPTSIZE*2+1);
     for (vini=0; vini<numvins; vini++)
     {
         savelen = V[vini].spendlen;
@@ -297,6 +300,9 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
         memcpy(V[vini].spendscript,savescript,savelen);
         V[vini].spendlen = savelen;
     }
+    free(str);
+    free(script);
+    free(savescript);
     if ( errs != 0 )
         return(-errs);
     if ( logarray != 0 )
