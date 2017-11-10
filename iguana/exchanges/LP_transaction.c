@@ -480,7 +480,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
     memset(privkey.bytes,0,sizeof(privkey));
     if ( rawtx != 0 && rawtx[0] != 0 && (len= (int32_t)strlen(rawtx)>>1) < maxsize )
     {
-        privkeys = calloc(numinputs,sizeof(*privkeys));
+        privkeys = calloc(numinputs+1024,sizeof(*privkeys));
         serialized = malloc(maxsize);
         serialized2 = malloc(maxsize);
         serialized3 = malloc(maxsize);
