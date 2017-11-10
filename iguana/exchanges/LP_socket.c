@@ -1073,10 +1073,13 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
     }
     else
     {
-        kickval = electrum_kickstart(ep);
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"status","already there");
-        jaddnum(retjson,"restart",kickval);
+        if ( ep->numerrors > 0 )
+        {
+            kickval = electrum_kickstart(ep);
+            jaddnum(retjson,"restart",kickval);
+        }
     }
     //printf("(%s)\n",jprint(retjson,0));
     return(retjson);
