@@ -416,7 +416,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-printf("%s %s",symbol,stratumreq);
+//printf("%s %s",symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = electrum_sitem(ep,stratumreq,timeout,retjsonp);
            /*sitem = (struct stritem *)queueitem(stratumreq);
@@ -743,19 +743,12 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
 
 cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
 {
-    cJSON *retjson; //struct iguana_info *coin; struct LP_transaction *tx;
+    cJSON *retjson;
     if ( ep != 0 )
         portable_mutex_lock(&ep->txmutex);
     retjson = _electrum_transaction(symbol,ep,retjsonp,txid);
     if ( ep != 0 )
         portable_mutex_unlock(&ep->txmutex);
-    /*if ( ep != 0 && (coin= LP_coinfind(symbol)) != 0 && (tx= LP_transactionfind(coin,txid)) != 0 && tx->SPV <= 0 ) // we just dont have height!
-    {
-        if ( tx->height == 0 )
-            tx->height = LP_gettxheight(coin,txid);
-        LP_merkleproof(coin,ep,txid,tx->height);
-        printf("extra merkle\n");
-    }*/
     return(retjson);
 }
 
