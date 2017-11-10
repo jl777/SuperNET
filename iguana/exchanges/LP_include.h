@@ -37,6 +37,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 8
 
+#define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
 #define LP_AUTOTRADE_TIMEOUT 30
 #define ELECTRUM_TIMEOUT 7

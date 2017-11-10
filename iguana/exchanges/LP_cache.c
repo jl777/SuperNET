@@ -62,7 +62,7 @@ cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seria
 
 void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t height)
 {
-    struct LP_transaction TX; struct LP_transaction *tx = 0;
+    struct LP_transaction TX; int32_t n; struct LP_transaction *tx = 0;
     if ( coin->cachefp != 0 && (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 && tx->len > 0 ) //strcmp(coin->smartaddr,coinaddr) == 0 &&
     {
         char str[65]; printf("store %s %s.[%d]\n",coin->symbol,bits256_str(str,txid),tx->len);
@@ -74,6 +74,9 @@ void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t h
         if ( tx->numvouts > 0 )
             fwrite(TX.outpoints,tx->numvouts,sizeof(*TX.outpoints),coin->cachefp);
         fwrite(tx->serialized,1,tx->len,coin->cachefp);
+        n = tx->len;
+        while ( (n & 7) != 0 )
+            fputc(0,coin->cachefp), n++;
         fflush(coin->cachefp);
     }
 }
@@ -89,11 +92,17 @@ void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t h
 
 int32_t LP_cacheitem(struct iguana_info *coin,struct LP_transaction *tx,long remains)
 {
-    int32_t offset;
+    int32_t offset; bits256 hash; char str[65],str2[65];
     offset = sizeof(*tx) + tx->numvouts*sizeof(*tx->outpoints);
     if ( offset+tx->len <= remains )
     {
-        return(0);
+        hash = bits256_doublesha256(0,&((uint8_t *)tx)[offset],tx->len);
+        if ( bits256_cmp(hash,tx->txid) == 0 )
+        {
+            printf("%s validated in cache\n",bits256_str(str,hash));
+            return(0);
+        }
+        printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,tx->txid));
     }
     return(-1);
 }
