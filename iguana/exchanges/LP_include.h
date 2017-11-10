@@ -268,7 +268,7 @@ struct iguana_info
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
-    void *electrum; void *ctx; FILE *cachefp; long cachesize;
+    void *electrum; void *ctx;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33],zcash;
     bits256 lastprivkey; uint32_t lastprivkeytime; int32_t privkeydepth;
@@ -433,7 +433,7 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid);
 uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance);
 int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 void LP_smartutxos_push(struct iguana_info *coin);
-long LP_cacheptrs_init(FILE **wfp,struct iguana_info *coin);
+void LP_cacheptrs_init(struct iguana_info *coin);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);
 cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 void LP_postutxos(char *symbol,char *coinaddr);
