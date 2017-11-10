@@ -1089,7 +1089,7 @@ void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedfla
 {
     char fname[1024]; FILE *fp=0;
     sprintf(fname,"%s/UNSPENTS/%s_%s",GLOBAL_DBDIR,symbol,addr), OS_portable_path(fname);
-    printf("unspents cache.(%s) for %s %s\n",fname,symbol,addr);
+    printf("unspents cache.(%s) for %s %s, updated.%d\n",fname,symbol,addr,updatedflag);
     if ( updatedflag == 0 && (fp= fopen(fname,"rb")) == 0 )
         updatedflag = 1;
     else if ( fp != 0 )
