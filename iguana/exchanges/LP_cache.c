@@ -106,26 +106,32 @@ int32_t LP_cacheitem(struct iguana_info *coin,struct LP_transaction *tx,long rem
 
 long LP_cacheptrs_init(FILE **wfp,struct iguana_info *coin)
 {
-    char fname[1024]; FILE *fp; long n,fsize=0,len = 0; uint8_t *ptr = 0;
+    char fname[1024]; FILE *fp; int32_t flag = 0; long n,fsize=0,len = 0; uint8_t *ptr = 0;
     sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
     fp = fopen(fname,"rb");
     if ( ((*wfp)= OS_appendfile(fname)) != 0 )
     {
         if ( fp != 0 )
         {
+            fseek(fp,0,SEEK_END);
+            if ( ftell(fp) > sizeof(struct LP_transaction) )
+                flag = 1;
             fclose(fp);
-            ptr = OS_portable_mapfile(fname,&fsize,0);
-            while ( len < fsize )
+            if ( flag != 0 )
             {
-                if ( (n= LP_cacheitem(coin,(struct LP_transaction *)&ptr[len],fsize - len)) < 0 )
+                ptr = OS_portable_mapfile(fname,&fsize,0);
+                while ( len < fsize )
                 {
-                    printf("cacheitem error at %s offset.%ld when fsize.%ld\n",coin->symbol,len,fsize);
-                    fseek(*wfp,len,SEEK_SET);
-                    break;
+                    if ( (n= LP_cacheitem(coin,(struct LP_transaction *)&ptr[len],fsize - len)) < 0 )
+                    {
+                        printf("cacheitem error at %s offset.%ld when fsize.%ld\n",coin->symbol,len,fsize);
+                        fseek(*wfp,len,SEEK_SET);
+                        break;
+                    }
+                    len += n;
+                    if ( (len & 1) != 0 )
+                        printf("odd offset at %ld\n",len);
                 }
-                len += n;
-                if ( (len & 1) != 0 )
-                    printf("odd offset at %ld\n",len);
             }
         }
     }
