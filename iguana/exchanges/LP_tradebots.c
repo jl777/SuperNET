@@ -36,7 +36,7 @@ struct LP_tradebot
     char name[128],base[32],rel[32];
     int32_t numtrades,numpending,completed,dispdir;
     double maxprice,totalrelvolume,totalbasevolume,basesum,relsum,pendbasesum,pendrelsum;
-    uint32_t dead,pause,started,id;
+    uint32_t dead,pause,userpause,started,id;
     struct LP_tradebot_trade *trades[LP_TRADEBOTS_MAXTRADES];
 } *LP_tradebots;
 
@@ -134,8 +134,8 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
     jaddstr(json,"name",bot->name);
     jaddnum(json,"botid",bot->id);
     jaddnum(json,"started",bot->started);
-    if ( bot->pause != 0 )
-        jaddnum(json,"paused",bot->pause);
+    if ( bot->pause != 0 || bot->userpause != 0 )
+        jaddnum(json,"paused",bot->userpause != 0 ? bot->userpause : bot->pause);
     if ( bot->dead != 0 )
         jaddnum(json,"stopped",bot->dead);
     if ( bot->dispdir > 0 )
@@ -293,7 +293,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
 {
     double remaining,maxrel; struct LP_tradebot_trade *tp; int32_t i,maxiters = 10; uint32_t tradeid; bits256 destpubkey; char *retstr,*liststr; cJSON *retjson,*retjson2,*pending;
     memset(destpubkey.bytes,0,sizeof(destpubkey));
-    if ( bot->dead == 0 && bot->pause == 0 && bot->numtrades < sizeof(bot->trades)/sizeof(*bot->trades) )
+    if ( bot->dead == 0 && bot->pause == 0 && bot->userpause == 0 && bot->numtrades < sizeof(bot->trades)/sizeof(*bot->trades) )
     {
         if ( (liststr= LP_recent_swaps(0)) != 0 )
         {
@@ -427,7 +427,8 @@ void LP_tradebots_timeslice(void *ctx)
             bot->dead = (uint32_t)time(NULL);
         else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )
             bot->pause = (uint32_t)time(NULL);
-        else bot->pause = 0;
+        else if ( bot->userpause == 0 )
+            bot->pause = 0;
         if ( bot->numpending == 0 )
             LP_tradebot_timeslice(ctx,bot);
     }
@@ -629,7 +630,7 @@ char *LP_tradebot_pause(void *ctx,int32_t pubsock,cJSON *argjson,uint32_t botid)
     {
         if ( bot->dead != 0 )
             return(clonestr("{\"error\":\"botid aleady stopped\"}"));
-        bot->pause = (uint32_t)time(NULL);
+        bot->userpause = (uint32_t)time(NULL);
         return(clonestr("{\"result\":\"success\"}"));
     }
     return(clonestr("{\"error\":\"couldnt find botid\"}"));
@@ -642,9 +643,9 @@ char *LP_tradebot_resume(void *ctx,int32_t pubsock,cJSON *argjson,uint32_t botid
     {
         if ( bot->dead != 0 )
             return(clonestr("{\"error\":\"botid aleady stopped\"}"));
-        if ( bot->pause == 0 )
+        if ( bot->userpause == 0 )
             return(clonestr("{\"result\":\"success\",\"status\":\"botid not paused\"}"));
-        bot->pause = 0;
+        bot->userpause = 0;
         return(clonestr("{\"result\":\"success\"}"));
     }
     return(clonestr("{\"error\":\"couldnt find botid\"}"));
