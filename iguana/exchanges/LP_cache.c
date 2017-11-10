@@ -93,7 +93,7 @@ void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
         sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
         if ( (fp= OS_appendfile(fname)) != 0 )
         {
-            char str[65]; printf("store %s %s.[%d]\n",coin->symbol,bits256_str(str,txid),tx->len);
+            //char str[65]; printf("store %s %s.[%d]\n",coin->symbol,bits256_str(str,txid),tx->len);
             fwrite(&tx->txid,1,sizeof(tx->txid),fp);
             fwrite(&tx->len,1,sizeof(tx->len),fp);
             fwrite(&tx->height,1,sizeof(tx->height),fp);
