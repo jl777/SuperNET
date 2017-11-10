@@ -509,11 +509,11 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     if ( coin->privkeydepth > 0 )
         return(0);
     coin->privkeydepth++;
-    printf("privkey init.(%s) %s depth.%d\n",coin->symbol,coin->smartaddr,coin->privkeydepth);
+    //printf("privkey init.(%s) %s depth.%d\n",coin->symbol,coin->smartaddr,coin->privkeydepth);
     if ( coin->inactive == 0 )
         LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
     array = LP_listunspent(coin->symbol,coin->smartaddr);
-    printf("unspent array %ld\n",strlen(jprint(array,0)));
+    //printf("unspent array %ld\n",strlen(jprint(array,0)));
     LP_address(coin,coin->smartaddr);
     if ( array != 0 )
     {
@@ -521,7 +521,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
             coin->numutxos = n;
-            printf("LP_privkey_init %s %d\n",coin->symbol,n);
+            //printf("LP_privkey_init %s %d\n",coin->symbol,n);
             for (iambob=0; iambob<=1; iambob++)
             {
                 if ( iambob == 0 )
@@ -582,7 +582,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                         else targetval = (depositval / 9) * 8 + 2*txfee;
                         if ( targetval < txfee*2 )
                             targetval = txfee*2;
-                        printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
+                        //printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
                         if ( depositval < (1+LP_MINSIZE_TXFEEMULT)*txfee )
                             continue;
                         i = -1;
