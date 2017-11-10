@@ -598,10 +598,9 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
             usecache = 0;
         else if ( ap->unspentheight < height )
             usecache = 0;
-        else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+20 )
+        else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+30 )
             usecache = 0;
     }
-    //printf("electrum.%s/%s listunspent last.(%s lag %d)\n",ep->symbol,coin->symbol,coin->lastunspent,(int32_t)(time(NULL) - coin->unspenttime));
     if ( usecache == 0 || electrumflag > 1 )
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
@@ -636,7 +635,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( strcmp(addr,coin->smartaddr) == 0 && (retstr= LP_unspents_filestr(symbol,coin->smartaddr)) != 0 )
         {
-            retjson = LP_address_utxos(coin,addr,1);
+            retjson = cJSON_Parse(retstr);
             free(retstr);
         } else retjson = LP_address_utxos(coin,addr,1);
     }
