@@ -348,6 +348,7 @@ void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid
             if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->tradeid == tradeid )
             {
                 tp->aliceid = aliceid;
+                printf("bot event tradeid.%u aliceid.%llu %s r.%u q.%u\n",tradeid,(long long)aliceid,event,requestid,quoteid);
                 if ( requestid != 0 && quoteid != 0 )
                 {
                     tp->requestid = requestid;
