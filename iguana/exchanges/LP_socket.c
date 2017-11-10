@@ -407,8 +407,6 @@ int32_t electrum_kickstart(struct electrum_info *ep)
     return(0);
 }
 
-int32_t zeroval() { return(0); }
-
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
@@ -419,9 +417,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
     {
         if ( strcmp(ep->symbol,symbol) != 0 )
         {
-            printf("ep.%p %s %s:%u called for [%s]???\n",ep,ep->symbol,ep->ipaddr,ep->port,symbol);
-            int32_t i = 1 / zeroval();
-            printf("it should be dead already.%d\n",i);
+            printf("electrum_submit ep.%p %s %s:%u called for [%s]???\n",ep,ep->symbol,ep->ipaddr,ep->port,symbol);
         }
         if ( ep != 0 && ep->sock >= 0 && retjsonp != 0 )
         {
@@ -434,12 +430,12 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             sitem->expiration = timeout;
             sitem->DL.type = ep->stratumid++;
             sitem->retptrp = (void **)retjsonp;*/
-            portable_mutex_lock(&ep->mutex);
+//portable_mutex_lock(&ep->mutex);
             //queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
             expiration = (uint32_t)time(NULL) + timeout + 1;
             while ( *retjsonp == 0 && time(NULL) <= expiration )
                 usleep(5000);
-            portable_mutex_unlock(&ep->mutex);
+//portable_mutex_unlock(&ep->mutex);
             if ( *retjsonp == 0 || jobj(*retjsonp,"error") != 0 )
             {
                 if ( ++ep->numerrors >= LP_ELECTRUM_MAXERRORS )
@@ -612,7 +608,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
         {
             if ( jobj(retjson,"error") == 0 && is_cJSON_Array(retjson) != 0 )
             {
-                if ( 1 && electrumflag > 1 )
+                if ( 0 && electrumflag > 1 )
                     printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
                 updatedflag = 0;
                 if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
