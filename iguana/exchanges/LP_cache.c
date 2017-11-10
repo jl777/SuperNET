@@ -87,82 +87,61 @@ cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seri
 
 void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t height)
 {
-    FILE *fp; char fname[512]; struct LP_transaction TX; int32_t n; struct LP_transaction *tx = 0;
+    FILE *fp; char fname[512]; struct LP_transaction *tx = 0;
     if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 && tx->len > 0 )
     {
         sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
         if ( (fp= OS_appendfile(fname)) != 0 )
         {
             char str[65]; printf("store %s %s.[%d]\n",coin->symbol,bits256_str(str,txid),tx->len);
-            TX = *tx;
-            memset(&TX.hh,0,sizeof(TX.hh));
-            TX.serialized = 0;
-            TX.SPV = height;
-            fwrite(&TX,1,sizeof(TX),fp);
-            if ( tx->numvouts > 0 )
-                fwrite(TX.outpoints,tx->numvouts,sizeof(*TX.outpoints),fp);
-            fwrite(tx->serialized,1,tx->len,fp);
-            n = tx->len;
-            while ( (n & 7) != 0 )
-                fputc(0,fp), n++;
+            fwrite(&tx->txid,1,sizeof(tx->txid),fp);
+            fwrite(&tx->len,1,sizeof(tx->len),fp);
+            fwrite(&tx->height,1,sizeof(tx->height),fp);
+            fwrite(&tx->serialized,1,tx->len,fp);
             fclose(fp);
         }
     }
 }
 
-long LP_cacheitem(struct iguana_info *coin,void *ptr,long fpos,long remains)
+long LP_cacheitem(struct iguana_info *coin,FILE *fp)
 {
-    struct LP_transaction *tx; long offset; int32_t n; uint8_t *serialized; bits256 hash; cJSON *txobj; char str[65],str2[65];
-    tx = ptr;
-    offset = fpos + sizeof(*tx) + tx->numvouts*sizeof(*tx->outpoints);
-    if ( offset+tx->len <= remains )
+    bits256 txid,hash; int32_t height,len; uint8_t *serialized; cJSON *txobj; char str[65],str2[65];
+    if ( fread(&txid,1,sizeof(txid),fp) == sizeof(txid) && fread(&len,1,sizeof(len),fp) == sizeof(len) && fread(&height,1,sizeof(height),fp) == sizeof(height) && len < 100000 )
     {
-        printf("offset.%ld txlen.%d remains.%ld\n",offset,tx->len,remains);
-        serialized = &((uint8_t *)ptr)[offset];
-        hash = bits256_doublesha256(0,serialized,tx->len);
-        if ( bits256_cmp(hash,tx->txid) == 0 )
+        serialized = malloc(len);
+        if ( fread(serialized,1,len,fp) == len )
         {
-            printf("%s validated in cache\n",bits256_str(str,hash));
-            n = tx->len;
-            while ( (n & 7) != 0 )
-                n++;
-            if ( (txobj= LP_create_transaction(coin,tx->txid,serialized,tx->len,tx->height)) != 0 )
-                free_json(txobj);
-            printf("return offset.%ld + tx->len %d -> %d\n",offset,tx->len,n);
-            return(offset + n);
+            hash = bits256_doublesha256(0,serialized,len);
+            if ( bits256_cmp(hash,txid) == 0 )
+            {
+                printf("%s validated in cache\n",bits256_str(str,hash));
+                if ( (txobj= LP_create_transaction(coin,txid,serialized,len,height)) != 0 )
+                    free_json(txobj);
+                return(ftell(fp));
+            }
+            printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,txid));
         }
-        printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,tx->txid));
     }
     return(-1);
 }
 
 void LP_cacheptrs_init(struct iguana_info *coin)
 {
-    char fname[1024]; FILE *fp; int32_t tflag=0,flag = 0; long n,fsize=0,len = 0; uint8_t *ptr = 0;
+    char fname[1024]; FILE *fp; int32_t tflag=0; long n,fsize=0,len = 0;
     sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
     fp = fopen(fname,"rb");
     if ( fp != 0 )
     {
-        fseek(fp,0,SEEK_END);
-        if ( ftell(fp) > sizeof(struct LP_transaction) )
-            flag = 1;
-        fclose(fp);
-        if ( flag != 0 )
+        while ( len < fsize )
         {
-            ptr = OS_portable_mapfile(fname,&fsize,0);
-            while ( len < fsize )
+            if ( (n= LP_cacheitem(coin,fp)) < 0 )
             {
-                if ( (n= LP_cacheitem(coin,ptr,len,fsize - len)) < 0 )
-                {
-                    printf("cacheitem error at %s offset.%ld when fsize.%ld\n",coin->symbol,len,fsize);
-                    tflag = 1;
-                    break;
-                }
-                len = n;
-                if ( (len & 7) != 0 )
-                    printf("odd offset at %ld\n",len);
+                printf("cacheitem error at %s offset.%ld when fsize.%ld\n",coin->symbol,len,fsize);
+                tflag = 1;
+                break;
             }
-            OS_releasemap(ptr,fsize);
+            len = n;
+            printf("len.%ld\n",len);
         }
     }
     if ( tflag != 0 )
