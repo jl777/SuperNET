@@ -318,6 +318,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                                 if ( (pending= jobj(retjson2,"pending")) != 0 && juint(pending,"tradeid") == tradeid )
                                 {
                                     bot->trades[bot->numtrades++] = tp = LP_tradebot_pending(bot,pending,tradeid);
+                                    sleep(3);
                                     if ( bot->relsum >= 0.99*bot->totalrelvolume-SMALLVAL || bot->basesum >= 0.99*bot->totalbasevolume-SMALLVAL )
                                         bot->dead = (uint32_t)time(NULL);
                                     else if ( tp->requestid != 0 && ((bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL) )
