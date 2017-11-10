@@ -592,7 +592,7 @@ bot_resume(botid)\n\
                     LP_address(ptr,coinaddr);
                     if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                     {
-                        printf("ADDR_UNSPENTS %s %s is my address being asked for!\n",ptr->symbol,coinaddr);
+                        //printf("ADDR_UNSPENTS %s %s is my address being asked for!\n",ptr->symbol,coinaddr);
                         if ( ptr->lastpushtime > 0 && ptr->addr_listunspent_requested > (uint32_t)time(NULL)-10 )
                             ptr->lastpushtime -= LP_ORDERBOOK_DURATION*0.1;
                         ptr->addr_listunspent_requested = (uint32_t)time(NULL);
