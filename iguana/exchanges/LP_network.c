@@ -409,7 +409,11 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
     msglen = (int32_t)strlen((char *)msg) + 1;
     if ( crc32 == 0 )
         crc32 = calc_crc32(0,&msg[2],msglen - 2);
+#ifdef FROM_MARKETMAKER
     if ( G.LP_IAMLP == 0 )
+#else
+    if ( IAMLP == 0 )
+#endif
     {
         free(msg);
 //printf("broadcast %s\n",jstr(argjson,"method"));
