@@ -901,9 +901,9 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                 {
                     item = jitem(asks,i);
                     price = jdouble(item,"price");
-                    if ( price/maxprice < .9 )
-                        price *= 1.05;
-                    else price *= 1.01;
+                    if ( price < maxprice && price > maxprice*0.8)
+                        price = price * 0.9 + 0.1 * maxprice;
+                    else price *= 1.005;
                     pubkey = jbits256(item,"pubkey");
                     if ( bits256_nonz(destpubkey) != 0 && bits256_cmp(destpubkey,pubkey) != 0 )
                         continue;
@@ -1010,15 +1010,15 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     destsatoshis = SATOSHIDEN * relvolume;
     if ( (autxo= LP_utxo_bestfit(rel,destsatoshis + 2*desttxfee)) == 0 )
         return(clonestr("{\"error\":\"cant find alice utxo that is big enough\"}"));
-    if ( destsatoshis - 0*desttxfee < autxo->S.satoshis )
+    if ( destsatoshis - desttxfee < autxo->S.satoshis )
     {
-        //destsatoshis -= 2*desttxfee;
+        destsatoshis -= desttxfee;
         autxo->S.satoshis = destsatoshis;
         //printf("first path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->S.satoshis));
     }
-    else if ( autxo->S.satoshis - 0*desttxfee < destsatoshis )
+    else if ( autxo->S.satoshis - desttxfee < destsatoshis )
     {
-        autxo->S.satoshis -= 0*desttxfee;
+        autxo->S.satoshis -= desttxfee;
         destsatoshis = autxo->S.satoshis;
         printf("second path dest %.8f from %.8f\n",dstr(destsatoshis),dstr(autxo->S.satoshis));
     }

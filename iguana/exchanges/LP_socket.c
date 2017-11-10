@@ -434,7 +434,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             //queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
             expiration = (uint32_t)time(NULL) + timeout + 1;
             while ( *retjsonp == 0 && time(NULL) <= expiration )
-                usleep(5000);
+                usleep(15000);
 //portable_mutex_unlock(&ep->mutex);
             if ( *retjsonp == 0 || jobj(*retjsonp,"error") != 0 )
             {
@@ -598,17 +598,16 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
             usecache = 0;
         else if ( ap->unspentheight < height )
             usecache = 0;
-        else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+20 )
+        else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+30 )
             usecache = 0;
     }
-    //printf("electrum.%s/%s listunspent last.(%s lag %d)\n",ep->symbol,coin->symbol,coin->lastunspent,(int32_t)(time(NULL) - coin->unspenttime));
     if ( usecache == 0 || electrumflag > 1 )
     {
         if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.listunspent",addr,ELECTRUM_TIMEOUT)) != 0 )
         {
             if ( jobj(retjson,"error") == 0 && is_cJSON_Array(retjson) != 0 )
             {
-                if ( 0 && electrumflag > 1 )
+                //if ( 0 && electrumflag > 1 )
                     printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
                 updatedflag = 0;
                 if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
@@ -636,7 +635,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     {
         if ( strcmp(addr,coin->smartaddr) == 0 && (retstr= LP_unspents_filestr(symbol,coin->smartaddr)) != 0 )
         {
-            retjson = LP_address_utxos(coin,addr,1);
+            retjson = cJSON_Parse(retstr);
             free(retstr);
         } else retjson = LP_address_utxos(coin,addr,1);
     }
@@ -899,16 +898,9 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     if ( str == 0 || len == 0 )
         return(-1);
     ep->lasttime = (uint32_t)time(NULL);
-    /*if ( (strjson= cJSON_Parse(str)) == 0 )
-    {
-        strjson = cJSON_CreateObject();
-        resitem = cJSON_CreateObject();
-        jaddstr(resitem,"string",str);
-        jadd(strjson,"result",resitem);
-     printf("mapped.(%s) -> %s\n",str,jprint(strjson,0));
-     }*/
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
+        //printf("%s RECV.(%ld) id.%d\n",ep->symbol,strlen(str),jint(strjson,"id"));
         resultjson = jobj(strjson,"result");
         //printf("strjson.(%s)\n",jprint(strjson,0));
         if ( (method= jstr(strjson,"method")) != 0 )
@@ -1081,10 +1073,13 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
     }
     else
     {
-        kickval = electrum_kickstart(ep);
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"status","already there");
-        jaddnum(retjson,"restart",kickval);
+        if ( ep->numerrors > 0 )
+        {
+            kickval = electrum_kickstart(ep);
+            jaddnum(retjson,"restart",kickval);
+        }
     }
     //printf("(%s)\n",jprint(retjson,0));
     return(retjson);

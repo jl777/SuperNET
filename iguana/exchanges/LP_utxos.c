@@ -502,17 +502,26 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         //printf("coin not active\n");
         return(0);
     }
-    //printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
+    if ( bits256_cmp(myprivkey,coin->lastprivkey) == 0 && time(NULL) < coin->lastprivkeytime+60 )
+        return(0);
+    coin->lastprivkey = myprivkey;
+    coin->lastprivkeytime = (uint32_t)time(NULL);
+    if ( coin->privkeydepth > 0 )
+        return(0);
+    coin->privkeydepth++;
+    //printf("privkey init.(%s) %s depth.%d\n",coin->symbol,coin->smartaddr,coin->privkeydepth);
     if ( coin->inactive == 0 )
         LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
+    array = LP_listunspent(coin->symbol,coin->smartaddr);
+    //printf("unspent array %ld\n",strlen(jprint(array,0)));
     LP_address(coin,coin->smartaddr);
-    if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
+    if ( array != 0 )
     {
         txfee = LP_txfeecalc(coin,0,0);
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
             coin->numutxos = n;
-            //printf("LP_privkey_init %s %s\n",coin->symbol,jprint(array,0));
+            //printf("LP_privkey_init %s %d\n",coin->symbol,n);
             for (iambob=0; iambob<=1; iambob++)
             {
                 if ( iambob == 0 )
@@ -539,7 +548,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                     satoshis = LP_txvalue(destaddr,coin->symbol,txid,vout);
                     if ( satoshis != 0 && satoshis != value )
                         printf("%s %s  privkey_init value  %.8f vs %.8f (%s) %.8f %.8f\n",coin->symbol,coin->smartaddr,dstr(satoshis),dstr(value),jprint(item,0),jdouble(item,"amount"),jdouble(item,"interest"));
-                    if ( LP_inventory_prevent(iambob,coin->symbol,txid,vout) == 0 )//&& height > 0 )
+                    if ( coin->electrum != 0 || LP_inventory_prevent(iambob,coin->symbol,txid,vout) == 0 )//&& height > 0 )
                     {
                         values[i] = satoshis;
                         //flag += LP_address_utxoadd(coin,destaddr,txid,vout,satoshis,height,-1);
@@ -636,6 +645,8 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     }
     if ( values != 0 )
         free(values);
+    if ( coin->privkeydepth > 0 )
+        coin->privkeydepth--;
     //printf("privkey.%s %.8f\n",symbol,dstr(total));
     return(flag);
 }
