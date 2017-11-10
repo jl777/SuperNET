@@ -854,7 +854,7 @@ int64_t LP_komodo_interest(bits256 txid,int64_t value)
 
 int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_t amount,struct vin_info *V,struct LP_address_utxo **utxos,int32_t numunspents,int32_t suppress_pubkeys,int32_t ignore_cltverr,bits256 privkey,cJSON *privkeys,cJSON *vins,uint8_t *script,int32_t scriptlen,bits256 utxotxid,int32_t utxovout,int32_t dustcombine)
 {
-    char wifstr[128],spendscriptstr[128],str[65]; int32_t i,j,n,numpre,ind,abovei,belowi,maxmode=0; struct vin_info *vp; cJSON *txobj; struct LP_address_utxo *up,*min0,*min1,*preselected[3]; int64_t value,interest,interestsum,above,below,remains = amount,total = 0;
+    char wifstr[128],spendscriptstr[128],str[65]; int32_t i,j,maxiters,n,numpre,ind,abovei,belowi,maxmode=0; struct vin_info *vp; cJSON *txobj; struct LP_address_utxo *up,*min0,*min1,*preselected[3]; int64_t value,interest,interestsum,above,below,remains = amount,total = 0;
     *totalp = 0;
     interestsum = 0;
     init_hexbytes_noT(spendscriptstr,script,scriptlen);
@@ -923,7 +923,8 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         preselected[numpre++] = min1;
     else min1 = 0;
     printf("dustcombine.%d numpre.%d min0.%p min1.%p numutxos.%d amount %.8f\n",dustcombine,numpre,min0,min1,numunspents,dstr(amount));
-    for (i=0; i<numunspents+numpre; i++)
+    maxiters = numunspents+numpre;
+    for (i=0; i<maxiters; i++)
     {
         if ( i < numpre )
         {
@@ -971,7 +972,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
                 char str[65]; printf("%s/%d %.8f interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
             }
         }
-        printf("vini.%d value %.8f, total %.8f remains %.8f interest %.8f sum %.8f\n",n,dstr(up->U.value),dstr(total),dstr(remains),dstr(interest),dstr(interestsum));
+        printf("numunspents.%d vini.%d value %.8f, total %.8f remains %.8f interest %.8f sum %.8f\n",numunspents,n,dstr(up->U.value),dstr(total),dstr(remains),dstr(interest),dstr(interestsum));
         vp = &V[n++];
         vp->N = vp->M = 1;
         vp->signers[0].privkey = privkey;
