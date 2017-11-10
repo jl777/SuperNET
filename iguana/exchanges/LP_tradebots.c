@@ -340,7 +340,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
 
 void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid,uint32_t quoteid)
 {
-    struct LP_tradebot *bot,*tmp; int32_t i; struct LP_tradebot_trade *tp;
+    struct LP_tradebot *bot,*tmp; int32_t i,matched = 0; struct LP_tradebot_trade *tp;
     DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
     {
         for (i=0; i<bot->numtrades; i++)
@@ -348,17 +348,22 @@ void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid
             if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->tradeid == tradeid )
             {
                 tp->aliceid = aliceid;
-                printf("bot event tradeid.%u aliceid.%llu %s r.%u q.%u\n",tradeid,(long long)aliceid,event,requestid,quoteid);
+                printf("bot event tradeid.%u aliceid.%llu (%s) r.%u q.%u\n",tradeid,(long long)aliceid,event,requestid,quoteid);
                 if ( requestid != 0 && quoteid != 0 )
                 {
                     tp->requestid = requestid;
                     tp->quoteid = quoteid;
                 }
                 strcpy(tp->event,event);
+                matched = 0;
                 break;
             }
         }
+        if ( matched != 0 )
+            break;
     }
+    if ( matched == 0 )
+        printf("NO MATCH: bot event tradeid.%u aliceid.%llu (%s) r.%u q.%u\n",tradeid,(long long)aliceid,event,requestid,quoteid);
 }
 
 void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid)
