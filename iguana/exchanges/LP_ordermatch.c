@@ -901,9 +901,9 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                 {
                     item = jitem(asks,i);
                     price = jdouble(item,"price");
-                    if ( price/maxprice < .9 )
-                        price *= 1.05;
-                    else price *= 1.01;
+                    if ( price < maxprice && price > maxprice*0.8)
+                        price = price * 0.9 + 0.1 * maxprice;
+                    else price *= 1.005;
                     pubkey = jbits256(item,"pubkey");
                     if ( bits256_nonz(destpubkey) != 0 && bits256_cmp(destpubkey,pubkey) != 0 )
                         continue;
