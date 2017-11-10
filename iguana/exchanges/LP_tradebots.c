@@ -291,7 +291,7 @@ double LP_orderbook_maxrel(char *base,char *rel,double maxprice)
 
 void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
 {
-    double remaining,maxrel; int32_t i,maxiters = 10; uint32_t tradeid; bits256 destpubkey; char *retstr,*liststr; cJSON *retjson,*retjson2,*pending;
+    double remaining,maxrel; struct LP_tradebot_trade *tp; int32_t i,maxiters = 10; uint32_t tradeid; bits256 destpubkey; char *retstr,*liststr; cJSON *retjson,*retjson2,*pending;
     memset(destpubkey.bytes,0,sizeof(destpubkey));
     if ( bot->dead == 0 && bot->pause == 0 && bot->numtrades < sizeof(bot->trades)/sizeof(*bot->trades) )
     {
@@ -317,10 +317,10 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                             {
                                 if ( (pending= jobj(retjson2,"pending")) != 0 && juint(pending,"tradeid") == tradeid )
                                 {
-                                    bot->trades[bot->numtrades++] = LP_tradebot_pending(bot,pending,tradeid);
+                                    bot->trades[bot->numtrades++] = tp = LP_tradebot_pending(bot,pending,tradeid);
                                     if ( bot->relsum >= 0.99*bot->totalrelvolume-SMALLVAL || bot->basesum >= 0.99*bot->totalbasevolume-SMALLVAL )
                                         bot->dead = (uint32_t)time(NULL);
-                                    else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )
+                                    else if ( tp->requestid != 0 && ((bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL) )
                                         bot->pause = (uint32_t)time(NULL);
                                     printf("issued bot trade.%u %s\n",tradeid,retstr);
                                     free_json(retjson2);
