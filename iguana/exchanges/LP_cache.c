@@ -70,8 +70,8 @@ void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t h
     struct LP_transaction *tx = 0;
     if ( strcmp(coin->smartaddr,coinaddr) == 0 && (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 )
     {
-        char str[65]; printf("store %s %s.[%d]\n",coin->symbol,bits256_str(str,txid),tx->len);
-    } else printf("skip SPV store for (%s) tx.%p\n",coinaddr,tx);
+        //char str[65]; printf("store %s %s.[%d]\n",coin->symbol,bits256_str(str,txid),tx->len);
+    } //else printf("skip SPV store for (%s) tx.%p\n",coinaddr,tx);
 }
 
 bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
