@@ -83,12 +83,12 @@ void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t h
 
 int32_t LP_cacheitem(struct iguana_info *coin,struct LP_transaction *tx,long remains)
 {
-    int32_t offset,n; bits256 hash; cJSON *txobj; char str[65],str2[65];
+    int32_t offset,n; uint8_t *serialized; bits256 hash; cJSON *txobj; char str[65],str2[65];
     offset = sizeof(*tx) + tx->numvouts*sizeof(*tx->outpoints);
     if ( offset+tx->len <= remains )
     {
         printf("offset.%d txlen.%d remains.%ld\n",offset,tx->len,remains);
-        tx->serialized = &((uint8_t *)tx)[offset];
+        serialized = &((uint8_t *)tx)[offset];
         hash = bits256_doublesha256(0,tx->serialized,tx->len);
         if ( bits256_cmp(hash,tx->txid) == 0 )
         {
