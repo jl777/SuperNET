@@ -26,7 +26,7 @@ struct LP_tradebot_trade
     double maxprice,totalrelvolume,basevol,relvol;
     uint64_t aliceid;
     int32_t dispdir;
-    uint32_t started,finished,requestid,quoteid,tradeid;
+    uint32_t started,finished,requestid,quoteid,tradeid,completed;
     char base[32],rel[32],event[32];
 };
 
@@ -255,9 +255,9 @@ struct LP_tradebot_trade *LP_tradebot_pending(struct LP_tradebot *bot,cJSON *pen
     tp->basevol = jdouble(pending,"basevalue");
     tp->relvol = jdouble(pending,"relvalue");
     printf("tradebot pending basevol %.8f relvol %.8f\n",tp->basevol,tp->relvol);
-    bot->pendrelsum += tp->relvol;
-    bot->pendbasesum += tp->basevol;
-    bot->numpending++;
+    //bot->pendrelsum += tp->relvol;
+    //bot->pendbasesum += tp->basevol;
+    //bot->numpending++;
     return(tp);
 }
 
@@ -318,11 +318,6 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                                 if ( (pending= jobj(retjson2,"pending")) != 0 && juint(pending,"tradeid") == tradeid )
                                 {
                                     bot->trades[bot->numtrades++] = tp = LP_tradebot_pending(bot,pending,tradeid);
-                                    sleep(3);
-                                    if ( bot->relsum >= 0.99*bot->totalrelvolume-SMALLVAL || bot->basesum >= 0.99*bot->totalbasevolume-SMALLVAL )
-                                        bot->dead = (uint32_t)time(NULL);
-                                    else if ( tp->requestid != 0 && ((bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL) )
-                                        bot->pause = (uint32_t)time(NULL);
                                     printf("issued bot trade.%u %s\n",tradeid,retstr);
                                     free_json(retjson2);
                                     free(retstr);
@@ -376,11 +371,11 @@ void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid)
             {
                 tp->requestid = requestid;
                 tp->quoteid = quoteid;
-                bot->pendbasesum -= tp->basevol, bot->basesum += tp->basevol;
-                bot->pendrelsum -= tp->relvol, bot->relsum += tp->relvol;
-                bot->numpending--, bot->completed++;
+                //bot->pendbasesum -= tp->basevol, bot->basesum += tp->basevol;
+                //bot->pendrelsum -= tp->relvol, bot->relsum += tp->relvol;
+                //bot->numpending--, bot->completed++;
                 printf("bot.%u detected completion tradeid.%u aliceid.%llx r.%u q.%u, numpending.%d completed.%d\n",bot->id,tp->tradeid,(long long)tp->aliceid,tp->requestid,tp->quoteid,bot->numpending,bot->completed);
-                tp->finished = (uint32_t)time(NULL);
+                tp->completed = tp->finished = (uint32_t)time(NULL);
                 break;
             }
         }
@@ -398,22 +393,42 @@ void LP_tradebots_timeslice(void *ctx)
         if ( bot->numpending > 0 && LP_numfinished > lastnumfinished )
         {
             // expire pending trades and see if any still need their requestid/quoteid
+            bot->basesum = bot->pendbasesum = 0.;//-= tp->basevol;
+            bot->relsum = bot->pendrelsum = 0.;//-= tp->relvol;
+            bot->completed = bot->numpending = 0;//--;
             for (i=0; i<bot->numtrades; i++)
             {
-                if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 )
+                if ( (tp= bot->trades[i]) != 0 )
                 {
-                    if ( time(NULL) > tp->started+INSTANTDEX_LOCKTIME*2 )
+                    if (tp->finished == 0 )
                     {
-                        bot->pendbasesum -= tp->basevol;
-                        bot->pendrelsum -= tp->relvol;
-                        bot->numpending--;
-                        tp->finished = (uint32_t)time(NULL);
-                        printf("%s trade.%d of %d expired\n",bot->name,i,bot->numtrades);
+                        if ( time(NULL) > tp->started+INSTANTDEX_LOCKTIME*2 )
+                        {
+                            tp->finished = (uint32_t)time(NULL);
+                            printf("%s trade.%d of %d expired\n",bot->name,i,bot->numtrades);
+                        }
+                    }
+                    if ( tp->finished != 0 && tp->completed != 0 )
+                    {
+                        bot->basesum += tp->basevol;
+                        bot->relsum += tp->relvol;
+                        bot->completed++;
+                    }
+                    else if ( tp->finished == 0 && tp->requestid != 0 && tp->quoteid != 0 )
+                    {
+                        bot->pendbasesum += tp->basevol;
+                        bot->pendrelsum += tp->relvol;
+                        bot->numpending++;
                     }
                 }
             }
         }
-        else if ( bot->numpending == 0 )
+        if ( bot->relsum >= 0.99*bot->totalrelvolume-SMALLVAL || bot->basesum >= 0.99*bot->totalbasevolume-SMALLVAL )
+            bot->dead = (uint32_t)time(NULL);
+        else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )
+            bot->pause = (uint32_t)time(NULL);
+        else bot->pause = 0;
+        if ( bot->numpending == 0 )
             LP_tradebot_timeslice(ctx,bot);
     }
     lastnumfinished = LP_numfinished;
