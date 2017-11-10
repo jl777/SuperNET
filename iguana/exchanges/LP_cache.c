@@ -97,7 +97,7 @@ void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t h
             fwrite(&tx->txid,1,sizeof(tx->txid),fp);
             fwrite(&tx->len,1,sizeof(tx->len),fp);
             fwrite(&tx->height,1,sizeof(tx->height),fp);
-            fwrite(&tx->serialized,1,tx->len,fp);
+            fwrite(tx->serialized,1,tx->len,fp);
             fclose(fp);
         }
     }
