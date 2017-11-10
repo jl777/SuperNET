@@ -87,6 +87,7 @@ int32_t LP_cacheitem(struct iguana_info *coin,struct LP_transaction *tx,long rem
     offset = sizeof(*tx) + tx->numvouts*sizeof(*tx->outpoints);
     if ( offset+tx->len <= remains )
     {
+        printf("offset.%d txlen.%d remains.%ld\n",offset,tx->len,remains);
         tx->serialized = &((uint8_t *)tx)[offset];
         hash = bits256_doublesha256(0,tx->serialized,tx->len);
         if ( bits256_cmp(hash,tx->txid) == 0 )
@@ -129,7 +130,7 @@ long LP_cacheptrs_init(FILE **wfp,struct iguana_info *coin)
                         break;
                     }
                     len += n;
-                    if ( (len & 1) != 0 )
+                    if ( (len & 7) != 0 )
                         printf("odd offset at %ld\n",len);
                 }
             }
