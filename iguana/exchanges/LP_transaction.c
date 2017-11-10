@@ -996,7 +996,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
 char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,uint32_t locktime)
 {
     static void *ctx;
-    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[64],spendscript[256]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[256]; struct LP_address *ap;
+    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[64],spendscript[256]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[1024]; struct LP_address *ap;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     *numvinsp = 0;
@@ -1135,7 +1135,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     safecopy(changeaddr,coin->smartaddr,sizeof(changeaddr));
     safecopy(vinaddr,coin->smartaddr,sizeof(vinaddr));
     privkey = LP_privkey(vinaddr,coin->taddr);
-    maxV = 256;
+    maxV = 1024;
     V = malloc(maxV * sizeof(*V));
     for (iter=0; iter<2; iter++)
     {

@@ -18,6 +18,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// previously, it used to show amount, kmd equiv, perc
 // swap started, pending, locked, finished, ...
 // aliceid
 //there is still a pending one with `-1 wait for bobpayment bYoNxkfvwQ42Yufry8J5y8BYi6mQxokvW9 numconfs.1 MNZ c0ea4aa808a653222a15122d96692fecf734dbbacfb9a54cb4711306ea0c3cef`, but that tx is already spent including 6 confirmation
@@ -153,6 +154,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_bitcoin.c"
 #include "LP_coins.c"
 #include "LP_rpc.c"
+#include "LP_cache.c"
 #include "LP_RTmetrics.c"
 #include "LP_utxo.c"
 #include "LP_prices.c"
@@ -465,7 +467,7 @@ void utxosQ_loop(void *myipaddr)
 
 void LP_coinsloop(void *_coins)
 {
-    struct LP_address *ap=0,*atmp; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
+    struct LP_address *ap=0; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
@@ -513,9 +515,8 @@ void LP_coinsloop(void *_coins)
             {
                 if ( (backupep= ep->prev) == 0 )
                     backupep = ep;
-                HASH_ITER(hh,coin->addresses,ap,atmp)
+                if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
                 {
-                    break; // causes timeouts probably due to too much usage, SPV validation done on tx spending
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
                     {
                         if ( up->U.height > 0 && up->spendheight < 0 )
@@ -523,7 +524,7 @@ void LP_coinsloop(void *_coins)
                             if ( up->SPV == 0 )
                             {
                                 nonz++;
-                                up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                                up->SPV = LP_merkleproof(coin,ap->coinaddr,backupep,up->U.txid,up->U.height);
                                 if ( 0 && up->SPV > 0 )
                                     printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
                             }
@@ -534,7 +535,7 @@ void LP_coinsloop(void *_coins)
                                 oldht = up->U.height;
                                 LP_txheight_check(coin,ap->coinaddr,up);
                                 if ( oldht != up->U.height )
-                                    up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                                    up->SPV = LP_merkleproof(coin,ap->coinaddr,backupep,up->U.txid,up->U.height);
                                 if ( up->SPV <= 0 )
                                     up->SPV = -2;
                                 else printf("%s %s: corrected SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
