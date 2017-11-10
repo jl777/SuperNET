@@ -128,6 +128,7 @@ long LP_cacheitem(struct iguana_info *coin,void *ptr,long fpos,long remains)
                 n++;
             if ( (txobj= LP_create_transaction(coin,tx->txid,serialized,tx->len,tx->height)) != 0 )
                 free_json(txobj);
+            printf("return offset.%ld + tx->len %d -> %d\n",offset,tx->len,n);
             return(offset + n);
         }
         printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,tx->txid));
