@@ -154,6 +154,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_bitcoin.c"
 #include "LP_coins.c"
 #include "LP_rpc.c"
+#include "LP_cache.c"
 #include "LP_RTmetrics.c"
 #include "LP_utxo.c"
 #include "LP_prices.c"
@@ -524,7 +525,7 @@ void LP_coinsloop(void *_coins)
                             if ( up->SPV == 0 )
                             {
                                 nonz++;
-                                up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                                up->SPV = LP_merkleproof(coin,ap->coinaddr,backupep,up->U.txid,up->U.height);
                                 if ( 0 && up->SPV > 0 )
                                     printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
                             }
@@ -535,7 +536,7 @@ void LP_coinsloop(void *_coins)
                                 oldht = up->U.height;
                                 LP_txheight_check(coin,ap->coinaddr,up);
                                 if ( oldht != up->U.height )
-                                    up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                                    up->SPV = LP_merkleproof(coin,ap->coinaddr,backupep,up->U.txid,up->U.height);
                                 if ( up->SPV <= 0 )
                                     up->SPV = -2;
                                 else printf("%s %s: corrected SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
