@@ -45,7 +45,7 @@ cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seri
         tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
         tx->serialized = serialized;
         tx->len = len;
-        tx->height = height;
+        tx->SPV = tx->height = height;
         //printf("tx.%p vins.(%s) vouts.(%s)\n",tx,jprint(vins,0),jprint(vouts,0));
         for (i=0; i<numvouts; i++)
         {
