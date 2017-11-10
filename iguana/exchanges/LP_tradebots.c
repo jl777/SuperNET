@@ -341,6 +341,8 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
 void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid,uint32_t quoteid)
 {
     struct LP_tradebot *bot,*tmp; int32_t i,matched = 0; struct LP_tradebot_trade *tp;
+    if ( tradeid == 0 )
+        return;
     DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
     {
         for (i=0; i<bot->numtrades; i++)
