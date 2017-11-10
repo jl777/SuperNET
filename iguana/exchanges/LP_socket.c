@@ -327,7 +327,11 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                 if (tx->height <= 0 )
                 {
                     tx->height = ht;
-                    //printf("%s %s >>>>>>>>>> set %s <- height %d\n",coin->symbol,coinaddr,bits256_str(str,txid),tx->height);
+                    if ( ep != 0 && coin != 0 && tx->SPV == 0 )
+                    {
+                        tx->SPV = LP_merkleproof(coin,ep,txid,tx->height);
+                        printf("%s %s >>>>>>>>>> set %s <- height %d\n",coin->symbol,coinaddr,bits256_str(str,txid),tx->height);
+                    }
                 }
                 if ( v >= 0 && v < tx->numvouts )
                 {
