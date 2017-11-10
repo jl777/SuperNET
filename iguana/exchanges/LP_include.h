@@ -244,7 +244,8 @@ struct LP_outpoint { bits256 spendtxid; uint64_t value,interest; int32_t spendvi
 struct LP_transaction
 {
     UT_hash_handle hh;
-    bits256 txid; int32_t height,numvouts,numvins,len; //uint32_t timestamp;
+    bits256 txid;
+    int32_t height,numvouts,numvins,len,SPV;
     uint8_t *serialized;
     struct LP_outpoint outpoints[];
 };
@@ -260,7 +261,7 @@ struct iguana_info
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
-    void *electrum; void *ctx;
+    void *electrum; void *ctx; FILE *cachefp;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33],zcash;
     bits256 lastprivkey; uint32_t lastprivkeytime; int32_t privkeydepth;
