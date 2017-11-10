@@ -238,18 +238,7 @@ int32_t LP_socketrecv(int32_t sock,uint8_t *recvbuf,int32_t maxlen)
     return(recvlen);
 }
 
-struct electrum_info
-{
-    queue_t sendQ,pendingQ;
-    portable_mutex_t mutex,txmutex;
-    struct electrum_info *prev;
-    int32_t bufsize,sock,*heightp,numerrors;
-    struct iguana_info *coin;
-    uint32_t stratumid,lasttime,keepalive,pending,*heighttimep;
-    char ipaddr[64],symbol[16];
-    uint16_t port;
-    uint8_t buf[];
-} *Electrums[8192];
+struct electrum_info *Electrums[8192];
 int32_t Num_electrums;
 
 struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
@@ -750,12 +739,17 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
 
 cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
 {
-    cJSON *retjson;
+    cJSON *retjson; struct iguana_info *coin; struct LP_transaction *tx;
     if ( ep != 0 )
         portable_mutex_lock(&ep->txmutex);
     retjson = _electrum_transaction(symbol,ep,retjsonp,txid);
     if ( ep != 0 )
         portable_mutex_unlock(&ep->txmutex);
+    if ( ep != 0 && (coin= LP_coinfind(symbol)) != 0 && (tx= LP_transactionfind(coin,txid)) != 0 && tx->height > 0 && tx->SPV <= 0 )
+    {
+        LP_merkleproof(coin,ep,txid,tx->height);
+        printf("extra merkle\n");
+    }
     return(retjson);
 }
 

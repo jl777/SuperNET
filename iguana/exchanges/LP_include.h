@@ -371,6 +371,19 @@ struct LP_pubkeyinfo
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };
 
+struct electrum_info
+{
+    queue_t sendQ,pendingQ;
+    portable_mutex_t mutex,txmutex;
+    struct electrum_info *prev;
+    int32_t bufsize,sock,*heightp,numerrors;
+    struct iguana_info *coin;
+    uint32_t stratumid,lasttime,keepalive,pending,*heighttimep;
+    char ipaddr[64],symbol[16];
+    uint16_t port;
+    uint8_t buf[];
+};
+
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
 int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
@@ -410,6 +423,7 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
 struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
+int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256 txid,int32_t height);
 struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,int32_t height,int32_t numvouts,int32_t numvins);
 void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid);
 uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen);
