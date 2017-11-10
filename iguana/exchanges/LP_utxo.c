@@ -237,7 +237,7 @@ void LP_mark_spent(char *symbol,bits256 txid,int32_t vout)
 
 int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
-    struct LP_address *ap; cJSON *txobj; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; char str[65];
+    struct LP_address *ap; cJSON *txobj; struct LP_transaction *tx; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; char str[65];
     if ( coin == 0 )
         return(0);
     if ( spendheight > 0 ) // dont autocreate entries for spends we dont care about
@@ -282,8 +282,11 @@ int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,b
             DL_APPEND(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);                
             retval = 1;
-            if ( value == 0 )
+            if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->SPV > 0 )
+            {
+                up->SPV = tx->SPV;
                 printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
+            }
         }
     } // else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
     //printf("done %s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);

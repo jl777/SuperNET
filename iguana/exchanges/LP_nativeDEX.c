@@ -467,7 +467,7 @@ void utxosQ_loop(void *myipaddr)
 
 void LP_coinsloop(void *_coins)
 {
-    struct LP_address *ap=0,*atmp; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
+    struct LP_address *ap=0,*atmp; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
@@ -526,8 +526,14 @@ void LP_coinsloop(void *_coins)
                             {
                                 nonz++;
                                 up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
-                                if ( 0 && up->SPV > 0 )
-                                    printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
+                                if ( up->SPV > 0 )
+                                {
+                                    if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && tx->SPV == 0 )
+                                    {
+                                        tx->SPV = up->SPV;
+                                        printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
+                                    }
+                                }
                             }
                             else if ( up->SPV == -1 )
                             {
