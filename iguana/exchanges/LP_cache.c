@@ -81,44 +81,41 @@ void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t h
     }
 }
 
-/*struct LP_transaction
- {
- UT_hash_handle hh;
- bits256 txid;
- int32_t height,numvouts,numvins,len,SPV;
- uint8_t *serialized;
- struct LP_outpoint outpoints[];
- };*/
-
 int32_t LP_cacheitem(struct iguana_info *coin,struct LP_transaction *tx,long remains)
 {
-    int32_t offset; bits256 hash; char str[65],str2[65];
+    int32_t offset,n; bits256 hash; cJSON *txobj; char str[65],str2[65];
     offset = sizeof(*tx) + tx->numvouts*sizeof(*tx->outpoints);
     if ( offset+tx->len <= remains )
     {
-        hash = bits256_doublesha256(0,&((uint8_t *)tx)[offset],tx->len);
+        tx->serialized = &((uint8_t *)tx)[offset];
+        hash = bits256_doublesha256(0,tx->serialized,tx->len);
         if ( bits256_cmp(hash,tx->txid) == 0 )
         {
             printf("%s validated in cache\n",bits256_str(str,hash));
-            return(0);
+            n = tx->len;
+            while ( (n & 7) != 0 )
+                n++;
+            if ( (txobj= LP_cache_transaction(coin,tx->txid,tx->serialized,tx->len)) != 0 )
+                free_json(txobj);
+            return(offset + n);
         }
         printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,tx->txid));
     }
     return(-1);
 }
 
-void *LP_cacheptrs_init(FILE **wfp,long *fsizep,struct iguana_info *coin)
+long LP_cacheptrs_init(FILE **wfp,struct iguana_info *coin)
 {
-    char fname[1024]; long n,len = 0; uint8_t *ptr = 0;
+    char fname[1024]; long n,fsize=0,len = 0; uint8_t *ptr = 0;
     sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
     if ( ((*wfp)= OS_appendfile(fname)) != 0 )
     {
-        ptr = OS_portable_mapfile(fname,fsizep,0);
-        while ( len < *fsizep )
+        ptr = OS_portable_mapfile(fname,&fsize,0);
+        while ( len < fsize )
         {
-            if ( (n= LP_cacheitem(coin,(struct LP_transaction *)&ptr[len],*fsizep - len)) < 0 )
+            if ( (n= LP_cacheitem(coin,(struct LP_transaction *)&ptr[len],fsize - len)) < 0 )
             {
-                printf("cacheitem error at %s offset.%ld when fsize.%ld\n",coin->symbol,len,*fsizep);
+                printf("cacheitem error at %s offset.%ld when fsize.%ld\n",coin->symbol,len,fsize);
                 fseek(*wfp,len,SEEK_SET);
                 break;
             }
@@ -127,7 +124,7 @@ void *LP_cacheptrs_init(FILE **wfp,long *fsizep,struct iguana_info *coin)
                 printf("odd offset at %ld\n",len);
         }
     }
-    return(ptr);
+    return(fsize);
 }
 
 bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
