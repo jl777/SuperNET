@@ -133,6 +133,9 @@ void LP_cacheptrs_init(struct iguana_info *coin)
     fp = fopen(fname,"rb");
     if ( fp != 0 )
     {
+        fseek(fp,0,SEEK_END);
+        fsize = ftell(fp);
+        rewind(fp);
         while ( len < fsize )
         {
             if ( (n= LP_cacheitem(coin,fp)) < 0 )
