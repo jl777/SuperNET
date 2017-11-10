@@ -100,7 +100,7 @@ void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
             fwrite(tx->serialized,1,tx->len,fp);
             fclose(fp);
         }
-    }
+    } else printf("cant store tx.%p len.%d\n",tx,tx!=0?tx->len:0);
 }
 
 int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
@@ -245,7 +245,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
                     if ( tx != 0 )
                         tx->SPV = height;
                     LP_SPV_store(coin,txid,height);
-                    //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
+                    printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash));
                 }
                 else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
             } else SPV = 0;
