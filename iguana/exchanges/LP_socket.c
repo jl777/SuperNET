@@ -1056,9 +1056,13 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
         {
             printf("launched %s electrum.(%s:%u)\n",coin->symbol,ep->ipaddr,ep->port);
             jaddstr(retjson,"result","success");
-            if ( (ep->prev= coin->electrum) == 0 )
-                LP_cacheptrs_init(coin);
+            ep->prev = coin->electrum;
             coin->electrum = ep;
+            if ( coin->loadedcache == 0 )
+            {
+                LP_cacheptrs_init(coin);
+                coin->loadedcache = (uint32_t)time(NULL);
+            }
         }
     }
     else

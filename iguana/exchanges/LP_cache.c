@@ -115,7 +115,7 @@ int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
             hash = bits256_doublesha256(0,serialized,len);
             if ( bits256_cmp(hash,txid) == 0 )
             {
-                printf("%s validated in cache\n",bits256_str(str,hash));
+                //printf("%s validated in cache\n",bits256_str(str,hash));
                 if ( (txobj= LP_create_transaction(coin,txid,serialized,len,height)) != 0 )
                     free_json(txobj);
                 return((int32_t)(ftell(fp) - fpos));
@@ -128,10 +128,10 @@ int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
 
 void LP_cacheptrs_init(struct iguana_info *coin)
 {
-    char fname[1024]; FILE *fp; int32_t tflag=0; long n,fsize=0,len = 0;
+    char fname[1024]; FILE *fp; int32_t count,tflag=0; long n,fsize=0,len = 0;
     sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
     fp = fopen(fname,"rb");
-    printf("load %s\n",fname);
+    count = 0;
     if ( fp != 0 )
     {
         fseek(fp,0,SEEK_END);
@@ -145,9 +145,10 @@ void LP_cacheptrs_init(struct iguana_info *coin)
                 tflag = 1;
                 break;
             }
+            count++;
             len += n;
-            printf("%s len.%ld n.%ld\n",fname,len,n);
         }
+        printf("loaded %s %d entries total len.%ld\n",fname,count,len);
         fclose(fp);
     } else printf("couldnt find.(%s)\n",fname);
     if ( tflag != 0 )
