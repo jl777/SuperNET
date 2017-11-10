@@ -531,7 +531,7 @@ void LP_coinsloop(void *_coins)
                                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && tx->SPV == 0 )
                                     {
                                         tx->SPV = up->SPV;
-                                        printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
+                                        //printf("%s %s: SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);
                                     }
                                 }
                             }
