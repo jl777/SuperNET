@@ -149,7 +149,7 @@ void LP_cacheptrs_init(struct iguana_info *coin)
         }
         printf("loaded %s %d entries total len.%ld\n",fname,count,len);
         fclose(fp);
-    } else printf("couldnt find.(%s)\n",fname);
+    } //else printf("couldnt find.(%s)\n",fname);
     if ( tflag != 0 )
         OS_truncate(fname,len);
 }
