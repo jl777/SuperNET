@@ -502,11 +502,17 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         //printf("coin not active\n");
         return(0);
     }
+    if ( bits256_cmp(myprivkey,coin->lastprivkey) == 0 && time(NULL) < coin->lastprivkeytime+60 )
+        return(0);
+    coin->lastprivkey = myprivkey;
+    coin->lastprivkeytime = (uint32_t)time(NULL);
     printf("privkey init.(%s) %s\n",coin->symbol,coin->smartaddr);
     if ( coin->inactive == 0 )
         LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
+    array = LP_listunspent(coin->symbol,coin->smartaddr);
+    printf("unspent array %ld\n",strlen(jprint(array,0)));
     LP_address(coin,coin->smartaddr);
-    if ( coin->inactive == 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
+    if ( array != 0 )
     {
         txfee = LP_txfeecalc(coin,0,0);
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
