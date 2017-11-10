@@ -18,8 +18,8 @@
 //  marketmaker
 //
 
-#define TRADEBOTS_GAPTIME 60
-#define LP_TRADEBOTS_MAXTRADES 100
+#define TRADEBOTS_GAPTIME 120
+#define LP_TRADEBOTS_MAXTRADES 10
 
 struct LP_tradebot_trade
 {
@@ -36,7 +36,7 @@ struct LP_tradebot
     char name[128],base[32],rel[32];
     int32_t numtrades,numpending,completed,dispdir;
     double maxprice,totalrelvolume,totalbasevolume,basesum,relsum,pendbasesum,pendrelsum;
-    uint32_t dead,pause,userpause,started,id;
+    uint32_t lasttime,dead,pause,userpause,started,id;
     struct LP_tradebot_trade *trades[LP_TRADEBOTS_MAXTRADES];
 } *LP_tradebots;
 
@@ -438,8 +438,11 @@ void LP_tradebots_timeslice(void *ctx)
             bot->pause = (uint32_t)time(NULL);
         else if ( bot->userpause == 0 )
             bot->pause = 0;
-        if ( bot->numpending == 0 )
+        if ( bot->numpending == 0 && time(NULL) > bot->lasttime+TRADEBOTS_GAPTIME )
+        {
             LP_tradebot_timeslice(ctx,bot);
+            bot->lasttime = (uint32_t)time(NULL);
+        }
     }
     lastnumfinished = LP_numfinished;
 }
