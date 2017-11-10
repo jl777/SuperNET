@@ -739,17 +739,19 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
 
 cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
 {
-    cJSON *retjson; struct iguana_info *coin; struct LP_transaction *tx;
+    cJSON *retjson; //struct iguana_info *coin; struct LP_transaction *tx;
     if ( ep != 0 )
         portable_mutex_lock(&ep->txmutex);
     retjson = _electrum_transaction(symbol,ep,retjsonp,txid);
     if ( ep != 0 )
         portable_mutex_unlock(&ep->txmutex);
-    if ( ep != 0 && (coin= LP_coinfind(symbol)) != 0 && (tx= LP_transactionfind(coin,txid)) != 0 && tx->height > 0 && tx->SPV <= 0 )
+    /*if ( ep != 0 && (coin= LP_coinfind(symbol)) != 0 && (tx= LP_transactionfind(coin,txid)) != 0 && tx->SPV <= 0 ) // we just dont have height!
     {
+        if ( tx->height == 0 )
+            tx->height = LP_gettxheight(coin,txid);
         LP_merkleproof(coin,ep,txid,tx->height);
         printf("extra merkle\n");
-    }
+    }*/
     return(retjson);
 }
 
