@@ -635,7 +635,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
             return(bitcoin_json(coin,"listunspent",buf));
         } else return(LP_address_utxos(coin,coinaddr,0));
-    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
+    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,2));
 }
 
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
