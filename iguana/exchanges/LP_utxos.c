@@ -548,9 +548,9 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                 //printf("array.%d\n",n);
                 while ( used < n-1 )
                 {
-                    //for (i=0; i<n; i++)
-                    //   printf("%.8f ",dstr(values[i]));
-                    //printf("used.%d of n.%d\n",used,n);
+                    for (i=0; i<n; i++)
+                       printf("%.8f ",dstr(values[i]));
+                    printf("used.%d of n.%d\n",used,n);
                     if ( (i= LP_maxvalue(values,n)) >= 0 )
                     {
                         item = jitem(array,i);
@@ -573,7 +573,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                         else targetval = (depositval / 9) * 8 + 2*txfee;
                         if ( targetval < txfee*2 )
                             targetval = txfee*2;
-                        //printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
+                        printf("iambob.%d i.%d deposit %.8f min %.8f target %.8f\n",iambob,i,dstr(depositval),dstr((1+LP_MINSIZE_TXFEEMULT)*txfee),dstr(targetval));
                         if ( depositval < (1+LP_MINSIZE_TXFEEMULT)*txfee )
                             continue;
                         i = -1;
