@@ -87,8 +87,10 @@ void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t h
  struct LP_outpoint outpoints[];
  };*/
 
-int32_t LP_cacheitem(struct iguana_info *coin,uint8_t *ptr,long remains)
+int32_t LP_cacheitem(struct iguana_info *coin,struct LP_transaction *tx,long remains)
 {
+    int32_t offset;
+    
     return(-1);
 }
 
@@ -101,13 +103,15 @@ void *LP_cacheptrs_init(FILE **wfp,long *fsizep,struct iguana_info *coin)
         ptr = OS_portable_mapfile(fname,fsizep,0);
         while ( len < *fsizep )
         {
-            if ( (n= LP_cacheitem(coin,&ptr[len],*fsizep - len)) < 0 )
+            if ( (n= LP_cacheitem(coin,(struct LP_transaction *)&ptr[len],*fsizep - len)) < 0 )
             {
                 printf("cacheitem error at %s offset.%ld when fsize.%ld\n",coin->symbol,len,*fsizep);
                 fseek(*wfp,len,SEEK_SET);
                 break;
             }
             len += n;
+            if ( (len & 1) != 0 )
+                printf("odd offset at %ld\n",len);
         }
     }
     return(ptr);

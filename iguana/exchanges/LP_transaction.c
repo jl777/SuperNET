@@ -500,7 +500,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
             if ( iguana_rwmsgtx(taddr,pubtype,p2shtype,isPoS,height,0,0,serialized,maxsize,msgtx,&txid,"",extraspace,extralen,vins,V->suppress_pubkeys,zcash) > 0 && numinputs == msgtx->tx_in )
             {
                 memset(pubkeys,0,sizeof(pubkeys));
-                memset(privkeys,0,sizeof(privkeys));
+                memset(privkeys,0,sizeof(*privkeys)*numinputs);
                 if ( (n= cJSON_GetArraySize(privkeysjson)) > 0 )
                 {
                     for (i=0; i<n; i++)

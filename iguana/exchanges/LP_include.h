@@ -239,13 +239,20 @@ struct LP_swap_remember
     char src[64],dest[64],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[64],bobcoin[64],*txbytes[sizeof(txnames)/sizeof(*txnames)];
 };
 
-struct LP_outpoint { bits256 spendtxid; uint64_t value,interest; int32_t spendvini,spendheight; char coinaddr[64]; };
+struct LP_outpoint
+{
+    bits256 spendtxid;
+    uint64_t value,interest;
+    int32_t spendvini,spendheight;
+    char coinaddr[56];
+};
 
 struct LP_transaction
 {
     UT_hash_handle hh;
     bits256 txid;
-    int32_t height,numvouts,numvins,len,SPV;
+    int32_t height,len,SPV;
+    uint16_t numvouts,numvins;
     uint8_t *serialized;
     struct LP_outpoint outpoints[];
 };
