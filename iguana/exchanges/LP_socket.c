@@ -391,8 +391,7 @@ void electrum_initial_requests(struct electrum_info *ep)
 
 int32_t electrum_kickstart(struct electrum_info *ep)
 {
-    closesocket(ep->sock), ep->sock = -1;
-    sleep(1);
+    closesocket(ep->sock);//, ep->sock = -1;
     if ( (ep->sock= LP_socket(0,ep->ipaddr,ep->port)) < 0 )
     {
         printf("error RE-connecting to %s:%u\n",ep->ipaddr,ep->port);
