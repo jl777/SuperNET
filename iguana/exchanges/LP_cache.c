@@ -105,11 +105,12 @@ void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t h
 
 long LP_cacheitem(struct iguana_info *coin,FILE *fp)
 {
-    bits256 txid,hash; int32_t height,len; uint8_t *serialized; cJSON *txobj; char str[65],str2[65];
+    bits256 txid,hash; int32_t retval,height,len; uint8_t *serialized; cJSON *txobj; char str[65],str2[65];
     if ( fread(&txid,1,sizeof(txid),fp) == sizeof(txid) && fread(&len,1,sizeof(len),fp) == sizeof(len) && fread(&height,1,sizeof(height),fp) == sizeof(height) && len < 100000 )
     {
         serialized = malloc(len);
-        if ( fread(serialized,1,len,fp) == len )
+        printf("read len.%d\n",len);
+        if ( (retval= (int32_t)fread(serialized,1,len,fp)) == len )
         {
             hash = bits256_doublesha256(0,serialized,len);
             if ( bits256_cmp(hash,txid) == 0 )
@@ -120,8 +121,8 @@ long LP_cacheitem(struct iguana_info *coin,FILE *fp)
                 return(ftell(fp));
             }
             printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,txid));
-        }
-    }
+        } else printf("retval.%d vs len.%d\n",retval,len);
+    } else printf("fread error\n");
     return(-1);
 }
 
@@ -143,7 +144,7 @@ void LP_cacheptrs_init(struct iguana_info *coin)
             len = n;
             printf("len.%ld\n",len);
         }
-    }
+    } else printf("couldnt find.(%s)\n",fname);
     if ( tflag != 0 )
         OS_truncate(fname,len);
 }
