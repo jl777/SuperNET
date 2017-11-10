@@ -43,15 +43,18 @@ cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seri
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
         tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
-        printf("tx.%p vins.(%s) vouts.(%s)\n",tx,jprint(vins,0),jprint(vouts,0));
+        tx->serialized = serialized;
+        tx->len = len;
+        tx->height = height;
+        //printf("tx.%p vins.(%s) vouts.(%s)\n",tx,jprint(vins,0),jprint(vouts,0));
         for (i=0; i<numvouts; i++)
         {
             vout = jitem(vouts,i);
             tx->outpoints[i].value = LP_value_extract(vout,0);
             tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
             LP_destaddr(tx->outpoints[i].coinaddr,vout);
-            printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
-            LP_address_utxoadd("LP_transactioninit iter0",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
+            //printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
+            LP_address_utxoadd("LP_create_transaction",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
         }
         for (i=0; i<numvins; i++)
         {
