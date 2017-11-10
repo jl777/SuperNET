@@ -647,7 +647,7 @@ int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
                 return(-1);
             if ( (backupep= ep->prev) == 0 )
                 backupep = ep;
-            up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+            up->SPV = LP_merkleproof(coin,coinaddr,backupep,up->U.txid,up->U.height);
             if ( up->SPV <= 0 )
                 return(-1);
         }

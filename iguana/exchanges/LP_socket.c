@@ -662,23 +662,6 @@ cJSON *electrum_getheader(char *symbol,struct electrum_info *ep,cJSON **retjsonp
     return(electrum_intarg(symbol,ep,retjsonp,"blockchain.block.get_header",n,ELECTRUM_TIMEOUT));
 }
 
-cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len)
-{
-    uint8_t *extraspace; cJSON *txobj; char str[65],str2[65]; struct iguana_msgtx msgtx; bits256 checktxid;
-    extraspace = calloc(1,4000000);
-    memset(&msgtx,0,sizeof(msgtx));
-    txobj = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,4000000,serialized,len,0,0,coin->zcash);
-    //printf("TX.(%s) match.%d\n",jprint(txobj,0),bits256_cmp(txid,checktxid));
-    free(extraspace);
-    if ( bits256_cmp(txid,checktxid) != 0 )
-    {
-        printf("%s LP_transaction_fromdata mismatched txid %s vs %s\n",coin->symbol,bits256_str(str,txid),bits256_str(str2,checktxid));
-        free_json(txobj);
-        txobj = 0;
-    }
-    return(txobj);
-}
-
 cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
 {
     char *hexstr,str[65]; int32_t len; cJSON *hexjson,*txobj=0; struct iguana_info *coin; uint8_t *serialized; struct LP_transaction *tx;
@@ -728,26 +711,7 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
             memcpy(coin->cachedtxiddata,serialized,len);
             free(hexstr);
             //printf("DATA.(%s) from (%s)\n",hexstr+1,jprint(hexjson,0));
-            if ( (txobj= LP_transaction_fromdata(coin,txid,serialized,len)) != 0 )
-            {
-                if ( (tx= LP_transactionfind(coin,txid)) == 0 || tx->serialized == 0 )
-                {
-                    txobj = LP_transactioninit(coin,txid,0,txobj);
-                    LP_transactioninit(coin,txid,1,txobj);
-                    tx = LP_transactionfind(coin,txid);
-                }
-                if ( tx != 0 )
-                {
-                    tx->serialized = serialized;
-                    tx->len = len;
-                }
-                else
-                {
-                    printf("unexpected couldnt find tx %s %s\n",coin->symbol,bits256_str(str,txid));
-                    free(serialized);
-                }
-            }
-            *retjsonp = txobj;
+            *retjsonp = LP_cache_transaction(coin,txid,serialized,len); // eats serialized
             free_json(hexjson);
             //printf("return from electrum_transaction\n");
             return(*retjsonp);

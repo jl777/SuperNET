@@ -393,10 +393,9 @@ bot_resume(botid)\n\
                         if ( coinaddr[0] != 0 )
                         {
                             LP_address(ptr,coinaddr);
-                            LP_listunspent_issue(coin,coinaddr,1);
                             if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                             {
-                                //printf("network invoked\n");
+                                LP_listunspent_issue(coin,coinaddr,2);
                                 LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                                 //LP_smartutxos_push(ptr);
                                 if ( ptr->electrum != 0 )
@@ -487,6 +486,8 @@ bot_resume(botid)\n\
                 {
                     //privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
                     //LP_utxopurge(0);
+                    LP_address(ptr,ptr->smartaddr);
+                    LP_listunspent_issue(coin,ptr->smartaddr,2);
                     if ( bits256_nonz(G.LP_privkey) != 0 )
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                     else printf("no LP_privkey\n");
