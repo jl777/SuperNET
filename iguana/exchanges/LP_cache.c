@@ -110,14 +110,15 @@ void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t h
     }
 }
 
-int32_t LP_cacheitem(struct iguana_info *coin,struct LP_transaction *tx,long remains)
+long LP_cacheitem(struct iguana_info *coin,void *ptr,long fpos,long remains)
 {
-    int32_t offset,n; uint8_t *serialized; bits256 hash; cJSON *txobj; char str[65],str2[65];
-    offset = sizeof(*tx) + tx->numvouts*sizeof(*tx->outpoints);
+    struct LP_transaction *tx; long offset; int32_t n; uint8_t *serialized; bits256 hash; cJSON *txobj; char str[65],str2[65];
+    tx = ptr;
+    offset = fpos + sizeof(*tx) + tx->numvouts*sizeof(*tx->outpoints);
     if ( offset+tx->len <= remains )
     {
-        printf("offset.%d txlen.%d remains.%ld\n",offset,tx->len,remains);
-        serialized = &((uint8_t *)tx)[offset];
+        printf("offset.%ld txlen.%d remains.%ld\n",offset,tx->len,remains);
+        serialized = &((uint8_t *)ptr)[offset];
         hash = bits256_doublesha256(0,serialized,tx->len);
         if ( bits256_cmp(hash,tx->txid) == 0 )
         {
@@ -150,13 +151,13 @@ void LP_cacheptrs_init(struct iguana_info *coin)
             ptr = OS_portable_mapfile(fname,&fsize,0);
             while ( len < fsize )
             {
-                if ( (n= LP_cacheitem(coin,(struct LP_transaction *)&ptr[len],fsize - len)) < 0 )
+                if ( (n= LP_cacheitem(coin,ptr,len,fsize - len)) < 0 )
                 {
                     printf("cacheitem error at %s offset.%ld when fsize.%ld\n",coin->symbol,len,fsize);
                     tflag = 1;
                     break;
                 }
-                len += n;
+                len = n;
                 if ( (len & 7) != 0 )
                     printf("odd offset at %ld\n",len);
             }
