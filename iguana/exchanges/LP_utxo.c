@@ -285,7 +285,7 @@ int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,b
             if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->SPV > 0 )
             {
                 up->SPV = tx->SPV;
-                printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
+                //printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
             }
         }
     } // else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
