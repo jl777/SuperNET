@@ -35,26 +35,48 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
     return(txobj);
 }
 
-cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len)
+cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len,int32_t height)
 {
-    cJSON *txobj; struct LP_transaction *tx;
+    cJSON *txobj; bits256 spenttxid; int32_t i,spentvout,numvins,numvouts; cJSON *vout,*vin,*vins,*vouts; struct LP_transaction *tx; char str[65];
     if ( (txobj= LP_transaction_fromdata(coin,txid,serialized,len)) != 0 )
     {
-        if ( (tx= LP_transactionfind(coin,txid)) == 0 || tx->serialized == 0 )
+        vins = jarray(&numvins,txobj,"vin");
+        vouts = jarray(&numvouts,txobj,"vout");
+        tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
+        printf("tx.%p vins.(%s) vouts.(%s)\n",tx,jprint(vins,0),jprint(vouts,0));
+        for (i=0; i<numvouts; i++)
         {
-            txobj = LP_transactioninit(coin,txid,0,txobj);
-            LP_transactioninit(coin,txid,1,txobj);
-            tx = LP_transactionfind(coin,txid);
+            vout = jitem(vouts,i);
+            tx->outpoints[i].value = LP_value_extract(vout,0);
+            tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
+            LP_destaddr(tx->outpoints[i].coinaddr,vout);
+            printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
+            LP_address_utxoadd("LP_transactioninit iter0",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
         }
-        if ( tx != 0 )
+        for (i=0; i<numvins; i++)
         {
-            tx->serialized = serialized;
-            tx->len = len;
-        }
-        else
-        {
-            char str[65]; printf("unexpected couldnt find tx %s %s\n",coin->symbol,bits256_str(str,txid));
-            free(serialized);
+            vin = jitem(vins,i);
+            spenttxid = jbits256(vin,"txid");
+            spentvout = jint(vin,"vout");
+            if ( i == 0 && bits256_nonz(spenttxid) == 0 )
+                continue;
+            if ( (tx= LP_transactionfind(coin,spenttxid)) != 0 )
+            {
+                if ( spentvout < tx->numvouts )
+                {
+                    if ( tx->outpoints[spentvout].spendheight <= 0 )
+                    {
+                        tx->outpoints[spentvout].spendtxid = txid;
+                        tx->outpoints[spentvout].spendvini = i;
+                        tx->outpoints[spentvout].spendheight = height > 0 ? height : 1;
+                        LP_address_utxoadd("LP_transactioninit iter1",coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
+                        if ( 0 && strcmp(coin->symbol,"REVS") == 0 )
+                            printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
+                    }
+                } else printf("LP_transactioninit: %s spentvout.%d < numvouts.%d spendheight.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts,tx->outpoints[spentvout].spendheight);
+            } //else printf("LP_transactioninit: couldnt find (%s) ht.%d %s\n",bits256_str(str,spenttxid),height,jprint(vin,0));
+            if ( bits256_cmp(spenttxid,txid) == 0 )
+                printf("spending same tx's %p vout ht.%d %s.[%d] s%d\n",tx,height,bits256_str(str,txid),tx!=0?tx->numvouts:0,spentvout);
         }
     }
     return(txobj);
@@ -96,7 +118,7 @@ int32_t LP_cacheitem(struct iguana_info *coin,struct LP_transaction *tx,long rem
             n = tx->len;
             while ( (n & 7) != 0 )
                 n++;
-            if ( (txobj= LP_cache_transaction(coin,tx->txid,serialized,tx->len)) != 0 )
+            if ( (txobj= LP_create_transaction(coin,tx->txid,serialized,tx->len,tx->height)) != 0 )
                 free_json(txobj);
             return(offset + n);
         }
