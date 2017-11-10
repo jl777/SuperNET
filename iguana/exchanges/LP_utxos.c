@@ -512,7 +512,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
             coin->numutxos = n;
-            //printf("LP_privkey_init %s %s\n",coin->symbol,jprint(array,0));
+            printf("LP_privkey_init %s %d\n",coin->symbol,n);
             for (iambob=0; iambob<=1; iambob++)
             {
                 if ( iambob == 0 )
@@ -537,7 +537,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                         height = jint(item,"height");
                     }
                     satoshis = LP_txvalue(destaddr,coin->symbol,txid,vout);
-                    if ( satoshis != 0 && satoshis != value )
+                    //if ( satoshis != 0 && satoshis != value )
                         printf("%s %s  privkey_init value  %.8f vs %.8f (%s) %.8f %.8f\n",coin->symbol,coin->smartaddr,dstr(satoshis),dstr(value),jprint(item,0),jdouble(item,"amount"),jdouble(item,"interest"));
                     if ( LP_inventory_prevent(iambob,coin->symbol,txid,vout) == 0 )//&& height > 0 )
                     {
