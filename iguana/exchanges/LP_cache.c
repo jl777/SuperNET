@@ -60,18 +60,18 @@ cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seria
     return(txobj);
 }
 
-struct LP_transaction
+/*struct LP_transaction
 {
     UT_hash_handle hh;
     bits256 txid;
     int32_t height,numvouts,numvins,len,SPV;
     uint8_t *serialized;
     struct LP_outpoint outpoints[];
-};
+};*/
 
-int32_t LP_cacheitem(uint8_t *ptr,long remains)
+int32_t LP_cacheitem(struct iguana_info *coin,uint8_t *ptr,long remains)
 {
-    
+    return(-1);
 }
 
 void *LP_cacheptr(FILE **wfp,long *fsizep,struct iguana_info *coin)
@@ -97,19 +97,10 @@ void *LP_cacheptr(FILE **wfp,long *fsizep,struct iguana_info *coin)
 
 int32_t LP_SPV_load(struct iguana_info *coin,bits256 txid,int32_t height)
 {
-    struct LP_transaction *tp;
-    HASH_FIND(hh,coin->SPVcache,&txid,sizeof(txid),cp)
+   // struct LP_transaction *tp;
     return(-1);
 }
 
-struct LP_transaction
-{
-    UT_hash_handle hh;
-    bits256 txid;
-    int32_t height,numvouts,numvins,len,SPV;
-    uint8_t *serialized;
-    struct LP_outpoint outpoints[];
-};
 
 void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t height)
 {
@@ -198,7 +189,7 @@ bits256 LP_merkleroot(struct iguana_info *coin,struct electrum_info *ep,int32_t 
 
 int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height)
 {
-    struct LP_transaction *tx; cJSON *merkobj,*merkles; bits256 roothash,merkleroot; int32_t retval,m,SPV = 0;
+    struct LP_transaction *tx; cJSON *merkobj,*merkles; bits256 roothash,merkleroot; int32_t m,SPV = 0;
     if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->height == height && tx->SPV > 0 )
         return(tx->SPV);
     if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
