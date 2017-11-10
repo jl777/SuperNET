@@ -391,8 +391,7 @@ void electrum_initial_requests(struct electrum_info *ep)
 
 int32_t electrum_kickstart(struct electrum_info *ep)
 {
-    closesocket(ep->sock), ep->sock = -1;
-    sleep(1);
+    closesocket(ep->sock);//, ep->sock = -1;
     if ( (ep->sock= LP_socket(0,ep->ipaddr,ep->port)) < 0 )
     {
         printf("error RE-connecting to %s:%u\n",ep->ipaddr,ep->port);
@@ -408,6 +407,8 @@ int32_t electrum_kickstart(struct electrum_info *ep)
     return(0);
 }
 
+int32_t zeroval() { return(0); }
+
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
@@ -416,6 +417,12 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         ep = electrum_server(symbol,0);
     while ( ep != 0 )
     {
+        if ( strcmp(ep->symbol,symbol) != 0 )
+        {
+            printf("ep.%p %s %s:%u called for [%s]???\n",ep,ep->symbol,ep->ipaddr,ep->port,symbol);
+            int32_t i = 1 / zeroval();
+            printf("it should be dead already.%d\n",i);
+        }
         if ( ep != 0 && ep->sock >= 0 && retjsonp != 0 )
         {
             *retjsonp = 0;
@@ -605,7 +612,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
         {
             if ( jobj(retjson,"error") == 0 && is_cJSON_Array(retjson) != 0 )
             {
-                if ( 0 && electrumflag > 1 )
+                if ( 1 && electrumflag > 1 )
                     printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
                 updatedflag = 0;
                 if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )

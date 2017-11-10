@@ -18,8 +18,11 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// bot status 1600% ?
-
+// swap started, pending, locked, finished, ...
+// aliceid
+//there is still a pending one with `-1 wait for bobpayment bYoNxkfvwQ42Yufry8J5y8BYi6mQxokvW9 numconfs.1 MNZ c0ea4aa808a653222a15122d96692fecf734dbbacfb9a54cb4711306ea0c3cef`, but that tx is already spent including 6 confirmation
+// bot safe to exit?
+//
 // BCH signing
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
