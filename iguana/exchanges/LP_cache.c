@@ -43,8 +43,9 @@ cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seri
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
         tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
-        tx->serialized = serialized;
-        tx->len = len;
+        tx->serialized = 0;
+        free(serialized);
+        tx->len = 0;
         tx->SPV = tx->height = height;
         //printf("tx.%p vins.(%s) vouts.(%s)\n",tx,jprint(vins,0),jprint(vouts,0));
         for (i=0; i<numvouts; i++)
@@ -104,10 +105,12 @@ void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
 
 int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
 {
-    bits256 txid,hash; long fpos; int32_t retval,height,len; uint8_t *serialized; cJSON *txobj; char str[65],str2[65];
+    bits256 txid,hash; long fpos; int32_t i,retval,height,len; uint8_t *serialized; cJSON *txobj; char str[65],str2[65];
     fpos = ftell(fp);
     if ( fread(&txid,1,sizeof(txid),fp) == sizeof(txid) && fread(&len,1,sizeof(len),fp) == sizeof(len) && fread(&height,1,sizeof(height),fp) == sizeof(height) && len < 100000 )
     {
+        if ( len < 4096 )
+        {
         serialized = malloc(len);
         if ( (retval= (int32_t)fread(serialized,1,len,fp)) == len )
         {
@@ -121,6 +124,14 @@ int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
             }
             printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,txid));
         } else printf("retval.%d vs len.%d\n",retval,len);
+        }
+        else
+        {
+            printf("warning: big cachelen.%d\n",len);
+            for (i=0; i<len; i++)
+                fgetc(fp);
+            return((int32_t)(ftell(fp) - fpos));
+        }
     } else printf("fread error\n");
     return(-1);
 }
