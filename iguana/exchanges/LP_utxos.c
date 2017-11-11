@@ -286,9 +286,9 @@ void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
     utxo->T.spentflag = (uint32_t)time(NULL);
 }
 
-struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *coinaddr,bits256 pubkey,char *gui,uint32_t sessionid,uint64_t satoshis)
+struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *coinaddr,bits256 pubkey,char *gui,uint32_t sessionid)
 {
-    uint64_t val,val2=0,txfee; int32_t spendvini,numconfirms,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    uint64_t val,val2=0,tmpsatoshis,txfee; int32_t spendvini,numconfirms,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
     if ( symbol == 0 || symbol[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )//|| sessionid == 0 )
     {
         char str[65],str2[65]; printf("REJECT (%s) iambob.%d %s utxoadd.(%.8f %.8f) %s/v%d %s/v%d\n",coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2);
@@ -301,7 +301,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         return(0);
     }
     txfee = LP_txfeecalc(coin,0,0);
-    /*if ( iambob != 0 && value2 < 9 * (satoshis >> 3) + 2*txfee ) // big txfee padding
+    if ( iambob != 0 && value2 < 9 * (value >> 3) + 2*txfee ) // big txfee padding
     {
         if ( value2 > 2*txfee )
             tmpsatoshis = (((value2 - 2*txfee) / 9) << 3);
@@ -310,7 +310,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
             printf("value2 %.8f <= 2 * %.8f\n",dstr(value2),dstr(txfee));
             return(0);
         }
-    } else tmpsatoshis = (satoshis - txfee);*/
+    } else tmpsatoshis = (value - txfee);
     char str[65],str2[65],dispflag = 0;//(iambob == 0);
     if ( iambob == 0 && bits256_cmp(pubkey,G.LP_mypub25519) != 0 )
     {
@@ -319,11 +319,11 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
     }
     if ( coin->inactive == 0 )
     {
-        if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,satoshis,txid2,vout2) <= 0 )
+        if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,tmpsatoshis,txid2,vout2) <= 0 )
         {
             static uint32_t counter;
             if ( counter++ < 3 )
-                printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f:%.8f, value2 %.8f:%.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(val),dstr(value2),dstr(val2),dstr(satoshis));
+                printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f:%.8f, value2 %.8f:%.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(val),dstr(value2),dstr(val2),dstr(tmpsatoshis));
             return(0);
         }
         if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,vout,0)) <= 0 )
@@ -351,10 +351,10 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         if ( 0 && LP_ismine(utxo) == 0 )
         {
             char str2[65],str3[65]; printf("iambob.%d %s %s utxoadd.(%.8f %.8f) %s %s\n",iambob,bits256_str(str3,pubkey),symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
-            printf("duplicate %.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(satoshis),dstr(utxo->payment.value),dstr(utxo->deposit.value),dstr(utxo->S.satoshis));
+            printf("duplicate %.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(tmpsatoshis),dstr(utxo->payment.value),dstr(utxo->deposit.value),dstr(utxo->S.satoshis));
         }
         u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
-        if ( bits256_cmp(txid,utxo->payment.txid) != 0 || bits256_cmp(txid2,u.txid) != 0 || vout != utxo->payment.vout || value != utxo->payment.value || satoshis != utxo->S.satoshis || vout2 != u.vout || value2 != u.value || strcmp(symbol,utxo->coin) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || bits256_cmp(pubkey,utxo->pubkey) != 0 )
+        if ( bits256_cmp(txid,utxo->payment.txid) != 0 || bits256_cmp(txid2,u.txid) != 0 || vout != utxo->payment.vout || value != utxo->payment.value || tmpsatoshis != utxo->S.satoshis || vout2 != u.vout || value2 != u.value || strcmp(symbol,utxo->coin) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || bits256_cmp(pubkey,utxo->pubkey) != 0 )
         {
             utxo->T.errors++;
             char str[65],str2[65],str3[65],str4[65],str5[65],str6[65];
@@ -364,7 +364,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
                 //    utxo->T.spentflag = (uint32_t)time(NULL);
                 printf("original utxo pair not valid\n");
                 if ( dispflag != 0 )
-                    printf("error on subsequent utxo iambob.%d %.8f %.8f add.(%s %s) when.(%s %s) %d %d %d %d %d %d %d %d %d %d pubkeys.(%s vs %s)\n",iambob,dstr(val),dstr(val2),bits256_str(str,txid),bits256_str(str2,txid2),bits256_str(str3,utxo->payment.txid),bits256_str(str4,utxo->deposit.txid),bits256_cmp(txid,utxo->payment.txid) != 0,bits256_cmp(txid2,u.txid) != 0,vout != utxo->payment.vout,satoshis != utxo->S.satoshis,vout2 != u.vout,value2 != u.value,strcmp(symbol,utxo->coin) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,bits256_cmp(pubkey,utxo->pubkey) != 0,value != utxo->payment.value,bits256_str(str5,pubkey),bits256_str(str6,utxo->pubkey));
+                    printf("error on subsequent utxo iambob.%d %.8f %.8f add.(%s %s) when.(%s %s) %d %d %d %d %d %d %d %d %d %d pubkeys.(%s vs %s)\n",iambob,dstr(val),dstr(val2),bits256_str(str,txid),bits256_str(str2,txid2),bits256_str(str3,utxo->payment.txid),bits256_str(str4,utxo->deposit.txid),bits256_cmp(txid,utxo->payment.txid) != 0,bits256_cmp(txid2,u.txid) != 0,vout != utxo->payment.vout,tmpsatoshis != utxo->S.satoshis,vout2 != u.vout,value2 != u.value,strcmp(symbol,utxo->coin) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,bits256_cmp(pubkey,utxo->pubkey) != 0,value != utxo->payment.value,bits256_str(str5,pubkey),bits256_str(str6,utxo->pubkey));
                 utxo = 0;
             }
         }
@@ -389,7 +389,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
     utxo->payment.txid = txid;
     utxo->payment.vout = vout;
     utxo->payment.value = value;
-    utxo->S.satoshis = satoshis;
+    utxo->S.satoshis = tmpsatoshis;
     if ( (utxo->iambob= iambob) != 0 )
     {
         utxo->deposit.txid = txid2;
@@ -658,14 +658,14 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                                 portable_mutex_lock(&LP_UTXOmutex);
                                 if ( iambob != 0 )
                                 {
-                                    if ( (utxo= LP_utxoadd(1,coin->symbol,txid,vout,value,deposittxid,depositvout,depositval,coin->smartaddr,mypub,LP_gui,G.LP_sessionid,value)) != 0 )
+                                    if ( (utxo= LP_utxoadd(1,coin->symbol,txid,vout,value,deposittxid,depositvout,depositval,coin->smartaddr,mypub,LP_gui,G.LP_sessionid)) != 0 )
                                     {
                                     }
                                 }
                                 else
                                 {
                                     //printf("call utxoadd\n");
-                                    if ( (utxo= LP_utxoadd(0,coin->symbol,deposittxid,depositvout,depositval,txid,vout,value,coin->smartaddr,mypub,LP_gui,G.LP_sessionid,value)) != 0 )
+                                    if ( (utxo= LP_utxoadd(0,coin->symbol,deposittxid,depositvout,depositval,txid,vout,value,coin->smartaddr,mypub,LP_gui,G.LP_sessionid)) != 0 )
                                     {
                                     }
                                 }
