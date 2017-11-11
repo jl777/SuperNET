@@ -109,8 +109,6 @@ int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
     fpos = ftell(fp);
     if ( fread(&txid,1,sizeof(txid),fp) == sizeof(txid) && fread(&len,1,sizeof(len),fp) == sizeof(len) && fread(&height,1,sizeof(height),fp) == sizeof(height) && len < 100000 )
     {
-        if ( len < 4096 )
-        {
         serialized = malloc(len);
         if ( (retval= (int32_t)fread(serialized,1,len,fp)) == len )
         {
@@ -124,14 +122,14 @@ int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
             }
             printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,txid));
         } else printf("retval.%d vs len.%d\n",retval,len);
-        }
+        /*}
         else
         {
             printf("warning: big cachelen.%d\n",len);
             for (i=0; i<len; i++)
                 fgetc(fp);
             return((int32_t)(ftell(fp) - fpos));
-        }
+        }*/
     } else printf("fread error\n");
     return(-1);
 }
@@ -243,6 +241,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
         if ( (retjson= electrum_transaction(coin->symbol,ep,&retjson,txid)) != 0 )
             free_json(retjson);
     }
+    tx->height = height;
     if ( tx != 0 && tx->height == height && tx->SPV > 0 )
         return(tx->SPV);
     if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
