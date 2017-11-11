@@ -779,7 +779,7 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
 
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
-    uint64_t val,val2=0,txfee,threshold=0; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct LP_transaction *tx; struct LP_address_utxo *up; struct iguana_info *coin = LP_coinfind(symbol);
+    uint64_t val,val2=0,txfee,threshold=0; cJSON *txobj; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct LP_transaction *tx; struct LP_address_utxo *up; struct iguana_info *coin = LP_coinfind(symbol);
     if ( bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 )
     {
         printf("null txid not eligible\n");
@@ -837,7 +837,12 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                     }
                     else
                     {
-                        
+                        if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid,vout)) == 0 )
+                            return(0);
+                        else free_json(txobj);
+                        if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid2,vout2)) == 0 )
+                            return(0);
+                        else free_json(txobj);
                     }
                 }
                 return(1);
