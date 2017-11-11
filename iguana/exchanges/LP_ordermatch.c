@@ -296,7 +296,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                     {
                         if ( up != 0 && (up2= utxos[mini]) != 0 )
                         {
-                            if ( (utxo= LP_utxoadd(1,coin->symbol,up->U.txid,up->U.vout,up->U.value,up2->U.txid,up2->U.vout,up2->U.value,coinaddr,ap->pubkey,G.gui,0)) != 0 )
+                            if ( (utxo= LP_utxoadd(1,coin->symbol,up->U.txid,up->U.vout,up->U.value,up2->U.txid,up2->U.vout,up2->U.value,coinaddr,ap->pubkey,G.gui,0,targetval)) != 0 )
                             {
                                 utxo->S.satoshis = targetval;
                                 char str[65],str2[65]; printf("butxo.%p targetval %.8f, found val %.8f %s | targetval2 %.8f val2 %.8f %s\n",utxo,dstr(targetval),dstr(up->U.value),bits256_str(str,utxo->payment.txid),dstr(targetval2),dstr(up2->U.value),bits256_str(str2,utxo->deposit.txid));
@@ -789,7 +789,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     value = LP_txvalue(tmp,Q.srccoin,Q.txid,Q.vout);
                     value2 = LP_txvalue(tmp,Q.srccoin,Q.txid2,Q.vout2);
                     //printf("call LP_utxoadd.(%s) %.8f %.8f\n",Q.coinaddr,dstr(value),dstr(value2));
-                    if ( (butxo= LP_utxoadd(1,coin->symbol,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,G.gui,0)) == 0 )
+                    if ( (butxo= LP_utxoadd(1,coin->symbol,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,G.gui,0,Q.satoshis)) == 0 )
                         recalc = 1;
                 }
                 else
