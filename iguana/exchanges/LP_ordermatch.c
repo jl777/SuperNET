@@ -506,7 +506,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     }
     if ( LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin) <= SMALLVAL || bid <= SMALLVAL )
     {
-        printf("this node has no price for %s/%s (%.8f %.8f)\n",Q.destcoin,Q.srccoin,bid,ask);
+        //printf("this node has no price for %s/%s (%.8f %.8f)\n",Q.destcoin,Q.srccoin,bid,ask);
         LP_availableset(autxo);
         LP_aliceid(Q.tradeid,Q.aliceid,"error5",0,0);
         return(clonestr("{\"error\":\"no price set\"}"));
@@ -725,7 +725,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         if ( (coin= LP_coinfind(Q.srccoin)) == 0 || (price= LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin)) <= SMALLVAL || ask <= SMALLVAL )
         {
-            printf("this node has no price for %s/%s\n",Q.srccoin,Q.destcoin);
+            //printf("this node has no price for %s/%s\n",Q.srccoin,Q.destcoin);
             return(retval);
         }
         if ( LP_validSPV(Q.destcoin,Q.destaddr,Q.desttxid,Q.destvout) < 0 )
