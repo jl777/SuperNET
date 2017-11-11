@@ -685,11 +685,13 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_abutxo_set(autxo,butxo,&Q);
         if ( strcmp(method,"reserved") == 0 )
         {
+            if ( LP_Alicemaxprice == 0. )
+                return(retval);
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && LP_alice_eligible() > 0 )
             {
                 if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
                 {
-                    printf("quote validate error %.0f\n",qprice);
+                    printf("reserved quote validate error %.0f\n",qprice);
                     return(retval);
                 }
                 if ( LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid,Q.vout) < 0 )
