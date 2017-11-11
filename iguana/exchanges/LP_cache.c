@@ -105,8 +105,7 @@ void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
             fwrite(tx->serialized,1,tx->len,fp);
             fclose(fp);
         }
-    }
-    else printf("cant store %s %s tx.%p [%d] fpos.%ld SPV.%d\n",coin->symbol,bits256_str(str,txid),tx,tx!=0?tx->len:-1,tx!=0?tx->fpos:-1,tx!=0?tx->SPV:-1);
+    } //else printf("cant store %s %s tx.%p [%d] fpos.%ld SPV.%d\n",coin->symbol,bits256_str(str,txid),tx,tx!=0?tx->len:-1,tx!=0?tx->fpos:-1,tx!=0?tx->SPV:-1);
 }
 
 int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
