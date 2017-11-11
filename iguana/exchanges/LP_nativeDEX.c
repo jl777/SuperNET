@@ -18,7 +18,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// version info
+// immediate "request"
 // previously, it used to show amount, kmd equiv, perc
 // swap started, pending, locked, finished, ...
 // aliceid

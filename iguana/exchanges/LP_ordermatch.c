@@ -466,8 +466,9 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
             memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
             LP_Alicemaxprice = 0.;
             Alice_expiration = 0;
+            printf("send CONNECT\n");
             LP_query(ctx,myipaddr,mypubsock,"connect",qp);
-        }
+        } else printf("LP_reserved price %.8f vs maxprice %.8f\n",price,maxprice*1.005);
     } else printf("probably a timeout, reject reserved due to not eligible.%d or mismatched quote price %.8f vs maxprice %.8f\n",LP_alice_eligible(),price,maxprice);
 }
 
