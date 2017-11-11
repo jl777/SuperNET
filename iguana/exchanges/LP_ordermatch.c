@@ -426,7 +426,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
 
 int32_t LP_quotecmp(struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2)
 {
-    if ( bits256_cmp(qp->srchash,qp2->srchash) == 0 && bits256_cmp(qp->desthash,qp2->desthash) == 0 && strcmp(qp->srccoin,qp2->srccoin) == 0 && strcmp(qp->destcoin,qp2->destcoin) == 0 && bits256_cmp(qp->desttxid,qp2->desttxid) == 0 && qp->destvout == qp2->destvout && bits256_cmp(qp->feetxid,qp2->feetxid) == 0 && qp->feevout == qp2->feevout && qp->destsatoshis == qp2->destsatoshis && qp->txfee >= qp2->txfee && qp->desttxfee == qp2->desttxfee )
+    if ( bits256_cmp(qp->desthash,qp2->desthash) == 0 && strcmp(qp->srccoin,qp2->srccoin) == 0 && strcmp(qp->destcoin,qp2->destcoin) == 0 && bits256_cmp(qp->desttxid,qp2->desttxid) == 0 && qp->destvout == qp2->destvout && bits256_cmp(qp->feetxid,qp2->feetxid) == 0 && qp->feevout == qp2->feevout && qp->destsatoshis == qp2->destsatoshis && qp->txfee >= qp2->txfee && qp->desttxfee == qp2->desttxfee ) //bits256_cmp(qp->srchash,qp2->srchash) == 0 &&
         return(0);
     else return(-1);
 }
@@ -666,10 +666,20 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_tradecommand_log(argjson);
         //printf("LP_tradecommand: check received method %s aliceid.%llx\n",method,(long long)Q.aliceid);
         retval = 1;
+        autxo = &A;
+        butxo = &B;
+        memset(autxo,0,sizeof(*autxo));
+        memset(butxo,0,sizeof(*butxo));
+        LP_abutxo_set(autxo,butxo,&Q);
         if ( strcmp(method,"reserved") == 0 )
         {
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && LP_alice_eligible() > 0 )
             {
+                if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
+                {
+                    printf("quote validate error %.0f\n",qprice);
+                    return(-33);
+                }
                 if ( LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid,Q.vout) < 0 )
                 {
                     printf("%s src %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid));
@@ -692,6 +702,11 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         {
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
+                if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
+                {
+                    printf("quote validate error %.0f\n",qprice);
+                    return(-33);
+                }
                 if ( LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid,Q.vout) < 0 )
                 {
                     printf("%s src %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid));
@@ -729,11 +744,6 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             printf("{\"error\":\"GAME can only be alice coin\"}\n");
             return(retval);
         }
-        autxo = &A;
-        butxo = &B;
-        memset(autxo,0,sizeof(*autxo));
-        memset(butxo,0,sizeof(*butxo));
-        LP_abutxo_set(autxo,butxo,&Q);
         if ( strcmp(method,"request") == 0 )
         {
             char str[65],str2[65];
@@ -808,7 +818,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             printf("quote validate error %.0f\n",qprice);
             return(-3);
         }
-        if ( qprice < (price - 0.00000001) * 0.9999 )
+        if ( qprice < (price - 0.00000001) * 0.998 )
         {
             printf("(%.8f %.8f) quote price %.8f too low vs %.8f for %s/%s\n",bid,ask,qprice,price,Q.srccoin,Q.destcoin);
             return(-4);
