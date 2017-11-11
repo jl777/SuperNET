@@ -105,7 +105,7 @@ void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
 
 int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
 {
-    bits256 txid,hash; long fpos; int32_t i,retval,height,len; uint8_t *serialized; cJSON *txobj; char str[65],str2[65];
+    bits256 txid,hash; long fpos; int32_t retval,height,len; uint8_t *serialized; cJSON *txobj; char str[65],str2[65];
     fpos = ftell(fp);
     if ( fread(&txid,1,sizeof(txid),fp) == sizeof(txid) && fread(&len,1,sizeof(len),fp) == sizeof(len) && fread(&height,1,sizeof(height),fp) == sizeof(height) && len < 100000 )
     {
@@ -241,9 +241,12 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
         if ( (retjson= electrum_transaction(coin->symbol,ep,&retjson,txid)) != 0 )
             free_json(retjson);
     }
-    tx->height = height;
-    if ( tx != 0 && tx->height == height && tx->SPV > 0 )
-        return(tx->SPV);
+    if ( tx != 0 )
+    {
+        tx->height = height;
+        if ( tx->SPV > 0 )
+            return(tx->SPV);
+    }
     if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
     {
         char str[65],str2[65],str3[65];
