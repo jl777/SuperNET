@@ -90,7 +90,7 @@ cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seri
 void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
 {
     FILE *fp; char fname[512],str[65]; struct LP_transaction *tx = 0;
-    if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 && tx->len > 0 )
+    if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 && tx->len > 0 && tx->fpos == 0 )
     {
         sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
         if ( (fp= OS_appendfile(fname)) != 0 )
