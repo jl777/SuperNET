@@ -459,7 +459,7 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
     if ( LP_alice_eligible() > 0 && LP_quotecmp(qp,&LP_Alicequery) == 0 )
     {
         price = LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout);
-        if ( LP_pricevalid(price) > 0 && maxprice > SMALLVAL && price <= maxprice )
+        if ( LP_pricevalid(price) > 0 && maxprice > SMALLVAL && price <= maxprice*1.005 )
         {
             qp->tradeid = LP_Alicequery.tradeid;
             memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
@@ -904,7 +904,7 @@ struct LP_utxoinfo *LP_ordermatch_iter(struct LP_address_utxo **utxos,int32_t ma
 {
     uint64_t basesatoshis; struct LP_utxoinfo *bestutxo;
     basesatoshis = LP_basesatoshis(dstr(asatoshis),price,txfee,desttxfee);
-    printf("basesatoshis %.8f price %.8f txfee %.8f desttxfee %.8f\n",dstr(basesatoshis),price,dstr(txfee),dstr(desttxfee));
+    //printf("basesatoshis %.8f price %.8f txfee %.8f desttxfee %.8f\n",dstr(basesatoshis),price,dstr(txfee),dstr(desttxfee));
     if ( basesatoshis != 0 && (bestutxo= LP_address_utxopair(0,utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,desttxfee)) != 0 )
     {
         bestutxo->pubkey = pubkey;
