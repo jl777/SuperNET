@@ -376,7 +376,9 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
             //    utxo->S.profitmargin = profitmargin;
             utxo->T.lasttime = (uint32_t)time(NULL);
             //printf("return existing utxo[%d] %s %s\n",iambob,bits256_str(str,utxo->payment.txid),bits256_str(str2,iambob != 0 ? utxo->deposit.txid : utxo->fee.txid));
-            return(utxo);
+            if ( bits256_cmp(txid,utxo->payment.txid) != 0 || vout != utxo->payment.vout || bits256_cmp(txid2,u.txid) != 0 || vout2 != u.vout )
+                printf("unexpected mismatch? %s vs %s\n",bits256_str(str,txid2),bits256_str(str2,u.txid));
+            else return(utxo);
         }
     }
     utxo = calloc(1,sizeof(*utxo));
