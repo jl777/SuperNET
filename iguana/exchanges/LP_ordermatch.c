@@ -115,7 +115,7 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
     {
         if ( LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) == 0 )
         {
-            char str[65]; printf("alice not eligible (%.8f %.8f) %s/v%d\n",dstr(destvalue),dstr(destvalue2),bits256_str(str,qp->feetxid),qp->feevout);
+            char str[65]; printf("alice not eligible destsatoshis %.8f (%.8f %.8f) %s/v%d\n",dstr(qp->destsatoshis),dstr(destvalue),dstr(destvalue2),bits256_str(str,qp->feetxid),qp->feevout);
             return(-3);
         }
         if ( (txout= LP_gettxout(qp->destcoin,qp->destaddr,qp->desttxid,qp->destvout)) != 0 )
@@ -269,7 +269,7 @@ uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t d
 
 struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double relvolume,double price,uint64_t desttxfee)
 {
-    struct LP_address *ap; uint64_t targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2; struct LP_utxoinfo *utxo = 0,*utmp;
+    struct LP_address *ap; uint64_t targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2; struct LP_utxoinfo *utxo = 0;//,*utmp;
     targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee);
     targetval2 = (targetval / 8) * 9 + 2*txfee;
     if ( coin != 0 && (ap= LP_addressfind(coin,coinaddr)) != 0 )
