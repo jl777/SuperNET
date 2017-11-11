@@ -48,7 +48,7 @@ cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seri
         free(serialized);
         tx->len = tx->len;
         tx->SPV = tx->height = height;
-        //printf("tx.%p vins.(%s) vouts.(%s)\n",tx,jprint(vins,0),jprint(vouts,0));
+        printf("tx.%s numvins.%d numvouts.%d\n",bits256_str(str,txid),numvins,numvouts);
         for (i=0; i<numvouts; i++)
         {
             vout = jitem(vouts,i);
