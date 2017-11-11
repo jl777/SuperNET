@@ -50,7 +50,7 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
         free(serialized);
         tx->len = tx->len;
         tx->SPV = tx->height = height;
-        printf("tx.%s numvins.%d numvouts.%d\n",bits256_str(str,txid),numvins,numvouts);
+        //printf("tx.%s numvins.%d numvouts.%d\n",bits256_str(str,txid),numvins,numvouts);
         for (i=0; i<numvouts; i++)
         {
             vout = jitem(vouts,i);
@@ -92,7 +92,7 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
 
 void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
 {
-    FILE *fp; char fname[512],str[65]; struct LP_transaction *tx = 0;
+    FILE *fp; char fname[512]; struct LP_transaction *tx = 0;
     if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 && tx->len > 0 && tx->fpos == 0 )
     {
         sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
@@ -260,7 +260,15 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
                     SPV = height;
                     LP_SPV_store(coin,txid,height);
                     if ( tx != 0 )
+                    {
                         tx->SPV = height;
+                        if ( tx->serialized != 0 )
+                        {
+                            free(tx->serialized);
+                            tx->serialized = 0;
+                            tx->len = 0;
+                        }
+                    }
                     //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash));
                 }
                 else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
