@@ -755,7 +755,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         if ( strcmp(method,"request") == 0 )
         {
             char str[65],str2[65];
-            printf("address.(%s/%s) request.(%s)\n",Q.coinaddr,coin->smartaddr,jprint(argjson,0));
+            //printf("address.(%s/%s) request.(%s)\n",Q.coinaddr,coin->smartaddr,jprint(argjson,0));
             recalc = 0;
             if ( bits256_cmp(Q.srchash,G.LP_mypub25519) != 0 || strcmp(butxo->coinaddr,coin->smartaddr) != 0 )
             {
@@ -784,7 +784,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 {
                     value = LP_txvalue(tmp,Q.srccoin,Q.txid,Q.vout);
                     value2 = LP_txvalue(tmp,Q.srccoin,Q.txid2,Q.vout2);
-                    printf("call LP_utxoadd.(%s) %.8f %.8f\n",Q.coinaddr,dstr(value),dstr(value2));
+                    //printf("call LP_utxoadd.(%s) %.8f %.8f\n",Q.coinaddr,dstr(value),dstr(value2));
                     if ( (butxo= LP_utxoadd(1,coin->symbol,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,G.gui,0)) == 0 )
                         recalc = 1;
                 }
@@ -818,7 +818,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 }
                 else
                 {
-                    printf("cant find utxopair\n");
+                    //printf("cant find utxopair\n");
                     return(retval);
                 }
             }
