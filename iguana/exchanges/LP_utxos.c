@@ -376,9 +376,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
             //    utxo->S.profitmargin = profitmargin;
             utxo->T.lasttime = (uint32_t)time(NULL);
             //printf("return existing utxo[%d] %s %s\n",iambob,bits256_str(str,utxo->payment.txid),bits256_str(str2,iambob != 0 ? utxo->deposit.txid : utxo->fee.txid));
-            if ( bits256_cmp(txid,utxo->payment.txid) != 0 || vout != utxo->payment.vout || bits256_cmp(txid2,u.txid) != 0 || vout2 != u.vout )
-                printf("unexpected mismatch? %s vs %s\n",bits256_str(str,txid2),bits256_str(str2,u.txid));
-            else return(utxo);
+            return(utxo);
         }
     }
     utxo = calloc(1,sizeof(*utxo));
@@ -430,6 +428,39 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         }
     }
     return(utxo);
+}
+
+int32_t LP_utxos_remove(bits256 txid,int32_t vout)
+{
+    struct LP_utxoinfo *utxo,*utxo2; int32_t retval = 0,iambob = 1;
+    utxo = utxo2 = 0;
+    portable_mutex_lock(&LP_utxomutex);
+    if ( (utxo= _LP_utxofind(iambob,txid,vout)) != 0 )
+    {
+        if ( LP_isavailable(utxo) == 0 )
+            retval = -1;
+        else
+        {
+            if ( (utxo2= _LP_utxo2find(iambob,txid,vout)) != 0 )
+            {
+                if ( LP_isavailable(utxo) == 0 )
+                    retval = -1;
+                else
+                {
+                    _LP_utxo_delete(iambob,utxo);
+                    _LP_utxo2_delete(iambob,utxo2);
+                }
+            }
+        }
+    }
+    else if ( (utxo2= _LP_utxo2find(iambob,txid,vout)) != 0 )
+    {
+        if ( LP_isavailable(utxo2) == 0 )
+            retval = -1;
+        else _LP_utxo2_delete(iambob,utxo2);
+    }
+    portable_mutex_unlock(&LP_utxomutex);
+    return(retval);
 }
 
 cJSON *LP_inventory(char *symbol)

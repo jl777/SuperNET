@@ -185,7 +185,7 @@ printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str
                     continue;
                 }
             }
-            if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
+            if ( LP_allocated(up->U.txid,up->U.vout) == 0 && LP_utxos_remove(up->U.txid,up->U.vout) == 0 )
             {
                 utxos[n++] = up;
                 if ( n >= max )
@@ -478,6 +478,16 @@ struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
     LP_utxosetkey(key,txid,vout);
     HASH_FIND(hh,G.LP_utxoinfos[iambob],key,sizeof(key),utxo);
     return(utxo);
+}
+
+void _LP_utxo_delete(int32_t iambob,struct LP_utxoinfo *utxo)
+{
+    HASH_DELETE(hh,G.LP_utxoinfos[iambob],utxo);
+}
+
+void _LP_utxo2_delete(int32_t iambob,struct LP_utxoinfo *utxo)
+{
+    HASH_DELETE(hh,G.LP_utxoinfos2[iambob],utxo);
 }
 
 struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)

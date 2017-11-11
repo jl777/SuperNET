@@ -762,6 +762,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             else
             {
                 char tmp[64];
+                LP_utxos_remove(Q.txid,Q.vout);
+                LP_utxos_remove(Q.txid2,Q.vout2);
                 value = LP_txvalue(tmp,Q.srccoin,Q.txid,Q.vout);
                 value2 = LP_txvalue(tmp,Q.srccoin,Q.txid2,Q.vout2);
                 printf("call LP_utxoadd.(%s) %.8f %.8f\n",Q.coinaddr,dstr(value),dstr(value2));
@@ -769,7 +771,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     recalc = 1;
                 else
                 {
-                    printf("butxo deposit %s, Q %s\n",bits256_str(str,butxo->deposit.txid),bits256_str(str2,Q.txid2));
+                    if ( bits256_cmp(Q.txid,butxo->payment.txid) != 0 || Q.vout != butxo->payment.vout || bits256_cmp(Q.txid2,butxo->deposit.txid) != 0 || Q.vout2 != butxo->deposit.vout )
+                        recalc = 1;
                 }
             }
             if ( recalc != 0 )

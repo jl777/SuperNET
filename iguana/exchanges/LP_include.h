@@ -429,6 +429,7 @@ struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
 int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256 txid,int32_t height);
+int32_t LP_utxos_remove(bits256 txid,int32_t vout);
 struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,int32_t height,int32_t numvouts,int32_t numvins);
 void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid);
 uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen);
