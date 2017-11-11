@@ -885,7 +885,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
         return(0);
     if ( basecoin->electrum == 0 )
         max = 1000;
-    else max = 40;
+    else max = LP_MAXDESIRED_UTXOS;
     utxos = calloc(max,sizeof(*utxos));
     LP_txfees(&txfee,&desttxfee,base,autxo->coin);
     //printf("LP_buyutxo maxprice %.8f relvol %.8f %s/%s %.8f %.8f\n",maxprice,dstr(autxo->S.satoshis),base,autxo->coin,dstr(txfee),dstr(desttxfee));
