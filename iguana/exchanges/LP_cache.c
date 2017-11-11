@@ -257,12 +257,9 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
                 if ( bits256_cmp(merkleroot,roothash) == 0 )
                 {
                     SPV = height;
-                    if ( tx != 0 )
-                    {
-                        tx->SPV = height;
-                        printf("tx len.%d ht.%d %d\n",tx->len,tx->height,height);
-                    }
                     LP_SPV_store(coin,txid,height);
+                    if ( tx != 0 )
+                        tx->SPV = height;
                     //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash));
                 }
                 else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
