@@ -762,6 +762,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             else
             {
                 char tmp[64];
+                price = (qprice * 0.5) + (0.5 * price);
                 LP_utxos_remove(Q.txid,Q.vout);
                 LP_utxos_remove(Q.txid2,Q.vout2);
                 value = LP_txvalue(tmp,Q.srccoin,Q.txid,Q.vout);
