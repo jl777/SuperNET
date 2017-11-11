@@ -424,6 +424,8 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
         return(clonestr("{\"error\":\"cant find alice utxopair\"}"));
     }
     price = 0.;
+    memset(qp->txid.bytes,0,sizeof(qp->txid));
+    qp->txid2 = qp->txid;
     qp->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
     qp->tradeid = tradeid;
     LP_query(ctx,myipaddr,mypubsock,"request",qp);
@@ -1071,6 +1073,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"cant find alice utxo that is small enough\"}"));
     }
     LP_RTmetrics_update(base,rel);
+    return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid));
     while ( 1 )
     {
         if ( (bestutxo= LP_buyutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,gui,pubkeys,numpubs,destpubkey)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
