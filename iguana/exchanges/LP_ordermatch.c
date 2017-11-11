@@ -916,9 +916,9 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                 {
                     item = jitem(asks,i);
                     price = jdouble(item,"price");
-                    if ( price < maxprice && price > maxprice*0.8)
-                        price = price * 0.9 + 0.1 * maxprice;
-                    else price *= 1.005;
+                    //if ( price < maxprice && price > maxprice*0.8)
+                    //    price = price * 0.9 + 0.1 * maxprice;
+                    //else price *= 1.005;
                     pubkey = jbits256(item,"pubkey");
                     if ( bits256_nonz(destpubkey) != 0 && bits256_cmp(destpubkey,pubkey) != 0 )
                         continue;
@@ -942,7 +942,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
                             LP_listunspent_query(base,coinaddr);
                             for (j=0; j<maxiters; j++)
                             {
-                                if ( (bestutxo= LP_ordermatch_iter(utxos,max,ordermatchpricep,bestsatoshisp,bestdestsatoshisp,basecoin,coinaddr,asatoshis,price,txfee,desttxfee,pubp->pubkey,gui)) != 0 )
+                                if ( (bestutxo= LP_ordermatch_iter(utxos,max,ordermatchpricep,bestsatoshisp,bestdestsatoshisp,basecoin,coinaddr,asatoshis,maxprice*.999,txfee,desttxfee,pubp->pubkey,gui)) != 0 )
                                 {
                                     //printf("j.%d/%d ordermatch %.8f best satoshis %.8f destsatoshis %.8f txfees (%.8f %.8f)\n",j,maxiters,price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp),dstr(txfee),dstr(desttxfee));
                                     break;
