@@ -678,7 +678,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
                 {
                     printf("quote validate error %.0f\n",qprice);
-                    return(-33);
+                    return(retval);
                 }
                 if ( LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid,Q.vout) < 0 )
                 {
@@ -705,7 +705,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
                 {
                     printf("quote validate error %.0f\n",qprice);
-                    return(-33);
+                    return(retval);
                 }
                 if ( LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid,Q.vout) < 0 )
                 {
