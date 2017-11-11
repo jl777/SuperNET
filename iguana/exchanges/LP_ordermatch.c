@@ -309,7 +309,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
                 printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
         } //else printf("no %s utxos pass LP_address_utxo_ptrs filter\n",coinaddr);
     } else printf("couldnt find %s %s\n",coin->symbol,coinaddr);
-    HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,utmp)
+    /*HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,utmp)
     {
         if ( LP_isavailable(utxo) != 0 && utxo->payment.value >= targetval && targetval >= utxo->payment.value/2 && utxo->deposit.value >= targetval2 )
         {
@@ -317,7 +317,7 @@ struct LP_utxoinfo *LP_address_utxopair(int32_t iambob,struct LP_address_utxo **
             printf("backup method found utxo!\n");
             return(utxo);
         }
-    }
+    }*/
     return(0);
 }
 
