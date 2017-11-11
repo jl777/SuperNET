@@ -185,7 +185,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                     continue;
                 }
             }
-            if ( LP_allocated(up->U.txid,up->U.vout) == 0 && _LP_utxos_remove(up->U.txid,up->U.vout) == 0 )
+            if ( LP_allocated(up->U.txid,up->U.vout) == 0 && _LP_utxofind(iambob,up->U.txid,up->U.vout) == 0 && _LP_utxo2find(iambob,up->U.txid,up->U.vout) == 0 )
             {
                 utxos[n++] = up;
                 if ( n >= max )
@@ -468,15 +468,8 @@ void LP_utxosetkey(uint8_t *key,bits256 txid,int32_t vout)
 struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
 {
     struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
-    /*if ( iambob != 0 )
-    {
-        static uint32_t counter;
-        if ( counter++ < 3 )
-            printf("_LP_utxofind deprecated iambob\n");
-        return(0);
-    }*/
     LP_utxosetkey(key,txid,vout);
-    HASH_FIND(hh,G.LP_utxoinfos[iambob],key,sizeof(key),utxo);
+    HASH_FIND(hh,G.LP_utxoinfos[iambob!=0],key,sizeof(key),utxo);
     return(utxo);
 }
 
@@ -493,11 +486,6 @@ void _LP_utxo2_delete(int32_t iambob,struct LP_utxoinfo *utxo)
 struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)
 {
     struct LP_utxoinfo *utxo=0; uint8_t key2[sizeof(txid2) + sizeof(vout2)];
-    /*if ( iambob != 0 )
-    {
-        printf("_LP_utxo2find deprecated iambob\n");
-        return(0);
-    }*/
     LP_utxosetkey(key2,txid2,vout2);
     HASH_FIND(hh2,G.LP_utxoinfos2[iambob],key2,sizeof(key2),utxo);
     return(utxo);
