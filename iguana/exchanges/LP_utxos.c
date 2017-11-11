@@ -430,11 +430,10 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
     return(utxo);
 }
 
-int32_t LP_utxos_remove(bits256 txid,int32_t vout)
+int32_t _LP_utxos_remove(bits256 txid,int32_t vout)
 {
     struct LP_utxoinfo *utxo,*utxo2; int32_t retval = 0,iambob = 1;
     utxo = utxo2 = 0;
-    portable_mutex_lock(&LP_utxomutex);
     if ( (utxo= _LP_utxofind(iambob,txid,vout)) != 0 )
     {
         if ( LP_isavailable(utxo) == 0 )
@@ -459,6 +458,14 @@ int32_t LP_utxos_remove(bits256 txid,int32_t vout)
             retval = -1;
         else _LP_utxo2_delete(iambob,utxo2);
     }
+    return(retval);
+}
+
+int32_t LP_utxos_remove(bits256 txid,int32_t vout)
+{
+    int32_t retval;
+    portable_mutex_lock(&LP_utxomutex);
+    retval = _LP_utxos_remove(txid,vout);
     portable_mutex_unlock(&LP_utxomutex);
     return(retval);
 }
