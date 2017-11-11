@@ -45,7 +45,7 @@ cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seri
         tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
         tx->serialized = 0;
         free(serialized);
-        tx->len = 0;
+        tx->len = -tx->len;
         tx->SPV = tx->height = height;
         //printf("tx.%p vins.(%s) vouts.(%s)\n",tx,jprint(vins,0),jprint(vouts,0));
         for (i=0; i<numvouts; i++)
@@ -260,7 +260,10 @@ int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256
                 {
                     SPV = height;
                     if ( tx != 0 )
+                    {
                         tx->SPV = height;
+                        printf("tx len.%d ht.%d %d\n",tx->len,tx->height,height);
+                    }
                     LP_SPV_store(coin,txid,height);
                     //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash));
                 }
