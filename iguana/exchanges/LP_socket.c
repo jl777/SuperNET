@@ -420,16 +420,11 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
 //printf("%s %s",symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = electrum_sitem(ep,stratumreq,timeout,retjsonp);
-           /*sitem = (struct stritem *)queueitem(stratumreq);
-            sitem->expiration = timeout;
-            sitem->DL.type = ep->stratumid++;
-            sitem->retptrp = (void **)retjsonp;*/
-portable_mutex_lock(&ep->mutex);
-            //queue_enqueue("sendQ",&ep->sendQ,&sitem->DL);
+            portable_mutex_lock(&ep->mutex); // this helps performance!
             expiration = (uint32_t)time(NULL) + timeout + 1;
             while ( *retjsonp == 0 && time(NULL) <= expiration )
                 usleep(15000);
-portable_mutex_unlock(&ep->mutex);
+            portable_mutex_unlock(&ep->mutex);
             if ( *retjsonp == 0 || jobj(*retjsonp,"error") != 0 )
             {
                 if ( ++ep->numerrors >= LP_ELECTRUM_MAXERRORS )
