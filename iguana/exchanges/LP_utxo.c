@@ -812,25 +812,32 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                     strcpy(destaddr,destaddr2);
                 if ( coin != 0 )
                 {
-                    if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts && tx->outpoints[vout].spendheight > 0 )
+                    if ( coin->electrum != 0 )
                     {
-                        //printf("txid spent\n");
-                        return(0);
+                        if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts && tx->outpoints[vout].spendheight > 0 )
+                        {
+                            //printf("txid spent\n");
+                            return(0);
+                        }
+                        if ( (tx= LP_transactionfind(coin,txid2)) != 0 && vout2 < tx->numvouts && tx->outpoints[vout2].spendheight > 0 )
+                        {
+                            //printf("txid2 spent\n");
+                            return(0);
+                        }
+                        if ( (up= LP_address_utxofind(coin,destaddr,txid,vout)) != 0 && up->spendheight > 0 )
+                        {
+                            //printf("txid %s spentB\n",destaddr);
+                            return(0);
+                        }
+                        if ( (up= LP_address_utxofind(coin,destaddr,txid2,vout2)) != 0 && up->spendheight > 0 )
+                        {
+                            //printf("txid2 %s spentB\n",destaddr);
+                            return(0);
+                        }
                     }
-                    if ( (tx= LP_transactionfind(coin,txid2)) != 0 && vout2 < tx->numvouts && tx->outpoints[vout2].spendheight > 0 )
+                    else
                     {
-                        //printf("txid2 spent\n");
-                        return(0);
-                    }
-                    if ( (up= LP_address_utxofind(coin,destaddr,txid,vout)) != 0 && up->spendheight > 0 )
-                    {
-                        //printf("txid %s spentB\n",destaddr);
-                        return(0);
-                    }
-                    if ( (up= LP_address_utxofind(coin,destaddr,txid2,vout2)) != 0 && up->spendheight > 0 )
-                    {
-                        //printf("txid2 %s spentB\n",destaddr);
-                        return(0);
+                        
                     }
                 }
                 return(1);
