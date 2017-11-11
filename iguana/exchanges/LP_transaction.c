@@ -1805,7 +1805,10 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
         }
     }
     if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 && swap->myfee.I.datalen != 0 && swap->myfee.I.spendlen > 0 )
+    {
+        printf("fee sent\n");
         return(0);
+    }
     return(-1);
 }
 
