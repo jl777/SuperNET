@@ -37,6 +37,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 8
 
+#define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
 #define LP_AUTOTRADE_TIMEOUT 30
 #define ELECTRUM_TIMEOUT 7
@@ -239,12 +240,20 @@ struct LP_swap_remember
     char src[64],dest[64],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[64],bobcoin[64],*txbytes[sizeof(txnames)/sizeof(*txnames)];
 };
 
-struct LP_outpoint { bits256 spendtxid; uint64_t value,interest; int32_t spendvini,spendheight; char coinaddr[64]; };
+struct LP_outpoint
+{
+    bits256 spendtxid;
+    uint64_t value,interest;
+    int32_t spendvini,spendheight;
+    char coinaddr[64];
+};
 
 struct LP_transaction
 {
     UT_hash_handle hh;
-    bits256 txid; int32_t height,numvouts,numvins,len; //uint32_t timestamp;
+    bits256 txid;
+    long fpos;
+    int32_t height,numvouts,numvins,len,SPV;
     uint8_t *serialized;
     struct LP_outpoint outpoints[];
 };
@@ -255,7 +264,7 @@ struct iguana_info
     portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t numutxos,longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
+    uint32_t loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
@@ -363,6 +372,19 @@ struct LP_pubkeyinfo
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };
 
+struct electrum_info
+{
+    queue_t sendQ,pendingQ;
+    portable_mutex_t mutex,txmutex;
+    struct electrum_info *prev;
+    int32_t bufsize,sock,*heightp,numerrors;
+    struct iguana_info *coin;
+    uint32_t stratumid,lasttime,keepalive,pending,*heighttimep;
+    char ipaddr[64],symbol[16];
+    uint16_t port;
+    uint8_t buf[];
+};
+
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
 int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
@@ -402,6 +424,8 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
 struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
+int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256 txid,int32_t height);
+struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,int32_t height,int32_t numvouts,int32_t numvins);
 void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid);
 uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen);
 struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr);
@@ -424,6 +448,7 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid);
 uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance);
 int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 void LP_smartutxos_push(struct iguana_info *coin);
+void LP_cacheptrs_init(struct iguana_info *coin);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);
 cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 void LP_postutxos(char *symbol,char *coinaddr);

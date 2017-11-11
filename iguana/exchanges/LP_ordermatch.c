@@ -647,7 +647,7 @@ int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
                 return(-1);
             if ( (backupep= ep->prev) == 0 )
                 backupep = ep;
-            up->SPV = LP_merkleproof(coin,coinaddr,backupep,up->U.txid,up->U.height);
+            up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
             if ( up->SPV <= 0 )
                 return(-1);
         }
@@ -666,30 +666,20 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_tradecommand_log(argjson);
         //printf("LP_tradecommand: check received method %s aliceid.%llx\n",method,(long long)Q.aliceid);
         retval = 1;
-        if ( LP_validSPV(Q.destcoin,Q.destaddr,Q.desttxid,Q.destvout) < 0 )
-        {
-            printf("%s dest %s failed SPV check\n",Q.destcoin,bits256_str(str,Q.desttxid));
-            return(retval);
-        }
-        else if (LP_validSPV(Q.destcoin,Q.destaddr,Q.feetxid,Q.feevout) < 0 )
-        {
-            printf("%s dexfee %s failed SPV check\n",Q.destcoin,bits256_str(str,Q.feetxid));
-            return(retval);
-        }
         if ( strcmp(method,"reserved") == 0 )
         {
-            if ( LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid,Q.vout) < 0 )
-            {
-                printf("%s src %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid));
-                return(retval);
-            }
-            else if (LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid2,Q.vout2) < 0 )
-            {
-                printf("%s src2 %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid2));
-                return(retval);
-            }
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && LP_alice_eligible() > 0 )
             {
+                if ( LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid,Q.vout) < 0 )
+                {
+                    printf("%s src %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid));
+                    return(retval);
+                }
+                else if (LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid2,Q.vout2) < 0 )
+                {
+                    printf("%s src2 %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid2));
+                    return(retval);
+                }
                 LP_aliceid(Q.tradeid,Q.aliceid,"reserved",0,0);
                 printf("alice %s received RESERVED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
                 if ( (retstr= LP_quotereceived(argjson)) != 0 )
@@ -723,6 +713,16 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             if ( (coin= LP_coinfind(Q.srccoin)) == 0 || (price= LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin)) <= SMALLVAL || ask <= SMALLVAL )
             {
                 printf("this node has no price for %s/%s\n",Q.srccoin,Q.destcoin);
+                return(retval);
+            }
+            if ( LP_validSPV(Q.destcoin,Q.destaddr,Q.desttxid,Q.destvout) < 0 )
+            {
+                printf("%s dest %s failed SPV check\n",Q.destcoin,bits256_str(str,Q.desttxid));
+                return(retval);
+            }
+            else if (LP_validSPV(Q.destcoin,Q.destaddr,Q.feetxid,Q.feevout) < 0 )
+            {
+                printf("%s dexfee %s failed SPV check\n",Q.destcoin,bits256_str(str,Q.feetxid));
                 return(retval);
             }
             price = ask;

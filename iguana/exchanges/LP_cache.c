@@ -35,43 +35,129 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
     return(txobj);
 }
 
-cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len)
+struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len,int32_t height,long fpos)
 {
-    cJSON *txobj; struct LP_transaction *tx;
+    cJSON *txobj; bits256 spenttxid; int32_t i,spentvout,numvins,numvouts; cJSON *vout,*vin,*vins,*vouts; struct LP_transaction *tx; char str[65];
+    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+        return(tx);
     if ( (txobj= LP_transaction_fromdata(coin,txid,serialized,len)) != 0 )
     {
-        if ( (tx= LP_transactionfind(coin,txid)) == 0 || tx->serialized == 0 )
+        vins = jarray(&numvins,txobj,"vin");
+        vouts = jarray(&numvouts,txobj,"vout");
+        tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
+        tx->serialized = 0;
+        tx->fpos = fpos;
+        free(serialized);
+        tx->len = tx->len;
+        tx->SPV = tx->height = height;
+        //printf("tx.%s numvins.%d numvouts.%d\n",bits256_str(str,txid),numvins,numvouts);
+        for (i=0; i<numvouts; i++)
         {
-            txobj = LP_transactioninit(coin,txid,0,txobj);
-            LP_transactioninit(coin,txid,1,txobj);
-            tx = LP_transactionfind(coin,txid);
+            vout = jitem(vouts,i);
+            tx->outpoints[i].value = LP_value_extract(vout,0);
+            tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
+            LP_destaddr(tx->outpoints[i].coinaddr,vout);
+            //printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
+            LP_address_utxoadd("LP_create_transaction",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
         }
-        if ( tx != 0 )
+        for (i=0; i<numvins; i++)
         {
-            tx->serialized = serialized;
-            tx->len = len;
+            vin = jitem(vins,i);
+            spenttxid = jbits256(vin,"txid");
+            spentvout = jint(vin,"vout");
+            if ( i == 0 && bits256_nonz(spenttxid) == 0 )
+                continue;
+            if ( (tx= LP_transactionfind(coin,spenttxid)) != 0 )
+            {
+                if ( spentvout < tx->numvouts )
+                {
+                    if ( tx->outpoints[spentvout].spendheight <= 0 )
+                    {
+                        tx->outpoints[spentvout].spendtxid = txid;
+                        tx->outpoints[spentvout].spendvini = i;
+                        tx->outpoints[spentvout].spendheight = height > 0 ? height : 1;
+                        LP_address_utxoadd("LP_transactioninit iter1",coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
+                        if ( 0 && strcmp(coin->symbol,"REVS") == 0 )
+                            printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
+                    }
+                } else printf("LP_transactioninit: %s spentvout.%d < numvouts.%d spendheight.%d\n",bits256_str(str,spenttxid),spentvout,tx->numvouts,tx->outpoints[spentvout].spendheight);
+            } //else printf("LP_transactioninit: couldnt find (%s) ht.%d %s\n",bits256_str(str,spenttxid),height,jprint(vin,0));
+            if ( bits256_cmp(spenttxid,txid) == 0 )
+                printf("spending same tx's %p vout ht.%d %s.[%d] s%d\n",tx,height,bits256_str(str,txid),tx!=0?tx->numvouts:0,spentvout);
         }
-        else
-        {
-            char str[65]; printf("unexpected couldnt find tx %s %s\n",coin->symbol,bits256_str(str,txid));
-            free(serialized);
-        }
+        free_json(txobj);
     }
-    return(txobj);
+    return(tx);
 }
 
-int32_t LP_SPV_load(struct iguana_info *coin,bits256 txid,int32_t height)
+void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
 {
+    FILE *fp; char fname[512]; struct LP_transaction *tx = 0;
+    if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 && tx->len > 0 && tx->fpos == 0 )
+    {
+        sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
+        if ( (fp= OS_appendfile(fname)) != 0 )
+        {
+            fwrite(&tx->txid,1,sizeof(tx->txid),fp);
+            fwrite(&tx->len,1,sizeof(tx->len),fp);
+            fwrite(&tx->height,1,sizeof(tx->height),fp);
+            tx->fpos = ftell(fp);
+            fwrite(tx->serialized,1,tx->len,fp);
+            fclose(fp);
+        }
+    } //else printf("cant store %s %s tx.%p [%d] fpos.%ld SPV.%d\n",coin->symbol,bits256_str(str,txid),tx,tx!=0?tx->len:-1,tx!=0?tx->fpos:-1,tx!=0?tx->SPV:-1);
+}
+
+int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
+{
+    bits256 txid,hash; long fpos; int32_t offset,retval,height,len; uint8_t *serialized; char str[65],str2[65];
+    fpos = ftell(fp);
+    if ( fread(&txid,1,sizeof(txid),fp) == sizeof(txid) && fread(&len,1,sizeof(len),fp) == sizeof(len) && fread(&height,1,sizeof(height),fp) == sizeof(height) && len < 100000 )
+    {
+        offset = (int32_t)(sizeof(txid) + sizeof(len) + sizeof(height));
+        serialized = malloc(len);
+        if ( (retval= (int32_t)fread(serialized,1,len,fp)) == len )
+        {
+            hash = bits256_doublesha256(0,serialized,len);
+            if ( bits256_cmp(hash,txid) == 0 )
+            {
+                //printf("%s validated in cache\n",bits256_str(str,hash));
+                LP_create_transaction(coin,txid,serialized,len,height,fpos+offset);
+                return((int32_t)(ftell(fp) - fpos));
+            }
+            printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,txid));
+        } else printf("retval.%d vs len.%d\n",retval,len);
+    } else printf("fread error\n");
     return(-1);
 }
 
-void LP_SPV_store(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t height)
+void LP_cacheptrs_init(struct iguana_info *coin)
 {
-    struct LP_transaction *tx = 0;
-    if ( strcmp(coin->smartaddr,coinaddr) == 0 && (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 )
+    char fname[1024]; FILE *fp; int32_t count,tflag=0; long n,fsize=0,len = 0;
+    sprintf(fname,"%s/UNSPENTS/%s.SPV",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
+    fp = fopen(fname,"rb");
+    count = 0;
+    if ( fp != 0 )
     {
-        //char str[65]; printf("store %s %s.[%d]\n",coin->symbol,bits256_str(str,txid),tx->len);
-    } //else printf("skip SPV store for (%s) tx.%p\n",coinaddr,tx);
+        fseek(fp,0,SEEK_END);
+        fsize = ftell(fp);
+        rewind(fp);
+        while ( len < fsize )
+        {
+            if ( (n= LP_cacheitem(coin,fp)) < 0 )
+            {
+                printf("cacheitem error at %s offset.%ld when fsize.%ld\n",coin->symbol,len,fsize);
+                tflag = 1;
+                break;
+            }
+            count++;
+            len += n;
+        }
+        printf("loaded %s %d entries total len.%ld\n",fname,count,len);
+        fclose(fp);
+    } //else printf("couldnt find.(%s)\n",fname);
+    if ( tflag != 0 )
+        OS_truncate(fname,len);
 }
 
 bits256 iguana_merkle(bits256 *tree,int32_t txn_count)
@@ -142,11 +228,22 @@ bits256 LP_merkleroot(struct iguana_info *coin,struct electrum_info *ep,int32_t 
     return(merkleroot);
 }
 
-int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height)
+int32_t LP_merkleproof(struct iguana_info *coin,struct electrum_info *ep,bits256 txid,int32_t height)
 {
-    cJSON *merkobj,*merkles; bits256 roothash,merkleroot; int32_t retval,m,SPV = 0;
-    if ( strcmp(coin->smartaddr,coinaddr) == 0 && (retval= LP_SPV_load(coin,txid,height)) > 0 )
-        return(retval);
+    struct LP_transaction *tx=0; cJSON *merkobj,*merkles,*retjson; bits256 roothash,merkleroot; int32_t m,SPV = 0;
+    if ( height < 0 )
+        return(0);
+    if ( (tx= LP_transactionfind(coin,txid)) == 0)
+    {
+        if ( (retjson= electrum_transaction(coin->symbol,ep,&retjson,txid)) != 0 )
+            free_json(retjson);
+    }
+    if ( tx != 0 )
+    {
+        tx->height = height;
+        if ( tx->SPV > 0 )
+            return(tx->SPV);
+    }
     if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
     {
         char str[65],str2[65],str3[65];
@@ -161,8 +258,18 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
                 if ( bits256_cmp(merkleroot,roothash) == 0 )
                 {
                     SPV = height;
-                    LP_SPV_store(coin,coinaddr,txid,height);
-                    //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,up->U.txid),up->U.height,jprint(merkobj,0),bits256_str(str2,roothash));
+                    LP_SPV_store(coin,txid,height);
+                    if ( tx != 0 )
+                    {
+                        tx->SPV = height;
+                        if ( tx->serialized != 0 )
+                        {
+                            free(tx->serialized);
+                            tx->serialized = 0;
+                            tx->len = 0;
+                        }
+                    }
+                    //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash));
                 }
                 else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
             } else SPV = 0;

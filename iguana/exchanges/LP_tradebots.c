@@ -99,7 +99,7 @@ void LP_tradebot_calcstats(struct LP_tradebot *bot)
         }
         //LP_tradebot_updatestats(bot,bot->trades[i]);
     }
-    printf("completed.%d (%.8f / %.8f)  pending.%d (%.8f / %.8f)\n",bot->completed,bot->basesum,bot->relsum,bot->numpending,bot->pendbasesum,bot->pendrelsum);
+    //printf("completed.%d (%.8f / %.8f)  pending.%d (%.8f / %.8f)\n",bot->completed,bot->basesum,bot->relsum,bot->numpending,bot->pendbasesum,bot->pendrelsum);
 }
 
 double LP_pricevol_invert(double *basevolumep,double maxprice,double relvolume)

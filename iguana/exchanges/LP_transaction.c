@@ -247,7 +247,10 @@ int32_t iguana_msgtx_Vset(uint8_t *serialized,int32_t maxlen,struct iguana_msgtx
 
 int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLockTime,struct vin_info *V,int32_t numvins)
 {
-    uint8_t script[IGUANA_MAXSCRIPTSIZE],*activescript,savescript[IGUANA_MAXSCRIPTSIZE]; char str[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t vini,scriptlen,activescriptlen,savelen,errs = 0; cJSON *spendscript,*item=0;
+    uint8_t *script,*activescript,*savescript; char *str; int32_t vini,scriptlen,activescriptlen,savelen,errs = 0; cJSON *spendscript,*item=0;
+    script = calloc(1,IGUANA_MAXSCRIPTSIZE);
+    savescript = calloc(1,IGUANA_MAXSCRIPTSIZE);
+    str = calloc(1,IGUANA_MAXSCRIPTSIZE*2+1);
     for (vini=0; vini<numvins; vini++)
     {
         savelen = V[vini].spendlen;
@@ -297,6 +300,9 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
         memcpy(V[vini].spendscript,savescript,savelen);
         V[vini].spendlen = savelen;
     }
+    free(str);
+    free(script);
+    free(savescript);
     if ( errs != 0 )
         return(-errs);
     if ( logarray != 0 )
@@ -475,7 +481,7 @@ int64_t iguana_lockval(int32_t finalized,int64_t locktime)
 
 int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson,int32_t zcash)
 {
-    uint8_t *serialized,*serialized2,*serialized3,*serialized4,*extraspace,pubkeys[64][33]; int32_t finalized,i,len,n,z,plen,maxsize,complete = 0,extralen = 100000; char *privkeystr,*signedtx = 0; bits256 privkeys[64],privkey,txid; cJSON *item; cJSON *txobj = 0;
+    uint8_t *serialized,*serialized2,*serialized3,*serialized4,*extraspace,pubkeys[64][33]; int32_t finalized,i,len,n,z,plen,maxsize,complete = 0,extralen = 100000; char *privkeystr,*signedtx = 0; bits256 privkeys[LP_MAXVINS],privkey,txid; cJSON *item; cJSON *txobj = 0;
     maxsize = 1000000;
     memset(privkey.bytes,0,sizeof(privkey));
     if ( rawtx != 0 && rawtx[0] != 0 && (len= (int32_t)strlen(rawtx)>>1) < maxsize )
@@ -996,7 +1002,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
 char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,uint32_t locktime)
 {
     static void *ctx;
-    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[64],spendscript[256]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[1024]; struct LP_address *ap;
+    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[64],spendscript[256]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS]; struct LP_address *ap;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     *numvinsp = 0;
@@ -1135,7 +1141,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     safecopy(changeaddr,coin->smartaddr,sizeof(changeaddr));
     safecopy(vinaddr,coin->smartaddr,sizeof(vinaddr));
     privkey = LP_privkey(vinaddr,coin->taddr);
-    maxV = 1024;
+    maxV = LP_MAXVINS;
     V = malloc(maxV * sizeof(*V));
     for (iter=0; iter<2; iter++)
     {
