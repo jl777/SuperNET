@@ -21,6 +21,10 @@
 #ifndef LP_INCLUDE_H
 #define LP_INCLUDE_H
 
+#define LP_MAJOR_VERSION "0"
+#define LP_MINOR_VERSION "1"
+#define LP_BUILD_NUMBER "11843"
+
 #ifdef FROM_JS
 #include <emscripten.h>
 #define sleep(x) emscripten_usleep((x) * 1000000)
