@@ -820,7 +820,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         if ( qprice < (price - 0.00000001) * 0.998 )
         {
             printf("(%.8f %.8f) quote price %.8f too low vs %.8f for %s/%s\n",bid,ask,qprice,price,Q.srccoin,Q.destcoin);
-            return(-4);
+            return(retval);
         }
         char str[65],str2[65]; printf("butxo.%p (%s %s) TRADECOMMAND.(%s)\n",butxo,butxo!=0?bits256_str(str,butxo->payment.txid):"",butxo!=0?bits256_str(str2,butxo->deposit.txid):"",jprint(argjson,0));
         if ( butxo->S.swap == 0 && time(NULL) > butxo->T.swappending )
