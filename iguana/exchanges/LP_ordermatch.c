@@ -807,7 +807,6 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             printf("bob is patching Q.coinaddr %s mismatch != %s\n",Q.coinaddr,coin->smartaddr);
             strcpy(Q.coinaddr,coin->smartaddr);
         }
-        char str[65],str2[65]; printf("butxo.%p (%s %s) TRADECOMMAND.(%s)\n",butxo,butxo!=0?bits256_str(str,butxo->payment.txid):"",butxo!=0?bits256_str(str2,butxo->deposit.txid):"",jprint(argjson,0));
         if ( butxo == 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 || butxo->payment.vout < 0 || butxo->deposit.vout < 0 )
         {
             char str[65],str2[65]; printf("couldnt find bob utxos for autxo %s/v%d %s/v%d %.8f -> %.8f\n",bits256_str(str,Q.txid),Q.vout,bits256_str(str2,Q.txid2),Q.vout2,dstr(Q.satoshis),dstr(Q.destsatoshis));
@@ -823,6 +822,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             printf("(%.8f %.8f) quote price %.8f too low vs %.8f for %s/%s\n",bid,ask,qprice,price,Q.srccoin,Q.destcoin);
             return(-4);
         }
+        char str[65],str2[65]; printf("butxo.%p (%s %s) TRADECOMMAND.(%s)\n",butxo,butxo!=0?bits256_str(str,butxo->payment.txid):"",butxo!=0?bits256_str(str2,butxo->deposit.txid):"",jprint(argjson,0));
         if ( butxo->S.swap == 0 && time(NULL) > butxo->T.swappending )
             butxo->T.swappending = 0;
         if ( strcmp(method,"request") == 0 ) // bob needs apayment + fee tx's
