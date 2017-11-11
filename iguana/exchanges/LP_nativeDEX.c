@@ -515,8 +515,8 @@ void LP_coinsloop(void *_coins)
             {
                 if ( (backupep= ep->prev) == 0 )
                     backupep = ep;
-                //HASH_ITER(hh,coin->addresses,ap,atmp)
-                if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
+                HASH_ITER(hh,coin->addresses,ap,atmp)
+                //if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
                 {
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
                     {

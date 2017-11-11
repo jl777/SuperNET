@@ -237,7 +237,7 @@ void LP_mark_spent(char *symbol,bits256 txid,int32_t vout)
 
 int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
-    struct LP_address *ap; cJSON *txobj; struct LP_transaction *tx; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; char str[65];
+    struct LP_address *ap; cJSON *txobj; struct LP_transaction *tx; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; //char str[65];
     if ( coin == 0 )
         return(0);
     if ( spendheight > 0 ) // dont autocreate entries for spends we dont care about
@@ -532,13 +532,15 @@ struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid)
 
 struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,int32_t height,int32_t numvouts,int32_t numvins)
 {
+    static long totalsize;
     struct LP_transaction *tx; int32_t i;
     if ( (tx= LP_transactionfind(coin,txid)) == 0 )
     {
-        //char str[65]; printf("%s ht.%d u.%u NEW TXID.(%s) vouts.[%d]\n",coin->symbol,height,timestamp,bits256_str(str,txid),numvouts);
         //if ( bits256_nonz(txid) == 0 && tx->height == 0 )
         //    getchar();
         tx = calloc(1,sizeof(*tx) + (sizeof(*tx->outpoints) * numvouts));
+        totalsize += sizeof(*tx) + (sizeof(*tx->outpoints) * numvouts);
+        char str[65]; printf("%s ht.%d NEW TXID.(%s) vouts.[%d] size.%ld total %ld\n",coin->symbol,height,bits256_str(str,txid),numvouts,sizeof(*tx) + (sizeof(*tx->outpoints) * numvouts),totalsize);
         for (i=0; i<numvouts; i++)
             tx->outpoints[i].spendvini = -1;
         tx->height = height;
