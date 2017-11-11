@@ -35,9 +35,11 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
     return(txobj);
 }
 
-cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len,int32_t height,long fpos)
+struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len,int32_t height,long fpos)
 {
     cJSON *txobj; bits256 spenttxid; int32_t i,spentvout,numvins,numvouts; cJSON *vout,*vin,*vins,*vouts; struct LP_transaction *tx; char str[65];
+    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+        return(tx);
     if ( (txobj= LP_transaction_fromdata(coin,txid,serialized,len)) != 0 )
     {
         vins = jarray(&numvins,txobj,"vin");
@@ -83,8 +85,9 @@ cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seri
             if ( bits256_cmp(spenttxid,txid) == 0 )
                 printf("spending same tx's %p vout ht.%d %s.[%d] s%d\n",tx,height,bits256_str(str,txid),tx!=0?tx->numvouts:0,spentvout);
         }
+        free_json(txobj);
     }
-    return(txobj);
+    return(tx);
 }
 
 void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
@@ -108,7 +111,7 @@ void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
 
 int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
 {
-    bits256 txid,hash; long fpos; int32_t offset,retval,height,len; uint8_t *serialized; cJSON *txobj; char str[65],str2[65];
+    bits256 txid,hash; long fpos; int32_t offset,retval,height,len; uint8_t *serialized; char str[65],str2[65];
     fpos = ftell(fp);
     if ( fread(&txid,1,sizeof(txid),fp) == sizeof(txid) && fread(&len,1,sizeof(len),fp) == sizeof(len) && fread(&height,1,sizeof(height),fp) == sizeof(height) && len < 100000 )
     {
@@ -120,8 +123,7 @@ int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
             if ( bits256_cmp(hash,txid) == 0 )
             {
                 //printf("%s validated in cache\n",bits256_str(str,hash));
-                if ( (txobj= LP_create_transaction(coin,txid,serialized,len,height,fpos+offset)) != 0 )
-                    free_json(txobj);
+                LP_create_transaction(coin,txid,serialized,len,height,fpos+offset);
                 return((int32_t)(ftell(fp) - fpos));
             }
             printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,txid));
