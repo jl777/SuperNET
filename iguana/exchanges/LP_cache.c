@@ -35,7 +35,7 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
     return(txobj);
 }
 
-cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len,int32_t height)
+cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len,int32_t height,long fpos)
 {
     cJSON *txobj; bits256 spenttxid; int32_t i,spentvout,numvins,numvouts; cJSON *vout,*vin,*vins,*vouts; struct LP_transaction *tx; char str[65];
     if ( (txobj= LP_transaction_fromdata(coin,txid,serialized,len)) != 0 )
@@ -44,8 +44,9 @@ cJSON *LP_create_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seri
         vouts = jarray(&numvouts,txobj,"vout");
         tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
         tx->serialized = 0;
+        tx->fpos = fpos;
         free(serialized);
-        tx->len = -tx->len;
+        tx->len = tx->len;
         tx->SPV = tx->height = height;
         //printf("tx.%p vins.(%s) vouts.(%s)\n",tx,jprint(vins,0),jprint(vouts,0));
         for (i=0; i<numvouts; i++)
@@ -97,18 +98,21 @@ void LP_SPV_store(struct iguana_info *coin,bits256 txid,int32_t height)
             fwrite(&tx->txid,1,sizeof(tx->txid),fp);
             fwrite(&tx->len,1,sizeof(tx->len),fp);
             fwrite(&tx->height,1,sizeof(tx->height),fp);
+            tx->fpos = ftell(fp);
             fwrite(tx->serialized,1,tx->len,fp);
             fclose(fp);
         }
-    } else printf("cant store %s %s tx.%p [%d]\n",coin->symbol,bits256_str(str,txid),tx,tx!=0?tx->len:-1);
+    }
+    else printf("cant store %s %s tx.%p [%d] fpos.%ld\n",coin->symbol,bits256_str(str,txid),tx,tx!=0?tx->len:-1,tx!=0?tx->fpos:-1);
 }
 
 int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
 {
-    bits256 txid,hash; long fpos; int32_t retval,height,len; uint8_t *serialized; cJSON *txobj; char str[65],str2[65];
+    bits256 txid,hash; long fpos; int32_t offset,retval,height,len; uint8_t *serialized; cJSON *txobj; char str[65],str2[65];
     fpos = ftell(fp);
     if ( fread(&txid,1,sizeof(txid),fp) == sizeof(txid) && fread(&len,1,sizeof(len),fp) == sizeof(len) && fread(&height,1,sizeof(height),fp) == sizeof(height) && len < 100000 )
     {
+        offset = (int32_t)(sizeof(txid) + sizeof(len) + sizeof(height));
         serialized = malloc(len);
         if ( (retval= (int32_t)fread(serialized,1,len,fp)) == len )
         {
@@ -116,20 +120,12 @@ int32_t LP_cacheitem(struct iguana_info *coin,FILE *fp)
             if ( bits256_cmp(hash,txid) == 0 )
             {
                 //printf("%s validated in cache\n",bits256_str(str,hash));
-                if ( (txobj= LP_create_transaction(coin,txid,serialized,len,height)) != 0 )
+                if ( (txobj= LP_create_transaction(coin,txid,serialized,len,height,fpos+offset)) != 0 )
                     free_json(txobj);
                 return((int32_t)(ftell(fp) - fpos));
             }
             printf("%s vs %s did not validated in cache\n",bits256_str(str,hash),bits256_str(str2,txid));
         } else printf("retval.%d vs len.%d\n",retval,len);
-        /*}
-        else
-        {
-            printf("warning: big cachelen.%d\n",len);
-            for (i=0; i<len; i++)
-                fgetc(fp);
-            return((int32_t)(ftell(fp) - fpos));
-        }*/
     } else printf("fread error\n");
     return(-1);
 }

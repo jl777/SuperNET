@@ -252,6 +252,7 @@ struct LP_transaction
 {
     UT_hash_handle hh;
     bits256 txid;
+    long fpos;
     int32_t height,numvouts,numvins,len,SPV;
     uint8_t *serialized;
     struct LP_outpoint outpoints[];
