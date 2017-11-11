@@ -457,7 +457,7 @@ void command_rpcloop(void *myipaddr)
 void utxosQ_loop(void *myipaddr)
 {
     strcpy(utxosQ_loop_stats.name,"utxosQ_loop");
-    utxosQ_loop_stats.threshold = 500.;
+    utxosQ_loop_stats.threshold = 5000.;
     while ( 1 )
     {
         LP_millistats_update(&utxosQ_loop_stats);

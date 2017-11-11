@@ -739,6 +739,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             char str[65],str2[65];
             printf("address.(%s/%s) request.(%s)\n",Q.coinaddr,coin->smartaddr,jprint(argjson,0));
             recalc = 0;
+            strcpy(Q.gui,G.gui);
+            strcpy(Q.coinaddr,coin->smartaddr);
             if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) < SMALLVAL )
                 recalc = 1;
             else
