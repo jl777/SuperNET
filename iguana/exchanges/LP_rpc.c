@@ -447,7 +447,7 @@ uint32_t LP_locktime(char *symbol,bits256 txid)
     return(locktime);
 }
 
-uint32_t LP_txtime(char *symbol,bits256 txid)
+/*uint32_t LP_txtime(char *symbol,bits256 txid)
 {
     struct LP_transaction *tx; struct iguana_info *coin; int32_t timestamp=0,height = 0;
     char str[65]; printf("LP_txtime (%s %s)\n",symbol,bits256_str(str,txid));
@@ -462,7 +462,7 @@ uint32_t LP_txtime(char *symbol,bits256 txid)
         }
     }
     return(height);
-}
+}*/
 
 cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,uint64_t value)
 {

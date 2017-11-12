@@ -260,10 +260,7 @@ bot_resume(botid)\n\
         {
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
-            {
-                printf("swapentry %u %u\n",requestid,quoteid);
                 return(basilisk_swapentry(requestid,quoteid));
-            }
             else if ( coin[0] != 0 )
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
             else if ( base[0] != 0 && rel[0] != 0 )

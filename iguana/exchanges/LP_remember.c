@@ -479,9 +479,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     if ( rswap->finishedflag != 0 )
     {
         jaddstr(item,"status","finished");
-        if ( rswap->iambob == 0 )
-            jaddnum(item,"finishtime",LP_txtime(rswap->src,rswap->paymentspent));
-        else jaddnum(item,"finishtime",LP_txtime(rswap->src,rswap->depositspent));
+        jaddnum(item,"finishtime",rswap->finishtime);
     }
     else jaddstr(item,"status","pending");
     jaddbits256(item,"bobdeposit",rswap->txids[BASILISK_BOBDEPOSIT]);
@@ -663,6 +661,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
     {
         if ( (fileobj= cJSON_Parse(fstr)) != 0 )
         {
+            rswap->finishtime = juint(fileobj,"finishtime");
             rswap->origfinishedflag = rswap->finishedflag = 1;
             free_json(fileobj);
         }
@@ -1121,6 +1120,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
             jaddstr(item,"method","tradestatus");
+            jaddnum(item,"finishtime",rswap.finishtime);
             jaddstr(item,"gui",G.gui);
             itemstr = jprint(item,0);
             fprintf(fp,"%s\n",itemstr);
