@@ -23,7 +23,7 @@
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "14288"
+#define LP_BUILD_NUMBER "14336"
 
 #ifdef FROM_JS
 #include <emscripten.h>
