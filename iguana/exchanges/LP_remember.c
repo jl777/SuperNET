@@ -481,7 +481,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
         jaddstr(item,"status","finished");
         if ( rswap->iambob == 0 )
             jaddnum(item,"finishtime",LP_txtime(rswap->dest,rswap->paymentspent));
-        else jaddnum(item,"finishtime",LP_txtime(rswap->dest,rswap->depositspent));
+        else jaddnum(item,"finishtime",LP_txtime(rswap->src,rswap->depositspent));
     }
     else jaddstr(item,"status","pending");
     jaddbits256(item,"bobdeposit",rswap->txids[BASILISK_BOBDEPOSIT]);
@@ -1137,7 +1137,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
 
 char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
 {
-    uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i,j,count=0;
+    uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS],Btotal,Ktotal; int32_t i,j,count=0;
     portable_mutex_lock(&LP_swaplistmutex);
     memset(ridqids,0,sizeof(ridqids));
     memset(KMDtotals,0,sizeof(KMDtotals));
@@ -1229,8 +1229,13 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
 
 char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
 {
-    char *liststr,*retstr = 0; cJSON *retjson,*array,*item; int32_t i,n;
-    if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
+    cJSON *item; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS];
+    memset(KMDtotals,0,sizeof(KMDtotals));
+    memset(BTCtotals,0,sizeof(BTCtotals));
+    if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+        return(jprint(item,1));
+    else return(clonestr("{\"error\":\"cant find requestid-quoteid\"}"));
+    /*if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
     {
         //printf("swapentry.(%s)\n",liststr);
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
@@ -1252,7 +1257,7 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
         }
         free(liststr);
     }
-    return(retstr);
+    return(retstr);*/
 }
 
 extern struct LP_quoteinfo LP_Alicequery;
