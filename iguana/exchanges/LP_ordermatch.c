@@ -486,14 +486,6 @@ char *LP_connectedalice(cJSON *argjson) // alice
         return(clonestr("{\"result\",\"update stats\"}"));
     }
     printf("CONNECTED.(%s) numpending.%d tradeid.%u\n",jprint(argjson,0),G.LP_pendingswaps,Q.tradeid);
-    /*if ( LP_alice_eligible() == 0 || LP_quotecmp(&Q,&LP_Alicequery) != 0 )
-    {
-        printf("reject mismatched alice query\n");
-        return(clonestr("{\"error\",\"mismatched alice query\"}"));
-    }
-    memset(&LP_Alicequery,0,sizeof(LP_Alicequery));
-    LP_Alicemaxprice = 0.;
-    Alice_expiration = 0;*/
     if ( (autxo= LP_utxopairfind(0,Q.desttxid,Q.destvout,Q.feetxid,Q.feevout)) == 0 )
     {
         printf("cant find autxo\n");
@@ -761,9 +753,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         if ( strcmp(method,"request") == 0 )
         {
             char str[65],str2[65];
-            printf("address.(%s/%s) request.(%s)\n",Q.coinaddr,coin->smartaddr,jprint(argjson,0));
             recalc = 0;
-            if ( bits256_cmp(Q.srchash,G.LP_mypub25519) != 0 || strcmp(butxo->coinaddr,coin->smartaddr) != 0 )
+            if ( bits256_cmp(Q.srchash,G.LP_mypub25519) != 0 || strcmp(butxo->coinaddr,coin->smartaddr) != 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 )
             {
                 strcpy(Q.gui,G.gui);
                 strcpy(Q.coinaddr,coin->smartaddr);
@@ -800,6 +791,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         recalc = 1;
                 }
             }
+            printf("recalc.%d address.(%s/%s) request.(%s)\n",recalc,Q.coinaddr,coin->smartaddr,jprint(argjson,0));
             if ( recalc != 0 )
             {
                 LP_RTmetrics_update(Q.srccoin,Q.destcoin);
@@ -1083,6 +1075,8 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,G.LP_mypub25519,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
+    int32_t changed;
+    LP_mypriceset(&changed,autxo->coin,base,1. / maxprice);
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid));
    
     LP_RTmetrics_update(base,rel);
