@@ -261,7 +261,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
 
 uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t desttxfee)
 {
-    //printf("basesatoshis %.8f (rel %.8f / price %.8f)\n",dstr(SATOSHIDEN * ((relvolume) / price) + 2*txfee),relvolume,price);
+    printf("basesatoshis %.8f (rel %.8f / price %.8f)\n",dstr(SATOSHIDEN * ((relvolume) / price) + 2*txfee),relvolume,price);
     if ( relvolume > dstr(desttxfee) && price > SMALLVAL )
         return(SATOSHIDEN * (relvolume / price) + 2*txfee);
     else return(0);
@@ -669,7 +669,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_quoteparse(&Q,argjson);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         LP_tradecommand_log(argjson);
-        printf("LP_tradecommand: check received method %s aliceid.%llx %s/%s %.8f -> %.8f\n",method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis));
+        printf("LP_tradecommand: check received method %s aliceid.%llx %s/%s %.8f -> %.8f price %.8f\n",method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis);
         retval = 1;
         autxo = &A;
         butxo = &B;
@@ -771,6 +771,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             else
             {
                 char tmp[64];
+                printf("price %.8f qprice %.8f -> %.8f\n",dstr(price),dstr(qprice),dstr((qprice * 0.5) + (0.5 * price)));
                 price = (qprice * 0.5) + (0.5 * price);
                 if ( bits256_nonz(Q.txid) != 0 )
                     LP_utxos_remove(Q.txid,Q.vout);
