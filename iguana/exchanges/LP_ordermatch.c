@@ -699,7 +699,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     printf("%s src %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid));
                     return(retval);
                 }
-                else if (LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid2,Q.vout2) < 0 )
+                else if ( LP_validSPV(Q.srccoin,Q.coinaddr,Q.txid2,Q.vout2) < 0 )
                 {
                     printf("%s src2 %s failed SPV check\n",Q.srccoin,bits256_str(str,Q.txid2));
                     return(retval);

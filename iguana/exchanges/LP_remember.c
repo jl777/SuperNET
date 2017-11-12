@@ -450,6 +450,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
 {
     cJSON *item,*array; int32_t i;
     item = cJSON_CreateObject();
+    jaddnum(item,"timestamp",rswap->expiration - INSTANTDEX_LOCKTIME*2);
     jaddnum(item,"tradeid",rswap->tradeid);
     jaddnum(item,"requestid",rswap->requestid);
     jaddnum(item,"quoteid",rswap->quoteid);
