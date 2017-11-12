@@ -450,6 +450,7 @@ uint32_t LP_locktime(char *symbol,bits256 txid)
 uint32_t LP_txtime(char *symbol,bits256 txid)
 {
     struct LP_transaction *tx; struct iguana_info *coin; int32_t timestamp=0,height = 0;
+    char str[65]; printf("LP_txtime (%s %s)\n",symbol,bits256_str(str,txid));
     if ( (timestamp= LP_locktime(symbol,txid)) != 0 )
         return(timestamp);
     if ( (coin= LP_coinfind(symbol)) != 0 )
@@ -1040,6 +1041,7 @@ uint32_t LP_heighttime(char *symbol,int32_t height)
             {
                 if ( (retjson= cJSON_Parse(blockhashstr)) != 0 )
                 {
+                    printf("height.(%s)\n",jprint(retjson,0));
                     timestamp = juint(retjson,"time");
                     free_json(retjson);
                 }
