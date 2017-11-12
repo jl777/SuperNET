@@ -33,7 +33,7 @@ double LP_bob_competition(uint64_t aliceid,double price)
             if ( price != 0. && (Bob_competition[i].bestprice == 0. || price < Bob_competition[i].bestprice) )
             {
                 Bob_competition[i].bestprice = price;
-                printf("Bob competition aliceid.%llx <- bestprice %.8f\n",(long long)aliceid,price);
+                //printf("Bob competition aliceid.%llx <- bestprice %.8f\n",(long long)aliceid,price);
             }
             return(Bob_competition[i].bestprice);
         }
@@ -44,7 +44,7 @@ double LP_bob_competition(uint64_t aliceid,double price)
         firsti = (rand() % (sizeof(Bob_competition)/sizeof(*Bob_competition)));
     Bob_competition[firsti].aliceid = aliceid;
     Bob_competition[firsti].bestprice = price;
-    printf("Bob competition aliceid.%llx %.8f\n",(long long)aliceid,price);
+    //printf("Bob competition aliceid.%llx %.8f\n",(long long)aliceid,price);
     return(price);
 }
 
@@ -695,7 +695,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_quoteparse(&Q,argjson);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         LP_tradecommand_log(argjson);
-        printf("LP_tradecommand: check received method %12s aliceid.%16llx %5s/%-5s %12.8f -> %12.8f price %12.8f\n",method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis);
+        //printf("LP_tradecommand: check received method %12s aliceid.%16llx %5s/%-5s %12.8f -> %12.8f price %12.8f\n",method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis);
         retval = 1;
         autxo = &A;
         butxo = &B;
@@ -822,13 +822,16 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         recalc = 1;
                 }
             } else return(retval);
-            r = (rand() % 100);
-            range = (qprice - price);
-            printf(">>>>>>>>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f vs bestprice %.8f\n",price,qprice,r,range,price + r*range,LP_bob_competition(aliceid,price));
-            price += (r * range) / 100.;
-            bestprice = LP_bob_competition(aliceid,price);
-            if ( price < bestprice+SMALLVAL )
-                return(retval);
+            if ( qprice > price )
+            {
+                r = (rand() % 100);
+                range = (qprice - price);
+                printf(">>>>>>>>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f vs bestprice %.8f\n",price,qprice,r,range,price + r*range,LP_bob_competition(aliceid,price));
+                price += (r * range) / 100.;
+                bestprice = LP_bob_competition(aliceid,price);
+                if ( price < bestprice+SMALLVAL )
+                    return(retval);
+            } else return(retval);
             //printf("recalc.%d address.(%s/%s) price %.8f request.(%s)\n",recalc,Q.coinaddr,coin->smartaddr,price,jprint(argjson,0));
             if ( recalc != 0 )
             {
@@ -853,7 +856,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 }
                 else
                 {
-                    printf("cant find utxopair\n");
+                    //printf("cant find utxopair\n");
                     return(retval);
                 }
             }
