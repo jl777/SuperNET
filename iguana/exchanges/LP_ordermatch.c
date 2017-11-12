@@ -883,7 +883,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             printf("quote validate error %.0f\n",qprice);
             return(-3);
         }
-        if ( qprice < (price - 0.00000001) * 0.998 )
+        if ( qprice < (ask - 0.00000001) * 0.998 )
         {
             printf("(%.8f %.8f) quote price %.8f too low vs %.8f for %s/%s\n",bid,ask,qprice,price,Q.srccoin,Q.destcoin);
             return(retval);
