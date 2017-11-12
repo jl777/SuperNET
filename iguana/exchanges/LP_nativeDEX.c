@@ -856,7 +856,8 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
     if ( num_Reserved_msgs[priority] > max_Reserved_msgs[priority] )
     {
         max_Reserved_msgs[priority] = num_Reserved_msgs[priority];
-        printf("New priority.%d max_Reserved_msgs.%d\n",priority,max_Reserved_msgs[priority]);
+        if ( (max_Reserved_msgs[priority] % 100) == 0 ))
+            printf("New priority.%d max_Reserved_msgs.%d\n",priority,max_Reserved_msgs[priority]);
     }
     portable_mutex_unlock(&LP_reservedmutex);
     return(n);

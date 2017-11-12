@@ -856,7 +856,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                 }
                 return(1);
             }
-        } // else printf("no val2\n");
+        } else printf("no val2 %.8f < threshold %.8f\n",dstr(val),dstr(threshold));
     }
     /*char str2[65];
     if ( val != 0 && val2 != 0 )
