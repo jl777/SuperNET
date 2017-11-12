@@ -477,7 +477,12 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jadd(item,"values",array);
     jaddstr(item,"result","success");
     if ( rswap->finishedflag != 0 )
+    {
         jaddstr(item,"status","finished");
+        if ( rswap->iambob == 0 )
+            jaddnum(item,"finishtime",LP_txtime(rswap->dest,rswap->paymentspent));
+        else jaddnum(item,"finishtime",LP_txtime(rswap->dest,rswap->depositspent));
+    }
     else jaddstr(item,"status","pending");
     jaddbits256(item,"bobdeposit",rswap->txids[BASILISK_BOBDEPOSIT]);
     jaddbits256(item,"alicepayment",rswap->txids[BASILISK_ALICEPAYMENT]);

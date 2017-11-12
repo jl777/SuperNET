@@ -447,6 +447,22 @@ uint32_t LP_locktime(char *symbol,bits256 txid)
     return(locktime);
 }
 
+uint32_t LP_txtime(char *symbol,bits256 txid)
+{
+    struct LP_transaction *tx; struct iguana_info *coin; int32_t timestamp=0,height = 0;
+    if ( (timestamp= LP_locktime(symbol,txid)) != 0 )
+        return(timestamp);
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+        {
+            height = tx->height;
+            timestamp = LP_heighttime(symbol,height);
+        }
+    }
+    return(height);
+}
+
 cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,uint64_t value)
 {
     cJSON *retjson,*addresses,*sobj;
@@ -1011,6 +1027,36 @@ cJSON *LP_getblockhashstr(char *symbol,char *blockhashstr)
         return(cJSON_Parse("{\"error\":\"no native coin daemon\"}"));
     sprintf(buf,"[\"%s\"]",blockhashstr);
     return(bitcoin_json(coin,"getblock",buf));
+}
+
+uint32_t LP_heighttime(char *symbol,int32_t height)
+{
+    struct electrum_info *ep; uint32_t timestamp = 0; cJSON *retjson; char *blockhashstr; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( coin != 0 )
+    {
+        if ( (ep= coin->electrum) == 0 )
+        {
+            if ( (blockhashstr= LP_blockhashstr(symbol,height)) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(blockhashstr)) != 0 )
+                {
+                    timestamp = juint(retjson,"time");
+                    free_json(retjson);
+                }
+                free(blockhashstr);
+            }
+        }
+        else
+        {
+            if ( (retjson= electrum_getheader(coin->symbol,ep,&retjson,height)) != 0 )
+            {
+                printf("%s\n",jprint(retjson,0));
+                timestamp = juint(retjson,"timestamp");
+                free_json(retjson);
+            }
+        }
+    }
+    return(timestamp);
 }
 
 cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t height)
