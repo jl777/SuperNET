@@ -800,14 +800,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 recalc = 1;
             else if ( price < qprice )
             {
-                char tmp[64]; double range; int32_t r;
-                r = (rand() % 100);
-                range = (qprice - price);
-                bestprice = LP_bob_competition(j64bits(argjson,"aliceid"),price);
-                printf(">>>>>>>>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f vs bestprice %.8f\n",dstr(price),dstr(qprice),r,range,price + r*range,bestprice);
-                price += (r * range);
-                if ( price < bestprice+SMALLVAL )
-                    return(retval);
+                char tmp[64];
                 if ( bits256_nonz(Q.txid) != 0 )
                     LP_utxos_remove(Q.txid,Q.vout);
                 else recalc = 1;
@@ -828,6 +821,14 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         recalc = 1;
                 }
             } else return(retval);
+            double range; int32_t r;
+            r = (rand() % 100);
+            range = (qprice - price);
+            bestprice = LP_bob_competition(j64bits(argjson,"aliceid"),price);
+            printf(">>>>>>>>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f vs bestprice %.8f\n",dstr(price),dstr(qprice),r,range,price + r*range,bestprice);
+            price += (r * range);
+            if ( price < bestprice+SMALLVAL )
+                return(retval);
             printf("recalc.%d address.(%s/%s) request.(%s)\n",recalc,Q.coinaddr,coin->smartaddr,jprint(argjson,0));
             if ( recalc != 0 )
             {
