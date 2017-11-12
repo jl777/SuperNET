@@ -514,6 +514,7 @@ void LP_coinsloop(void *_coins)
             {
                 if ( (backupep= ep->prev) == 0 )
                     backupep = ep;
+                printf("electrum %s\n",coin->symbol);
                 if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
                 {
                     if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
