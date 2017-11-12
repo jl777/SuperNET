@@ -707,7 +707,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         if ( strcmp(method,"reserved") == 0 )
         {
             bestprice = LP_bob_competition(aliceid,qprice);
-            printf("aliceid.%llx price %.8f -> bestprice %.8f\n",(long long)aliceid,qprice,bestprice);
+            //printf("aliceid.%llx price %.8f -> bestprice %.8f\n",(long long)aliceid,qprice,bestprice);
             if ( LP_Alicemaxprice == 0. )
                 return(retval);
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && LP_alice_eligible() > 0 )
@@ -767,7 +767,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             return(retval);
         }
         price = ask;
-        printf("MYPRICE %s/%s %.8f\n",Q.srccoin,Q.destcoin,price);
+        //printf("MYPRICE %s/%s %.8f\n",Q.srccoin,Q.destcoin,price);
         if ( LP_validSPV(Q.destcoin,Q.destaddr,Q.desttxid,Q.destvout) < 0 )
         {
             printf("%s dest %s failed SPV check\n",Q.destcoin,bits256_str(str,Q.desttxid));
@@ -785,7 +785,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         if ( strcmp(method,"request") == 0 )
         {
-            char str[65],str2[65];
+            char str[65];//,str2[65];
             recalc = 0;
             if ( bits256_cmp(Q.srchash,G.LP_mypub25519) != 0 || strcmp(butxo->coinaddr,coin->smartaddr) != 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 )
             {
@@ -829,7 +829,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             bestprice = LP_bob_competition(aliceid,price);
             if ( price < bestprice+SMALLVAL )
                 return(retval);
-            printf("recalc.%d address.(%s/%s) price %.8f request.(%s)\n",recalc,Q.coinaddr,coin->smartaddr,price,jprint(argjson,0));
+            //printf("recalc.%d address.(%s/%s) price %.8f request.(%s)\n",recalc,Q.coinaddr,coin->smartaddr,price,jprint(argjson,0));
             if ( recalc != 0 )
             {
                 LP_RTmetrics_update(Q.srccoin,Q.destcoin);
@@ -849,7 +849,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     Q.txid2 = butxo->deposit.txid;
                     Q.vout2 = butxo->deposit.vout;
                     Q.satoshis = butxo->S.satoshis;
-                    printf("set butxo.%p %s/v%d %s/v%d %.8f %.8f -> bsat %.8f asat %.8f\n",butxo,bits256_str(str,butxo->payment.txid),butxo->payment.vout,bits256_str(str2,butxo->deposit.txid),butxo->deposit.vout,dstr(butxo->payment.value),dstr(butxo->deposit.value),dstr(butxo->S.satoshis),dstr(autxo->S.satoshis));
+                    //printf("set butxo.%p %s/v%d %s/v%d %.8f %.8f -> bsat %.8f asat %.8f\n",butxo,bits256_str(str,butxo->payment.txid),butxo->payment.vout,bits256_str(str2,butxo->deposit.txid),butxo->deposit.vout,dstr(butxo->payment.value),dstr(butxo->deposit.value),dstr(butxo->S.satoshis),dstr(autxo->S.satoshis));
                 }
                 else
                 {
