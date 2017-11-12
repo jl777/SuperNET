@@ -480,7 +480,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     {
         jaddstr(item,"status","finished");
         if ( rswap->iambob == 0 )
-            jaddnum(item,"finishtime",LP_txtime(rswap->dest,rswap->paymentspent));
+            jaddnum(item,"finishtime",LP_txtime(rswap->src,rswap->paymentspent));
         else jaddnum(item,"finishtime",LP_txtime(rswap->src,rswap->depositspent));
     }
     else jaddstr(item,"status","pending");
