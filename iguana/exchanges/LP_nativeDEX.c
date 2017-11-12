@@ -18,9 +18,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// immediate "request", actual auction
+// alice waiting for bestprice
+// regen inventory
 // previously, it used to show amount, kmd equiv, perc
-//there is still a pending one with `-1 wait for bobpayment bYoNxkfvwQ42Yufry8J5y8BYi6mQxokvW9 numconfs.1 MNZ c0ea4aa808a653222a15122d96692fecf734dbbacfb9a54cb4711306ea0c3cef`, but that tx is already spent including 6 confirmation
+// there is still a pending one with `-1 wait for bobpayment bYoNxkfvwQ42Yufry8J5y8BYi6mQxokvW9 numconfs.1 MNZ c0ea4aa808a653222a15122d96692fecf734dbbacfb9a54cb4711306ea0c3cef`, but that tx is already spent including 6 confirmation
 // bot safe to exit?
 //
 // BCH signing
@@ -466,7 +467,7 @@ void utxosQ_loop(void *myipaddr)
 
 void LP_coinsloop(void *_coins)
 {
-    struct LP_address *ap=0; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
+    struct LP_address *ap=0,*atmp; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
@@ -514,14 +515,23 @@ void LP_coinsloop(void *_coins)
             {
                 if ( (backupep= ep->prev) == 0 )
                     backupep = ep;
-                //HASH_ITER(hh,coin->addresses,ap,atmp)
+                // skip cLP_address MNZ bXcSsYBiVKtTzYErqxvma4UsojZTEf5L6H
+                //printf("electrum %s\n",coin->symbol);
                 if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
                 {
                     if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
                         free_json(retjson);
+                }
+                HASH_ITER(hh,coin->addresses,ap,atmp)
+                {
+                    //printf("call unspent %s\n",ap->coinaddr);
+                    if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
+                        free_json(retjson);
+                }
+                HASH_ITER(hh,coin->addresses,ap,atmp)
+                {
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
                     {
-                        break;
                         if ( up->U.height > 0 && up->spendheight < 0 )
                         {
                             if ( up->SPV == 0 )
@@ -813,12 +823,14 @@ void LP_reserved_msgs(void *ignore)
                 if ( num_Reserved_msgs[1] > 0 )
                 {
                     num_Reserved_msgs[1]--;
+                    //printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
                     LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[1][num_Reserved_msgs[1]]);
                     Reserved_msgs[1][num_Reserved_msgs[1]] = 0;
                 }
                 else if ( num_Reserved_msgs[0] > 0 )
                 {
                     num_Reserved_msgs[0]--;
+                    //printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
                     LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
                     Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
                 }
@@ -845,7 +857,8 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
     if ( num_Reserved_msgs[priority] > max_Reserved_msgs[priority] )
     {
         max_Reserved_msgs[priority] = num_Reserved_msgs[priority];
-        printf("New priority.%d max_Reserved_msgs.%d\n",priority,max_Reserved_msgs[priority]);
+        if ( (max_Reserved_msgs[priority] % 100) == 0 )
+            printf("New priority.%d max_Reserved_msgs.%d\n",priority,max_Reserved_msgs[priority]);
     }
     portable_mutex_unlock(&LP_reservedmutex);
     return(n);

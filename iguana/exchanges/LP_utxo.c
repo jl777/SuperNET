@@ -64,7 +64,10 @@ struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
 {
     struct LP_address *ap = 0;
     if ( (ap= _LP_addressfind(coin,coinaddr)) == 0 )
+    {
         ap = _LP_addressadd(coin,coinaddr);
+        //printf("LP_address %s %s\n",coin->symbol,coinaddr);
+    }
     return(ap);
 }
 
@@ -145,6 +148,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
     //printf("LP_address_utxo_ptrs for (%s).(%s)\n",ap->coinaddr,coinaddr);
     if ( strcmp(ap->coinaddr,coinaddr) != 0 )
         printf("UNEXPECTED coinaddr mismatch (%s) != (%s)\n",ap->coinaddr,coinaddr);
+    LP_listunspent_issue(coin->symbol,coin->smartaddr,2);
     portable_mutex_lock(&LP_utxomutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
@@ -185,7 +189,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                     continue;
                 }
             }
-            if ( LP_allocated(up->U.txid,up->U.vout) == 0 && _LP_utxofind(iambob,up->U.txid,up->U.vout) == 0 && _LP_utxo2find(iambob,up->U.txid,up->U.vout) == 0 )
+            if ( LP_allocated(up->U.txid,up->U.vout) == 0 && (iambob == 0 || (_LP_utxofind(iambob,up->U.txid,up->U.vout) == 0 && _LP_utxo2find(iambob,up->U.txid,up->U.vout) == 0)) )
             {
                 utxos[n++] = up;
                 if ( n >= max )
@@ -660,6 +664,11 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
         }
         else if ( mempool != 0 && LP_mempoolscan(symbol,txid) >= 0 )
             numconfirms = 0;
+        else if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+        {
+            numconfirms = jint(txobj,"confirmations");
+            free_json(txobj);
+        }
     }
     else
     {
@@ -847,7 +856,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                 }
                 return(1);
             }
-        } // else printf("no val2\n");
+        } else printf("no val2 %.8f < threshold %.8f\n",dstr(val),dstr(threshold));
     }
     /*char str2[65];
     if ( val != 0 && val2 != 0 )

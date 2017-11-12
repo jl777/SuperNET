@@ -23,7 +23,7 @@
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "14288"
+#define LP_BUILD_NUMBER "14336"
 
 #ifdef FROM_JS
 #include <emscripten.h>
@@ -238,7 +238,7 @@ struct LP_swap_remember
     bits256 pubA0,pubB0,pubB1,privAm,privBn,paymentspent,Apaymentspent,depositspent,myprivs[2],txids[sizeof(txnames)/sizeof(*txnames)];
     uint64_t Atxfee,Btxfee,srcamount,destamount,aliceid;
     int64_t values[sizeof(txnames)/sizeof(*txnames)];
-    uint32_t tradeid,requestid,quoteid,plocktime,dlocktime,expiration,state,otherstate;
+    uint32_t finishtime,tradeid,requestid,quoteid,plocktime,dlocktime,expiration,state,otherstate;
     int32_t iambob,finishedflag,origfinishedflag,Predeemlen,Dredeemlen,sentflags[sizeof(txnames)/sizeof(*txnames)];
     uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],Predeemscript[1024],Dredeemscript[1024],pubkey33[33],other33[33];
     char src[64],dest[64],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[64],bobcoin[64],*txbytes[sizeof(txnames)/sizeof(*txnames)];
@@ -443,6 +443,7 @@ struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coina
 int32_t LP_destaddr(char *destaddr,cJSON *item);
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration);
 char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey);
+uint32_t LP_heighttime(char *symbol,int32_t height);
 uint64_t LP_unspents_load(char *symbol,char *addr);
 int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid);
