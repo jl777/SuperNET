@@ -652,7 +652,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
                 satoshis = value - 3*txfee/4;
                 printf("reduce satoshis %.8f by txfee %.8f to value %.8f\n",dstr(satoshis),dstr(txfee),dstr(value));
             }
-            else if ( value == satoshis && (double)txfee/value < 0.1 )
+            else if ( value == satoshis && (double)txfee/value < 0.25 )
             {
                 satoshis = value - txfee;
                 printf("txfee allocation from value %.8f identical to satoshis: %.8f txfee %.8f\n",dstr(value),dstr(satoshis),dstr(txfee));
