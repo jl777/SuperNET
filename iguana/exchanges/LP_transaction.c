@@ -1805,7 +1805,10 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
         }
     }
     if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 && swap->myfee.I.datalen != 0 && swap->myfee.I.spendlen > 0 )
+    {
+        printf("fee sent\n");
         return(0);
+    }
     return(-1);
 }
 
@@ -1820,7 +1823,7 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
             diff = swap->otherfee.I.locktime - (swap->I.started+1);
             if ( diff < 0 )
                 diff = -diff;
-            if ( diff == 0 )
+            if ( diff < 10 )
                 printf("dexfee verified\n");
             else printf("locktime mismatch in otherfee, reject %u vs %u\n",swap->otherfee.I.locktime,swap->I.started+1);
             return(0);

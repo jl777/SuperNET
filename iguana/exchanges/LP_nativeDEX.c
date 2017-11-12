@@ -18,10 +18,8 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// version info
+// immediate "request", actual auction
 // previously, it used to show amount, kmd equiv, perc
-// swap started, pending, locked, finished, ...
-// aliceid
 //there is still a pending one with `-1 wait for bobpayment bYoNxkfvwQ42Yufry8J5y8BYi6mQxokvW9 numconfs.1 MNZ c0ea4aa808a653222a15122d96692fecf734dbbacfb9a54cb4711306ea0c3cef`, but that tx is already spent including 6 confirmation
 // bot safe to exit?
 //
@@ -457,7 +455,7 @@ void command_rpcloop(void *myipaddr)
 void utxosQ_loop(void *myipaddr)
 {
     strcpy(utxosQ_loop_stats.name,"utxosQ_loop");
-    utxosQ_loop_stats.threshold = 500.;
+    utxosQ_loop_stats.threshold = 5000.;
     while ( 1 )
     {
         LP_millistats_update(&utxosQ_loop_stats);
@@ -468,7 +466,7 @@ void utxosQ_loop(void *myipaddr)
 
 void LP_coinsloop(void *_coins)
 {
-    struct LP_address *ap=0,*atmp; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
+    struct LP_address *ap=0; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
@@ -519,6 +517,8 @@ void LP_coinsloop(void *_coins)
                 //HASH_ITER(hh,coin->addresses,ap,atmp)
                 if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
                 {
+                    if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
+                        free_json(retjson);
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
                     {
                         break;
@@ -527,7 +527,7 @@ void LP_coinsloop(void *_coins)
                             if ( up->SPV == 0 )
                             {
                                 nonz++;
-                                up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                                up->SPV = LP_merkleproof(coin,coin->smartaddr,backupep,up->U.txid,up->U.height);
                                 if ( up->SPV > 0 )
                                 {
                                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && tx->SPV == 0 )
@@ -544,7 +544,7 @@ void LP_coinsloop(void *_coins)
                                 oldht = up->U.height;
                                 LP_txheight_check(coin,ap->coinaddr,up);
                                 if ( oldht != up->U.height )
-                                    up->SPV = LP_merkleproof(coin,backupep,up->U.txid,up->U.height);
+                                    up->SPV = LP_merkleproof(coin,coin->smartaddr,backupep,up->U.txid,up->U.height);
                                 if ( up->SPV <= 0 )
                                     up->SPV = -2;
                                 else printf("%s %s: corrected SPV.%d\n",coin->symbol,bits256_str(str,up->U.txid),up->SPV);

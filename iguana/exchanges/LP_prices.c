@@ -813,13 +813,17 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=n=0; i<numbids; i++)
     {
         jaddi(array,LP_orderbookjson(rel,bids[i]));
-        if ( suppress_prefetch == 0 && n < 7 && bids[i]->numutxos < 3 )
+        if ( suppress_prefetch == 0 && n < 3 && bids[i]->numutxos == 0 )
         {
             //printf("bid ping %s %s\n",rel,bids[i]->coinaddr);
             LP_address(relcoin,bids[i]->coinaddr);
             if ( relcoin->electrum == 0 )
+            {
                 LP_listunspent_issue(rel,bids[i]->coinaddr,0);
-            LP_listunspent_query(rel,bids[i]->coinaddr);
+            //else if ( (tmpjson= LP_listunspent(rel,bids[i]->coinaddr)) != 0 )
+            //    free_json(tmpjson);
+                LP_listunspent_query(rel,bids[i]->coinaddr);
+            }
             n++;
         }
         free(bids[i]);
@@ -833,13 +837,17 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=n=0; i<numasks; i++)
     {
         jaddi(array,LP_orderbookjson(base,asks[i]));
-        if ( suppress_prefetch == 0 && n < 7 && asks[i]->numutxos < 3 )
+        if ( suppress_prefetch == 0 && n < 3 && asks[i]->numutxos == 0 )
         {
             //printf("ask ping %s %s\n",base,asks[i]->coinaddr);
             LP_address(basecoin,asks[i]->coinaddr);
             if ( basecoin->electrum == 0 )
+            {
                 LP_listunspent_issue(base,asks[i]->coinaddr,0);
-            LP_listunspent_query(base,asks[i]->coinaddr);
+            //else if ( (tmpjson= LP_listunspent(base,asks[i]->coinaddr)) != 0 )
+            //    free_json(tmpjson);
+                LP_listunspent_query(base,asks[i]->coinaddr);
+            }
             n++;
         }
         free(asks[i]);
