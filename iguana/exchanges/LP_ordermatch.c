@@ -801,7 +801,6 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     printf("request from blacklisted %s, ignore\n",bits256_str(str,Q.desthash));
                     return(retval);
                 }
-                printf("butxo.%p recalc path %p %s, %p %s, %.8f\n",butxo,LP_allocated(butxo->payment.txid,butxo->payment.vout),bits256_str(str,butxo->payment.txid),LP_allocated(butxo->deposit.txid,butxo->deposit.vout),bits256_str(str2,butxo->deposit.txid),LP_quote_validate(autxo,butxo,&Q,1));
                 LP_listunspent_both(Q.srccoin,Q.coinaddr,0);
                 if ( (butxo= LP_address_utxopair(1,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,Q.desttxfee)) != 0 )
                 {
@@ -817,7 +816,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 }
                 else
                 {
-                    //printf("cant find utxopair\n");
+                    printf("cant find utxopair\n");
                     return(retval);
                 }
             }
