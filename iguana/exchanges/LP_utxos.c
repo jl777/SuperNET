@@ -549,12 +549,12 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     if ( coin->privkeydepth > 0 )
         return(0);
     coin->privkeydepth++;
+    LP_address(coin,coin->smartaddr);
     //printf("privkey init.(%s) %s depth.%d\n",coin->symbol,coin->smartaddr,coin->privkeydepth);
     if ( coin->inactive == 0 )
         LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
     array = LP_listunspent(coin->symbol,coin->smartaddr);
-    //printf("unspent array %ld\n",strlen(jprint(array,0)));
-    LP_address(coin,coin->smartaddr);
+    printf("unspent array %ld\n",strlen(jprint(array,0)));
     if ( array != 0 )
     {
         txfee = LP_txfeecalc(coin,0,0);
