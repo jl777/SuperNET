@@ -760,7 +760,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             }
             return(retval);
         }
-        if ( (coin= LP_coinfind(Q.srccoin)) == 0 || (price= LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin)) <= SMALLVAL || ask <= SMALLVAL )
+        price = LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin);
+        if ( (coin= LP_coinfind(Q.srccoin)) == 0 || ask <= SMALLVAL )
         {
             //printf("this node has no price for %s/%s\n",Q.srccoin,Q.destcoin);
             return(retval);
