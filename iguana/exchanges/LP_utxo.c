@@ -64,7 +64,10 @@ struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr)
 {
     struct LP_address *ap = 0;
     if ( (ap= _LP_addressfind(coin,coinaddr)) == 0 )
+    {
         ap = _LP_addressadd(coin,coinaddr);
+        printf("LP_address %s %s\n",coin->symbol,coinaddr);
+    }
     return(ap);
 }
 
