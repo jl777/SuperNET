@@ -521,7 +521,6 @@ void LP_coinsloop(void *_coins)
                         free_json(retjson);
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
                     {
-                        break;
                         if ( up->U.height > 0 && up->spendheight < 0 )
                         {
                             if ( up->SPV == 0 )
