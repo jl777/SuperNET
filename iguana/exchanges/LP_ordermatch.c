@@ -494,6 +494,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     }
     if ( autxo->S.swap != 0 )
     {
+        printf("ignore duplicate swap\n");
         LP_aliceid(Q.tradeid,Q.aliceid,"error3",0,0);
         return(clonestr("{\"error\":\"ignore duplicate swap\"}"));
     }
@@ -510,7 +511,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     }
     if ( LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin) <= SMALLVAL || bid <= SMALLVAL )
     {
-        //printf("this node has no price for %s/%s (%.8f %.8f)\n",Q.destcoin,Q.srccoin,bid,ask);
+        printf("this node has no price for %s/%s (%.8f %.8f)\n",Q.destcoin,Q.srccoin,bid,ask);
         LP_availableset(autxo);
         LP_aliceid(Q.tradeid,Q.aliceid,"error5",0,0);
         return(clonestr("{\"error\":\"no price set\"}"));
