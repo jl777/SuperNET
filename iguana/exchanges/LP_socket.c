@@ -288,7 +288,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
     int32_t i,v,n,ht,flag = 0; char str[65]; uint64_t value; bits256 txid; cJSON *item,*retjson,*txobj; struct LP_transaction *tx;
     if ( array != 0 && coin != 0 && (n= cJSON_GetArraySize(array)) > 0 )
     {
-        printf("PROCESS %s/%s %s num.%d\n",coin->symbol,ep!=0?ep->symbol:"nanolistunspent",coinaddr,n);
+        //printf("PROCESS %s/%s %s num.%d\n",coin->symbol,ep!=0?ep->symbol:"nanolistunspent",coinaddr,n);
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
@@ -596,7 +596,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
         {
             if ( jobj(retjson,"error") == 0 && is_cJSON_Array(retjson) != 0 )
             {
-                if ( 1 && electrumflag > 1 )
+                if ( 0 && electrumflag > 1 )
                     printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
                 updatedflag = 0;
                 if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
