@@ -514,7 +514,8 @@ void LP_coinsloop(void *_coins)
             {
                 if ( (backupep= ep->prev) == 0 )
                     backupep = ep;
-                printf("electrum %s\n",coin->symbol);
+                // skip cLP_address MNZ bXcSsYBiVKtTzYErqxvma4UsojZTEf5L6H
+                //printf("electrum %s\n",coin->symbol);
                 if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
                 {
                     if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
@@ -522,7 +523,7 @@ void LP_coinsloop(void *_coins)
                 }
                 HASH_ITER(hh,coin->addresses,ap,atmp)
                 {
-                    printf("call unspent %s\n",ap->coinaddr);
+                    //printf("call unspent %s\n",ap->coinaddr);
                     if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
                         free_json(retjson);
                 }
