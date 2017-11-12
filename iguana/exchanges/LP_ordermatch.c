@@ -702,12 +702,12 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         memset(autxo,0,sizeof(*autxo));
         memset(butxo,0,sizeof(*butxo));
         LP_abutxo_set(autxo,butxo,&Q);
+        aliceid = j64bits(argjson,"aliceid");
+        qprice = jdouble(argjson,"price");
         if ( strcmp(method,"reserved") == 0 )
         {
-            aliceid = j64bits(argjson,"aliceid");
-            price = jdouble(argjson,"price");
-            bestprice = LP_bob_competition(aliceid,price);
-            printf("aliceid.%llx price %.8f -> bestprice %.8f\n",(long long)aliceid,price,bestprice);
+            bestprice = LP_bob_competition(aliceid,qprice);
+            printf("aliceid.%llx price %.8f -> bestprice %.8f\n",(long long)aliceid,qprice,bestprice);
             if ( LP_Alicemaxprice == 0. )
                 return(retval);
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && LP_alice_eligible() > 0 )
@@ -823,9 +823,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             double range; int32_t r;
             r = (rand() % 100);
             range = (qprice - price);
-            bestprice = LP_bob_competition(j64bits(argjson,"aliceid"),price);
-            printf(">>>>>>>>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f vs bestprice %.8f\n",dstr(price),dstr(qprice),r,range,price + r*range,bestprice);
+            printf(">>>>>>>>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f vs bestprice %.8f\n",dstr(price),dstr(qprice),r,range,price + r*range,LP_bob_competition(aliceid,price));
             price += (r * range);
+            bestprice = LP_bob_competition(aliceid,price);
             if ( price < bestprice+SMALLVAL )
                 return(retval);
             printf("recalc.%d address.(%s/%s) price %.8f request.(%s)\n",recalc,Q.coinaddr,coin->smartaddr,price,jprint(argjson,0));
