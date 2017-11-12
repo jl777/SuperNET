@@ -1100,7 +1100,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         printf("destsatoshis %.8f vs utxo %.8f this would have triggered an quote error -13\n",dstr(destsatoshis),dstr(autxo->payment.value));
         return(clonestr("{\"error\":\"cant find alice utxo that is small enough\"}"));
     }
-    bestsatoshis = LP_basesatoshis(relvolume,maxprice,txfee,desttxfee);
+    bestsatoshis = LP_basesatoshis(dstr(destsatoshis),maxprice,txfee,desttxfee);
     memset(&B,0,sizeof(B));
     strcpy(B.coin,base);
     if ( LP_quoteinfoinit(&Q,&B,rel,maxprice,bestsatoshis,destsatoshis) < 0 )
