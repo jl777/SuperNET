@@ -787,6 +787,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             recalc = 0;
             if ( bits256_cmp(Q.srchash,G.LP_mypub25519) != 0 || strcmp(butxo->coinaddr,coin->smartaddr) != 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 )
             {
+                qprice = (double)Q.destsatoshis / Q.satoshis;
                 strcpy(Q.gui,G.gui);
                 strcpy(Q.coinaddr,coin->smartaddr);
                 strcpy(butxo->coinaddr,coin->smartaddr);
