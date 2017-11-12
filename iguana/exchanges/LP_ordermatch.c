@@ -30,8 +30,11 @@ double LP_bob_competition(uint64_t aliceid,double price)
     {
         if ( Bob_competition[i].aliceid == aliceid )
         {
-            if ( price < Bob_competition[i].bestprice )
+            if ( price != 0. && (Bob_competition[i].bestprice == 0. || price < Bob_competition[i].bestprice) )
+            {
                 Bob_competition[i].bestprice = price;
+                printf("Bob competition aliceid.%llx <- bestprice %.8f\n",(long long)aliceid,price);
+            }
             return(Bob_competition[i].bestprice);
         }
         else if ( Bob_competition[i].aliceid == 0 )
@@ -41,7 +44,8 @@ double LP_bob_competition(uint64_t aliceid,double price)
         firsti = (rand() % (sizeof(Bob_competition)/sizeof(*Bob_competition)));
     Bob_competition[firsti].aliceid = aliceid;
     Bob_competition[firsti].bestprice = price;
-    return(Bob_competition[i].bestprice);
+    printf("Bob competition aliceid.%llx %.8f\n",(long long)aliceid,price);
+    return(price);
 }
 
 uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen)
