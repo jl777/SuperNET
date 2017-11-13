@@ -681,12 +681,12 @@ cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seria
 cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
 {
     char *hexstr,str[65]; int32_t len; cJSON *hexjson,*txobj=0; struct iguana_info *coin; uint8_t *serialized; struct LP_transaction *tx;
-    //printf("electrum_transaction %s %s\n",symbol,bits256_str(str,txid));
+    printf("electrum_transaction %s %s\n",symbol,bits256_str(str,txid));
     if ( bits256_nonz(txid) != 0 && (coin= LP_coinfind(symbol)) != 0 )
     {
         if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 )
         {
-            //char str[65]; printf("%s cache hit -> TRANSACTION.(%s)\n",symbol,bits256_str(str,txid));
+            char str[65]; printf("%s cache hit -> TRANSACTION.(%s)\n",symbol,bits256_str(str,txid));
             if ( (txobj= LP_transaction_fromdata(coin,txid,tx->serialized,tx->len)) != 0 )
             {
                 *retjsonp = txobj;
