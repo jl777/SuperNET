@@ -488,6 +488,7 @@ bot_resume(botid)\n\
                     if ( jint(argjson,"reset") != 0 )
                     {
                         LP_address_utxo_reset(ptr);
+                        ptr->privkeydepth = 0;
                         LP_passphrase_init(jstr(argjson,"passphrase"),G.gui);
                     }
                     if ( bits256_nonz(G.LP_privkey) != 0 )
