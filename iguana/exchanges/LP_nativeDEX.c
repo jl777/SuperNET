@@ -540,7 +540,7 @@ void LP_coinsloop(void *_coins)
                     if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
                         free_json(retjson);
                 }
-                HASH_ITER(hh,coin->addresses,ap,atmp)
+                if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
                 {
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
                     {
