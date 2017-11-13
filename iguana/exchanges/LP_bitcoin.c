@@ -3361,7 +3361,10 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
          The flag MUST be 0x01
          */
         if ( serialized[len] == 0x00 && (segwitflag= serialized[len+1]) == 0x01 )
+        {
             len += 2;
+            printf("SEGWIT transaction\n");
+        }
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
     if ( rwflag == 0 )
@@ -3437,6 +3440,7 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
         else
         {
             len += iguana_rwvarint32(rwflag,&serialized[len],&seglen);
+            printf("witness len.%d sum %d vs max.%d\n",seglen,seglen+len,maxsize);
             if ( seglen+len < maxsize )
                 len += maxsize;
         }
