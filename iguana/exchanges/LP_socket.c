@@ -703,7 +703,7 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
         }
         hexjson = electrum_hasharg(symbol,ep,&hexjson,"blockchain.transaction.get",txid,ELECTRUM_TIMEOUT);
         hexstr = jprint(hexjson,0);
-        if ( strlen(hexstr) > 60000 )
+        if ( strlen(hexstr) > 100000 )
         {
             static uint32_t counter;
             if ( counter++ < 3 )
