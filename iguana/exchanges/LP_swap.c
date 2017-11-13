@@ -801,7 +801,7 @@ void LP_bobloop(void *_swap)
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->bobcoin->symbol,swap->alicecoin->symbol)*2,30);
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*2,30);
                 }
             }
         }
@@ -867,7 +867,7 @@ void LP_aliceloop(void *_swap)
                     }*/
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->bobcoin->symbol,swap->alicecoin->symbol)*2,30);
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*2,30);
                 }
             }
         }
@@ -999,6 +999,24 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
 {
     //FILE *fp; char fname[512];
     uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag=-2,x = -1; struct iguana_info *coin;
+    strcpy(swap->I.bobstr,swap->I.req.src);
+    strcpy(swap->I.alicestr,swap->I.req.dest);
+    if ( (coin= LP_coinfind(swap->I.alicestr)) != 0 )
+        swap->alicecoin = coin;
+    else
+    {
+        printf("missing bobcoin->%p or missing alicecoin->%p src.%p dest.%p\n",swap->bobcoin,swap->alicecoin,LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
+        free(swap);
+        return(0);
+    }
+    if ( (coin= LP_coinfind(swap->I.bobstr)) != 0 )
+        swap->bobcoin = coin;
+    else
+    {
+        printf("missing bobcoin->%p or missing alicecoin->%p src.%p dest.%p\n",swap->bobcoin,swap->alicecoin,LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
+        free(swap);
+        return(0);
+    }
     if ( (swap->I.Atxfee= qp->desttxfee) < 0 )
     {
         printf("bitcoin_swapinit %s Atxfee %.8f rejected\n",swap->I.req.dest,dstr(swap->I.Atxfee));
@@ -1009,7 +1027,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         printf("bitcoin_swapinit %s Btxfee %.8f rejected\n",swap->I.req.src,dstr(swap->I.Btxfee));
         return(0);
     }
-    swap->I.putduration = swap->I.callduration = LP_atomic_locktime(swap->bobcoin->symbol,swap->alicecoin->symbol);
+    swap->I.putduration = swap->I.callduration = LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr);
     if ( optionduration < 0 )
         swap->I.putduration -= optionduration;
     else if ( optionduration > 0 )
@@ -1028,8 +1046,6 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobinsurance = LP_MIN_TXFEE;
     if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
         swap->I.aliceinsurance = LP_MIN_TXFEE;
-    strcpy(swap->I.bobstr,swap->I.req.src);
-    strcpy(swap->I.alicestr,swap->I.req.dest);
     swap->I.started = (uint32_t)time(NULL);
     swap->I.expiration = swap->I.req.timestamp + swap->I.putduration + swap->I.callduration;
     OS_randombytes((uint8_t *)&swap->I.choosei,sizeof(swap->I.choosei));
@@ -1055,22 +1071,6 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     if ( bits256_nonz(privkey) == 0 || (x= instantdex_pubkeyargs(swap,2 + INSTANTDEX_DECKSIZE,privkey,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
     {
         char str[65]; printf("couldnt generate privkeys %d %s\n",x,bits256_str(str,privkey));
-        return(0);
-    }
-    if ( (coin= LP_coinfind(swap->I.alicestr)) != 0 )
-        swap->alicecoin = coin;
-    else
-    {
-        printf("missing bobcoin->%p or missing alicecoin->%p src.%p dest.%p\n",swap->bobcoin,swap->alicecoin,LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
-        free(swap);
-        return(0);
-    }
-    if ( (coin= LP_coinfind(swap->I.bobstr)) != 0 )
-        swap->bobcoin = coin;
-    else
-    {
-        printf("missing bobcoin->%p or missing alicecoin->%p src.%p dest.%p\n",swap->bobcoin,swap->alicecoin,LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
-        free(swap);
         return(0);
     }
     if ( strcmp("BTC",swap->bobcoin->symbol) == 0 )
