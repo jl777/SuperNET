@@ -103,7 +103,7 @@ notarizations(coin)\n\
 parselog()\n\
 statsdisp(starttime=0, endtime=0, gui="", pubkey="")\n\
 getrawtransaction(coin, txid)\n\
-inventory(coin, reset=0)\n\
+inventory(coin, reset=0, [passphrase=])\n\
 bestfit(rel, relvolume)\n\
 lastnonce()\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
@@ -488,7 +488,7 @@ bot_resume(botid)\n\
                     if ( jint(argjson,"reset") != 0 )
                     {
                         LP_address_utxo_reset(ptr);
-                        LP_passphrase_init(G.PASSPHRASE,G.gui);
+                        LP_passphrase_init(jstr(argjson,"passphrase"),G.gui);
                     }
                     if ( bits256_nonz(G.LP_privkey) != 0 )
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
