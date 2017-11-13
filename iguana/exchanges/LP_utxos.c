@@ -242,7 +242,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
             continue;
         if ( LP_isavailable(utxo) > 0 && LP_ismine(utxo) > 0 )
         {
-            printf("(%.8f %.8f %.8f)\n",dstr(utxo->payment.value),dstr(utxo->fee.value),dstr(utxo->S.satoshis));
+            //printf("(%.8f %.8f %.8f)\n",dstr(utxo->payment.value),dstr(utxo->fee.value),dstr(utxo->S.satoshis));
             //char str[65]; printf("s%u %d [%.8f vs %.8f] check %s.%s avail.%d ismine.%d >= %d\n",utxo->T.spentflag,LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout),dstr(destsatoshis),dstr(utxo->S.satoshis),utxo->coin,bits256_str(str,utxo->payment.txid),LP_isavailable(utxo) > 0,LP_ismine(utxo) > 0,utxo->S.satoshis >= destsatoshis);
             bestsize = 0;
             if ( bestutxo == 0 )
@@ -267,7 +267,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
             }
             if ( bestsize > 0 )
             {
-                printf("bestsize.%d %.8f %.8f -> %.8f\n",bestsize,dstr(utxo->payment.value),dstr(utxo->fee.value),dstr(utxo->S.satoshis));
+                //printf("bestsize.%d %.8f %.8f -> %.8f\n",bestsize,dstr(utxo->payment.value),dstr(utxo->fee.value),dstr(utxo->S.satoshis));
                 if ( LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout) == 0 )
                 {
                     //if ( utxo->T.spentflag == 0 )
@@ -275,7 +275,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
                     continue;
                 }
                 bestutxo = utxo;
-            } else printf("skip alice utxo %.8f vs dest %.8f, bestsize.%d %p\n",dstr(utxo->S.satoshis),dstr(destsatoshis),bestsize,bestutxo);
+            } //else printf("skip alice utxo %.8f vs dest %.8f, bestsize.%d %p\n",dstr(utxo->S.satoshis),dstr(destsatoshis),bestsize,bestutxo);
         }
     }
     return(bestutxo);
@@ -414,7 +414,7 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         printf("utxoadd selector.%d spent in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
         utxo->T.spentflag = (uint32_t)time(NULL);
     }
-    printf(" %s %.8f %.8f %p addutxo.%d (%s %s) session.%u iambob.%d <<<<<<<<<<<<<<< %.8f\n",symbol,dstr(value),dstr(value2),utxo,LP_ismine(utxo) > 0,bits256_str(str,utxo->payment.txid),bits256_str(str2,iambob != 0 ? utxo->deposit.txid : utxo->fee.txid),utxo->T.sessionid,iambob,dstr(satoshis));
+    //printf(" %s %.8f %.8f %p addutxo.%d (%s %s) session.%u iambob.%d <<<<<<<<<<<<<<< %.8f\n",symbol,dstr(value),dstr(value2),utxo,LP_ismine(utxo) > 0,bits256_str(str,utxo->payment.txid),bits256_str(str2,iambob != 0 ? utxo->deposit.txid : utxo->fee.txid),utxo->T.sessionid,iambob,dstr(satoshis));
     portable_mutex_lock(&LP_utxomutex);
     HASH_ADD_KEYPTR(hh,G.LP_utxoinfos[iambob],utxo->key,sizeof(utxo->key),utxo);
     if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )

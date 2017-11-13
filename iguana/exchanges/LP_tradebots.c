@@ -481,7 +481,7 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
     else balance = LP_RTsmartbalance(relcoin);
     sum = (relvolume+2*dstr(txfees)) + 3 * ((relvolume+2*dstr(txfees))/777);
     printf("%s inventory balance %.8f, relvolume %.8f + txfees %.8f, utxobal %.8f sum %.8f\n",rel,dstr(abalance),relvolume,dstr(txfees),dstr(balance),dstr(sum));
-    if ( dstr(abalance) < relvolume && balance > sum+txfee )
+    if ( dstr(abalance) < relvolume && balance > sum+2*txfee )
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"error","not enough funds");
@@ -492,7 +492,7 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
         jaddnum(retjson,"txfees",dstr(txfees));
         shortfall = (relvolume + dstr(txfees)) - dstr(balance);
         jaddnum(retjson,"shortfall",shortfall);
-        if ( balance >= sum+txfee )
+        if ( balance > sum+2*txfee )
         {
             char *withdrawstr; cJSON *outputjson,*withdrawjson,*outputs,*item;
             outputjson = cJSON_CreateObject();
