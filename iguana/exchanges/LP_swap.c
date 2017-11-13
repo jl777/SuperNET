@@ -801,7 +801,7 @@ void LP_bobloop(void *_swap)
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,INSTANTDEX_LOCKTIME*2,30);
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->bobcoin.symbol,swap->alicecoin.symbol)*2,30);
                 }
             }
         }
@@ -867,7 +867,7 @@ void LP_aliceloop(void *_swap)
                     }*/
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,INSTANTDEX_LOCKTIME*2,30);
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->bobcoin.symbol,swap->alicecoin.symbol)*2,30);
                 }
             }
         }
@@ -1009,7 +1009,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         printf("bitcoin_swapinit %s Btxfee %.8f rejected\n",swap->I.req.src,dstr(swap->I.Btxfee));
         return(0);
     }
-    swap->I.putduration = swap->I.callduration = INSTANTDEX_LOCKTIME;
+    swap->I.putduration = swap->I.callduration = LP_atomic_locktime(swap->bobcoin.symbol,swap->alicecoin.symbol);
     if ( optionduration < 0 )
         swap->I.putduration -= optionduration;
     else if ( optionduration > 0 )

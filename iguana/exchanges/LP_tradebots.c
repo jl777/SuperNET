@@ -27,13 +27,13 @@ struct LP_tradebot_trade
     uint64_t aliceid;
     int32_t dispdir;
     uint32_t started,finished,requestid,quoteid,tradeid,expired;
-    char base[32],rel[32],event[32];
+    char base[65],rel[65],event[32];
 };
 
 struct LP_tradebot
 {
     struct LP_tradebot *next,*prev;
-    char name[128],base[32],rel[32];
+    char name[128],base[65],rel[65];
     int32_t numtrades,numpending,completed,dispdir;
     double maxprice,totalrelvolume,totalbasevolume,basesum,relsum,pendbasesum,pendrelsum;
     uint32_t lasttime,dead,pause,userpause,started,id;
@@ -74,7 +74,7 @@ void LP_tradebot_calcstats(struct LP_tradebot *bot)
     {
         if ( (tp= bot->trades[i]) == 0 )
             continue;
-        if ( tp->finished == 0 && time(NULL) > tp->started+INSTANTDEX_LOCKTIME*2 )
+        if ( tp->finished == 0 && time(NULL) > tp->started+LP_atomic_locktime(bot->base,bot->rel)*2 )
         {
             tp->expired = tp->finished = (uint32_t)time(NULL);
             printf("tradeid.%u expired\n",tp->tradeid);

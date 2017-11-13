@@ -666,6 +666,8 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
             if ( LP_getheight(coin) <= 0 )
                 coin->inactive = (uint32_t)time(NULL);
             else LP_unspents_load(coin->symbol,coin->smartaddr);
+            if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
+                coin->txfee = LP_MIN_TXFEE;
         }
     }
     if ( (n= cJSON_GetArraySize(coins)) > 0 )
@@ -683,6 +685,8 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     if ( LP_getheight(coin) <= 0 )
                         coin->inactive = (uint32_t)time(NULL);
                     else LP_unspents_load(coin->symbol,coin->smartaddr);
+                    if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
+                        coin->txfee = LP_MIN_TXFEE;
                 }
             }
         }
