@@ -242,7 +242,8 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
             continue;
         if ( LP_isavailable(utxo) > 0 && LP_ismine(utxo) > 0 )
         {
-            char str[65]; printf("s%u %d [%.8f vs %.8f] check %s.%s avail.%d ismine.%d >= %d\n",utxo->T.spentflag,LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout),dstr(destsatoshis),dstr(utxo->S.satoshis),utxo->coin,bits256_str(str,utxo->payment.txid),LP_isavailable(utxo) > 0,LP_ismine(utxo) > 0,utxo->S.satoshis >= destsatoshis);
+            printf("(%.8f %.8f %.8f)\n",dstr(utxo->payment.value),dstr(utxo->fee.value),dstr(utxo->S.satoshis));
+            //char str[65]; printf("s%u %d [%.8f vs %.8f] check %s.%s avail.%d ismine.%d >= %d\n",utxo->T.spentflag,LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout),dstr(destsatoshis),dstr(utxo->S.satoshis),utxo->coin,bits256_str(str,utxo->payment.txid),LP_isavailable(utxo) > 0,LP_ismine(utxo) > 0,utxo->S.satoshis >= destsatoshis);
             bestsize = 0;
             if ( bestutxo == 0 )
             {
@@ -266,7 +267,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
             }
             if ( bestsize > 0 )
             {
-                printf("bestsize.%d %.8f %.8f\n",dstr(utxo->payment.value),dstr(utxo->fee.value),dstr(utxo->S.satoshis));
+                printf("bestsize.%d %.8f %.8f -> %.8f\n",bestsize,dstr(utxo->payment.value),dstr(utxo->fee.value),dstr(utxo->S.satoshis));
                 if ( LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout) == 0 )
                 {
                     //if ( utxo->T.spentflag == 0 )
