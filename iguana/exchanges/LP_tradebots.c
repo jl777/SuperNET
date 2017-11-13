@@ -479,7 +479,7 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
     if ( relcoin->electrum != 0 )
         balance = LP_unspents_load(relcoin->symbol,relcoin->smartaddr);
     else balance = LP_RTsmartbalance(relcoin);
-    sum = (relvolume+2*dstr(txfees)) + 3 * ((relvolume+2*dstr(txfees))/777);
+    sum = (SATOSHIDEN*relvolume+2*dstr(txfees)) + 3 * ((SATOSHIDEN*relvolume+2*dstr(txfees))/777);
     printf("%s inventory balance %.8f, relvolume %.8f + txfees %.8f, utxobal %.8f sum %.8f\n",rel,dstr(abalance),relvolume,dstr(txfees),dstr(balance),dstr(sum));
     if ( dstr(abalance) < relvolume && balance > sum+2*txfee )
     {
