@@ -832,7 +832,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             {
                 r = (rand() % 100);
                 range = (qprice - price);
-                printf(">>>>>>>>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f vs bestprice %.8f\n",price,qprice,r,range,price + (r*range)/100.,LP_bob_competition(aliceid,price));
+                printf(">>>>>>>>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f\n",price,qprice,r,range,price + (r*range)/100.);
                 price += (r * range) / 100.;
                 bestprice = LP_bob_competition(aliceid,price);
                 if ( price < bestprice+SMALLVAL )
