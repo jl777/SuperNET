@@ -989,7 +989,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
         if ( remains <= 0 && i >= numpre-1 )
             break;
-        if ( numunspents == 0 )
+        if ( numunspents < 0 )
         {
             printf("total %.8f not enough for amount %.8f\n",dstr(total),dstr(amount));
             return(0);
