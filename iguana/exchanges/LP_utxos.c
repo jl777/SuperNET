@@ -266,6 +266,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
             }
             if ( bestsize > 0 )
             {
+                printf("bestsize.%d %.8f %.8f\n",dstr(utxo->payment.value),dstr(utxo->fee.value),dstr(utxo->S.satoshis));
                 if ( LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout) == 0 )
                 {
                     //if ( utxo->T.spentflag == 0 )
@@ -273,7 +274,7 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
                     continue;
                 }
                 bestutxo = utxo;
-            } else printf("skip alice utxo %.8f vs dest %.8f, bestsize.%d\n",dstr(utxo->S.satoshis),dstr(destsatoshis),bestsize);
+            } else printf("skip alice utxo %.8f vs dest %.8f, bestsize.%d %p\n",dstr(utxo->S.satoshis),dstr(destsatoshis),bestsize,bestutxo);
         }
     }
     return(bestutxo);
