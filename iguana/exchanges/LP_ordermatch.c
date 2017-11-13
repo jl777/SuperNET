@@ -842,7 +842,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     return(retval);
                 }
                 LP_listunspent_both(Q.srccoin,Q.coinaddr,0);
-                if ( (butxo= LP_address_utxopair(1,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,2*Q.txfee,dstr(Q.destsatoshis),price,Q.desttxfee)) != 0 )
+                if ( (butxo= LP_address_utxopair(1,utxos,max,LP_coinfind(Q.srccoin),Q.coinaddr,Q.txfee,dstr(Q.destsatoshis),price,Q.desttxfee)) != 0 )
                 {
                     strcpy(Q.gui,G.gui);
                     strcpy(Q.coinaddr,coin->smartaddr);
