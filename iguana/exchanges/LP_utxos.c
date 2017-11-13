@@ -870,12 +870,13 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
         }
     }
     memset(&G,0,sizeof(G));
-    strcpy(G.PASSPHRASE,passphrase);
     LP_privkey_updates(ctx,LP_mypubsock,passphrase);
     init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
     G.LP_sessionid = (uint32_t)time(NULL);
     safecopy(G.gui,gui,sizeof(G.gui));
     G.USERPASS_COUNTER = counter;
+    strcpy(G.PASSPHRASE,passphrase);
+    printf("set PASSPHRASE.(%s)\n",G.PASSPHRASE);
     G.initializing = 0;
     return(0);
 }
