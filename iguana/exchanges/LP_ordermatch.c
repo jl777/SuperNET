@@ -32,8 +32,9 @@ double LP_bob_competition(uint64_t aliceid,double price)
         {
             if ( now > Bob_competition[i].starttime+LP_AUTOTRADE_TIMEOUT )
             {
-                printf("aliceid.%llx expired\n",(long long)aliceid);
+                //printf("aliceid.%llx expired\n",(long long)aliceid);
                 Bob_competition[i].bestprice = 0.;
+                Bob_competition[i].starttime = now;
             }
             if ( price != 0. && (Bob_competition[i].bestprice == 0. || price < Bob_competition[i].bestprice) )
             {
