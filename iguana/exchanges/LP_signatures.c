@@ -104,6 +104,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 {
     uint32_t rid,qid;
+    memset(qp,0,sizeof(*qp));
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
