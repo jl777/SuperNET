@@ -388,13 +388,16 @@ bot_resume(botid)\n\
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
                     char *coinaddr;
+                    printf("listunspent\n");
                     if ( (coinaddr= jstr(argjson,"address")) != 0 )
                     {
                         if ( coinaddr[0] != 0 )
                         {
                             LP_address(ptr,coinaddr);
+                            printf("check addr\n");
                             if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                             {
+                                printf("my addr\n");
                                 LP_listunspent_issue(coin,coinaddr,2);
                                 LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                                 //LP_smartutxos_push(ptr);
