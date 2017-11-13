@@ -94,6 +94,10 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
     if ( (fp= fopen(fname,"wb")) != 0 )
     {
         fprintf(fp,"{\"tradeid\":%u,\"aliceid\":\"%llu\",\"src\":\"%s\",\"srcamount\":%.8f,\"dest\":\"%s\",\"destamount\":%.8f,\"requestid\":%u,\"quoteid\":%u,\"iambob\":%d,\"state\":%u,\"otherstate\":%u,\"expiration\":%u,\"dlocktime\":%u,\"plocktime\":%u,\"Atxfee\":%llu,\"Btxfee\":%llu",swap->tradeid,(long long)swap->aliceid,swap->I.req.src,dstr(swap->I.req.srcamount),swap->I.req.dest,dstr(swap->I.req.destamount),swap->I.req.requestid,swap->I.req.quoteid,swap->I.iambob,swap->I.statebits,swap->I.otherstatebits,swap->I.expiration,swap->bobdeposit.I.locktime,swap->bobpayment.I.locktime,(long long)swap->I.Atxfee,(long long)swap->I.Btxfee);
+        if ( swap->I.iambob == 0 )
+            fprintf(fp,",\"Agui\":\"%s\"",G.gui);
+        else fprintf(fp,",\"Bgui\":\"%s\"",G.gui);
+        fprintf(fp,",\"gui\":\"%s\"",G.gui);
         if ( memcmp(zeroes,swap->I.secretAm,20) != 0 )
         {
             init_hexbytes_noT(secretAmstr,swap->I.secretAm,20);
@@ -455,6 +459,9 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jaddnum(item,"requestid",rswap->requestid);
     jaddnum(item,"quoteid",rswap->quoteid);
     jaddnum(item,"iambob",rswap->iambob);
+    jaddstr(item,"Bgui",rswap->Bgui);
+    jaddstr(item,"Agui",rswap->Agui);
+    jaddstr(item,"gui",rswap->gui);
     jaddstr(item,"bob",rswap->src);
     jaddnum(item,"srcamount",dstr(rswap->srcamount));
     jaddnum(item,"bobtxfee",dstr(rswap->Btxfee));
@@ -503,6 +510,9 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
         if ( (item= cJSON_Parse(fstr)) != 0 )
         {
             rswap->iambob = jint(item,"iambob");
+            safecopy(rswap->Bgui,jstr(item,"Bgui"),sizeof(rswap->Bgui));
+            safecopy(rswap->Agui,jstr(item,"Agui"),sizeof(rswap->Agui));
+            safecopy(rswap->gui,jstr(item,"gui"),sizeof(rswap->gui));
             rswap->tradeid = juint(item,"tradeid");
             rswap->aliceid = j64bits(item,"aliceid");
             if ( (secretstr= jstr(item,"secretAm")) != 0 && strlen(secretstr) == 40 )

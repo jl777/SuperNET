@@ -22,7 +22,7 @@ struct LP_orderbookentry { bits256 pubkey; double price; uint64_t minsatoshis,ma
 
 struct LP_priceinfo
 {
-    char symbol[16];
+    char symbol[68];
     uint64_t coinbits;
     int32_t ind,pad;
     double diagval,high[2],low[2],last[2],bid[2],ask[2]; //volume,btcvolume,prevday; // mostly bittrex info

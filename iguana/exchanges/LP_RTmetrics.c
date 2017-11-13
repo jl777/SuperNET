@@ -29,7 +29,7 @@ struct LP_metricinfo
 
 struct LP_RTmetrics_pendings
 {
-    char refbase[16],refrel[16];
+    char refbase[65],refrel[65];
     int32_t numswaps,numavoidtxids,numwhitelist,numblacklist,numpendings,pending_swaps[1024];
     bits256 avoidtxids[8192],whitelist[1024],blacklist[1024],pending_pubkeys[1024];
 } LP_RTmetrics;

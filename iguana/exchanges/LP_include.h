@@ -166,7 +166,7 @@ struct basilisk_swap;
 
 struct basilisk_rawtxinfo
 {
-    char destaddr[64],coinstr[16];
+    char destaddr[64],coinstr[128];
     bits256 txid,signedtxid,actualtxid;
     int64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
@@ -200,7 +200,7 @@ struct basilisk_rawtx
 struct basilisk_swapinfo
 {
     struct basilisk_request req;
-    char bobstr[64],alicestr[64];
+    char bobstr[128],alicestr[128];
     bits256 myhash,otherhash,orderhash;
     uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,putduration,callduration;
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed,bobspent,alicespent,pad,aliceistrusted,bobistrusted,otheristrusted,otherstrust,alicemaxconfirms,bobmaxconfirms;
@@ -270,7 +270,7 @@ struct iguana_info
     int32_t numutxos,longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
     uint32_t loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
-    char symbol[16],smartaddr[64],userpass[1024],serverport[128];
+    char symbol[128],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
@@ -301,7 +301,7 @@ struct LP_utxoinfo
     int32_t iambob,iamlp;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
-    char coin[16],coinaddr[64],gui[16];//spendscript[256];
+    char coin[65],coinaddr[64],gui[16];//spendscript[256];
 };
 
 struct LP_address_utxo
@@ -340,7 +340,7 @@ struct LP_quoteinfo
     uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
     uint32_t timestamp,quotetime,tradeid;
     int32_t vout,vout2,destvout,feevout,pair;
-    char srccoin[16],coinaddr[64],destcoin[16],destaddr[64],gui[64];
+    char srccoin[65],coinaddr[64],destcoin[65],destaddr[64],gui[64];
 };
 
 struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };
@@ -384,7 +384,7 @@ struct electrum_info
     int32_t bufsize,sock,*heightp,numerrors;
     struct iguana_info *coin;
     uint32_t stratumid,lasttime,keepalive,pending,*heighttimep;
-    char ipaddr[64],symbol[16];
+    char ipaddr[64],symbol[66];
     uint16_t port;
     uint8_t buf[];
 };
