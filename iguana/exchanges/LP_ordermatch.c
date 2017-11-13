@@ -477,9 +477,15 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
 
 int32_t LP_quotecmp(struct LP_quoteinfo *qp,struct LP_quoteinfo *qp2)
 {
-    if ( bits256_nonz(LP_Alicedestpubkey) != 0 && bits256_cmp(LP_Alicedestpubkey,qp->srchash) != 0 )
-        return(-1);
-    else if ( bits256_cmp(qp->desthash,qp2->desthash) == 0 && strcmp(qp->srccoin,qp2->srccoin) == 0 && strcmp(qp->destcoin,qp2->destcoin) == 0 && bits256_cmp(qp->desttxid,qp2->desttxid) == 0 && qp->destvout == qp2->destvout && bits256_cmp(qp->feetxid,qp2->feetxid) == 0 && qp->feevout == qp2->feevout && qp->destsatoshis == qp2->destsatoshis && qp->txfee >= qp2->txfee && qp->desttxfee == qp2->desttxfee ) //bits256_cmp(qp->srchash,qp2->srchash) == 0 &&
+    if ( bits256_nonz(LP_Alicedestpubkey) != 0 )
+    {
+        if (bits256_cmp(LP_Alicedestpubkey,qp->srchash) != 0 )
+        {
+            printf("reject quote from non-matching pubkey\n");
+            return(-1);
+        } else printf("dont reject quote from destpubkey\n");
+    }
+    if ( bits256_cmp(qp->desthash,qp2->desthash) == 0 && strcmp(qp->srccoin,qp2->srccoin) == 0 && strcmp(qp->destcoin,qp2->destcoin) == 0 && bits256_cmp(qp->desttxid,qp2->desttxid) == 0 && qp->destvout == qp2->destvout && bits256_cmp(qp->feetxid,qp2->feetxid) == 0 && qp->feevout == qp2->feevout && qp->destsatoshis == qp2->destsatoshis && qp->txfee >= qp2->txfee && qp->desttxfee == qp2->desttxfee ) //bits256_cmp(qp->srchash,qp2->srchash) == 0 &&
         return(0);
     else return(-1);
 }
@@ -728,10 +734,13 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             //printf("aliceid.%llx price %.8f -> bestprice %.8f\n",(long long)aliceid,qprice,bestprice);
             if ( LP_Alicemaxprice == 0. )
                 return(retval);
-            if ( bits256_nonz(LP_Alicedestpubkey) != 0 && bits256_cmp(LP_Alicedestpubkey,Q.srchash) != 0 )
+            if ( bits256_nonz(LP_Alicedestpubkey) != 0 )
             {
-                printf("got reserved response from different node\n");
-                return(retval);
+                if (bits256_cmp(LP_Alicedestpubkey,Q.srchash) != 0 )
+                {
+                    printf("got reserved response from different node %s\n",bits256_str(str,Q.srchash));
+                    return(retval);
+                } else printf("got reserved response from destpubkey %s\n",bits256_str(str,Q.srchash));
             }
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && LP_alice_eligible() > 0 )
             {
