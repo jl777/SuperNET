@@ -1230,8 +1230,8 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
         return(-1);
     if ( strcmp(coin->smartaddr,vinaddr) != 0 )
     {
-        printf("basilisk_rawtx_gen mismatched %s vinaddr.%s != (%s)\n",coin->symbol,vinaddr,coin->smartaddr);
-        return(-1);
+        printf("???????????????????????? basilisk_rawtx_gen mismatched %s vinaddr.%s != (%s)\n",coin->symbol,vinaddr,coin->smartaddr);
+        //return(-1);
     }
     argjson = cJSON_CreateObject();
     jaddbits256(argjson,"utxotxid",rawtx->utxotxid);

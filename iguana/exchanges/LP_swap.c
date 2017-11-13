@@ -969,6 +969,7 @@ void basilisk_rawtx_setparms(char *name,uint32_t quoteid,struct basilisk_rawtx *
 #endif
     strcpy(rawtx->name,name);
     rawtx->coin = coin;
+    printf("set coin.%s %s -> %s\n",coin->symbol,coin->smartaddr,name);
     strcpy(rawtx->I.coinstr,coin->symbol);
     rawtx->I.numconfirms = numconfirms;
     if ( (rawtx->I.amount= satoshis) < LP_MIN_TXFEE )
@@ -1152,7 +1153,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->myfee.utxotxid = qp->feetxid, swap->myfee.utxovout = qp->feevout;
         LP_mark_spent(swap->alicecoin->symbol,qp->feetxid,qp->feevout);
     }
-    char str[65],str2[65],str3[65]; printf("IAMBOB.%d %s %s %s\n",swap->I.iambob,bits256_str(str,qp->txid),bits256_str(str2,qp->txid2),bits256_str(str3,qp->feetxid));
+    char str[65],str2[65],str3[65]; printf("IAMBOB.%d %s %s %s [%s %s]\n",swap->I.iambob,bits256_str(str,qp->txid),bits256_str(str2,qp->txid2),bits256_str(str3,qp->feetxid),swap->bobcoin->symbol,swap->alicecoin->symbol);
     return(swap);
 }
 
