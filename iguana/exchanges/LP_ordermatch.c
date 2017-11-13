@@ -21,15 +21,20 @@
 struct LP_quoteinfo LP_Alicequery;
 double LP_Alicemaxprice;
 uint32_t Alice_expiration;
-struct { uint64_t aliceid; double bestprice; } Bob_competition[512];
+struct { uint64_t aliceid; double bestprice; uint32_t starttime; } Bob_competition[512];
 
 double LP_bob_competition(uint64_t aliceid,double price)
 {
-    int32_t i,firsti = -1;
+    int32_t i,firsti = -1; uint32_t now = (uint32_t)time(NULL);
     for (i=0; i<sizeof(Bob_competition)/sizeof(*Bob_competition); i++)
     {
         if ( Bob_competition[i].aliceid == aliceid )
         {
+            if ( now > Bob_competition[i].starttime+LP_AUTOTRADE_TIMEOUT )
+            {
+                printf("aliceid.%llx expired\n",(long long)aliceid);
+                Bob_competition[i].bestprice = 0.;
+            }
             if ( price != 0. && (Bob_competition[i].bestprice == 0. || price < Bob_competition[i].bestprice) )
             {
                 Bob_competition[i].bestprice = price;
@@ -42,6 +47,7 @@ double LP_bob_competition(uint64_t aliceid,double price)
     }
     if ( firsti < 0 )
         firsti = (rand() % (sizeof(Bob_competition)/sizeof(*Bob_competition)));
+    Bob_competition[firsti].starttime = (uint32_t)time(NULL);
     Bob_competition[firsti].aliceid = aliceid;
     Bob_competition[firsti].bestprice = price;
     //printf("Bob competition aliceid.%llx %.8f\n",(long long)aliceid,price);
