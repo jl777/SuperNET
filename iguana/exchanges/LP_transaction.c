@@ -999,10 +999,40 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     return(n);
 }
 
+struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
+{
+    struct LP_address *ap; int32_t i,n; cJSON *array,*item; int64_t value; bits256 txid; int32_t vout,height;
+    LP_listunspent_issue(coin->symbol,coin->smartaddr,2);
+    if ( (ap= LP_addressfind(coin,coin->smartaddr)) == 0 )
+    {
+        printf("LP_createrawtransaction: cant find address data\n");
+        return(0);
+    }
+    if ( (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
+    {
+        ap->utxos = 0;
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                //{"tx_hash":"38d1b7c73015e1b1d6cb7fc314cae402a635b7d7ea294970ab857df8777a66f4","tx_pos":0,"height":577975,"value":238700}
+                item = jitem(array,i);
+                txid = jbits256(item,"tx_hash");
+                vout = juint(item,"tx_pos");
+                value = j64bits(item,"value");
+                height = jint(item,"height");
+                LP_address_utxoadd("withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
+            }
+        }
+        free_json(array);
+    }
+    return(ap);
+}
+
 char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,uint32_t locktime)
 {
     static void *ctx;
-    cJSON *txobj,*item,*array; uint8_t addrtype,rmd160[20],script[64],spendscript[256]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,n,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS]; struct LP_address *ap;
+    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[64],spendscript[256]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS]; struct LP_address *ap;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     *numvinsp = 0;
@@ -1047,31 +1077,9 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             return(0);
         }
     }
-    LP_listunspent_issue(coin->symbol,coin->smartaddr,2);
-    if ( (ap= LP_addressfind(coin,coin->smartaddr)) == 0 )
-    {
-        printf("LP_createrawtransaction: cant find address data\n");
+    if ( (ap= LP_address_utxo_reset(coin)) == 0 )
         return(0);
-    }
     memset(utxos,0,sizeof(utxos));
-    if ( (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
-    {
-        int32_t vout,height;
-        ap->utxos = 0;
-        if ( (n= cJSON_GetArraySize(array)) > 0 )
-        {
-            for (i=0; i<n; i++)
-            {
-                //{"tx_hash":"38d1b7c73015e1b1d6cb7fc314cae402a635b7d7ea294970ab857df8777a66f4","tx_pos":0,"height":577975,"value":238700}
-                item = jitem(array,i);
-                txid = jbits256(item,"tx_hash");
-                vout = juint(item,"tx_pos");
-                value = j64bits(item,"value");
-                height = jint(item,"height");
-                LP_address_utxoadd("withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
-            }
-        }
-    }
     if ( (numutxos= LP_address_utxo_ptrs(coin,0,utxos,max,ap,coin->smartaddr)) <= 0 )
     {
         printf("LP_createrawtransaction: address_utxo_ptrs %d, error\n",numutxos);
