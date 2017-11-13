@@ -132,6 +132,324 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
                  }*/
     return(fp);
 }
+/*if ( IAMLP != 0 && time(NULL) > lasthello+600 )
+ {
+ char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
+ allgood = 0;
+ if ( (retstr= issue_hello(myport)) != 0 )
+ {
+ if ( (retjson= cJSON_Parse(retstr)) != 0 )
+ {
+ if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"got hello") == 0 )
+ allgood = 1;
+ else printf("strange return.(%s)\n",jprint(retjson,0));
+ free_json(retjson);
+ } else printf("couldnt parse hello return.(%s)\n",retstr);
+ free(retstr);
+ } else printf("issue_hello NULL return\n");
+ lasthello = (uint32_t)time(NULL);
+ if ( allgood == 0 )
+ {
+ printf("RPC port got stuck, would have close bindsocket\n");
+ if ( 0 )
+ {
+ LP_bindsock = -1;
+ closesocket(sock);
+ LP_bindsock_reset++;
+ sleep(10);
+ printf("launch new rpcloop\n");
+ if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+ {
+ printf("error launching stats rpcloop for port.%u\n",myport);
+ exit(-1);
+ }
+ }
+ }
+ }*/
+/*
+ now = (uint32_t)time(NULL);
+ numpeers = LP_numpeers();
+ needpings = 0;
+ HASH_ITER(hh,LP_peerinfos,peer,tmp)
+ {
+ if ( peer->errors >= LP_MAXPEER_ERRORS )
+ {
+ if ( (rand() % 10000) == 0 )
+ {
+ peer->errors--;
+ if ( peer->errors < LP_MAXPEER_ERRORS )
+ peer->diduquery = 0;
+ }
+ if ( IAMLP == 0 )
+ continue;
+ }
+ if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (rand() % 100000) == 0 )
+ {
+ if ( strcmp(peer->ipaddr,myipaddr) != 0 )
+ {
+ nonz++;
+ //issue_LP_getpeers(peer->ipaddr,peer->port);
+ //LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+ //if ( peer->diduquery == 0 )
+ //    LP_peer_pricesquery(peer);
+ //LP_utxos_sync(peer);
+ needpings++;
+ }
+ peer->lastpeers = now;
+ }
+ if ( peer->needping != 0 )
+ {
+ peer->diduquery = now;
+ nonz++;
+ if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
+ free(retstr);
+ peer->needping = 0;
+ needpings++;
+ }
+ }*/
+
+#ifdef oldway
+int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
+{
+    struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t numpeers,i,n=0;
+    if ( (array= cJSON_Parse(retstr)) != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
+                {
+                    if ( (pushport= juint(item,"push")) == 0 )
+                        pushport = argport + 1;
+                    if ( (subport= juint(item,"sub")) == 0 )
+                        subport = argport + 2;
+                    argipbits = (uint32_t)calc_ipbits(argipaddr);
+                    if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
+                    {
+                        numpeers = LP_numpeers();
+                        if ( IAMLP != 0 || numpeers < LP_MIN_PEERS || (IAMLP == 0 && (rand() % LP_MAX_PEERS) > numpeers) )
+                            peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jint(item,"numpeers"),jint(item,"numutxos"),juint(item,"session"));
+                    }
+                    if ( peer != 0 )
+                    {
+                        peer->lasttime = now;
+                        if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers != n )
+                            peer->numpeers = n;
+                    }
+                }
+            }
+        }
+        free_json(array);
+    }
+    return(n);
+}
+void issue_LP_getpeers(char *destip,uint16_t destport)
+{
+    cJSON *reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","getpeers");
+    LP_peer_request(destip,destport,reqjson);
+    /*char url[512],*retstr;
+     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d",destip,destport,ipaddr,port,numpeers);
+     retstr = LP_issue_curl("getpeers",destip,port,url);
+     //printf("%s -> getpeers.(%s)\n",destip,retstr);
+     return(retstr);*/
+}
+
+void LP_peer_request(char *destip,uint16_t destport,cJSON *argjson)
+{
+    struct LP_peerinfo *peer; uint8_t *msg; int32_t msglen; uint32_t crc32;
+    peer = LP_peerfind((uint32_t)calc_ipbits(destip),destport);
+    msg = (void *)jprint(argjson,0);
+    msglen = (int32_t)strlen((char *)msg) + 1;
+    crc32 = calc_crc32(0,&msg[2],msglen - 2);
+    LP_queuesend(crc32,peer->pushsock,"","",msg,msglen);
+    free_json(argjson);
+}void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport)
+{
+    char *retstr; struct LP_peerinfo *peer,*tmp; bits256 zero; uint32_t now,flag = 0;
+    peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
+    if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,mypeer!=0?mypeer->numpeers:0)) != 0 )
+    {
+        //printf("got.(%s)\n",retstr);
+        now = (uint32_t)time(NULL);
+        LP_peersparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
+        free(retstr);
+        if ( IAMLP != 0 )
+        {
+            HASH_ITER(hh,LP_peerinfos,peer,tmp)
+            {
+                if ( peer->lasttime != now )
+                {
+                    printf("{%s:%u}.%d ",peer->ipaddr,peer->port,peer->lasttime - now);
+                    flag++;
+                    memset(&zero,0,sizeof(zero));
+                    if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->numpeers,peer->sessionid,0,zero)) != 0 )
+                        free(retstr);
+                }
+            }
+            if ( flag != 0 )
+                printf(" <- missing peers\n");
+        }
+    }
+}
+void issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,uint32_t sessionid,char *rmd160str,bits256 pub)
+{
+    cJSON *reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","notify");
+    jaddstr(reqjson,"coin",symbol);
+    jaddstr(reqjson,"coinaddr",coinaddr);
+    jaddbits256(reqjson,"txid",txid);
+    jaddnum(reqjson,"vout",vout);
+    jaddnum(reqjson,"ht",height);
+    jadd64bits(reqjson,"value",value);
+    LP_peer_request(destip,destport,reqjson);
+    /*char url[512],*retstr,str[65];
+     if ( (retstr= LP_isitme(destip,destport)) != 0 )
+     return(retstr);
+     sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&numpeers=%d&session=%u",destip,destport,ipaddr,port,numpeers,sessionid);
+     if ( rmd160str != 0 && bits256_nonz(pub) != 0 )
+     {
+     sprintf(url+strlen(url),"&rmd160=%s&pub=%s",rmd160str,bits256_str(str,pub));
+     //printf("SEND (%s)\n",url);
+     }
+     return(LP_issue_curl("notify",destip,destport,url));
+     //return(issue_curlt(url,LP_HTTP_TIMEOUT));*/
+}
+
+char *issue_hello(uint16_t port)
+{
+    char url[512];
+    sprintf(url,"http://127.0.0.1:%u/api/stats/hello",port);
+    //printf("getutxo.(%s)\n",url);
+    return(issue_curlt(url,600)); // might be starting a trade
+}
+
+
+void issue_LP_uitem(char *destip,uint16_t destport,char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t height,uint64_t value)
+{
+    cJSON *reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","uitem");
+    jaddstr(reqjson,"coin",symbol);
+    jaddstr(reqjson,"coinaddr",coinaddr);
+    jaddbits256(reqjson,"txid",txid);
+    jaddnum(reqjson,"vout",vout);
+    jaddnum(reqjson,"ht",height);
+    jadd64bits(reqjson,"value",value);
+    LP_peer_request(destip,destport,reqjson);
+    /*char url[512],*retstr,str[65];
+     if ( (retstr= LP_isitme(destip,destport)) != 0 )
+     return(retstr);
+     sprintf(url,"http://%s:%u/api/stats/uitem?coin=%s&coinaddr=%s&txid=%s&vout=%d&ht=%d&value=%llu",destip,destport,symbol,coinaddr,bits256_str(str,txid),vout,height,(long long)value);
+     retstr = LP_issue_curl("uitem",destip,destport,url);
+     //printf("uitem.(%s)\n",retstr);
+     return(retstr);*/
+}
+
+char *issue_LP_getprices(char *destip,uint16_t destport)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/getprices",destip,destport);
+    //printf("getutxo.(%s)\n",url);
+    return(LP_issue_curl("getprices",destip,destport,url));
+    //return(issue_curlt(url,LP_HTTP_TIMEOUT));
+}
+void issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
+{
+    cJSON *reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","listunspent");
+    jaddstr(reqjson,"coin",symbol);
+    jaddstr(reqjson,"address",coinaddr);
+    LP_peer_request(destip,destport,reqjson);
+    /*char url[512],*retstr;
+     sprintf(url,"http://%s:%u/api/stats/listunspent?coin=%s&address=%s",destip,destport,symbol,coinaddr);
+     retstr = LP_issue_curl("listunspent",destip,destport,url);
+     //printf("listunspent.(%s) -> (%s)\n",url,retstr);
+     return(retstr);*/
+}
+
+
+int32_t LP_utxos_sync(struct LP_peerinfo *peer)
+{
+    int32_t i,j,n=0,m,v,posted=0; bits256 txid; cJSON *array,*item,*item2,*array2; uint64_t total,total2; struct iguana_info *coin,*ctmp; char *retstr,*retstr2;
+    if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+        return(0);
+    HASH_ITER(hh,LP_coins,coin,ctmp)
+    {
+        if ( IAMLP == 0 && coin->inactive != 0 )
+            continue;
+        if ( coin->smartaddr[0] == 0 )
+            continue;
+        total = 0;
+        if ( (j= LP_listunspent_both(coin->symbol,coin->smartaddr,0)) == 0 )
+            continue;
+        if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    total += j64bits(item,"value");
+                }
+            }
+            if ( n > 0 && total > 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
+            {
+                //printf("UTXO sync.%d %s n.%d total %.8f -> %s (%s)\n",j,coin->symbol,n,dstr(total),peer->ipaddr,retstr);
+                total2 = 0;
+                if ( (array2= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (m= cJSON_GetArraySize(array2)) > 0 )
+                    {
+                        for (i=0; i<m; i++)
+                        {
+                            item2 = jitem(array2,i);
+                            total2 += j64bits(item2,"value");
+                        }
+                    }
+                    if ( total != total2 || n != m )
+                    {
+                        for (i=0; i<n; i++)
+                        {
+                            item = jitem(array,i);
+                            txid = jbits256(item,"tx_hash");
+                            v = jint(item,"tx_pos");
+                            for (j=0; j<m; j++)
+                            {
+                                if ( v == jint(jitem(array2,i),"tx_pos") && bits256_cmp(txid,jbits256(jitem(array2,i),"tx_hash")) == 0 )
+                                    break;
+                            }
+                            if ( j == m )
+                            {
+                                //printf("%s missing %s %s\n",peer->ipaddr,coin->symbol,jprint(item,0));
+                                issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"));
+                                posted++;
+                            }
+                        }
+                        if ( 0 && posted != 0 )
+                            printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
+                    } //else printf("%s matches %s\n",peer->ipaddr,coin->symbol);
+                    free_json(array2);
+                } else printf("parse error (%s)\n",retstr);
+                free(retstr);
+            }
+            else if ( n != 0 && total != 0 )
+            {
+                //printf("no response from %s for %s %s\n",peer->ipaddr,coin->symbol,coin->smartaddr);
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    txid = jbits256(item,"tx_hash");
+                    v = jint(item,"tx_pos");
+                    issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"));
+                }
+            }
+            free_json(array);
+        }
+    }
+    return(posted);
+}
 /*char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
  {
  char url[4096],str[65],str2[65],str3[65],*retstr; struct _LP_utxoinfo u; uint64_t val,val2;

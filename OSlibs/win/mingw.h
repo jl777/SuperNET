@@ -61,13 +61,18 @@
  * @remarks - #if (defined(_M_X64) || defined(__amd64__)) && defined(WIN32)
  *     is equivalent to #if defined(_M_X64) as _M_X64 is defined for MSVC only
  */
-#if !defined(_M_X64)
-struct pollfd {
-    SOCKET fd;        /* file descriptor */
-    short events;     /* requested events */
-    short revents;    /* returned events */
-};
-#endif
+
+
+// [Decker] pollfs is already defined in winsock2.h
+
+//#if !defined(_M_X64)
+//struct pollfd {
+    //SOCKET fd;        /* file descriptor */
+    //short events;     /* requested events */
+    //short revents;    /* returned events */
+//};
+//#endif
+
 
 #if defined(_M_X64)
 /*

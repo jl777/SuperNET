@@ -29,12 +29,13 @@ struct LP_priceinfo
     double relvals[LP_MAXPRICEINFOS];
     double myprices[LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS]; // autoprice
+    double fixedprices[LP_MAXPRICEINFOS]; // fixedprices
     double margins[LP_MAXPRICEINFOS];
     double offsets[LP_MAXPRICEINFOS];
     double factors[LP_MAXPRICEINFOS];
     //double maxprices[LP_MAXPRICEINFOS]; // autofill of base/rel
     //double relvols[LP_MAXPRICEINFOS];
-    FILE *fps[LP_MAXPRICEINFOS];
+    //FILE *fps[LP_MAXPRICEINFOS];
 } LP_priceinfos[LP_MAXPRICEINFOS];
 int32_t LP_numpriceinfos;
 
@@ -313,7 +314,7 @@ char *LP_prices()
     return(jprint(array,1));
 }
 
-void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
+/*void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
 {
     struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid,mismatch; char *base,*rel,*hexstr; double askprice; uint32_t now;
     now = (uint32_t)time(NULL);
@@ -381,7 +382,7 @@ void LP_peer_pricesquery(struct LP_peerinfo *peer)
     {
         //printf("%s needs ping\n",peer->ipaddr);
     }
-}
+}*/
 
 double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,int32_t vout)
 {
@@ -697,15 +698,14 @@ struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,d
 
 void LP_pubkeys_query()
 {
-    static uint32_t lasttime;
     uint8_t zeroes[20]; bits256 zero; cJSON *reqjson; struct LP_pubkeyinfo *pubp=0,*tmp;
     memset(zero.bytes,0,sizeof(zero));
     memset(zeroes,0,sizeof(zeroes));
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
     {
-        if ( memcmp(zeroes,pubp->rmd160,sizeof(pubp->rmd160)) == 0 && time(NULL) > lasttime+30 )
+        if ( memcmp(zeroes,pubp->rmd160,sizeof(pubp->rmd160)) == 0 && time(NULL) > pubp->lasttime+60 )
         {
-            lasttime = (uint32_t)time(NULL);
+            pubp->lasttime = (uint32_t)time(NULL);
             reqjson = cJSON_CreateObject();
             jaddstr(reqjson,"method","wantnotify");
             jaddbits256(reqjson,"pub",pubp->pubkey);
@@ -813,13 +813,17 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=n=0; i<numbids; i++)
     {
         jaddi(array,LP_orderbookjson(rel,bids[i]));
-        if ( suppress_prefetch == 0 && n < 7 && bids[i]->numutxos == 0 )
+        if ( suppress_prefetch == 0 && n < 3 && bids[i]->numutxos == 0 )
         {
             //printf("bid ping %s %s\n",rel,bids[i]->coinaddr);
             LP_address(relcoin,bids[i]->coinaddr);
             if ( relcoin->electrum == 0 )
+            {
                 LP_listunspent_issue(rel,bids[i]->coinaddr,0);
-            LP_listunspent_query(rel,bids[i]->coinaddr);
+            //else if ( (tmpjson= LP_listunspent(rel,bids[i]->coinaddr)) != 0 )
+            //    free_json(tmpjson);
+                LP_listunspent_query(rel,bids[i]->coinaddr);
+            }
             n++;
         }
         free(bids[i]);
@@ -833,13 +837,17 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     for (i=n=0; i<numasks; i++)
     {
         jaddi(array,LP_orderbookjson(base,asks[i]));
-        if ( suppress_prefetch == 0 && n < 7 && asks[i]->numutxos == 0 )
+        if ( suppress_prefetch == 0 && n < 3 && asks[i]->numutxos == 0 )
         {
             //printf("ask ping %s %s\n",base,asks[i]->coinaddr);
             LP_address(basecoin,asks[i]->coinaddr);
             if ( basecoin->electrum == 0 )
+            {
                 LP_listunspent_issue(base,asks[i]->coinaddr,0);
-            LP_listunspent_query(base,asks[i]->coinaddr);
+            //else if ( (tmpjson= LP_listunspent(base,asks[i]->coinaddr)) != 0 )
+            //    free_json(tmpjson);
+                LP_listunspent_query(base,asks[i]->coinaddr);
+            }
             n++;
         }
         free(asks[i]);
@@ -1033,10 +1041,10 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
     //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
     if ( LP_pricevalid(price) > 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
-        if ( (fp= basepp->fps[relpp->ind]) == 0 )
+        //if ( (fp= basepp->fps[relpp->ind]) == 0 )
         {
             LP_pricefname(fname,base,rel);
-            fp = basepp->fps[relpp->ind] = OS_appendfile(fname);
+            fp = OS_appendfile(fname); //basepp->fps[relpp->ind] =
         }
         if ( fp != 0 )
         {
@@ -1044,12 +1052,12 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             price64 = price * SATOSHIDEN;
             fwrite(&now,1,sizeof(now),fp);
             fwrite(&price64,1,sizeof(price64),fp);
-            fflush(fp);
+            fclose(fp);
         }
-        if ( (fp= relpp->fps[basepp->ind]) == 0 )
+        //if ( (fp= relpp->fps[basepp->ind]) == 0 )
         {
             sprintf(fname,"%s/PRICES/%s_%s",GLOBAL_DBDIR,rel,base);
-            fp = relpp->fps[basepp->ind] = OS_appendfile(fname);
+            fp = OS_appendfile(fname); //relpp->fps[basepp->ind] =
         }
         if ( fp != 0 )
         {
@@ -1057,7 +1065,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price)
             price64 = (1. / price) * SATOSHIDEN;
             fwrite(&now,1,sizeof(now),fp);
             fwrite(&price64,1,sizeof(price64),fp);
-            fflush(fp);
+            fclose(fp);
         }
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {

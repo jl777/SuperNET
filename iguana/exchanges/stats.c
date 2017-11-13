@@ -33,7 +33,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char 
 char *stats_validmethods[] =
 {
     "psock", "getprices", "listunspent", "notify", "getpeers", "uitem", // from issue_
-    "orderbook", "help", "getcoins", "pricearray", "balance"
+    "orderbook", "help", "getcoins", "pricearray", "balance", "tradestatus"
 };
 
 int32_t LP_valid_remotemethod(cJSON *argjson)
@@ -219,7 +219,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                 return(-1);
             }
         }
-        if ( listen(sock,512) != 0 )
+        if ( listen(sock,1) != 0 )
         {
             printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
             if ( sock >= 0 )
@@ -589,24 +589,31 @@ int32_t iguana_getheadersize(char *buf,int32_t recvlen)
 }
 
 uint16_t RPC_port;
-extern portable_mutex_t LP_commandmutex;
+extern portable_mutex_t LP_commandmutex,LP_gcmutex;
+extern struct rpcrequest_info *LP_garbage_collector;
 
 void LP_rpc_processreq(void *_ptr)
 {
-    uint64_t arg64 = *(uint64_t *)_ptr;
+    static uint32_t spawned,maxspawned;
     char filetype[128],content_type[128];
     int32_t recvlen,flag,postflag=0,contentlen,remains,sock,numsent,jsonflag=0,hdrsize,len;
-    char helpname[512],remoteaddr[64],*buf,*retstr,*space,*jsonbuf;
-    uint32_t ipbits,i,size = 32*IGUANA_MAXPACKETSIZE + 512;
-    ipbits = (arg64 >> 32);
+    char helpname[512],remoteaddr[64],*buf,*retstr,*space,*jsonbuf; struct rpcrequest_info *req = _ptr;
+    uint32_t ipbits,i,size = IGUANA_MAXPACKETSIZE + 512;
+    ipbits = req->ipbits;;
     expand_ipbits(remoteaddr,ipbits);
-    sock = (arg64 & 0xffffffff);
+    sock = req->sock;
     recvlen = flag = 0;
     retstr = 0;
     space = calloc(1,size);
     jsonbuf = calloc(1,size);
     remains = size-1;
     buf = jsonbuf;
+    spawned++;
+    if ( spawned > maxspawned )
+    {
+        printf("max rpc threads spawned and alive %d <- %d\n",maxspawned,spawned);
+        maxspawned = spawned;
+    }
     while ( remains > 0 )
     {
         //printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
@@ -651,8 +658,7 @@ void LP_rpc_processreq(void *_ptr)
             else
             {
                 usleep(10000);
-                //printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
-                //retstr = iguana_rpcparse(space,size,&postflag,jsonbuf);
+                printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
                 if ( flag == 0 )
                     break;
             }
@@ -663,9 +669,7 @@ void LP_rpc_processreq(void *_ptr)
     {
         jsonflag = postflag = 0;
         portable_mutex_lock(&LP_commandmutex);
-        retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,RPC_port);
-        //if ( strcmp("5.9.253.195",remoteaddr) == 0 )
-        //    printf("RPC.(%s)%s\n",jsonbuf,retstr);
+        retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,req->port);
         portable_mutex_unlock(&LP_commandmutex);
         if ( filetype[0] != 0 )
         {
@@ -720,7 +724,7 @@ void LP_rpc_processreq(void *_ptr)
                 remains -= numsent;
                 i += numsent;
                 if ( remains > 0 )
-                    printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
+                    printf("iguana sent.%d remains.%d of recvlen.%d (%s)\n",numsent,remains,recvlen,jsonbuf);
             }
         }
         if ( retstr != space)
@@ -728,67 +732,97 @@ void LP_rpc_processreq(void *_ptr)
     }
     free(space);
     free(jsonbuf);
+    closesocket(sock);
+    portable_mutex_lock(&LP_gcmutex);
+    DL_APPEND(LP_garbage_collector,req);
+    spawned--;
+    portable_mutex_unlock(&LP_gcmutex);
 }
+
+extern int32_t IAMLP;
+//int32_t LP_bindsock_reset,LP_bindsock = -1;
 
 void stats_rpcloop(void *args)
 {
-    static uint32_t counter;
-    uint16_t port; int32_t sock,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits; uint64_t arg64; void *arg64ptr;
+    uint16_t port; int32_t retval,sock=-1,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
-    RPC_port = port;
-    /*while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
+    printf("Start stats_rpcloop.%u\n",port);
+    localhostbits = (uint32_t)calc_ipbits("127.0.0.1");
+    //initial_bindsock_reset = LP_bindsock_reset;
+    while ( 1 )//LP_bindsock_reset == initial_bindsock_reset )
     {
-        //if ( coin->MAXPEERS == 1 )
-        //    break;
-        //exit(-1);
-        sleep(3);
-    }
-    printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);*/
-    while ( 1 )
-    {
+        //printf("LP_bindsock.%d\n",LP_bindsock);
         if ( bindsock < 0 )
         {
             while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
                 usleep(10000);
-            if ( counter++ < 1 )
+#ifndef _WIN32
+            //fcntl(bindsock, F_SETFL, fcntl(bindsock, F_GETFL, 0) | O_NONBLOCK);
+#endif
+            //if ( counter++ < 1 )
                 printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
         }
+        //printf("after sock.%d\n",sock);
         clilen = sizeof(cli_addr);
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
+//#ifdef _WIN32
         if ( sock < 0 )
         {
-            printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
-            close(bindsock);
+            printf("iguana_rpcloop ERROR on accept port.%u usock.%d errno %d %s\n",port,sock,errno,strerror(errno));
+            closesocket(bindsock);
             bindsock = -1;
             continue;
         }
+/*#else
+        if ( sock < 0 )
+        {
+            //fprintf(stderr,".");
+            if ( IAMLP == 0 )
+                usleep(50000);
+            else usleep(2500);
+            continue;
+        }
+#endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
-        arg64 = ((uint64_t)ipbits << 32) | (sock & 0xffffffff);
-        arg64ptr = malloc(sizeof(arg64));
-        memcpy(arg64ptr,&arg64,sizeof(arg64));
-        if ( 1 )
+        if ( port == RPC_port && ipbits != localhostbits )
         {
-            LP_rpc_processreq((void *)&arg64);
-            free(arg64ptr);
-            //char remoteaddr[64];
-            //expand_ipbits(remoteaddr,ipbits);
-            //printf("finished RPC request from (%s) %x\n",remoteaddr,ipbits);
+            closesocket(sock);
+            continue;
         }
-        else if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_rpc_processreq,arg64ptr) != 0 )
+        req = calloc(1,sizeof(*req));
+        req->sock = sock;
+        req->ipbits = ipbits;
+        req->port = port;
+        LP_rpc_processreq(req);
+continue;
+        // this leads to cant open file errors
+        if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
-            printf("error launching rpc handler on port %d\n",port);
-            // yes, small leak per command
-        }
-        close(bindsock);
-        closesocket(sock);
-        bindsock = iguana_socket(1,"0.0.0.0",port);
+            printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
+            closesocket(sock);
+            sock = -1;
+            portable_mutex_lock(&LP_gcmutex);
+            DL_FOREACH_SAFE(LP_garbage_collector,req2,rtmp)
+            {
+                DL_DELETE(LP_garbage_collector,req2);
+                free(req2);
+            }
+            portable_mutex_unlock(&LP_gcmutex);
+            if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
+            {
+                printf("error2 launching rpc handler on port %d, retval.%d\n",port,retval);
+                LP_rpc_processreq(req);
+            }
+       }
     }
+    printf("i got killed\n");
 }
 
 #ifndef FROM_MARKETMAKER
 
 portable_mutex_t LP_commandmutex;
+uint16_t LP_RPCPORT;
 
 void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
@@ -1100,6 +1134,7 @@ char *stats_update(FILE *logfp,char *destdir,char *statefname,char *komodofname)
     return(jprint(retjson,1));
 }
 
+#ifndef FROM_PRIVATEBET
 int main(int argc, const char * argv[])
 {
     struct tai T; uint32_t timestamp; struct DEXstats_disp prices[365]; int32_t i,n,seconds,leftdatenum; FILE *fp,*logfp; char *filestr,*retstr,*statefname,logfname[512],komodofile[512]; uint16_t port = LP_RPCPORT;
@@ -1149,4 +1184,5 @@ int main(int argc, const char * argv[])
     }
     return 0;
 }
+#endif
 #endif

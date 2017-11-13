@@ -450,6 +450,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
 {
     cJSON *item,*array; int32_t i;
     item = cJSON_CreateObject();
+    jaddnum(item,"expiration",rswap->expiration);// - INSTANTDEX_LOCKTIME*2);
     jaddnum(item,"tradeid",rswap->tradeid);
     jaddnum(item,"requestid",rswap->requestid);
     jaddnum(item,"quoteid",rswap->quoteid);
@@ -476,7 +477,10 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jadd(item,"values",array);
     jaddstr(item,"result","success");
     if ( rswap->finishedflag != 0 )
+    {
         jaddstr(item,"status","finished");
+        jaddnum(item,"finishtime",rswap->finishtime);
+    }
     else jaddstr(item,"status","pending");
     jaddbits256(item,"bobdeposit",rswap->txids[BASILISK_BOBDEPOSIT]);
     jaddbits256(item,"alicepayment",rswap->txids[BASILISK_ALICEPAYMENT]);
@@ -657,6 +661,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
     {
         if ( (fileobj= cJSON_Parse(fstr)) != 0 )
         {
+            rswap->finishtime = juint(fileobj,"finishtime");
             rswap->origfinishedflag = rswap->finishedflag = 1;
             free_json(fileobj);
         }
@@ -839,7 +844,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     srcAdest = srcBdest = destAdest = destBdest = 0;
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,rswap.src) != 0 || strcmp(rswap.alicecoin,rswap.dest) != 0 )
     {
-        printf("legacy DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
+        //printf("legacy DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
         return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
     }
     alice = LP_coinfind(rswap.alicecoin);
@@ -1115,6 +1120,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
             jaddstr(item,"method","tradestatus");
+            jaddnum(item,"finishtime",rswap.finishtime);
+            jaddstr(item,"gui",G.gui);
             itemstr = jprint(item,0);
             fprintf(fp,"%s\n",itemstr);
             LP_tradecommand_log(item);
@@ -1130,7 +1137,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
 
 char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
 {
-    uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i,j,count=0;
+    uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS],Btotal,Ktotal; int32_t i,j,count=0;
     portable_mutex_lock(&LP_swaplistmutex);
     memset(ridqids,0,sizeof(ridqids));
     memset(KMDtotals,0,sizeof(KMDtotals));
@@ -1222,8 +1229,13 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
 
 char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
 {
-    char *liststr,*retstr = 0; cJSON *retjson,*array,*item; int32_t i,n;
-    if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
+    cJSON *item; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS];
+    memset(KMDtotals,0,sizeof(KMDtotals));
+    memset(BTCtotals,0,sizeof(BTCtotals));
+    if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+        return(jprint(item,1));
+    else return(clonestr("{\"error\":\"cant find requestid-quoteid\"}"));
+    /*if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
     {
         //printf("swapentry.(%s)\n",liststr);
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
@@ -1245,7 +1257,7 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
         }
         free(liststr);
     }
-    return(retstr);
+    return(retstr);*/
 }
 
 extern struct LP_quoteinfo LP_Alicequery;

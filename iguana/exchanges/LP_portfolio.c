@@ -222,7 +222,7 @@ struct LP_autoprice_ref
 int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
 {
     //curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"MNZ\",\"rel\":\"KMD\",\"offset\":0.1,\"refbase\":\"KMD\",\refrel\":\"BTC\",\"factor\":15000,\"margin\":0.01}"
-    struct LP_priceinfo *basepp,*relpp; int32_t i; char *refbase,*refrel; double minprice,margin,offset,factor;
+    struct LP_priceinfo *basepp,*relpp; int32_t i; char *refbase="",*refrel=""; double minprice,margin,offset,factor,fixedprice;
     //printf("autoprice.(%s %s) %s\n",base,rel,jprint(argjson,0));
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
@@ -232,12 +232,19 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
         margin = jdouble(argjson,"margin");
         offset = jdouble(argjson,"offset");
         factor = jdouble(argjson,"factor");
+        fixedprice = jdouble(argjson,"fixed");
+        basepp->fixedprices[relpp->ind] = fixedprice;
         basepp->minprices[relpp->ind] = minprice;
         basepp->margins[relpp->ind] = margin;
         basepp->offsets[relpp->ind] = offset;
         basepp->factors[relpp->ind] = factor;
-        if ( (refbase= jstr(argjson,"refbase")) != 0 && (refrel= jstr(argjson,"refrel")) != 0 )
+        if ( fixedprice > SMALLVAL || ((refbase= jstr(argjson,"refbase")) != 0 && (refrel= jstr(argjson,"refrel")) != 0) )
         {
+            if ( fixedprice > SMALLVAL )
+            {
+                refbase = base;
+                refrel = rel;
+            }
             for (i=0; i<num_LP_autorefs; i++)
             {
                 if ( strcmp(base,LP_autorefs[i].base) == 0 && strcmp(rel,LP_autorefs[i].rel) == 0 )
@@ -254,7 +261,7 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
                 safecopy(LP_autorefs[num_LP_autorefs].refrel,refrel,sizeof(LP_autorefs[num_LP_autorefs].refrel));
                 safecopy(LP_autorefs[num_LP_autorefs].base,base,sizeof(LP_autorefs[num_LP_autorefs].base));
                 safecopy(LP_autorefs[num_LP_autorefs].rel,rel,sizeof(LP_autorefs[num_LP_autorefs].rel));
-                printf("%d Using ref %s/%s for %s/%s factor %.8f, offset %.8f, margin %.8f\n",num_LP_autorefs,refbase,refrel,base,rel,factor,offset,margin);
+                printf("%d Using ref %s/%s for %s/%s factor %.8f, offset %.8f, margin %.8f fixed %.8f\n",num_LP_autorefs,refbase,refrel,base,rel,factor,offset,margin,fixedprice);
                 num_LP_autorefs++;
             }
         }
@@ -267,9 +274,16 @@ int32_t LP_autoprice(char *base,char *rel,cJSON *argjson)
 void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP_priceinfo *relpp,double price,char *refbase,char *refrel)
 {
     static uint32_t lasttime;
-    double margin,minprice,newprice,oppomargin,factor,offset; double bid,ask; int32_t changed;
+    double margin,minprice,newprice,oppomargin,fixedprice,factor,offset; double bid,ask; int32_t changed;
     margin = basepp->margins[relpp->ind];
     oppomargin = relpp->margins[basepp->ind];
+    if ( (fixedprice= basepp->fixedprices[relpp->ind]) > SMALLVAL )
+    {
+        LP_mypriceset(&changed,relpp->symbol,basepp->symbol,fixedprice);
+        //printf("autoprice FIXED %s/%s <- %.8f\n",basepp->symbol,relpp->symbol,fixedprice);
+        LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,relpp->symbol,basepp->symbol,fixedprice);
+        return;
+    }
     if ( margin != 0. || oppomargin != 0. )
     {
         offset = basepp->offsets[relpp->ind];
@@ -293,8 +307,6 @@ void LP_autopriceset(void *ctx,int32_t dir,struct LP_priceinfo *basepp,struct LP
             if ( dir > 0 )
                 newprice = (1. / price) * (1. + margin);
             else newprice = (price * (1. + margin));
-            
-            //newprice = 1. / (price * (1. - margin));
             if ( (minprice= basepp->minprices[relpp->ind]) == 0. || price >= minprice )
             {
                 LP_mypriceset(&changed,relpp->symbol,basepp->symbol,newprice);
@@ -468,7 +480,10 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         basepp = LP_priceinfofind(LP_autorefs[i].base);
         relpp = LP_priceinfofind(LP_autorefs[i].rel);
         if ( basepp != 0 && relpp != 0 )
-            LP_autopriceset(ctx,1,basepp,relpp,0,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
+        {
+            //printf("check ref-autoprice %s/%s %f %f\n",LP_autorefs[i].refbase,LP_autorefs[i].refrel,relpp->fixedprices[basepp->ind],basepp->fixedprices[relpp->ind]);
+            LP_autopriceset(ctx,1,basepp,relpp,0.,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
+        }
     }
 }
 
@@ -593,10 +608,12 @@ void prices_loop(void *ctx)
     prices_loop_stats.threshold = 91000.;
     while ( 1 )
     {
+        //printf("prices loop autoprices.%d autorefs.%d\n",LP_autoprices,num_LP_autorefs);
         LP_millistats_update(&prices_loop_stats);
         LP_tradebots_timeslice(ctx);
         if ( (btcpp= LP_priceinfofind("BTC")) == 0 )
         {
+            printf("prices_loop BTC not in LP_priceinfofind\n");
             sleep(60);
             continue;
         }
@@ -630,7 +647,7 @@ void prices_loop(void *ctx)
             }
             free(retstr);
         }
-        sleep(60);
+        sleep(30);
     }
 }
 

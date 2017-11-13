@@ -23,9 +23,12 @@ char *portstrs[][3] = { { "BTC", "8332" }, { "KMD", "7771" } };
 uint16_t LP_rpcport(char *symbol)
 {
     int32_t i;
-    for (i=0; i<sizeof(portstrs)/sizeof(*portstrs); i++)
-        if ( strcmp(portstrs[i][0],symbol) == 0 )
-            return(atoi(portstrs[i][1]));
+    if ( symbol != 0 && symbol[0] != 0 )
+    {
+        for (i=0; i<sizeof(portstrs)/sizeof(*portstrs); i++)
+            if ( strcmp(portstrs[i][0],symbol) == 0 )
+                return(atoi(portstrs[i][1]));
+    }
     return(0);
 }
 
@@ -198,7 +201,9 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     if ( coin->userpass[0] != 0 )
     {
         jaddnum(item,"height",LP_getheight(coin));
-        balance = LP_RTsmartbalance(coin);
+        if ( coin->electrum != 0 )
+            balance = LP_unspents_load(coin->symbol,coin->smartaddr);
+        else balance = LP_RTsmartbalance(coin);
         jaddnum(item,"balance",dstr(balance));
         jaddnum(item,"KMDvalue",dstr(LP_KMDvalue(coin,balance)));
     }
@@ -231,12 +236,15 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 struct iguana_info *LP_conflicts_find(struct iguana_info *refcoin)
 {
     struct iguana_info *coin=0,*tmp;
-    HASH_ITER(hh,LP_coins,coin,tmp)
+    if ( refcoin != 0 )
     {
-        if ( coin->inactive != 0 || coin->electrum != 0 || coin == refcoin )
-            continue;
-        if ( strcmp(coin->serverport,refcoin->serverport) == 0 )
-            break;
+        HASH_ITER(hh,LP_coins,coin,tmp)
+        {
+            if ( coin->inactive != 0 || coin->electrum != 0 || coin == refcoin )
+                continue;
+            if ( strcmp(coin->serverport,refcoin->serverport) == 0 )
+                break;
+        }
     }
     return(coin);
 }
@@ -254,31 +262,37 @@ cJSON *LP_coinsjson(int32_t showwif)
 char *LP_getcoin(char *symbol)
 {
     int32_t numenabled,numdisabled; struct iguana_info *coin,*tmp; cJSON *item=0,*retjson;
-    numenabled = numdisabled = 0;
     retjson = cJSON_CreateObject();
-    HASH_ITER(hh,LP_coins,coin,tmp)
+    if ( symbol != 0 && symbol[0] != 0 )
     {
-        if ( strcmp(symbol,coin->symbol) == 0 )
-            item = LP_coinjson(coin,0);
-        if ( coin->inactive == 0 )
-            numenabled++;
-        else numdisabled++;
+        numenabled = numdisabled = 0;
+        HASH_ITER(hh,LP_coins,coin,tmp)
+        {
+            if ( strcmp(symbol,coin->symbol) == 0 )
+                item = LP_coinjson(coin,0);
+            if ( coin->inactive == 0 )
+                numenabled++;
+            else numdisabled++;
+        }
+        jaddstr(retjson,"result","success");
+        jaddnum(retjson,"enabled",numenabled);
+        jaddnum(retjson,"disabled",numdisabled);
+        if ( item == 0 )
+            item = cJSON_CreateObject();
+        jadd(retjson,"coin",item);
     }
-    jaddstr(retjson,"result","success");
-    jaddnum(retjson,"enabled",numenabled);
-    jaddnum(retjson,"disabled",numdisabled);
-    if ( item == 0 )
-        item = cJSON_CreateObject();
-    jadd(retjson,"coin",item);
     return(jprint(retjson,1));
 }
 
 struct iguana_info *LP_coinsearch(char *symbol)
 {
-    struct iguana_info *coin;
-    portable_mutex_lock(&LP_coinmutex);
-    HASH_FIND(hh,LP_coins,symbol,strlen(symbol),coin);
-    portable_mutex_unlock(&LP_coinmutex);
+    struct iguana_info *coin = 0;
+    if ( symbol != 0 && symbol[0] != 0 )
+    {
+        portable_mutex_lock(&LP_coinmutex);
+        HASH_FIND(hh,LP_coins,symbol,strlen(symbol),coin);
+        portable_mutex_unlock(&LP_coinmutex);
+    }
     return(coin);
 }
 

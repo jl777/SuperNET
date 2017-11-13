@@ -869,7 +869,7 @@ void LP_main(void *ptr)
         LP_profitratio += profitmargin;
         if ( (port= juint(argjson,"rpcport")) < 1000 )
             port = LP_RPCPORT;
-        LPinit(port,LP_RPCPORT+1,LP_RPCPORT+2,LP_RPCPORT+3,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+        LPinit(port,LP_RPCPORT+10,LP_RPCPORT+20,LP_RPCPORT+30,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 
@@ -907,7 +907,7 @@ int main(int argc, const char * argv[])
         } //else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
         while ( (1) )
-            sleep(1);
+            sleep(100000);
         profitmargin = jdouble(retjson,"profitmargin");
         minask = jdouble(retjson,"minask");
         maxbid = jdouble(retjson,"maxbid");

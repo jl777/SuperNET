@@ -21,6 +21,10 @@
 #ifndef LP_INCLUDE_H
 #define LP_INCLUDE_H
 
+#define LP_MAJOR_VERSION "0"
+#define LP_MINOR_VERSION "1"
+#define LP_BUILD_NUMBER "14336"
+
 #ifdef FROM_JS
 #include <emscripten.h>
 #define sleep(x) emscripten_usleep((x) * 1000000)
@@ -34,15 +38,23 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #endif
 //#define LP_STRICTPEERS
 
-#define LP_BARTERDEX_VERSION 0
+#define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 8
 
+#define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
-#define LP_AUTOTRADE_TIMEOUT 20
-#define ELECTRUM_TIMEOUT 10
+#define LP_AUTOTRADE_TIMEOUT 40
+#define ELECTRUM_TIMEOUT 7
 #define LP_ELECTRUM_KEEPALIVE 60
 #define LP_ELECTRUM_MAXERRORS 777
 #define LP_MEMPOOL_TIMEINCR 10
+
+#define LP_MIN_PEERS 8
+#define LP_MAX_PEERS 32
+
+#define LP_MAXDESIRED_UTXOS 128
+#define LP_MINDESIRED_UTXOS 32
+#define LP_DUSTCOMBINE_THRESHOLD 1000000
 
 // RTmetrics
 #define LP_RTMETRICS_TOPGROUP 1.01
@@ -52,7 +64,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_COMMAND_RECVSOCK NN_PULL
 
 #define DPOW_MIN_ASSETCHAIN_SIGS 11
-#define LP_ENCRYPTED_MAXSIZE (4096 + 2 + crypto_box_NONCEBYTES + crypto_box_ZEROBYTES)
+#define LP_ENCRYPTED_MAXSIZE (16384 + 2 + crypto_box_NONCEBYTES + crypto_box_ZEROBYTES)
 
 #define LP_MAXPUBKEY_ERRORS 10
 #define PSOCK_KEEPALIVE 3600
@@ -156,7 +168,7 @@ struct basilisk_rawtxinfo
 {
     char destaddr[64],coinstr[16];
     bits256 txid,signedtxid,actualtxid;
-    uint64_t amount,change,inputsum;
+    int64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
     uint32_t locktime,crcs[2];
     uint8_t addrtype,pubkey33[33],rmd160[20];
@@ -165,7 +177,7 @@ struct basilisk_rawtxinfo
 struct basilisk_request
 {
     uint32_t requestid,timestamp,quoteid,quotetime; // 0 to 15
-    uint64_t srcamount,unused; // 16 to 31
+    int64_t srcamount,unused; // 16 to 31
     bits256 srchash; // 32 to 63
     bits256 desthash;
     char src[8],dest[8];
@@ -192,7 +204,7 @@ struct basilisk_swapinfo
     bits256 myhash,otherhash,orderhash;
     uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,putduration,callduration;
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed,bobspent,alicespent,pad,aliceistrusted,bobistrusted,otheristrusted,otherstrust,alicemaxconfirms,bobmaxconfirms;
-    uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance,Atxfee,Btxfee;
+    int64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance,Atxfee,Btxfee;
     
     bits256 myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
     uint32_t crcs_mypub[2],crcs_mychoosei[2],crcs_myprivs[2],crcs_mypriv[2];
@@ -226,18 +238,26 @@ struct LP_swap_remember
     bits256 pubA0,pubB0,pubB1,privAm,privBn,paymentspent,Apaymentspent,depositspent,myprivs[2],txids[sizeof(txnames)/sizeof(*txnames)];
     uint64_t Atxfee,Btxfee,srcamount,destamount,aliceid;
     int64_t values[sizeof(txnames)/sizeof(*txnames)];
-    uint32_t tradeid,requestid,quoteid,plocktime,dlocktime,expiration,state,otherstate;
+    uint32_t finishtime,tradeid,requestid,quoteid,plocktime,dlocktime,expiration,state,otherstate;
     int32_t iambob,finishedflag,origfinishedflag,Predeemlen,Dredeemlen,sentflags[sizeof(txnames)/sizeof(*txnames)];
     uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],Predeemscript[1024],Dredeemscript[1024],pubkey33[33],other33[33];
     char src[64],dest[64],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[64],bobcoin[64],*txbytes[sizeof(txnames)/sizeof(*txnames)];
 };
 
-struct LP_outpoint { bits256 spendtxid; uint64_t value,interest; int32_t spendvini,spendheight; char coinaddr[64]; };
+struct LP_outpoint
+{
+    bits256 spendtxid;
+    uint64_t value,interest;
+    int32_t spendvini,spendheight;
+    char coinaddr[64];
+};
 
 struct LP_transaction
 {
     UT_hash_handle hh;
-    bits256 txid; int32_t height,numvouts,numvins,len; //uint32_t timestamp;
+    bits256 txid;
+    long fpos;
+    int32_t height,numvouts,numvins,len,SPV;
     uint8_t *serialized;
     struct LP_outpoint outpoints[];
 };
@@ -247,8 +267,8 @@ struct iguana_info
     UT_hash_handle hh;
     portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
-    int32_t longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
+    int32_t numutxos,longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
+    uint32_t loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
     char symbol[16],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
@@ -256,6 +276,7 @@ struct iguana_info
     void *electrum; void *ctx;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33],zcash;
+    bits256 lastprivkey; uint32_t lastprivkeytime; int32_t privkeydepth;
     bits256 cachedtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
     bits256 cachedmerkle; int32_t cachedmerkleheight;
 };
@@ -306,8 +327,8 @@ struct LP_peerinfo
 {
     UT_hash_handle hh;
     uint64_t ip_port;
-    uint32_t ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
-    int32_t pushsock,subsock;
+    uint32_t recvtime,numrecv,ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
+    int32_t pushsock,subsock,isLP;
     uint16_t port;
     char ipaddr[64];
 };
@@ -350,9 +371,22 @@ struct LP_pubkeyinfo
     bits256 pubkey;
     float matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
     //uint32_t timestamps[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
-    uint32_t timestamp,numerrors;
+    uint32_t timestamp,numerrors,lasttime;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
+};
+
+struct electrum_info
+{
+    queue_t sendQ,pendingQ;
+    portable_mutex_t mutex,txmutex;
+    struct electrum_info *prev;
+    int32_t bufsize,sock,*heightp,numerrors;
+    struct iguana_info *coin;
+    uint32_t stratumid,lasttime,keepalive,pending,*heighttimep;
+    char ipaddr[64],symbol[16];
+    uint16_t port;
+    uint8_t buf[];
 };
 
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
@@ -385,12 +419,19 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
+void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid,uint32_t quoteid);
+cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len);
+cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len);
 uint64_t LP_RTsmartbalance(struct iguana_info *coin);
 int32_t LP_getheight(struct iguana_info *coin);
 int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg);
 struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
+int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height);
+int32_t _LP_utxos_remove(bits256 txid,int32_t vout);
+int32_t LP_utxos_remove(bits256 txid,int32_t vout);
+struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,int32_t height,int32_t numvouts,int32_t numvins);
 void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid);
 uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen);
 struct LP_address *_LP_address(struct iguana_info *coin,char *coinaddr);
@@ -402,6 +443,9 @@ struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coina
 int32_t LP_destaddr(char *destaddr,cJSON *item);
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration);
 char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey);
+uint32_t LP_heighttime(char *symbol,int32_t height);
+uint64_t LP_unspents_load(char *symbol,char *addr);
+int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 struct LP_transaction *LP_transactionfind(struct iguana_info *coin,bits256 txid);
 cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJSON *txobj);
 int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
@@ -411,11 +455,14 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid);
 uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance);
 int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 void LP_smartutxos_push(struct iguana_info *coin);
+void LP_cacheptrs_init(struct iguana_info *coin);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);
 cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 void LP_postutxos(char *symbol,char *coinaddr);
 int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag);
 uint16_t LP_randpeer(char *destip);
+char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired);
+char *LP_unspents_filestr(char *symbol,char *addr);
 cJSON *bitcoin_data2json(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,bits256 *txidp,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,uint8_t *serialized,int32_t len,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash);
 //int32_t LP_butxo_findeither(bits256 txid,int32_t vout);
 cJSON *LP_listunspent(char *symbol,char *coinaddr);
