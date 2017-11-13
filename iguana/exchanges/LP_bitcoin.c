@@ -3628,7 +3628,7 @@ cJSON *bitcoin_data2json(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t 
         txobj = cJSON_CreateObject();
         jaddstr(txobj,"error","couldnt decode transaction");
     }
-    //printf("msgtx.(%s)\n",jprint(txobj,0));
+    printf("msgtx.(%s)\n",jprint(txobj,0));
     if ( n != len )
     {
         int32_t i;
