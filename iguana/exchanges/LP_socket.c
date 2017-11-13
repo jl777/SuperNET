@@ -578,6 +578,8 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     cJSON *retjson=0; char *retstr; struct LP_address *ap; struct iguana_info *coin; int32_t updatedflag,height,usecache=1;
     if ( (coin= LP_coinfind(symbol)) == 0 )
         return(0);
+    if ( strcmp(addr,INSTANTDEX_KMD) == 0 )
+        return(cJSON_Parse("[]"));
     if ( ep == 0 || ep->heightp == 0 )
         height = coin->longestchain;
     else height = *(ep->heightp);
@@ -701,7 +703,7 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
         }
         hexjson = electrum_hasharg(symbol,ep,&hexjson,"blockchain.transaction.get",txid,ELECTRUM_TIMEOUT);
         hexstr = jprint(hexjson,0);
-        if ( strlen(hexstr) > 60000 )
+        if ( strlen(hexstr) > 100000 )
         {
             static uint32_t counter;
             if ( counter++ < 3 )
