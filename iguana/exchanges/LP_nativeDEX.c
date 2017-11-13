@@ -856,8 +856,8 @@ void LP_reserved_msgs(void *ignore)
         if ( ignore == 0 )
             break;
         if ( nonz != 0 )
-            usleep(3000);
-        else usleep(25000);
+            usleep(1000);
+        else usleep(5000);
     }
 }
 
