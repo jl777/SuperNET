@@ -3366,6 +3366,7 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
             printf("SEGWIT transaction\n");
         }
     }
+    printf("segwit.%d \n",segwitflag);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
     if ( rwflag == 0 )
     {
