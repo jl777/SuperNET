@@ -347,7 +347,7 @@ struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };
 
 struct basilisk_swap
 {
-    void *ctx; struct iguana_info bobcoin,alicecoin; struct LP_utxoinfo *utxo;
+    void *ctx; struct iguana_info *bobcoin,*alicecoin; struct LP_utxoinfo *utxo;
     struct LP_endpoint N;
     void (*balancingtrade)(struct basilisk_swap *swap,int32_t iambob);
     int32_t subsock,pushsock,connected,aliceunconf,depositunconf,paymentunconf;

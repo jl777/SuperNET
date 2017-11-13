@@ -620,9 +620,9 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
                 txfee = LP_MIN_TXFEE;
             else
             {
-                if ( strcmp(rawtx->coin->symbol,swap->bobcoin.symbol) == 0 )
+                if ( strcmp(rawtx->coin->symbol,swap->bobcoin->symbol) == 0 )
                     txfee = swap->I.Btxfee;
-                else if ( strcmp(rawtx->coin->symbol,swap->alicecoin.symbol) == 0 )
+                else if ( strcmp(rawtx->coin->symbol,swap->alicecoin->symbol) == 0 )
                     txfee = swap->I.Atxfee;
                 else txfee = LP_MIN_TXFEE;
             }
@@ -783,12 +783,12 @@ void LP_bobloop(void *_swap)
                     printf("error bobscripts payment\n");
                 else
                 {
-                    if ( strcmp(swap->alicecoin.symbol,"BTC") == 0 )
+                    if ( strcmp(swap->alicecoin->symbol,"BTC") == 0 )
                         m = 0;
                     else m = swap->I.aliceconfirms;
-                    while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m ) // sync with alice
+                    while ( (n= LP_numconfirms(swap->alicecoin->symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m ) // sync with alice
                     {
-                        char str[65];printf("%d wait for alicepayment %s numconfs.%d %s %s\n",n,swap->alicepayment.I.destaddr,m,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
+                        char str[65];printf("%d wait for alicepayment %s numconfs.%d %s %s\n",n,swap->alicepayment.I.destaddr,m,swap->alicecoin->symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                         sleep(10);
                     }
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
@@ -801,7 +801,7 @@ void LP_bobloop(void *_swap)
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->bobcoin.symbol,swap->alicecoin.symbol)*2,30);
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->bobcoin->symbol,swap->alicecoin->symbol)*2,30);
                 }
             }
         }
@@ -840,12 +840,12 @@ void LP_aliceloop(void *_swap)
                 printf("error sending alicepayment\n");
             else
             {
-                if ( strcmp(swap->alicecoin.symbol,"BTC") == 0 )
+                if ( strcmp(swap->alicecoin->symbol,"BTC") == 0 )
                     m = 0;
                 else m = swap->I.aliceconfirms;
-                while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m )
+                while ( (n= LP_numconfirms(swap->alicecoin->symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m )
                 {
-                    char str[65];printf("%d wait for alicepayment %s numconfs.%d %s %s\n",n,swap->alicepayment.I.destaddr,m,swap->alicecoin.symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
+                    char str[65];printf("%d wait for alicepayment %s numconfs.%d %s %s\n",n,swap->alicepayment.I.destaddr,m,swap->alicecoin->symbol,bits256_str(str,swap->alicepayment.I.signedtxid));
                     sleep(10);
                 }
                 swap->sentflag = 1;
@@ -853,21 +853,21 @@ void LP_aliceloop(void *_swap)
                     printf("error waiting for bobpayment\n");
                 else
                 {
-                    while ( (n= LP_numconfirms(swap->bobcoin.symbol,swap->bobpayment.I.destaddr,swap->bobpayment.I.signedtxid,0,1)) < swap->I.bobconfirms )
+                    while ( (n= LP_numconfirms(swap->bobcoin->symbol,swap->bobpayment.I.destaddr,swap->bobpayment.I.signedtxid,0,1)) < swap->I.bobconfirms )
                     {
-                        char str[65];printf("%d wait for bobpayment %s numconfs.%d %s %s\n",n,swap->bobpayment.I.destaddr,swap->I.bobconfirms,swap->bobcoin.symbol,bits256_str(str,swap->bobpayment.I.signedtxid));
+                        char str[65];printf("%d wait for bobpayment %s numconfs.%d %s %s\n",n,swap->bobpayment.I.destaddr,swap->I.bobconfirms,swap->bobcoin->symbol,bits256_str(str,swap->bobpayment.I.signedtxid));
                         sleep(10);
                     }
                     /*if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x20000,data,maxlen,&swap->alicespend,0x40000,0) == 0 )
                         printf("error sending alicespend\n");
-                    while ( (n= LP_numconfirms(swap->alicecoin.symbol,swap->alicespend.I.destaddr,swap->alicespend.I.signedtxid,0,1)) < swap->I.aliceconfirms )
+                    while ( (n= LP_numconfirms(swap->alicecoin->symbol,swap->alicespend.I.destaddr,swap->alicespend.I.signedtxid,0,1)) < swap->I.aliceconfirms )
                     {
-                        char str[65];printf("%d wait for alicespend %s numconfs.%d %s %s\n",n,swap->alicespend.I.destaddr,swap->I.aliceconfirms,swap->bobcoin.symbol,bits256_str(str,swap->alicespend.I.signedtxid));
+                        char str[65];printf("%d wait for alicespend %s numconfs.%d %s %s\n",n,swap->alicespend.I.destaddr,swap->I.aliceconfirms,swap->bobcoin->symbol,bits256_str(str,swap->alicespend.I.signedtxid));
                         sleep(LP_SWAPSTEP_TIMEOUT);
                     }*/
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->bobcoin.symbol,swap->alicecoin.symbol)*2,30);
+                    LP_swapwait(swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->bobcoin->symbol,swap->alicecoin->symbol)*2,30);
                 }
             }
         }
@@ -1009,7 +1009,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         printf("bitcoin_swapinit %s Btxfee %.8f rejected\n",swap->I.req.src,dstr(swap->I.Btxfee));
         return(0);
     }
-    swap->I.putduration = swap->I.callduration = LP_atomic_locktime(swap->bobcoin.symbol,swap->alicecoin.symbol);
+    swap->I.putduration = swap->I.callduration = LP_atomic_locktime(swap->bobcoin->symbol,swap->alicecoin->symbol);
     if ( optionduration < 0 )
         swap->I.putduration -= optionduration;
     else if ( optionduration > 0 )
@@ -1058,27 +1058,27 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         return(0);
     }
     if ( (coin= LP_coinfind(swap->I.alicestr)) != 0 )
-        swap->alicecoin = *coin;
+        swap->alicecoin = coin;
     else
     {
-        printf("missing bobcoin.%p or missing alicecoin.%p src.%p dest.%p\n",&swap->bobcoin,&swap->alicecoin,LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
+        printf("missing bobcoin->%p or missing alicecoin->%p src.%p dest.%p\n",swap->bobcoin,swap->alicecoin,LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
         free(swap);
         return(0);
     }
     if ( (coin= LP_coinfind(swap->I.bobstr)) != 0 )
-        swap->bobcoin = *coin;
+        swap->bobcoin = coin;
     else
     {
-        printf("missing bobcoin.%p or missing alicecoin.%p src.%p dest.%p\n",&swap->bobcoin,&swap->alicecoin,LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
+        printf("missing bobcoin->%p or missing alicecoin->%p src.%p dest.%p\n",swap->bobcoin,swap->alicecoin,LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
         free(swap);
         return(0);
     }
-    if ( strcmp("BTC",swap->bobcoin.symbol) == 0 )
+    if ( strcmp("BTC",swap->bobcoin->symbol) == 0 )
     {
         swap->I.bobconfirms = (1 + sqrt(dstr(swap->I.bobsatoshis) * .1));
         swap->I.aliceconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
     }
-    else if ( strcmp("BTC",swap->alicecoin.symbol) == 0 )
+    else if ( strcmp("BTC",swap->alicecoin->symbol) == 0 )
     {
         swap->I.aliceconfirms = (1 + sqrt(dstr(swap->I.alicesatoshis) * .1));
         swap->I.bobconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
@@ -1088,17 +1088,17 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
         swap->I.aliceconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
     }
-    if ( swap->bobcoin.isassetchain != 0 )
+    if ( swap->bobcoin->isassetchain != 0 )
         swap->I.bobconfirms = 1;
-    if ( swap->alicecoin.isassetchain != 0 )
+    if ( swap->alicecoin->isassetchain != 0 )
         swap->I.aliceconfirms = 1;
-    if ( swap->bobcoin.userconfirms > 0 )
-        swap->I.bobconfirms = swap->bobcoin.userconfirms;
-    if ( swap->alicecoin.userconfirms > 0 )
-        swap->I.aliceconfirms = swap->alicecoin.userconfirms;
-    if ( (swap->I.bobmaxconfirms= swap->bobcoin.maxconfirms) == 0 )
+    if ( swap->bobcoin->userconfirms > 0 )
+        swap->I.bobconfirms = swap->bobcoin->userconfirms;
+    if ( swap->alicecoin->userconfirms > 0 )
+        swap->I.aliceconfirms = swap->alicecoin->userconfirms;
+    if ( (swap->I.bobmaxconfirms= swap->bobcoin->maxconfirms) == 0 )
         swap->I.bobmaxconfirms = BASILISK_DEFAULT_MAXCONFIRMS;
-    if ( (swap->I.alicemaxconfirms= swap->alicecoin.maxconfirms) == 0 )
+    if ( (swap->I.alicemaxconfirms= swap->alicecoin->maxconfirms) == 0 )
         swap->I.alicemaxconfirms = BASILISK_DEFAULT_MAXCONFIRMS;
     if ( swap->I.bobconfirms > swap->I.bobmaxconfirms )
         swap->I.bobconfirms = swap->I.bobmaxconfirms;
@@ -1106,51 +1106,51 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.aliceconfirms = swap->I.alicemaxconfirms;
     swap->I.bobconfirms *= !swap->I.bobistrusted;
     swap->I.aliceconfirms *= !swap->I.aliceistrusted;
-    printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< use smart address, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,swap->bobcoin.taddr,swap->alicecoin.taddr);
+    printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< use smart address, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,swap->bobcoin->taddr,swap->alicecoin->taddr);
     if ( swap->I.iambob != 0 )
     {
-        basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,&swap->bobcoin,0,0,LP_DEXFEE(swap->I.bobsatoshis) + 0*swap->bobcoin.txfee,0,0,jumblrflag);
-        basilisk_rawtx_setparms("otherfee",swap->I.req.quoteid,&swap->otherfee,&swap->alicecoin,0,0,LP_DEXFEE(swap->I.alicesatoshis) + 0*swap->alicecoin.txfee,0,0,jumblrflag);
+        basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,swap->bobcoin,0,0,LP_DEXFEE(swap->I.bobsatoshis) + 0*swap->bobcoin->txfee,0,0,jumblrflag);
+        basilisk_rawtx_setparms("otherfee",swap->I.req.quoteid,&swap->otherfee,swap->alicecoin,0,0,LP_DEXFEE(swap->I.alicesatoshis) + 0*swap->alicecoin->txfee,0,0,jumblrflag);
         bobpub33 = pubkey33;
     }
     else
     {
-        basilisk_rawtx_setparms("otherfee",swap->I.req.quoteid,&swap->otherfee,&swap->bobcoin,0,0,LP_DEXFEE(swap->I.bobsatoshis) + 0*swap->bobcoin.txfee,0,0,jumblrflag);
-        basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,&swap->alicecoin,0,0,LP_DEXFEE(swap->I.alicesatoshis) + 0*swap->alicecoin.txfee,0,0,jumblrflag);
+        basilisk_rawtx_setparms("otherfee",swap->I.req.quoteid,&swap->otherfee,swap->bobcoin,0,0,LP_DEXFEE(swap->I.bobsatoshis) + 0*swap->bobcoin->txfee,0,0,jumblrflag);
+        basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,swap->alicecoin,0,0,LP_DEXFEE(swap->I.alicesatoshis) + 0*swap->alicecoin->txfee,0,0,jumblrflag);
         alicepub33 = pubkey33;
     }
     swap->myfee.I.locktime = swap->I.started + 1;
     swap->otherfee.I.locktime = swap->I.started + 1;
-    basilisk_rawtx_setparms("bobdeposit",swap->I.req.quoteid,&swap->bobdeposit,&swap->bobcoin,swap->I.bobconfirms,0,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis) + swap->bobcoin.txfee,4,0,jumblrflag);
-    basilisk_rawtx_setparms("bobrefund",swap->I.req.quoteid,&swap->bobrefund,&swap->bobcoin,1,4,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis),1,bobpub33,jumblrflag);
+    basilisk_rawtx_setparms("bobdeposit",swap->I.req.quoteid,&swap->bobdeposit,swap->bobcoin,swap->I.bobconfirms,0,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis) + swap->bobcoin->txfee,4,0,jumblrflag);
+    basilisk_rawtx_setparms("bobrefund",swap->I.req.quoteid,&swap->bobrefund,swap->bobcoin,1,4,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis),1,bobpub33,jumblrflag);
     swap->bobrefund.I.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms("aliceclaim",swap->I.req.quoteid,&swap->aliceclaim,&swap->bobcoin,1,4,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis),1,alicepub33,jumblrflag);
+    basilisk_rawtx_setparms("aliceclaim",swap->I.req.quoteid,&swap->aliceclaim,swap->bobcoin,1,4,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis),1,alicepub33,jumblrflag);
     swap->aliceclaim.I.suppress_pubkeys = 1;
     swap->aliceclaim.I.locktime = swap->I.started + swap->I.putduration+swap->I.callduration + 1;
     
-    basilisk_rawtx_setparms("bobpayment",swap->I.req.quoteid,&swap->bobpayment,&swap->bobcoin,swap->I.bobconfirms,0,swap->I.bobsatoshis + swap->bobcoin.txfee,3,0,jumblrflag);
-    basilisk_rawtx_setparms("alicespend",swap->I.req.quoteid,&swap->alicespend,&swap->bobcoin,swap->I.bobconfirms,3,swap->I.bobsatoshis,1,alicepub33,jumblrflag);
+    basilisk_rawtx_setparms("bobpayment",swap->I.req.quoteid,&swap->bobpayment,swap->bobcoin,swap->I.bobconfirms,0,swap->I.bobsatoshis + swap->bobcoin->txfee,3,0,jumblrflag);
+    basilisk_rawtx_setparms("alicespend",swap->I.req.quoteid,&swap->alicespend,swap->bobcoin,swap->I.bobconfirms,3,swap->I.bobsatoshis,1,alicepub33,jumblrflag);
     swap->alicespend.I.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms("bobreclaim",swap->I.req.quoteid,&swap->bobreclaim,&swap->bobcoin,swap->I.bobconfirms,3,swap->I.bobsatoshis,1,bobpub33,jumblrflag);
+    basilisk_rawtx_setparms("bobreclaim",swap->I.req.quoteid,&swap->bobreclaim,swap->bobcoin,swap->I.bobconfirms,3,swap->I.bobsatoshis,1,bobpub33,jumblrflag);
     swap->bobreclaim.I.suppress_pubkeys = 1;
     swap->bobreclaim.I.locktime = swap->I.started + swap->I.putduration + 1;
-    basilisk_rawtx_setparms("alicepayment",swap->I.req.quoteid,&swap->alicepayment,&swap->alicecoin,swap->I.aliceconfirms,0,swap->I.alicesatoshis + swap->alicecoin.txfee,2,0,jumblrflag);
-    basilisk_rawtx_setparms("bobspend",swap->I.req.quoteid,&swap->bobspend,&swap->alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,bobpub33,jumblrflag);
+    basilisk_rawtx_setparms("alicepayment",swap->I.req.quoteid,&swap->alicepayment,swap->alicecoin,swap->I.aliceconfirms,0,swap->I.alicesatoshis + swap->alicecoin->txfee,2,0,jumblrflag);
+    basilisk_rawtx_setparms("bobspend",swap->I.req.quoteid,&swap->bobspend,swap->alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,bobpub33,jumblrflag);
     swap->bobspend.I.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms("alicereclaim",swap->I.req.quoteid,&swap->alicereclaim,&swap->alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,alicepub33,jumblrflag);
+    basilisk_rawtx_setparms("alicereclaim",swap->I.req.quoteid,&swap->alicereclaim,swap->alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,alicepub33,jumblrflag);
     swap->alicereclaim.I.suppress_pubkeys = 1;
     swap->bobpayment.utxotxid = qp->txid, swap->bobpayment.utxovout = qp->vout;
     swap->bobdeposit.utxotxid = qp->txid2, swap->bobdeposit.utxovout = qp->vout2;
     swap->alicepayment.utxotxid = qp->desttxid, swap->alicepayment.utxovout = qp->destvout;
-    LP_mark_spent(swap->bobcoin.symbol,qp->txid,qp->vout);
-    LP_mark_spent(swap->bobcoin.symbol,qp->txid2,qp->vout2);
-    LP_mark_spent(swap->alicecoin.symbol,qp->desttxid,qp->destvout);
+    LP_mark_spent(swap->bobcoin->symbol,qp->txid,qp->vout);
+    LP_mark_spent(swap->bobcoin->symbol,qp->txid2,qp->vout2);
+    LP_mark_spent(swap->alicecoin->symbol,qp->desttxid,qp->destvout);
     if ( swap->I.iambob != 0 )
         swap->otherfee.utxotxid = qp->feetxid, swap->otherfee.utxovout = qp->feevout;
     else
     {
         swap->myfee.utxotxid = qp->feetxid, swap->myfee.utxovout = qp->feevout;
-        LP_mark_spent(swap->alicecoin.symbol,qp->feetxid,qp->feevout);
+        LP_mark_spent(swap->alicecoin->symbol,qp->feetxid,qp->feevout);
     }
     char str[65],str2[65],str3[65]; printf("IAMBOB.%d %s %s %s\n",swap->I.iambob,bits256_str(str,qp->txid),bits256_str(str2,qp->txid2),bits256_str(str3,qp->feetxid));
     return(swap);

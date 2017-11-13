@@ -47,10 +47,10 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,"\",\"txid\":\"%s\"",bits256_str(str,bits256_doublesha256(0,rawtx->txbytes,rawtx->I.datalen)));
             if ( rawtx == &swap->bobdeposit || rawtx == &swap->bobpayment )
             {
-                LP_swap_coinaddr(&swap->bobcoin,coinaddr,0,rawtx->txbytes,rawtx->I.datalen,0);
+                LP_swap_coinaddr(swap->bobcoin,coinaddr,0,rawtx->txbytes,rawtx->I.datalen,0);
                 if ( coinaddr[0] != 0 )
                 {
-                    LP_importaddress(swap->bobcoin.symbol,coinaddr);
+                    LP_importaddress(swap->bobcoin->symbol,coinaddr);
                     if ( rawtx == &swap->bobdeposit )
                         safecopy(swap->Bdeposit,coinaddr,sizeof(swap->Bdeposit));
                     else safecopy(swap->Bpayment,coinaddr,sizeof(swap->Bpayment));
@@ -63,16 +63,16 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"%s\":\"%s\"","Bpayment",swap->Bpayment);
         fprintf(fp,",\"expiration\":%u",swap->I.expiration);
         fprintf(fp,",\"iambob\":%d",swap->I.iambob);
-        fprintf(fp,",\"bobcoin\":\"%s\"",swap->bobcoin.symbol);
-        fprintf(fp,",\"alicecoin\":\"%s\"",swap->alicecoin.symbol);
+        fprintf(fp,",\"bobcoin\":\"%s\"",swap->bobcoin->symbol);
+        fprintf(fp,",\"alicecoin\":\"%s\"",swap->alicecoin->symbol);
         fprintf(fp,",\"lock\":%u",locktime);
         fprintf(fp,",\"amount\":%.8f",dstr(rawtx->I.amount));
         if ( bits256_nonz(triggertxid) != 0 )
             fprintf(fp,",\"trigger\":\"%s\"",bits256_str(str,triggertxid));
         if ( bits256_nonz(swap->I.pubAm) != 0 && bits256_nonz(swap->I.pubBn) != 0 )
         {
-            basilisk_alicescript(redeemscript,&len,script,0,coinaddr,swap->alicecoin.taddr,swap->alicecoin.p2shtype,swap->I.pubAm,swap->I.pubBn);
-            LP_importaddress(swap->alicecoin.symbol,coinaddr);
+            basilisk_alicescript(redeemscript,&len,script,0,coinaddr,swap->alicecoin->taddr,swap->alicecoin->p2shtype,swap->I.pubAm,swap->I.pubBn);
+            LP_importaddress(swap->alicecoin->symbol,coinaddr);
             fprintf(fp,",\"Apayment\":\"%s\"",coinaddr);
         }
         if ( rawtx->I.redeemlen > 0 )
