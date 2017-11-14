@@ -574,11 +574,18 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
                             printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
+                            buf = 0;
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
                                 ptr->lasttime = now;
                                 sendsock = ptr->sendsock;
                                 break;
+                            }
+                            else if ( buf != 0 )
+                            {
+                                nn_freemsg(buf);
+                                buf = 0;
+                                size = 0;
                             }
                         }
                     }
@@ -606,12 +613,12 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                                     sendsock = ptr->publicsock;
                                     break;
                                 }
-                                else
-                                {
-                                    nn_freemsg(buf);
-                                    buf = 0;
-                                    size = 0;
-                                }
+                            }
+                            if ( buf != 0 )
+                            {
+                                nn_freemsg(buf);
+                                buf = 0;
+                                size = 0;
                             }
                         }
                     }

@@ -17,8 +17,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// single utxo allocations, reject result, latency
+// single utxo allocations alice, reject result, latency
 // alice waiting for bestprice
+//if ( G.LP_pendingswaps != 0 )
+//return(-1);
 // bot safe to exit?
 //
 // BCH signing
@@ -313,8 +315,9 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                     }
                     //printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
                 }
-                free_json(argjson);
             }
+            if ( argjson != 0 )
+                free_json(argjson);
         }
     } //else printf("DUPLICATE.(%s)\n",(char *)ptr);
     portable_mutex_unlock(&LP_commandmutex);
@@ -336,6 +339,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             pfd.events = NN_POLLIN;
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
+            ptr = 0;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 methodstr[0] = 0;
@@ -385,9 +389,9 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free(str);
                     }
                 }
-                if ( ptr != 0 )
-                    nn_freemsg(ptr), ptr = 0;
             }
+            if ( ptr != 0 )
+                nn_freemsg(ptr), ptr = 0;
         }
     }
     return(nonz);
