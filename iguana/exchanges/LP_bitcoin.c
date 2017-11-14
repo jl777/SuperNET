@@ -3331,7 +3331,7 @@ int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgj
 
 int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash)
 {
-    int32_t i,j,n,len = 0,extraused=0; uint32_t tmp,segitems; uint8_t segwitflag=0,spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
+    int32_t i,j,n,segtxlen,len = 0,extraused=0; uint32_t tmp,segitems; uint8_t *segtx,segwitflag=0,spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
     
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( json != 0 )
@@ -3436,6 +3436,11 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
     }
     if ( segwitflag != 0 )
     {
+        segtxlen = len - 2 + sizeof(msg->lock_time);
+        segtx = malloc(segtxlen);
+        memcpy(segtx,serialized,sizeof(int32_t));
+        memcpy(&segtx[sizeof(int32_t)],&serialized[sizeof(int32_t)+2],len-2-sizeof(int32_t));
+        
         printf("tx_out %d, tx_in %d %02x %02x %02x\n",msg->tx_out,msg->tx_in,serialized[len],serialized[len+1],serialized[len+2]);
         if ( rwflag != 0 )
             printf("unsupported rwflag.%d when segwitflag\n",rwflag);
@@ -3457,7 +3462,8 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
                 }
                 printf("), ");
             }
-            bits256 txid = bits256_doublesha256(0,serialized,len+sizeof(msg->lock_time));
+            memcpy(&segtx[segtxlen-sizeof(int32_t)],&serialized[len],sizeof(int32_t));
+            bits256 txid = bits256_doublesha256(0,segtx,segtxlen);
             char str[65]; printf("witness sum %d vs max.%d txid %s\n",len,maxsize,bits256_str(str,txid));
         }
     }
