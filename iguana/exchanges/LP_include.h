@@ -23,7 +23,7 @@
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "14336"
+#define LP_BUILD_NUMBER "14414"
 
 #ifdef FROM_JS
 #include <emscripten.h>
@@ -43,7 +43,8 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
-#define LP_AUTOTRADE_TIMEOUT 60
+#define LP_AUTOTRADE_TIMEOUT 30
+#define LP_RESERVETIME (LP_AUTOTRADE_TIMEOUT * 2)
 #define ELECTRUM_TIMEOUT 7
 #define LP_ELECTRUM_KEEPALIVE 60
 #define LP_ELECTRUM_MAXERRORS 777
@@ -103,7 +104,6 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_RPCPORT 7783
 
 #define LP_PROPAGATION_SLACK 100 // txid ordering is not enforced, so getting extra recent txid
-#define LP_RESERVETIME 60
 #define LP_AVETXSIZE 256
 #define LP_CACHEDURATION 60
 #define BASILISK_DEFAULT_NUMCONFIRMS 1
@@ -288,7 +288,7 @@ struct LP_utxobob { struct _LP_utxoinfo utxo,deposit; };
 
 struct LP_utxoalice { struct _LP_utxoinfo utxo,fee; };
 
-struct LP_utxoswap { bits256 otherpubkey; void *swap; uint64_t satoshis; };
+struct LP_utxoswap { bits256 otherpubkey; uint64_t satoshis; };
 
 struct LP_utxoinfo
 {
@@ -308,6 +308,7 @@ struct LP_address_utxo
     struct LP_address_utxo *next,*prev;
     struct _LP_utxoinfo U;
     int32_t SPV,spendheight;
+    uint32_t timestamp;
 };
 
 struct LP_address
@@ -346,7 +347,7 @@ struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };
 
 struct basilisk_swap
 {
-    void *ctx; struct LP_utxoinfo *utxo;
+    void *ctx; //struct LP_utxoinfo *utxo;
     struct LP_endpoint N;
     void (*balancingtrade)(struct basilisk_swap *swap,int32_t iambob);
     int32_t subsock,pushsock,connected,aliceunconf,depositunconf,paymentunconf;
@@ -410,7 +411,7 @@ uint64_t LP_value_extract(cJSON *obj,int32_t addinterest);
 int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
 int64_t LP_komodo_interest(bits256 txid,int64_t value);
-void LP_availableset(struct LP_utxoinfo *utxo);
+void LP_availableset(bits256 txid,int32_t vout);
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2);
 int32_t LP_pullsock_check(void *ctx,char **retstrp,char *myipaddr,int32_t pubsock,int32_t pullsock);
 void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedflag);
@@ -452,7 +453,7 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
 int32_t LP_numpeers();
 char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid);
 uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance);
-int32_t LP_address_utxoadd(char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
+int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 void LP_smartutxos_push(struct iguana_info *coin);
 void LP_cacheptrs_init(struct iguana_info *coin);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);
