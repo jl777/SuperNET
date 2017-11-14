@@ -243,7 +243,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
     portable_mutex_lock(&LP_utxomutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
-        //char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d spendheight.%d allocated.%p\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout,up->spendheight,LP_allocated(up->U.txid,up->U.vout));
+        char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d spendheight.%d allocated.%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout,up->spendheight,LP_allocated(up->U.txid,up->U.vout));
         if ( up->spendheight <= 0 && LP_RTmetrics_avoidtxid(up->U.txid) < 0 )
         {
             if ( coin->electrum == 0 )
@@ -349,11 +349,11 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
                 flag = 1;
                 if ( height > 0 && up->U.height != height )
                     up->U.height = height, flag |= 2;
-                if ( up->spendheight != spendheight )
+                if ( spendheight > 0 && up->spendheight != spendheight )
                     up->spendheight = spendheight, flag |= 4;
                 if ( value != 0 && up->U.value == 0 && up->U.value != value )
                     up->U.value = value, flag |= 8;
-                up->timestamp = timestamp;
+                //up->timestamp = timestamp;
                 //char str[65]; printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
                 break;
             }
@@ -374,7 +374,7 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
             up->U.height = height;
             up->U.value = value;
             up->spendheight = spendheight;
-            up->timestamp = timestamp;
+            //up->timestamp = timestamp;
             retval = 1;
             if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->SPV > 0 )
             {
@@ -402,7 +402,13 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     }
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
     {
-        //ap->utxos = 0;
+        DL_FOREACH_SAFE(ap->utxos,up,tmp)
+        {
+            portable_mutex_lock(&coin->addrmutex);
+            DL_DELETE(ap->utxos,up);
+            portable_mutex_unlock(&coin->addrmutex);
+            free(up);
+        }
         now = (uint32_t)time(NULL);
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -418,15 +424,6 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
             }
         }
         free_json(array);
-        DL_FOREACH_SAFE(ap->utxos,up,tmp)
-        {
-            char str[65]; 
-            if ( up->timestamp < now && up->spendheight <= 0 )
-            {
-                printf("purge %s/v%d as it wasnt in listunspent\n",bits256_str(str,up->U.txid),up->U.vout);
-                up->spendheight = 1;
-            } else printf("%s/v%d %.8f avail\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value));
-        }
     }
     return(ap);
 }

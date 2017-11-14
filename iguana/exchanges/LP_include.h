@@ -308,7 +308,7 @@ struct LP_address_utxo
     struct LP_address_utxo *next,*prev;
     struct _LP_utxoinfo U;
     int32_t SPV,spendheight;
-    uint32_t timestamp;
+    //uint32_t timestamp;
 };
 
 struct LP_address
