@@ -3198,6 +3198,7 @@ cJSON *iguana_voutjson(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,struct igu
             jadd(json,"scriptPubKey",skey);
         }
     }
+    free(vp);
     return(json);
 }
 
