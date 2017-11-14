@@ -3364,7 +3364,7 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
         if ( serialized[len] == 0x00 && (segwitflag= serialized[len+1]) == 0x01 )
         {
             len += 2;
-            printf("SEGWIT transaction\n");
+            //printf("SEGWIT transaction\n");
         }
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
@@ -3441,7 +3441,7 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
         memcpy(segtx,serialized,sizeof(int32_t));
         memcpy(&segtx[sizeof(int32_t)],&serialized[sizeof(int32_t)+2],len-2-sizeof(int32_t));
         
-        printf("tx_out %d, tx_in %d %02x %02x %02x\n",msg->tx_out,msg->tx_in,serialized[len],serialized[len+1],serialized[len+2]);
+        //printf("tx_out %d, tx_in %d %02x %02x %02x\n",msg->tx_out,msg->tx_in,serialized[len],serialized[len+1],serialized[len+2]);
         if ( rwflag != 0 )
             printf("unsupported rwflag.%d when segwitflag\n",rwflag);
         else
