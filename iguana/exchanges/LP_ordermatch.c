@@ -863,7 +863,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 price += (r * range) / 100.;
                 bestprice = LP_bob_competition(&counter,aliceid,price,0);
                 printf(">>>>>>>>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f, bestprice %.8f counter.%d\n",ask,qprice,r,range,price,bestprice,counter);
-                if ( counter > 2 || price > bestprice*1.1 )
+                if ( counter > 10 )//2 || price > bestprice*1.1 )
                     return(retval);
             } else return(retval);
             //printf("recalc.%d address.(%s/%s) price %.8f request.(%s)\n",recalc,Q.coinaddr,coin->smartaddr,price,jprint(argjson,0));
@@ -948,8 +948,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 sleep(1);
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
-                //LP_reserved_msg(1,Q.srccoin,Q.destcoin,zero,msg);
-                LP_reserved_msg(0,Q.srccoin,Q.destcoin,zero,msg);
+                LP_reserved_msg(1,Q.srccoin,Q.destcoin,zero,msg);
+                //LP_reserved_msg(0,Q.srccoin,Q.destcoin,zero,msg);
                 //LP_broadcast_message(LP_mypubsock,Q.srccoin,Q.destcoin,Q.desthash,jprint(retjson,0));
                 free_json(retjson);
                 return(retval);
