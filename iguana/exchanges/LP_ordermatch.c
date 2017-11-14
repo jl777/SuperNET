@@ -911,6 +911,11 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 return(retval);
             }
         }
+        else if ( strcmp(method,"connect") == 0 )
+        {
+            if ( bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 || bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 )
+                return(retval);
+        }
         if ( strcmp(Q.coinaddr,coin->smartaddr) != 0 )
         {
             printf("bob is patching Q.coinaddr %s mismatch != %s\n",Q.coinaddr,coin->smartaddr);
@@ -958,9 +963,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         else if ( strcmp(method,"connect") == 0 ) // bob
         {
             retval = 4;
-            if ( bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 || bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 )
-                return(retval);
-            else if ( LP_reservation_check(Q.txid,Q.vout,Q.desthash) == 0 && LP_reservation_check(Q.txid2,Q.vout2,Q.desthash) == 0  )
+            if ( LP_reservation_check(Q.txid,Q.vout,Q.desthash) == 0 && LP_reservation_check(Q.txid2,Q.vout2,Q.desthash) == 0  )
             {
                 LP_connectstartbob(ctx,pubsock,argjson,Q.srccoin,Q.destcoin,qprice,&Q);
                 return(retval);
