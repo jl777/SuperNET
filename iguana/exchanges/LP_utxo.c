@@ -52,7 +52,7 @@ int32_t _LP_inuse_delete(bits256 txid,int32_t vout)
             if ( LP_inuse[ind].ind != ind )
                 printf("ind.%d of %d: mismatched ind.%d\n",ind,LP_numinuse,LP_inuse[ind].ind);
     }
-    char str[65]; printf("_LP_inuse_delete cant find %s/v%d\n",bits256_str(str,txid),vout);
+    //char str[65]; printf("_LP_inuse_delete cant find %s/v%d\n",bits256_str(str,txid),vout);
     return(-1);
 }
 
@@ -285,7 +285,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                 utxos[n++] = up;
                 if ( n >= max )
                     break;
-            } else printf("LP_allocated skip\n");
+            } //else printf("LP_allocated skip\n");
         }
         else
         {

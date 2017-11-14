@@ -309,10 +309,13 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
             if ( i != mini && (up= utxos[i]) != 0 )
             {
                 dist = (up->U.value - targetval);
-                if ( dist > 0 && (double)dist/bestdist < 1.1 && up->U.height < bestheight )
+                if ( dist > 0 && up->U.height < bestheight )
                 {
-                    replacei = i;
-                    bestheight = up->U.height;
+                    if ( (double)dist/bestdist < 1.1 )
+                    {
+                        replacei = i;
+                        bestheight = up->U.height;
+                    } else printf("almost ratio %.3f dist %.8f vs best %.8f, ht %d vs best ht %d\n",(double)dist/bestdist,dstr(dist),dstr(bestdist),up->U.height,bestheight);
                 }
             }
         }
@@ -397,8 +400,9 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
             {
                 int32_t i;
                 for (i=0; i<m; i++)
-                    printf("%.8f ",dstr(utxos[i]->U.value));
-                printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s\n",dstr(targetval),relvolume,price,dstr(txfee),coinaddr);
+                    if ( utxos[i]->U.value >= targetval )
+                        printf("%.8f ",dstr(utxos[i]->U.value));
+                printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s %s\n",dstr(targetval),relvolume,price,dstr(txfee),coin->symbol,coinaddr);
             }
             mini = -1;
             if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval)) >= 0 )
@@ -896,7 +900,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             }
             else
             {
-                printf("cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f\n",(long long)aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis));
+                printf("cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f\n",(long long)aliceid,Q.srccoin,Q.destcoin,dstr(LP_basesatoshis(dstr(Q.destsatoshis),price,Q.txfee,Q.desttxfee)),dstr(Q.destsatoshis));
                 return(retval);
             }
         }
