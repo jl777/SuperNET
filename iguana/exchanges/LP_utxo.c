@@ -349,7 +349,7 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
                 flag = 1;
                 if ( height > 0 && up->U.height != height )
                     up->U.height = height, flag |= 2;
-                if ( spendheight > 0 && up->spendheight != spendheight )
+                if ( up->spendheight != spendheight )
                     up->spendheight = spendheight, flag |= 4;
                 if ( value != 0 && up->U.value == 0 && up->U.value != value )
                     up->U.value = value, flag |= 8;
