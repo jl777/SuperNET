@@ -78,7 +78,7 @@ void LP_millistats_update(struct LP_millistats *mp)
 }
 
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[2][1000];
 int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
@@ -87,6 +87,7 @@ struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
 struct LP_pubkeyinfo *LP_pubkeyinfos;
 struct rpcrequest_info *LP_garbage_collector;
+struct LP_address_utxo *LP_garbage_collector2;
 
 
 //uint32_t LP_deadman_switch;
@@ -923,6 +924,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_networkmutex);
     portable_mutex_init(&LP_gcmutex);
     portable_mutex_init(&LP_forwardmutex);
+    portable_mutex_init(&LP_inusemutex);
     portable_mutex_init(&LP_psockmutex);
     portable_mutex_init(&LP_coinmutex);
     portable_mutex_init(&LP_pubkeymutex);

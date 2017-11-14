@@ -658,7 +658,7 @@ char *LP_uitem_recv(cJSON *argjson)
     {
         //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",symbol,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
         if ( strcmp(coin->smartaddr,coinaddr) != 0 )
-            LP_address_utxoadd("LP_uitem_recv",coin,coinaddr,txid,vout,value,height,-1);
+            LP_address_utxoadd((uint32_t)time(NULL),"LP_uitem_recv",coin,coinaddr,txid,vout,value,height,-1);
         //else printf("ignore external uitem %s %s\n",symbol,coin->smartaddr);
     }
     return(clonestr("{\"result\":\"success\"}"));
@@ -676,11 +676,14 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
 
 void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_quoteinfo *qp)
 {
-    cJSON *reqjson; bits256 zero; char *msg,*msg2; int32_t flag = 0; struct LP_utxoinfo *utxo;
+    cJSON *reqjson; bits256 zero; char *msg,*msg2; int32_t flag = 0;
     if ( strcmp(method,"request") == 0 )
     {
-        if ( (utxo= LP_utxofind(0,qp->desttxid,qp->destvout)) != 0 && LP_ismine(utxo) > 0 && LP_isavailable(utxo) > 0 )
-            LP_unavailableset(utxo,qp->srchash);
+        if ( LP_allocated(qp->desttxid,qp->destvout) == 0 && LP_allocated(qp->feetxid,qp->feevout) == 0 )
+        {
+            LP_unavailableset(qp->desttxid,qp->destvout,qp->timestamp+LP_AUTOTRADE_TIMEOUT,qp->srchash);
+            LP_unavailableset(qp->feetxid,qp->feevout,qp->timestamp+LP_AUTOTRADE_TIMEOUT,qp->srchash);
+        }
         else
         {
             printf("couldnt find my txid to make request\n");

@@ -120,11 +120,21 @@ void basilisk_rawtx_purge(struct basilisk_rawtx *rawtx)
 void basilisk_swap_finished(struct basilisk_swap *swap)
 {
     int32_t i;
-    if ( swap->utxo != 0 && swap->sentflag == 0 )
+    /*if ( swap->utxo != 0 && swap->sentflag == 0 )
     {
         LP_availableset(swap->utxo);
         swap->utxo = 0;
         //LP_butxo_swapfields_set(swap->utxo);
+    }*/
+    if ( swap->I.iambob != 0 )
+    {
+        LP_availableset(swap->bobdeposit.utxotxid,swap->bobdeposit.utxovout);
+        LP_availableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout);
+    }
+    else
+    {
+        LP_availableset(swap->alicepayment.utxotxid,swap->alicepayment.utxovout);
+        LP_availableset(swap->myfee.utxotxid,swap->myfee.utxovout);
     }
     swap->I.finished = (uint32_t)time(NULL);
     // save to permanent storage
