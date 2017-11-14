@@ -3449,22 +3449,22 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
             for (i=0; i<msg->tx_in; i++)
             {
                 len += iguana_rwvarint32(rwflag,&serialized[len],&segitems);
-                printf("vini.%d (%d:",i,segitems);
+                //printf("vini.%d (%d:",i,segitems);
                 for (j=0; j<segitems; j++)
                 {
                     len += iguana_rwvarint32(rwflag,&serialized[len],&tmp);
-                    printf(" %d",tmp);
+                    //printf(" %d",tmp);
                     if ( len+tmp >= maxsize )
                     {
                         printf("vini.%d of %d, j.%d of segitems.%d overflowed %d+%d >= max.%d\n",i,msg->tx_in,j,segitems,len,tmp,maxsize);
                         break;
                     } else len += tmp;
                 }
-                printf("), ");
+                //printf("), ");
             }
             memcpy(&segtx[segtxlen-sizeof(int32_t)],&serialized[len],sizeof(int32_t));
-            bits256 txid = bits256_doublesha256(0,segtx,segtxlen);
-            char str[65]; printf("witness sum %d vs max.%d txid %s\n",len,maxsize,bits256_str(str,txid));
+            *txidp = bits256_doublesha256(0,segtx,segtxlen);
+            //char str[65]; printf("witness sum %d vs max.%d txid %s\n",len,maxsize,bits256_str(str,txid));
         }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
@@ -3519,7 +3519,8 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
         jadd(json,"vout",voutarray);
         jaddnum(json,"numvouts",msg->tx_out);
     }
-    *txidp = bits256_doublesha256(txidstr,txstart,len);
+    if ( segwitflag == 0 )
+        *txidp = bits256_doublesha256(txidstr,txstart,len);
     if ( json != 0 )
     {
         jaddnum(json,"locktime",msg->lock_time);
