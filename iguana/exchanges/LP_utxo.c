@@ -189,7 +189,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                     continue;
                 }
             }
-            if ( LP_allocated(up->U.txid,up->U.vout) == 0 && (iambob == 0 || (_LP_utxofind(iambob,up->U.txid,up->U.vout) == 0 && _LP_utxo2find(iambob,up->U.txid,up->U.vout) == 0)) )
+            if ( LP_allocated(up->U.txid,up->U.vout) == 0 )//&& (iambob == 0 || (_LP_utxofind(iambob,up->U.txid,up->U.vout) == 0 && _LP_utxo2find(iambob,up->U.txid,up->U.vout) == 0)) )
             {
                 utxos[n++] = up;
                 if ( n >= max )
