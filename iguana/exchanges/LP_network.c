@@ -288,7 +288,7 @@ void gc_loop(void *arg)
             if ( now > (uint32_t)up->spendheight+120 )
             {
                 DL_DELETE(LP_garbage_collector2,up);
-                char str[65]; printf("garbage collect %s/v%d lag.%d\n",bits256_str(str,up->U.txid),up->U.vout,now-up->spendheight);
+                //char str[65]; printf("garbage collect %s/v%d lag.%d\n",bits256_str(str,up->U.txid),up->U.vout,now-up->spendheight);
                 free(up);
             }
             flag++;
