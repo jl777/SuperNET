@@ -370,7 +370,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
     {
         if ( (m= LP_address_utxo_ptrs(coin,iambob,utxos,max,ap,coinaddr)) > 1 )
         {
-            if ( 0 )
+            if ( 1 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)
@@ -382,7 +382,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
-                //printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
+printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
                 if ( (double)up->U.value/targetval < LP_MINVOL-1 )
 
                 {
@@ -397,6 +397,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                                 return(butxo);
                             }*/
                             LP_butxo_set(butxo,coin,up,up2,targetval);
+                            return(butxo);
                         }
                     } //else printf("cant find targetval2 %.8f\n",dstr(targetval2));
                 } //else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
