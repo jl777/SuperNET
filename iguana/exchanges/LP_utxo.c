@@ -419,11 +419,12 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         free_json(array);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
         {
-            if ( up->timestamp < now )
+            char str[65]; 
+            if ( up->timestamp < now && up->spendheight <= 0 )
             {
-                char str[65]; printf("purge %s/v%d as it wasnt in listunspent\n",bits256_str(str,up->U.txid),up->U.vout);
+                printf("purge %s/v%d as it wasnt in listunspent\n",bits256_str(str,up->U.txid),up->U.vout);
                 up->spendheight = 1;
-            }
+            } else printf("%s/v%d %.8f avail\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value));
         }
     }
     return(ap);
