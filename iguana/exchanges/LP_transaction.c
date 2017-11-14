@@ -907,12 +907,12 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     if ( bits256_nonz(utxotxid) != 0 && numpre == 0 )
     {
         up = LP_address_utxofind(coin,coin->smartaddr,utxotxid,utxovout);
-        printf("have utxotxid but wasnt found up.%p\n",up);
+        //printf("have utxotxid but wasnt found up.%p\n",up);
         if ( up == 0 )
         {
             value = LP_txvalue(0,coin->symbol,utxotxid,utxovout);
             LP_address_utxoadd("withdraw",coin,coin->smartaddr,utxotxid,utxovout,value,1,-1);
-            printf("added after not finding\n");
+            //printf("added after not finding\n");
         }
         if ( (up= LP_address_utxofind(coin,coin->smartaddr,utxotxid,utxovout)) != 0 )
             preselected[numpre++] = up;
@@ -978,7 +978,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
                 char str[65]; printf("%s/%d %.8f interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
             }
         }
-        printf("numunspents.%d vini.%d value %.8f, total %.8f remains %.8f interest %.8f sum %.8f %s/v%d\n",numunspents,n,dstr(up->U.value),dstr(total),dstr(remains),dstr(interest),dstr(interestsum),bits256_str(str,up->U.txid),up->U.vout);
+        //printf("numunspents.%d vini.%d value %.8f, total %.8f remains %.8f interest %.8f sum %.8f %s/v%d\n",numunspents,n,dstr(up->U.value),dstr(total),dstr(remains),dstr(interest),dstr(interestsum),bits256_str(str,up->U.txid),up->U.vout);
         vp = &V[n++];
         vp->N = vp->M = 1;
         vp->signers[0].privkey = privkey;
@@ -1082,12 +1082,15 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     memset(utxos,0,sizeof(utxos));
     if ( (numutxos= LP_address_utxo_ptrs(coin,0,utxos,max,ap,coin->smartaddr)) <= 0 )
     {
-        printf("LP_createrawtransaction: address_utxo_ptrs %d, error\n",numutxos);
-        //return(0);
+        if ( bits256_nonz(utxotxid) == 0 )
+        {
+            printf("LP_createrawtransaction: address_utxo_ptrs %d, error\n",numutxos);
+            return(0);
+        }
     }
-    char str[65];
-    for (i=0; i<numutxos; i++)
-        printf("utxo.%d %s/v%d %.8f\n",i,bits256_str(str,utxos[i]->U.txid),utxos[i]->U.vout,dstr(utxos[i]->U.value));
+    //char str[65];
+    //for (i=0; i<numutxos; i++)
+    //    printf("utxo.%d %s/v%d %.8f\n",i,bits256_str(str,utxos[i]->U.txid),utxos[i]->U.vout,dstr(utxos[i]->U.value));
     
     ignore_cltverr = 0;
     suppress_pubkeys = 1;
