@@ -844,7 +844,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 if ( bits256_nonz(Q.txid2) != 0 )
                     LP_utxos_remove(Q.txid2,Q.vout2);
                 else recalc = 1;
-                printf("price %.8f qprice %.8f\n",price,qprice);
+                //printf("price %.8f qprice %.8f\n",price,qprice);
                 if ( recalc == 0 )
                 {
                     value = LP_txvalue(tmp,Q.srccoin,Q.txid,Q.vout);
@@ -941,14 +941,15 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 jaddstr(retjson,"method","reserved");
                 msg = jprint(retjson,0);
                 butxo->T.lasttime = (uint32_t)time(NULL);
-                printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,ask,msg);
+                //printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,ask,msg);
                 // LP_addsig
                 //msg2 = clonestr(msg);
                 LP_reserved_msg(1,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,clonestr(msg));
                 sleep(1);
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
-                LP_reserved_msg(1,Q.srccoin,Q.destcoin,zero,msg);
+                //LP_reserved_msg(1,Q.srccoin,Q.destcoin,zero,msg);
+                LP_reserved_msg(0,Q.srccoin,Q.destcoin,zero,msg);
                 //LP_broadcast_message(LP_mypubsock,Q.srccoin,Q.destcoin,Q.desthash,jprint(retjson,0));
                 free_json(retjson);
                 return(retval);
