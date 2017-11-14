@@ -543,7 +543,7 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
     if ( LP_alice_eligible() > 0 && LP_quotecmp(qp,&LP_Alicequery) == 0 )
     {
         price = LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout);
-        if ( LP_pricevalid(price) > 0 && maxprice > SMALLVAL && price <= maxprice*1.005 )
+        if ( LP_pricevalid(price) > 0 && maxprice > SMALLVAL && price <= maxprice )
         {
             qp->tradeid = LP_Alicequery.tradeid;
             LP_alicequery_clear();
