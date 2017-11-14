@@ -32,13 +32,15 @@ void basilisk_dontforget_userdata(char *userdataname,FILE *fp,uint8_t *script,in
 
 void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid)
 {
-    char zeroes[32],fname[512],str[65],coinaddr[64],secretAmstr[41],secretAm256str[65],secretBnstr[41],secretBn256str[65]; FILE *fp; int32_t i,len; uint8_t redeemscript[256],script[256];
+    char zeroes[32],fname[512],str[65],coinaddr[64],secretAmstr[41],secretAm256str[65],secretBnstr[41],secretBn256str[65]; FILE *fp; int32_t i,len; uint8_t redeemscript[256],script[256]; struct iguana_info *bobcoin,*alicecoin;
     sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid,rawtx->name), OS_compatible_path(fname);
+    bobcoin = LP_coinfind(swap->I.bobstr);
+    alicecoin = LP_coinfind(swap->I.alicestr);
     coinaddr[0] = secretAmstr[0] = secretAm256str[0] = secretBnstr[0] = secretBn256str[0] = 0;
     memset(zeroes,0,sizeof(zeroes));
-    if ( rawtx != 0 && (fp= fopen(fname,"wb")) != 0 )
+    if ( alicecoin != 0 && bobcoin != 0 && rawtx != 0 && (fp= fopen(fname,"wb")) != 0 )
     {
-        fprintf(fp,"{\"name\":\"%s\",\"coin\":\"%s\"",rawtx->name,rawtx->coin->symbol);
+        fprintf(fp,"{\"name\":\"%s\",\"coin\":\"%s\"",rawtx->name,rawtx->symbol);
         if ( rawtx->I.datalen > 0 )
         {
             fprintf(fp,",\"tx\":\"");
@@ -47,10 +49,10 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,"\",\"txid\":\"%s\"",bits256_str(str,bits256_doublesha256(0,rawtx->txbytes,rawtx->I.datalen)));
             if ( rawtx == &swap->bobdeposit || rawtx == &swap->bobpayment )
             {
-                LP_swap_coinaddr(swap->bobcoin,coinaddr,0,rawtx->txbytes,rawtx->I.datalen,0);
+                LP_swap_coinaddr(bobcoin,coinaddr,0,rawtx->txbytes,rawtx->I.datalen,0);
                 if ( coinaddr[0] != 0 )
                 {
-                    LP_importaddress(swap->bobcoin->symbol,coinaddr);
+                    LP_importaddress(swap->I.bobstr,coinaddr);
                     if ( rawtx == &swap->bobdeposit )
                         safecopy(swap->Bdeposit,coinaddr,sizeof(swap->Bdeposit));
                     else safecopy(swap->Bpayment,coinaddr,sizeof(swap->Bpayment));
@@ -63,16 +65,16 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"%s\":\"%s\"","Bpayment",swap->Bpayment);
         fprintf(fp,",\"expiration\":%u",swap->I.expiration);
         fprintf(fp,",\"iambob\":%d",swap->I.iambob);
-        fprintf(fp,",\"bobcoin\":\"%s\"",swap->bobcoin->symbol);
-        fprintf(fp,",\"alicecoin\":\"%s\"",swap->alicecoin->symbol);
+        fprintf(fp,",\"bobcoin\":\"%s\"",swap->I.bobstr);
+        fprintf(fp,",\"alicecoin\":\"%s\"",swap->I.alicestr);
         fprintf(fp,",\"lock\":%u",locktime);
         fprintf(fp,",\"amount\":%.8f",dstr(rawtx->I.amount));
         if ( bits256_nonz(triggertxid) != 0 )
             fprintf(fp,",\"trigger\":\"%s\"",bits256_str(str,triggertxid));
         if ( bits256_nonz(swap->I.pubAm) != 0 && bits256_nonz(swap->I.pubBn) != 0 )
         {
-            basilisk_alicescript(redeemscript,&len,script,0,coinaddr,swap->alicecoin->taddr,swap->alicecoin->p2shtype,swap->I.pubAm,swap->I.pubBn);
-            LP_importaddress(swap->alicecoin->symbol,coinaddr);
+            basilisk_alicescript(redeemscript,&len,script,0,coinaddr,alicecoin->taddr,alicecoin->p2shtype,swap->I.pubAm,swap->I.pubBn);
+            LP_importaddress(swap->I.alicestr,coinaddr);
             fprintf(fp,",\"Apayment\":\"%s\"",coinaddr);
         }
         if ( rawtx->I.redeemlen > 0 )

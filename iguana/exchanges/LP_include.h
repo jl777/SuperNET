@@ -166,7 +166,7 @@ struct basilisk_swap;
 
 struct basilisk_rawtxinfo
 {
-    char destaddr[64],coinstr[128];
+    char destaddr[64];
     bits256 txid,signedtxid,actualtxid;
     int64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
@@ -187,10 +187,9 @@ struct basilisk_request
 
 struct basilisk_rawtx
 {
-    char name[32];
+    char name[32],symbol[65];
     struct iguana_msgtx msgtx;
     struct basilisk_rawtxinfo I;
-    struct iguana_info *coin;
     char vinstr[8192],p2shaddr[64];
     cJSON *vins;
     bits256 utxotxid; int32_t utxovout;
@@ -347,7 +346,7 @@ struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };
 
 struct basilisk_swap
 {
-    void *ctx; struct iguana_info *bobcoin,*alicecoin; struct LP_utxoinfo *utxo;
+    void *ctx; struct LP_utxoinfo *utxo;
     struct LP_endpoint N;
     void (*balancingtrade)(struct basilisk_swap *swap,int32_t iambob);
     int32_t subsock,pushsock,connected,aliceunconf,depositunconf,paymentunconf;
