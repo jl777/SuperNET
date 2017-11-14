@@ -239,8 +239,8 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
     struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout; int32_t n = 0;
     if ( strcmp(ap->coinaddr,coinaddr) != 0 )
         printf("UNEXPECTED coinaddr mismatch (%s) != (%s)\n",ap->coinaddr,coinaddr);
-    LP_listunspent_issue(coin->symbol,coin->smartaddr,2);
-    portable_mutex_lock(&LP_utxomutex);
+    //LP_listunspent_issue(coin->symbol,coin->smartaddr,2);
+    //portable_mutex_lock(&LP_utxomutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
         char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d spendheight.%d allocated.%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout,up->spendheight,LP_allocated(up->U.txid,up->U.vout));
@@ -293,8 +293,8 @@ printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str
                 tx->outpoints[up->U.vout].spendheight = 1;
         }
     }
-    portable_mutex_unlock(&LP_utxomutex);
-    //printf("return n.%d\n",n);
+    //portable_mutex_unlock(&LP_utxomutex);
+    printf("return n.%d for %s %s\n",n,coin->symbol,coinaddr);
     return(n);
 }
 

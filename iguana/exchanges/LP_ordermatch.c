@@ -366,7 +366,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
     memset(butxo,0,sizeof(*butxo));
     targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee);
     targetval2 = (targetval / 8) * 9 + 2*txfee;
-    if ( coin != 0 && (ap= LP_addressfind(coin,coinaddr)) != 0 )
+    if ( coin != 0 && (ap= LP_address(coin,coinaddr)) != 0 )
     {
         if ( (m= LP_address_utxo_ptrs(coin,iambob,utxos,max,ap,coinaddr)) > 1 )
         {
@@ -403,7 +403,7 @@ printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",
                 } //else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
             } else if ( targetval != 0 && mini >= 0 )
                 printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
-        } //else printf("no %s utxos pass LP_address_utxo_ptrs filter\n",coinaddr);
+        } else printf("no %s utxos pass LP_address_utxo_ptrs filter\n",coinaddr);
     } else printf("couldnt find %s %s\n",coin->symbol,coinaddr);
     return(0);
 }
