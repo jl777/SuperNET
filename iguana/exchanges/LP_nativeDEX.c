@@ -365,7 +365,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     } else validreq = 1;
                     recvlen -= sizeof(bits256);
                 }
-                if ( validreq != 0 )
+                if ( 0 && validreq != 0 )
                 {
                     if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                         free(retstr);
