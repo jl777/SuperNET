@@ -338,6 +338,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             pfd.events = NN_POLLIN;
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
+            ptr = 0;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 methodstr[0] = 0;
@@ -387,9 +388,9 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free(str);
                     }
                 }
-                if ( ptr != 0 )
-                    nn_freemsg(ptr), ptr = 0;
             }
+            if ( ptr != 0 )
+                nn_freemsg(ptr), ptr = 0;
         }
     }
     return(nonz);
