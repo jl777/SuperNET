@@ -414,6 +414,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         now = (uint32_t)time(NULL);
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
+            char str[65];
             for (i=0; i<n; i++)
             {
                 //{"tx_hash":"38d1b7c73015e1b1d6cb7fc314cae402a635b7d7ea294970ab857df8777a66f4","tx_pos":0,"height":577975,"value":238700}
@@ -423,6 +424,8 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 value = j64bits(item,"value");
                 height = jint(item,"height");
                 LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
+                if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
+                    printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
             }
             printf("added %d from listunspents\n",n);
         }
