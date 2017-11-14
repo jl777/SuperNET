@@ -801,7 +801,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             return(retval);
         }
         price = ask;
-        //printf("MYPRICE %s/%s %.8f\n",Q.srccoin,Q.destcoin,price);
+        printf("MYPRICE %s/%s %.8f vs qprice %.8f\n",Q.srccoin,Q.destcoin,price,qprice);
         if ( LP_validSPV(Q.destcoin,Q.destaddr,Q.desttxid,Q.destvout) < 0 )
         {
             printf("%s dest %s failed SPV check\n",Q.destcoin,bits256_str(str,Q.desttxid));
@@ -891,7 +891,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 }
                 else
                 {
-                    //printf("cant find utxopair\n");
+                    printf("cant find utxopair\n");
                     return(retval);
                 }
             }
@@ -941,7 +941,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 jaddstr(retjson,"method","reserved");
                 msg = jprint(retjson,0);
                 butxo->T.lasttime = (uint32_t)time(NULL);
-                //printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,ask,msg);
+                printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",butxo->T.swappending,qprice,ask,msg);
                 // LP_addsig
                 //msg2 = clonestr(msg);
                 LP_reserved_msg(1,Q.srccoin,Q.destcoin,butxo->S.otherpubkey,clonestr(msg));
