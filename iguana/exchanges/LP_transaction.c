@@ -910,7 +910,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         printf("have utxotxid but wasnt found up.%p\n",up);
         if ( up == 0 )
         {
-            value = LP_txvalue(coin->smartaddr,coin->symbol,utxotxid,utxovout);
+            value = LP_txvalue(0,coin->symbol,utxotxid,utxovout);
             LP_address_utxoadd("withdraw",coin,coin->smartaddr,utxotxid,utxovout,value,1,-1);
             printf("added after not finding\n");
         }
