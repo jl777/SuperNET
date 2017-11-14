@@ -354,7 +354,7 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
                 if ( value != 0 && up->U.value == 0 && up->U.value != value )
                     up->U.value = value, flag |= 8;
                 up->timestamp = timestamp;
-//printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
+                char str[65]; printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
                 break;
             }
         }
@@ -379,8 +379,8 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
             if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->SPV > 0 )
             {
                 up->SPV = tx->SPV;
-                //printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
             }
+            char str[65]; printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
             portable_mutex_lock(&coin->addrmutex);
             DL_APPEND(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);
