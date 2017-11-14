@@ -518,6 +518,8 @@ void LP_coinsloop(void *_coins)
                         continue;
                 }
             }
+            if ( coin->smartaddr[0] == 0 )
+                printf("%s has no smartaddress??\n",coin->symbol);
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
