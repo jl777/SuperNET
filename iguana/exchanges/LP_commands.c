@@ -486,7 +486,7 @@ bot_resume(botid)\n\
                 {
                     ptr->privkeydepth = 0;
                     LP_address(ptr,ptr->smartaddr);
-                    if ( 0 && jint(argjson,"reset") != 0 )
+                    if ( jint(argjson,"reset") != 0 )
                     {
                         LP_address_utxo_reset(ptr);
                         LP_passphrase_init(jstr(argjson,"passphrase"),G.gui);
