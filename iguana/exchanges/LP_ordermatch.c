@@ -404,7 +404,7 @@ printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",
             } else if ( targetval != 0 && mini >= 0 )
                 printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
         } else printf("no %s utxos pass LP_address_utxo_ptrs filter\n",coinaddr);
-    } else printf("couldnt find %s %s\n",coin->symbol,coinaddr);
+    } else printf("address_myutxopair couldnt find %s %s\n",coin->symbol,coinaddr);
     return(0);
 }
 
@@ -812,7 +812,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             return(retval);
         }
         price = ask;
-        printf("MYPRICE %s/%s %.8f vs qprice %.8f\n",Q.srccoin,Q.destcoin,price,qprice);
+        //printf("MYPRICE %s/%s %.8f vs qprice %.8f\n",Q.srccoin,Q.destcoin,price,qprice);
         if ( LP_validSPV(Q.destcoin,Q.destaddr,Q.desttxid,Q.destvout) < 0 )
         {
             printf("%s dest %s failed SPV check\n",Q.destcoin,bits256_str(str,Q.desttxid));
