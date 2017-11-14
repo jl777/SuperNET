@@ -799,7 +799,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     return(retval);
                 }
                 LP_aliceid(Q.tradeid,Q.aliceid,"reserved",0,0);
-                printf("alice %s received RESERVED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
+                //printf("alice %s received RESERVED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
                 if ( (retstr= LP_quotereceived(argjson)) != 0 )
                     free(retstr);
                 LP_reserved(ctx,myipaddr,pubsock,&Q);
@@ -929,7 +929,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             printf("(%.8f %.8f) quote price %.8f too low vs %.8f for %s/%s %.8f < %.8f\n",bid,ask,qprice,price,Q.srccoin,Q.destcoin,qprice,(ask - 0.00000001) * 0.998);
             return(retval);
         }
-        char str[65],str2[65]; printf("(%s/v%d %s/v%d) TRADECOMMAND.(%s)\n",bits256_str(str,Q.txid),Q.vout,bits256_str(str2,Q.txid2),Q.vout2,jprint(argjson,0));
+        char *astr = jprint(argjson,0);
+        char str[65],str2[65]; printf("(%s/v%d %s/v%d) TRADECOMMAND.(%s)\n",bits256_str(str,Q.txid),Q.vout,bits256_str(str2,Q.txid2),Q.vout2,astr);
+        free(astr);
         if ( strcmp(method,"request") == 0 ) // bob needs apayment + fee tx's
         {
             if ( LP_allocated(Q.txid,Q.vout) == 0 && LP_allocated(Q.txid2,Q.vout2) == 0 )

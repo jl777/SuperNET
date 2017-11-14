@@ -315,8 +315,9 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                     }
                     //printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
                 }
-                free_json(argjson);
             }
+            if ( argjson != 0 )
+                free_json(argjson);
         }
     } //else printf("DUPLICATE.(%s)\n",(char *)ptr);
     portable_mutex_unlock(&LP_commandmutex);
@@ -365,7 +366,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     } else validreq = 1;
                     recvlen -= sizeof(bits256);
                 }
-                if ( 0 && validreq != 0 )
+                if ( validreq != 0 )
                 {
                     if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                         free(retstr);
