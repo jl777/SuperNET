@@ -3331,7 +3331,7 @@ int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgj
 
 int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash)
 {
-    int32_t i,n,len = 0,extraused=0; uint32_t seglen,tmp,segitems; uint8_t segwitflag=0,spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
+    int32_t i,j,n,len = 0,extraused=0; uint32_t tmp,segitems; uint8_t segwitflag=0,spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
     
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( json != 0 )
@@ -3441,18 +3441,23 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
             printf("unsupported rwflag.%d when segwitflag\n",rwflag);
         else
         {
-            len += iguana_rwvarint32(rwflag,&serialized[len],&segitems);
-            printf("witness segitems.%d sum %d vs max.%d\n",segitems,len,maxsize);
-            for (i=0; i<segitems; i++)
+            for (i=0; i<msg->tx_in; i++)
             {
-                len += iguana_rwvarint32(rwflag,&serialized[len],&tmp);
-                printf("%d ",tmp);
-                if ( len+tmp >= maxsize )
+                len += iguana_rwvarint32(rwflag,&serialized[len],&segitems);
+                printf("vini.%d (%d:",i,segitems);
+                for (j=0; j<segitems; j++)
                 {
-                    printf("i.%d of segitems.%d overflowed %d+%d >= max.%d\n",i,segitems,len,tmp,maxsize);
-                    break;
-                } else len += tmp;
+                    len += iguana_rwvarint32(rwflag,&serialized[len],&tmp);
+                    printf(" %d",tmp);
+                    if ( len+tmp >= maxsize )
+                    {
+                        printf("vini.%d of %d, j.%d of segitems.%d overflowed %d+%d >= max.%d\n",i,msg->tx_in,j,segitems,len,tmp,maxsize);
+                        break;
+                    } else len += tmp;
+                }
+                printf("), ");
             }
+            printf("witness sum %d vs max.%d\n",len,maxsize);
         }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
