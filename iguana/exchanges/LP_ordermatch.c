@@ -311,11 +311,11 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
                 dist = (up->U.value - targetval);
                 if ( dist > 0 && up->U.height < bestheight )
                 {
-                    if ( (double)dist/bestdist < 1.1 )
+                    if ( (double)dist/bestdist < sqrt(bestheight - up->U.height) )
                     {
                         replacei = i;
                         bestheight = up->U.height;
-                    } else printf("almost ratio %.3f dist %.8f vs best %.8f, ht %d vs best ht %d\n",(double)dist/bestdist,dstr(dist),dstr(bestdist),up->U.height,bestheight);
+                    } //else printf("almost ratio %.3f dist %.8f vs best %.8f, ht %d vs best ht %d\n",(double)dist/bestdist,dstr(dist),dstr(bestdist),up->U.height,bestheight);
                 }
             }
         }
