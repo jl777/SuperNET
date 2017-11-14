@@ -3457,7 +3457,8 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
                 }
                 printf("), ");
             }
-            printf("witness sum %d vs max.%d\n",len,maxsize);
+            bits256 txid = bits256_doublesha256(0,serialized,len+sizeof(msg->lock_time));
+            char str[65]; printf("witness sum %d vs max.%d txid %s\n",len,maxsize,bits256_str(str,txid));
         }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
