@@ -364,7 +364,7 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
             {
                 if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) == 0 )
                 {
-                    //printf("prevent utxoadd since gettxout %s %s %s/v%d missing\n",coin->symbol,coinaddr,bits256_str(str,txid),vout);
+                    char str[65]; printf("prevent utxoadd since gettxout %s %s %s/v%d missing\n",coin->symbol,coinaddr,bits256_str(str,txid),vout);
                     return(0);
                 } else free_json(txobj);
             }
@@ -379,8 +379,10 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
             if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->SPV > 0 )
             {
                 up->SPV = tx->SPV;
-                //char str[65]; printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
             }
+            char str[65];
+            if ( strcmp(coin->smartaddr,coinaddr) == 0 && strcmp("KMD",coin->symbol) == 0 )
+                printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
             portable_mutex_lock(&coin->addrmutex);
             DL_APPEND(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);
