@@ -269,7 +269,7 @@ void gc_loop(void *arg)
 {
     uint32_t now; struct LP_address_utxo *up,*utmp; struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
     strcpy(LP_gcloop_stats.name,"gc_loop");
-    LP_gcloop_stats.threshold = 1100.;
+    LP_gcloop_stats.threshold = 11000.;
     while ( 1 )
     {
         flag = 0;

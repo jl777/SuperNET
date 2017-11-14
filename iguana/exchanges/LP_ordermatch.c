@@ -393,7 +393,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
     {
         if ( (m= LP_address_utxo_ptrs(coin,iambob,utxos,max,ap,coinaddr)) > 1 )
         {
-            if ( 0 )
+            if ( 1 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)
@@ -422,8 +422,8 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                             LP_butxo_set(butxo,coin,up,up2,targetval);
                             return(butxo);
                         }
-                    } //else printf("cant find targetval2 %.8f\n",dstr(targetval2));
-                } //else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
+                    } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
+                } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
             } else if ( targetval != 0 && mini >= 0 )
                 printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
         } else printf("no %s utxos pass LP_address_utxo_ptrs filter\n",coinaddr);
@@ -896,7 +896,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             }
             else
             {
-                printf("cant find utxopair aliceid.%llu %s/%s\n",(long long)aliceid,Q.srccoin,Q.destcoin);
+                printf("cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f\n",(long long)aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis));
                 return(retval);
             }
         }

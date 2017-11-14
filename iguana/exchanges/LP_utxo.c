@@ -294,7 +294,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
         }
     }
     //portable_mutex_unlock(&LP_utxomutex);
-    printf("return n.%d for %s %s\n",n,coin->symbol,coinaddr);
+    //printf("return n.%d for %s %s\n",n,coin->symbol,coinaddr);
     return(n);
 }
 
@@ -440,7 +440,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
             }
-            printf("added %d from listunspents\n",n);
+            //printf("added %d from listunspents\n",n);
         }
         free_json(array);
     }
