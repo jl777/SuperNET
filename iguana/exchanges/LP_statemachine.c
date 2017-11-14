@@ -595,24 +595,6 @@ void basilisk_swap_saveupdate(struct basilisk_swap *swap)
     }
 }
 
-/*int32_t basilisk_swap_loadtx(struct basilisk_rawtx *rawtx,FILE *fp,char *bobcoinstr,char *alicecoinstr)
- {
- if ( fread(rawtx,1,sizeof(*rawtx),fp) == sizeof(*rawtx) )
- {
- rawtx->coin = 0;
- rawtx->vins = 0;
- if ( strcmp(rawtx->I.coinstr,bobcoinstr) == 0 || strcmp(rawtx->I.coinstr,alicecoinstr) == 0 )
- {
- rawtx->coin = LP_coinfind(rawtx->I.coinstr);
- if ( rawtx->vinstr[0] != 0 )
- rawtx->vins = cJSON_Parse(rawtx->vinstr);
- printf("loaded.%s len.%d\n",rawtx->name,rawtx->I.datalen);
- return(0);
- }
- }
- return(-1);
- }*/
-
 void basilisk_swap_sendabort(struct basilisk_swap *swap)
 {
     uint32_t msgbits = 0; uint8_t buf[sizeof(msgbits) + sizeof(swap->I.req.quoteid) + sizeof(bits256)*2]; int32_t sentbytes,offset=0;

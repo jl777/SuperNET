@@ -34,6 +34,13 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj);
 
 char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "connected", "tradestatus" };
 
+uint32_t LP_atomic_locktime(char *base,char *rel)
+{
+    if ( strcmp(base,"BTC") != 0 && strcmp(rel,"BTC") != 0 )
+        return(INSTANTDEX_LOCKTIME);
+    else return(INSTANTDEX_LOCKTIME * 10);
+}
+
 static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_aliceids;
 
 void LP_tradecommand_log(cJSON *argjson)
@@ -195,7 +202,7 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
                 if ( (sp->finished= juint(lineobj,"timestamp")) == 0 )
                     sp->finished = (uint32_t)time(NULL);
             }
-            if ( sp->finished == 0 && time(NULL) > sp->Q.timestamp+INSTANTDEX_LOCKTIME*2 )
+            if ( sp->finished == 0 && time(NULL) > sp->Q.timestamp+LP_atomic_locktime(base,rel)*2 )
                 sp->expired = (uint32_t)time(NULL);
             return(0);
         }
@@ -337,7 +344,7 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgu
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_swapstats,sp,tmp)
     {
-        if ( sp->finished == 0 && time(NULL) > sp->Q.timestamp+INSTANTDEX_LOCKTIME*2 )
+        if ( sp->finished == 0 && time(NULL) > sp->Q.timestamp+LP_atomic_locktime(sp->Q.srccoin,sp->Q.destcoin)*2 )
             sp->expired = (uint32_t)time(NULL);
         dispflag = 0;
         if ( starttime == 0 && endtime == 0 )

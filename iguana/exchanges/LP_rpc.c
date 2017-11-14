@@ -208,7 +208,7 @@ cJSON *LP_NXT_decrypt(uint64_t txnum,char *account,char *data,char *nonce,char *
 
 cJSON *LP_NXT_redeems()
 {
-    char url[1024],*retstr,*recv,*method,*msgstr,assetname[16]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
+    char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
     uint64_t txnum_marker = calc_nxt64bits("0");
     uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143");
 char *passphrase = "";

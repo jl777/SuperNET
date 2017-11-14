@@ -43,7 +43,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
-#define LP_AUTOTRADE_TIMEOUT 30
+#define LP_AUTOTRADE_TIMEOUT 60
 #define ELECTRUM_TIMEOUT 7
 #define LP_ELECTRUM_KEEPALIVE 60
 #define LP_ELECTRUM_MAXERRORS 777
@@ -166,7 +166,7 @@ struct basilisk_swap;
 
 struct basilisk_rawtxinfo
 {
-    char destaddr[64],coinstr[16];
+    char destaddr[64];
     bits256 txid,signedtxid,actualtxid;
     int64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
@@ -180,17 +180,16 @@ struct basilisk_request
     int64_t srcamount,unused; // 16 to 31
     bits256 srchash; // 32 to 63
     bits256 desthash;
-    char src[8],dest[8];
+    char src[65],dest[65];
     uint64_t destamount;
     int32_t optionhours,DEXselector;
 };
 
 struct basilisk_rawtx
 {
-    char name[32];
+    char name[32],symbol[65];
     struct iguana_msgtx msgtx;
     struct basilisk_rawtxinfo I;
-    struct iguana_info *coin;
     char vinstr[8192],p2shaddr[64];
     cJSON *vins;
     bits256 utxotxid; int32_t utxovout;
@@ -200,7 +199,7 @@ struct basilisk_rawtx
 struct basilisk_swapinfo
 {
     struct basilisk_request req;
-    char bobstr[64],alicestr[64];
+    char bobstr[128],alicestr[128];
     bits256 myhash,otherhash,orderhash;
     uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,putduration,callduration;
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed,bobspent,alicespent,pad,aliceistrusted,bobistrusted,otheristrusted,otherstrust,alicemaxconfirms,bobmaxconfirms;
@@ -241,7 +240,7 @@ struct LP_swap_remember
     uint32_t finishtime,tradeid,requestid,quoteid,plocktime,dlocktime,expiration,state,otherstate;
     int32_t iambob,finishedflag,origfinishedflag,Predeemlen,Dredeemlen,sentflags[sizeof(txnames)/sizeof(*txnames)];
     uint8_t secretAm[20],secretAm256[32],secretBn[20],secretBn256[32],Predeemscript[1024],Dredeemscript[1024],pubkey33[33],other33[33];
-    char src[64],dest[64],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[64],bobcoin[64],*txbytes[sizeof(txnames)/sizeof(*txnames)];
+    char Agui[65],Bgui[65],gui[65],src[65],dest[65],destaddr[64],Adestaddr[64],Sdestaddr[64],alicepaymentaddr[64],bobpaymentaddr[64],bobdepositaddr[64],alicecoin[65],bobcoin[65],*txbytes[sizeof(txnames)/sizeof(*txnames)];
 };
 
 struct LP_outpoint
@@ -270,7 +269,7 @@ struct iguana_info
     int32_t numutxos,longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
     uint32_t loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
-    char symbol[16],smartaddr[64],userpass[1024],serverport[128];
+    char symbol[128],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
     double price_kmd,force,perc,goal,goalperc,relvolume,rate;
     void *electrum; void *ctx;
@@ -301,7 +300,7 @@ struct LP_utxoinfo
     int32_t iambob,iamlp;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
-    char coin[16],coinaddr[64],gui[16];//spendscript[256];
+    char coin[65],coinaddr[64],gui[16];//spendscript[256];
 };
 
 struct LP_address_utxo
@@ -340,14 +339,14 @@ struct LP_quoteinfo
     uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
     uint32_t timestamp,quotetime,tradeid;
     int32_t vout,vout2,destvout,feevout,pair;
-    char srccoin[16],coinaddr[64],destcoin[16],destaddr[64],gui[64];
+    char srccoin[65],coinaddr[64],destcoin[65],destaddr[64],gui[64];
 };
 
 struct LP_endpoint { int32_t pair; char ipaddr[64]; uint16_t port; };
 
 struct basilisk_swap
 {
-    void *ctx; struct iguana_info bobcoin,alicecoin; struct LP_utxoinfo *utxo;
+    void *ctx; struct LP_utxoinfo *utxo;
     struct LP_endpoint N;
     void (*balancingtrade)(struct basilisk_swap *swap,int32_t iambob);
     int32_t subsock,pushsock,connected,aliceunconf,depositunconf,paymentunconf;
@@ -384,7 +383,7 @@ struct electrum_info
     int32_t bufsize,sock,*heightp,numerrors;
     struct iguana_info *coin;
     uint32_t stratumid,lasttime,keepalive,pending,*heighttimep;
-    char ipaddr[64],symbol[16];
+    char ipaddr[64],symbol[66];
     uint16_t port;
     uint8_t buf[];
 };

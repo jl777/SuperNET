@@ -51,7 +51,7 @@ struct DEXstats_pricepoint
 
 struct DEXstats_pairinfo
 {
-    char dest[16];
+    char dest[128];
     int32_t numprices;
     struct DEXstats_pricepoint *prices;
 };
@@ -64,7 +64,7 @@ struct DEXstats_datenuminfo
 
 struct DEXstats_priceinfo
 {
-    char symbol[16];
+    char symbol[128];
     int32_t firstdatenum,numdates;
     struct DEXstats_datenuminfo *dates;
 } Prices[1024];

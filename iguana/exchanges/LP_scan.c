@@ -127,7 +127,7 @@ int sort_balance(void *a,void *b)
 
 cJSON *LP_snapshot(struct iguana_info *coin,int32_t height)
 {
-   static bits256 bannedarray[64]; static int32_t numbanned,indallvouts,maxsnapht; static char lastcoin[16];
+   static bits256 bannedarray[64]; static int32_t numbanned,indallvouts,maxsnapht; static char lastcoin[65];
     struct LP_transaction *tx,*tmp; struct LP_address *ap,*atmp; int32_t isKMD,i,j,n,skipflag=0,startht,endht,ht; uint64_t banned_balance=0,balance=0,noaddr_balance=0; cJSON *retjson,*array,*item;
     if ( bannedarray[0].txid == 0 )
         numbanned = komodo_bannedset(&indallvouts,bannedarray,(int32_t)(sizeof(bannedarray)/sizeof(*bannedarray)));

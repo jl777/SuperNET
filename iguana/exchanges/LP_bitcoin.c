@@ -3198,6 +3198,7 @@ cJSON *iguana_voutjson(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,struct igu
             jadd(json,"scriptPubKey",skey);
         }
     }
+    free(vp);
     return(json);
 }
 
@@ -3330,7 +3331,7 @@ int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgj
 
 int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash)
 {
-    int32_t i,n,len = 0,extraused=0; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
+    int32_t i,n,len = 0,extraused=0; uint32_t seglen; uint8_t segwitflag=0,spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
     
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( json != 0 )
@@ -3349,6 +3350,22 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
         //char str[65]; printf("version.%d timestamp.%08x %u %s\n",msg->version,msg->timestamp,msg->timestamp,utc_str(str,msg->timestamp));
         if ( json != 0 )
             jaddnum(json,"timestamp",msg->timestamp);
+    }
+    if ( rwflag == 0 && zcash == 0 )
+    {
+        /*
+         normal: nVersion|txins|txouts|nLockTime.
+         segwit
+         nVersion|marker|flag|txins|txouts|witness|nLockTime
+         Format of nVersion, txins, txouts, and nLockTime are same as the original format
+         The marker MUST be 0x00
+         The flag MUST be 0x01
+         */
+        if ( serialized[len] == 0x00 && (segwitflag= serialized[len+1]) == 0x01 )
+        {
+            len += 2;
+            printf("SEGWIT transaction\n");
+        }
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
     if ( rwflag == 0 )
@@ -3416,6 +3433,19 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
         }
         if ( voutarray != 0 )
             jaddi(voutarray,iguana_voutjson(taddr,pubtype,p2shtype,&msg->vouts[i],i,*txidp));
+    }
+    if ( segwitflag != 0 )
+    {
+        printf("tx_out %d, tx_in %d %02x %02x %02x\n",msg->tx_out,msg->tx_in,serialized[len],serialized[len+1],serialized[len+2]);
+        if ( rwflag != 0 )
+            printf("unsupported rwflag.%d when segwitflag\n",rwflag);
+        else
+        {
+            len += iguana_rwvarint32(rwflag,&serialized[len],&seglen);
+            printf("witness len.%d sum %d vs max.%d\n",seglen,seglen+len,maxsize);
+            if ( seglen+len < maxsize )
+                len += maxsize;
+        }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
     //printf("lock_time.%08x len.%d\n",msg->lock_time,len);
@@ -3603,7 +3633,7 @@ cJSON *bitcoin_data2json(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t 
     if ( n != len )
     {
         int32_t i;
-        for (i=0; i<len; i++)
+        for (i=0; i<len&&i<n; i++)
             printf("%02x",serialized[i]);
         printf(" data2json n.%d vs len.%d\n",n,len);
     }

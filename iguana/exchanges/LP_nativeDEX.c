@@ -26,6 +26,19 @@
 // BCH signing
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
+//BTC LP_transaction_fromdata mismatched txid f78c80e831c02c89c0888e7d4438287030238e09e33f88da6df4dc84b949959b vs 1390f386f5997607e646be9c93f30018aa68ea971790b92b7b06e892656f0769
+//failed blockchain.transaction.get BTC f78c80e831c02c89c0888e7d4438287030238e09e33f88da6df4dc84b949959b
+//02000000000101242344292f9117c8318adb84f7991239361da2ff0a15ad2106d402945072cc110a0000001716001470eb5212b558cfc10b31f0849ef88ecf17097ac1ffffffff0c4a8321000000000017a914baed1c79cc6325333d5013b44dc17e8256bf5b718704bf3c000000000017a914255cf2809a1f42569c5c47c71e6234aac35a800f873099f400000000001976a914049877b81a8d6d8592919b75b9bcb4182f7c52cd88acb907e200000000001976a9140614fc114940e867210b09cc900db14d8bc58d2b88ac40771b00000000001976a9148cadbb1d7002d22d60e38ca238678d00f04ed22988ac002d3101000000001976a9140d05714431cf478846cea1435f9eabae9ad5c65388acc0f280010000000017a914c17a70c74154fc53263652aaca26c8d71683f1ba87aa2a4e00000000001976a914feea6b867954b1072962083233796d47e4c1665e88ace0e1de02000000001976a91445b71fbb02df53be5563257b77780b9afcc55bdc88acf6fe6700000000001976a91492332f8ff3b26e3ce2666afa5fee2e45308225af88ace74c1500000000001976a914fc7580f1ce24b2c85c80b2c8e641592b9bbf974588ac081ad000000000001976a9145e61c81c9b3ac55bf90ab00240023e8ddaf43e1788ac02483045022100a74be4e00585637c6792eeff9279508f09163db525f8b16c03e57283d12b0a6a022042cc061d70e78e9260ff30635db4f4e0b317831a8cb1f30473a25b93b4d1b4fb01210238288b60e8c50785809a69517ae3ca2fe3e407cac8b5868c5fb3803c233dfbcc00000000 data2json n.219 vs len.586
+
+
+//BTC LP_transaction_fromdata mismatched txid ae7af65215554964b7af01babb58fce10fc51d9812ced07ee4a62a1ffe10c0bb vs 051ef4f75898b511dd3aebd687d5a5bdb004226d811aaf13e64be741dbe81ff2
+//failed blockchain.transaction.get BTC ae7af65215554964b7af01babb58fce10fc51d9812ced07ee4a62a1ffe10c0bb
+//errortxobj.({"version":1})
+//010000000001010c590740b0c558f75b64cc0d00b0533ff951e403d993b866a87c7c52981388a60300000017160014cd2b7646f9931c85bb9d4d353b652c76b40aff84ffffffff0240420f000000000017a914239ae54cd403a91b084d3244e7e423f05c25ec268728fe28010000000017a914b96e21dd6e11bb67479f9072df55881e7fb17f788702473044022076e4c1cfba0dab889598efdfdcbc7a1046cc0eecfb8fec379994d559143d271c02206b16d9a0e3c425434d1b793d61e1e491f269abc7e7d3af52d95f6a26c1c2aa0d0121037f88a6ccdd608645024b05f408324550cf6fa1c74e3d7c1f94a1e9b57369d10600000000 data2json n.-1 vs len.247
+
+
+//ScriptSig: PUSHDATA(34)[002072d8f7debd607b94c95ced6cff38265ed99c7c1ee58b67d0a3f3ed43b6d9a977]
+//Witness: 040047304402206f23bb2dd06bc70d78312e27d53954420d0defbda7ad638718b9dc2c1efb93100220270f79bfb3230194d2e625875073799f6f07d96d5bce43b19cfe6be9957d95540148304502210081842f5987009e65f1d7de6140433da541b9da52ed211e87e1ae6fc25260d7680220798de97c682541d7b26b0795b19994f045f3ef4f433c55da0b5f1506ddeec413014752210305345798069ac85285628732485a3ce7e96b85696ed7da72287f6eae3b275363210268aace9c841b8d61fe3532981c8b25e235690003916c5a90c23a708e5d8f929752ae
 
 #include <stdio.h>
 struct LP_millistats
@@ -120,7 +133,7 @@ char GLOBAL_DBDIR[] = { "DB" };
 char LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
 char LP_gui[16] = { "cli" };
 
-char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", //"5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
+char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
     //"24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
     "51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
 };//"5.9.253.204" }; //
@@ -505,6 +518,8 @@ void LP_coinsloop(void *_coins)
                         continue;
                 }
             }
+            if ( coin->smartaddr[0] == 0 )
+                printf("%s has no smartaddress??\n",coin->symbol);
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
@@ -527,7 +542,7 @@ void LP_coinsloop(void *_coins)
                     if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
                         free_json(retjson);
                 }
-                HASH_ITER(hh,coin->addresses,ap,atmp)
+                if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
                 {
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
                     {
@@ -666,6 +681,8 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
             if ( LP_getheight(coin) <= 0 )
                 coin->inactive = (uint32_t)time(NULL);
             else LP_unspents_load(coin->symbol,coin->smartaddr);
+            if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
+                coin->txfee = LP_MIN_TXFEE;
         }
     }
     if ( (n= cJSON_GetArraySize(coins)) > 0 )
@@ -683,6 +700,8 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     if ( LP_getheight(coin) <= 0 )
                         coin->inactive = (uint32_t)time(NULL);
                     else LP_unspents_load(coin->symbol,coin->smartaddr);
+                    if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
+                        coin->txfee = LP_MIN_TXFEE;
                 }
             }
         }
@@ -839,8 +858,8 @@ void LP_reserved_msgs(void *ignore)
         if ( ignore == 0 )
             break;
         if ( nonz != 0 )
-            usleep(3000);
-        else usleep(25000);
+            usleep(1000);
+        else usleep(5000);
     }
 }
 

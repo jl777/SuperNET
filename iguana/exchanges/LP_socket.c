@@ -98,7 +98,7 @@ int32_t LP_socket(int32_t bindflag,char *hostname,uint16_t port)
 #endif
     expand_ipbits(checkipaddr,saddr.sin_addr.s_addr);
     if ( strcmp(ipaddr,checkipaddr) != 0 )
-        printf("bindflag.%d iguana_socket mismatch (%s) -> (%s)?\n",bindflag,checkipaddr,ipaddr);
+        printf("bindflag.%d iguana_socket mismatch (%s) -> (%s)\n",bindflag,checkipaddr,ipaddr);
     //#endif
     if ( (sock= socket(AF_INET,SOCK_STREAM,0)) < 0 )
     {
@@ -578,8 +578,8 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     cJSON *retjson=0; char *retstr; struct LP_address *ap; struct iguana_info *coin; int32_t updatedflag,height,usecache=1;
     if ( (coin= LP_coinfind(symbol)) == 0 )
         return(0);
-    if ( strcmp(addr,INSTANTDEX_KMD) == 0 )
-        return(cJSON_Parse("[]"));
+    //if ( strcmp(addr,INSTANTDEX_KMD) == 0 )
+    //    return(cJSON_Parse("[]"));
     if ( ep == 0 || ep->heightp == 0 )
         height = coin->longestchain;
     else height = *(ep->heightp);
@@ -707,7 +707,7 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
         {
             static uint32_t counter;
             if ( counter++ < 3 )
-                printf("rawtransaction too big %d\n",(int32_t)strlen(hexstr));
+                printf("rawtransaction %s %s too big %d\n",coin->symbol,bits256_str(str,txid),(int32_t)strlen(hexstr));
             free(hexstr);
             free_json(hexjson);
             *retjsonp = cJSON_Parse("{\"error\":\"transaction too big\"}");
@@ -922,9 +922,11 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
                 if ( item->type == idnum )
                 {
                     DL_DELETE(ep->pendingQ.list,item);
-                    *((cJSON **)stritem->retptrp) = (resultjson != 0 ? jduplicate(resultjson) : jduplicate(strjson));
+                    if ( resultjson != 0 )
+                        *((cJSON **)stritem->retptrp) = jduplicate(resultjson);
+                    else *((cJSON **)stritem->retptrp) = strjson, strjson = 0;
                     //printf("matched idnum.%d result.(%s)\n",idnum,jprint(*((cJSON **)stritem->retptrp),0));
-                    resultjson = strjson = 0;
+                    //resultjson = strjson = 0;
                     free(item);
                     break;
                 }

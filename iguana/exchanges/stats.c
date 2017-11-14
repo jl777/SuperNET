@@ -62,7 +62,7 @@ char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD",
     "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK", // end of currencies
 };
 
-char ASSETCHAINS_SYMBOL[16] = { "KV" };
+char ASSETCHAINS_SYMBOL[65] = { "KV" };
 
 struct komodo_state
 {
@@ -1090,7 +1090,7 @@ int32_t komodo_parsestatefile(FILE *logfp,struct komodo_state *sp,FILE *fp,char 
 int32_t stats_stateupdate(FILE *logfp,char *destdir,char *statefname,int32_t maxseconds,char *komodofile)
 {
     static long lastpos[2];
-    char symbol[64],base[64]; int32_t iter,n; FILE *fp; uint32_t starttime; struct komodo_state *sp;
+    char symbol[65],base[65]; int32_t iter,n; FILE *fp; uint32_t starttime; struct komodo_state *sp;
     starttime = (uint32_t)time(NULL);
     strcpy(base,"KV");
     strcpy(symbol,"KV");

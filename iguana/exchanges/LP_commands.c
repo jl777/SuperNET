@@ -103,7 +103,7 @@ notarizations(coin)\n\
 parselog()\n\
 statsdisp(starttime=0, endtime=0, gui="", pubkey="")\n\
 getrawtransaction(coin, txid)\n\
-inventory(coin)\n\
+inventory(coin, reset=0, [passphrase=])\n\
 bestfit(rel, relvolume)\n\
 lastnonce()\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
@@ -484,10 +484,13 @@ bot_resume(botid)\n\
                 struct iguana_info *ptr;
                 if ( (ptr= LP_coinfind(coin)) != 0 )
                 {
-                    //privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
-                    //LP_utxopurge(0);
+                    ptr->privkeydepth = 0;
                     LP_address(ptr,ptr->smartaddr);
-                    LP_listunspent_issue(coin,ptr->smartaddr,2);
+                    if ( 0 && jint(argjson,"reset") != 0 )
+                    {
+                        LP_address_utxo_reset(ptr);
+                        LP_passphrase_init(jstr(argjson,"passphrase"),G.gui);
+                    }
                     if ( bits256_nonz(G.LP_privkey) != 0 )
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                     else printf("no LP_privkey\n");

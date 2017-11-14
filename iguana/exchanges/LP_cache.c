@@ -247,7 +247,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
     if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
     {
         char str[65],str2[65],str3[65];
-        SPV = -1;
+        SPV = 0;
         memset(roothash.bytes,0,sizeof(roothash));
         if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 )
         {
@@ -271,7 +271,11 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
                     }
                     //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash));
                 }
-                else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
+                else
+                {
+                    SPV = -1;
+                    printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
+                }
             } else SPV = 0;
         }
         if ( SPV < 0 )

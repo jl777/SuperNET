@@ -27,13 +27,13 @@ struct LP_tradebot_trade
     uint64_t aliceid;
     int32_t dispdir;
     uint32_t started,finished,requestid,quoteid,tradeid,expired;
-    char base[32],rel[32],event[32];
+    char base[65],rel[65],event[32];
 };
 
 struct LP_tradebot
 {
     struct LP_tradebot *next,*prev;
-    char name[128],base[32],rel[32];
+    char name[128],base[65],rel[65];
     int32_t numtrades,numpending,completed,dispdir;
     double maxprice,totalrelvolume,totalbasevolume,basesum,relsum,pendbasesum,pendrelsum;
     uint32_t lasttime,dead,pause,userpause,started,id;
@@ -74,7 +74,7 @@ void LP_tradebot_calcstats(struct LP_tradebot *bot)
     {
         if ( (tp= bot->trades[i]) == 0 )
             continue;
-        if ( tp->finished == 0 && time(NULL) > tp->started+INSTANTDEX_LOCKTIME*2 )
+        if ( tp->finished == 0 && time(NULL) > tp->started+LP_atomic_locktime(bot->base,bot->rel)*2 )
         {
             tp->expired = tp->finished = (uint32_t)time(NULL);
             printf("tradeid.%u expired\n",tp->tradeid);
@@ -479,9 +479,10 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
     if ( relcoin->electrum != 0 )
         balance = LP_unspents_load(relcoin->symbol,relcoin->smartaddr);
     else balance = LP_RTsmartbalance(relcoin);
-    sum = (relvolume+2*dstr(txfees)) + 3 * ((relvolume+2*dstr(txfees))/777);
+    sum = (SATOSHIDEN*relvolume+2*dstr(txfees)) + 3 * ((SATOSHIDEN*relvolume+2*dstr(txfees))/777);
     printf("%s inventory balance %.8f, relvolume %.8f + txfees %.8f, utxobal %.8f sum %.8f\n",rel,dstr(abalance),relvolume,dstr(txfees),dstr(balance),dstr(sum));
-    if ( dstr(abalance) < relvolume + dstr(txfees) && balance > sum+txfee )
+    if ( (abalance < SATOSHIDEN*relvolume + txfees) || ((balance-abalance) < (uint64_t)(SATOSHIDEN*relvolume)/777 + txfees) )
+    //if ( dstr(abalance) < relvolume && balance > sum+2*txfee )
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"error","not enough funds");
@@ -492,7 +493,7 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
         jaddnum(retjson,"txfees",dstr(txfees));
         shortfall = (relvolume + dstr(txfees)) - dstr(balance);
         jaddnum(retjson,"shortfall",shortfall);
-        if ( balance >= sum+txfee )
+        if ( balance > sum+2*txfee )
         {
             char *withdrawstr; cJSON *outputjson,*withdrawjson,*outputs,*item;
             outputjson = cJSON_CreateObject();
