@@ -252,7 +252,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                 {
                     if ( LP_value_extract(txout,0) == 0 )
                     {
-                        //printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
+                        printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
                         free_json(txout);
                         up->spendheight = 1;
                         if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
@@ -263,7 +263,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                 }
                 else
                 {
-                    //printf("LP_address_utxo_ptrs skips %s %s payment %s/v%d is spent\n",coin->symbol,coinaddr,bits256_str(str,up->U.txid),up->U.vout);
+                    printf("LP_address_utxo_ptrs skips %s %s payment %s/v%d is spent\n",coin->symbol,coinaddr,bits256_str(str,up->U.txid),up->U.vout);
                     up->spendheight = 1;
                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                         tx->outpoints[up->U.vout].spendheight = 1;
@@ -274,7 +274,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( up->SPV < 0 || up->U.height == 0 )
                 {
-//printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str,up->U.txid),up->U.vout,up->SPV,up->U.height);
+printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str,up->U.txid),up->U.vout,up->SPV,up->U.height);
                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                         tx->outpoints[up->U.vout].spendheight = 1;
                     continue;
@@ -285,7 +285,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                 utxos[n++] = up;
                 if ( n >= max )
                     break;
-            }
+            } else printf("LP_allocated skip\n");
         }
         else
         {
@@ -422,6 +422,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 height = jint(item,"height");
                 LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
             }
+            printf("added %d from listunspents\n",n);
         }
         free_json(array);
     }
