@@ -285,9 +285,7 @@ void gc_loop(void *arg)
         now = (uint32_t)time(NULL);
         DL_FOREACH_SAFE(LP_garbage_collector2,up,utmp)
         {
-            if ( (uint32_t)up->spendheight > now-120 )
-                printf("recent gc2 %u lag.%d\n",up->spendheight,now-up->spendheight);
-            else
+            if ( now > (uint32_t)up->spendheight+120 )
             {
                 DL_DELETE(LP_garbage_collector2,up);
                 char str[65]; printf("garbage collect %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
@@ -298,7 +296,7 @@ void gc_loop(void *arg)
         portable_mutex_unlock(&LP_gcmutex);
         if ( 0 && flag != 0 )
             printf("gc_loop.%d\n",flag);
-        sleep(1);
+        sleep(10);
     }
 }
 
