@@ -891,7 +891,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 }
                 else
                 {
-                    printf("cant find utxopair\n");
+                    printf("cant find utxopair %s/%s\n",Q.srccoin,Q.destcoin);
                     return(retval);
                 }
             }

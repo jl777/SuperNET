@@ -13,11 +13,11 @@
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
  ******************************************************************************/
-
 //
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// single utxo allocations, reject result, latency
 // alice waiting for bestprice
 // bot safe to exit?
 //
