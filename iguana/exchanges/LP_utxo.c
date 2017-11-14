@@ -393,10 +393,11 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
 struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,vout,height; cJSON *array,*item; int64_t value; bits256 txid; uint32_t now;
+    LP_address(coin,coin->smartaddr);
     LP_listunspent_issue(coin->symbol,coin->smartaddr,2);
     if ( (ap= LP_addressfind(coin,coin->smartaddr)) == 0 )
     {
-        printf("LP_createrawtransaction: cant find address data\n");
+        printf("LP_address_utxo_reset: cant find address data\n");
         return(0);
     }
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr)) != 0 )
