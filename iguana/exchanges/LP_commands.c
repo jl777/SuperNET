@@ -484,10 +484,10 @@ bot_resume(botid)\n\
                 struct iguana_info *ptr;
                 if ( (ptr= LP_coinfind(coin)) != 0 )
                 {
-                    ptr->privkeydepth = 0;
                     LP_address(ptr,ptr->smartaddr);
                     if ( jint(argjson,"reset") != 0 )
                     {
+                        ptr->privkeydepth = 0;
                         LP_address_utxo_reset(ptr);
                         LP_passphrase_init(jstr(argjson,"passphrase"),G.gui);
                     }
