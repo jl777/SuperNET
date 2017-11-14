@@ -1704,6 +1704,41 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
  }
  portable_mutex_unlock(&myinfo->DEX_swapmutex);
  }*/
+/*if ( bits256_nonz(Q.srchash) == 0 || bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 || strcmp(butxo->coinaddr,coin->smartaddr) != 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 )
+ {
+ qprice = (double)Q.destsatoshis / Q.satoshis;
+ strcpy(Q.gui,G.gui);
+ strcpy(Q.coinaddr,coin->smartaddr);
+ strcpy(butxo->coinaddr,coin->smartaddr);
+ Q.srchash = G.LP_mypub25519;
+ memset(&Q.txid,0,sizeof(Q.txid));
+ memset(&Q.txid2,0,sizeof(Q.txid2));
+ Q.vout = Q.vout2 = -1;
+ recalc = 1;
+ }
+ else if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) < SMALLVAL )
+ recalc = 1;
+ else if ( price < qprice )
+ {
+ char tmp[64];
+ if ( bits256_nonz(Q.txid) != 0 )
+ LP_utxos_remove(Q.txid,Q.vout);
+ else recalc = 1;
+ if ( bits256_nonz(Q.txid2) != 0 )
+ LP_utxos_remove(Q.txid2,Q.vout2);
+ else recalc = 1;
+ //printf("price %.8f qprice %.8f\n",price,qprice);
+ if ( recalc == 0 )
+ {
+ value = LP_txvalue(tmp,Q.srccoin,Q.txid,Q.vout);
+ value2 = LP_txvalue(tmp,Q.srccoin,Q.txid2,Q.vout2);
+ //printf("call LP_utxoadd.(%s) %.8f %.8f\n",Q.coinaddr,dstr(value),dstr(value2));
+ if ( (butxo= LP_utxoadd(1,coin->symbol,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,G.gui,0,Q.satoshis)) == 0 )
+ recalc = 1;
+ else if ( bits256_cmp(Q.txid,butxo->payment.txid) != 0 || Q.vout != butxo->payment.vout || bits256_cmp(Q.txid2,butxo->deposit.txid) != 0 || Q.vout2 != butxo->deposit.vout )
+ recalc = 1;
+ }
+ } else return(retval);*/
 
 /*int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double origprice)
  {

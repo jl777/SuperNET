@@ -409,8 +409,11 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
             portable_mutex_lock(&coin->addrmutex);
             DL_DELETE(ap->utxos,up);
             portable_mutex_unlock(&coin->addrmutex);
-            free(up);
-        }
+            portable_mutex_lock(&LP_gcmutex);
+            up->spendheight = (int32_t)time(NULL);
+            DL_APPEND(LP_garbage_collector2,up);
+            portable_mutex_unlock(&LP_gcmutex);
+       }
         now = (uint32_t)time(NULL);
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {

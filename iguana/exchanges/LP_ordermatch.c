@@ -275,7 +275,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
 
 int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_address_utxo **utxos,int32_t n,uint64_t targetval)
 {
-    int32_t i,mini = -1; struct LP_address_utxo *up; struct electrum_info *backupep=0,*ep; int64_t dist; uint64_t mindist = (1LL << 60);
+    int32_t i,replacei,bestheight,mini = -1; struct LP_address_utxo *up,*bestup; struct electrum_info *backupep=0,*ep; int64_t dist,bestdist; uint64_t mindist = (1LL << 60);
     if ( (ep= coin->electrum) != 0 )
     {
         if ( (backupep= ep->prev) == 0 )
@@ -297,6 +297,29 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
                     mindist = dist;
                 }
             }
+        }
+    }
+    if ( mini >= 0 && (bestup= utxos[mini]) != 0 )
+    {
+        bestdist = (bestup->U.value - targetval);
+        replacei = -1;
+        bestheight = bestup->U.height;
+        for (i=0; i<n; i++)
+        {
+            if ( i != mini && (up= utxos[i]) != 0 )
+            {
+                dist = (up->U.value - targetval);
+                if ( dist > 0 && (double)dist/bestdist < 1.1 && up->U.height < bestheight )
+                {
+                    replacei = i;
+                    bestheight = up->U.height;
+                }
+            }
+        }
+        if ( replacei >= 0 )
+        {
+            printf("REPLACE bestdist %.8f height %d with dist %.8f height %d\n",dstr(bestdist),bestup->U.height,dstr(utxos[replacei]->U.value - targetval),utxos[replacei]->U.height);
+            return(replacei);
         }
     }
     //printf("return mini.%d\n",mini);
@@ -370,7 +393,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
     {
         if ( (m= LP_address_utxo_ptrs(coin,iambob,utxos,max,ap,coinaddr)) > 1 )
         {
-            if ( 1 )
+            if ( 0 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)
@@ -382,7 +405,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
-printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
+//printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
                 if ( (double)up->U.value/targetval < LP_MINVOL-1 )
 
                 {
@@ -842,41 +865,6 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 memset(&Q.txid2,0,sizeof(Q.txid2));
                 Q.vout = Q.vout2 = -1;
             } else return(retval);
-            /*if ( bits256_nonz(Q.srchash) == 0 || bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 || strcmp(butxo->coinaddr,coin->smartaddr) != 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 )
-            {
-                qprice = (double)Q.destsatoshis / Q.satoshis;
-                strcpy(Q.gui,G.gui);
-                strcpy(Q.coinaddr,coin->smartaddr);
-                strcpy(butxo->coinaddr,coin->smartaddr);
-                Q.srchash = G.LP_mypub25519;
-                memset(&Q.txid,0,sizeof(Q.txid));
-                memset(&Q.txid2,0,sizeof(Q.txid2));
-                Q.vout = Q.vout2 = -1;
-                recalc = 1;
-            }
-            else if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) < SMALLVAL )
-                recalc = 1;
-            else if ( price < qprice )
-            {
-                char tmp[64];
-                if ( bits256_nonz(Q.txid) != 0 )
-                    LP_utxos_remove(Q.txid,Q.vout);
-                else recalc = 1;
-                if ( bits256_nonz(Q.txid2) != 0 )
-                    LP_utxos_remove(Q.txid2,Q.vout2);
-                else recalc = 1;
-                //printf("price %.8f qprice %.8f\n",price,qprice);
-                if ( recalc == 0 )
-                {
-                    value = LP_txvalue(tmp,Q.srccoin,Q.txid,Q.vout);
-                    value2 = LP_txvalue(tmp,Q.srccoin,Q.txid2,Q.vout2);
-                    //printf("call LP_utxoadd.(%s) %.8f %.8f\n",Q.coinaddr,dstr(value),dstr(value2));
-                    if ( (butxo= LP_utxoadd(1,coin->symbol,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,G.gui,0,Q.satoshis)) == 0 )
-                        recalc = 1;
-                    else if ( bits256_cmp(Q.txid,butxo->payment.txid) != 0 || Q.vout != butxo->payment.vout || bits256_cmp(Q.txid2,butxo->deposit.txid) != 0 || Q.vout2 != butxo->deposit.vout )
-                        recalc = 1;
-                }
-            } else return(retval);*/
             if ( qprice > price )
             {
                 r = (rand() % 100);

@@ -87,6 +87,7 @@ struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
 struct LP_pubkeyinfo *LP_pubkeyinfos;
 struct rpcrequest_info *LP_garbage_collector;
+struct LP_address_utxo *LP_garbage_collector2;
 
 
 //uint32_t LP_deadman_switch;

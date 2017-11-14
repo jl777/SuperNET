@@ -267,7 +267,7 @@ int32_t LP_peerindsock(int32_t *peerindp)
 
 void gc_loop(void *arg)
 {
-    struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
+    uint32_t now; struct LP_address_utxo *up,*utmp; struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
     strcpy(LP_gcloop_stats.name,"gc_loop");
     LP_gcloop_stats.threshold = 1100.;
     while ( 1 )
@@ -280,6 +280,19 @@ void gc_loop(void *arg)
             DL_DELETE(LP_garbage_collector,req);
             //printf("garbage collect ipbits.%x\n",req->ipbits);
             free(req);
+            flag++;
+        }
+        now = (uint32_t)time(NULL);
+        DL_FOREACH_SAFE(LP_garbage_collector2,up,utmp)
+        {
+            if ( (uint32_t)up->spendheight > now-120 )
+                printf("recent gc2 %u lag.%d\n",up->spendheight,now-up->spendheight);
+            else
+            {
+                DL_DELETE(LP_garbage_collector2,up);
+                char str[65]; printf("garbage collect %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
+                free(up);
+            }
             flag++;
         }
         portable_mutex_unlock(&LP_gcmutex);
