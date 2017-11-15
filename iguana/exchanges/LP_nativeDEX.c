@@ -1188,10 +1188,10 @@ void LP_fromjs_iter()
 
 #endif
 
-/*#undef calloc
+#undef calloc
 #undef free
 #undef realloc
-#undef clonestr*/
+#undef clonestr
 
 struct LP_memory_list
 {

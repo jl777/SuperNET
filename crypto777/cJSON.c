@@ -843,7 +843,7 @@ char *jprint(cJSON *json,int32_t freeflag)
     str = cJSON_Print(json), _stripwhite(str,' ');
     if ( freeflag != 0 )
         free_json(json);
-    retstr = malloc(strlen(str) + 1);
+    retstr = LP_alloc(strlen(str) + 1);
     strcpy(retstr,str);
     cJSON_free(str);
     //portable_mutex_unlock(&mutex);
