@@ -845,7 +845,7 @@ char *jprint(cJSON *json,int32_t freeflag)
         free_json(json);
     retstr = LP_alloc(strlen(str) + 1);
     strcpy(retstr,str);
-    cJSON_free(str);
+    //cJSON_free(str);
     //portable_mutex_unlock(&mutex);
     return(retstr);
 }
