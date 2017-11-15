@@ -23,6 +23,9 @@
 #define calloc(a,b) LP_alloc((uint64_t)(a) * (b))
 #define free(ptr) LP_free(ptr)
 #define clonestr(str) LP_clonestr(str)
+void *LP_alloc(uint64_t len);
+void LP_free(void *ptr);
+char *LP_clonestr(char *str);
 
 #if LIQUIDITY_PROVIDER
 #include <curl/curl.h>
