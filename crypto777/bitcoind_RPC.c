@@ -174,6 +174,7 @@ try_again:
     {
         init_string(&s);
         curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)accumulate); 		// send all data to this function
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,		&s); 			// we pass our 's' struct to the callback
     }
     else
     {
@@ -182,8 +183,6 @@ try_again:
         curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,(void *)&chunk);
 
     }
-    curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)WriteMemoryCallback);
-    curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,		&s); 			// we pass our 's' struct to the callback
     curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
 	curl_easy_setopt(curl_handle,CURLOPT_NOPROGRESS,	1L);			// no progress callback
     if ( timeout > 0 )
