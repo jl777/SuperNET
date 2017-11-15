@@ -1236,7 +1236,7 @@ void LP_free(void *ptr)
             if ( now > mp->timestamp+60 )
             {
                 lagging++;
-                if ( now > mp->timestamp+600 )
+                if ( now > mp->timestamp+60 )
                 {
                     portable_mutex_lock(&LP_cJSONmutex);
                     DL_DELETE(LP_memory_list,mp);
