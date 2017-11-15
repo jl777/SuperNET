@@ -58,9 +58,11 @@ void cJSON_unregister(cJSON *item)
         total = 0;
         DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
         {
-            tmpstr = jprint(ptr->item,0);
-            total += strlen(tmpstr);
-            free(tmpstr);
+            if ( (tmpstr= jprint(ptr->item,0)) != 0 )
+            {
+                total += strlen(tmpstr);
+                free(tmpstr);
+            }
             n++;
         }
         printf("total %d cJSON pending %s\n",n,mbstr(str,total));
