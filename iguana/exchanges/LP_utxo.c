@@ -37,6 +37,7 @@ struct cJSON_list
 void cJSON_register(cJSON *item)
 {
     struct cJSON_list *ptr;
+    printf("  register %p\n",item);
     ptr = calloc(1,sizeof(*ptr));
     ptr->timestamp = (uint32_t)time(NULL);
     ptr->item = item;
@@ -50,6 +51,7 @@ void cJSON_unregister(cJSON *item)
 {
     static uint32_t lasttime;
     char *tmpstr,str[65]; int32_t n; uint64_t total; struct cJSON_list *ptr,*tmp;
+    printf("unregister %p\n",item);
     if ( time(NULL) > lasttime+600 )
     {
         n = 0;
