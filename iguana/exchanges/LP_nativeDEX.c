@@ -1225,18 +1225,18 @@ void *LP_realloc(void *ptr,uint64_t len)
 void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown;
-    uint32_t now; int32_t n; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
+    uint32_t now; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
-        n = 0;
+        n = lagging = 0;
         DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
         {
-            if ( mp->len != 72 )
-                printf("%d ",mp->len);
+            if ( now > mp->timestamp+60 )
+                lagging++;
             total += mp->len;
             n++;
         }
-        printf("total %d allocated total %llu unknown.%u\n",n,(long long)total,unknown);
+        printf("total %d allocated total %llu unknown.%u lagging.%d\n",n,(long long)total,unknown,lagging);
         lasttime = (uint32_t)time(NULL);
     }
     DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
