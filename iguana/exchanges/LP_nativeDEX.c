@@ -1225,7 +1225,7 @@ void *LP_realloc(void *ptr,uint64_t len)
 void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown;
-    uint32_t now; char str[65],*tmpstr; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
+    uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
         n = lagging = 0;
@@ -1241,10 +1241,6 @@ void LP_free(void *ptr)
                     portable_mutex_lock(&LP_cJSONmutex);
                     DL_DELETE(LP_memory_list,mp);
                     portable_mutex_unlock(&LP_cJSONmutex);
-                    tmpstr = jprint(mp->ptr,0);
-                    if ( strlen(tmpstr) > 32 )
-                        printf("laggged.(%s)\n",tmpstr);
-                    free(tmpstr);
                     free(mp->ptr);
                     free(mp);
                 }
