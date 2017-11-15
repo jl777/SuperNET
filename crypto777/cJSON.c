@@ -1149,11 +1149,11 @@ cJSON *cJSON_CreateObject(void)
     return item;
 }
 
-void free_json(cJSON *json)
+void free_json(cJSON *item)
 {
 #ifdef CJSON_GARBAGECOLLECTION
     cJSON_unregister(item);
 #endif
    if ( json != 0 )
-        cJSON_Delete(json);
+        cJSON_Delete(item);
 }
