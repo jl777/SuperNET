@@ -17,7 +17,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// gc cJSON
 // more retries for swap sendrawtransaction?
 // pbca26 unfinished swaps
 // if ( G.LP_pendingswaps != 0 ) return(-1);
@@ -327,7 +326,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock,char *remoteaddr,int32_t maxdepth)
 {
-    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char methodstr[64],*retstr,*str; struct nn_pollfd pfd;
+    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr,*buf; char methodstr[64],*retstr,*str; struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
         while ( nonz < maxdepth && recvlen > 0 )
@@ -339,8 +338,11 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
             ptr = 0;
-            if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
+            buf = malloc(1000000);
+            if ( (recvlen= nn_recv(sock,buf,1000000,0)) > 0 )
+            //if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
+                ptr = buf;
                 methodstr[0] = 0;
                 //printf("%s.(%s)\n",typestr,(char *)ptr);
                 if ( 0 )
@@ -390,7 +392,10 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 }
             }
             if ( ptr != 0 )
-                nn_freemsg(ptr), ptr = 0;
+            {
+                //nn_freemsg(ptr), ptr = 0;
+                free(buf);
+            }
         }
     }
     return(nonz);
