@@ -27,6 +27,42 @@ struct LP_inuse_info
 } LP_inuse[1024];
 int32_t LP_numinuse;
 
+struct cJSON_list
+{
+    struct cJSON_list *next,*prev;
+    cJSON *item;
+    uint32_t timestamp;
+} *LP_cJSONlist;
+
+void cJSON_register(cJSON *item)
+{
+    struct cJSON_list *ptr;
+    ptr = calloc(1,sizeof(*ptr));
+    ptr->timestamp = (uint32_t)time(NULL);
+    ptr->item = item;
+    portable_mutex_lock(&LP_cJSONmutex);
+    DL_APPEND(LP_cJSONlist,ptr);
+    portable_mutex_unlock(&LP_cJSONmutex);
+}
+
+void cJSON_unregister(cJSON *item)
+{
+    struct cJSON_list *ptr,*tmp;
+    DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
+    {
+        if ( ptr->item == item )
+            break;
+        ptr = 0;
+    }
+    if ( ptr != 0 )
+    {
+        portable_mutex_lock(&LP_cJSONmutex);
+        DL_DELETE(LP_cJSONlist,ptr);
+        free(ptr);
+        portable_mutex_unlock(&LP_cJSONmutex);
+    }
+}
+
 struct LP_inuse_info *_LP_inuse_find(bits256 txid,int32_t vout)
 {
     int32_t i;
