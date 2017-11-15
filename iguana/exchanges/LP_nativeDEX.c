@@ -1190,6 +1190,7 @@ void LP_fromjs_iter()
 
 #undef calloc
 #undef free
+#undef realloc
 #undef clonestr
 
 struct LP_memory_list
@@ -1208,6 +1209,16 @@ void *LP_alloc(uint64_t len)
     portable_mutex_lock(&LP_cJSONmutex);
     DL_APPEND(LP_memory_list,mp);
     portable_mutex_unlock(&LP_cJSONmutex);
+    return(&mp[1]);
+}
+
+void *LP_realloc(void *ptr,uint64_t len)
+{
+    struct LP_memory_list *mp = ptr;
+    --mp;
+    mp = realloc(mp,len + sizeof(*mp));
+    mp->timestamp = (uint32_t)time(NULL);
+    mp->len = (uint32_t)len;
     return(&mp[1]);
 }
 
