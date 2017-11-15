@@ -1144,7 +1144,7 @@ cJSON *cJSON_CreateObject(void)
     if ( item )
         item->type = cJSON_Object;
 #ifdef CJSON_GARBAGECOLLECTION
-    cJSON_register(item);
+    cJSON_register(item); fff
 #endif
     return item;
 }
