@@ -1,15 +1,15 @@
 ## DexScripts for Windows. How to use? ##
 
-**1. ** Before start you should put scripts and following binaries into one folder:
+**1.** Before start you should put scripts and following binaries into one folder:
  
 - curl.exe (required for all scripts)
 - marketmaker.exe
 - libcurl.dll (required to run marketmaker)
 - nanomsg.dll (required to run marketmaker)
 
-**2. ** Don't forget to put `coins.json` file into a same folder. This file is available it this repo.
+**2.** Don't forget to put `coins.json` file into a same folder. This file is available it this repo.
 
-**3. ** Type your passphrase into passphrase file in this folder (you should create file with name `passphrase` and without extension) and run `1-client.cmd`. This will run marketmaker. Next step is to obtain userpass needed for other scripts, you can simply copy and paste it from marketmaker output on startup into userpass file. 
+**3.** Type your passphrase into passphrase file in this folder (you should create file with name `passphrase` and without extension) and run `1-client.cmd`. This will run marketmaker. Next step is to obtain userpass needed for other scripts, you can simply copy and paste it from marketmaker output on startup into userpass file. 
 
 ![](./images/userpass.png)
 
@@ -42,3 +42,9 @@ And nothing works.
 
 **A.** Before run `1-client.cmd` make sure in Task Manager that you haven't already running `marketmaker.exe`. If have - kill this process via Task Manager or via command line command `taskkill /f /im taskkill.exe` .
 
+**Q.** How can i pretty print JSON answers of marketmaker?
+**A.** You can get best results with 2 tools - [conemu](https://conemu.github.io/) and [jq](https://stedolan.github.io/jq/), conemu supports ANSI X3.64 and Xterm 256 colors and jq allow you to pretty-print json output with colors, like this:
+
+![](./images/conemu_jq.png)
+
+Also i'm always recommend to install [Far Manager](https://www.farmanager.com/index.php?l=en) - this is powerful console file manager for Windows, like Midnight Commander in *nix.
