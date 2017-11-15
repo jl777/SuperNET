@@ -14,14 +14,15 @@
  ******************************************************************************/
 
 
-#define malloc(n) LP_alloc(n)
-#define calloc(a,b) LP_alloc((uint64_t)(a) * (b))
-#define free(ptr) LP_free(ptr)
-#define clonestr(str) LP_clonestr(str)
 
 #ifndef FROM_JS
 #include "OS_portable.h"
 #define LIQUIDITY_PROVIDER 1
+
+#define malloc(n) LP_alloc(n)
+#define calloc(a,b) LP_alloc((uint64_t)(a) * (b))
+#define free(ptr) LP_free(ptr)
+#define clonestr(str) LP_clonestr(str)
 
 #if LIQUIDITY_PROVIDER
 #include <curl/curl.h>
