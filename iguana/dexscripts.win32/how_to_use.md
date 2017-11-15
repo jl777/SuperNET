@@ -81,3 +81,20 @@ And nothing works.
 ![](./images/conemu_jq.png)
 
 Also i'm always recommend to install [Far Manager](https://www.farmanager.com/index.php?l=en) - this is powerful console file manager for Windows, like Midnight Commander in *nix.
+
+**Q.** What additional dependencies required by marketmaker?
+
+**A.** Currently marketmaker (Windows) used the following DLLs:
+
+*32 bit:*
+- libcrypto-1_1.dll
+- libcurl.dll
+- libssl-1_1.dll
+- nanomsg.dll
+- pthreadvc2.dll
+
+*64-bit:*
+- libcurl.dll
+- nanomsg.dll
+
+It already included in repo and in archive with release.
