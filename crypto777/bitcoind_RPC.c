@@ -335,7 +335,7 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
     }
     if ( mem->allocsize < needed )
     {
-        mem->memory = realloc(mem->memory,needed);
+        mem->memory = (ptr != 0) ? realloc(mem->memory,needed) : malloc(needed);
         mem->allocsize = needed;
     }
     //mem->memory = (ptr != 0) ? realloc(mem->memory,mem->size + realsize + 1) : malloc(mem->size + realsize + 1);
