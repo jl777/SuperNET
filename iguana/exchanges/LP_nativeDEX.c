@@ -1215,11 +1215,15 @@ void *LP_alloc(uint64_t len)
 void *LP_realloc(void *ptr,uint64_t len)
 {
     struct LP_memory_list *mp = ptr;
-    --mp;
-    mp = realloc(mp,len + sizeof(*mp));
-    mp->timestamp = (uint32_t)time(NULL);
-    mp->len = (uint32_t)len;
-    return(&mp[1]);
+    if ( mp != 0 )
+    {
+        --mp;
+        printf("\n>>>>>>>>>>> LP_realloc mp.%p ptr.%p len.%llu\n",mp,&mp[1],(long long)len);
+        mp = realloc(mp,len + sizeof(*mp));
+        mp->timestamp = (uint32_t)time(NULL);
+        mp->len = (uint32_t)len;
+        return(&mp[1]);
+    } else return(LP_alloc(len));
 }
 
 void LP_free(void *ptr)
