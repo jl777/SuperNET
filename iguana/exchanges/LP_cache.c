@@ -45,10 +45,10 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
         tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
-        tx->serialized = serialized;
-        //free(serialized);
+        tx->serialized = 0;//serialized;
+        free(serialized);
         tx->fpos = fpos;
-        tx->len = tx->len;
+        tx->len = 0;//tx->len;
         tx->SPV = tx->height = height;
         //printf("tx.%s numvins.%d numvouts.%d\n",bits256_str(str,txid),numvins,numvouts);
         for (i=0; i<numvouts; i++)

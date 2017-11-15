@@ -23,7 +23,7 @@
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "14414"
+#define LP_BUILD_NUMBER "15000"
 
 #ifdef FROM_JS
 #include <emscripten.h>
@@ -53,8 +53,8 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_MIN_PEERS 8
 #define LP_MAX_PEERS 32
 
-#define LP_MAXDESIRED_UTXOS 128
-#define LP_MINDESIRED_UTXOS 32
+#define LP_MAXDESIRED_UTXOS (IAMLP != 0 ? 128 : 64)
+#define LP_MINDESIRED_UTXOS (IAMLP != 0 ? 32 : 16)
 #define LP_DUSTCOMBINE_THRESHOLD 1000000
 
 // RTmetrics

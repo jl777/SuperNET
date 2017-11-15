@@ -187,6 +187,8 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
 int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t i,datalen = 0;
+    datalen += iguana_rwnum(1,&data[datalen],sizeof(swap->I.req.requestid),&swap->I.req.requestid);
+    datalen += iguana_rwnum(1,&data[datalen],sizeof(swap->I.req.quoteid),&swap->I.req.quoteid);
     data[datalen++] = swap->I.aliceconfirms;
     data[datalen++] = swap->I.bobconfirms;
     data[datalen++] = swap->I.alicemaxconfirms;
@@ -196,14 +198,22 @@ int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
         data[datalen++] = swap->persistent_pubkey33[i];
     for (i=0; i<sizeof(swap->deck)/sizeof(swap->deck[0][0]); i++)
         datalen += iguana_rwnum(1,&data[datalen],sizeof(swap->deck[i>>1][i&1]),&swap->deck[i>>1][i&1]);
+    printf("send >>>>>>>>> r.%u q.%u datalen.%d\n",swap->I.req.requestid,swap->I.req.quoteid,datalen);
     return(datalen);
 }
 
 int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    int32_t i,nonz=0,alicemaxconfirms,bobmaxconfirms,aliceconfirms,bobconfirms,len = 0; uint8_t other33[33];
-    if ( datalen == sizeof(swap->otherdeck)+38 )
+    uint32_t requestid,quoteid; int32_t i,nonz=0,alicemaxconfirms,bobmaxconfirms,aliceconfirms,bobconfirms,len = 0; uint8_t other33[33];
+    if ( datalen == sizeof(swap->otherdeck)+38+sizeof(uint32_t)*2 )
     {
+        len += iguana_rwnum(0,&data[len],sizeof(requestid),&requestid);
+        len += iguana_rwnum(0,&data[len],sizeof(quoteid),&quoteid);
+        if ( requestid != swap->I.req.requestid || quoteid != swap->I.req.quoteid )
+        {
+            printf("SWAP requestid.%u quoteid.%u mismatch received r.%u q.%u\n",swap->I.req.requestid,swap->I.req.quoteid,requestid,quoteid);
+            return(-1);
+        }
         aliceconfirms = data[len++];
         bobconfirms = data[len++];
         alicemaxconfirms = data[len++];
@@ -243,7 +253,7 @@ int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
             len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
         return(0);
     }
-    printf("pubkeys verify size mismatch %d != %d\n",datalen,(int32_t)sizeof(swap->otherdeck)+36);
+    printf("pubkeys verify size mismatch %d != %d\n",datalen,(int32_t)(sizeof(swap->otherdeck)+38+sizeof(uint32_t)*2));
     return(-1);
 }
 
@@ -895,7 +905,7 @@ void LP_aliceloop(void *_swap)
     }
     basilisk_swap_finished(swap);
     printf("finish swap.%p\n",swap);
-    //free(swap);
+    free(swap);
     G.LP_pendingswaps--;
 }
 

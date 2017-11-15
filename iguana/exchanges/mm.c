@@ -19,11 +19,21 @@
 //  Copyright © 2017 SuperNET. All rights reserved.
 //
 
+/*
+#define malloc(n) LP_alloc(n)
+#define calloc(a,b) LP_alloc((uint64_t)(a) * (b))
+#define free(ptr) LP_free(ptr)*/
+
 void PNACL_message(char *arg,...)
 {
     
 }
 #define FROM_MARKETMAKER
+
+#ifndef CJSON_GARBAGECOLLECTION
+#define CJSON_GARBAGECOLLECTION
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
 #ifndef NATIVE_WINDOWS
