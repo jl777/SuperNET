@@ -52,7 +52,7 @@ void cJSON_unregister(cJSON *item)
     static uint32_t lasttime;
     char *tmpstr,str[65]; int32_t n; uint64_t total; struct cJSON_list *ptr,*tmp;
     printf("unregister %p\n",item);
-    if ( time(NULL) > lasttime+600 )
+    if ( time(NULL) > lasttime+6 )
     {
         n = 0;
         total = 0;
