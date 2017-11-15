@@ -1194,7 +1194,6 @@ void LP_fromjs_iter()
 struct LP_memory_list
 {
     struct LP_memory_list *next,*prev;
-    void *ptr;
     uint32_t timestamp,len;
 } *LP_memory_list;
 
@@ -1202,8 +1201,8 @@ void *LP_alloc(uint64_t len)
 {
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp) + len);
+    printf("mp.%p ptr.%p\n",mp,&mp[1]);
     mp->timestamp = (uint32_t)time(NULL);
-    mp->ptr = calloc(1,len);
     mp->len = (uint32_t)len;
     portable_mutex_lock(&LP_cJSONmutex);
     DL_APPEND(LP_memory_list,mp);
@@ -1216,6 +1215,7 @@ void LP_free(void *ptr)
     static uint32_t lasttime;
     uint32_t now; int32_t n; uint64_t total = 0; char str[65]; struct LP_memory_list *mp,*tmp,*freemp = ptr;
     --freemp;
+    printf("freemp.%p\n",freemp);
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
         n = 0;
