@@ -58,10 +58,13 @@ void cJSON_unregister(cJSON *item)
         total = 0;
         DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
         {
-            if ( (tmpstr= jprint(ptr->item,0)) != 0 )
+            if ( ptr->item != 0 && ptr->item->child != 0 )
             {
-                total += strlen(tmpstr);
-                free(tmpstr);
+                if ( (tmpstr= jprint(ptr->item,0)) != 0 )
+                {
+                    total += strlen(tmpstr);
+                    free(tmpstr);
+                }
             }
             n++;
         }
