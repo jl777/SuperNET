@@ -51,20 +51,20 @@ char *mbstr(char *str,double n);
 void cJSON_unregister(cJSON *item)
 {
     static uint32_t lasttime;
-    int32_t n; struct cJSON_list *ptr,*tmp; uint32_t now;
-    if ( (now= time(NULL)) > lasttime+6 )
+    int32_t n; char *tmpstr; uint64_t total = 0; struct cJSON_list *ptr,*tmp; uint32_t now;
+    if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
         n = 0;
         DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
         {
-            /*if ( ptr->item != 0 && ptr->item->child != 0 && ptr->cjsonid != 0 )
+            if ( ptr->item != 0 && ptr->item->child != 0 && ptr->cjsonid != 0 )
             {
                 if ( (tmpstr= jprint(ptr->item,0)) != 0 )
                 {
                     total += strlen(tmpstr);
                     free(tmpstr);
                 }
-            }*/
+            }
             n++;
         }
         printf("total %d cJSON pending\n",n);
