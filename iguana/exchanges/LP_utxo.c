@@ -31,16 +31,17 @@ struct cJSON_list
 {
     struct cJSON_list *next,*prev;
     cJSON *item;
-    uint32_t timestamp;
+    uint32_t timestamp,cjsonid;
 } *LP_cJSONlist;
 
 void cJSON_register(cJSON *item)
 {
     struct cJSON_list *ptr;
-    printf("  register %p\n",item);
     ptr = calloc(1,sizeof(*ptr));
     ptr->timestamp = (uint32_t)time(NULL);
     ptr->item = item;
+    item->cjsonid = rand();
+    ptr->cjsonid = item->cjsonid;
     portable_mutex_lock(&LP_cJSONmutex);
     DL_APPEND(LP_cJSONlist,ptr);
     portable_mutex_unlock(&LP_cJSONmutex);
@@ -51,8 +52,7 @@ void cJSON_unregister(cJSON *item)
 {
     static uint32_t lasttime;
     char *tmpstr,str[65]; int32_t n; uint64_t total; struct cJSON_list *ptr,*tmp;
-    printf("unregister %p\n",item);
-    if ( time(NULL) > lasttime+6 )
+    //if ( time(NULL) > lasttime+6 )
     {
         n = 0;
         total = 0;
@@ -68,18 +68,17 @@ void cJSON_unregister(cJSON *item)
     }
     DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
     {
-        if ( ptr->item == item )
+        if ( ptr->cjsonid == item->cjsonid )//ptr->item == item )
             break;
         ptr = 0;
     }
     if ( ptr != 0 )
     {
-        printf("found %p\n",item);
         portable_mutex_lock(&LP_cJSONmutex);
         DL_DELETE(LP_cJSONlist,ptr);
         free(ptr);
         portable_mutex_unlock(&LP_cJSONmutex);
-    } //else printf("cJSON_unregister of unknown %p\n",item);
+    } else printf("cJSON_unregister of unknown %p\n",item);
 }
 
 struct LP_inuse_info *_LP_inuse_find(bits256 txid,int32_t vout)
