@@ -189,6 +189,7 @@ int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
     int32_t i,datalen = 0;
     datalen += iguana_rwnum(1,&data[datalen],sizeof(swap->I.req.requestid),&swap->I.req.requestid);
     datalen += iguana_rwnum(1,&data[datalen],sizeof(swap->I.req.quoteid),&swap->I.req.quoteid);
+    printf("send >>>>>>>>> r.%u q.%u\n",swap->I.req.requestid,swap->I.req.quoteid);
     data[datalen++] = swap->I.aliceconfirms;
     data[datalen++] = swap->I.bobconfirms;
     data[datalen++] = swap->I.alicemaxconfirms;
