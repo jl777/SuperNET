@@ -72,9 +72,9 @@ void cJSON_unregister(cJSON *item)
     }
     DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
     {
-        if ( ptr->item == item )
+        if ( ptr->cjsonid == item->cjsonid )
             break;
-        else if ( now > ptr->timestamp+60 )
+        else if ( now > ptr->timestamp+60 && item->cjsonid != 0 )
         {
             portable_mutex_lock(&LP_cJSONmutex);
             DL_DELETE(LP_cJSONlist,ptr);
