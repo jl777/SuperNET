@@ -1188,10 +1188,10 @@ void LP_fromjs_iter()
 
 #endif
 
-#undef calloc
+/*#undef calloc
 #undef free
 #undef realloc
-#undef clonestr
+#undef clonestr*/
 
 struct LP_memory_list
 {
@@ -1254,7 +1254,7 @@ void LP_free(void *ptr)
         mp = 0;
     }
     if ( mp != freemp )
-        printf("mp %p != %p\n",mp,freemp);`
+        printf("mp %p != %p\n",mp,freemp);
     if ( mp != 0 )
     {
         portable_mutex_lock(&LP_cJSONmutex);
