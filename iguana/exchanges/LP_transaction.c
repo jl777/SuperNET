@@ -987,6 +987,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         vp->suppress_pubkeys = suppress_pubkeys;
         vp->ignore_cltverr = ignore_cltverr;
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
+        LP_unavailableset(up->U.txid,up->U.vout,(uint32_t)time(NULL)+600,G.LP_mypub25519);
         if ( remains <= 0 && i >= numpre-1 )
             break;
         if ( numunspents < 0 )
@@ -1019,7 +1020,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     }
     if ( coin->numutxos < LP_MINDESIRED_UTXOS )
         dustcombine = 0;
-    else if ( coin->numutxos >= LP_MINDESIRED_UTXOS )
+    else if ( coin->numutxos >= LP_MAXDESIRED_UTXOS )
         dustcombine = 2;
     else dustcombine = 1;
     amount = txfee;

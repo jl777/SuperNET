@@ -58,8 +58,32 @@ int32_t _LP_inuse_delete(bits256 txid,int32_t vout)
 
 struct LP_inuse_info *_LP_inuse_add(uint32_t expiration,bits256 otherpub,bits256 txid,int32_t vout)
 {
-    struct LP_inuse_info *lp;
-    if ( bits256_nonz(txid) != 0 && LP_numinuse < sizeof(LP_inuse)/sizeof(*LP_inuse) )
+    struct LP_inuse_info *lp; int32_t i,n,oldesti; uint32_t now,oldest;
+    if ( LP_numinuse >= sizeof(LP_inuse)/sizeof(*LP_inuse) )
+    {
+        now = (uint32_t)time(NULL);
+        n = 0;
+        oldesti = -1;
+        oldest = 0;
+        for (i=0; i<sizeof(LP_inuse)/sizeof(*LP_inuse); i++)
+        {
+            lp = &LP_inuse[i];
+            if ( now > lp->expiration )
+                _LP_inuse_delete(lp->txid,lp->vout), n++;
+            else if ( oldest == 0 || lp->expiration < oldest )
+            {
+                oldest = lp->expiration;
+                oldesti = i;
+            }
+        }
+        if ( n == 0 )
+        {
+            printf("_LP_inuse_add out of slots error, pick oldesti %d\n",oldesti);
+            lp = &LP_inuse[oldesti];
+            _LP_inuse_delete(lp->txid,lp->vout);
+        } else printf("expired %d inuse slots\n",n);
+    }
+    if ( bits256_nonz(txid) != 0 )
     {
         if ( (lp= _LP_inuse_find(txid,vout)) == 0 )
         {
