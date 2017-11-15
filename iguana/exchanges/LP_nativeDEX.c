@@ -1199,7 +1199,6 @@ struct LP_memory_list
     uint32_t timestamp,len;
     void *ptr;
 } *LP_memory_list;
-
 int32_t zeroval() { return(0); }
 
 void *LP_alloc(uint64_t len)
