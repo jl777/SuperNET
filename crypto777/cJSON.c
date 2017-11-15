@@ -578,8 +578,6 @@ cJSON *cJSON_CreateFalse(void)					{cJSON *item=cJSON_New_Item();if(item)item->t
 cJSON *cJSON_CreateBool(int32_t b)					{cJSON *item=cJSON_New_Item();if(item)item->type=b?cJSON_True:cJSON_False;return item;}
 cJSON *cJSON_CreateNumber(double num)			{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_Number;item->valuedouble=num;item->valueint=(int64_t)num;}return item;}
 cJSON *cJSON_CreateString(const char *string)	{cJSON *item=cJSON_New_Item();if(item){item->type=cJSON_String;item->valuestring=cJSON_strdup(string);}return item;}
-cJSON *cJSON_CreateArray(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_Array;return item;}
-cJSON *cJSON_CreateObject(void)					{cJSON *item=cJSON_New_Item();if(item)item->type=cJSON_Object;return item;}
 
 /* Create Arrays: */
 cJSON *cJSON_CreateIntArray(int64_t *numbers,int32_t count)		{int32_t i;cJSON *n=0,*p=0,*a=cJSON_CreateArray();for(i=0;a && i<count;i++){n=cJSON_CreateNumber((double)numbers[i]);if(!i)a->child=n;else suffix_object(p,n);p=n;}return a;}
@@ -1129,4 +1127,33 @@ cJSON *addrs_jsonarray(uint64_t *addrs,int32_t num)
     return(array);
 }
 
-void free_json(cJSON *json) { if ( json != 0 ) cJSON_Delete(json); }
+cJSON *cJSON_CreateArray(void)
+{
+    cJSON *item = cJSON_New_Item();
+    if ( item )
+        item->type = cJSON_Array;
+//#ifdef CJSON_GARBAGECOLLECTION
+//    cJSON_register(item);
+//#endif
+    return(item);
+}
+
+cJSON *cJSON_CreateObject(void)
+{
+    cJSON *item = cJSON_New_Item();
+    if ( item )
+        item->type = cJSON_Object;
+//#ifdef CJSON_GARBAGECOLLECTION
+//    cJSON_register(item);
+//#endif
+    return item;
+}
+
+void free_json(cJSON *item)
+{
+//#ifdef CJSON_GARBAGECOLLECTION
+//    cJSON_unregister(item);
+//#endif
+   if ( item != 0 )
+        cJSON_Delete(item);
+}

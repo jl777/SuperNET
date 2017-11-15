@@ -1441,3 +1441,40 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
     return(jprint(retarray,1));
 }
 
+int32_t LP_pendingswap(uint32_t requestid,uint32_t quoteid)
+{
+    cJSON *retjson,*array,*pending,*item; uint32_t r,q; char *retstr; int32_t i,n,retval = 0;
+    if ( (retstr= LP_recent_swaps(1000)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (array= jarray(&n,retjson,"swaps")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    r = juint(jitem(item,0),0);
+                    q = juint(jitem(item,1),0);
+                    if ( r == requestid && q == quoteid )
+                    {
+                        retval = 1;
+                        break;
+                    }
+                }
+            }
+            if ( retval == 0 )
+            {
+                if ( (pending= jobj(retjson,"pending")) != 0 )
+                {
+                    r = juint(pending,"requestid");
+                    q = juint(pending,"quoteid");
+                    if ( r == requestid && q == quoteid )
+                        retval = 1;
+                }
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    return(retval);
+}

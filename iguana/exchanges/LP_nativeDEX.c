@@ -17,16 +17,14 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// single utxo allocations alice
-// gc cJSON
-// more retries for swap sendrawtransaction
+// more retries for swap sendrawtransaction?
 // pbca26 unfinished swaps
-// alice waiting for bestprice
-//if ( G.LP_pendingswaps != 0 )
-//return(-1);
+// if ( G.LP_pendingswaps != 0 ) return(-1);
 // bot safe to exit?
 //
 // BCH signing
+// single utxo allocations alice
+// alice waiting for bestprice
 // previously, it used to show amount, kmd equiv, perc
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -83,7 +81,7 @@ void LP_millistats_update(struct LP_millistats *mp)
 }
 
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[2][1000];
 int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
@@ -328,7 +326,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock,char *remoteaddr,int32_t maxdepth)
 {
-    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char methodstr[64],*retstr,*str; struct nn_pollfd pfd;
+    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr,*buf; char methodstr[64],*retstr,*str; struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
         while ( nonz < maxdepth && recvlen > 0 )
@@ -340,8 +338,11 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
             ptr = 0;
-            if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
+            buf = malloc(1000000);
+            if ( (recvlen= nn_recv(sock,buf,1000000,0)) > 0 )
+            //if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
+                ptr = buf;
                 methodstr[0] = 0;
                 //printf("%s.(%s)\n",typestr,(char *)ptr);
                 if ( 0 )
@@ -391,7 +392,10 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 }
             }
             if ( ptr != 0 )
-                nn_freemsg(ptr), ptr = 0;
+            {
+                //nn_freemsg(ptr), ptr = 0;
+                free(buf);
+            }
         }
     }
     return(nonz);
@@ -939,6 +943,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_reservedmutex);
     portable_mutex_init(&LP_nanorecvsmutex);
     portable_mutex_init(&LP_tradebotsmutex);
+    portable_mutex_init(&LP_cJSONmutex);
     myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
 #ifndef FROM_JS
