@@ -53,8 +53,8 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_MIN_PEERS 8
 #define LP_MAX_PEERS 32
 
-#define LP_MAXDESIRED_UTXOS 128
-#define LP_MINDESIRED_UTXOS 32
+#define LP_MAXDESIRED_UTXOS (IAMLP != 0 ? 128 : 64)
+#define LP_MINDESIRED_UTXOS (IAMLP != 0 ? 32 : 16)
 #define LP_DUSTCOMBINE_THRESHOLD 1000000
 
 // RTmetrics

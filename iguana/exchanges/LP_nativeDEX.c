@@ -17,16 +17,15 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// single utxo allocations alice
 // gc cJSON
-// more retries for swap sendrawtransaction
+// more retries for swap sendrawtransaction?
 // pbca26 unfinished swaps
-// alice waiting for bestprice
-//if ( G.LP_pendingswaps != 0 )
-//return(-1);
+// if ( G.LP_pendingswaps != 0 ) return(-1);
 // bot safe to exit?
 //
 // BCH signing
+// single utxo allocations alice
+// alice waiting for bestprice
 // previously, it used to show amount, kmd equiv, perc
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
