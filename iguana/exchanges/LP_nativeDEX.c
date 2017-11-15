@@ -1243,13 +1243,19 @@ void LP_free(void *ptr)
         printf("total %d allocated total %llu\n",n,(long long)total);
         lasttime = (uint32_t)time(NULL);
     }
-    if ( freemp != 0 )
+    DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
+    {
+        if ( mp == freemp )
+            break;
+        mp = 0;
+    }
+    if ( mp != 0 )
     {
         portable_mutex_lock(&LP_cJSONmutex);
-        DL_DELETE(LP_memory_list,freemp);
+        DL_DELETE(LP_memory_list,mp);
         portable_mutex_unlock(&LP_cJSONmutex);
-        free(freemp);
-    } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
+        free(mp);
+    } // free from source file with #define redirect for alloc that wasnt
 }
 
 char *LP_clonestr(char *str)
