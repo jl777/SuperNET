@@ -1132,9 +1132,9 @@ cJSON *cJSON_CreateArray(void)
     cJSON *item = cJSON_New_Item();
     if ( item )
         item->type = cJSON_Array;
-#ifdef CJSON_GARBAGECOLLECTION
-    cJSON_register(item);
-#endif
+//#ifdef CJSON_GARBAGECOLLECTION
+//    cJSON_register(item);
+//#endif
     return(item);
 }
 
@@ -1143,17 +1143,17 @@ cJSON *cJSON_CreateObject(void)
     cJSON *item = cJSON_New_Item();
     if ( item )
         item->type = cJSON_Object;
-#ifdef CJSON_GARBAGECOLLECTION
-    cJSON_register(item);
-#endif
+//#ifdef CJSON_GARBAGECOLLECTION
+//    cJSON_register(item);
+//#endif
     return item;
 }
 
 void free_json(cJSON *item)
 {
-#ifdef CJSON_GARBAGECOLLECTION
-    cJSON_unregister(item);
-#endif
+//#ifdef CJSON_GARBAGECOLLECTION
+//    cJSON_unregister(item);
+//#endif
    if ( item != 0 )
         cJSON_Delete(item);
 }
