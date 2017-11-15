@@ -571,7 +571,14 @@ char *LP_connectedalice(cJSON *argjson) // alice
         LP_aliceid(Q.tradeid,Q.aliceid,"error1",0,0);
         return(clonestr("{\"result\",\"update stats\"}"));
     }
-    printf("CONNECTED.(%s) numpending.%d tradeid.%u\n",jprint(argjson,0),G.LP_pendingswaps,Q.tradeid);
+    printf("CONNECTED.(%s) numpending.%d tradeid.%u requestid.%u quoteid.%u\n",jprint(argjson,0),G.LP_pendingswaps,Q.tradeid,Q.R.requestid,Q.R.quoteid);
+    if ( LP_pendingswap(Q.R.requestid,Q.R.quoteid) > 0 )
+    {
+        printf("requestid.%u quoteid.%u is already in progres\n",Q.R.requestid,Q.R.quoteid);
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"error","swap already in progress");
+        return(jprint(retjson,1));
+    }
     if ( (autxo= LP_utxopairfind(0,Q.desttxid,Q.destvout,Q.feetxid,Q.feevout)) == 0 )
     {
         printf("cant find autxo\n");
@@ -616,12 +623,6 @@ char *LP_connectedalice(cJSON *argjson) // alice
     {
         retjson = cJSON_CreateObject();
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
-        if ( LP_pendingswap(Q.R.requestid,Q.R.quoteid) > 0 )
-        {
-            printf("requestid.%u quoteid.%u is already in progres\n",Q.R.requestid,Q.R.quoteid);
-            jaddstr(retjson,"error","swap already in progress");
-            return(jprint(retjson,1));
-        }
         if ( (swap= LP_swapinit(0,0,Q.privkey,&Q.R,&Q)) == 0 )
         {
             jaddstr(retjson,"error","couldnt swapinit");
