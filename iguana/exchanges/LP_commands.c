@@ -38,7 +38,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
 method = jstr(argjson,"method");
 if ( //strcmp(method,"uitem") == 0 || strcmp(method,"postutxos") == 0 ||
     strcmp(method,"notify") == 0
-    //|| strcmp(method,"postprice") == 0
+    || strcmp(method,"postprice") == 0
     )
     return(clonestr("{}"));
     /*if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (method == 0 || strcmp(method,"electrum") != 0) )
