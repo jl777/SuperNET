@@ -1225,18 +1225,25 @@ void *LP_realloc(void *ptr,uint64_t len)
 void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown;
-    uint32_t now; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
+    uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
         n = lagging = 0;
+        portable_mutex_lock(&LP_cJSONmutex);
         DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
         {
-            if ( now > mp->timestamp+60 )
-                lagging++;
             total += mp->len;
             n++;
+            if ( now > mp->timestamp+60 )
+            {
+                lagging++;
+                DL_DELETE(LP_memory_list,mp);
+                free(mp->ptr);
+                free(mp);
+            }
         }
-        printf("total %d allocated total %llu unknown.%u lagging.%d\n",n,(long long)total,unknown,lagging);
+        portable_mutex_unlock(&LP_cJSONmutex);
+        printf("total %d allocated total %llu %s unknown.%u lagging.%d\n",n,(long long)total,mbstr(str,total),unknown,lagging);
         lasttime = (uint32_t)time(NULL);
     }
     DL_FOREACH_SAFE(LP_memory_list,mp,tmp)

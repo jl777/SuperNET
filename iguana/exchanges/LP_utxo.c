@@ -47,7 +47,6 @@ void cJSON_register(cJSON *item)
     portable_mutex_unlock(&LP_cJSONmutex);
 }
 
-char *mbstr(char *str,double n);
 void cJSON_unregister(cJSON *item)
 {
     static uint32_t lasttime;
