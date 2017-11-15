@@ -1205,8 +1205,8 @@ void *LP_alloc(uint64_t len)
 {
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp));
-    if ( len == 72 )
-        printf("%d\n",1/zeroval());
+    //if ( len == 72 )
+    //    printf("%d\n",1/zeroval());
     //printf("\n>>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu\n",mp,mp->ptr,(long long)len);
     mp->timestamp = (uint32_t)time(NULL);
     mp->len = (uint32_t)len;
@@ -1231,7 +1231,8 @@ void LP_free(void *ptr)
         n = 0;
         DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
         {
-            printf("%d ",mp->len);
+            if ( mp->len != 72 )
+                printf("%d ",mp->len);
             total += mp->len;
             n++;
         }
