@@ -23,7 +23,10 @@ void PNACL_message(char *arg,...)
 {
     
 }
+#ifndef FROM_MARKETMAKER
 #define FROM_MARKETMAKER
+#endif
+
 #define CJSON_GARBAGECOLLECTION
 #include <stdio.h>
 #include <stdint.h>
