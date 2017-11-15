@@ -1200,10 +1200,14 @@ struct LP_memory_list
     void *ptr;
 } *LP_memory_list;
 
+int32_t zeroval() { return(0); }
+
 void *LP_alloc(uint64_t len)
 {
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp));
+    if ( len == 72 )
+        printf("%d\n",1/zeroval());
     //printf("\n>>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu\n",mp,mp->ptr,(long long)len);
     mp->timestamp = (uint32_t)time(NULL);
     mp->len = (uint32_t)len;
