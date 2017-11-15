@@ -51,11 +51,10 @@ char *mbstr(char *str,double n);
 void cJSON_unregister(cJSON *item)
 {
     static uint32_t lasttime;
-    char *tmpstr,str[65]; int32_t n; uint64_t total; struct cJSON_list *ptr,*tmp;
-    //if ( time(NULL) > lasttime+6 )
+    int32_t n; struct cJSON_list *ptr,*tmp; uint32_t now;
+    if ( (now= time(NULL)) > lasttime+6 )
     {
         n = 0;
-        total = 0;
         DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
         {
             /*if ( ptr->item != 0 && ptr->item->child != 0 && ptr->cjsonid != 0 )
@@ -68,13 +67,21 @@ void cJSON_unregister(cJSON *item)
             }*/
             n++;
         }
-        printf("total %d cJSON pending %s\n",n,mbstr(str,total));
+        printf("total %d cJSON pending\n",n);
         lasttime = (uint32_t)time(NULL);
     }
     DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
     {
-        if ( ptr->cjsonid == item->cjsonid )//ptr->item == item )
+        if ( ptr->item == item )
             break;
+        else if ( now > ptr->timestamp+60 )
+        {
+            portable_mutex_lock(&LP_cJSONmutex);
+            DL_DELETE(LP_cJSONlist,ptr);
+            portable_mutex_unlock(&LP_cJSONmutex);
+            cJSON_Delete(ptr->item);
+            free(ptr);
+        }
         ptr = 0;
     }
     if ( ptr != 0 )
