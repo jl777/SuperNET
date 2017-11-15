@@ -303,7 +303,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                 else
                 {
                     //printf("external unspent has no gettxout\n");
-                    flag += LP_address_utxoadd("electrum process",coin,coinaddr,txid,v,value,0,1);
+                    flag += LP_address_utxoadd((uint32_t)time(NULL),"electrum process",coin,coinaddr,txid,v,value,0,1);
                 }
             }
             else
@@ -345,7 +345,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                 if ( tx->height > 0 )
                 {
                     //printf("from electrum_process_array\n");
-                    flag += LP_address_utxoadd("electrum process2",coin,coinaddr,txid,v,value,tx->height,-1);
+                    flag += LP_address_utxoadd((uint32_t)time(NULL),"electrum process2",coin,coinaddr,txid,v,value,tx->height,-1);
                 }
                 //printf("v.%d numvouts.%d %.8f (%s)\n",v,tx->numvouts,dstr(tx->outpoints[jint(item,"tx_pos")].value),jprint(item,0));
             } //else printf("cant find tx\n");
@@ -544,7 +544,7 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
                         if ( tx->height > 0 && tx->height != height )
                             printf("update %s height.%d <- %d\n",bits256_str(str,txid),tx->height,height);
                         tx->height = height;
-                        LP_address_utxoadd("electrum history",coin,addr,txid,0,0,height,-1);
+                        LP_address_utxoadd((uint32_t)time(NULL),"electrum history",coin,addr,txid,0,0,height,-1);
                     }
                 }
             }
@@ -578,8 +578,8 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     cJSON *retjson=0; char *retstr; struct LP_address *ap; struct iguana_info *coin; int32_t updatedflag,height,usecache=1;
     if ( (coin= LP_coinfind(symbol)) == 0 )
         return(0);
-    //if ( strcmp(addr,INSTANTDEX_KMD) == 0 )
-    //    return(cJSON_Parse("[]"));
+    if ( strcmp(addr,INSTANTDEX_KMD) == 0 )
+        return(cJSON_Parse("[]"));
     if ( ep == 0 || ep->heightp == 0 )
         height = coin->longestchain;
     else height = *(ep->heightp);

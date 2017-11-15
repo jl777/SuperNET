@@ -17,8 +17,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// single utxo allocations, reject result, latency
+// single utxo allocations alice, reject result, latency
 // alice waiting for bestprice
+//if ( G.LP_pendingswaps != 0 )
+//return(-1);
 // bot safe to exit?
 //
 // BCH signing
@@ -78,7 +80,7 @@ void LP_millistats_update(struct LP_millistats *mp)
 }
 
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[2][1000];
 int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
@@ -87,6 +89,7 @@ struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
 struct LP_pubkeyinfo *LP_pubkeyinfos;
 struct rpcrequest_info *LP_garbage_collector;
+struct LP_address_utxo *LP_garbage_collector2;
 
 
 //uint32_t LP_deadman_switch;
@@ -312,8 +315,9 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                     }
                     //printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
                 }
-                free_json(argjson);
             }
+            if ( argjson != 0 )
+                free_json(argjson);
         }
     } //else printf("DUPLICATE.(%s)\n",(char *)ptr);
     portable_mutex_unlock(&LP_commandmutex);
@@ -335,6 +339,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             pfd.events = NN_POLLIN;
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
+            ptr = 0;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
                 methodstr[0] = 0;
@@ -384,9 +389,9 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         free(str);
                     }
                 }
-                if ( ptr != 0 )
-                    nn_freemsg(ptr), ptr = 0;
             }
+            if ( ptr != 0 )
+                nn_freemsg(ptr), ptr = 0;
         }
     }
     return(nonz);
@@ -923,6 +928,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_networkmutex);
     portable_mutex_init(&LP_gcmutex);
     portable_mutex_init(&LP_forwardmutex);
+    portable_mutex_init(&LP_inusemutex);
     portable_mutex_init(&LP_psockmutex);
     portable_mutex_init(&LP_coinmutex);
     portable_mutex_init(&LP_pubkeymutex);

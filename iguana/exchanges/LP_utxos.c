@@ -19,20 +19,9 @@
 //
 
 
-
-
 int32_t LP_ismine(struct LP_utxoinfo *utxo)
 {
     if ( utxo != 0 && bits256_cmp(utxo->pubkey,G.LP_mypub25519) == 0 )
-        return(1);
-    else return(0);
-}
-
-int32_t LP_isavailable(struct LP_utxoinfo *utxo)
-{
-    if ( time(NULL) > utxo->T.swappending )
-        utxo->T.swappending = 0;
-    if ( utxo != 0 && utxo->T.swappending == 0 && utxo->S.swap == 0 )
         return(1);
     else return(0);
 }
@@ -88,6 +77,41 @@ int32_t LP_utxoaddptrs(struct LP_utxoinfo *ptrs[],int32_t n,struct LP_utxoinfo *
     return(n);
 }
 
+/*uint32_t LP_allocated(bits256 txid,int32_t vout)
+{
+    struct LP_utxoinfo *utxo;
+    if ( (utxo= _LP_utxofind(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    {
+        //char str[65]; printf("%s/v%d not available\n",bits256_str(str,txid),vout);
+        return(utxo);
+    }
+    if ( (utxo= _LP_utxo2find(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    {
+        //char str[65]; printf("%s/v%d not available2\n",bits256_str(str,txid),vout);
+        return(utxo);
+    }
+    if ( (utxo= _LP_utxofind(1,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    {
+        //char str[65]; printf("%s/v%d not available\n",bits256_str(str,txid),vout);
+        return(utxo);
+    }
+    if ( (utxo= _LP_utxo2find(1,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    {
+        //char str[65]; printf("%s/v%d not available2\n",bits256_str(str,txid),vout);
+        return(utxo);
+    }
+    return(0);
+}
+
+int32_t LP_isavailable(struct LP_utxoinfo *utxo)
+{
+    if ( time(NULL) > utxo->T.swappending )
+        utxo->T.swappending = 0;
+    if ( utxo != 0 && utxo->T.swappending == 0 && utxo->S.swap == 0 )
+        return(1);
+    else return(0);
+}
+ 
 int32_t LP_utxocollisions(struct LP_utxoinfo *ptrs[],struct LP_utxoinfo *refutxo)
 {
     int32_t iambob,n = 0; struct LP_utxoinfo *utxo; struct _LP_utxoinfo u;
@@ -170,6 +194,7 @@ void LP_availableset(struct LP_utxoinfo *utxo)
         }
     }
 }
+*/
 
 cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
 {
@@ -208,8 +233,8 @@ cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
         if ( bits256_nonz(utxo->S.otherpubkey) != 0 )
             jaddbits256(item,"srchash",utxo->S.otherpubkey);
     }
-    if ( utxo->S.swap != 0 )
-        jaddstr(item,"swap","in progress");
+    //if ( utxo->S.swap != 0 )
+    //    jaddstr(item,"swap","in progress");
     if ( utxo->T.spentflag != 0 )
         jaddnum(item,"spent",utxo->T.spentflag);
     jaddnum(item,"session",utxo->T.sessionid);
@@ -235,7 +260,6 @@ struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
         printf("LP_utxo_bestfit error symbol.%p %.8f\n",symbol,dstr(destsatoshis));
         return(0);
     }
-    // jl777 remove mempool
     HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
     {
         if ( strcmp(symbol,utxo->coin) != 0 )
@@ -492,7 +516,7 @@ cJSON *LP_inventory(char *symbol)
             {
                 //if ( utxo->T.spentflag == 0 )
                 //    utxo->T.spentflag = (uint32_t)time(NULL);
-                printf("%s %s ineligible %.8f %.8f\n",utxo->coin,bits256_str(str,u.txid),dstr(val),dstr(val2));
+                //printf("%s %s ineligible %.8f %.8f\n",utxo->coin,bits256_str(str,u.txid),dstr(val),dstr(val2));
                 continue;
             }
             //if ( iambob != 0 )
