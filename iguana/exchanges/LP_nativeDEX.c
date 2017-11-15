@@ -1229,7 +1229,6 @@ void LP_free(void *ptr)
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
         n = lagging = 0;
-        portable_mutex_lock(&LP_cJSONmutex);
         DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
         {
             total += mp->len;
@@ -1237,12 +1236,16 @@ void LP_free(void *ptr)
             if ( now > mp->timestamp+60 )
             {
                 lagging++;
-                DL_DELETE(LP_memory_list,mp);
-                free(mp->ptr);
-                free(mp);
+                if ( now > mp->timestamp+600 )
+                {
+                    portable_mutex_lock(&LP_cJSONmutex);
+                    DL_DELETE(LP_memory_list,mp);
+                    portable_mutex_unlock(&LP_cJSONmutex);
+                    free(mp->ptr);
+                    free(mp);
+                }
             }
         }
-        portable_mutex_unlock(&LP_cJSONmutex);
         printf("total %d allocated total %llu %s unknown.%u lagging.%d\n",n,(long long)total,mbstr(str,total),unknown,lagging);
         lasttime = (uint32_t)time(NULL);
     }
