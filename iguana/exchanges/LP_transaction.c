@@ -120,7 +120,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
                     {
                         if ( totalretries < 10 )
                         {
-                            printf("time error with electrum, retry\n");
+                            printf("time error with electrum, retry.%d\n",totalretries);
                             totalretries++;
                             i--;
                         }

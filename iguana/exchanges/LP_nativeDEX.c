@@ -17,8 +17,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// more retries for swap sendrawtransaction?
-// pbca26 unfinished swaps
 // if ( G.LP_pendingswaps != 0 ) return(-1);
 // bot safe to exit?
 //
@@ -1190,4 +1188,16 @@ void LP_fromjs_iter()
 
 #endif
 
+#undef calloc
+#undef free
+
+void *LP_alloc(uint64_t len)
+{
+    return(calloc(1,len));
+}
+
+void LP_free(void *ptr)
+{
+    free(ptr);
+}
 
