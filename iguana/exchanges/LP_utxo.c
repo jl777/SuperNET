@@ -59,7 +59,11 @@ int32_t _LP_inuse_delete(bits256 txid,int32_t vout)
 struct LP_inuse_info *_LP_inuse_add(uint32_t expiration,bits256 otherpub,bits256 txid,int32_t vout)
 {
     struct LP_inuse_info *lp;
-    if ( bits256_nonz(txid) != 0 && LP_numinuse < sizeof(LP_inuse)/sizeof(*LP_inuse) )
+    if ( LP_numinuse >= sizeof(LP_inuse)/sizeof(*LP_inuse) )
+    {
+        
+    }
+    if ( bits256_nonz(txid) != 0 &&  )
     {
         if ( (lp= _LP_inuse_find(txid,vout)) == 0 )
         {

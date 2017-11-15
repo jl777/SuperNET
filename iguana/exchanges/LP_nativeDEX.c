@@ -17,7 +17,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// single utxo allocations alice, reject result, latency
+// single utxo allocations alice
+// gc cJSON
+// more retries for swap sendrawtransaction
+// pbca26 unfinished swaps
 // alice waiting for bestprice
 //if ( G.LP_pendingswaps != 0 )
 //return(-1);
