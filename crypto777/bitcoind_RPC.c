@@ -45,6 +45,8 @@ struct return_string {
     size_t len;
 };
 
+struct MemoryStruct { char *memory; size_t size; };
+
 size_t accumulate(void *ptr, size_t size, size_t nmemb, struct return_string *s);
 void init_string(struct return_string *s);
 static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data);
@@ -137,8 +139,9 @@ char *Jay_NXTrequest(char *command,char *params)
 char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
     static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
+    struct MemoryStruct chunk;
     struct curl_slist *headers = NULL; struct return_string s; CURLcode res; CURL *curl_handle;
-    char *bracket0,*bracket1,*databuf = 0; long len; int32_t specialcase,numretries; double starttime;
+    char *bracket0,*bracket1,*retstr,*databuf = 0; long len; int32_t specialcase,numretries; double starttime;
     if ( didinit == 0 )
     {
         didinit = 1;
@@ -162,13 +165,23 @@ try_again:
         *retstrp = 0;
     starttime = OS_milliseconds();
     curl_handle = curl_easy_init();
-    //init_string(&s);
     headers = curl_slist_append(0,"Expect:");
     
   	curl_easy_setopt(curl_handle,CURLOPT_USERAGENT,"mozilla/4.0");//"Mozilla/4.0 (compatible; )");
     curl_easy_setopt(curl_handle,CURLOPT_HTTPHEADER,	headers);
     curl_easy_setopt(curl_handle,CURLOPT_URL,		url);
-    //curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)accumulate); 		// send all data to this function
+    if ( (0) )
+    {
+        init_string(&s);
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)accumulate); 		// send all data to this function
+    }
+    else
+    {
+        memset(&chunk,0,sizeof(chunk));
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,WriteMemoryCallback);
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,(void *)&chunk);
+
+    }
     curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)WriteMemoryCallback);
     curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,		&s); 			// we pass our 's' struct to the callback
     curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
@@ -225,23 +238,24 @@ try_again:
         if ( specialcase != 0 || timeout != 0 )
         {
             //printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,s.ptr,res);
-            free(s.ptr);
+            free(chunk.memory); //free(s.ptr);
             return(0);
         }
         else if ( numretries >= 4 )
         {
             printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
             //printf("Maximum number of retries exceeded!\n");
-            free(s.ptr);
+            free(chunk.memory);//free(s.ptr);
             return(0);
         }
-        free(s.ptr);
+        free(chunk.memory);//free(s.ptr);
         sleep((1<<numretries));
         goto try_again;
         
     }
     else
     {
+        retstr = chunk.memory; // retstr = s.ptr;
         if ( command != 0 && specialcase == 0 )
         {
             count++;
@@ -250,20 +264,20 @@ try_again:
                 printf("%d: ave %9.6f | elapsed %.3f millis | bitcoind_RPC.(%s) url.(%s)\n",count,elapsedsum/count,(OS_milliseconds() - starttime),command,url);
             if ( retstrp != 0 )
             {
-                *retstrp = s.ptr;
-                return(s.ptr);
+                *retstrp = retstr;
+                return(retstr);
             }
-            return(post_process_bitcoind_RPC(debugstr,command,s.ptr,params));
+            return(post_process_bitcoind_RPC(debugstr,command,retstr,params));
         }
         else
         {
             if ( (0) && specialcase != 0 )
-                fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: BTCD.(%s) -> (%s)\n",params,s.ptr);
+                fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: BTCD.(%s) -> (%s)\n",params,retstr);
             count2++;
             elapsedsum2 += (OS_milliseconds() - starttime);
             if ( (count2 % 10000) == 0)
                 printf("%d: ave %9.6f | elapsed %.3f millis | NXT calls.(%s) cmd.(%s)\n",count2,elapsedsum2/count2,(double)(OS_milliseconds() - starttime),url,command);
-            return(s.ptr);
+            return(retstr);
         }
     }
     //printf("bitcoind_RPC: impossible case\n");
@@ -309,8 +323,6 @@ size_t accumulate(void *ptr,size_t size,size_t nmemb,struct return_string *s)
     s->len = new_len;
     return(size * nmemb);
 }
-
-struct MemoryStruct { char *memory; size_t size; };
 
 static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
 {
