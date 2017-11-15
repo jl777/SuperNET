@@ -19,7 +19,7 @@
 #include "OS_portable.h"
 #define LIQUIDITY_PROVIDER 1
 
-/*#define malloc(n) LP_alloc(n)
+#define malloc(n) LP_alloc(n)
 #define realloc(ptr,n) LP_realloc(ptr,n)
 #define calloc(a,b) LP_alloc((uint64_t)(a) * (b))
 #define free(ptr) LP_free(ptr)
@@ -28,7 +28,7 @@
 void *LP_realloc(void *ptr,uint64_t len);
 void *LP_alloc(uint64_t len);
 void LP_free(void *ptr);
-char *LP_clonestr(char *str);*/
+char *LP_clonestr(char *str);
 
 
 #if LIQUIDITY_PROVIDER
@@ -45,7 +45,7 @@ struct return_string {
     size_t len;
 };
 
-struct MemoryStruct { char *memory; size_t size; };
+struct MemoryStruct { char *memory; size_t size,allocsize; };
 
 size_t accumulate(void *ptr, size_t size, size_t nmemb, struct return_string *s);
 void init_string(struct return_string *s);
@@ -325,9 +325,20 @@ size_t accumulate(void *ptr,size_t size,size_t nmemb,struct return_string *s)
 
 static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
 {
-    size_t realsize = (size * nmemb);
+    size_t needed,realsize = (size * nmemb);
     struct MemoryStruct *mem = (struct MemoryStruct *)data;
-    mem->memory = (ptr != 0) ? realloc(mem->memory,mem->size + realsize + 1) : malloc(mem->size + realsize + 1);
+    needed = mem->size + realsize + 1;
+    if ( ptr == 0 && needed < 512 )
+    {
+        mem->allocsize = 511;
+        mem->memory = malloc(mem->allocsize);
+    }
+    if ( mem->allocsize < needed )
+    {
+        mem->memory = realloc(mem->memory,needed);
+        mem->allocsize = needed;
+    }
+    //mem->memory = (ptr != 0) ? realloc(mem->memory,mem->size + realsize + 1) : malloc(mem->size + realsize + 1);
     if ( mem->memory != 0 )
     {
         if ( ptr != 0 )
