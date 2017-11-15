@@ -1210,7 +1210,7 @@ void *LP_alloc(uint64_t len)
     //printf("\n>>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu\n",mp,mp->ptr,(long long)len);
     mp->timestamp = (uint32_t)time(NULL);
     mp->len = (uint32_t)len;
-    mp->ptr = &mp[1];
+    mp->ptr = calloc(1,len);
     portable_mutex_lock(&LP_cJSONmutex);
     DL_APPEND(LP_memory_list,mp);
     portable_mutex_unlock(&LP_cJSONmutex);
@@ -1225,8 +1225,7 @@ void *LP_realloc(void *ptr,uint64_t len)
 void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown;
-    uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp,*freemp = ptr;
-    --freemp;
+    uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
         n = lagging = 0;
@@ -1239,7 +1238,7 @@ void LP_free(void *ptr)
             {
                 lagging++;
                 DL_DELETE(LP_memory_list,mp);
-                //free(mp->ptr);
+                free(mp->ptr);
                 free(mp);
             }
         }
@@ -1253,15 +1252,13 @@ void LP_free(void *ptr)
             break;
         mp = 0;
     }
-    if ( mp != freemp )
-        printf("mp %p != %p\n",mp,freemp);
     if ( mp != 0 )
     {
         portable_mutex_lock(&LP_cJSONmutex);
         DL_DELETE(LP_memory_list,mp);
         portable_mutex_unlock(&LP_cJSONmutex);
         //printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u\n",ptr,mp,mp->len);
-        //free(mp->ptr);
+        free(mp->ptr);
         free(mp);
     } else unknown++; // free from source file with #define redirect for alloc that wasnt
 }

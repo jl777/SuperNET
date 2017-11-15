@@ -829,7 +829,7 @@ char *jstr(cJSON *json,char *field) { if ( json == 0 ) return(0); if ( field == 
 char *jstri(cJSON *json,int32_t i) { return(cJSON_str(cJSON_GetArrayItem(json,i))); }
 char *jprint(cJSON *json,int32_t freeflag)
 {
-    char *str;
+    char *str,*retstr;
     /*static portable_mutex_t mutex; static int32_t initflag;
     if ( initflag == 0 )
     {
@@ -843,11 +843,11 @@ char *jprint(cJSON *json,int32_t freeflag)
     str = cJSON_Print(json), _stripwhite(str,' ');
     if ( freeflag != 0 )
         free_json(json);
-    //retstr = LP_alloc(strlen(str) + 1);
-    //strcpy(retstr,str);
-    //cJSON_free(str); garbage collected
+    retstr = LP_alloc(strlen(str) + 1);
+    strcpy(retstr,str);
+    cJSON_free(str);
     //portable_mutex_unlock(&mutex);
-    return(str);
+    return(retstr);
 }
 
 bits256 get_API_bits256(cJSON *obj)
