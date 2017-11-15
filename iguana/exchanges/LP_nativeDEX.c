@@ -1228,6 +1228,7 @@ void LP_free(void *ptr)
         n = 0;
         DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
         {
+            printf("%d ",mp->len);
             total += mp->len;
             n++;
         }
@@ -1245,7 +1246,7 @@ void LP_free(void *ptr)
         portable_mutex_lock(&LP_cJSONmutex);
         DL_DELETE(LP_memory_list,mp);
         portable_mutex_unlock(&LP_cJSONmutex);
-        printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u\n",ptr,mp,mp->len);
+        //printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u\n",ptr,mp,mp->len);
         free(mp->ptr);
         free(mp);
     } // free from source file with #define redirect for alloc that wasnt
