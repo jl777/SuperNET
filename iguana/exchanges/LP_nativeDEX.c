@@ -1190,6 +1190,7 @@ void LP_fromjs_iter()
 
 #undef calloc
 #undef free
+#undef clonestr
 
 struct LP_memory_list
 {
@@ -1236,4 +1237,10 @@ void LP_free(void *ptr)
     } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
 }
 
+char *LP_clonestr(char *str)
+{
+    char *retstr = LP_alloc(strlen(str)+1);
+    strcpy(retstr,str);
+    return(retstr);
+}
 
