@@ -37,7 +37,8 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
     char *method,*userpass,*base,*rel,*coin,*retstr = 0; int32_t changed,flag = 0; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
 method = jstr(argjson,"method");
 if ( strcmp(method,"uitem") == 0 || strcmp(method,"postutxos") == 0
-    || strcmp(method,"notify") == 0 || strcmp(method,"postprice") == 0
+    || strcmp(method,"notify") == 0
+    //|| strcmp(method,"postprice") == 0
     )
     return(clonestr("{}"));
 retstr = jprint(argjson,0);
