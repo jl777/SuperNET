@@ -79,6 +79,7 @@ void cJSON_unregister(cJSON *item)
             portable_mutex_lock(&LP_cJSONmutex);
             DL_DELETE(LP_cJSONlist,ptr);
             portable_mutex_unlock(&LP_cJSONmutex);
+            printf("free expired\n");
             cJSON_Delete(ptr->item);
             free(ptr);
         }
@@ -90,7 +91,7 @@ void cJSON_unregister(cJSON *item)
         DL_DELETE(LP_cJSONlist,ptr);
         free(ptr);
         portable_mutex_unlock(&LP_cJSONmutex);
-    } else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
+    } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
 }
 
 struct LP_inuse_info *_LP_inuse_find(bits256 txid,int32_t vout)
