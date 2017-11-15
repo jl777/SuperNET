@@ -19,7 +19,7 @@
 #include "OS_portable.h"
 #define LIQUIDITY_PROVIDER 1
 
-#define malloc(n) LP_alloc(n)
+/*#define malloc(n) LP_alloc(n)
 #define realloc(ptr,n) LP_realloc(ptr,n)
 #define calloc(a,b) LP_alloc((uint64_t)(a) * (b))
 #define free(ptr) LP_free(ptr)
@@ -28,7 +28,7 @@
 void *LP_realloc(void *ptr,uint64_t len);
 void *LP_alloc(uint64_t len);
 void LP_free(void *ptr);
-char *LP_clonestr(char *str);
+char *LP_clonestr(char *str);*/
 
 
 #if LIQUIDITY_PROVIDER
@@ -328,9 +328,9 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
     size_t needed,realsize = (size * nmemb);
     struct MemoryStruct *mem = (struct MemoryStruct *)data;
     needed = mem->size + realsize + 1;
-    if ( ptr == 0 && needed < 512 )
+    if ( ptr == 0 && needed < 1024 )
     {
-        mem->allocsize = 512;
+        mem->allocsize = 1024;
         mem->memory = malloc(mem->allocsize);
     }
     if ( mem->allocsize < needed )
