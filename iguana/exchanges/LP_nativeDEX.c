@@ -1221,7 +1221,7 @@ void *LP_realloc(void *ptr,uint64_t len)
 
 void LP_free(void *ptr)
 {
-    static uint32_t lasttime;
+    static uint32_t lasttime,unknown;
     uint32_t now; int32_t n; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
@@ -1232,7 +1232,7 @@ void LP_free(void *ptr)
             total += mp->len;
             n++;
         }
-        printf("total %d allocated total %llu\n",n,(long long)total);
+        printf("total %d allocated total %llu unknown.%u\n",n,(long long)total,unknown);
         lasttime = (uint32_t)time(NULL);
     }
     DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
@@ -1249,7 +1249,7 @@ void LP_free(void *ptr)
         //printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u\n",ptr,mp,mp->len);
         free(mp->ptr);
         free(mp);
-    } // free from source file with #define redirect for alloc that wasnt
+    } else unknown++; // free from source file with #define redirect for alloc that wasnt
 }
 
 char *LP_clonestr(char *str)

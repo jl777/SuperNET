@@ -277,7 +277,7 @@ try_again:
 
 void init_string(struct return_string *s)
 {
-    s->len = 0;
+    s->len = 511;
     s->ptr = (char *)calloc(1,s->len+1);
     if ( s->ptr == NULL )
     {
