@@ -47,6 +47,7 @@ struct return_string {
 
 size_t accumulate(void *ptr, size_t size, size_t nmemb, struct return_string *s);
 void init_string(struct return_string *s);
+static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data);
 
 
 /************************************************************************
@@ -161,13 +162,14 @@ try_again:
         *retstrp = 0;
     starttime = OS_milliseconds();
     curl_handle = curl_easy_init();
-    init_string(&s);
+    //init_string(&s);
     headers = curl_slist_append(0,"Expect:");
     
   	curl_easy_setopt(curl_handle,CURLOPT_USERAGENT,"mozilla/4.0");//"Mozilla/4.0 (compatible; )");
     curl_easy_setopt(curl_handle,CURLOPT_HTTPHEADER,	headers);
     curl_easy_setopt(curl_handle,CURLOPT_URL,		url);
-    curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)accumulate); 		// send all data to this function
+    //curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)accumulate); 		// send all data to this function
+    curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)WriteMemoryCallback);
     curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,		&s); 			// we pass our 's' struct to the callback
     curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
 	curl_easy_setopt(curl_handle,CURLOPT_NOPROGRESS,	1L);			// no progress callback
