@@ -1154,6 +1154,6 @@ void free_json(cJSON *item)
 #ifdef CJSON_GARBAGECOLLECTION
     cJSON_unregister(item);
 #endif
-   if ( json != 0 )
+   if ( item != 0 )
         cJSON_Delete(item);
 }
