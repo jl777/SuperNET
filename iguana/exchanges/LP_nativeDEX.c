@@ -1226,7 +1226,7 @@ void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown;
     uint32_t now; int32_t n; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
-    if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
+    if ( (now= (uint32_t)time(NULL)) > lasttime+600 )
     {
         n = 0;
         DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
