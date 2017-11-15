@@ -206,8 +206,8 @@ int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
     uint32_t requestid,quoteid; int32_t i,nonz=0,alicemaxconfirms,bobmaxconfirms,aliceconfirms,bobconfirms,len = 0; uint8_t other33[33];
     if ( datalen == sizeof(swap->otherdeck)+38+sizeof(uint32_t)*2 )
     {
-        datalen += iguana_rwnum(0,&data[len],sizeof(requestid),&requestid);
-        datalen += iguana_rwnum(0,&data[len],sizeof(quoteid),&quoteid);
+        len += iguana_rwnum(0,&data[len],sizeof(requestid),&requestid);
+        len += iguana_rwnum(0,&data[len],sizeof(quoteid),&quoteid);
         if ( requestid != swap->I.req.requestid || quoteid != swap->I.req.quoteid )
         {
             printf("SWAP requestid.%u quoteid.%u mismatch received r.%u q.%u\n",swap->I.req.requestid,swap->I.req.quoteid,requestid,quoteid);
@@ -252,7 +252,7 @@ int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
             len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
         return(0);
     }
-    printf("pubkeys verify size mismatch %d != %d\n",datalen,(int32_t)sizeof(swap->otherdeck)+38+sizeof(uint32_t)*2);
+    printf("pubkeys verify size mismatch %d != %d\n",datalen,(int32_t)(sizeof(swap->otherdeck)+38+sizeof(uint32_t)*2));
     return(-1);
 }
 
