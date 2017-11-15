@@ -45,9 +45,25 @@ void cJSON_register(cJSON *item)
     portable_mutex_unlock(&LP_cJSONmutex);
 }
 
+char *mbstr(char *str,double n);
 void cJSON_unregister(cJSON *item)
 {
-    struct cJSON_list *ptr,*tmp;
+    static uint32_t lasttime;
+    char *tmpstr,str[65]; int32_t n; uint64_t total; struct cJSON_list *ptr,*tmp;
+    if ( time(NULL) > lasttime+600 )
+    {
+        n = 0;
+        total = 0;
+        DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
+        {
+            tmpstr = jprint(ptr->item,0);
+            total += strlen(tmpstr);
+            free(tmpstr);
+            n++;
+        }
+        printf("total %d cJSON pending %s\n",n,mbstr(str,total));
+        lasttime = (uint32_t)time(NULL);
+    }
     DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
     {
         if ( ptr->item == item )
@@ -60,7 +76,7 @@ void cJSON_unregister(cJSON *item)
         DL_DELETE(LP_cJSONlist,ptr);
         free(ptr);
         portable_mutex_unlock(&LP_cJSONmutex);
-    }
+    } else printf("cJSON_unregister of unknown %p\n",item);
 }
 
 struct LP_inuse_info *_LP_inuse_find(bits256 txid,int32_t vout)
