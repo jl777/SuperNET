@@ -449,6 +449,11 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,cJSON *argjson,char *base,c
     if ( bits256_nonz(privkey) != 0 && bits256_cmp(G.LP_mypub25519,qp->srchash) == 0 )
     {
         LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis-qp->txfee,rel,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
+        if ( LP_pendingswap(qp->R.requestid,qp->R.quoteid) > 0 )
+        {
+            printf("requestid.%u quoteid.%u is already in progres\n",qp->R.requestid,qp->R.quoteid);
+            return(-1);
+        }
         if ( (swap= LP_swapinit(1,0,privkey,&qp->R,qp)) == 0 )
         {
             printf("cant initialize swap\n");
@@ -611,6 +616,12 @@ char *LP_connectedalice(cJSON *argjson) // alice
     {
         retjson = cJSON_CreateObject();
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
+        if ( LP_pendingswap(Q.R.requestid,Q.R.quoteid) > 0 )
+        {
+            printf("requestid.%u quoteid.%u is already in progres\n",Q.R.requestid,Q.R.quoteid);
+            jaddstr(retjson,"error","swap already in progress");
+            return(jprint(retjson,1));
+        }
         if ( (swap= LP_swapinit(0,0,Q.privkey,&Q.R,&Q)) == 0 )
         {
             jaddstr(retjson,"error","couldnt swapinit");
