@@ -1234,7 +1234,7 @@ void LP_free(void *ptr)
         {
             total += mp->len;
             n++;
-            if ( now > mp->timestamp+60 )
+            if ( now > mp->timestamp+600 )
             {
                 lagging++;
                 DL_DELETE(LP_memory_list,mp);
