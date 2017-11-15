@@ -24,6 +24,7 @@ void PNACL_message(char *arg,...)
     
 }
 #define FROM_MARKETMAKER
+#define CJSON_GARBAGECOLLECTION
 #include <stdio.h>
 #include <stdint.h>
 #ifndef NATIVE_WINDOWS
