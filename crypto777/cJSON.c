@@ -25,8 +25,6 @@
 /* JSON parser in C. */
 #include <math.h>
 
-#define CJSON_GARBAGECOLLECTION
-
 #include "../includes/cJSON.h"
 
 #ifndef DBL_EPSILON

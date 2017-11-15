@@ -23,11 +23,12 @@ void PNACL_message(char *arg,...)
 {
     
 }
-#ifndef FROM_MARKETMAKER
 #define FROM_MARKETMAKER
+
+#ifndef CJSON_GARBAGECOLLECTION
+#define CJSON_GARBAGECOLLECTION
 #endif
 
-#define CJSON_GARBAGECOLLECTION
 #include <stdio.h>
 #include <stdint.h>
 #ifndef NATIVE_WINDOWS
