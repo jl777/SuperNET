@@ -72,11 +72,12 @@ void cJSON_unregister(cJSON *item)
     }
     if ( ptr != 0 )
     {
+        printf("found %p\n",item);
         portable_mutex_lock(&LP_cJSONmutex);
         DL_DELETE(LP_cJSONlist,ptr);
         free(ptr);
         portable_mutex_unlock(&LP_cJSONmutex);
-    } else printf("cJSON_unregister of unknown %p\n",item);
+    } //else printf("cJSON_unregister of unknown %p\n",item);
 }
 
 struct LP_inuse_info *_LP_inuse_find(bits256 txid,int32_t vout)
