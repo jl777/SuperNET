@@ -27,7 +27,7 @@ struct LP_inuse_info
 } LP_inuse[1024];
 int32_t LP_numinuse;
 
-struct cJSON_list
+/*struct cJSON_list
 {
     struct cJSON_list *next,*prev;
     cJSON *item;
@@ -92,7 +92,7 @@ void cJSON_unregister(cJSON *item)
         free(ptr);
         portable_mutex_unlock(&LP_cJSONmutex);
     } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
-}
+}*/
 
 struct LP_inuse_info *_LP_inuse_find(bits256 txid,int32_t vout)
 {

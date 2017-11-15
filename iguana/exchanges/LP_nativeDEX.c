@@ -1201,7 +1201,7 @@ void *LP_alloc(uint64_t len)
 {
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp) + len);
-    printf("mp.%p ptr.%p\n",mp,&mp[1]);
+    printf("\n>>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu\n",mp,&mp[1],(long long)len);
     mp->timestamp = (uint32_t)time(NULL);
     mp->len = (uint32_t)len;
     portable_mutex_lock(&LP_cJSONmutex);
@@ -1213,9 +1213,9 @@ void *LP_alloc(uint64_t len)
 void LP_free(void *ptr)
 {
     static uint32_t lasttime;
-    uint32_t now; int32_t n; uint64_t total = 0; char str[65]; struct LP_memory_list *mp,*tmp,*freemp = ptr;
+    uint32_t now; int32_t n; uint64_t total = 0; struct LP_memory_list *mp,*tmp,*freemp = ptr;
     --freemp;
-    printf("freemp.%p\n",freemp);
+    printf("\n>>>>>>>>>>> LP_free freemp.%p\n",freemp);
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
         n = 0;
@@ -1224,15 +1224,15 @@ void LP_free(void *ptr)
             total += mp->len;
             n++;
         }
-        printf("total %d allocated total size %s\n",n,mbstr(str,total));
+        printf("total %d allocated total %llu\n",n,(long long)total);
         lasttime = (uint32_t)time(NULL);
     }
     if ( freemp != 0 )
     {
         portable_mutex_lock(&LP_cJSONmutex);
         DL_DELETE(LP_memory_list,freemp);
-        free(freemp);
         portable_mutex_unlock(&LP_cJSONmutex);
+        free(freemp);
     } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
 }
 
