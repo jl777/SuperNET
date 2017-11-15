@@ -895,7 +895,7 @@ void LP_aliceloop(void *_swap)
     }
     basilisk_swap_finished(swap);
     printf("finish swap.%p\n",swap);
-    //free(swap);
+    free(swap);
     G.LP_pendingswaps--;
 }
 
