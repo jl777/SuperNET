@@ -328,14 +328,14 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
     size_t needed,realsize = (size * nmemb);
     struct MemoryStruct *mem = (struct MemoryStruct *)data;
     needed = mem->size + realsize + 1;
-    if ( ptr == 0 && needed < 1024 )
+    if ( ptr == 0 && needed < 256 )
     {
-        mem->allocsize = 1024;
+        mem->allocsize = 256;
         mem->memory = malloc(mem->allocsize);
     }
     if ( mem->allocsize < needed )
     {
-        printf("curl needs %d more\n",(int32_t)realsize);
+        //printf("curl needs %d more\n",(int32_t)realsize);
         mem->memory = (ptr != 0) ? realloc(mem->memory,needed) : malloc(needed);
         mem->allocsize = needed;
     }
