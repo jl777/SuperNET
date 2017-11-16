@@ -23,7 +23,9 @@
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "15000"
+#define LP_BUILD_NUMBER "15096"
+#define LP_BARTERDEX_VERSION 1
+#define LP_MAGICBITS 8
 
 #ifdef FROM_JS
 #include <emscripten.h>
@@ -38,8 +40,6 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #endif
 //#define LP_STRICTPEERS
 
-#define LP_BARTERDEX_VERSION 1
-#define LP_MAGICBITS 8
 
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
@@ -180,7 +180,7 @@ struct basilisk_request
     int64_t srcamount,unused; // 16 to 31
     bits256 srchash; // 32 to 63
     bits256 desthash;
-    char src[65],dest[65];
+    char src[68],dest[68];
     uint64_t destamount;
     int32_t optionhours,DEXselector;
 };

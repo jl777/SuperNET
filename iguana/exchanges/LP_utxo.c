@@ -464,7 +464,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
             }
-            //printf("added %d from listunspents\n",n);
+            printf("added %d from listunspents\n",n);
         }
         free_json(array);
     }
@@ -999,7 +999,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                     strcpy(destaddr,destaddr2);
                 if ( coin != 0 )
                 {
-                    if ( coin->electrum != 0 )
+                    /*if ( coin->electrum != 0 )
                     {
                         if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts && tx->outpoints[vout].spendheight > 0 )
                         {
@@ -1022,7 +1022,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                             return(0);
                         }
                     }
-                    else
+                    else*/
                     {
                         if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid,vout)) == 0 )
                             return(0);

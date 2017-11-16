@@ -1043,7 +1043,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_reserved_msgs for (%s)\n",myipaddr);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)utxosQ_loop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)utxosQ_loop,(void *)myipaddr) != 0 )
     {
         printf("error launching utxosQ_loop for (%s)\n",myipaddr);
         exit(-1);
@@ -1216,7 +1216,7 @@ int32_t zeroval() { return(0); }
 
 void *LP_alloc(uint64_t len)
 {
-return(calloc(1,len));
+//return(calloc(1,len));
     LP_cjson_allocated += len;
     LP_cjson_total += len;
     LP_cjson_count++;
@@ -1235,7 +1235,7 @@ return(calloc(1,len));
 void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown; static int64_t lasttotal;
-free(ptr); return;
+//free(ptr); return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+1 )
     {
