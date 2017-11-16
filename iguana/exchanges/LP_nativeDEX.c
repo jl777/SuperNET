@@ -1066,7 +1066,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,(void *)myipaddr) != 0 )
+    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,(void *)myipaddr) != 0 )
     {
         printf("error launching command_rpcloop for port.%u\n",myport);
         exit(-1);
@@ -1229,7 +1229,7 @@ void *LP_alloc(uint64_t len)
     //return(calloc(1,len));
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp) + len);
-    printf("\n>>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu\n",mp,mp->ptr,(long long)len);
+    printf(">>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu %llu\n",mp,mp->ptr,(long long)len,(long long)LP_cjson_allocated);
     mp->timestamp = (uint32_t)time(NULL);
     mp->len = (uint32_t)len;
     mp->ptr = calloc(1,len);
@@ -1285,7 +1285,7 @@ void LP_free(void *ptr)
         portable_mutex_lock(&LP_cJSONmutex);
         DL_DELETE(LP_memory_list,mp);
         portable_mutex_unlock(&LP_cJSONmutex);
-        printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u\n",ptr,mp,mp->len);
+        printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u %llu\n",ptr,mp,mp->len,(long long)LP_cjson_allocated);
         free(mp->ptr);
         free(mp);
     } else unknown++; // free from source file with #define redirect for alloc that wasnt
