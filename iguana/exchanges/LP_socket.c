@@ -272,7 +272,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
         ep = recent_ep;
         if ( n > 0 )
         {
-            i = (rand() % n);
+            i = (LP_rand() % n);
             ep = rbuf[i];
         }
     }
@@ -513,7 +513,7 @@ cJSON *electrum_address_subscribe(char *symbol,struct electrum_info *ep,cJSON **
     cJSON *retjson;
     if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.subscribe",addr,ELECTRUM_TIMEOUT)) != 0 )
     {
-        printf("subscribe.(%s)\n",jprint(retjson,0));
+        //printf("subscribe.(%s)\n",jprint(retjson,0));
     }
     return(retjson);
 }
@@ -602,7 +602,10 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
                     printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
                 updatedflag = 0;
                 if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
-                    LP_postutxos(coin->symbol,addr), updatedflag = 1;
+                {
+                    //LP_postutxos(coin->symbol,addr);
+                    updatedflag = 1;
+                }
                 if ( strcmp(addr,coin->smartaddr) == 0 )
                 {
                     retstr = jprint(retjson,0);

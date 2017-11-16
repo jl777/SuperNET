@@ -52,7 +52,7 @@ double LP_bob_competition(int32_t *counterp,uint64_t aliceid,double price,int32_
             firsti = i;
     }
     if ( firsti < 0 )
-        firsti = (rand() % (sizeof(Bob_competition)/sizeof(*Bob_competition)));
+        firsti = (LP_rand() % (sizeof(Bob_competition)/sizeof(*Bob_competition)));
     Bob_competition[firsti].starttime = (uint32_t)time(NULL);
     Bob_competition[firsti].counter = counter;
     Bob_competition[firsti].aliceid = aliceid;
@@ -252,7 +252,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
         {
             for (i=0; i<10; i++)
             {
-                r = (10000 + (rand() % 50000)) & 0xffff;
+                r = (10000 + (LP_rand() % 50000)) & 0xffff;
                 if ( LP_fixed_pairport != 0 )
                     r = LP_fixed_pairport;
                 nanomsg_transportname(0,pairstr,LP_myipaddr,r);
@@ -572,6 +572,8 @@ char *LP_connectedalice(cJSON *argjson) // alice
         return(clonestr("{\"result\",\"update stats\"}"));
     }
     printf("CONNECTED.(%s) numpending.%d tradeid.%u requestid.%u quoteid.%u\n",jprint(argjson,0),G.LP_pendingswaps,Q.tradeid,Q.R.requestid,Q.R.quoteid);
+    LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
+    printf("calculated requestid.%u quoteid.%u\n",Q.R.requestid,Q.R.quoteid);
     if ( LP_pendingswap(Q.R.requestid,Q.R.quoteid) > 0 )
     {
         printf("requestid.%u quoteid.%u is already in progres\n",Q.R.requestid,Q.R.quoteid);
@@ -585,12 +587,6 @@ char *LP_connectedalice(cJSON *argjson) // alice
         LP_aliceid(Q.tradeid,Q.aliceid,"error2",0,0);
         return(clonestr("{\"error\":\"cant find autxo\"}"));
     }
-    /*if ( autxo->S.swap != 0 )
-    {
-        printf("ignore duplicate swap\n");
-        LP_aliceid(Q.tradeid,Q.aliceid,"error3",0,0);
-        return(clonestr("{\"error\":\"ignore duplicate swap\"}"));
-    }*/
     LP_aliceid(Q.tradeid,Q.aliceid,"connected",Q.R.requestid,Q.R.quoteid);
     butxo = &B;
     memset(butxo,0,sizeof(*butxo));
@@ -622,7 +618,6 @@ char *LP_connectedalice(cJSON *argjson) // alice
     if ( bits256_nonz(Q.privkey) != 0 )//&& Q.quotetime >= Q.timestamp-3 )
     {
         retjson = cJSON_CreateObject();
-        LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         if ( (swap= LP_swapinit(0,0,Q.privkey,&Q.R,&Q)) == 0 )
         {
             jaddstr(retjson,"error","couldnt swapinit");
@@ -771,7 +766,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_quoteparse(&Q,argjson);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         LP_tradecommand_log(argjson);
-        printf("LP_tradecommand: received %12s aliceid.%22llu %5s/%-5s %12.8f -> %12.8f price %12.8f\n",method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis);
+        printf("(%-10u %10u) %12s aliceid.%22llu %5s/%-5s %12.8f -> %12.8f price %12.8f\n",Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis);
         retval = 1;
         autxo = &A;
         butxo = &B;
@@ -884,12 +879,12 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             } else return(retval);
             if ( qprice > price )
             {
-                r = (rand() % 100);
+                r = (LP_rand() % 100);
                 range = (qprice - price);
                 price += (r * range) / 100.;
                 bestprice = LP_bob_competition(&counter,aliceid,price,0);
                 printf(">>>>>>>>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f, bestprice %.8f counter.%d\n",ask,qprice,r,range,price,bestprice,counter);
-                if ( counter > 5 || price > bestprice*1.1 ) // skip if late or bad price
+                if ( counter > 3 || price > bestprice ) // skip if late or bad price
                     return(retval);
             } else return(retval);
             LP_RTmetrics_update(Q.srccoin,Q.destcoin);

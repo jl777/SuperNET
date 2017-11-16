@@ -112,7 +112,7 @@
 void basilisk_rawtx_purge(struct basilisk_rawtx *rawtx)
 {
     if ( rawtx->vins != 0 )
-        free_json(rawtx->vins);
+        free_json(rawtx->vins), rawtx->vins = 0;
     //if ( rawtx->txbytes != 0 )
     //    free(rawtx->txbytes), rawtx->txbytes = 0;
 }
@@ -831,7 +831,7 @@ void LP_bobloop(void *_swap)
             }
         }
         basilisk_swap_finished(swap);
-        //free(swap);
+        free(swap);
     } else printf("swap timed out\n");
     G.LP_pendingswaps--;
 }
@@ -1127,7 +1127,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.aliceconfirms = swap->I.alicemaxconfirms;
     swap->I.bobconfirms *= !swap->I.bobistrusted;
     swap->I.aliceconfirms *= !swap->I.aliceistrusted;
-    printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< use smart address, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,bobcoin->taddr,alicecoin->taddr);
+    printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< r.%u q.%u, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,swap->I.req.requestid,swap->I.req.quoteid,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,bobcoin->taddr,alicecoin->taddr);
     if ( swap->I.iambob != 0 )
     {
         basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,bobcoin,0,0,LP_DEXFEE(swap->I.bobsatoshis) + 0*bobcoin->txfee,0,0,jumblrflag);
@@ -1189,7 +1189,7 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
     G.LP_skipstatus[G.LP_numskips] = ((uint64_t)rp->requestid << 32) | rp->quoteid;
     if ( G.LP_numskips < sizeof(G.LP_skipstatus)/sizeof(*G.LP_skipstatus) )
         G.LP_numskips++;
-    printf("basilisk_thread_start request.%u iambob.%d (%s/%s) quoteid.%u\n",rp->requestid,iambob,rp->src,rp->dest,rp->quoteid);
+    printf("LP_swapinit request.%u iambob.%d (%s/%s) quoteid.%u\n",rp->requestid,iambob,rp->src,rp->dest,rp->quoteid);
     bitcoin_pubkey33(swap->ctx,pubkey33,privkey);
     pubkey25519 = curve25519(privkey,curve25519_basepoint9());
     swap->persistent_pubkey = pubkey25519;

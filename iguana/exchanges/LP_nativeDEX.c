@@ -19,10 +19,11 @@
 //
 // if ( G.LP_pendingswaps != 0 ) return(-1);
 // bot safe to exit?
-//
+// 324744 and 50mb
 // BCH signing
 // single utxo allocations alice
 // alice waiting for bestprice
+//
 // previously, it used to show amount, kmd equiv, perc
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -117,6 +118,16 @@ struct LP_globals
     struct LP_privkey LP_privkeys[100];
 } G;
 
+uint32_t LP_rand()
+{
+    uint32_t retval;
+    retval = rand();
+    retval = (retval << 7) ^ (retval >> 17) ^ rand();
+    retval = (retval << 13) ^ (retval >> 13) ^ rand();
+    retval = (retval << 17) ^ (retval >> 7) ^ rand();
+    return(retval);
+}
+
 #include "LP_network.c"
 
 char *activecoins[] = { "BTC", "KMD" };
@@ -128,7 +139,6 @@ char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.25
     //"24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
     "51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
 };//"5.9.253.204" }; //
-
 
 // stubs
 
@@ -229,7 +239,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
         dup++;
     else uniq++;
     portable_mutex_lock(&LP_commandmutex);
-    if ( (rand() % 10000) == 0 )
+    if ( (LP_rand() % 10000) == 0 )
         printf("%s dup.%d (%u / %u) %.1f%% encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,duplicate,dup,dup+uniq,(double)100*dup/(dup+uniq),encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
     if ( duplicate == 0 )
     {
@@ -326,7 +336,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock,char *remoteaddr,int32_t maxdepth)
 {
-    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr,*buf; char methodstr[64],*retstr,*str; struct nn_pollfd pfd;
+    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char methodstr[64],*retstr,*str; struct nn_pollfd pfd;
     if ( sock >= 0 )
     {
         while ( nonz < maxdepth && recvlen > 0 )
@@ -338,11 +348,11 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
             ptr = 0;
-            buf = malloc(1000000);
-            if ( (recvlen= nn_recv(sock,buf,1000000,0)) > 0 )
-            //if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
+            //buf = malloc(1000000);
+            //if ( (recvlen= nn_recv(sock,buf,1000000,0)) > 0 )
+            if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-                ptr = buf;
+                //ptr = buf;
                 methodstr[0] = 0;
                 //printf("%s.(%s)\n",typestr,(char *)ptr);
                 if ( 0 )
@@ -393,8 +403,8 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             }
             if ( ptr != 0 )
             {
-                //nn_freemsg(ptr), ptr = 0;
-                free(buf);
+                nn_freemsg(ptr), ptr = 0;
+                //free(buf);
             }
         }
     }
@@ -411,7 +421,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
     {
         if ( peer->errors >= LP_MAXPEER_ERRORS )
         {
-            if ( (rand() % 10000) == 0 )
+            if ( (LP_rand() % 10000) == 0 )
                 peer->errors--;
             else
             {
@@ -767,7 +777,7 @@ void LP_pubkeysloop(void *ctx)
         }
         if ( time(NULL) > lasttime+LP_ORDERBOOK_DURATION*0.5 )
         {
-            //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
+//printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
             LP_notify_pubkeys(ctx,LP_mypubsock);
             lasttime = (uint32_t)time(NULL);
         }
@@ -784,7 +794,7 @@ void LP_privkeysloop(void *ctx)
     {
         LP_millistats_update(&LP_privkeysloop_stats);
         LP_counter += 1000;
-        //printf("LP_privkeysloop %u\n",LP_counter);
+//printf("LP_privkeysloop %u\n",LP_counter);
         LP_privkey_updates(ctx,LP_mypubsock,0);
         sleep(LP_ORDERBOOK_DURATION * .777);
     }
@@ -800,10 +810,9 @@ void LP_swapsloop(void *ignore)
     {
         LP_millistats_update(&LP_swapsloop_stats);
         LP_counter += 10000;
-        //printf("LP_swapsloop %u\n",LP_counter);
+//printf("LP_swapsloop %u\n",LP_counter);
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
-        //LP_millistats_update(0);
         sleep(600);
     }
 }
@@ -836,14 +845,14 @@ void LP_reserved_msgs(void *ignore)
                 if ( num_Reserved_msgs[1] > 0 )
                 {
                     num_Reserved_msgs[1]--;
-                    //printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
+//printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
                     LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[1][num_Reserved_msgs[1]]);
                     Reserved_msgs[1][num_Reserved_msgs[1]] = 0;
                 }
                 else if ( num_Reserved_msgs[0] > 0 )
                 {
                     num_Reserved_msgs[0]--;
-                    //printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
+//printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
                     LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
                     Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
                 }
@@ -879,8 +888,9 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
-    printf("Marketmaker %s.%s %s\n",LP_MAJOR_VERSION,LP_MINOR_VERSION,LP_BUILD_NUMBER);
+    char *myipaddr=0,version[64]; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
+    sprintf(version,"Marketmaker %s.%s %s rsize.%ld",LP_MAJOR_VERSION,LP_MINOR_VERSION,LP_BUILD_NUMBER,sizeof(struct basilisk_request));
+    printf("%s %u\n",version,calc_crc32(0,version,(int32_t)strlen(version)));
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
@@ -896,6 +906,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
 #endif
     OS_randombytes((void *)&n,sizeof(n));
+    srand((uint32_t)n);
     if ( jobj(argjson,"gui") != 0 )
         safecopy(LP_gui,jstr(argjson,"gui"),sizeof(LP_gui));
     if ( jobj(argjson,"canbind") == 0 )
@@ -1205,14 +1216,14 @@ int32_t zeroval() { return(0); }
 
 void *LP_alloc(uint64_t len)
 {
-    return(calloc(1,len));
+return(calloc(1,len));
     LP_cjson_allocated += len;
     LP_cjson_total += len;
     LP_cjson_count++;
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp) + len);
     mp->ptr = calloc(1,len);
-    printf(">>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu %llu\n",mp,mp->ptr,(long long)len,(long long)LP_cjson_allocated);
+    //printf(">>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu %llu\n",mp,mp->ptr,(long long)len,(long long)LP_cjson_allocated);
     mp->timestamp = (uint32_t)time(NULL);
     mp->len = (uint32_t)len;
     portable_mutex_lock(&LP_cJSONmutex);
@@ -1223,21 +1234,20 @@ void *LP_alloc(uint64_t len)
 
 void LP_free(void *ptr)
 {
-    static uint32_t lasttime,unknown;
-    free(ptr);
-    return;
+    static uint32_t lasttime,unknown; static int64_t lasttotal;
+free(ptr); return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
-    if ( (now= (uint32_t)time(NULL)) > lasttime+60 )
+    if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
         n = lagging = 0;
         DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
         {
             total += mp->len;
             n++;
-            if ( 0 && now > mp->timestamp+60 )
+            if ( 0 && now > mp->timestamp+120 )
             {
                 lagging++;
-                if ( now > mp->timestamp+60 )
+                if ( now > mp->timestamp+240 )
                 {
                     portable_mutex_lock(&LP_cJSONmutex);
                     DL_DELETE(LP_memory_list,mp);
@@ -1247,8 +1257,9 @@ void LP_free(void *ptr)
                 }
             }
         }
-        printf("total %d allocated total %llu/%llu [%llu %llu] %.1f ave %s unknown.%u lagging.%d\n",n,(long long)total,(long long)LP_cjson_allocated,(long long)LP_cjson_total,(long long)LP_cjson_count,(double)LP_cjson_total/LP_cjson_count,mbstr(str,total),unknown,lagging);
+        printf("[%lld] total %d allocated total %llu/%llu [%llu %llu] %.1f ave %s unknown.%u lagging.%d\n",(long long)(total-lasttotal),n,(long long)total,(long long)LP_cjson_allocated,(long long)LP_cjson_total,(long long)LP_cjson_count,(double)LP_cjson_total/LP_cjson_count,mbstr(str,total),unknown,lagging);
         lasttime = (uint32_t)time(NULL);
+        lasttotal = total;
     }
     DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
     {
@@ -1262,13 +1273,13 @@ void LP_free(void *ptr)
         portable_mutex_lock(&LP_cJSONmutex);
         DL_DELETE(LP_memory_list,mp);
         portable_mutex_unlock(&LP_cJSONmutex);
-        printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u %llu\n",ptr,mp,mp->len,(long long)LP_cjson_allocated);
+        //printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u %llu\n",ptr,mp,mp->len,(long long)LP_cjson_allocated);
         free(mp->ptr);
         free(mp);
     } else unknown++; // free from source file with #define redirect for alloc that wasnt
 }
 
-char *LP_clonestr(char *str)
+/*char *LP_clonestr(char *str)
 {
     char *retstr = LP_alloc(strlen(str)+1);
     strcpy(retstr,str);
@@ -1278,6 +1289,6 @@ char *LP_clonestr(char *str)
 void *LP_realloc(void *ptr,uint64_t len)
 {
     return(realloc(ptr,len));
-}
+}*/
 
 
