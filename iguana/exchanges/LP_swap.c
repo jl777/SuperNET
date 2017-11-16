@@ -112,9 +112,9 @@
 void basilisk_rawtx_purge(struct basilisk_rawtx *rawtx)
 {
     if ( rawtx->vins != 0 )
-        free_json(rawtx->vins);
-    if ( rawtx->txbytes != 0 )
-        free(rawtx->txbytes), rawtx->txbytes = 0;
+        free_json(rawtx->vins), rawtx->vins = 0;
+    //if ( rawtx->txbytes != 0 )
+    //    free(rawtx->txbytes), rawtx->txbytes = 0;
 }
 
 void basilisk_swap_finished(struct basilisk_swap *swap)
