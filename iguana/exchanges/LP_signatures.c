@@ -616,6 +616,7 @@ char *LP_notify_recv(cJSON *argjson)
 void LP_smartutxos_push(struct iguana_info *coin)
 {
     uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; cJSON *array,*item,*req;
+    return;
     if ( coin->smartaddr[0] == 0 )
         return;
     //LP_notify_pubkeys(coin->ctx,LP_mypubsock);

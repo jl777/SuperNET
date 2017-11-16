@@ -602,7 +602,10 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
                     printf("%s.%d u.%u/%d t.%ld %s LISTUNSPENT.(%d)\n",coin->symbol,height,ap->unspenttime,ap->unspentheight,time(NULL),addr,(int32_t)strlen(jprint(retjson,0)));
                 updatedflag = 0;
                 if ( electrum_process_array(coin,ep,addr,retjson,electrumflag) != 0 )
-                    LP_postutxos(coin->symbol,addr), updatedflag = 1;
+                {
+                    //LP_postutxos(coin->symbol,addr);
+                    updatedflag = 1;
+                }
                 if ( strcmp(addr,coin->smartaddr) == 0 )
                 {
                     retstr = jprint(retjson,0);
