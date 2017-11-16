@@ -78,7 +78,8 @@ int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid)
 
 bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxid)
 {
-    char *retstr; bits256 txid; uint8_t *ptr; cJSON *retjson,*errorobj; int32_t i,len,sentflag = 0;
+    char *retstr,*errstr; bits256 txid; uint8_t *ptr; cJSON *retjson,*errorobj; struct iguana_info *coin; int32_t i,totalretries=0,len,sentflag = 0;
+    coin = LP_coinfind(symbol);
     memset(&txid,0,sizeof(txid));
     if ( txbytes == 0 || txbytes[0] == 0 )
         return(txid);
@@ -114,6 +115,15 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
                     {
                         txid = expectedtxid;
                         sentflag = 1;
+                    }
+                    else if ( (errstr= jstr(retjson,"error")) != 0 && strcmp(errstr,"timeout") == 0 && coin != 0 && coin->electrum != 0 )
+                    {
+                        if ( totalretries < 10 )
+                        {
+                            printf("time error with electrum, retry.%d\n",totalretries);
+                            totalretries++;
+                            i--;
+                        }
                     }
                     else printf("broadcast error.(%s)\n",retstr);
                 }

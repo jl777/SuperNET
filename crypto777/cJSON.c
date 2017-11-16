@@ -54,8 +54,10 @@ static int32_t cJSON_strcasecmp(const char *s1,const char *s2)
 	return tolower((int32_t)(*(const unsigned char *)s1)) - tolower((int32_t)(*(const unsigned char *)s2));
 }
 
-static void *(*cJSON_malloc)(size_t sz) = malloc;
-static void (*cJSON_free)(void *ptr) = free;
+void *LP_alloc(uint64_t len);
+void LP_free(void *ptr);
+static void *(*cJSON_malloc)(size_t sz) = (void *)LP_alloc;
+static void (*cJSON_free)(void *ptr) = LP_free;
 
 static char* cJSON_strdup(const char* str)
 {

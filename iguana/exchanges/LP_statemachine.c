@@ -355,6 +355,16 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
     return(LP_issue_curl("getprices",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
+/*if ( fullflag != 0 )
+ {
+ if ( (destport= LP_randpeer(destip)) > 0 )
+ {
+ retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
+ //printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
+ retjson = cJSON_Parse(retstr);
+ } else printf("LP_listunspent_issue couldnt get a random peer?\n");
+ }*/
+
 void issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
 {
     cJSON *reqjson = cJSON_CreateObject();
