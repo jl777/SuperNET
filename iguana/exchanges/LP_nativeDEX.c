@@ -1200,10 +1200,12 @@ struct LP_memory_list
     void *ptr;
 } *LP_memory_list;
 int32_t zeroval() { return(0); }
+long LP_cjson_allocated;
 
 void *LP_alloc(uint64_t len)
 {
-    return(calloc(1,len));
+    LP_cjson_allocated += len;
+    //return(calloc(1,len));
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp) + len);
     //if ( len == 72 )
@@ -1226,8 +1228,8 @@ void *LP_realloc(void *ptr,uint64_t len)
 void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown;
-    free(ptr);
-    return;
+    //free(ptr);
+    //return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
@@ -1236,7 +1238,7 @@ void LP_free(void *ptr)
         {
             total += mp->len;
             n++;
-            if ( now > mp->timestamp+60 )
+            if ( 0 && now > mp->timestamp+60 )
             {
                 lagging++;
                 if ( now > mp->timestamp+60 )
@@ -1249,7 +1251,7 @@ void LP_free(void *ptr)
                 }
             }
         }
-        printf("total %d allocated total %llu %s unknown.%u lagging.%d\n",n,(long long)total,mbstr(str,total),unknown,lagging);
+        printf("total %d allocated total %llu/%llu %s unknown.%u lagging.%d\n",n,(long long)total,(long long)LP_cjson_allocated,mbstr(str,total),unknown,lagging);
         lasttime = (uint32_t)time(NULL);
     }
     DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
@@ -1260,6 +1262,7 @@ void LP_free(void *ptr)
     }
     if ( mp != 0 )
     {
+        LP_cjson_allocated -= mp->len;
         portable_mutex_lock(&LP_cJSONmutex);
         DL_DELETE(LP_memory_list,mp);
         portable_mutex_unlock(&LP_cJSONmutex);
