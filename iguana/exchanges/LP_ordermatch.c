@@ -778,7 +778,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         if ( strcmp(method,"reserved") == 0 )
         {
             bestprice = LP_bob_competition(&counter,aliceid,qprice,1);
-            printf("aliceid.%llu price %.8f -> bestprice %.8f Alice max %.8f\n",(long long)aliceid,qprice,bestprice,LP_Alicemaxprice);
+            printf("%s lag %ld: aliceid.%llu price %.8f -> bestprice %.8f Alice max %.8f\n",jprint(argjson,0),Q.quotetime - (time(NULL)-20),(long long)aliceid,qprice,bestprice,LP_Alicemaxprice);
             if ( LP_Alicemaxprice == 0. )
                 return(retval);
             if ( bits256_nonz(LP_Alicedestpubkey) != 0 )
