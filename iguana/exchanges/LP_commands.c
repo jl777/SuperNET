@@ -36,7 +36,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
 {
     char *method,*userpass,*base,*rel,*coin,*retstr = 0; int32_t changed,flag = 0; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
     method = jstr(argjson,"method");
-    if ( method != 0 && strcmp(method,"uitem") == 0 )
+    if ( method != 0 && (strcmp(method,"uitem") == 0 || strcmp(method,"postutxos") == 0) )
         return(0);
 printf("stats_JSON %s\n",method);
     /*if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (method == 0 || strcmp(method,"electrum") != 0) )
