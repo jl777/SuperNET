@@ -309,10 +309,15 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 }
                 else
                 {
+                    long startval = LP_cjson_allocated;
                     if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                     {
                     }
-                    //printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
+                    if ( LP_cjson_allocated > startval )
+                    {
+                        char *str = jprint(argjson,0);
+                        printf("leaked.%ld (%s)\n",LP_cjson_allocated - startval,str);
+                    }
                 }
             }
             if ( argjson != 0 )
