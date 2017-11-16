@@ -132,6 +132,18 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
                  }*/
     return(fp);
 }
+//printf("VOUT.(%s)\n",jprint(vout,0));
+/*if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
+ {
+ item = jitem(addresses,0);
+ //printf("item.(%s)\n",jprint(item,0));
+ if ( (addr= jstr(item,0)) != 0 )
+ {
+ safecopy(coinaddr,addr,64);
+ //printf("extracted.(%s)\n",coinaddr);
+ }
+ }*/
+
 /*if ( IAMLP != 0 && time(NULL) > lasthello+600 )
  {
  char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
@@ -347,6 +359,94 @@ void issue_LP_uitem(char *destip,uint16_t destport,char *symbol,char *coinaddr,b
      return(retstr);*/
 }
 
+/*if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
+ {
+ //printf("swapentry.(%s)\n",liststr);
+ if ( (retjson= cJSON_Parse(liststr)) != 0 )
+ {
+ if ( (array= jarray(&n,retjson,"swaps")) != 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ item = jitem(array,i);
+ //printf("(%s) check r%u/q%u\n",jprint(item,0),juint(item,"requestid"),juint(item,"quoteid"));
+ if ( juint(item,"requestid") == requestid && juint(item,"quoteid") == quoteid )
+ {
+ retstr = jprint(item,0);
+ break;
+ }
+ }
+ }
+ free_json(retjson);
+ }
+ free(liststr);
+ }
+ return(retstr);*/
+/*struct cJSON_list
+ {
+ struct cJSON_list *next,*prev;
+ cJSON *item;
+ uint32_t timestamp,cjsonid;
+ } *LP_cJSONlist;
+ 
+ void cJSON_register(cJSON *item)
+ {
+ struct cJSON_list *ptr;
+ ptr = calloc(1,sizeof(*ptr));
+ ptr->timestamp = (uint32_t)time(NULL);
+ ptr->item = item;
+ item->cjsonid = rand();
+ ptr->cjsonid = item->cjsonid;
+ portable_mutex_lock(&LP_cJSONmutex);
+ DL_APPEND(LP_cJSONlist,ptr);
+ portable_mutex_unlock(&LP_cJSONmutex);
+ }
+ 
+ void cJSON_unregister(cJSON *item)
+ {
+ static uint32_t lasttime;
+ int32_t n; char *tmpstr; uint64_t total = 0; struct cJSON_list *ptr,*tmp; uint32_t now;
+ if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
+ {
+ n = 0;
+ DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
+ {
+ if ( ptr->item != 0 && ptr->item->child != 0 && ptr->cjsonid != 0 )
+ {
+ if ( (tmpstr= jprint(ptr->item,0)) != 0 )
+ {
+ total += strlen(tmpstr);
+ free(tmpstr);
+ }
+ }
+ n++;
+ }
+ printf("total %d cJSON pending\n",n);
+ lasttime = (uint32_t)time(NULL);
+ }
+ DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
+ {
+ if ( ptr->cjsonid == item->cjsonid )
+ break;
+ else if ( now > ptr->timestamp+60 && item->cjsonid != 0 )
+ {
+ portable_mutex_lock(&LP_cJSONmutex);
+ DL_DELETE(LP_cJSONlist,ptr);
+ portable_mutex_unlock(&LP_cJSONmutex);
+ printf("free expired\n");
+ cJSON_Delete(ptr->item);
+ free(ptr);
+ }
+ ptr = 0;
+ }
+ if ( ptr != 0 )
+ {
+ portable_mutex_lock(&LP_cJSONmutex);
+ DL_DELETE(LP_cJSONlist,ptr);
+ free(ptr);
+ portable_mutex_unlock(&LP_cJSONmutex);
+ } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
+ }*/
 char *issue_LP_getprices(char *destip,uint16_t destport)
 {
     char url[512];

@@ -1247,29 +1247,6 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
     if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
         return(jprint(item,1));
     else return(clonestr("{\"error\":\"cant find requestid-quoteid\"}"));
-    /*if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
-    {
-        //printf("swapentry.(%s)\n",liststr);
-        if ( (retjson= cJSON_Parse(liststr)) != 0 )
-        {
-            if ( (array= jarray(&n,retjson,"swaps")) != 0 )
-            {
-                for (i=0; i<n; i++)
-                {
-                    item = jitem(array,i);
-                    //printf("(%s) check r%u/q%u\n",jprint(item,0),juint(item,"requestid"),juint(item,"quoteid"));
-                    if ( juint(item,"requestid") == requestid && juint(item,"quoteid") == quoteid )
-                    {
-                        retstr = jprint(item,0);
-                        break;
-                    }
-                }
-            }
-            free_json(retjson);
-        }
-        free(liststr);
-    }
-    return(retstr);*/
 }
 
 extern struct LP_quoteinfo LP_Alicequery;

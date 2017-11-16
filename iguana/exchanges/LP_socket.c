@@ -513,7 +513,7 @@ cJSON *electrum_address_subscribe(char *symbol,struct electrum_info *ep,cJSON **
     cJSON *retjson;
     if ( (retjson= electrum_strarg(symbol,ep,retjsonp,"blockchain.address.subscribe",addr,ELECTRUM_TIMEOUT)) != 0 )
     {
-        printf("subscribe.(%s)\n",jprint(retjson,0));
+        //printf("subscribe.(%s)\n",jprint(retjson,0));
     }
     return(retjson);
 }

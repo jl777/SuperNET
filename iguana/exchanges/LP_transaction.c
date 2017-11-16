@@ -1651,17 +1651,6 @@ void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,u
             vout = jitem(vouts,v);
             if ( valuep != 0 )
                 *valuep = LP_value_extract(vout,1);
-            //printf("VOUT.(%s)\n",jprint(vout,0));
-            /*if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
-            {
-                item = jitem(addresses,0);
-                //printf("item.(%s)\n",jprint(item,0));
-                if ( (addr= jstr(item,0)) != 0 )
-                {
-                    safecopy(coinaddr,addr,64);
-                    //printf("extracted.(%s)\n",coinaddr);
-                }
-            }*/
             LP_destaddr(coinaddr,vout);
         }
         free_json(txobj);
