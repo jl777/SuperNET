@@ -183,7 +183,7 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
     sum += (OS_milliseconds() - millis);
     nsum += n;
     counter++;
-    if ( n > maxn || (rand() % 10000) == 0 )
+    if ( n > maxn || (LP_rand() % 10000) == 0 )
     {
         if ( n > maxn )
         {
@@ -237,7 +237,7 @@ int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
                 break;
         }
         if ( i >= sizeof(crcs)/sizeof(*crcs) )
-            i = (rand() % (sizeof(crcs)/sizeof(*crcs)));
+            i = (LP_rand() % (sizeof(crcs)/sizeof(*crcs)));
         return(i);
     }
     else
@@ -316,7 +316,7 @@ void queue_loop(void *arg)
             flag = 0;
             if ( ptr->sock >= 0 )
             {
-                if ( ptr->notready == 0 || (rand() % ptr->notready) == 0 )
+                if ( ptr->notready == 0 || (LP_rand() % ptr->notready) == 0 )
                 {
                     if ( LP_sockcheck(ptr->sock) > 0 )
                     {
@@ -387,11 +387,11 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
     if ( sock0 < 0 && sock1 < 0 )
     {
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
+            peerind = (LP_rand() % maxind) + 1;
         else peerind = 1;
         sock0 = LP_peerindsock(&peerind);
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
+            peerind = (LP_rand() % maxind) + 1;
         else peerind = 1;
         sock1 = LP_peerindsock(&peerind);
     }

@@ -132,14 +132,14 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->R.quoteid = juint(argjson,"quoteid");
     if ( qp->R.requestid == 0 )
     {
-        rid= basilisk_requestid(&qp->R);
-        //printf("requestid.%u -> %u\n",qp->R.requestid,rid);
+        rid = basilisk_requestid(&qp->R);
+        printf("requestid.%u -> %u\n",qp->R.requestid,rid);
         qp->R.requestid = rid;
     }
     if ( qp->R.quoteid == 0 )
     {
-        qid= basilisk_quoteid(&qp->R);
-        //printf("quoteid.%u -> %u\n",qp->R.quoteid,qid);
+        qid = basilisk_quoteid(&qp->R);
+        printf("quoteid.%u -> %u\n",qp->R.quoteid,qid);
         qp->R.quoteid = qid;
     }
     return(0);

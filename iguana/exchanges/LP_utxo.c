@@ -405,7 +405,7 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
                 up->SPV = tx->SPV;
             }
             char str[65];
-            //if ( 0 && strcmp(coin->smartaddr,coinaddr) == 0 && strcmp("KMD",coin->symbol) == 0 )
+            if ( 0 && strcmp(coin->smartaddr,coinaddr) == 0 && strcmp("KMD",coin->symbol) == 0 )
                 printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
             portable_mutex_lock(&coin->addrmutex);
             DL_APPEND(ap->utxos,up);

@@ -52,7 +52,7 @@ double LP_bob_competition(int32_t *counterp,uint64_t aliceid,double price,int32_
             firsti = i;
     }
     if ( firsti < 0 )
-        firsti = (rand() % (sizeof(Bob_competition)/sizeof(*Bob_competition)));
+        firsti = (LP_rand() % (sizeof(Bob_competition)/sizeof(*Bob_competition)));
     Bob_competition[firsti].starttime = (uint32_t)time(NULL);
     Bob_competition[firsti].counter = counter;
     Bob_competition[firsti].aliceid = aliceid;
@@ -252,7 +252,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
         {
             for (i=0; i<10; i++)
             {
-                r = (10000 + (rand() % 50000)) & 0xffff;
+                r = (10000 + (LP_rand() % 50000)) & 0xffff;
                 if ( LP_fixed_pairport != 0 )
                     r = LP_fixed_pairport;
                 nanomsg_transportname(0,pairstr,LP_myipaddr,r);
@@ -884,7 +884,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             } else return(retval);
             if ( qprice > price )
             {
-                r = (rand() % 100);
+                r = (LP_rand() % 100);
                 range = (qprice - price);
                 price += (r * range) / 100.;
                 bestprice = LP_bob_competition(&counter,aliceid,price,0);

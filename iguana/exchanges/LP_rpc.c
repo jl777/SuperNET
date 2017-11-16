@@ -314,13 +314,13 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
 cJSON *LP_assethbla(char *assetid)
 {
     char url[1024],*retstr; int32_t n; cJSON *array,*bid=0,*ask=0,*retjson;
-    sprintf(url,"http://%s:7876/nxt?requestType=getBidOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
+    sprintf(url,"http://%s:7876/nxt?requestType=getBidOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[LP_rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         bid = cJSON_Parse(retstr);
         free(retstr);
     }
-    sprintf(url,"http://%s:7876/nxt?requestType=getAskOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
+    sprintf(url,"http://%s:7876/nxt?requestType=getAskOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[LP_rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         ask = cJSON_Parse(retstr);

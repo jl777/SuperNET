@@ -272,7 +272,7 @@ struct electrum_info *electrum_server(char *symbol,struct electrum_info *ep)
         ep = recent_ep;
         if ( n > 0 )
         {
-            i = (rand() % n);
+            i = (LP_rand() % n);
             ep = rbuf[i];
         }
     }

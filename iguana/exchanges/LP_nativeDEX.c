@@ -118,6 +118,16 @@ struct LP_globals
     struct LP_privkey LP_privkeys[100];
 } G;
 
+uint32_t LP_rand()
+{
+    uint32_t retval;
+    retval = rand();
+    retval = (retval << 7) ^ (retval >> 17) ^ rand();
+    retval = (retval << 13) ^ (retval >> 13) ^ rand();
+    retval = (retval << 17) ^ (retval >> 7) ^ rand();
+    return(retval);
+}
+
 #include "LP_network.c"
 
 char *activecoins[] = { "BTC", "KMD" };
@@ -129,7 +139,6 @@ char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.25
     //"24.54.206.138", "173.212.225.176", "136.243.45.140", "107.72.162.127", "72.50.16.86", "51.15.202.191", "173.228.198.88",
     "51.15.203.171", "51.15.86.136", "51.15.94.249", "51.15.80.18", "51.15.91.40", "51.15.54.2", "51.15.86.31", "51.15.82.29", "51.15.89.155",
 };//"5.9.253.204" }; //
-
 
 // stubs
 
@@ -230,7 +239,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
         dup++;
     else uniq++;
     portable_mutex_lock(&LP_commandmutex);
-    if ( (rand() % 10000) == 0 )
+    if ( (LP_rand() % 10000) == 0 )
         printf("%s dup.%d (%u / %u) %.1f%% encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,duplicate,dup,dup+uniq,(double)100*dup/(dup+uniq),encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
     if ( duplicate == 0 )
     {
@@ -412,7 +421,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
     {
         if ( peer->errors >= LP_MAXPEER_ERRORS )
         {
-            if ( (rand() % 10000) == 0 )
+            if ( (LP_rand() % 10000) == 0 )
                 peer->errors--;
             else
             {
@@ -896,6 +905,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
 #endif
     OS_randombytes((void *)&n,sizeof(n));
+    srand((uint32_t)n);
     if ( jobj(argjson,"gui") != 0 )
         safecopy(LP_gui,jstr(argjson,"gui"),sizeof(LP_gui));
     if ( jobj(argjson,"canbind") == 0 )
@@ -1205,7 +1215,7 @@ int32_t zeroval() { return(0); }
 
 void *LP_alloc(uint64_t len)
 {
-//return(calloc(1,len));
+return(calloc(1,len));
     LP_cjson_allocated += len;
     LP_cjson_total += len;
     LP_cjson_count++;
@@ -1224,7 +1234,7 @@ void *LP_alloc(uint64_t len)
 void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown; static int64_t lasttotal;
-//free(ptr); return;
+free(ptr); return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {

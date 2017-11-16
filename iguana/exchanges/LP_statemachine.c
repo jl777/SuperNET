@@ -186,7 +186,7 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
  {
  if ( peer->errors >= LP_MAXPEER_ERRORS )
  {
- if ( (rand() % 10000) == 0 )
+ if ( (LP_rand() % 10000) == 0 )
  {
  peer->errors--;
  if ( peer->errors < LP_MAXPEER_ERRORS )
@@ -195,7 +195,7 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
  if ( IAMLP == 0 )
  continue;
  }
- if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (rand() % 100000) == 0 )
+ if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (LP_rand() % 100000) == 0 )
  {
  if ( strcmp(peer->ipaddr,myipaddr) != 0 )
  {
@@ -241,7 +241,7 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
                     {
                         numpeers = LP_numpeers();
-                        if ( IAMLP != 0 || numpeers < LP_MIN_PEERS || (IAMLP == 0 && (rand() % LP_MAX_PEERS) > numpeers) )
+                        if ( IAMLP != 0 || numpeers < LP_MIN_PEERS || (IAMLP == 0 && (LP_rand() % LP_MAX_PEERS) > numpeers) )
                             peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jint(item,"numpeers"),jint(item,"numutxos"),juint(item,"session"));
                     }
                     if ( peer != 0 )
@@ -395,7 +395,7 @@ void issue_LP_uitem(char *destip,uint16_t destport,char *symbol,char *coinaddr,b
  ptr = calloc(1,sizeof(*ptr));
  ptr->timestamp = (uint32_t)time(NULL);
  ptr->item = item;
- item->cjsonid = rand();
+ item->cjsonid = LP_rand();
  ptr->cjsonid = item->cjsonid;
  portable_mutex_lock(&LP_cJSONmutex);
  DL_APPEND(LP_cJSONlist,ptr);
@@ -955,7 +955,7 @@ int32_t _basilisk_rawtx_gen(char *str,uint32_t swapstarted,uint8_t *pubkey33,int
 {
     char scriptstr[1024],wifstr[256],coinaddr[64],*signedtx,*rawtxbytes; uint32_t basilisktag; int32_t retval = -1; cJSON *vins,*privkeys,*addresses,*valsobj; struct vin_info *V;
     init_hexbytes_noT(scriptstr,script,scriptlen);
-    basilisktag = (uint32_t)rand();
+    basilisktag = (uint32_t)LP_rand();
     valsobj = cJSON_CreateObject();
     jaddstr(valsobj,"coin",rawtx->coin->symbol);
     jaddstr(valsobj,"spendscript",scriptstr);
@@ -1195,7 +1195,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
         basilisk_swap_saveupdate(swap);
         if ( swap->connected == 0 )
             basilisk_psockinit(swap,swap->I.iambob != 0);
-        //if ( (rand() % 30) == 0 )
+        //if ( (LP_rand() % 30) == 0 )
         printf("E r%u/q%u swapstate.%x otherstate.%x remaining %d\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,swap->I.otherstatebits,(int32_t)(swap->I.expiration-time(NULL)));
         if ( swap->I.iambob != 0 )
         {
@@ -1369,7 +1369,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
                 }
             }
         }
-        if ( (rand() % 30) == 0 )
+        if ( (LP_rand() % 30) == 0 )
             printf("finished swapstate.%x other.%x\n",swap->I.statebits,swap->I.otherstatebits);
         if ( swap->I.statebits == savestatebits && swap->I.otherstatebits == saveotherbits )
             sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
@@ -2792,7 +2792,7 @@ void LP_price_broadcastloop(void *ctx)
  minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
  printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s price %.8f relvol %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p,relvol);
  }
- if ( (rand() % 2) == 0 )
+ if ( (LP_rand() % 2) == 0 )
  {
  bot->relsum += relvol;
  bot->basesum += v;
@@ -2809,7 +2809,7 @@ void LP_price_broadcastloop(void *ctx)
 #ifdef FROM_JS
 int32_t sentbytes,sock,peerind,maxind;
 if ( (maxind= LP_numpeers()) > 0 )
-peerind = (rand() % maxind) + 1;
+peerind = (LP_rand() % maxind) + 1;
 else peerind = 1;
 sock = LP_peerindsock(&peerind);
 if ( sock >= 0 )
@@ -2851,11 +2851,11 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
     else
     {
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
+            peerind = (LP_rand() % maxind) + 1;
         else peerind = 1;
         sock0 = LP_peerindsock(&peerind);
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
+            peerind = (LP_rand() % maxind) + 1;
         else peerind = 1;
         sock1 = LP_peerindsock(&peerind);
     }
