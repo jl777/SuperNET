@@ -532,9 +532,9 @@ void LP_alicequery_clear()
     Alice_expiration = 0;
 }
 
-int32_t LP_alice_eligible()
+int32_t LP_alice_eligible(uint32_t quotetime)
 {
-    if ( Alice_expiration != 0 && time(NULL) > Alice_expiration )
+    if ( Alice_expiration != 0 && quotetime > Alice_expiration )
     {
         printf("time expired for Alice_request\n");
         LP_alicequery_clear();
@@ -545,7 +545,7 @@ int32_t LP_alice_eligible()
 void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp)
 {
     double price=0.,maxprice = LP_Alicemaxprice;
-    if ( LP_alice_eligible() > 0 && LP_quotecmp(qp,&LP_Alicequery) == 0 )
+    if ( LP_quotecmp(qp,&LP_Alicequery) == 0 )
     {
         price = LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout);
         if ( LP_pricevalid(price) > 0 && maxprice > SMALLVAL && price <= maxprice )
@@ -555,7 +555,7 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
             printf("send CONNECT\n");
             LP_query(ctx,myipaddr,mypubsock,"connect",qp);
         } else printf("LP_reserved price %.8f vs maxprice %.8f\n",price,maxprice*1.005);
-    } else printf("probably a timeout, reject reserved due to not eligible.%d or mismatched quote price %.8f vs maxprice %.8f\n",LP_alice_eligible(),price,maxprice);
+    } else printf("probably a timeout, reject reserved due to not eligible.%d or mismatched quote price %.8f vs maxprice %.8f\n",LP_alice_eligible(qp->quotetime),price,maxprice);
 }
 
 char *LP_connectedalice(cJSON *argjson) // alice
@@ -789,7 +789,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     return(retval);
                 } else printf("got reserved response from destpubkey %s\n",bits256_str(str,Q.srchash));
             }
-            if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && LP_alice_eligible() > 0 )
+            if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && Q.quotetime > time(NULL)-20 && LP_alice_eligible(Q.quotetime) > 0 )
             {
                 printf("alice %s received RESERVED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
                 if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
