@@ -115,7 +115,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
 
 void LP_unspents_mark(char *symbol,cJSON *vins)
 {
-    printf("LOCK (%s)\n",jprint(vins,0));
+    //printf("LOCK (%s)\n",jprint(vins,0));
 }
 
 char *NXTnodes[] = { "62.75.159.113", "91.44.203.238", "82.114.88.225", "78.63.207.76", "188.174.110.224", "91.235.72.49", "213.144.130.91", "209.222.98.250", "216.155.128.10", "178.33.203.157", "162.243.122.251", "69.163.47.173", "193.151.106.129", "78.94.2.74", "192.3.196.10", "173.33.112.87", "104.198.173.28", "35.184.154.126", "174.140.167.239", "23.88.113.131", "198.71.84.173", "178.150.207.53", "23.88.61.53", "192.157.233.106", "192.157.241.212", "23.89.192.88", "23.89.200.27", "192.157.241.139", "23.89.200.63", "23.89.192.98", "163.172.214.102", "176.9.85.5", "80.150.243.88", "80.150.243.92", "80.150.243.98", "109.70.186.198", "146.148.84.237", "104.155.56.82", "104.197.157.140", "37.48.73.249", "146.148.77.226", "84.57.170.200", "107.161.145.131", "80.150.243.97", "80.150.243.93", "80.150.243.100", "80.150.243.95", "80.150.243.91", "80.150.243.99", "80.150.243.96", "93.231.187.177", "212.237.23.85", "35.158.179.254", "46.36.66.41", "185.170.113.79", "163.172.68.112", "78.47.35.210", "77.90.90.75", "94.177.196.134", "212.237.22.215", "94.177.234.11", "167.160.180.199", "54.68.189.9", "94.159.62.14", "195.181.221.89", "185.33.145.94", "195.181.209.245", "195.181.221.38", "195.181.221.162", "185.33.145.12", "185.33.145.176", "178.79.128.235", "94.177.214.120", "94.177.199.41", "94.177.214.200", "94.177.213.201", "212.237.13.162", "195.181.221.236", "195.181.221.185", "185.28.103.187", "185.33.146.244", "217.61.123.71", "195.181.214.45", "195.181.212.99", "195.181.214.46", "195.181.214.215", "195.181.214.68", "217.61.123.118", "195.181.214.79", "217.61.123.14", "217.61.124.100", "195.181.214.111", "85.255.0.176", "81.2.254.116", "217.61.123.184", "195.181.212.231", "94.177.214.110", "195.181.209.164", "104.129.56.238", "85.255.13.64", "167.160.180.206", "217.61.123.226", "167.160.180.208", "93.186.253.127", "212.237.6.208", "94.177.207.190", "217.61.123.119", "85.255.1.245", "217.61.124.157", "37.59.57.141", "167.160.180.58", "104.223.53.14", "217.61.124.69", "195.181.212.103", "85.255.13.141", "104.207.133.204", "71.90.7.107", "107.150.18.108", "23.94.134.161", "80.150.243.13", "80.150.243.11", "185.81.165.52", "80.150.243.8" };
@@ -314,13 +314,13 @@ char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
 cJSON *LP_assethbla(char *assetid)
 {
     char url[1024],*retstr; int32_t n; cJSON *array,*bid=0,*ask=0,*retjson;
-    sprintf(url,"http://%s:7876/nxt?requestType=getBidOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
+    sprintf(url,"http://%s:7876/nxt?requestType=getBidOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[LP_rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         bid = cJSON_Parse(retstr);
         free(retstr);
     }
-    sprintf(url,"http://%s:7876/nxt?requestType=getAskOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
+    sprintf(url,"http://%s:7876/nxt?requestType=getAskOrders&asset=%s&firstIndex=0&lastIndex=0",NXTnodes[LP_rand() % (sizeof(NXTnodes)/sizeof(*NXTnodes))],assetid);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         ask = cJSON_Parse(retstr);
@@ -866,6 +866,7 @@ char *LP_sendrawtransaction(char *symbol,char *signedtx)
                 errobj = cJSON_CreateObject();
                 jaddstr(errobj,"error","rejected");
                 jaddnum(errobj,"code",-27);
+                free(retstr);
                 retstr = jprint(errobj,1);
             }
             else
@@ -922,36 +923,38 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
         return(jprint(retjson,1));
     }
     return(signedtx);
-    
-    array = cJSON_CreateArray();
-    jaddistr(array,rawtx);
-    jaddi(array,jduplicate(vins));
-    jaddi(array,jduplicate(privkeys));
-    paramstr = jprint(array,1);
-    //printf("signrawtransaction\n");
-    if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr)) != 0 )
+    if ( (0) )
     {
-        if ( (json= cJSON_Parse(retstr)) != 0 )
+        array = cJSON_CreateArray();
+        jaddistr(array,rawtx);
+        jaddi(array,jduplicate(vins));
+        jaddi(array,jduplicate(privkeys));
+        paramstr = jprint(array,1);
+        //printf("signrawtransaction\n");
+        if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr)) != 0 )
         {
-            if ( (hexstr= jstr(json,"hex")) != 0 )
+            if ( (json= cJSON_Parse(retstr)) != 0 )
             {
-                len = (int32_t)strlen(hexstr);
-                signedtx = calloc(1,len+1);
-                strcpy(signedtx,hexstr);
-                *completedp = is_cJSON_True(jobj(json,"complete"));
-                len >>= 1;
-                data = malloc(len);
-                decode_hex(data,len,hexstr);
-                *signedtxidp = bits256_doublesha256(0,data,len);
+                if ( (hexstr= jstr(json,"hex")) != 0 )
+                {
+                    len = (int32_t)strlen(hexstr);
+                    signedtx = calloc(1,len+1);
+                    strcpy(signedtx,hexstr);
+                    *completedp = is_cJSON_True(jobj(json,"complete"));
+                    len >>= 1;
+                    data = malloc(len);
+                    decode_hex(data,len,hexstr);
+                    *signedtxidp = bits256_doublesha256(0,data,len);
+                }
+                //else
+                printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
+                free_json(json);
             }
-            //else
-            printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
-            free_json(json);
+            free(retstr);
         }
-        free(retstr);
+        free(paramstr);
+        return(signedtx);
     }
-    free(paramstr);
-    return(signedtx);
 }
 
 cJSON *LP_getblock(char *symbol,bits256 txid)
@@ -1032,7 +1035,7 @@ uint32_t LP_heighttime(char *symbol,int32_t height)
             {
                 if ( (retjson= cJSON_Parse(blockhashstr)) != 0 )
                 {
-                    printf("height.(%s)\n",jprint(retjson,0));
+                    //printf("height.(%s)\n",jprint(retjson,0));
                     timestamp = juint(retjson,"time");
                     free_json(retjson);
                 }
@@ -1043,7 +1046,7 @@ uint32_t LP_heighttime(char *symbol,int32_t height)
         {
             if ( (retjson= electrum_getheader(coin->symbol,ep,&retjson,height)) != 0 )
             {
-                printf("%s\n",jprint(retjson,0));
+                //printf("%s\n",jprint(retjson,0));
                 timestamp = juint(retjson,"timestamp");
                 free_json(retjson);
             }
@@ -1074,7 +1077,7 @@ cJSON *LP_blockjson(int32_t *heightp,char *symbol,char *blockhashstr,int32_t hei
                 *heightp = juint(json,"height");
                 if ( height >= 0 && *heightp != height )
                 {
-                    printf("unexpected height %d vs %d for %s (%s)\n",*heightp,height,blockhashstr,jprint(json,0));
+                    //printf("unexpected height %d vs %d for %s (%s)\n",*heightp,height,blockhashstr,jprint(json,0));
                     *heightp = -1;
                     free_json(json);
                     json = 0;
@@ -1255,7 +1258,7 @@ int32_t LP_notarization_latest(int32_t *bestheightp,struct iguana_info *coin)
                     blockhash = jbits256(blockjson,"previousblockhash");
                     if ( bits256_nonz(blockhash) == 0 )
                     {
-                        printf("null prev.(%s)\n",jprint(blockjson,0));
+                        //printf("null prev.(%s)\n",jprint(blockjson,0));
                         free_json(blockjson);
                         break;
                     }

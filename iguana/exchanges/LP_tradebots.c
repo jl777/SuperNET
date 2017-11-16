@@ -324,7 +324,7 @@ void LP_tradebot_timeslice(void *ctx,struct LP_tradebot *bot)
                     printf("try autobuy %s/%s remaining %.8f maxprice %.8f maxrel %.8f\n",bot->base,bot->rel,remaining,bot->maxprice,maxrel);
                     if ( maxrel < remaining )
                         remaining = maxrel;
-                    tradeid = rand();
+                    tradeid = LP_rand();
                     for (i=1; i<=maxiters; i++)
                     {
                         if ( remaining < 0.001 )

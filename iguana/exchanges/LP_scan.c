@@ -466,7 +466,7 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
             {
                 if ( (array= electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr)) != 0 )
                 {
-                    char str[65]; printf("check %s mempool.(%s)\n",bits256_str(str,txid),jprint(array,0));
+                    //char str[65]; printf("check %s mempool.(%s)\n",bits256_str(str,txid),jprint(array,0));
                     if ( (n= cJSON_GetArraySize(array)) > 0 )
                     {
                         for (i=0; i<n; i++)

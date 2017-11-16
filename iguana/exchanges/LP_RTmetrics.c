@@ -161,7 +161,7 @@ void LP_RTmetrics_update(char *base,char *rel)
         {
             if ( (swaps= jarray(&numswaps,statsjson,"swaps")) != 0 )
             {
-                printf("LP_RTmetrics_update for (%s)\n",jprint(swaps,0));
+                //printf("LP_RTmetrics_update for (%s)\n",jprint(swaps,0));
                 if ( numswaps > 0 )
                     LP_RTmetrics_swapsinfo(base,rel,swaps,numswaps);
             }

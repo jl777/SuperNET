@@ -700,7 +700,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
             }
         }
         free_json(array);
-        if ( flag != 0 )
+        if ( 0 && flag != 0 )
             LP_postutxos(coin->symbol,coin->smartaddr);
     }
     if ( values != 0 )
@@ -848,8 +848,10 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
         else if ( IAMLP == 0 || coin->inactive == 0 )
         {
             //printf("from updates %s\n",coin->symbol);
-            if ( LP_privkey_init(pubsock,coin,G.LP_privkey,G.LP_mypub25519) == 0 && (rand() % 10) == 0 )
-                LP_postutxos(coin->symbol,coin->smartaddr);
+            if ( LP_privkey_init(pubsock,coin,G.LP_privkey,G.LP_mypub25519) == 0 && (LP_rand() % 10) == 0 )
+            {
+                //LP_postutxos(coin->symbol,coin->smartaddr);
+            }
         }
     }
 }
