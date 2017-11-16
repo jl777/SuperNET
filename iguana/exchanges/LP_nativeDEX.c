@@ -17,8 +17,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// more retries for swap sendrawtransaction?
-// pbca26 unfinished swaps
 // if ( G.LP_pendingswaps != 0 ) return(-1);
 // bot safe to exit?
 //
@@ -30,6 +28,9 @@
 // bigendian architectures need to use little endian for sighash calcs
 
 #include <stdio.h>
+
+long LP_cjson_allocated,LP_cjson_total,LP_cjson_count;
+
 struct LP_millistats
 {
     double lastmilli,millisum,threshold;
@@ -311,7 +312,6 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                     if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                     {
                     }
-                    //printf("%.3f %s LP_command_process\n",OS_milliseconds()-millis,jstr(argjson,"method"));
                 }
             }
             if ( argjson != 0 )
@@ -1189,5 +1189,95 @@ void LP_fromjs_iter()
 }
 
 #endif
+
+#undef calloc
+#undef free
+#undef realloc
+#undef clonestr
+
+struct LP_memory_list
+{
+    struct LP_memory_list *next,*prev;
+    uint32_t timestamp,len;
+    void *ptr;
+} *LP_memory_list;
+int32_t zeroval() { return(0); }
+
+void *LP_alloc(uint64_t len)
+{
+    return(calloc(1,len));
+    LP_cjson_allocated += len;
+    LP_cjson_total += len;
+    LP_cjson_count++;
+    struct LP_memory_list *mp;
+    mp = calloc(1,sizeof(*mp) + len);
+    mp->ptr = calloc(1,len);
+    printf(">>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu %llu\n",mp,mp->ptr,(long long)len,(long long)LP_cjson_allocated);
+    mp->timestamp = (uint32_t)time(NULL);
+    mp->len = (uint32_t)len;
+    portable_mutex_lock(&LP_cJSONmutex);
+    DL_APPEND(LP_memory_list,mp);
+    portable_mutex_unlock(&LP_cJSONmutex);
+    return(mp->ptr);
+}
+
+void LP_free(void *ptr)
+{
+    static uint32_t lasttime,unknown;
+    free(ptr);
+    return;
+    uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
+    if ( (now= (uint32_t)time(NULL)) > lasttime+60 )
+    {
+        n = lagging = 0;
+        DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
+        {
+            total += mp->len;
+            n++;
+            if ( 0 && now > mp->timestamp+60 )
+            {
+                lagging++;
+                if ( now > mp->timestamp+60 )
+                {
+                    portable_mutex_lock(&LP_cJSONmutex);
+                    DL_DELETE(LP_memory_list,mp);
+                    portable_mutex_unlock(&LP_cJSONmutex);
+                    free(mp->ptr);
+                    free(mp);
+                }
+            }
+        }
+        printf("total %d allocated total %llu/%llu [%llu %llu] %.1f ave %s unknown.%u lagging.%d\n",n,(long long)total,(long long)LP_cjson_allocated,(long long)LP_cjson_total,(long long)LP_cjson_count,(double)LP_cjson_total/LP_cjson_count,mbstr(str,total),unknown,lagging);
+        lasttime = (uint32_t)time(NULL);
+    }
+    DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
+    {
+        if ( mp->ptr == ptr )
+            break;
+        mp = 0;
+    }
+    if ( mp != 0 )
+    {
+        LP_cjson_allocated -= mp->len;
+        portable_mutex_lock(&LP_cJSONmutex);
+        DL_DELETE(LP_memory_list,mp);
+        portable_mutex_unlock(&LP_cJSONmutex);
+        printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u %llu\n",ptr,mp,mp->len,(long long)LP_cjson_allocated);
+        free(mp->ptr);
+        free(mp);
+    } else unknown++; // free from source file with #define redirect for alloc that wasnt
+}
+
+char *LP_clonestr(char *str)
+{
+    char *retstr = LP_alloc(strlen(str)+1);
+    strcpy(retstr,str);
+    return(retstr);
+}
+
+void *LP_realloc(void *ptr,uint64_t len)
+{
+    return(realloc(ptr,len));
+}
 
 

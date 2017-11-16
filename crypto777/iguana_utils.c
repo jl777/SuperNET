@@ -446,8 +446,6 @@ char *clonestr(char *str)
     return(clone);
 }
 
-int32_t zeroval() { return(0); }
-
 int32_t safecopy(char *dest,char *src,long len)
 {
     int32_t i = -1;

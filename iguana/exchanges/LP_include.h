@@ -275,7 +275,7 @@ struct iguana_info
     void *electrum; void *ctx;
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33],zcash;
-    bits256 lastprivkey; uint32_t lastprivkeytime; int32_t privkeydepth;
+    int32_t privkeydepth;
     bits256 cachedtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
     bits256 cachedmerkle; int32_t cachedmerkleheight;
 };

@@ -27,7 +27,7 @@ struct LP_inuse_info
 } LP_inuse[1024];
 int32_t LP_numinuse;
 
-struct cJSON_list
+/*struct cJSON_list
 {
     struct cJSON_list *next,*prev;
     cJSON *item;
@@ -47,7 +47,6 @@ void cJSON_register(cJSON *item)
     portable_mutex_unlock(&LP_cJSONmutex);
 }
 
-char *mbstr(char *str,double n);
 void cJSON_unregister(cJSON *item)
 {
     static uint32_t lasttime;
@@ -92,7 +91,7 @@ void cJSON_unregister(cJSON *item)
         free(ptr);
         portable_mutex_unlock(&LP_cJSONmutex);
     } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
-}
+}*/
 
 struct LP_inuse_info *_LP_inuse_find(bits256 txid,int32_t vout)
 {
@@ -504,7 +503,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
             up->spendheight = (int32_t)time(NULL);
             DL_APPEND(LP_garbage_collector2,up);
             portable_mutex_unlock(&LP_gcmutex);
-       }
+        }
         now = (uint32_t)time(NULL);
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -635,6 +634,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
                     balance += LP_value_extract(item,1);
                 }
             }
+            free_json(array);
         }
     }
     else
@@ -653,6 +653,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
                         balance += j64bits(item,"value");
                     }
                 }
+                free_json(array);
             }
         }
     }

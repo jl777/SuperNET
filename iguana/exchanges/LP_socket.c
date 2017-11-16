@@ -1034,7 +1034,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"ipaddr",ipaddr);
     jaddnum(retjson,"port",port);
-    if ( (ep= LP_electrum_info(&already,coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE * 10)) == 0 )
+    if ( (ep= LP_electrum_info(&already,coin->symbol,ipaddr,port,IGUANA_MAXPACKETSIZE)) == 0 )
     {
         jaddstr(retjson,"error","couldnt connect to electrum server");
         return(retjson);

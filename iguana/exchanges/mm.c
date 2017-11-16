@@ -19,20 +19,13 @@
 //  Copyright © 2017 SuperNET. All rights reserved.
 //
 
-/*
-#define malloc(n) LP_alloc(n)
-#define calloc(a,b) LP_alloc((uint64_t)(a) * (b))
-#define free(ptr) LP_free(ptr)*/
+
 
 void PNACL_message(char *arg,...)
 {
     
 }
 #define FROM_MARKETMAKER
-
-#ifndef CJSON_GARBAGECOLLECTION
-#define CJSON_GARBAGECOLLECTION
-#endif
 
 #include <stdio.h>
 #include <stdint.h>
@@ -41,7 +34,6 @@ void PNACL_message(char *arg,...)
 #else
 #include "../../crypto777/OS_portable.h"
 #endif // !_WIN_32
-
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);

@@ -36,11 +36,6 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
 {
     char *method,*userpass,*base,*rel,*coin,*retstr = 0; int32_t changed,flag = 0; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
     method = jstr(argjson,"method");
-/*if ( //strcmp(method,"uitem") == 0 || strcmp(method,"postutxos") == 0 ||
-    strcmp(method,"notify") == 0
-    || strcmp(method,"postprice") == 0
-    )
-    return(clonestr("{}"));*/
     /*if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (method == 0 || strcmp(method,"electrum") != 0) )
     {
         if ( strcmp(ipaddr,"127.0.0.1") != 0 && argport >= 1000 )
@@ -435,7 +430,7 @@ bot_resume(botid)\n\
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
-                return(jprint(LP_gettx(coin,jbits256(argjson,"txid")),0));
+                return(jprint(LP_gettx(coin,jbits256(argjson,"txid")),1));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {
