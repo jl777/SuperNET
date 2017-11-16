@@ -382,7 +382,7 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
                 break;
             }
         }
-        if ( flag == 0 && value != 0 )
+        if ( 0 && flag == 0 && value != 0 )
         {
             if ( coin->electrum == 0 )
             {
@@ -739,7 +739,7 @@ struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,i
 cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJSON *txobj)
 {
     struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; cJSON *vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
-    if ( coin->inactive != 0 )
+    //if ( coin->inactive != 0 )
         return(0);
     if ( txobj != 0 || (txobj= LP_gettx(coin->symbol,txid)) != 0 )
     {

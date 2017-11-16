@@ -1028,23 +1028,23 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_psockloop for (%s)\n",myipaddr);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_reserved_msgs,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_reserved_msgs,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_reserved_msgs for (%s)\n",myipaddr);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)utxosQ_loop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)utxosQ_loop,(void *)myipaddr) != 0 )
     {
         printf("error launching utxosQ_loop for (%s)\n",myipaddr);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
     uint16_t myport2 = myport-1;
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport2) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport2) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
@@ -1054,7 +1054,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching command_rpcloop for port.%u\n",myport);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)queue_loop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)queue_loop,(void *)myipaddr) != 0 )
     {
         printf("error launching queue_loop for port.%u\n",myport);
         exit(-1);
@@ -1206,7 +1206,7 @@ int32_t zeroval() { return(0); }
 
 void *LP_alloc(uint64_t len)
 {
-    //return(calloc(1,len));
+return(calloc(1,len));
     LP_cjson_allocated += len;
     LP_cjson_total += len;
     LP_cjson_count++;
@@ -1225,7 +1225,7 @@ void *LP_alloc(uint64_t len)
 void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown;
-    // free(ptr); return;
+free(ptr); return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+60 )
     {
@@ -1268,7 +1268,7 @@ void LP_free(void *ptr)
     } else unknown++; // free from source file with #define redirect for alloc that wasnt
 }
 
-char *LP_clonestr(char *str)
+/*char *LP_clonestr(char *str)
 {
     char *retstr = LP_alloc(strlen(str)+1);
     strcpy(retstr,str);
@@ -1278,6 +1278,6 @@ char *LP_clonestr(char *str)
 void *LP_realloc(void *ptr,uint64_t len)
 {
     return(realloc(ptr,len));
-}
+}*/
 
 
