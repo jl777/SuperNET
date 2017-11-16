@@ -1765,7 +1765,7 @@ void basilisk_swaploop(void *_utxo)
         else tradebot_pendingadd(swapjson(swap),swap->I.req.dest,dstr(swap->I.req.destamount),swap->I.req.src,dstr(swap->I.req.srcamount));
     }
     printf("%s swap finished statebits %x\n",swap->I.iambob!=0?"BOB":"ALICE",swap->I.statebits);
-    //basilisk_swap_purge(swap);
+    basilisk_swap_purge(swap);
     free(data);
 }
 #endif
