@@ -568,19 +568,17 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         //printf("coin not active\n");
         return(0);
     }
-    /*if ( bits256_cmp(myprivkey,coin->lastprivkey) == 0 && time(NULL) < coin->lastprivkeytime+60 )
-        return(0);*/
-    coin->lastprivkey = myprivkey;
-    coin->lastprivkeytime = (uint32_t)time(NULL);
     if ( coin->privkeydepth > 0 )
         return(0);
+    printf("LP_privkey_init.0 %ld\n",LP_cjson_allocated);
     coin->privkeydepth++;
     LP_address(coin,coin->smartaddr);
-    //printf("privkey init.(%s) %s depth.%d\n",coin->symbol,coin->smartaddr,coin->privkeydepth);
+    printf("LP_privkey_init.1 %ld\n",LP_cjson_allocated);
     if ( coin->inactive == 0 )
         LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
+    printf("LP_privkey_init.2 %ld\n",LP_cjson_allocated);
     array = LP_listunspent(coin->symbol,coin->smartaddr);
-    //printf("unspent array %ld\n",strlen(jprint(array,0)));
+    printf("LP_privkey_init.3 %ld\n",LP_cjson_allocated);
     if ( array != 0 )
     {
         txfee = LP_txfeecalc(coin,0,0);
@@ -709,6 +707,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         if ( flag != 0 )
             LP_postutxos(coin->symbol,coin->smartaddr);
     }
+    printf("LP_privkey_init.4 %ld\n",LP_cjson_allocated);
     if ( values != 0 )
         free(values);
     if ( coin->privkeydepth > 0 )
