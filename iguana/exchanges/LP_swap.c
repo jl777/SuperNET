@@ -113,8 +113,8 @@ void basilisk_rawtx_purge(struct basilisk_rawtx *rawtx)
 {
     if ( rawtx->vins != 0 )
         free_json(rawtx->vins);
-    //if ( rawtx->txbytes != 0 )
-    //    free(rawtx->txbytes), rawtx->txbytes = 0;
+    if ( rawtx->txbytes != 0 )
+        free(rawtx->txbytes), rawtx->txbytes = 0;
 }
 
 void basilisk_swap_finished(struct basilisk_swap *swap)
@@ -831,7 +831,7 @@ void LP_bobloop(void *_swap)
             }
         }
         basilisk_swap_finished(swap);
-        //free(swap);
+        free(swap);
     } else printf("swap timed out\n");
     G.LP_pendingswaps--;
 }
