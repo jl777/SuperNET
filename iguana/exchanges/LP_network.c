@@ -204,8 +204,8 @@ int32_t LP_magic_check(uint8_t *msg,int32_t recvlen,char *remoteaddr)
         vcalc_sha256(0,hash.bytes,msg,recvlen);
         memcpy(magic.bytes,&msg[recvlen],sizeof(magic));
         val = _LP_magic_check(hash,magic);
-        if ( val != LP_BARTERDEX_VERSION )
-            printf("magicval = %x from %s\n",val,remoteaddr);
+        //if ( val != LP_BARTERDEX_VERSION )
+        //    printf("magicval = %x from %s\n",val,remoteaddr);
         return(val == LP_BARTERDEX_VERSION);
     }
     return(-1);
