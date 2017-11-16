@@ -32,6 +32,39 @@ rem MSBuild /help
 MSBuild marketmaker.sln /t:Rebuild /p:Configuration=Release /p:Platform=x64
 MSBuild marketmaker.sln /t:Rebuild /p:Configuration=Release /p:Platform=x86
 
+rem Obtain version number and latest git commit number
+
+FOR /F "tokens=* USEBACKQ" %%F IN (`find /i "LP_MAJOR_VERSION" "iguana\exchanges\LP_include.h"`) DO (
+SET LP_MAJOR_VERSION_STR=%%F
+)
+FOR /F "tokens=* USEBACKQ" %%F IN (`find /i "LP_MINOR_VERSION" "iguana\exchanges\LP_include.h"`) DO (
+SET LP_MINOR_VERSION_STR=%%F
+)
+FOR /F "tokens=* USEBACKQ" %%F IN (`find /i "LP_BUILD_NUMBER" "iguana\exchanges\LP_include.h"`) DO (
+SET LP_BUILD_NUMBER_STR=%%F
+)
+
+for /f delims^=^"^ tokens^=2 %%a in ('echo %LP_MAJOR_VERSION_STR%') do (
+set LP_MAJOR_VERSION=%%a
+)
+for /f delims^=^"^ tokens^=2 %%a in ('echo %LP_MINOR_VERSION_STR%') do (
+set LP_MINOR_VERSION=%%a
+)
+for /f delims^=^"^ tokens^=2 %%a in ('echo %LP_BUILD_NUMBER_STR%') do (
+set LP_BUILD_NUMBER=%%a
+)
+
+rem Check if git command exist and if does - receive latest GIT_COMMIT
+git --version >nul 2>&1 && (
+	for /f "tokens=1" %%a in ('git rev-parse --short HEAD') do (
+		set GIT_COMMIT=_%%a
+	)
+) || (
+    set GIT_COMMIT=
+)
+
+rem echo Marketmaker_%LP_MAJOR_VERSION%.%LP_MINOR_VERSION%_%LP_BUILD_NUMBER%%GIT_COMMIT%
+
 rem Using to add in marketmaker_release.7z
 set host=%COMPUTERNAME%
 IF "%host%"=="VM-81" (
@@ -39,9 +72,11 @@ IF "%host%"=="VM-81" (
     mkdir package_content\win64
     copy /y Release\marketmaker.exe package_content\win32
     copy /y x64\Release\marketmaker.exe package_content\win64
+    echo Marketmaker_%LP_MAJOR_VERSION%.%LP_MINOR_VERSION%_%LP_BUILD_NUMBER%%GIT_COMMIT% > package_content\version.txt
     cd package_content
     "C:\Program Files\7-Zip\7z.exe" a C:\komodo\marketmaker_release\marketmaker_release.7z win32\marketmaker.exe
     "C:\Program Files\7-Zip\7z.exe" a C:\komodo\marketmaker_release\marketmaker_release.7z win64\marketmaker.exe
+    "C:\Program Files\7-Zip\7z.exe" a C:\komodo\marketmaker_release\marketmaker_release.7z version.txt
     cd ..
     rd package_content /s /q
     )
