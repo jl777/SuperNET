@@ -35,6 +35,7 @@ char *LP_numutxos()
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*userpass,*base,*rel,*coin,*retstr = 0; int32_t changed,flag = 0; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
+    printf("stats_JSON.0 %ld\n",LP_cjson_allocated);
     method = jstr(argjson,"method");
 /*if ( //strcmp(method,"uitem") == 0 || strcmp(method,"postutxos") == 0 ||
     strcmp(method,"notify") == 0
@@ -158,6 +159,7 @@ bot_resume(botid)\n\
         rel = "";
     if ( (coin= jstr(argjson,"coin")) == 0 )
         coin = "";
+    printf("stats_JSON.1 %ld %s\n",LP_cjson_allocated,method);
     if ( G.USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 ) // protected localhost
     {
         if ( G.USERPASS_COUNTER == 0 )
@@ -640,8 +642,10 @@ bot_resume(botid)\n\
     }
     if ( retstr == 0 )
         printf("ERROR.(%s)\n",jprint(argjson,0));
+    printf("stats_JSON.2 %ld reqjson.%p\n",LP_cjson_allocated,reqjson);
     if ( reqjson != 0 )
         free_json(reqjson);
+    printf("stats_JSON.3 %ld retstr.%p\n",LP_cjson_allocated,retstr);
     if ( retstr != 0 )
     {
         free(retstr);

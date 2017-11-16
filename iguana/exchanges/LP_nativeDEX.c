@@ -195,6 +195,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
             char *leakstr = jprint(argjson,0);
             printf("stats_JSON leaked.%ld (%s)\n",LP_cjson_allocated - startval,leakstr);
             free(leakstr);
+            exit(-1);
         }
     } //else printf("finished tradecommand (%s)\n",jprint(argjson,0));
     return(retstr);
