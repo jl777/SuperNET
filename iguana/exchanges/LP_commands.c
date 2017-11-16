@@ -542,7 +542,7 @@ bot_resume(botid)\n\
         return(LP_postprice_recv(argjson));
     else if ( strcmp(method,"postutxos") == 0 )
         return(LP_postutxos_recv(argjson));
-    else if ( 0 && strcmp(method,"uitem") == 0 )
+    else if ( strcmp(method,"uitem") == 0 )
         return(LP_uitem_recv(argjson));
     else if ( strcmp(method,"notify") == 0 )
         return(LP_notify_recv(argjson));
