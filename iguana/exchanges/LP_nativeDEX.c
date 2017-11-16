@@ -1200,11 +1200,13 @@ struct LP_memory_list
     void *ptr;
 } *LP_memory_list;
 int32_t zeroval() { return(0); }
-long LP_cjson_allocated;
+long LP_cjson_allocated,LP_cjson_total,LP_cjson_count;
 
 void *LP_alloc(uint64_t len)
 {
     LP_cjson_allocated += len;
+    LP_cjson_total += len;
+    LP_cjson_count++;
     //return(calloc(1,len));
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp) + len);
@@ -1231,7 +1233,7 @@ void LP_free(void *ptr)
     //free(ptr);
     //return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
-    if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
+    if ( (now= (uint32_t)time(NULL)) > lasttime+60 )
     {
         n = lagging = 0;
         DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
@@ -1251,7 +1253,7 @@ void LP_free(void *ptr)
                 }
             }
         }
-        printf("total %d allocated total %llu/%llu %s unknown.%u lagging.%d\n",n,(long long)total,(long long)LP_cjson_allocated,mbstr(str,total),unknown,lagging);
+        printf("total %d allocated total %llu/%llu [%llu %llu] %.1f ave %s unknown.%u lagging.%d\n",n,(long long)total,(long long)LP_cjson_allocated,(long long)LP_cjson_total,(long long)LP_cjson_count,(double)LP_cjson_total/LP_cjson_count,mbstr(str,total),unknown,lagging);
         lasttime = (uint32_t)time(NULL);
     }
     DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
