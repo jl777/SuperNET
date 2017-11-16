@@ -704,7 +704,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     jaddnum(reqjson,"timestamp",time(NULL));
     msg = jprint(reqjson,1);
     msg2 = clonestr(msg);
-    //printf("QUERY.(%s)\n",msg);
+    printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )
