@@ -1229,9 +1229,7 @@ void *LP_alloc(uint64_t len)
     //return(calloc(1,len));
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp) + len);
-    //if ( len == 72 )
-    //    printf("%d\n",1/zeroval());
-    //printf("\n>>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu\n",mp,mp->ptr,(long long)len);
+    printf("\n>>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu\n",mp,mp->ptr,(long long)len);
     mp->timestamp = (uint32_t)time(NULL);
     mp->len = (uint32_t)len;
     mp->ptr = calloc(1,len);
@@ -1287,7 +1285,7 @@ void LP_free(void *ptr)
         portable_mutex_lock(&LP_cJSONmutex);
         DL_DELETE(LP_memory_list,mp);
         portable_mutex_unlock(&LP_cJSONmutex);
-        //printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u\n",ptr,mp,mp->len);
+        printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u\n",ptr,mp,mp->len);
         free(mp->ptr);
         free(mp);
     } else unknown++; // free from source file with #define redirect for alloc that wasnt
