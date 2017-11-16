@@ -904,6 +904,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 Q.txid2 = butxo->deposit.txid;
                 Q.vout2 = butxo->deposit.vout;
                 Q.satoshis = butxo->S.satoshis;
+                Q.quotetime = (uint32_t)time(NULL);
                 printf("found %.8f -> %.8f newprice %.8f vs ask %.8f += %.8f qprice %.8f\n",dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,ask,price,qprice);
             }
             else
