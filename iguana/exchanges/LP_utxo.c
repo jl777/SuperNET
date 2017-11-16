@@ -405,7 +405,7 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
                 up->SPV = tx->SPV;
             }
             char str[65];
-            if ( 0 && strcmp(coin->smartaddr,coinaddr) == 0 && strcmp("KMD",coin->symbol) == 0 )
+            if ( strcmp(coin->smartaddr,coinaddr) == 0 && strcmp("KMD",coin->symbol) == 0 )
                 printf("%s ADD UTXO >> %s %s %s/v%d ht.%d %.8f\n",debug,coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
             portable_mutex_lock(&coin->addrmutex);
             DL_APPEND(ap->utxos,up);
@@ -464,7 +464,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
             }
-            //printf("added %d from listunspents\n",n);
+            printf("added %d from listunspents\n",n);
         }
         free_json(array);
     }
