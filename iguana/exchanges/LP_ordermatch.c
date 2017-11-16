@@ -791,6 +791,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             }
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 && LP_alice_eligible() > 0 )
             {
+                printf("alice %s received RESERVED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
                 if ( (qprice= LP_quote_validate(autxo,butxo,&Q,0)) <= SMALLVAL )
                 {
                     printf("reserved quote validate error %.0f\n",qprice);
@@ -807,7 +808,6 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     return(retval);
                 }
                 LP_aliceid(Q.tradeid,Q.aliceid,"reserved",0,0);
-                //printf("alice %s received RESERVED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
                 if ( (retstr= LP_quotereceived(argjson)) != 0 )
                     free(retstr);
                 LP_reserved(ctx,myipaddr,pubsock,&Q);
