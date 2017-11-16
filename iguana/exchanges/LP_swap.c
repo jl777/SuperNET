@@ -1189,7 +1189,7 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
     G.LP_skipstatus[G.LP_numskips] = ((uint64_t)rp->requestid << 32) | rp->quoteid;
     if ( G.LP_numskips < sizeof(G.LP_skipstatus)/sizeof(*G.LP_skipstatus) )
         G.LP_numskips++;
-    printf("basilisk_thread_start request.%u iambob.%d (%s/%s) quoteid.%u\n",rp->requestid,iambob,rp->src,rp->dest,rp->quoteid);
+    printf("LP_swapinit request.%u iambob.%d (%s/%s) quoteid.%u\n",rp->requestid,iambob,rp->src,rp->dest,rp->quoteid);
     bitcoin_pubkey33(swap->ctx,pubkey33,privkey);
     pubkey25519 = curve25519(privkey,curve25519_basepoint9());
     swap->persistent_pubkey = pubkey25519;
