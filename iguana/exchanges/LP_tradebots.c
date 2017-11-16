@@ -386,7 +386,7 @@ void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid
         if ( matched != 0 )
             break;
     }
-    if ( matched == 0 )
+    if ( 0 && matched == 0 )
         printf("NO MATCH: bot event tradeid.%u aliceid.%llu (%s) r.%u q.%u\n",tradeid,(long long)aliceid,event,requestid,quoteid);
 }
 
