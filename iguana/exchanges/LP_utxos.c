@@ -570,15 +570,11 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     }
     if ( coin->privkeydepth > 0 )
         return(0);
-    printf("LP_privkey_init.0 %ld\n",LP_cjson_allocated);
     coin->privkeydepth++;
     LP_address(coin,coin->smartaddr);
-    printf("LP_privkey_init.1 %ld\n",LP_cjson_allocated);
     if ( coin->inactive == 0 )
         LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
-    printf("LP_privkey_init.2 %ld\n",LP_cjson_allocated);
     array = LP_listunspent(coin->symbol,coin->smartaddr);
-    printf("LP_privkey_init.3 %ld\n",LP_cjson_allocated);
     if ( array != 0 )
     {
         txfee = LP_txfeecalc(coin,0,0);
@@ -707,7 +703,6 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         if ( flag != 0 )
             LP_postutxos(coin->symbol,coin->smartaddr);
     }
-    printf("LP_privkey_init.4 %ld\n",LP_cjson_allocated);
     if ( values != 0 )
         free(values);
     if ( coin->privkeydepth > 0 )
@@ -819,7 +814,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
                 printf("cant importprivkey.%s -> (%s), abort session\n",coin->symbol,jprint(retjson,1));
                 exit(-1);
             }
-        } else free_json(retjson);
+            free_json(retjson);
+        }
         coin->importedprivkey = (uint32_t)time(NULL);
     }
     vcalc_sha256(0,checkkey.bytes,privkey.bytes,sizeof(privkey));

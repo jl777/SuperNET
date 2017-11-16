@@ -423,7 +423,6 @@ void LP_mark_spent(char *symbol,bits256 txid,int32_t vout)
 int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; cJSON *txobj; struct LP_transaction *tx; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; //char str[65];
-    printf("LP_address_utxoadd.0 %ld\n",LP_cjson_allocated);
     if ( coin == 0 )
         return(0);
     if ( spendheight > 0 ) // dont autocreate entries for spends we dont care about
@@ -480,7 +479,6 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
         }
     } // else printf("cant get ap %s %s\n",coin->symbol,coinaddr);
     //printf("done %s add addr.%s ht.%d\n",coin->symbol,coinaddr,height);
-    printf("LP_address_utxoadd.1 %ld\n",LP_cjson_allocated);
     return(retval);
 }
 
@@ -505,7 +503,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
             up->spendheight = (int32_t)time(NULL);
             DL_APPEND(LP_garbage_collector2,up);
             portable_mutex_unlock(&LP_gcmutex);
-       }
+        }
         now = (uint32_t)time(NULL);
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -636,6 +634,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
                     balance += LP_value_extract(item,1);
                 }
             }
+            free_json(array);
         }
     }
     else
@@ -654,6 +653,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
                         balance += j64bits(item,"value");
                     }
                 }
+                free_json(array);
             }
         }
     }

@@ -682,15 +682,6 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
             {
                 //printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
                 LP_listunspent_query(coin->symbol,coin->smartaddr);
-                /*if ( fullflag != 0 )
-                {
-                    if ( (destport= LP_randpeer(destip)) > 0 )
-                    {
-                        retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
-                        //printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
-                        retjson = cJSON_Parse(retstr);
-                    } else printf("LP_listunspent_issue couldnt get a random peer?\n");
-                }*/
             }
             if ( retjson != 0 )
             {

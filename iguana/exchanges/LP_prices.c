@@ -265,6 +265,7 @@ uint64_t LP_unspents_metric(struct iguana_info *coin,char *coinaddr)
             }
         }
         metric = _LP_unspents_metric(total,n);
+        free_json(array);
     }
     return(metric);
 }

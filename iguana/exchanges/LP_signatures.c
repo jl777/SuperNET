@@ -649,7 +649,6 @@ void LP_smartutxos_push(struct iguana_info *coin)
 char *LP_uitem_recv(cJSON *argjson)
 {
     bits256 txid; int32_t vout,height; uint64_t value; struct iguana_info *coin; char *coinaddr,*symbol;
-    printf("LP_uitem_recv.0 %ld\n",LP_cjson_allocated);
     txid = jbits256(argjson,"txid");
     vout = jint(argjson,"vout");
     height = jint(argjson,"ht");
@@ -661,9 +660,7 @@ char *LP_uitem_recv(cJSON *argjson)
         if ( strcmp(coin->smartaddr,coinaddr) != 0 )
             LP_address_utxoadd((uint32_t)time(NULL),"LP_uitem_recv",coin,coinaddr,txid,vout,value,height,-1);
         //else printf("ignore external uitem %s %s\n",symbol,coin->smartaddr);
-        printf("LP_uitem_recv.1 %ld\n",LP_cjson_allocated);
     }
-    printf("LP_uitem_recv.2 %ld\n",LP_cjson_allocated);
     return(clonestr("{\"result\":\"success\"}"));
 }
 

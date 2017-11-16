@@ -183,18 +183,11 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
         return(0);
     if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
     {
-        long startval = LP_cjson_allocated;
         if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,"127.0.0.1",0)) != 0 )
         {
             //printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
             //if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 &&
                 //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
-        }
-        if ( LP_cjson_allocated > startval )
-        {
-            char *leakstr = jprint(argjson,0);
-            printf("stats_JSON leaked.%ld (%s)\n",LP_cjson_allocated - startval,leakstr);
-            free(leakstr);
         }
     } //else printf("finished tradecommand (%s)\n",jprint(argjson,0));
     return(retstr);
@@ -316,15 +309,8 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 }
                 else
                 {
-                    long startval = LP_cjson_allocated;
                     if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                     {
-                    }
-                    if ( LP_cjson_allocated > startval )
-                    {
-                        char *leakstr = jprint(argjson,0);
-                        printf("LP_command_process leaked.%ld (%s)\n",LP_cjson_allocated - startval,leakstr);
-                        free(leakstr);
                     }
                 }
             }
@@ -383,11 +369,8 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 }
                 if ( validreq != 0 )
                 {
-                    long startval = LP_cjson_allocated;
                     if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                         free(retstr);
-                    if ( LP_cjson_allocated > startval )
-                        printf("leaked.%ld (%s)\n",LP_cjson_allocated - startval,(char *)ptr);
                     if ( Broadcaststr != 0 )
                     {
                         //printf("self broadcast.(%s)\n",Broadcaststr);
@@ -1222,10 +1205,10 @@ int32_t zeroval() { return(0); }
 
 void *LP_alloc(uint64_t len)
 {
+    return(calloc(1,len));
     LP_cjson_allocated += len;
     LP_cjson_total += len;
     LP_cjson_count++;
-    //return(calloc(1,len));
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp) + len);
     mp->ptr = calloc(1,len);
@@ -1238,16 +1221,11 @@ void *LP_alloc(uint64_t len)
     return(mp->ptr);
 }
 
-void *LP_realloc(void *ptr,uint64_t len)
-{
-    return(realloc(ptr,len));
-}
-
 void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown;
-    //free(ptr);
-    //return;
+    free(ptr);
+    return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+60 )
     {
@@ -1296,4 +1274,10 @@ char *LP_clonestr(char *str)
     strcpy(retstr,str);
     return(retstr);
 }
+
+void *LP_realloc(void *ptr,uint64_t len)
+{
+    return(realloc(ptr,len));
+}
+
 

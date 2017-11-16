@@ -718,6 +718,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag)
                         LP_address_utxoadd(now,"LP_listunspent_both",coin,coinaddr,txid,v,value,height,-1);
                     }
                 }
+                free_json(array);
             }
         }
     } //else printf("%s coin.%p inactive.%d\n",symbol,coin,coin!=0?coin->inactive:-1);
