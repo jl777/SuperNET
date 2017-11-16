@@ -28,6 +28,9 @@
 // bigendian architectures need to use little endian for sighash calcs
 
 #include <stdio.h>
+
+long LP_cjson_allocated,LP_cjson_total,LP_cjson_count;
+
 struct LP_millistats
 {
     double lastmilli,millisum,threshold;
@@ -367,8 +370,11 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 }
                 if ( validreq != 0 )
                 {
+                    long startval = LP_cjson_allocated;
                     if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
                         free(retstr);
+                    if ( LP_cjson_allocated > startval )
+                        printf("leaked.%ld (%s)\n",LP_cjson_allocated - startval,(char *)ptr);
                     if ( Broadcaststr != 0 )
                     {
                         //printf("self broadcast.(%s)\n",Broadcaststr);
@@ -1200,7 +1206,6 @@ struct LP_memory_list
     void *ptr;
 } *LP_memory_list;
 int32_t zeroval() { return(0); }
-long LP_cjson_allocated,LP_cjson_total,LP_cjson_count;
 
 void *LP_alloc(uint64_t len)
 {
