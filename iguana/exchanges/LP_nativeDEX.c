@@ -1043,7 +1043,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_reserved_msgs for (%s)\n",myipaddr);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)utxosQ_loop,(void *)myipaddr) != 0 )
+    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)utxosQ_loop,(void *)myipaddr) != 0 )
     {
         printf("error launching utxosQ_loop for (%s)\n",myipaddr);
         exit(-1);
@@ -1237,7 +1237,7 @@ void LP_free(void *ptr)
     static uint32_t lasttime,unknown; static int64_t lasttotal;
 free(ptr); return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
-    if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
+    if ( (now= (uint32_t)time(NULL)) > lasttime+1 )
     {
         n = lagging = 0;
         DL_FOREACH_SAFE(LP_memory_list,mp,tmp)

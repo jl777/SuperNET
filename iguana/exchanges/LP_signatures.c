@@ -330,6 +330,7 @@ int32_t LP_utxos_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,uint8_t *pub
 void LP_postutxos(char *symbol,char *coinaddr)
 {
     bits256 zero; uint32_t timestamp; bits256 utxoshash; char pubsecpstr[67]; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
+return;
     if ( (coin= LP_coinfind(symbol)) != 0 && (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
     {
         //printf("LP_postutxos pubsock.%d %s %s\n",pubsock,symbol,coin->smartaddr);
@@ -362,6 +363,7 @@ struct LP_utxos_qitem { struct queueitem DL; cJSON *argjson; };
 char *LP_postutxos_recv(cJSON *argjson)
 {
     struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash,pubkey; cJSON *obj; struct LP_pubkeyinfo *pubp;
+printf("LP_postutxos_recv deprecated\n");
     pubkey = jbits256(argjson,"pubkey");
     pubp = LP_pubkeyfind(pubkey);
     if ( pubp != 0 && pubp->numerrors > LP_MAXPUBKEY_ERRORS )
@@ -616,7 +618,7 @@ char *LP_notify_recv(cJSON *argjson)
 void LP_smartutxos_push(struct iguana_info *coin)
 {
     uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; cJSON *array,*item,*req;
-    return;
+return;
     if ( coin->smartaddr[0] == 0 )
         return;
     //LP_notify_pubkeys(coin->ctx,LP_mypubsock);
@@ -652,6 +654,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
 char *LP_uitem_recv(cJSON *argjson)
 {
     bits256 txid; int32_t vout,height; uint64_t value; struct iguana_info *coin; char *coinaddr,*symbol;
+printf("LP_uitem_recv deprecated\n");
     txid = jbits256(argjson,"txid");
     vout = jint(argjson,"vout");
     height = jint(argjson,"ht");
