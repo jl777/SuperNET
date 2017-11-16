@@ -768,7 +768,7 @@ void LP_pubkeysloop(void *ctx)
         }
         if ( time(NULL) > lasttime+LP_ORDERBOOK_DURATION*0.5 )
         {
-            //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
+printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
             LP_notify_pubkeys(ctx,LP_mypubsock);
             lasttime = (uint32_t)time(NULL);
         }
@@ -785,7 +785,7 @@ void LP_privkeysloop(void *ctx)
     {
         LP_millistats_update(&LP_privkeysloop_stats);
         LP_counter += 1000;
-        //printf("LP_privkeysloop %u\n",LP_counter);
+printf("LP_privkeysloop %u\n",LP_counter);
         LP_privkey_updates(ctx,LP_mypubsock,0);
         sleep(LP_ORDERBOOK_DURATION * .777);
     }
@@ -801,10 +801,9 @@ void LP_swapsloop(void *ignore)
     {
         LP_millistats_update(&LP_swapsloop_stats);
         LP_counter += 10000;
-        //printf("LP_swapsloop %u\n",LP_counter);
+printf("LP_swapsloop %u\n",LP_counter);
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
-        //LP_millistats_update(0);
         sleep(600);
     }
 }
@@ -837,14 +836,14 @@ void LP_reserved_msgs(void *ignore)
                 if ( num_Reserved_msgs[1] > 0 )
                 {
                     num_Reserved_msgs[1]--;
-                    //printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
+printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
                     LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[1][num_Reserved_msgs[1]]);
                     Reserved_msgs[1][num_Reserved_msgs[1]] = 0;
                 }
                 else if ( num_Reserved_msgs[0] > 0 )
                 {
                     num_Reserved_msgs[0]--;
-                    //printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
+printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
                     LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
                     Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
                 }
@@ -1227,14 +1226,14 @@ void LP_free(void *ptr)
     static uint32_t lasttime,unknown;
 //free(ptr); return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
-    if ( (now= (uint32_t)time(NULL)) > lasttime+60 )
+    if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
     {
         n = lagging = 0;
         DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
         {
             total += mp->len;
             n++;
-            if ( now > mp->timestamp+120 )
+            if ( 0 && now > mp->timestamp+120 )
             {
                 lagging++;
                 if ( now > mp->timestamp+240 )
