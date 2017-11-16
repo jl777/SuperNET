@@ -250,7 +250,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES];
             //printf("[%s]\n",jsonstr);
             cipherlen = 0;
-            if ( (cipherstr= jstr(argjson,"cipher")) != 0 && (cipherlen= is_hexstr(cipherstr,0)) > 32 && cipherlen <= sizeof(decoded)*2 )
+            if ( 0 && (cipherstr= jstr(argjson,"cipher")) != 0 && (cipherlen= is_hexstr(cipherstr,0)) > 32 && cipherlen <= sizeof(decoded)*2 )
             {
                 method2 = jstr(argjson,"method2");
                 if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"encrypted") == 0 ||(method2 != 0 && strcmp(method2,"encrypted") == 0)) )
@@ -1206,14 +1206,14 @@ int32_t zeroval() { return(0); }
 
 void *LP_alloc(uint64_t len)
 {
-    return(calloc(1,len));
+    //return(calloc(1,len));
     LP_cjson_allocated += len;
     LP_cjson_total += len;
     LP_cjson_count++;
     struct LP_memory_list *mp;
     mp = calloc(1,sizeof(*mp) + len);
     mp->ptr = calloc(1,len);
-    printf(">>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu %llu\n",mp,mp->ptr,(long long)len,(long long)LP_cjson_allocated);
+    //printf(">>>>>>>>>>> LP_alloc mp.%p ptr.%p len.%llu %llu\n",mp,mp->ptr,(long long)len,(long long)LP_cjson_allocated);
     mp->timestamp = (uint32_t)time(NULL);
     mp->len = (uint32_t)len;
     portable_mutex_lock(&LP_cJSONmutex);
@@ -1225,8 +1225,7 @@ void *LP_alloc(uint64_t len)
 void LP_free(void *ptr)
 {
     static uint32_t lasttime,unknown;
-    free(ptr);
-    return;
+    // free(ptr); return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+60 )
     {
@@ -1263,7 +1262,7 @@ void LP_free(void *ptr)
         portable_mutex_lock(&LP_cJSONmutex);
         DL_DELETE(LP_memory_list,mp);
         portable_mutex_unlock(&LP_cJSONmutex);
-        printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u %llu\n",ptr,mp,mp->len,(long long)LP_cjson_allocated);
+        //printf(">>>>>>>>>>> LP_free ptr.%p mp.%p len.%u %llu\n",ptr,mp,mp->len,(long long)LP_cjson_allocated);
         free(mp->ptr);
         free(mp);
     } else unknown++; // free from source file with #define redirect for alloc that wasnt
