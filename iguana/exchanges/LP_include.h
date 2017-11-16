@@ -24,6 +24,8 @@
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
 #define LP_BUILD_NUMBER "15096"
+#define LP_BARTERDEX_VERSION 2
+#define LP_MAGICBITS 8
 
 #ifdef FROM_JS
 #include <emscripten.h>
@@ -38,8 +40,6 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #endif
 //#define LP_STRICTPEERS
 
-#define LP_BARTERDEX_VERSION 1
-#define LP_MAGICBITS 8
 
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
