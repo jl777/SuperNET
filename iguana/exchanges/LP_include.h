@@ -180,7 +180,7 @@ struct basilisk_request
     int64_t srcamount,unused; // 16 to 31
     bits256 srchash; // 32 to 63
     bits256 desthash;
-    char src[65],dest[65];
+    char src[68],dest[68];
     uint64_t destamount;
     int32_t optionhours,DEXselector;
 };
