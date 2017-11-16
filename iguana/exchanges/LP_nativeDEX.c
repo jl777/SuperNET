@@ -183,11 +183,18 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
         return(0);
     if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
     {
+        long startval = LP_cjson_allocated;
         if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,"127.0.0.1",0)) != 0 )
         {
             //printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
             //if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 &&
                 //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
+        }
+        if ( LP_cjson_allocated > startval )
+        {
+            char *leakstr = jprint(argjson,0);
+            printf("stats_JSON leaked.%ld (%s)\n",LP_cjson_allocated - startval,leakstr);
+            free(leakstr);
         }
     } //else printf("finished tradecommand (%s)\n",jprint(argjson,0));
     return(retstr);
@@ -315,8 +322,9 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                     }
                     if ( LP_cjson_allocated > startval )
                     {
-                        char *str = jprint(argjson,0);
-                        printf("leaked.%ld (%s)\n",LP_cjson_allocated - startval,str);
+                        char *leakstr = jprint(argjson,0);
+                        printf("LP_command_process leaked.%ld (%s)\n",LP_cjson_allocated - startval,leakstr);
+                        free(leakstr);
                     }
                 }
             }
