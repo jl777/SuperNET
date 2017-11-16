@@ -1223,7 +1223,7 @@ void *LP_alloc(uint64_t len)
 
 void LP_free(void *ptr)
 {
-    static uint32_t lasttime,unknown;
+    static uint32_t lasttime,unknown; static int64_t lasttotal;
 //free(ptr); return;
     uint32_t now; char str[65]; int32_t n,lagging; uint64_t total = 0; struct LP_memory_list *mp,*tmp;
     if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
@@ -1246,8 +1246,9 @@ void LP_free(void *ptr)
                 }
             }
         }
-        printf("total %d allocated total %llu/%llu [%llu %llu] %.1f ave %s unknown.%u lagging.%d\n",n,(long long)total,(long long)LP_cjson_allocated,(long long)LP_cjson_total,(long long)LP_cjson_count,(double)LP_cjson_total/LP_cjson_count,mbstr(str,total),unknown,lagging);
+        printf("[%lld] total %d allocated total %llu/%llu [%llu %llu] %.1f ave %s unknown.%u lagging.%d\n",(long long)(total-lasttotal),n,(long long)total,(long long)LP_cjson_allocated,(long long)LP_cjson_total,(long long)LP_cjson_count,(double)LP_cjson_total/LP_cjson_count,mbstr(str,total),unknown,lagging);
         lasttime = (uint32_t)time(NULL);
+        lasttotal = total;
     }
     DL_FOREACH_SAFE(LP_memory_list,mp,tmp)
     {
