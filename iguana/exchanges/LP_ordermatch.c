@@ -505,7 +505,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     qp->tradeid = tradeid;
     LP_query(ctx,myipaddr,mypubsock,"request",qp);
     LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = destpubkey;
-    char str[65]; printf("LP_trade %s/%s %.8f vol %.8f dest.(%s)\n",qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey));
+    char str[65]; printf("LP_trade %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f\n",qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),maxprice);
     return(LP_recent_swaps(0));
 }
 
@@ -778,7 +778,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         if ( strcmp(method,"reserved") == 0 )
         {
             bestprice = LP_bob_competition(&counter,aliceid,qprice,1);
-            //printf("aliceid.%llu price %.8f -> bestprice %.8f\n",(long long)aliceid,qprice,bestprice);
+            printf("aliceid.%llu price %.8f -> bestprice %.8f Alice max %.8f\n",(long long)aliceid,qprice,bestprice,LP_Alicemaxprice);
             if ( LP_Alicemaxprice == 0. )
                 return(retval);
             if ( bits256_nonz(LP_Alicedestpubkey) != 0 )
