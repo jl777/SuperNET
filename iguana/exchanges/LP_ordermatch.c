@@ -778,7 +778,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         if ( strcmp(method,"reserved") == 0 )
         {
             bestprice = LP_bob_competition(&counter,aliceid,qprice,1);
-            printf("%s lag %ld: aliceid.%llu price %.8f -> bestprice %.8f Alice max %.8f\n",jprint(argjson,0),Q.quotetime - (time(NULL)-20),(long long)aliceid,qprice,bestprice,LP_Alicemaxprice);
+            //printf("%s lag %ld: aliceid.%llu price %.8f -> bestprice %.8f Alice max %.8f\n",jprint(argjson,0),Q.quotetime - (time(NULL)-20),(long long)aliceid,qprice,bestprice,LP_Alicemaxprice);
             if ( LP_Alicemaxprice == 0. )
                 return(retval);
             if ( bits256_nonz(LP_Alicedestpubkey) != 0 )
@@ -948,9 +948,11 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 retjson = LP_quotejson(&Q);
                 LP_unavailableset(Q.txid,Q.vout,Q.timestamp + LP_RESERVETIME,Q.desthash);
                 LP_unavailableset(Q.txid2,Q.vout2,Q.timestamp + LP_RESERVETIME,Q.desthash);
+                if ( Q.quotetime == 0 )
+                    Q.quotetime = (uint32_t)time(NULL);
                 jaddnum(retjson,"quotetime",Q.quotetime);
                 jaddnum(retjson,"pending",Q.timestamp + LP_RESERVETIME);
-                jaddbits256(retjson,"desthash",Q.desthash);
+                //jaddbits256(retjson,"desthash",Q.desthash);
                 jaddstr(retjson,"method","reserved");
                 msg = jprint(retjson,0);
                 printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",Q.timestamp + LP_RESERVETIME,qprice,ask,msg);
