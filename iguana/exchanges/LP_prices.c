@@ -49,10 +49,10 @@ struct LP_cacheinfo
 } *LP_cacheinfos;
 
 
-float LP_pubkey_price(int32_t *numrelutxosp,int64_t *avesatoshisp,int64_t *maxsatoshisp,struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relind)
+float LP_pubkey_price(int32_t *numutxosp,int64_t *avesatoshisp,int64_t *maxsatoshisp,struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relind)
 {
     struct LP_pubkey_quote *pq,*tmp; int32_t scale; int64_t scale64;
-    *numrelutxosp = 0;
+    *numutxosp = 0;
     *avesatoshisp = *maxsatoshisp = 0;
     DL_FOREACH_SAFE(pubp->quotes,pq,tmp)
     {
@@ -66,7 +66,7 @@ float LP_pubkey_price(int32_t *numrelutxosp,int64_t *avesatoshisp,int64_t *maxsa
                 scale64 *= 10;
                 scale--;
             }
-            *numrelutxosp = pq->numrelutxos;
+            *numutxosp = pq->numutxos;
             *avesatoshisp = pq->aveutxo * scale64;
             *maxsatoshisp = pq->maxutxo * scale64;
             return(pq->price);
@@ -103,9 +103,9 @@ void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relin
             scale64 *= 10;
             scale--;
         }
-        if ( numutxos > (1L << sizeof(pq->numrelutxos)) )
-            pq->numrelutxos = (1L << sizeof(pq->numrelutxos)) - 1;
-        else pq->numrelutxos = numutxos;
+        if ( numutxos > (1L << sizeof(pq->numutxos)) )
+            pq->numutxos = (1L << sizeof(pq->numutxos)) - 1;
+        else pq->numutxos = numutxos;
         aveutxo = (balance + (scale64>>1)) / numutxos;
         if ( (ave64= (aveutxo / scale64)) > (1LL << 32) )
             ave64 = (1LL << 32) - 1;
@@ -114,7 +114,7 @@ void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relin
             max64 = (1LL << 32) - 1;
         pq->aveutxo = (uint32_t)ave64;
         pq->maxutxo = (uint32_t)max64;
-        printf("base.%s rel.%s utxocoin.%s numutxos.%u %u scale64 = %llu, ave %llu, ave32 %u (%llu) max32 %u (%llu)\n",LP_priceinfos[baseind].symbol,LP_priceinfos[relind].symbol,utxocoin,numutxos,pq->numrelutxos,(long long)scale64,(long long)aveutxo,pq->aveutxo,(long long)pq->aveutxo * scale64,pq->maxutxo,(long long)pq->maxutxo * scale64);
+        //printf("base.%s rel.%s utxocoin.%s numutxos.%u %u scale64 = %llu, ave %llu, ave32 %u (%llu) max32 %u (%llu)\n",LP_priceinfos[baseind].symbol,LP_priceinfos[relind].symbol,utxocoin,numutxos,pq->numutxos,(long long)scale64,(long long)aveutxo,pq->aveutxo,(long long)pq->aveutxo * scale64,pq->maxutxo,(long long)pq->maxutxo * scale64);
     }
 }
 

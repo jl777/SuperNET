@@ -369,7 +369,7 @@ struct LP_pubkey_quote
     struct LP_pubkey_quote *next,*prev;
     float price;
     uint32_t maxutxo,aveutxo;
-    uint8_t baseind,relind,numrelutxos,scale;
+    uint8_t baseind,relind,numutxos,scale;
 };
 
 #define LP_MAXPRICEINFOS 256
