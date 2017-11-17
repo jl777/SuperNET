@@ -93,7 +93,7 @@ void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relin
         DL_APPEND(pubp->quotes,pq); // already serialized as only path is via stats_JSON()
     }
     pq->price = price;
-    if ( numutxos != 0 )
+    if ( utxocoin != 0 && utxocoin[0] != 0 )
     {
         if ( (scale= pq->scale) == 0 )
             pq->scale = scale = 6;
@@ -565,7 +565,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
         {
             pubp->timestamp = (uint32_t)time(NULL);
-            LP_pubkey_update(pubp,basepp->ind,relpp->ind,price,0,0,0,0);
+            LP_pubkey_update(pubp,basepp->ind,relpp->ind,price,0,0,0,0,0);
             //pubp->matrix[basepp->ind][relpp->ind] = price;
             //pubp->timestamps[basepp->ind][relpp->ind] = pubp->timestamp;
             //pubp->matrix[relpp->ind][basepp->ind] = (1. / price);
