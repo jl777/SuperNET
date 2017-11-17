@@ -746,10 +746,23 @@ int32_t LP_aliceonly(char *symbol)
 
 int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
 {
-    struct electrum_info *ep,*backupep; struct LP_address_utxo *up; struct iguana_info *coin;
+    struct electrum_info *ep,*backupep; cJSON *txobj; struct LP_address_utxo *up; struct iguana_info *coin; struct LP_transaction *tx;
     coin = LP_coinfind(symbol);
     if ( coin != 0 && (ep= coin->electrum) != 0 )
     {
+        if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) == 0 )
+        {
+            if ( (txobj= electrum_transaction(symbol,ep,&txobj,txid,coinaddr)) != 0 )
+                free_json(txobj);
+            if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+            {
+                if ( vout < tx->numvouts && tx->height > 0 )
+                    LP_address_utxoadd((uint32_t)time(NULL),"LP_validSPV",coin,coinaddr,txid,vout,tx->outpoints[vout].value,tx->height,-1);
+                if ( tx->SPV <= 0 )
+                    return(-1);
+                return(0);
+            }
+        }
         if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
         {
             if ( up->SPV < 0 )

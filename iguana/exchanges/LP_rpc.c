@@ -429,7 +429,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     }
     else
     {
-        if ( (retjson= electrum_transaction(symbol,coin->electrum,&retjson,txid)) != 0 )
+        if ( (retjson= electrum_transaction(symbol,coin->electrum,&retjson,txid,0)) != 0 )
             return(retjson);
         else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,bits256_str(str,txid));
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
@@ -507,7 +507,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         }
         if ( coinaddr[0] == 0 )
         {
-            if ( (txobj= electrum_transaction(symbol,coin->electrum,&txobj,txid)) != 0 )
+            if ( (txobj= electrum_transaction(symbol,coin->electrum,&txobj,txid,0)) != 0 )
             {
                 if ( (vouts= jarray(&n,txobj,"vout")) != 0 && n > 0 )
                     LP_destaddr(coinaddr,jitem(vouts,vout));

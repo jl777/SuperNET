@@ -17,11 +17,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// destpubkey
 // if ( G.LP_pendingswaps != 0 ) return(-1);
 // bot safe to exit?
-// 324744 and 50mb
 // BCH signing
-// single utxo allocations alice
 // alice waiting for bestprice
 //
 // previously, it used to show amount, kmd equiv, perc

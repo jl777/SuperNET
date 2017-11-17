@@ -742,12 +742,27 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
     return(*retjsonp);
 }
 
-cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
+cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid,char *SPVcheck)
 {
-    cJSON *retjson;
+    cJSON *retjson,*array; struct LP_transaction *tx; struct iguana_info *coin;
+    coin = LP_coinfind(symbol);
     if ( ep != 0 )
         portable_mutex_lock(&ep->txmutex);
     retjson = _electrum_transaction(symbol,ep,retjsonp,txid);
+    if ( ep != 0 && coin != 0 && SPVcheck != 0 && SPVcheck[0] != 0 && (tx= LP_transactionfind(coin,txid)) != 0 )
+    {
+        if ( tx->height <= 0 )
+        {
+            if ( (array= electrum_address_listunspent(symbol,ep,&array,SPVcheck,2)) != 0 )
+            {
+                printf("SPVcheck.%s got %d unspents\n",SPVcheck,cJSON_GetArraySize(array));
+                free_json(array);
+            }
+        }
+        if ( tx->height > 0 )
+            tx->SPV = LP_merkleproof(coin,SPVcheck,ep,txid,tx->height);
+        char str[65]; printf("%s %s %s SPV height %d SPV %d\n",coin->symbol,SPVcheck,bits256_str(str,txid),tx->height,tx->SPV);
+    }
     if ( ep != 0 )
         portable_mutex_unlock(&ep->txmutex);
     return(retjson);
@@ -789,7 +804,7 @@ void electrum_test()
     decode_hex(hash.bytes,sizeof(hash),"b967a7d55889fe11e993430921574ec6379bc8ce712a652c3fcb66c6be6e925c");
     if ( (retjson= electrum_getmerkle(symbol,ep,0,hash,403000)) != 0 )
         printf("electrum_getmerkle %s\n",jprint(retjson,1));
-    if ( (retjson= electrum_transaction(symbol,ep,0,hash)) != 0 )
+    if ( (retjson= electrum_transaction(symbol,ep,0,hash,0)) != 0 )
         printf("electrum_transaction %s\n",jprint(retjson,1));
     addr = "14NeevLME8UAANiTCVNgvDrynUPk1VcQKb";
     if ( (retjson= electrum_address_gethistory(symbol,ep,0,addr)) != 0 )

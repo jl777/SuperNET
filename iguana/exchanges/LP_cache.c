@@ -235,7 +235,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
         return(0);
     if ( (tx= LP_transactionfind(coin,txid)) == 0 && strcmp(coinaddr,coin->smartaddr) == 0 )
     {
-        if ( (retjson= electrum_transaction(coin->symbol,ep,&retjson,txid)) != 0 )
+        if ( (retjson= electrum_transaction(coin->symbol,ep,&retjson,txid,0)) != 0 )
             free_json(retjson);
     }
     if ( tx != 0 )

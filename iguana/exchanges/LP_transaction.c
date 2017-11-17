@@ -118,7 +118,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
                     }
                     else if ( (errstr= jstr(retjson,"error")) != 0 && strcmp(errstr,"timeout") == 0 && coin != 0 && coin->electrum != 0 )
                     {
-                        if ( totalretries < 10 )
+                        if ( totalretries < 4 )
                         {
                             printf("time error with electrum, retry.%d\n",totalretries);
                             totalretries++;
