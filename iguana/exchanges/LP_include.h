@@ -364,12 +364,21 @@ struct basilisk_swap
     
 };
 
+struct LP_pubkey_quote
+{
+    struct LP_pubkey_quote *next,*prev;
+    float price;
+    uint32_t maxutxo,aveutxo;
+    uint8_t baseind,relind,numutxos,scale;
+};
+
 #define LP_MAXPRICEINFOS 256
 struct LP_pubkeyinfo
 {
     UT_hash_handle hh;
     bits256 pubkey;
-    float matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
+    struct LP_pubkey_quote *quotes;
+    //float matrix[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
     //uint32_t timestamps[LP_MAXPRICEINFOS][LP_MAXPRICEINFOS];
     uint32_t timestamp,numerrors,lasttime;
     int32_t istrusted;

@@ -533,8 +533,6 @@ void LP_coinsloop(void *_coins)
             {
                 if ( (backupep= ep->prev) == 0 )
                     backupep = ep;
-                // skip cLP_address MNZ bXcSsYBiVKtTzYErqxvma4UsojZTEf5L6H
-                //printf("electrum %s\n",coin->symbol);
                 if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
                 {
                     if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
@@ -892,6 +890,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     char *myipaddr=0,version[64]; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     sprintf(version,"Marketmaker %s.%s %s rsize.%ld",LP_MAJOR_VERSION,LP_MINOR_VERSION,LP_BUILD_NUMBER,sizeof(struct basilisk_request));
     printf("%s %u\n",version,calc_crc32(0,version,(int32_t)strlen(version)));
+    if ( LP_MAXPRICEINFOS > 256 )
+    {
+        printf("LP_MAXPRICEINFOS %d wont fit in a uint8_t, need to increase the width of the baseind and relind for struct LP_pubkey_quote\n",LP_MAXPRICEINFOS);
+        exit(-1);
+    }
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
