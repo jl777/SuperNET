@@ -19,7 +19,9 @@
 //
 // BCH signing
 // alice waiting for bestprice
-//
+// MNZ getcoin strangeness
+// improve critical section detection when parallel trades
+// reduce mem: dont redundant store pubkey utxo info
 // previously, it used to show amount, kmd equiv, perc
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -887,6 +889,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     char *myipaddr=0,version[64]; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     sprintf(version,"Marketmaker %s.%s %s rsize.%ld",LP_MAJOR_VERSION,LP_MINOR_VERSION,LP_BUILD_NUMBER,sizeof(struct basilisk_request));
     printf("%s %u\n",version,calc_crc32(0,version,(int32_t)strlen(version)));
+    //test_validate("02000000010e62f95ff5881de8853ce1a5ddbaad731a62879d719367f539103600f1895477010000006b483045022100c684a0871689519bd97f2e61275752124f0f1498360750c87cf99a8acf06fd8c022047e7e62a7bfd481599130e6f40c95833f6ed6f44aa8b6ead7b0ec86a738b98a041210361857e1ba609aadff520a2ca9886fe7548c7154fab2cbe108c3b0e1e7635eb1ffeffffff02a0860100000000001976a9146cfa0a987f4c8f2ffee7e9944ef0c86fcda9671d88ac1e6f0700000000001976a9147f4b7113f9e26d84b150f2cc6d219baaf27f884488ace6b00700");
     if ( LP_MAXPRICEINFOS > 256 )
     {
         printf("LP_MAXPRICEINFOS %d wont fit in a uint8_t, need to increase the width of the baseind and relind for struct LP_pubkey_quote\n",LP_MAXPRICEINFOS);

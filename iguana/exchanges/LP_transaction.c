@@ -535,7 +535,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
                 {
                     if ( msgtx->vins[i].p2shlen != 0 )
                     {
-                        char coinaddr[64]; uint32_t userdatalen,sigsize,pubkeysize; uint8_t *userdata; int32_t j,k,hashtype,type,flag; struct vin_info mvin,mainvin; bits256 zero;
+                        char coinaddr[64]; uint32_t userdatalen,hashtype,sigsize,pubkeysize; uint8_t *userdata; int32_t j,k,type,flag; struct vin_info mvin,mainvin; bits256 zero;
                         memset(zero.bytes,0,sizeof(zero));
                         coinaddr[0] = 0;
                         sigsize = 0;
