@@ -468,11 +468,11 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
         jaddnum(reqjson,"timestamp",timestamp);
         init_hexbytes_noT(pubsecpstr,G.LP_pubsecp,33);
         jaddstr(reqjson,"pubsecp",pubsecpstr);
-        if ( (ap= LP_address(basecoin,basecoin->smartaddr)) != 0 )
+        if ( (ap= LP_address(relcoin,relcoin->smartaddr)) != 0 )
         {
             if ( (numutxos= LP_address_minmax(&balance,&minsize,&maxsize,ap)) != 0 )
             {
-                printf("%s numutxos.%d balance %.8f min %.8f max %.8f\n",base,numutxos,dstr(balance),dstr(minsize),dstr(maxsize));
+                printf("%s numutxos.%d balance %.8f min %.8f max %.8f\n",rel,numutxos,dstr(balance),dstr(minsize),dstr(maxsize));
                 jaddnum(reqjson,"n",numutxos);
                 jaddnum(reqjson,"bal",dstr(balance));
                 jaddnum(reqjson,"min",dstr(minsize));
