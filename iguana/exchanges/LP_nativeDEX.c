@@ -17,9 +17,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// destpubkey
-// if ( G.LP_pendingswaps != 0 ) return(-1);
-// bot safe to exit?
 // BCH signing
 // alice waiting for bestprice
 //
