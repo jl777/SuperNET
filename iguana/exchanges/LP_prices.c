@@ -106,14 +106,15 @@ void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relin
         if ( numutxos > (1L << sizeof(pq->numutxos)) )
             pq->numutxos = (1L << sizeof(pq->numutxos)) - 1;
         else pq->numutxos = numutxos;
-        aveutxo = balance / numutxos;
+        aveutxo = (balance + (scale64>>1)) / numutxos;
         if ( (ave64= (aveutxo / scale64)) > (1LL << 32) )
             ave64 = (1LL << 32) - 1;
-        if ( (max64= (maxutxo / scale64)) > (1LL << 32) )
+        max64 = ((maxutxo + (scale64>>1)) / scale64);
+        if ( max64 > (1LL << 32) )
             max64 = (1LL << 32) - 1;
         pq->aveutxo = (uint32_t)ave64;
         pq->maxutxo = (uint32_t)max64;
-        printf("scale64 = %llu, ave %llu, ave32 %u (%llu) max32 %u (%llu)\n",(long long)scale64,(long long)aveutxo,pq->aveutxo,(long long)pq->aveutxo * scale64,pq->maxutxo,(long long)pq->maxutxo * scale64);
+        printf("base.%s scale64 = %llu, ave %llu, ave32 %u (%llu) max32 %u (%llu)\n",LP_priceinfos[baseind].symbol,(long long)scale64,(long long)aveutxo,pq->aveutxo,(long long)pq->aveutxo * scale64,pq->maxutxo,(long long)pq->maxutxo * scale64);
     }
 }
 
