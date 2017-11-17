@@ -763,7 +763,7 @@ struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,d
         op->price = price;
         op->numutxos = numutxos;
         op->avesatoshis = avesatoshis;
-        op->maxsatoshis = avesatoshis;
+        op->maxsatoshis = maxsatoshis;
         op->pubkey = pubkey;
         op->timestamp = timestamp;
         op->depth = balance;
