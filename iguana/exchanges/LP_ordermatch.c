@@ -405,7 +405,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s %s\n",dstr(targetval),relvolume,price,dstr(txfee),coin->symbol,coinaddr);
             }
             mini = -1;
-            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval)) >= 0 )
+            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval+txfee)) >= 0 )
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
@@ -1170,7 +1170,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         printf("destsatoshis %.8f vs utxo %.8f this would have triggered an quote error -13\n",dstr(destsatoshis),dstr(autxo->payment.value));
         return(clonestr("{\"error\":\"cant find alice utxo that is small enough\"}"));
     }
-    bestsatoshis = LP_basesatoshis(dstr(destsatoshis),maxprice,txfee,desttxfee);
+    bestsatoshis = 1.001 * LP_basesatoshis(dstr(destsatoshis),maxprice,txfee,desttxfee);
     memset(&B,0,sizeof(B));
     strcpy(B.coin,base);
     if ( LP_quoteinfoinit(&Q,&B,rel,maxprice,bestsatoshis,destsatoshis) < 0 )
