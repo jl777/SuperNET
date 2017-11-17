@@ -456,6 +456,12 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
 {
     cJSON *item,*array; int32_t i;
     item = cJSON_CreateObject();
+    if ( LP_swap_endcritical < LP_swap_critical )
+    {
+        jaddstr(item,"warning","swaps in critical section");
+        jaddnum(item,"critical",LP_swap_critical);
+        jaddnum(item,"endcritical",LP_swap_endcritical);
+    }
     jaddnum(item,"expiration",rswap->expiration);// - INSTANTDEX_LOCKTIME*2);
     jaddnum(item,"tradeid",rswap->tradeid);
     jaddnum(item,"requestid",rswap->requestid);
