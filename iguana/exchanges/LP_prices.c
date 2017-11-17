@@ -103,10 +103,10 @@ void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relin
             scale64 *= 10;
             scale--;
         }
-        if ( numrelutxos > (1L << sizeof(pq->numutxos)) )
-            pq->numrelutxos = (1L << sizeof(pq->numutxos)) - 1;
+        if ( numrelutxos > (1L << sizeof(pq->numrelutxos)) )
+            pq->numrelutxos = (1L << sizeof(pq->numrelutxos)) - 1;
         else pq->numrelutxos = numrelutxos;
-        aveutxo = (balance + (scale64>>1)) / numutxos;
+        aveutxo = (balance + (scale64>>1)) / numrelutxos;
         if ( (ave64= (aveutxo / scale64)) > (1LL << 32) )
             ave64 = (1LL << 32) - 1;
         max64 = ((maxutxo + (scale64>>1)) / scale64);
