@@ -468,11 +468,12 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
         jaddnum(reqjson,"timestamp",timestamp);
         init_hexbytes_noT(pubsecpstr,G.LP_pubsecp,33);
         jaddstr(reqjson,"pubsecp",pubsecpstr);
-        if ( (ap= LP_address(relcoin,relcoin->smartaddr)) != 0 )
+        if ( (ap= LP_address(basecoin,basecoin->smartaddr)) != 0 )
         {
             if ( (numutxos= LP_address_minmax(&balance,&minsize,&maxsize,ap)) != 0 )
             {
-                printf("%s numutxos.%d balance %.8f min %.8f max %.8f\n",rel,numutxos,dstr(balance),dstr(minsize),dstr(maxsize));
+                printf("%s numutxos.%d balance %.8f min %.8f max %.8f\n",base,numutxos,dstr(balance),dstr(minsize),dstr(maxsize));
+                jaddstr(reqjson,"utxocoin",base);
                 jaddnum(reqjson,"n",numutxos);
                 jaddnum(reqjson,"bal",dstr(balance));
                 jaddnum(reqjson,"min",dstr(minsize));
@@ -496,7 +497,7 @@ char *LP_postprice_recv(cJSON *argjson)
         {
             if ( LP_price_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,base,rel,j64bits(argjson,"price64")) == 0 )
             {
-                LP_pricefeedupdate(pubkey,base,rel,price,jint(argjson,"n"),jdouble(argjson,"bal")*SATOSHIDEN,jdouble(argjson,"min")*SATOSHIDEN,jdouble(argjson,"max")*SATOSHIDEN);
+                LP_pricefeedupdate(pubkey,base,rel,price,jstr(argjson,"utxocoin"),jint(argjson,"n"),jdouble(argjson,"bal")*SATOSHIDEN,jdouble(argjson,"min")*SATOSHIDEN,jdouble(argjson,"max")*SATOSHIDEN);
                 return(clonestr("{\"result\":\"success\"}"));
             } else return(clonestr("{\"error\":\"sig failure\"}"));
         }

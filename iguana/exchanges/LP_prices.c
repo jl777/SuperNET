@@ -75,7 +75,7 @@ float LP_pubkey_price(int32_t *numrelutxosp,int64_t *avesatoshisp,int64_t *maxsa
     return(0);
 }
 
-void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relind,float price,int64_t balance,int32_t numrelutxos,int64_t minutxo,int64_t maxutxo)
+void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relind,float price,int64_t balance,char *utxocoin,int32_t numutxos,int64_t minutxo,int64_t maxutxo)
 {
     struct LP_pubkey_quote *pq,*tmp; int64_t aveutxo,scale64,ave64,max64; int32_t scale;
     DL_FOREACH_SAFE(pubp->quotes,pq,tmp)
@@ -93,7 +93,7 @@ void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relin
         DL_APPEND(pubp->quotes,pq); // already serialized as only path is via stats_JSON()
     }
     pq->price = price;
-    if ( numrelutxos != 0 )
+    if ( numutxos != 0 )
     {
         if ( (scale= pq->scale) == 0 )
             pq->scale = scale = 6;
@@ -103,10 +103,10 @@ void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relin
             scale64 *= 10;
             scale--;
         }
-        if ( numrelutxos > (1L << sizeof(pq->numrelutxos)) )
+        if ( numutxos > (1L << sizeof(pq->numrelutxos)) )
             pq->numrelutxos = (1L << sizeof(pq->numrelutxos)) - 1;
-        else pq->numrelutxos = numrelutxos;
-        aveutxo = (balance + (scale64>>1)) / numrelutxos;
+        else pq->numrelutxos = numutxos;
+        aveutxo = (balance + (scale64>>1)) / numutxos;
         if ( (ave64= (aveutxo / scale64)) > (1LL << 32) )
             ave64 = (1LL << 32) - 1;
         max64 = ((maxutxo + (scale64>>1)) / scale64);
@@ -114,7 +114,7 @@ void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relin
             max64 = (1LL << 32) - 1;
         pq->aveutxo = (uint32_t)ave64;
         pq->maxutxo = (uint32_t)max64;
-        printf("base.%s numutxos.%u %u scale64 = %llu, ave %llu, ave32 %u (%llu) max32 %u (%llu)\n",LP_priceinfos[relind].symbol,numrelutxos,pq->numrelutxos,(long long)scale64,(long long)aveutxo,pq->aveutxo,(long long)pq->aveutxo * scale64,pq->maxutxo,(long long)pq->maxutxo * scale64);
+        printf("base.%s rel.%s utxocoin.%s numutxos.%u %u scale64 = %llu, ave %llu, ave32 %u (%llu) max32 %u (%llu)\n",LP_priceinfos[baseind].symbol,LP_priceinfos[relind].symbol,utxocoin,numutxos,pq->numrelutxos,(long long)scale64,(long long)aveutxo,pq->aveutxo,(long long)pq->aveutxo * scale64,pq->maxutxo,(long long)pq->maxutxo * scale64);
     }
 }
 
@@ -1107,7 +1107,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
     return(retarray);
 }
 
-void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,int32_t numrelutxos,int64_t balance,int64_t minutxo,int64_t maxutxo)
+void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *utxocoin,int32_t numrelutxos,int64_t balance,int64_t minutxo,int64_t maxutxo)
 {
     struct LP_priceinfo *basepp,*relpp; uint32_t now; uint64_t price64; struct LP_pubkeyinfo *pubp; char str[65],fname[512]; FILE *fp;
     //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
@@ -1144,7 +1144,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,int32_t
             if ( (LP_rand() % 1000) == 0 )
                 printf("PRICEFEED UPDATE.(%-6s/%6s) %12.8f %s %12.8f\n",base,rel,price,bits256_str(str,pubkey),1./price);
             pubp->timestamp = (uint32_t)time(NULL);
-            LP_pubkey_update(pubp,basepp->ind,relpp->ind,price,balance,numrelutxos,minutxo,maxutxo);
+            LP_pubkey_update(pubp,basepp->ind,relpp->ind,price,balance,utxocoin,numrelutxos,minutxo,maxutxo);
             //pubp->depthinfo[basepp->ind][relpp->ind] = LP_depthinfo_compact();
             //if ( fabs(pubp->matrix[basepp->ind][relpp->ind] - price) > SMALLVAL )
             {
