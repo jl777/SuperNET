@@ -446,7 +446,6 @@ char *clonestr(char *str)
     return(clone);
 }
 
-
 int32_t safecopy(char *dest,char *src,long len)
 {
     int32_t i = -1;
@@ -459,6 +458,7 @@ int32_t safecopy(char *dest,char *src,long len)
         if ( i == len )
         {
             printf("safecopy: %s too long %ld\n",src,len);
+            //printf("divide by zero! %d\n",1/zeroval());
 #ifdef __APPLE__
             //getchar();
 #endif

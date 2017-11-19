@@ -104,6 +104,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 {
     uint32_t rid,qid;
+    memset(qp,0,sizeof(*qp));
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
@@ -131,14 +132,16 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->R.quoteid = juint(argjson,"quoteid");
     if ( qp->R.requestid == 0 )
     {
-        rid= basilisk_requestid(&qp->R);
-        //printf("requestid.%u -> %u\n",qp->R.requestid,rid);
+        rid = basilisk_requestid(&qp->R);
+        if ( qp->R.requestid != 0 && qp->R.requestid != rid )
+            printf("requestid.%u -> %u\n",qp->R.requestid,rid);
         qp->R.requestid = rid;
     }
     if ( qp->R.quoteid == 0 )
     {
-        qid= basilisk_quoteid(&qp->R);
-        //printf("quoteid.%u -> %u\n",qp->R.quoteid,qid);
+        qid = basilisk_quoteid(&qp->R);
+        if ( qp->R.quoteid != 0 && qp->R.quoteid != qid )
+            printf("quoteid.%u -> %u\n",qp->R.quoteid,qid);
         qp->R.quoteid = qid;
     }
     return(0);
@@ -327,6 +330,7 @@ int32_t LP_utxos_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,uint8_t *pub
 void LP_postutxos(char *symbol,char *coinaddr)
 {
     bits256 zero; uint32_t timestamp; bits256 utxoshash; char pubsecpstr[67]; struct iguana_info *coin; cJSON *array,*reqjson = cJSON_CreateObject();
+return;
     if ( (coin= LP_coinfind(symbol)) != 0 && (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
     {
         //printf("LP_postutxos pubsock.%d %s %s\n",pubsock,symbol,coin->smartaddr);
@@ -359,6 +363,7 @@ struct LP_utxos_qitem { struct queueitem DL; cJSON *argjson; };
 char *LP_postutxos_recv(cJSON *argjson)
 {
     struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash,pubkey; cJSON *obj; struct LP_pubkeyinfo *pubp;
+printf("LP_postutxos_recv deprecated\n");
     pubkey = jbits256(argjson,"pubkey");
     pubp = LP_pubkeyfind(pubkey);
     if ( pubp != 0 && pubp->numerrors > LP_MAXPUBKEY_ERRORS )
@@ -446,7 +451,8 @@ int32_t LP_price_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,uint8_t *pub
 
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price)
 {
-    struct iguana_info *basecoin,*relcoin; char pubsecpstr[67]; uint32_t timestamp; uint64_t price64; bits256 zero; cJSON *reqjson = cJSON_CreateObject();
+    struct iguana_info *basecoin,*relcoin; struct LP_address *ap; char pubsecpstr[67]; uint32_t numutxos,timestamp; uint64_t price64,balance,minsize,maxsize; bits256 zero; cJSON *reqjson;
+    reqjson = cJSON_CreateObject();
     // LP_addsig
     if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 && basecoin->electrum == 0 )//&& relcoin->electrum == 0 )
     {
@@ -462,6 +468,18 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
         jaddnum(reqjson,"timestamp",timestamp);
         init_hexbytes_noT(pubsecpstr,G.LP_pubsecp,33);
         jaddstr(reqjson,"pubsecp",pubsecpstr);
+        if ( (ap= LP_address(basecoin,basecoin->smartaddr)) != 0 )
+        {
+            if ( (numutxos= LP_address_minmax(&balance,&minsize,&maxsize,ap)) != 0 )
+            {
+                //printf("%s numutxos.%d balance %.8f min %.8f max %.8f\n",base,numutxos,dstr(balance),dstr(minsize),dstr(maxsize));
+                jaddstr(reqjson,"utxocoin",base);
+                jaddnum(reqjson,"n",numutxos);
+                jaddnum(reqjson,"bal",dstr(balance));
+                jaddnum(reqjson,"min",dstr(minsize));
+                jaddnum(reqjson,"max",dstr(maxsize));
+            }
+        }
         LP_price_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_pubsecp,G.LP_mypub25519,base,rel,price64);
         LP_reserved_msg(0,base,rel,zero,jprint(reqjson,1));
         return(clonestr("{\"result\":\"success\"}"));
@@ -479,7 +497,7 @@ char *LP_postprice_recv(cJSON *argjson)
         {
             if ( LP_price_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,base,rel,j64bits(argjson,"price64")) == 0 )
             {
-                LP_pricefeedupdate(pubkey,base,rel,price);
+                LP_pricefeedupdate(pubkey,base,rel,price,jstr(argjson,"utxocoin"),jint(argjson,"n"),jdouble(argjson,"bal")*SATOSHIDEN,jdouble(argjson,"min")*SATOSHIDEN,jdouble(argjson,"max")*SATOSHIDEN);
                 return(clonestr("{\"result\":\"success\"}"));
             } else return(clonestr("{\"error\":\"sig failure\"}"));
         }
@@ -613,6 +631,7 @@ char *LP_notify_recv(cJSON *argjson)
 void LP_smartutxos_push(struct iguana_info *coin)
 {
     uint64_t value; bits256 zero,txid; int32_t i,vout,height,n; cJSON *array,*item,*req;
+return;
     if ( coin->smartaddr[0] == 0 )
         return;
     //LP_notify_pubkeys(coin->ctx,LP_mypubsock);
@@ -648,6 +667,7 @@ void LP_smartutxos_push(struct iguana_info *coin)
 char *LP_uitem_recv(cJSON *argjson)
 {
     bits256 txid; int32_t vout,height; uint64_t value; struct iguana_info *coin; char *coinaddr,*symbol;
+printf("LP_uitem_recv deprecated\n");
     txid = jbits256(argjson,"txid");
     vout = jint(argjson,"vout");
     height = jint(argjson,"ht");
@@ -657,7 +677,7 @@ char *LP_uitem_recv(cJSON *argjson)
     {
         //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",symbol,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
         if ( strcmp(coin->smartaddr,coinaddr) != 0 )
-            LP_address_utxoadd("LP_uitem_recv",coin,coinaddr,txid,vout,value,height,-1);
+            LP_address_utxoadd((uint32_t)time(NULL),"LP_uitem_recv",coin,coinaddr,txid,vout,value,height,-1);
         //else printf("ignore external uitem %s %s\n",symbol,coin->smartaddr);
     }
     return(clonestr("{\"result\":\"success\"}"));
@@ -675,11 +695,14 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
 
 void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_quoteinfo *qp)
 {
-    cJSON *reqjson; bits256 zero; char *msg,*msg2; int32_t flag = 0; struct LP_utxoinfo *utxo;
+    cJSON *reqjson; bits256 zero; char *msg,*msg2; int32_t flag = 0;
     if ( strcmp(method,"request") == 0 )
     {
-        if ( (utxo= LP_utxofind(0,qp->desttxid,qp->destvout)) != 0 && LP_ismine(utxo) > 0 && LP_isavailable(utxo) > 0 )
-            LP_unavailableset(utxo,qp->srchash);
+        if ( LP_allocated(qp->desttxid,qp->destvout) == 0 && LP_allocated(qp->feetxid,qp->feevout) == 0 )
+        {
+            LP_unavailableset(qp->desttxid,qp->destvout,qp->timestamp+LP_AUTOTRADE_TIMEOUT,qp->srchash);
+            LP_unavailableset(qp->feetxid,qp->feevout,qp->timestamp+LP_AUTOTRADE_TIMEOUT,qp->srchash);
+        }
         else
         {
             printf("couldnt find my txid to make request\n");
@@ -694,7 +717,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     jaddnum(reqjson,"timestamp",time(NULL));
     msg = jprint(reqjson,1);
     msg2 = clonestr(msg);
-    //printf("QUERY.(%s)\n",msg);
+    printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )

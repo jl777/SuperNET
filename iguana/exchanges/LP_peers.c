@@ -235,7 +235,7 @@ uint16_t LP_randpeer(char *destip)
     numpeers = LP_numpeers();
     if ( numpeers > 0 )
     {
-        r = rand() % numpeers;
+        r = LP_rand() % numpeers;
         n = 0;
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {

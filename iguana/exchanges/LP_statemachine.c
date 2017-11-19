@@ -132,6 +132,18 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
                  }*/
     return(fp);
 }
+//printf("VOUT.(%s)\n",jprint(vout,0));
+/*if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
+ {
+ item = jitem(addresses,0);
+ //printf("item.(%s)\n",jprint(item,0));
+ if ( (addr= jstr(item,0)) != 0 )
+ {
+ safecopy(coinaddr,addr,64);
+ //printf("extracted.(%s)\n",coinaddr);
+ }
+ }*/
+
 /*if ( IAMLP != 0 && time(NULL) > lasthello+600 )
  {
  char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
@@ -174,7 +186,7 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
  {
  if ( peer->errors >= LP_MAXPEER_ERRORS )
  {
- if ( (rand() % 10000) == 0 )
+ if ( (LP_rand() % 10000) == 0 )
  {
  peer->errors--;
  if ( peer->errors < LP_MAXPEER_ERRORS )
@@ -183,7 +195,7 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
  if ( IAMLP == 0 )
  continue;
  }
- if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (rand() % 100000) == 0 )
+ if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (LP_rand() % 100000) == 0 )
  {
  if ( strcmp(peer->ipaddr,myipaddr) != 0 )
  {
@@ -229,7 +241,7 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
                     {
                         numpeers = LP_numpeers();
-                        if ( IAMLP != 0 || numpeers < LP_MIN_PEERS || (IAMLP == 0 && (rand() % LP_MAX_PEERS) > numpeers) )
+                        if ( IAMLP != 0 || numpeers < LP_MIN_PEERS || (IAMLP == 0 && (LP_rand() % LP_MAX_PEERS) > numpeers) )
                             peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jint(item,"numpeers"),jint(item,"numutxos"),juint(item,"session"));
                     }
                     if ( peer != 0 )
@@ -347,6 +359,94 @@ void issue_LP_uitem(char *destip,uint16_t destport,char *symbol,char *coinaddr,b
      return(retstr);*/
 }
 
+/*if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
+ {
+ //printf("swapentry.(%s)\n",liststr);
+ if ( (retjson= cJSON_Parse(liststr)) != 0 )
+ {
+ if ( (array= jarray(&n,retjson,"swaps")) != 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ item = jitem(array,i);
+ //printf("(%s) check r%u/q%u\n",jprint(item,0),juint(item,"requestid"),juint(item,"quoteid"));
+ if ( juint(item,"requestid") == requestid && juint(item,"quoteid") == quoteid )
+ {
+ retstr = jprint(item,0);
+ break;
+ }
+ }
+ }
+ free_json(retjson);
+ }
+ free(liststr);
+ }
+ return(retstr);*/
+/*struct cJSON_list
+ {
+ struct cJSON_list *next,*prev;
+ cJSON *item;
+ uint32_t timestamp,cjsonid;
+ } *LP_cJSONlist;
+ 
+ void cJSON_register(cJSON *item)
+ {
+ struct cJSON_list *ptr;
+ ptr = calloc(1,sizeof(*ptr));
+ ptr->timestamp = (uint32_t)time(NULL);
+ ptr->item = item;
+ item->cjsonid = LP_rand();
+ ptr->cjsonid = item->cjsonid;
+ portable_mutex_lock(&LP_cJSONmutex);
+ DL_APPEND(LP_cJSONlist,ptr);
+ portable_mutex_unlock(&LP_cJSONmutex);
+ }
+ 
+ void cJSON_unregister(cJSON *item)
+ {
+ static uint32_t lasttime;
+ int32_t n; char *tmpstr; uint64_t total = 0; struct cJSON_list *ptr,*tmp; uint32_t now;
+ if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
+ {
+ n = 0;
+ DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
+ {
+ if ( ptr->item != 0 && ptr->item->child != 0 && ptr->cjsonid != 0 )
+ {
+ if ( (tmpstr= jprint(ptr->item,0)) != 0 )
+ {
+ total += strlen(tmpstr);
+ free(tmpstr);
+ }
+ }
+ n++;
+ }
+ printf("total %d cJSON pending\n",n);
+ lasttime = (uint32_t)time(NULL);
+ }
+ DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
+ {
+ if ( ptr->cjsonid == item->cjsonid )
+ break;
+ else if ( now > ptr->timestamp+60 && item->cjsonid != 0 )
+ {
+ portable_mutex_lock(&LP_cJSONmutex);
+ DL_DELETE(LP_cJSONlist,ptr);
+ portable_mutex_unlock(&LP_cJSONmutex);
+ printf("free expired\n");
+ cJSON_Delete(ptr->item);
+ free(ptr);
+ }
+ ptr = 0;
+ }
+ if ( ptr != 0 )
+ {
+ portable_mutex_lock(&LP_cJSONmutex);
+ DL_DELETE(LP_cJSONlist,ptr);
+ free(ptr);
+ portable_mutex_unlock(&LP_cJSONmutex);
+ } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
+ }*/
 char *issue_LP_getprices(char *destip,uint16_t destport)
 {
     char url[512];
@@ -355,6 +455,16 @@ char *issue_LP_getprices(char *destip,uint16_t destport)
     return(LP_issue_curl("getprices",destip,destport,url));
     //return(issue_curlt(url,LP_HTTP_TIMEOUT));
 }
+/*if ( fullflag != 0 )
+ {
+ if ( (destport= LP_randpeer(destip)) > 0 )
+ {
+ retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
+ //printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
+ retjson = cJSON_Parse(retstr);
+ } else printf("LP_listunspent_issue couldnt get a random peer?\n");
+ }*/
+
 void issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
 {
     cJSON *reqjson = cJSON_CreateObject();
@@ -594,24 +704,6 @@ void basilisk_swap_saveupdate(struct basilisk_swap *swap)
         fclose(fp);
     }
 }
-
-/*int32_t basilisk_swap_loadtx(struct basilisk_rawtx *rawtx,FILE *fp,char *bobcoinstr,char *alicecoinstr)
- {
- if ( fread(rawtx,1,sizeof(*rawtx),fp) == sizeof(*rawtx) )
- {
- rawtx->coin = 0;
- rawtx->vins = 0;
- if ( strcmp(rawtx->I.coinstr,bobcoinstr) == 0 || strcmp(rawtx->I.coinstr,alicecoinstr) == 0 )
- {
- rawtx->coin = LP_coinfind(rawtx->I.coinstr);
- if ( rawtx->vinstr[0] != 0 )
- rawtx->vins = cJSON_Parse(rawtx->vinstr);
- printf("loaded.%s len.%d\n",rawtx->name,rawtx->I.datalen);
- return(0);
- }
- }
- return(-1);
- }*/
 
 void basilisk_swap_sendabort(struct basilisk_swap *swap)
 {
@@ -863,7 +955,7 @@ int32_t _basilisk_rawtx_gen(char *str,uint32_t swapstarted,uint8_t *pubkey33,int
 {
     char scriptstr[1024],wifstr[256],coinaddr[64],*signedtx,*rawtxbytes; uint32_t basilisktag; int32_t retval = -1; cJSON *vins,*privkeys,*addresses,*valsobj; struct vin_info *V;
     init_hexbytes_noT(scriptstr,script,scriptlen);
-    basilisktag = (uint32_t)rand();
+    basilisktag = (uint32_t)LP_rand();
     valsobj = cJSON_CreateObject();
     jaddstr(valsobj,"coin",rawtx->coin->symbol);
     jaddstr(valsobj,"spendscript",scriptstr);
@@ -1103,7 +1195,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
         basilisk_swap_saveupdate(swap);
         if ( swap->connected == 0 )
             basilisk_psockinit(swap,swap->I.iambob != 0);
-        //if ( (rand() % 30) == 0 )
+        //if ( (LP_rand() % 30) == 0 )
         printf("E r%u/q%u swapstate.%x otherstate.%x remaining %d\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,swap->I.otherstatebits,(int32_t)(swap->I.expiration-time(NULL)));
         if ( swap->I.iambob != 0 )
         {
@@ -1277,7 +1369,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
                 }
             }
         }
-        if ( (rand() % 30) == 0 )
+        if ( (LP_rand() % 30) == 0 )
             printf("finished swapstate.%x other.%x\n",swap->I.statebits,swap->I.otherstatebits);
         if ( swap->I.statebits == savestatebits && swap->I.otherstatebits == saveotherbits )
             sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
@@ -1673,7 +1765,7 @@ void basilisk_swaploop(void *_utxo)
         else tradebot_pendingadd(swapjson(swap),swap->I.req.dest,dstr(swap->I.req.destamount),swap->I.req.src,dstr(swap->I.req.srcamount));
     }
     printf("%s swap finished statebits %x\n",swap->I.iambob!=0?"BOB":"ALICE",swap->I.statebits);
-    //basilisk_swap_purge(swap);
+    basilisk_swap_purge(swap);
     free(data);
 }
 #endif
@@ -1722,6 +1814,41 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
  }
  portable_mutex_unlock(&myinfo->DEX_swapmutex);
  }*/
+/*if ( bits256_nonz(Q.srchash) == 0 || bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 || strcmp(butxo->coinaddr,coin->smartaddr) != 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 )
+ {
+ qprice = (double)Q.destsatoshis / Q.satoshis;
+ strcpy(Q.gui,G.gui);
+ strcpy(Q.coinaddr,coin->smartaddr);
+ strcpy(butxo->coinaddr,coin->smartaddr);
+ Q.srchash = G.LP_mypub25519;
+ memset(&Q.txid,0,sizeof(Q.txid));
+ memset(&Q.txid2,0,sizeof(Q.txid2));
+ Q.vout = Q.vout2 = -1;
+ recalc = 1;
+ }
+ else if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) < SMALLVAL )
+ recalc = 1;
+ else if ( price < qprice )
+ {
+ char tmp[64];
+ if ( bits256_nonz(Q.txid) != 0 )
+ LP_utxos_remove(Q.txid,Q.vout);
+ else recalc = 1;
+ if ( bits256_nonz(Q.txid2) != 0 )
+ LP_utxos_remove(Q.txid2,Q.vout2);
+ else recalc = 1;
+ //printf("price %.8f qprice %.8f\n",price,qprice);
+ if ( recalc == 0 )
+ {
+ value = LP_txvalue(tmp,Q.srccoin,Q.txid,Q.vout);
+ value2 = LP_txvalue(tmp,Q.srccoin,Q.txid2,Q.vout2);
+ //printf("call LP_utxoadd.(%s) %.8f %.8f\n",Q.coinaddr,dstr(value),dstr(value2));
+ if ( (butxo= LP_utxoadd(1,coin->symbol,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,G.gui,0,Q.satoshis)) == 0 )
+ recalc = 1;
+ else if ( bits256_cmp(Q.txid,butxo->payment.txid) != 0 || Q.vout != butxo->payment.vout || bits256_cmp(Q.txid2,butxo->deposit.txid) != 0 || Q.vout2 != butxo->deposit.vout )
+ recalc = 1;
+ }
+ } else return(retval);*/
 
 /*int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double origprice)
  {
@@ -2665,7 +2792,7 @@ void LP_price_broadcastloop(void *ctx)
  minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
  printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s price %.8f relvol %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p,relvol);
  }
- if ( (rand() % 2) == 0 )
+ if ( (LP_rand() % 2) == 0 )
  {
  bot->relsum += relvol;
  bot->basesum += v;
@@ -2682,7 +2809,7 @@ void LP_price_broadcastloop(void *ctx)
 #ifdef FROM_JS
 int32_t sentbytes,sock,peerind,maxind;
 if ( (maxind= LP_numpeers()) > 0 )
-peerind = (rand() % maxind) + 1;
+peerind = (LP_rand() % maxind) + 1;
 else peerind = 1;
 sock = LP_peerindsock(&peerind);
 if ( sock >= 0 )
@@ -2724,11 +2851,11 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
     else
     {
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
+            peerind = (LP_rand() % maxind) + 1;
         else peerind = 1;
         sock0 = LP_peerindsock(&peerind);
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
+            peerind = (LP_rand() % maxind) + 1;
         else peerind = 1;
         sock1 = LP_peerindsock(&peerind);
     }

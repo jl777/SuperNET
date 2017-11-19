@@ -45,10 +45,10 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
         tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
-        tx->serialized = serialized;
-        //free(serialized);
+        tx->serialized = 0;//serialized;
+        free(serialized);
         tx->fpos = fpos;
-        tx->len = tx->len;
+        tx->len = 0;//tx->len;
         tx->SPV = tx->height = height;
         //printf("tx.%s numvins.%d numvouts.%d\n",bits256_str(str,txid),numvins,numvouts);
         for (i=0; i<numvouts; i++)
@@ -58,7 +58,7 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
             tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
             LP_destaddr(tx->outpoints[i].coinaddr,vout);
             //printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
-            LP_address_utxoadd("LP_create_transaction",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
+            LP_address_utxoadd((uint32_t)time(NULL),"LP_create_transaction",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
         }
         for (i=0; i<numvins; i++)
         {
@@ -76,7 +76,7 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
                         tx->outpoints[spentvout].spendtxid = txid;
                         tx->outpoints[spentvout].spendvini = i;
                         tx->outpoints[spentvout].spendheight = height > 0 ? height : 1;
-                        LP_address_utxoadd("LP_transactioninit iter1",coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
+                        LP_address_utxoadd((uint32_t)time(NULL),"LP_transactioninit iter1",coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
                         if ( 0 && strcmp(coin->symbol,"REVS") == 0 )
                             printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
                     }
@@ -235,7 +235,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
         return(0);
     if ( (tx= LP_transactionfind(coin,txid)) == 0 && strcmp(coinaddr,coin->smartaddr) == 0 )
     {
-        if ( (retjson= electrum_transaction(coin->symbol,ep,&retjson,txid)) != 0 )
+        if ( (retjson= electrum_transaction(coin->symbol,ep,&retjson,txid,0)) != 0 )
             free_json(retjson);
     }
     if ( tx != 0 )
@@ -247,7 +247,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
     if ( (merkobj= electrum_getmerkle(coin->symbol,ep,&merkobj,txid,height)) != 0 )
     {
         char str[65],str2[65],str3[65];
-        SPV = -1;
+        SPV = 0;
         memset(roothash.bytes,0,sizeof(roothash));
         if ( (merkles= jarray(&m,merkobj,"merkle")) != 0 )
         {
@@ -271,7 +271,11 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
                     }
                     //printf("validated MERK %s ht.%d -> %s root.(%s)\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash));
                 }
-                else printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
+                else
+                {
+                    SPV = -1;
+                    printf("ERROR MERK %s ht.%d -> %s root.(%s) vs %s\n",bits256_str(str,txid),height,jprint(merkobj,0),bits256_str(str2,roothash),bits256_str(str3,merkleroot));
+                }
             } else SPV = 0;
         }
         if ( SPV < 0 )

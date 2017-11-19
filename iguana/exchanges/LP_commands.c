@@ -35,8 +35,10 @@ char *LP_numutxos()
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
     char *method,*userpass,*base,*rel,*coin,*retstr = 0; int32_t changed,flag = 0; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
-    //printf("stats_JSON(%s)\n",jprint(argjson,0));
     method = jstr(argjson,"method");
+    if ( method != 0 && (strcmp(method,"addr_unspents") == 0 || strcmp(method,"uitem") == 0 || strcmp(method,"postutxos") == 0) )
+        return(0);
+//printf("stats_JSON %s\n",method);
     /*if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (method == 0 || strcmp(method,"electrum") != 0) )
     {
         if ( strcmp(ipaddr,"127.0.0.1") != 0 && argport >= 1000 )
@@ -103,7 +105,7 @@ notarizations(coin)\n\
 parselog()\n\
 statsdisp(starttime=0, endtime=0, gui="", pubkey="")\n\
 getrawtransaction(coin, txid)\n\
-inventory(coin)\n\
+inventory(coin, reset=0, [passphrase=])\n\
 bestfit(rel, relvolume)\n\
 lastnonce()\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
@@ -431,7 +433,7 @@ bot_resume(botid)\n\
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
-                return(jprint(LP_gettx(coin,jbits256(argjson,"txid")),0));
+                return(jprint(LP_gettx(coin,jbits256(argjson,"txid")),1));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {
@@ -484,10 +486,13 @@ bot_resume(botid)\n\
                 struct iguana_info *ptr;
                 if ( (ptr= LP_coinfind(coin)) != 0 )
                 {
-                    //privkey = LP_privkeycalc(ctx,pubkey33,&pubkey,ptr,"",USERPASS_WIFSTR);
-                    //LP_utxopurge(0);
                     LP_address(ptr,ptr->smartaddr);
-                    LP_listunspent_issue(coin,ptr->smartaddr,2);
+                    if ( jint(argjson,"reset") != 0 )
+                    {
+                        ptr->privkeydepth = 0;
+                        LP_address_utxo_reset(ptr);
+                        LP_passphrase_init(jstr(argjson,"passphrase"),G.gui);
+                    }
                     if ( bits256_nonz(G.LP_privkey) != 0 )
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                     else printf("no LP_privkey\n");

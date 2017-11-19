@@ -19,11 +19,14 @@
 //  Copyright © 2017 SuperNET. All rights reserved.
 //
 
+
+
 void PNACL_message(char *arg,...)
 {
     
 }
 #define FROM_MARKETMAKER
+
 #include <stdio.h>
 #include <stdint.h>
 #ifndef NATIVE_WINDOWS
@@ -31,7 +34,6 @@ void PNACL_message(char *arg,...)
 #else
 #include "../../crypto777/OS_portable.h"
 #endif // !_WIN_32
-
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
@@ -74,7 +76,7 @@ struct mmpending_order
     int32_t dir;
     uint32_t pending,completed,canceled,cancelstarted,reported;
     cJSON *errorjson;
-    char exchange[16],base[16],rel[16],orderid[64];
+    char exchange[16],base[65],rel[65],orderid[64];
 } *Pending_orders;
 int32_t Num_Pending;
 
@@ -415,7 +417,7 @@ void marketmaker_pendingupdate(char *exchange,char *base,char *rel)
 
 void marketmaker_pendinginit(char *exchange,char *base,char *rel)
 {
-    char *retstr,*orderid,*pairstr,relbase[64]; cJSON *retjson,*array,*item; int32_t i,j,n,dir; struct mmpending_order *ptr;
+    char *retstr,*orderid,*pairstr,relbase[65]; cJSON *retjson,*array,*item; int32_t i,j,n,dir; struct mmpending_order *ptr;
     sprintf(relbase,"%s-%s",rel,base);
     if ( (retstr= DEX_openorders(exchange)) != 0 )
     {
