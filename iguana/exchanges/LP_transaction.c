@@ -658,14 +658,15 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                 {
                     item = jitem(vins,i);
                     //vin.0 ({"sequence":4294967294,"txid":"775489f100361039f56793719d87621a73adbadda5e13c85e81d88f55ff9620e","vout":1,"scriptSig":{"hex":"483045022100c684a0871689519bd97f2e61275752124f0f1498360750c87cf99a8acf06fd8c022047e7e62a7bfd481599130e6f40c95833f6ed6f44aa8b6ead7b0ec86a738b98a041210361857e1ba609aadff520a2ca9886fe7548c7154fab2cbe108c3b0e1e7635eb1f","asm":"3045022100c684a0871689519bd97f2e61275752124f0f1498360750c87cf99a8acf06fd8c022047e7e62a7bfd481599130e6f40c95833f6ed6f44aa8b6ead7b0ec86a738b98a041 0361857e1ba609aadff520a2ca9886fe7548c7154fab2cbe108c3b0e1e7635eb1f"}})
-                    printf("vin.%d (%s)\n",i,jprint(item,0));
-                    len += iguana_parsevinobj(&serialized[len],maxsize-len,&vin,jitem(vins,i),&V[i]);
+                    len += iguana_parsevinobj(&serialized[len],maxsize-len,&msgtx->vins[i],jitem(vins,i),&V[i]);
                     if ( strcmp(jstr(item,"txid"),"775489f100361039f56793719d87621a73adbadda5e13c85e81d88f55ff9620e") == 0 && jint(item,"vout") == 1 )
                     {
                         V[i].spendlen = 25;
                         decode_hex(V[i].spendscript,V[i].spendlen,"761914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
                         V[i].amount = SATOSHIDEN * 0.00587427;
+                        strcpy(V[i].coinaddr,"19MnNLzxNTNXWUdfxpQvWK3CPwFXJbmLb8");
                     }
+                    printf("vin.%d (%s)\n",i,jprint(item,0));
                     V[i].suppress_pubkeys = suppress_pubkeys;
                     inputsum += V[i].amount;
                     msgtx->vins[i].spendscript = V[i].spendscript;

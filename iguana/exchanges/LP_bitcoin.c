@@ -2347,6 +2347,7 @@ int32_t bitcoin_scriptget(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint32_
     *userdatap = 0;
     *userdatalenp = *pubkeysizep = *sigsizep = 0;
     *hashtypep = SIGHASH_ALL;
+    printf("siglen.%d\n",scriptsig[0]);
     while ( (siglen= scriptsig[n]) >= 70 && siglen <= 73 && n+siglen < len && j < 16 )
     {
         vp->signers[j].siglen = siglen;
