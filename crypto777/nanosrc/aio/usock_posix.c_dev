@@ -31,11 +31,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#ifndef __PNACL
+//#ifndef __PNACL
 #include <sys/uio.h>
-#else
-#include <glibc-compat/sys/uio.h>
-#endif
+//#else
+//#include <glibc-compat/sys/uio.h>
+//#endif
 
 #define NN_USOCK_STATE_IDLE 1
 #define NN_USOCK_STATE_STARTING 2
@@ -287,7 +287,8 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     /*  Allow re-using the address. */
     opt = 1;
     rc = setsockopt (self->s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt));
-    errno_assert (rc == 0);
+    // ignore SO_REUSEADDR failures
+    //errno_assert (rc == 0);
 
     rc = bind (self->s, addr, (socklen_t) addrlen);
     if (nn_slow (rc != 0))
@@ -999,7 +1000,7 @@ static int32_t nn_usock_send_raw(struct nn_usock *self,struct msghdr *hdr)
 #else
     nbytes = sendmsg(self->s,hdr,0);
 #endif
-    PostMessage("nn_usock_send_raw nbytes.%d for sock.%d\n",(int32_t)nbytes,self->s);
+    printf("nn_usock_send_raw nbytes.%d for sock.%d\n",(int32_t)nbytes,self->s);
     if ( nn_slow(nbytes < 0) ) // Handle errors
     {
         if ( nn_fast(errno == EAGAIN || errno == EWOULDBLOCK) )

@@ -22,6 +22,7 @@ tests/addnotarys_7776
 coins/btc_7776
 coins/ltc_7776
 coins/kmd_7776
+coins/chips_7776
 ./wp_7776
 
 coins/revs_7776
@@ -41,6 +42,7 @@ coins/wlc_7776
 coins/kv_7776
 coins/ceal_7776
 coins/mesh_7776
+coins/mnz_7776
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"

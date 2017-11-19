@@ -1,2 +1,0 @@
-source userpass
-curl --url "http://5.9.253.195:7779" --data "{\"userpass\":\"9bb4846d24136fc7c33515e45bccbab5c8fb7b57b411aa20057b371da9358255\",\"agent\":\"stats\",\"method\":\"register\",\"client\":\"6d3332be4904feafd326609bd76b66528dc7b2e2d75a7bd110c6bf8d19c4cf58\",\"pushaddr\":\"5.9.253.195\",\"pushport\":\"10000\"}"

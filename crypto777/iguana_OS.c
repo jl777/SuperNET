@@ -30,7 +30,7 @@
 
 char *OS_mvstr()
 {
-#ifdef __WIN32
+#ifdef _WIN32
     return("rename");
 #else
     return("mv");
@@ -297,11 +297,11 @@ void *queue_dequeue(queue_t *queue)//,int32_t offsetflag)
 void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_t freeitem)
 {
     struct allocitem *ptr;
-    struct queueitem *item = 0;
+    struct queueitem *tmp,*item = 0;
     lock_queue(queue);
     if ( queue->list != 0 )
     {
-        DL_FOREACH(queue->list,item)
+        DL_FOREACH_SAFE(queue->list,item,tmp)
         {
             ptr = (void *)((long)item - sizeof(struct allocitem));
             if ( item == copy || (ptr->allocsize == copysize && memcmp((void *)((long)item + sizeof(struct queueitem)),(void *)((long)item + sizeof(struct queueitem)),copysize) == 0) )
@@ -321,11 +321,11 @@ void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_
 
 void *queue_free(queue_t *queue)
 {
-    struct queueitem *item = 0;
+    struct queueitem *tmp,*item = 0;
     lock_queue(queue);
     if ( queue->list != 0 )
     {
-        DL_FOREACH(queue->list,item)
+        DL_FOREACH_SAFE(queue->list,item,tmp)
         {
             DL_DELETE(queue->list,item);
             myfree(item,sizeof(struct queueitem));
@@ -338,11 +338,11 @@ void *queue_free(queue_t *queue)
 
 void *queue_clone(queue_t *clone,queue_t *queue,int32_t size)
 {
-    struct queueitem *ptr,*item = 0;
+    struct queueitem *ptr,*tmp,*item = 0;
     lock_queue(queue);
     if ( queue->list != 0 )
     {
-        DL_FOREACH(queue->list,item)
+        DL_FOREACH_SAFE(queue->list,item,tmp)
         {
             ptr = mycalloc('c',1,sizeof(*ptr));
             memcpy(ptr,item,size);
@@ -659,7 +659,7 @@ int64_t OS_copyfile(char *src,char *dest,int32_t cmpflag)
     {
         if ( (destfp= fopen(OS_compatible_path(dest),"wb")) != 0 )
         {
-#ifdef WIN32
+#ifdef _WIN32
 			allocsize = 1024 * 1024 * 8L;
 #else
             allocsize = 1024 * 1024 * 128L;
@@ -901,11 +901,15 @@ void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep)
     return(buf);
 }
 
-void *OS_filestr(long *allocsizep,char *fname)
+void *OS_filestr(long *allocsizep,char *_fname)
 {
-    long filesize = 0; char *buf = 0;
+    long filesize = 0; char *fname,*buf = 0; void *retptr;
     *allocsizep = 0;
-    return(OS_loadfile(fname,&buf,&filesize,allocsizep));
+    fname = malloc(strlen(_fname)+1);
+    strcpy(fname,_fname);
+    retptr = OS_loadfile(fname,&buf,&filesize,allocsizep);
+    free(fname);
+    return(retptr);
 }
 
 // following functions cant be fully implemented in one or more OS

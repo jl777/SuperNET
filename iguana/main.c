@@ -71,13 +71,17 @@ int32_t SuperNET_str2hex(uint8_t *hex,char *str)
 
 void SuperNET_hex2str(char *str,uint8_t *hex,int32_t len)
 {
-    init_hexbytes_noT(str,hex,len);
+     init_hexbytes_noT(str,hex,len);
 }
 
+void *bitcoin_ctx();
 struct supernet_info *SuperNET_MYINFO(char *passphrase)
 {
+    //int32_t i;
     if ( MYINFO.ctx == 0 )
     {
+        //for (i=0; i<sizeof(MYINFO.ctx)/sizeof(*MYINFO.ctx); i++)
+        //    MYINFO.ctx[i] = bitcoin_ctx();
         OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
         MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
         printf("SuperNET_MYINFO: generate session keypair\n");
@@ -887,7 +891,7 @@ uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,b
 cJSON *SuperNET_rosettajson(struct supernet_info *myinfo,bits256 privkey,int32_t showprivs)
 {
     uint8_t rmd160[20],pub[33]; uint64_t nxt64bits; bits256 pubkey;
-    char str2[41],wifbuf[64],addr[64],str[128],coinwif[16]; cJSON *retjson; struct iguana_info *coin,*tmp;
+    char str2[41],wifbuf[64],pbuf[65],addr[64],str[128],coinwif[16]; cJSON *retjson; struct iguana_info *coin,*tmp;
     pubkey = acct777_pubkey(privkey);
     nxt64bits = acct777_nxt64bits(pubkey);
     retjson = cJSON_CreateObject();
@@ -900,6 +904,8 @@ cJSON *SuperNET_rosettajson(struct supernet_info *myinfo,bits256 privkey,int32_t
     jaddstr(retjson,"btcpubkey",str);
     calc_OP_HASH160(str2,rmd160,str);
     jaddstr(retjson,"rmd160",str2);
+    if ( showprivs != 0 )
+        jaddstr(retjson,"privkey",bits256_str(pbuf,privkey));
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
         if ( coin != 0 && coin->symbol[0] != 0 )
