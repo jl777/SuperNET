@@ -707,7 +707,8 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                                     memcpy(V[i].signers[0].sig,scriptbuf+1,sigsize-1);
                                     V[i].signers[0].siglen = sigsize - 1;
                                     V[i].hashtype = scriptbuf[1 + sigsize-1];
-                                    if ( scriptbuf[sigsize] == 33 )
+                                    printf("hashtype.%d plen.%d\n",V[i].hashtype,scriptbuf[sigsize+1]);
+                                    if ( scriptbuf[sigsize+1] == 33 )
                                     {
                                         memcpy(V[i].signers[0].pubkey,&scriptbuf[sigsize+2],33);
                                     }
