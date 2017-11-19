@@ -167,7 +167,7 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
     s = socket (domain, type, protocol);
     if (nn_slow (s < 0))
        return -errno;
-    //PNACL_message("got socket s.%d\n",s);
+    //printf("got socket s.%d\n",s);
     nn_usock_init_from_fd (self, s);
 
     /*  Start the state machine. */
@@ -286,11 +286,14 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
 
     /*  Allow re-using the address. */
     opt = 1;
+    printf("call setsockopt %d SOL_SOCKET.%d SO_REUSEADDR.%d in nn_usock_bind\n",self->s,SOL_SOCKET,SO_REUSEADDR);
     rc = setsockopt (self->s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt));
-    errno_assert (rc == 0);
+    printf("called setsockopt in nn_usock_bind returns %d\n",rc);
+    // ignore SO_REUSEADDR failures
+    //errno_assert (rc == 0);
 
     rc = bind (self->s, addr, (socklen_t) addrlen);
-    //printf("usock.%d -> bind rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
+    printf("usock.%d -> bind rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
     if (nn_slow (rc != 0))
         return -errno;
 
@@ -306,7 +309,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
 
     /*  Start listening for incoming connections. */
     rc = listen (self->s, backlog);
-    //printf("usock.%d -> listen rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
+    printf("usock.%d -> listen rc.%d errno.%d %s\n",self->s,rc,errno,nn_strerror(errno));
     if (nn_slow (rc != 0))
         return -errno;
 
@@ -333,7 +336,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 #else
     s = accept (listener->s, NULL, NULL);
 #endif
-    //printf("usock.%d -> accept errno.%d s.%d %s\n",self->s,errno,s,nn_strerror(errno));
+    printf("usock.%d -> accept errno.%d s.%d %s\n",self->s,errno,s,nn_strerror(errno));
 
     /*  Immediate success. */
     if (nn_fast (s >= 0)) {
@@ -366,7 +369,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
         and allow processing other events in the meantime  */
     if (nn_slow (errno != EAGAIN && errno != EWOULDBLOCK && errno != ECONNABORTED && errno != listener->errnum))
     {
-        PNACL_message("listen errno.%d\n",errno);
+        printf("listen errno.%d\n",errno);
         listener->errnum = errno;
         listener->state = NN_USOCK_STATE_ACCEPTING_ERROR;
         nn_fsm_raise (&listener->fsm,
@@ -393,7 +396,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 
     /* Do the connect itself. */
     rc = connect(self->s,addr,(socklen_t)addrlen);
-    //printf("usock.%d <- connect (%llx) rc.%d errno.%d %s\n",self->s,*(long long *)addr,rc,errno,nn_strerror(errno));
+    printf("usock.%d <- connect (%llx) rc.%d errno.%d %s\n",self->s,*(long long *)addr,rc,errno,nn_strerror(errno));
     /* Immediate success. */
     if ( nn_fast(rc == 0) )
     {
@@ -404,7 +407,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     if ( nn_slow(errno != EINPROGRESS) )
     {
         self->errnum = errno;
-        PNACL_message("error.%d not EINPROGRESS\n",errno);
+        printf("error.%d not EINPROGRESS\n",errno);
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
@@ -433,13 +436,13 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
         self->out.iov [out].iov_base = iov [i].iov_base;
         self->out.iov [out].iov_len = iov [i].iov_len;
         out++;
-        //PNACL_message("{%d} ",(int)iov [i].iov_len);
+        printf("{%d} ",(int)iov [i].iov_len);
     }
-    //PNACL_message("iov[%d]\n",out);
     self->out.hdr.msg_iovlen = out;
 
     /*  Try to send the data immediately. */
     rc = nn_usock_send_raw (self, &self->out.hdr);
+    printf("iov[%d] nn_usock_send_raw -> rc.%d\n",out,rc);
 
     /*  Success. */
     if (nn_fast (rc == 0)) {
@@ -472,17 +475,17 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
     rc = nn_usock_recv_raw (self, buf, &nbytes);
     if (nn_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        //PNACL_message("rc.%d vs ECONNRESET\n",rc,ECONNRESET);
+        //printf("rc.%d vs ECONNRESET\n",rc,ECONNRESET);
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
     //int i;
     //for (i=0; i<16&&i<nbytes; i++)
-    //    PNACL_message("%02x ",((uint8_t *)buf)[i]);
-    //PNACL_message("nn_usock_recv nbytes.%d\n",(int)nbytes);
+    //    printf("%02x ",((uint8_t *)buf)[i]);
+    //printf("nn_usock_recv nbytes.%d\n",(int)nbytes);
     /*  Success. */
     if (nn_fast (nbytes == len)) {
-        //PNACL_message("raise NN_USOCK_RECEIVED\n");
+        //printf("raise NN_USOCK_RECEIVED\n");
         nn_fsm_raise (&self->fsm, &self->event_received, NN_USOCK_RECEIVED);
         return;
     }
@@ -1021,19 +1024,19 @@ int32_t nn_getiovec_size(uint8_t *buf,int32_t maxlen,struct msghdr *hdr)
         if ( nn_slow(iov->iov_len == NN_MSG) )
         {
             errno = EINVAL;
-            PNACL_message("ERROR: iov->iov_len == NN_MSG\n");
+            printf("ERROR: iov->iov_len == NN_MSG\n");
             return(-1);
         }
         if ( nn_slow(!iov->iov_base && iov->iov_len) )
         {
             errno = EFAULT;
-            PNACL_message("ERROR: !iov->iov_base && iov->iov_len\n");
+            printf("ERROR: !iov->iov_base && iov->iov_len\n");
             return(-1);
         }
         if ( maxlen > 0 && nn_slow(size + iov->iov_len > maxlen) )
         {
             errno = EINVAL;
-            PNACL_message("ERROR: sz.%d + iov->iov_len.%d < maxlen.%d\n",(int32_t)size,(int32_t)iov->iov_len,maxlen);
+            printf("ERROR: sz.%d + iov->iov_len.%d < maxlen.%d\n",(int32_t)size,(int32_t)iov->iov_len,maxlen);
             return(-1);
         }
         if ( iov->iov_len > 0 )
@@ -1054,7 +1057,7 @@ ssize_t mysendmsg(int32_t usock,struct msghdr *hdr,int32_t flags)
         clen = hdr->msg_controllen;
         if ( hdr->msg_control == 0 )
             clen = 0;
-        nn_assert(clen == 0); // no supporty control messagies
+        nn_assert(clen == 0); // no support control messagies
         if ( veclen > sizeof(_buf) ) // - clen - 5) )
             buf = malloc(veclen);// + clen + 5);
         else buf = _buf;
@@ -1069,10 +1072,10 @@ ssize_t mysendmsg(int32_t usock,struct msghdr *hdr,int32_t flags)
         if ( nn_getiovec_size(&buf[offset],veclen,hdr) == veclen )
         {
             nbytes = send(usock,buf,offset + veclen,0);
-            //PNACL_message(">>>>>>>>> send.[%d %d %d %d] (n.%d v.%d c.%d)-> usock.%d nbytes.%d\n",buf[offset],buf[offset+1],buf[offset+2],buf[offset+3],(int32_t)offset+veclen,veclen,clen,usock,(int32_t)nbytes);
+            printf(">>>>>>>>> send.[%d %d %d %d] (n.%d v.%d c.%d)-> usock.%d nbytes.%d\n",buf[offset],buf[offset+1],buf[offset+2],buf[offset+3],(int32_t)offset+veclen,veclen,clen,usock,(int32_t)nbytes);
             if ( nbytes != offset + veclen )
             {
-                //PNACL_message("nbytes.%d != offset.%d veclen.%d errno.%d usock.%d\n",(int32_t)nbytes,(int32_t)offset,veclen,errno,usock);
+                printf("nbytes.%d != offset.%d veclen.%d errno.%d usock.%d\n",(int32_t)nbytes,(int32_t)offset,veclen,errno,usock);
             }
             if ( nbytes >= offset )
                 nbytes -= offset;
@@ -1080,19 +1083,19 @@ ssize_t mysendmsg(int32_t usock,struct msghdr *hdr,int32_t flags)
         else
         {
             err = -errno;
-            PNACL_message("mysendmsg: unexpected nn_getiovec_size error %d\n",err);
+            printf("mysendmsg: unexpected nn_getiovec_size error %d\n",err);
         }
         if ( buf != _buf )
             free(buf);
         if ( err != 0 )
         {
-            PNACL_message("nn_usock_send_raw errno.%d err.%d\n",errno,err);
+            printf("nn_usock_send_raw errno.%d err.%d\n",errno,err);
             return(-errno);
         }
     }
     else
     {
-        PNACL_message("nn_usock_send_raw errno.%d invalid iovec size\n",errno);
+        printf("nn_usock_send_raw errno.%d invalid iovec size\n",errno);
         return(-errno);
     }
     return(nbytes);
@@ -1104,32 +1107,32 @@ ssize_t myrecvmsg(int32_t usock,struct msghdr *hdr,int32_t flags,int32_t len)
     iov = hdr->msg_iov;
     /*if ( (n= (int32_t)recv(usock,lens,sizeof(lens),0)) != sizeof(lens) )
     {
-        PNACL_message("error getting veclen/clen n.%d vs %d from usock.%d\n",n,(int32_t)sizeof(lens),usock);
+        printf("error getting veclen/clen n.%d vs %d from usock.%d\n",n,(int32_t)sizeof(lens),usock);
         return(0);
-    } else PNACL_message("GOT %d bytes from usock.%d\n",n,usock);
+    } else printf("GOT %d bytes from usock.%d\n",n,usock);
     offset = 0;
     veclen = lens[offset++];
     veclen |= ((int32_t)lens[offset++] << 8);
     veclen |= ((int32_t)lens[offset++] << 16);
     clen = lens[offset++];
     clen |= ((int32_t)lens[offset++] << 8);
-    PNACL_message("veclen.%d clen.%d waiting in usock.%d\n",veclen,clen,usock);
+    printf("veclen.%d clen.%d waiting in usock.%d\n",veclen,clen,usock);
     if ( clen > 0 )
     {
         if ( (cbytes= (int32_t)recv(usock,hdr->msg_control,clen,0)) != clen )
         {
-            PNACL_message("myrecvmsg: unexpected cbytes.%d vs clen.%d\n",cbytes,clen);
+            printf("myrecvmsg: unexpected cbytes.%d vs clen.%d\n",cbytes,clen);
         }
     } else cbytes = 0;*/
     hdr->msg_controllen = 0;
     if ( (nbytes= (int32_t)recv(usock,iov->iov_base,len,0)) != len )
     {
-        //PNACL_message("myrecvmsg: partial nbytes.%d vs veclen.%d\n",(int32_t)nbytes,len);
+        //printf("myrecvmsg: partial nbytes.%d vs veclen.%d\n",(int32_t)nbytes,len);
     }
-    //PNACL_message("GOT nbytes.%d of len.%d from usock.%d\n",(int32_t)nbytes,len,usock);
+    //printf("GOT nbytes.%d of len.%d from usock.%d\n",(int32_t)nbytes,len,usock);
     if ( 0 && nbytes > 0 )
     {
-        PNACL_message("got nbytes.%d from usock.%d [%d %d %d %d]\n",(int32_t)nbytes,usock,((uint8_t *)iov->iov_base)[0],((uint8_t *)iov->iov_base)[1],((uint8_t *)iov->iov_base)[2],((uint8_t *)iov->iov_base)[3]);
+        printf("got nbytes.%d from usock.%d [%d %d %d %d]\n",(int32_t)nbytes,usock,((uint8_t *)iov->iov_base)[0],((uint8_t *)iov->iov_base)[1],((uint8_t *)iov->iov_base)[2],((uint8_t *)iov->iov_base)[3]);
     }
     return(nbytes);
 }
@@ -1144,7 +1147,7 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
     nbytes = sendmsg(self->s,hdr,MSG_NOSIGNAL);
 #else
     nbytes = sendmsg(self->s,hdr,0);
-    //printf("sendmsg nbytes.%d\n",(int32_t)nbytes);
+    printf("nn_usock_send_raw nbytes.%d\n",(int32_t)nbytes);
 #endif
 #endif
     /*  Handle errors. */
@@ -1199,13 +1202,13 @@ int32_t nn_process_cmsg(struct nn_usock *self,struct msghdr *hdr)
             memcpy(&retval,(int32_t *)CMSG_DATA(cmsg),sizeof(int32_t));
             if ( self->in.pfd )
             {
-                PNACL_message("CMSG set self->in.pfd (%d)\n",retval);
+                printf("CMSG set self->in.pfd (%d)\n",retval);
                 *self->in.pfd = retval;
                 self->in.pfd = NULL;
             }
             else
             {
-                PNACL_message("CMSG nn_closefd(%d)\n",retval);
+                printf("CMSG nn_closefd(%d)\n",retval);
                 nn_closefd(retval);
             }
             break;
@@ -1257,7 +1260,7 @@ static int nn_usock_recv_raw(struct nn_usock *self, void *buf, size_t *len)
         if (!length)
             return 0;
     }
-#ifdef NN_USE_MYMSG
+#if NN_USE_MYMSG
     usebuf = (length >= NN_USOCK_BATCH_SIZE);
 #else
     usebuf = (length >= NN_USOCK_BATCH_SIZE);
@@ -1286,7 +1289,7 @@ static int nn_usock_recv_raw(struct nn_usock *self, void *buf, size_t *len)
     
 #if NN_USE_MYMSG
     nbytes = myrecvmsg(self->s,&hdr,0,(int32_t)iov.iov_len);
-    //printf("got nbytes.%d from recvmsg errno.%d %s\n",(int32_t)nbytes,errno,nn_strerror(errno));
+    printf("got nbytes.%d from recvmsg errno.%d %s\n",(int32_t)nbytes,errno,nn_strerror(errno));
 #else
     nbytes = recvmsg (self->s, &hdr, 0);
 #endif
@@ -1310,7 +1313,7 @@ static int nn_usock_recv_raw(struct nn_usock *self, void *buf, size_t *len)
         }
     } else if ( hdr.msg_controllen > 0 )
         nn_process_cmsg(self,&hdr);
-    //PNACL_message("nbytes.%d length.%d *len %d\n",(int)nbytes,(int)length,(int)*len);
+    printf("nbytes.%d length.%d *len %d\n",(int)nbytes,(int)length,(int)*len);
 
     //  If the data were received directly into the place we can return straight away
     if ( usebuf != 0 )

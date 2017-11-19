@@ -23,9 +23,12 @@ char *portstrs[][3] = { { "BTC", "8332" }, { "KMD", "7771" } };
 uint16_t LP_rpcport(char *symbol)
 {
     int32_t i;
-    for (i=0; i<sizeof(portstrs)/sizeof(*portstrs); i++)
-        if ( strcmp(portstrs[i][0],symbol) == 0 )
-            return(atoi(portstrs[i][1]));
+    if ( symbol != 0 && symbol[0] != 0 )
+    {
+        for (i=0; i<sizeof(portstrs)/sizeof(*portstrs); i++)
+            if ( strcmp(portstrs[i][0],symbol) == 0 )
+                return(atoi(portstrs[i][1]));
+    }
     return(0);
 }
 
@@ -54,9 +57,9 @@ char *parse_conf_line(char *line,char *field)
     return(clonestr(line));
 }
 
-void LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
+uint16_t LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
 {
-    char *rpcuser,*rpcpassword,*str,line[8192];
+    char *rpcuser,*rpcpassword,*str,line[8192]; uint16_t port = 0;
     rpcuser = rpcpassword = 0;
     username[0] = password[0] = 0;
     while ( fgets(line,sizeof(line),fp) != 0 )
@@ -68,6 +71,16 @@ void LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
             rpcuser = parse_conf_line(str,(char *)"rpcuser");
         else if ( (str= strstr(line,(char *)"rpcpassword")) != 0 )
             rpcpassword = parse_conf_line(str,(char *)"rpcpassword");
+        else if ( (str= strstr(line,(char *)"rpcport")) != 0 )
+        {
+            str = parse_conf_line(str,(char *)"rpcport");
+            if ( str != 0 )
+            {
+                port = atoi(str);
+                //printf("RPCPORT.%u\n",port);
+                free(str);
+            }
+        }
     }
     if ( rpcuser != 0 && rpcpassword != 0 )
     {
@@ -79,6 +92,7 @@ void LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
         free(rpcuser);
     if ( rpcpassword != 0 )
         free(rpcpassword);
+    return(port);
 }
 
 void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name,char *confpath)
@@ -89,14 +103,14 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
         return;
     }
     sprintf(fname,"%s",LP_getdatadir());
-#ifdef WIN32
+#ifdef _WIN32
     strcat(fname,"\\");
 #else
     strcat(fname,"/");
 #endif
     if ( strcmp(symbol,"BTC") == 0 )
     {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(NATIVE_WINDOWS)
         strcat(fname,"Bitcoin");
 #else
         strcat(fname,".bitcoin");
@@ -120,14 +134,14 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
     }
     else
     {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(NATIVE_WINDOWS)
         strcat(fname,"Komodo");
 #else
         strcat(fname,".komodo");
 #endif
         if ( strcmp(symbol,"KMD") != 0 )
         {
-#ifdef WIN32
+#ifdef _WIN32
             strcat(fname,"\\");
 #else
             strcat(fname,"/");
@@ -135,7 +149,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
             strcat(fname,assetname);
         }
     }
-#ifdef WIN32
+#ifdef _WIN32
     strcat(fname,"\\");
 #else
     strcat(fname,"/");
@@ -143,9 +157,9 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
     strcat(fname,str);
 }
 
-int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,char *name,char *confpath)
+uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,char *name,char *confpath,uint16_t origport)
 {
-    FILE *fp; char fname[512],username[512],password[512],confname[512];
+    FILE *fp; char fname[512],username[512],password[512],confname[512]; uint16_t port = 0;
     userpass[0] = 0;
     sprintf(confname,"%s.conf",confroot);
     if ( 0 )
@@ -160,40 +174,79 @@ int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,c
     LP_statefname(fname,symbol,assetname,confname,name,confpath);
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
-        LP_userpassfp(symbol,username,password,fp);
+        if ( (port= LP_userpassfp(symbol,username,password,fp)) == 0 )
+            port = origport;
         sprintf(userpass,"%s:%s",username,password);
         fclose(fp);
         if ( 0 )
             printf("LP_statefname.(%s) <- %s %s %s (%s) (%s)\n",fname,name,symbol,assetname,userpass,confpath);
-        return((int32_t)strlen(userpass));
+        return(port);
     } else printf("cant open.(%s)\n",fname);
-    return(-1);
+    return(0);
 }
 
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 {
-    char wifstr[128]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
+    struct electrum_info *ep; uint64_t balance; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
     if ( showwif != 0 )
     {
-        bitcoin_priv2wif(coin->wiftaddr,wifstr,LP_mypriv25519,coin->wiftype);
+        bitcoin_priv2wif(coin->wiftaddr,wifstr,G.LP_privkey,coin->wiftype);
         bitcoin_wif2priv(coin->wiftaddr,&tmptype,&checkkey,wifstr);
-        if ( bits256_cmp(LP_mypriv25519,checkkey) == 0 )
+        if ( bits256_cmp(G.LP_privkey,checkkey) == 0 )
             jaddstr(item,"wif",wifstr);
         else jaddstr(item,"wif","error creating wif");
     }
+    jadd(item,"installed",coin->userpass[0] == 0 ? jfalse() : jtrue());
+    if ( coin->userpass[0] != 0 )
+    {
+        jaddnum(item,"height",LP_getheight(coin));
+        if ( coin->electrum != 0 )
+            balance = LP_unspents_load(coin->symbol,coin->smartaddr);
+        else balance = LP_RTsmartbalance(coin);
+        jaddnum(item,"balance",dstr(balance));
+        jaddnum(item,"KMDvalue",dstr(LP_KMDvalue(coin,balance)));
+    }
+    else
+    {
+        jaddnum(item,"height",-1);
+        jaddnum(item,"balance",0);
+    }
     if ( coin->inactive != 0 )
+    {
         jaddstr(item,"status","inactive");
+    }
     else jaddstr(item,"status","active");
     if ( coin->isPoS != 0 )
         jaddstr(item,"type","PoS");
+    if ( (ep= coin->electrum) != 0 )
+    {
+        sprintf(ipaddr,"%s:%u",ep->ipaddr,ep->port);
+        jaddstr(item,"electrum",ipaddr);
+    }
     jaddstr(item,"smartaddress",coin->smartaddr);
     jaddstr(item,"rpc",coin->serverport);
     jaddnum(item,"pubtype",coin->pubtype);
     jaddnum(item,"p2shtype",coin->p2shtype);
     jaddnum(item,"wiftype",coin->wiftype);
-    jaddnum(item,"txfee",coin->txfee);
+    jaddnum(item,"txfee",strcmp(coin->symbol,"BTC") != 0 ? coin->txfee : LP_txfeecalc(coin,0,0));
     return(item);
+}
+
+struct iguana_info *LP_conflicts_find(struct iguana_info *refcoin)
+{
+    struct iguana_info *coin=0,*tmp;
+    if ( refcoin != 0 )
+    {
+        HASH_ITER(hh,LP_coins,coin,tmp)
+        {
+            if ( coin->inactive != 0 || coin->electrum != 0 || coin == refcoin )
+                continue;
+            if ( strcmp(coin->serverport,refcoin->serverport) == 0 )
+                break;
+        }
+    }
+    return(coin);
 }
 
 cJSON *LP_coinsjson(int32_t showwif)
@@ -209,62 +262,78 @@ cJSON *LP_coinsjson(int32_t showwif)
 char *LP_getcoin(char *symbol)
 {
     int32_t numenabled,numdisabled; struct iguana_info *coin,*tmp; cJSON *item=0,*retjson;
-    numenabled = numdisabled = 0;
     retjson = cJSON_CreateObject();
-    HASH_ITER(hh,LP_coins,coin,tmp)
+    if ( symbol != 0 && symbol[0] != 0 )
     {
-        if ( strcmp(symbol,coin->symbol) == 0 )
-            item = LP_coinjson(coin,0);
-        if ( coin->inactive == 0 )
-            numenabled++;
-        else numdisabled++;
+        numenabled = numdisabled = 0;
+        HASH_ITER(hh,LP_coins,coin,tmp)
+        {
+            if ( strcmp(symbol,coin->symbol) == 0 )
+                item = LP_coinjson(coin,0);
+            if ( coin->inactive == 0 )
+                numenabled++;
+            else numdisabled++;
+        }
+        jaddstr(retjson,"result","success");
+        jaddnum(retjson,"enabled",numenabled);
+        jaddnum(retjson,"disabled",numdisabled);
+        if ( item == 0 )
+            item = cJSON_CreateObject();
+        jadd(retjson,"coin",item);
     }
-    jaddstr(retjson,"result","success");
-    jaddnum(retjson,"enabled",numenabled);
-    jaddnum(retjson,"disabled",numdisabled);
-    if ( item == 0 )
-        item = cJSON_CreateObject();
-    jadd(retjson,"coin",item);
     return(jprint(retjson,1));
 }
 
 struct iguana_info *LP_coinsearch(char *symbol)
 {
-    struct iguana_info *coin;
-    portable_mutex_lock(&LP_coinmutex);
-    HASH_FIND(hh,LP_coins,symbol,strlen(symbol),coin);
-    portable_mutex_unlock(&LP_coinmutex);
+    struct iguana_info *coin = 0;
+    if ( symbol != 0 && symbol[0] != 0 )
+    {
+        portable_mutex_lock(&LP_coinmutex);
+        HASH_FIND(hh,LP_coins,symbol,strlen(symbol),coin);
+        portable_mutex_unlock(&LP_coinmutex);
+    }
     return(coin);
 }
 
 struct iguana_info *LP_coinadd(struct iguana_info *cdata)
 {
     struct iguana_info *coin = calloc(1,sizeof(*coin));
-    //printf("%s: (%s) (%s)\n",symbol,cdata.serverport,cdata.userpass);
     *coin = *cdata;
     portable_mutex_init(&coin->txmutex);
+    portable_mutex_init(&coin->addrmutex);
     portable_mutex_lock(&LP_coinmutex);
     HASH_ADD_KEYPTR(hh,LP_coins,coin->symbol,strlen(coin->symbol),coin);
     portable_mutex_unlock(&LP_coinmutex);
     return(coin);
 }
 
-int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath)
+uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath)
 {
+    static void *ctx;
     char *name2;
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
-    sprintf(coin->serverport,"127.0.0.1:%u",port);
+    coin->updaterate = (uint32_t)time(NULL);
     coin->isPoS = isPoS;
     coin->taddr = taddr;
     coin->wiftaddr = wiftaddr;
     coin->longestchain = longestchain;
-    coin->txfee = txfee;
+    if ( (coin->txfee= txfee) > 0 && txfee < LP_MIN_TXFEE )
+        coin->txfee = LP_MIN_TXFEE;
     coin->pubtype = pubtype;
     coin->p2shtype = p2shtype;
     coin->wiftype = wiftype;
     coin->inactive = (uint32_t)time(NULL);
     coin->bussock = LP_coinbus(busport);
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    coin->ctx = ctx;
+    if ( assetname != 0 && strcmp(name,assetname) == 0 )
+    {
+        //printf("%s is assetchain\n",symbol);
+        coin->isassetchain = 1;
+    }
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;
     else name2 = name;
@@ -273,7 +342,18 @@ int32_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asset
         coin->noimportprivkey_flag = 1;
         printf("truncate importprivkey for %s\n",symbol);
     }
-    return(LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath));
+#ifndef FROM_JS
+    port = LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath,port);
+#endif
+    sprintf(coin->serverport,"127.0.0.1:%u",port);
+    if ( strcmp(symbol,"KMD") == 0 || coin->isassetchain != 0 || taddr != 0 )
+        coin->zcash = LP_IS_ZCASHPROTOCOL;
+    else if ( strcmp(symbol,"BCH") == 0 )
+    {
+        coin->zcash = LP_IS_BITCOINCASH;
+        //printf("set coin.%s <- LP_IS_BITCOINCASH %d\n",symbol,coin->zcash);
+    }
+    return(port);
 }
 
 int32_t LP_isdisabled(char *base,char *rel)
@@ -289,6 +369,8 @@ int32_t LP_isdisabled(char *base,char *rel)
 struct iguana_info *LP_coinfind(char *symbol)
 {
     struct iguana_info *coin,cdata; int32_t isinactive,isPoS,longestchain = 1; uint16_t port,busport; uint64_t txfee; double estimatedrate; uint8_t pubtype,p2shtype,wiftype; char *name,*assetname;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
     if ( (coin= LP_coinsearch(symbol)) != 0 )
         return(coin);
     if ( (port= LP_rpcport(symbol)) == 0 )
@@ -314,13 +396,16 @@ struct iguana_info *LP_coinfind(char *symbol)
     else if ( strcmp(symbol,"KMD") == 0 )
         name = "komodo";
     else return(0);
-    isinactive = LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,0,busport,0) < 0;
+    port = LP_coininit(&cdata,symbol,name,assetname,isPoS,port,pubtype,p2shtype,wiftype,txfee,estimatedrate,longestchain,0,0,busport,0);
+    if ( port == 0 )
+        isinactive = 1;
+    else isinactive = 0;
     if ( (coin= LP_coinadd(&cdata)) != 0 )
     {
         coin->inactive = isinactive * (uint32_t)time(NULL);
-        if ( strcmp(symbol,"KMD") == 0 )
+        /*if ( strcmp(symbol,"KMD") == 0 )
             coin->inactive = 0;
-        else if ( strcmp(symbol,"BTC") == 0 )
+        else*/ if ( strcmp(symbol,"BTC") == 0 )
         {
             coin->inactive = (uint32_t)time(NULL) * !IAMLP;
             printf("BTC inactive.%u\n",coin->inactive);
@@ -374,7 +459,7 @@ struct iguana_info *LP_coincreate(cJSON *item)
             }
         } else coin->inactive = 0;
     }
-    if ( coin != 0 && coin->inactive != 0 )
+    if ( 0 && coin != 0 && coin->inactive != 0 )
         printf("LPnode.%d %s inactive.%u %p vs %p\n",IAMLP,coin->symbol,coin->inactive,assetname,name);
     return(0);
 }

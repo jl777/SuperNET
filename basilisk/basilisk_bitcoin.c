@@ -602,7 +602,7 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
             free_json(vins);
             return(rawtx);
         }
-        printf("splitfunds tx.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
+        printf("%s splitfunds tx.(%s) vins.(%s)\n",coin->symbol,rawtx,jprint(vins,0));
         if ( signedtxidp != 0 )
         {
             if ( (signedtx= iguana_signrawtx(myinfo,coin,0,signedtxidp,completedp,vins,rawtx,0,0)) != 0 )
@@ -615,7 +615,7 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
                     free(rawtx);
                     rawtx = signedtx, signedtx = 0;
                 }
-            } else printf("error signing raw utxoduplicates tx\n");
+            } else printf("error signing raw %s utxoduplicates tx\n",coin->symbol);
         }
     }
     if ( vins != 0 )

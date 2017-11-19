@@ -1,0 +1,3 @@
+ls -l /proc/$1/fd
+echo sockstat
+cat /proc/$1/net/sockstat

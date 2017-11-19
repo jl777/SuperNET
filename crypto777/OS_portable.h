@@ -40,7 +40,7 @@
 #include <sys/types.h>
 #include <time.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define sleep(x) Sleep(1000*(x))
 #include "../OSlibs/win/mingw.h"
 #include "../OSlibs/win/mman.h"
@@ -134,7 +134,7 @@ int32_t hseek(HUFF *hp,int32_t offset,int32_t mode);
 
 struct allocitem { uint32_t allocsize,type; } PACKED;
 struct queueitem { struct queueitem *next,*prev; uint32_t allocsize,type;  } PACKED;
-struct stritem { struct queueitem DL; char str[]; };
+struct stritem { struct queueitem DL; void **retptrp; uint32_t expiration; char str[]; };
 
 typedef struct queue
 {
@@ -142,6 +142,15 @@ typedef struct queue
 	portable_mutex_t mutex;
     char name[64],initflag;
 } queue_t;
+
+struct rpcrequest_info
+{
+    struct rpcrequest_info *next,*prev;
+    pthread_t T;
+    int32_t sock;
+    uint32_t ipbits;
+    uint16_t port,pad;
+};
 
 struct OS_mappedptr
 {
@@ -267,6 +276,7 @@ void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_
 void *queue_free(queue_t *queue);
 void *queue_clone(queue_t *clone,queue_t *queue,int32_t size);
 int32_t queue_size(queue_t *queue);
+char *mbstr(char *str,double n);
 
 void iguana_memreset(struct OS_memspace *mem);
 void iguana_mempurge(struct OS_memspace *mem);

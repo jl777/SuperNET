@@ -177,7 +177,7 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     memset(blockhash.bytes,0,sizeof(blockhash));
     if ( coin->FULLNODE < 0 )
     {
-        if ( coin->lastbesthashtime+20 > time(NULL) && bits256_nonz(coin->lastbesthash) != 0 )
+        if ( coin->lastbesthashtime+2 > time(NULL) && bits256_nonz(coin->lastbesthash) != 0 )
             return(coin->lastbesthash);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getbestblockhash","")) != 0 )
         {
@@ -394,7 +394,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
     char buf[128],*retstr; cJSON *array,*json = 0;
     if ( coin->FULLNODE < 0 )
     {
-        sprintf(buf,"0, 99999999, [\"%s\"]",coinaddr);
+        sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
@@ -820,7 +820,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                 }
             }
             if ( haveutxo == 0 )
-                printf("no utxo: need to fund address.(%s) or wait for splitfund to confirm\n",coinaddr);
+                printf("no %s utxo: need to fund address.(%s) or wait for splitfund to confirm\n",coin->symbol,coinaddr);
         } //else printf("null utxo array size\n");
         free_json(unspents);
     } else printf("null return from dpow_listunspent\n");
@@ -1154,10 +1154,11 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
     }
 }
 
-int32_t dpow_issuer_tx(struct dpow_info *dp,struct iguana_info *coin,int32_t height,int32_t txi,char *txidstr,uint32_t port)
+int32_t dpow_issuer_tx(int32_t *isspecialp,struct dpow_info *dp,struct iguana_info *coin,int32_t height,int32_t txi,char *txidstr,uint32_t port)
 {
-    char *retstr,params[256],*hexstr; uint8_t script[16384]; cJSON *json,*oldpub,*newpub,*result,*vouts,*item,*sobj; int32_t vout,n,len,isspecial,retval = -1; uint64_t value; bits256 txid;
+    char *retstr,params[256],*hexstr; uint8_t script[16384]; cJSON *json,*oldpub,*newpub,*result,*vouts,*item,*sobj; int32_t vout,n,len,retval = -1; uint64_t value; bits256 txid;
     sprintf(params,"[\"%s\", 1]",txidstr);
+    *isspecialp = 0;
     if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getrawtransaction",params,port)) != 0 )
     {
         if ( (json= cJSON_Parse(retstr)) != 0 )
@@ -1170,7 +1171,6 @@ int32_t dpow_issuer_tx(struct dpow_info *dp,struct iguana_info *coin,int32_t hei
                 retval = 0;
                 if ( oldpub == 0 && newpub == 0 && (vouts= jarray(&n,result,(char *)"vout")) != 0 )
                 {
-                    isspecial = 0;
                     txid = jbits256(result,(char *)"txid");
                     for (vout=0; vout<n; vout++)
                     {
@@ -1182,11 +1182,11 @@ int32_t dpow_issuer_tx(struct dpow_info *dp,struct iguana_info *coin,int32_t hei
                             {
                                 len = (int32_t)strlen(hexstr) >> 1;
                                 if ( vout == 0 && ((memcmp(&hexstr[2],CRYPTO777_PUBSECPSTR,66) == 0 && len == 35) || (memcmp(&hexstr[6],CRYPTO777_RMD160STR,40) == 0 && len == 25)) )
-                                    isspecial = 1;
+                                    *isspecialp = 1;
                                 else if ( len <= sizeof(script) )
                                 {
                                     decode_hex(script,len,hexstr);
-                                    dpow_issuer_voutupdate(dp,coin->symbol,isspecial,height,txi,txid,vout,n,value,script,len);
+                                    dpow_issuer_voutupdate(dp,coin->symbol,*isspecialp,height,txi,txid,vout,n,value,script,len);
                                 }
                             }
                         }
@@ -1202,7 +1202,7 @@ int32_t dpow_issuer_tx(struct dpow_info *dp,struct iguana_info *coin,int32_t hei
 
 int32_t dpow_issuer_block(struct dpow_info *dp,struct iguana_info *coin,int32_t height,uint16_t port)
 {
-    char *retstr,*retstr2,params[128],*txidstr; int32_t i,n,retval = -1; cJSON *json,*tx=0,*result=0,*result2;
+    char *retstr,*retstr2,params[128],*txidstr; int32_t i,isspecial,n,retval = -1; cJSON *json,*tx=0,*result=0,*result2;
     sprintf(params,"[%d]",height);
     if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getblockhash",params,port)) != 0 )
     {
@@ -1219,7 +1219,7 @@ int32_t dpow_issuer_block(struct dpow_info *dp,struct iguana_info *coin,int32_t 
                         if ( (result2= jobj(json,(char *)"result")) != 0 && (tx= jarray(&n,result2,(char *)"tx")) != 0 )
                         {
                             for (i=0; i<n; i++)
-                                if ( dpow_issuer_tx(dp,coin,height,i,jstri(tx,i),port) < 0 )
+                                if ( dpow_issuer_tx(&isspecial,dp,coin,height,i,jstri(tx,i),port) < 0 )
                                     break;
                             if ( i == n )
                                 retval = 0;

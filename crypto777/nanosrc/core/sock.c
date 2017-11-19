@@ -477,6 +477,7 @@ struct nn_ep *nn_find_ep(struct nn_sock *self,int32_t eid,const char *addr,struc
 int nn_sock_add_ep(struct nn_sock *self,struct nn_transport *transport,int32_t bind,const char *addr)
 {
     int rc,eid; struct nn_ep *ep;
+    printf("nn_sock_add_ep\n");
     nn_ctx_enter (&self->ctx);
     if ( (ep= nn_find_ep(self,0,addr,transport,bind)) == NULL ) // The endpoint doesn't exist
     {
@@ -484,16 +485,17 @@ int nn_sock_add_ep(struct nn_sock *self,struct nn_transport *transport,int32_t b
         rc = nn_ep_init(ep,NN_SOCK_SRC_EP,self,self->eid,transport,bind,addr);
         if ( nn_slow(rc < 0) )
         {
+            printf("nn_sock_add_ep nn_ep_init rc.%d\n",rc);
             nn_free(ep);
             nn_ctx_leave(&self->ctx);
             return rc;
         }
         nn_ep_start(ep);
-        PNACL_message("ep sock.(%s) started %s://(%s) bind.%d\n",self->socket_name,transport->name,addr,bind);
+        printf("ep sock.(%s) started %s://(%s) bind.%d\n",self->socket_name,transport->name,addr,bind);
         eid = self->eid++; // Increase the endpoint ID for the next endpoint
         nn_list_insert(&self->eps,&ep->item,nn_list_end(&self->eps)); // Add to the list of active endpoints
         nn_ctx_leave (&self->ctx);
-    } else PNACL_message("self->sock.(%s) %p already has (%s)\n",self->socket_name,self->sockbase->sock,addr);
+    } else printf("self->sock.(%s) %p already has (%s)\n",self->socket_name,self->sockbase->sock,addr);
     return(ep->eid);
 }
 
@@ -548,6 +550,7 @@ int nn_sock_send(struct nn_sock *self, struct nn_msg *msg, int flags)
 
         /*  Try to send the message in a non-blocking way. */
         rc = self->sockbase->vfptr->send (self->sockbase, msg);
+printf("sockbase send rc.%d\n",rc);
         if (nn_fast (rc == 0)) {
             nn_ctx_leave (&self->ctx);
             return 0;
@@ -560,8 +563,7 @@ int nn_sock_send(struct nn_sock *self, struct nn_msg *msg, int flags)
             return rc;
         }
 
-        /*  If the message cannot be sent at the moment and the send call
-            is non-blocking, return immediately. */
+        //  If the message cannot be sent at the moment and the send call is non-blocking, return immediately.
         if (nn_fast (flags & NN_DONTWAIT)) {
             nn_ctx_leave (&self->ctx);
             return -EAGAIN;
@@ -673,6 +675,7 @@ int nn_sock_add(struct nn_sock *self, struct nn_pipe *pipe)
 {
     int rc;
     rc = self->sockbase->vfptr->add(self->sockbase,pipe);
+    printf("nn_sock_add rc.%d\n",rc);
     if (nn_slow (rc >= 0)) {
         nn_sock_stat_increment (self, NN_STAT_CURRENT_CONNECTIONS, 1);
     }
@@ -973,12 +976,12 @@ void nn_sock_report_error(struct nn_sock *self,struct nn_ep *ep,int32_t errnum,c
     if ( ep != 0 )
     {
         fprintf(stderr,"nanomsg: socket.%s[%s]: Error: %s\n",self->socket_name,nn_ep_getaddr(ep),nn_strerror(errnum));
-        PNACL_message("nanomsg: socket.%s[%s]: [%s:%d] Error: %s\n",self->socket_name,nn_ep_getaddr(ep),fname,linenum,nn_strerror(errnum));
+        PNACL_msg("nanomsg: socket.%s[%s]: [%s:%d] Error: %s\n",self->socket_name,nn_ep_getaddr(ep),fname,linenum,nn_strerror(errnum));
     }
     else
     {
         fprintf(stderr,"nanomsg: socket.%s: Error: %s\n",self->socket_name, nn_strerror(errnum));
-        PNACL_message("nanomsg: socket.%s: [%s:%d] Error: %s\n",self->socket_name,fname,linenum,nn_strerror(errnum));
+        PNACL_msg("nanomsg: socket.%s: [%s:%d] Error: %s\n",self->socket_name,fname,linenum,nn_strerror(errnum));
     }
 }
 
