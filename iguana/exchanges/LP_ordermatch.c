@@ -20,8 +20,8 @@
 //
 struct LP_quoteinfo LP_Alicequery,LP_Alicereserved;
 double LP_Alicemaxprice;
-bits256 LP_Alicedestpubkey;
-uint32_t Alice_expiration;
+bits256 LP_Alicedestpubkey,LP_bobs_reserved;
+uint32_t Alice_expiration,Bob_expiration;
 struct { uint64_t aliceid; double bestprice; uint32_t starttime,counter; } Bob_competition[512];
 
 double LP_bob_competition(int32_t *counterp,uint64_t aliceid,double price,int32_t counter)
