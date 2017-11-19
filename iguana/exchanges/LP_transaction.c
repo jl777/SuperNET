@@ -624,7 +624,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
 
 char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,char *rawtx,int32_t mempool,int32_t suppress_pubkeys,int32_t zcash)
 {
-    bits256 signedtxid; cJSON *item,*vins,*vouts,*txobj,*retjson,*sobj; char *scriptsig,*signedtx; uint32_t sighash; int32_t j,sigsize,slen,height,finalized = 1,i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2,scriptbuf[256]; int64_t inputsum,outputsum; struct iguana_msgvout vout;
+    bits256 signedtxid; cJSON *item,*vins,*vouts,*txobj,*retjson,*sobj; char *scriptsig,*signedtx; uint32_t sighash; int32_t sigsize,slen,height,finalized = 1,i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2,scriptbuf[256]; int64_t inputsum,outputsum; struct iguana_msgvout vout;
     char *symbol; uint8_t wiftaddr,taddr,pubtype,p2shtype,isPoS;
     height = coin->longestchain;
     symbol = coin->symbol;
@@ -667,24 +667,24 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     if ( strcmp(jstr(item,"txid"),"775489f100361039f56793719d87621a73adbadda5e13c85e81d88f55ff9620e") == 0 && jint(item,"vout") == 1 )
                     {
                         V[i].spendlen = 25;
-                        decode_hex(V[i].spendscript,V[i].spendlen,"761914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
+                        decode_hex(V[i].spendscript,V[i].spendlen,"76a914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
                         V[i].amount = SATOSHIDEN * 0.00587427;
                         strcpy(V[i].coinaddr,"19MnNLzxNTNXWUdfxpQvWK3CPwFXJbmLb8");
                         V[i].suppress_pubkeys = 0;
                         sobj = cJSON_CreateObject();
-                        jaddstr(sobj,"hex","761914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
+                        jaddstr(sobj,"hex","76a914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
                         jadd(item,"scriptPubKey",sobj);
                         printf("match special txid A\n");
                     }
                     else if ( strcmp(jstr(item,"txid"),"980d621becd9bbd7f4a3fbd525a00ee5bc67518bb57da8bdcb1bd4c49cb83414") == 0 && jint(item,"vout") == 0 )
                     {
                         V[i].spendlen = 25;
-                        decode_hex(V[i].spendscript,V[i].spendlen,"7619146cfa0a987f4c8f2ffee7e9944ef0c86fcda9671d88ac");
+                        decode_hex(V[i].spendscript,V[i].spendlen,"76a9146cfa0a987f4c8f2ffee7e9944ef0c86fcda9671d88ac");
                         V[i].amount = SATOSHIDEN * 0.001;
                         strcpy(V[i].coinaddr,"1AwDWu5rZKyGMUu16gf9Kow8ohnKmc7tGH");
                         V[i].suppress_pubkeys = 0;
                         sobj = cJSON_CreateObject();
-                        jaddstr(sobj,"hex","761914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
+                        jaddstr(sobj,"hex","76a9146cfa0a987f4c8f2ffee7e9944ef0c86fcda9671d88ac");
                         jadd(item,"scriptPubKey",sobj);
                         printf("match special txid B\n");
                     }
@@ -723,11 +723,11 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                 sighash = LP_sighash(symbol,zcash);
                 complete = bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,sighash,0,V[0].suppress_pubkeys,zcash);
                 msgtx->txid = signedtxid;
-                /*log = cJSON_CreateArray();
+                cJSON *log = cJSON_CreateArray();
                 if ( iguana_interpreter(ctx,log,0,V,numinputs) < 0 )
                     jaddstr(retjson,"error","interpreter rejects tx");
                 else complete = 1;
-                jadd(retjson,"interpreter",log);*/
+                jadd(retjson,"interpreter",log);
                 jaddnum(retjson,"complete",complete);
                 free(serialized), free(serialized2);
                 if ( signedtx != 0 )
