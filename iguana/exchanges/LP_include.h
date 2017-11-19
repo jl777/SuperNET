@@ -150,8 +150,8 @@ struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],r
 struct vin_info
 {
     struct iguana_msgvin vin; uint64_t amount; cJSON *extras; bits256 sigtxid;
-    int32_t M,N,validmask,spendlen,type,p2shlen,numpubkeys,numsigs,height,hashtype,userdatalen,suppress_pubkeys,ignore_cltverr;
-    uint32_t sequence,unspentind; struct vin_signer signers[16]; char coinaddr[65];
+    int32_t M,N,validmask,spendlen,type,p2shlen,numpubkeys,numsigs,height,userdatalen,suppress_pubkeys,ignore_cltverr;
+    uint32_t sequence,unspentind,hashtype; struct vin_signer signers[16]; char coinaddr[65];
     uint8_t rmd160[20],spendscript[10000],p2shscript[10000],userdata[10000];
 };
 

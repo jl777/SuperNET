@@ -2583,6 +2583,39 @@ int32_t iguana_calcrmd160(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,char *a
     return(vp->type);
 }
 
+uint32_t iguana_vinscriptparse(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *userdatalenp,uint8_t *vinscript,int32_t scriptlen)
+{
+    uint32_t hashtype; uint8_t *userdata = 0;
+    *sigsizep = *pubkeysizep = *p2shsizep = *userdatalenp = 0;
+    if ( bitcoin_scriptget(taddr,pubtype,p2shtype,&hashtype,sigsizep,pubkeysizep,&userdata,userdatalenp,vp,vinscript,scriptlen,0) < 0 )
+    {
+        printf("iguana_vinscriptparse: error parsing vinscript?\n");
+        return(-1);
+    }
+    if ( userdata != 0 && *userdatalenp > 0 )
+        memcpy(vp->userdata,userdata,*userdatalenp);
+    if ( vp->type == IGUANA_SCRIPT_P2SH )
+    {
+        *p2shsizep = vp->p2shlen + 1 + (vp->p2shlen >= 0xfd)*2;
+        //printf("P2SHSIZE.%d\n",*p2shsizep);
+    }
+    return(hashtype);
+}
+
+/*char *iguana_scriptget(struct iguana_info *coin,char *scriptstr,char *asmstr,int32_t max,int32_t hdrsi,uint32_t unspentind,bits256 txid,int32_t vout,uint8_t *rmd160,int32_t type,uint8_t *pubkey33)
+{
+    int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE]; struct vin_info V,*vp = &V;
+    memset(vp,0,sizeof(*vp));
+    scriptstr[0] = 0;
+    if ( asmstr != 0 )
+        asmstr[0] = 0;
+    if ( pubkey33 != 0 && bitcoin_pubkeylen(pubkey33) > 0 )
+        memcpy(vp->signers[0].pubkey,pubkey33,33);
+    scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,rmd160,type,(const struct vin_info *)vp,vout);
+    init_hexbytes_noT(scriptstr,script,scriptlen);
+    return(scriptstr);
+}*/
+
 cJSON *bitcoin_txscript(char *asmstr,char **vardata,int32_t numvars)
 {
     int32_t i; cJSON *scriptjson,*array;
