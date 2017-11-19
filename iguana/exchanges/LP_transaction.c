@@ -666,7 +666,6 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         V[i].amount = SATOSHIDEN * 0.00587427;
                         strcpy(V[i].coinaddr,"19MnNLzxNTNXWUdfxpQvWK3CPwFXJbmLb8");
                     }
-                    printf("vin.%d (%s) scriptlen.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen);
                     V[i].suppress_pubkeys = suppress_pubkeys;
                     inputsum += V[i].amount;
                     msgtx->vins[i].spendscript = V[i].spendscript;
@@ -687,14 +686,15 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     //    memcpy(V[i].signers[0].sig,msgtx->vins[i].vinscript+1,sigsize);
                     //printf("sigsize.%d hashtype.%d\n",sigsize,V[i].hashtype);
                     //V[i].userdatalen = suffixlen;
-                    memcpy(V[i].spendscript,msgtx->vins[i].spendscript,msgtx->vins[i].spendlen);
-                    V[i].spendlen = msgtx->vins[i].spendlen;
+                    //memcpy(V[i].spendscript,msgtx->vins[i].spendscript,msgtx->vins[i].spendlen);
+                    //V[i].spendlen = msgtx->vins[i].spendlen;
                     if ( msgtx->vins[i].sequence < IGUANA_SEQUENCEID_FINAL )
                         finalized = 0;
                     if ( V[i].M == 0 )
                         V[i].M = 1;
                     if ( V[i].N < V[i].M )
-                        V[i].N = V[i].M;
+                        V[i].N = V[i].M;                    
+                    printf("vin.%d (%s) scriptlen.%d spendlen.%d finalize.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen,V[i].spendlen,finalized);
                     printf("V %dof%d %.8f (%s) spendscript.[%d] scriptlen.%d siglen.%d hashtype.%d\n",V[i].M,V[i].N,dstr(V[i].amount),V[i].coinaddr,V[i].spendlen,V[i].spendlen,msgtx->vins[i].vinscript[0],V[i].hashtype);
                 }
                 complete = bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys,LP_IS_BITCOINCASH);
