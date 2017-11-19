@@ -634,6 +634,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
     isPoS = coin->isPoS;
     retjson = cJSON_CreateObject();
     inputsum = outputsum = numinputs = numoutputs = 0;
+    printf("validate\n");
     if ( rawtx != 0 && rawtx[0] != 0 )
     {
         if ( (strlen(rawtx) & 1) != 0 )
@@ -644,7 +645,6 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
             maxsize = (int32_t)strlen(rawtx);
             serialized = malloc(maxsize);
             serialized2 = malloc(maxsize);
-            V = calloc(numinputs,sizeof(*V));
             if ( (vouts= jarray(&numoutputs,txobj,"vout")) > 0 )
             {
                 for (i=0; i<numoutputs; i++)
@@ -655,9 +655,11 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
             }
             if ( (vins= jarray(&numinputs,txobj,"vin")) > 0 )
             {
+                V = calloc(numinputs,sizeof(*V));
                 len = 0;
                 for (i=0; i<numinputs; i++)
                 {
+                    printf("%d of %d\n",i,numinputs);
                     if ( V[i].M == 0 )
                         V[i].M = 1;
                     if ( V[i].N < V[i].M )
