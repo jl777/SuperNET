@@ -696,7 +696,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         if ( (scriptsig= jstr(sobj,"hex")) != 0 )
                         {
                             slen = (int32_t)strlen(scriptsig) >> 1;
-                            if ( slen <= sizeof(scriptsig) )
+                            if ( slen <= sizeof(scriptbuf) )
                             {
                                 msgtx->vins[i].scriptlen = slen;
                                 msgtx->vins[i].vinscript = scriptbuf;
