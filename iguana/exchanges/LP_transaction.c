@@ -716,6 +716,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         V[i].N = V[i].M;
                     printf("vin.%d (%s) scriptlen.%d spendlen.%d finalize.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen,V[i].spendlen,finalized);
                 }
+                finalized = iguana_vininfo_create(taddr,pubtype,p2shtype,isPoS,serialized2,maxsize,msgtx,vins,numinputs,V);
                 complete = bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys,LP_IS_BITCOINCASH);
                 msgtx->txid = signedtxid;
                 log = cJSON_CreateArray();
