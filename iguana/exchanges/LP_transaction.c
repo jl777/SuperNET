@@ -623,7 +623,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
 
 char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,char *rawtx,int32_t mempool,int32_t suppress_pubkeys,int32_t zcash)
 {
-    bits256 signedtxid; cJSON *log,*item,*vins,*vouts,*txobj,*retjson,*sigobj; char *scriptsig,*signedtx; int32_t plen,sigsize,slen,height,finalized = 1,i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2,scriptbuf[256]; int64_t inputsum,outputsum; struct iguana_msgvout vout;
+    bits256 signedtxid; cJSON *log,*item,*vins,*vouts,*txobj,*retjson,*sigobj; char *scriptsig,*signedtx; int32_t j,plen,sigsize,slen,height,finalized = 1,i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2,scriptbuf[256]; int64_t inputsum,outputsum; struct iguana_msgvout vout;
     char *symbol; uint8_t wiftaddr,taddr,pubtype,p2shtype,isPoS;
     height = coin->longestchain;
     symbol = coin->symbol;
@@ -714,7 +714,9 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         V[i].M = 1;
                     if ( V[i].N < V[i].M )
                         V[i].N = V[i].M;
-                    printf("vin.%d (%s) scriptlen.%d spendlen.%d finalize.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen,V[i].spendlen,finalized);
+                    for (j=0; j<msgtx->vins[i].scriptlen; j++)
+                        printf("%02x",msgtx->vins[i].vinscript[j]);
+                    printf(" vin.%d (%s) scriptlen.%d spendlen.%d finalize.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen,V[i].spendlen,finalized);
                 }
                 finalized = iguana_vininfo_create(taddr,pubtype,p2shtype,isPoS,serialized2,maxsize,msgtx,vins,numinputs,V);
                 complete = bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys,LP_IS_BITCOINCASH);

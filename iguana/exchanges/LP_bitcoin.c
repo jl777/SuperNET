@@ -3411,7 +3411,7 @@ int32_t iguana_rwmsgtx(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t is
     }
     for (i=0; i<msg->tx_in; i++)
     {
-        //printf("vin.%d starts offset.%d numvins.%d\n",i,len,msg->tx_in);
+        printf("vin.%d starts offset.%d numvins.%d\n",i,len,msg->tx_in);
         if ( vins != 0 && jitem(vins,i) != 0 )
             iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
         if ( (n= iguana_vinparse(rwflag,&serialized[len],&msg->vins[i])) < 0 )
