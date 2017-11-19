@@ -671,6 +671,17 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         jaddstr(sobj,"hex","761914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
                         jadd(item,"scriptPubKey",sobj);
                     }
+                    else if ( strcmp(jstr(item,"txid"),"980d621becd9bbd7f4a3fbd525a00ee5bc67518bb57da8bdcb1bd4c49cb83414") == 0 && jint(item,"vout") == 0 )
+                    {
+                        V[i].spendlen = 25;
+                        decode_hex(V[i].spendscript,V[i].spendlen,"7619146cfa0a987f4c8f2ffee7e9944ef0c86fcda9671d88ac");
+                        V[i].amount = SATOSHIDEN * 0.001;
+                        strcpy(V[i].coinaddr,"1AwDWu5rZKyGMUu16gf9Kow8ohnKmc7tGH");
+                        V[i].suppress_pubkeys = 0;
+                        sobj = cJSON_CreateObject();
+                        jaddstr(sobj,"hex","761914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
+                        jadd(item,"scriptPubKey",sobj);
+                    }
                     msgtx->vins[i].spendscript = V[i].spendscript;
                     msgtx->vins[i].spendlen = V[i].spendlen;
                     if ( (sobj= jobj(item,"scriptSig")) != 0 )
