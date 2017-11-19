@@ -2355,7 +2355,7 @@ int32_t bitcoin_scriptget(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint32_
             *hashtypep = vp->signers[j].sig[siglen-1];
         else if ( vp->signers[j].sig[siglen-1] != (*hashtypep & (~SIGHASH_FORKID)) )
         {
-            //printf("SIGHASH.%d  mismatch %d vs %d\n",j,vp->signers[j].sig[siglen-1],*hashtypep);
+            printf("SIGHASH.%d  mismatch %d vs %d\n",j,vp->signers[j].sig[siglen-1],*hashtypep);
             break;
         }
         (*sigsizep) += siglen;
