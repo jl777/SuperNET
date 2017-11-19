@@ -415,9 +415,9 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
             script = msgtx->vins[vini].spendscript;
             scriptlen = msgtx->vins[vini].spendlen;
         }
-        for (j=0; j<scriptlen; j++)
-            printf("%02x",script[j]);
-        printf(" scriptlen.%d\n",scriptlen);
+        //for (j=0; j<scriptlen; j++)
+        //    printf("%02x",script[j]);
+        //printf(" scriptlen.%d\n",scriptlen);
         //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         sigtxid = bitcoin_sigtxid(symbol,taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,sighash,vpnstr,suppress_pubkeys,zcash);
         printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
