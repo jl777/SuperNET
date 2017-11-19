@@ -692,7 +692,6 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     msgtx->vins[i].spendlen = V[i].spendlen;
                     if ( (sobj= jobj(item,"scriptSig")) != 0 )
                     {
-                        printf("sobj.(%s)\n",jprint(sobj,0));
                         if ( (scriptsig= jstr(sobj,"hex")) != 0 )
                         {
                             slen = (int32_t)strlen(scriptsig) >> 1;
@@ -701,13 +700,11 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                                 msgtx->vins[i].scriptlen = slen;
                                 msgtx->vins[i].vinscript = scriptbuf;
                                 decode_hex(scriptbuf,slen,scriptsig);
-                                printf("slen.%d siglen.%d\n",slen,scriptbuf[0]);
                                 if ( (sigsize= scriptbuf[0]) >= 70 && sigsize < 76 )
                                 {
                                     memcpy(V[i].signers[0].sig,scriptbuf+1,sigsize-1);
                                     V[i].signers[0].siglen = sigsize - 1;
                                     V[i].hashtype = scriptbuf[1 + sigsize-1];
-                                    printf("hashtype.%d plen.%d\n",V[i].hashtype,scriptbuf[sigsize+1]);
                                     if ( scriptbuf[sigsize+1] == 33 )
                                     {
                                         memcpy(V[i].signers[0].pubkey,&scriptbuf[sigsize+2],33);
@@ -719,9 +716,9 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     inputsum += V[i].amount;
                     if ( msgtx->vins[i].sequence < IGUANA_SEQUENCEID_FINAL )
                         finalized = 0;
-                    for (j=0; j<msgtx->vins[i].scriptlen; j++)
-                        printf("%02x",msgtx->vins[i].vinscript[j]);
-                    printf(" vin.%d (%s) scriptlen.%d spendlen.%d:%d finalize.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen,V[i].spendlen,msgtx->vins[i].spendlen,finalized);
+                    for (j=0; j<msgtx->vins[i].spendlen; j++)
+                        printf("%02x",msgtx->vins[i].spendscript[j]);
+                    printf(" spendscript, vin.%d (%s) scriptlen.%d spendlen.%d:%d finalize.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen,V[i].spendlen,msgtx->vins[i].spendlen,finalized);
                 }
                 sighash = LP_sighash(symbol,zcash);
                 complete = bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,sighash,0,V[0].suppress_pubkeys,zcash);
