@@ -420,7 +420,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
         printf(" scriptlen.%d\n",scriptlen);
         //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         sigtxid = bitcoin_sigtxid(symbol,taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,sighash,vpnstr,suppress_pubkeys,zcash);
-        //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
+        printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         if ( bits256_nonz(sigtxid) != 0 )
         {
             vp = &V[vini];
@@ -448,6 +448,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
                 if ( sig == 0 || siglen == 0 )
                 {
                     memset(vp->signers[j].pubkey,0,sizeof(vp->signers[j].pubkey));
+                    printf("no sig.%p or siglen.%d zero\n",sig,siglen);
                     continue;
                 }
                 if ( bitcoin_verify(ctx,sig,siglen-1,sigtxid,vp->signers[j].pubkey,bitcoin_pubkeylen(vp->signers[j].pubkey)) < 0 )
@@ -663,7 +664,6 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     if ( V[i].N < V[i].M )
                         V[i].N = V[i].M;
                     item = jitem(vins,i);
-                    //vin.0 ({"sequence":4294967294,"txid":"775489f100361039f56793719d87621a73adbadda5e13c85e81d88f55ff9620e","vout":1,"scriptSig":{"hex":"483045022100c684a0871689519bd97f2e61275752124f0f1498360750c87cf99a8acf06fd8c022047e7e62a7bfd481599130e6f40c95833f6ed6f44aa8b6ead7b0ec86a738b98a041210361857e1ba609aadff520a2ca9886fe7548c7154fab2cbe108c3b0e1e7635eb1f","asm":"3045022100c684a0871689519bd97f2e61275752124f0f1498360750c87cf99a8acf06fd8c022047e7e62a7bfd481599130e6f40c95833f6ed6f44aa8b6ead7b0ec86a738b98a041 0361857e1ba609aadff520a2ca9886fe7548c7154fab2cbe108c3b0e1e7635eb1f"}})
                     if ( strcmp(jstr(item,"txid"),"775489f100361039f56793719d87621a73adbadda5e13c85e81d88f55ff9620e") == 0 && jint(item,"vout") == 1 )
                     {
                         V[i].spendlen = 25;
@@ -690,7 +690,6 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     }
                     msgtx->vins[i].spendscript = V[i].spendscript;
                     msgtx->vins[i].spendlen = V[i].spendlen;
-                    printf("spendlens %d and %d\n",V[i].spendlen,msgtx->vins[i].spendlen);
                     if ( (sobj= jobj(item,"scriptSig")) != 0 )
                     {
                         if ( (scriptsig= jstr(sobj,"hex")) != 0 )
@@ -714,7 +713,6 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                             }
                         }
                     }
-                    printf("B spendlens %d and %d\n",V[i].spendlen,msgtx->vins[i].spendlen);
                     inputsum += V[i].amount;
                     if ( msgtx->vins[i].sequence < IGUANA_SEQUENCEID_FINAL )
                         finalized = 0;
