@@ -708,6 +708,9 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                                     if ( scriptbuf[sigsize+1] == 33 )
                                     {
                                         memcpy(V[i].signers[0].pubkey,&scriptbuf[sigsize+2],33);
+                                        uint8_t rmd160[20]; char rmdstr[42];
+                                        calc_rmd160(rmdstr,rmd160,V[i].signers[0].pubkey,33);
+                                        printf("RMD160.%s\n",rmdstr);
                                     }
                                 } else printf("sigsize.%d unexpected\n",sigsize);
                             }
