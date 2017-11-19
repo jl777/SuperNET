@@ -656,6 +656,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                 len = 0;
                 for (i=0; i<numinputs; i++)
                 {
+                    printf("vin.%d (%s)\n",i,jprint(jitem(vins,i),0));
                     len += iguana_parsevinobj(&serialized[len],maxsize-len,&vin,jitem(vins,i),&V[i]);
                     V[i].suppress_pubkeys = suppress_pubkeys;
                     inputsum += V[i].amount;
