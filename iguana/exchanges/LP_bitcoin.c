@@ -2353,13 +2353,13 @@ int32_t bitcoin_scriptget(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint32_
         memcpy(vp->signers[j].sig,&scriptsig[n+1],siglen);
         if ( j == 0 )
             *hashtypep = vp->signers[j].sig[siglen-1];
-        else if ( vp->signers[j].sig[siglen-1] != *hashtypep )
+        else if ( vp->signers[j].sig[siglen-1] != (*hashtypep & (~SIGHASH_FORKID)) )
         {
             //printf("SIGHASH.%d  mismatch %d vs %d\n",j,vp->signers[j].sig[siglen-1],*hashtypep);
             break;
         }
         (*sigsizep) += siglen;
-        //printf("sigsize %d [%02x]\n",*sigsizep,vp->signers[j].sig[siglen-1]);
+        printf("sigsize %d [%02x]\n",*sigsizep,vp->signers[j].sig[siglen-1]);
         n += (siglen + 1);
         j++;
         if ( spendtype == 0 && j > 1 )
@@ -2408,14 +2408,8 @@ int32_t bitcoin_scriptget(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint32_
     }
     if ( *userdatap == p2shscript )
         *userdatap = 0;
-    /*if ( len == 0 )
-     {
-     //  txid.(eccf7e3034189b851985d871f91384b8ee357cd47c3024736e5676eb2debb3f2).v1
-     decode_hex(vp->rmd160,20,"010966776006953d5567439e5e39f86a0d273bee");//3564a74f9ddb4372301c49154605573d7d1a88fe");
-     vp->type = IGUANA_SCRIPT_76A988AC;
-     }*/
     vp->spendlen = iguana_scriptgen(taddr,pubtype,p2shtype,&vp->M,&vp->N,vp->coinaddr,vp->spendscript,0,vp->rmd160,vp->type,(const struct vin_info *)vp,vp->vin.prev_vout);
-    //printf("type.%d asmstr.(%s) spendlen.%d\n",vp->type,asmstr,vp->spendlen);
+printf("type.%d asmstr.(%s) spendlen.%d\n",vp->type,asmstr,vp->spendlen);
     return(vp->spendlen);
 }
 
