@@ -634,7 +634,6 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
     isPoS = coin->isPoS;
     retjson = cJSON_CreateObject();
     inputsum = outputsum = numinputs = numoutputs = 0;
-    printf("validate\n");
     if ( rawtx != 0 && rawtx[0] != 0 )
     {
         if ( (strlen(rawtx) & 1) != 0 )
@@ -659,7 +658,6 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                 len = 0;
                 for (i=0; i<numinputs; i++)
                 {
-                    printf("%d of %d\n",i,numinputs);
                     if ( V[i].M == 0 )
                         V[i].M = 1;
                     if ( V[i].N < V[i].M )
@@ -752,7 +750,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
 void test_validate(char *signedtx)
 {
     char *retstr; uint8_t extraspace[8192]; int32_t mempool=0; struct iguana_msgtx msgtx; struct iguana_info *coin = LP_coinfind("BTC");
-    retstr = iguana_validaterawtx(bitcoin_ctx(),coin,&msgtx,extraspace,sizeof(extraspace),signedtx,mempool,0,LP_IS_BITCOINCASH);
+    retstr = iguana_validaterawtx(bitcoin_ctx(),coin,&msgtx,extraspace,sizeof(extraspace),signedtx,mempool,0,LP_IS_BITCOINCASH*0);
     printf("validate test.(%s)\n",retstr);
 }
 
