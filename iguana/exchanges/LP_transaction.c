@@ -670,6 +670,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         sobj = cJSON_CreateObject();
                         jaddstr(sobj,"hex","761914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
                         jadd(item,"scriptPubKey",sobj);
+                        printf("match special txid A\n");
                     }
                     else if ( strcmp(jstr(item,"txid"),"980d621becd9bbd7f4a3fbd525a00ee5bc67518bb57da8bdcb1bd4c49cb83414") == 0 && jint(item,"vout") == 0 )
                     {
@@ -681,6 +682,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         sobj = cJSON_CreateObject();
                         jaddstr(sobj,"hex","761914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
                         jadd(item,"scriptPubKey",sobj);
+                        printf("match special txid B\n");
                     }
                     msgtx->vins[i].spendscript = V[i].spendscript;
                     msgtx->vins[i].spendlen = V[i].spendlen;
