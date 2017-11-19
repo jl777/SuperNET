@@ -709,7 +709,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                                     {
                                         memcpy(V[i].signers[0].pubkey,&scriptbuf[sigsize+1],33);
                                     }
-                                }
+                                } else printf("sigsize.%d unexpected\n",sigsize);
                             }
                         }
                     }
