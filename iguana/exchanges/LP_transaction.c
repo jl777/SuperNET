@@ -621,7 +621,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
 
 char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,char *rawtx,int32_t mempool,int32_t suppress_pubkeys,int32_t zcash)
 {
-    bits256 signedtxid; struct iguana_msgvin vin; cJSON *log,*item,*vins,*vouts,*txobj,*retjson; char *signedtx; int32_t plen,height,finalized = 1,i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2; uint32_t sigsize,pubkeysize,p2shsize,suffixlen; int64_t inputsum,outputsum; struct iguana_msgvout vout;
+    bits256 signedtxid; cJSON *log,*item,*vins,*vouts,*txobj,*retjson; char *scriptsig,*signedtx; int32_t plen,height,finalized = 1,i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2,sigspace[256]; uint32_t sigsize,pubkeysize,p2shsize,suffixlen; int64_t inputsum,outputsum; struct iguana_msgvout vout;
     char *symbol; uint8_t wiftaddr,taddr,pubtype,p2shtype,isPoS;
     height = coin->longestchain;
     symbol = coin->symbol;
@@ -666,7 +666,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         V[i].amount = SATOSHIDEN * 0.00587427;
                         strcpy(V[i].coinaddr,"19MnNLzxNTNXWUdfxpQvWK3CPwFXJbmLb8");
                     }
-                    printf("vin.%d (%s)\n",i,jprint(item,0));
+                    printf("vin.%d (%s) scriptlen.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen);
                     V[i].suppress_pubkeys = suppress_pubkeys;
                     inputsum += V[i].amount;
                     msgtx->vins[i].spendscript = V[i].spendscript;
@@ -682,11 +682,11 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     {
                         V[i].suppress_pubkeys = 0;
                     }
-                    V[i].hashtype = iguana_vinscriptparse(taddr,pubtype,p2shtype,&V[i],&sigsize,&pubkeysize,&p2shsize,&suffixlen,msgtx->vins[i].vinscript,msgtx->vins[i].scriptlen);
-                    if ( (V[i].signers[0].siglen= sigsize) > 0 )
-                        memcpy(V[i].signers[0].sig,msgtx->vins[i].vinscript+1,sigsize);
-                    printf("sigsize.%d hashtype.%d\n",sigsize,V[i].hashtype);
-                    V[i].userdatalen = suffixlen;
+                    //V[i].hashtype = iguana_vinscriptparse(taddr,pubtype,p2shtype,&V[i],&sigsize,&pubkeysize,&p2shsize,&suffixlen,msgtx->vins[i].vinscript,msgtx->vins[i].scriptlen);
+                    //if ( (V[i].signers[0].siglen= sigsize) > 0 )
+                    //    memcpy(V[i].signers[0].sig,msgtx->vins[i].vinscript+1,sigsize);
+                    //printf("sigsize.%d hashtype.%d\n",sigsize,V[i].hashtype);
+                    //V[i].userdatalen = suffixlen;
                     memcpy(V[i].spendscript,msgtx->vins[i].spendscript,msgtx->vins[i].spendlen);
                     V[i].spendlen = msgtx->vins[i].spendlen;
                     if ( msgtx->vins[i].sequence < IGUANA_SEQUENCEID_FINAL )
@@ -695,7 +695,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         V[i].M = 1;
                     if ( V[i].N < V[i].M )
                         V[i].N = V[i].M;
-                    printf("V %dof%d %.8f (%s) spendscript.[%d] scriptlen.%d siglen.%d hashtype.%d\n",V[i].M,V[i].N,dstr(V[i].amount),V[i].coinaddr,V[i].spendlen,V[i].spendlen,sigsize,V[i].hashtype);
+                    printf("V %dof%d %.8f (%s) spendscript.[%d] scriptlen.%d siglen.%d hashtype.%d\n",V[i].M,V[i].N,dstr(V[i].amount),V[i].coinaddr,V[i].spendlen,V[i].spendlen,msgtx->vins[i].vinscript[0],V[i].hashtype);
                 }
                 complete = bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys,LP_IS_BITCOINCASH);
                 msgtx->txid = signedtxid;
