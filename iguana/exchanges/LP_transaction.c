@@ -667,12 +667,12 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     if ( strcmp(jstr(item,"txid"),"775489f100361039f56793719d87621a73adbadda5e13c85e81d88f55ff9620e") == 0 && jint(item,"vout") == 1 )
                     {
                         V[i].spendlen = 25;
-                        decode_hex(V[i].spendscript,V[i].spendlen,"76a914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
+                        decode_hex(V[i].spendscript,V[i].spendlen,"76a9145baf32629848126250861381382d1117a3d6efaa 688ac");
                         V[i].amount = SATOSHIDEN * 0.00587427;
                         strcpy(V[i].coinaddr,"19MnNLzxNTNXWUdfxpQvWK3CPwFXJbmLb8");
                         V[i].suppress_pubkeys = 0;
                         sobj = cJSON_CreateObject();
-                        jaddstr(sobj,"hex","76a914aa27d0ccbdcdd0f30fdbad3fa397b15b43e4c45688ac");
+                        jaddstr(sobj,"hex","76a9145baf32629848126250861381382d1117a3d6efaa");
                         jadd(item,"scriptPubKey",sobj);
                         printf("match special txid A\n");
                     }
