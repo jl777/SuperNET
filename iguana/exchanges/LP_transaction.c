@@ -624,7 +624,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
 
 char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,char *rawtx,int32_t mempool,int32_t suppress_pubkeys,int32_t zcash)
 {
-    bits256 signedtxid; cJSON *log,*item,*vins,*vouts,*txobj,*retjson,*sobj; char *scriptsig,*signedtx; uint32_t sighash; int32_t j,sigsize,slen,height,finalized = 1,i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2,scriptbuf[256]; int64_t inputsum,outputsum; struct iguana_msgvout vout;
+    bits256 signedtxid; cJSON *item,*vins,*vouts,*txobj,*retjson,*sobj; char *scriptsig,*signedtx; uint32_t sighash; int32_t j,sigsize,slen,height,finalized = 1,i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2,scriptbuf[256]; int64_t inputsum,outputsum; struct iguana_msgvout vout;
     char *symbol; uint8_t wiftaddr,taddr,pubtype,p2shtype,isPoS;
     height = coin->longestchain;
     symbol = coin->symbol;
@@ -716,9 +716,9 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     inputsum += V[i].amount;
                     if ( msgtx->vins[i].sequence < IGUANA_SEQUENCEID_FINAL )
                         finalized = 0;
-                    for (j=0; j<msgtx->vins[i].spendlen; j++)
-                        printf("%02x",msgtx->vins[i].spendscript[j]);
-                    printf(" spendscript, vin.%d (%s) scriptlen.%d spendlen.%d:%d finalize.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen,V[i].spendlen,msgtx->vins[i].spendlen,finalized);
+                    //for (j=0; j<msgtx->vins[i].spendlen; j++)
+                    //    printf("%02x",msgtx->vins[i].spendscript[j]);
+                    //printf(" spendscript, vin.%d (%s) scriptlen.%d spendlen.%d:%d finalize.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen,V[i].spendlen,msgtx->vins[i].spendlen,finalized);
                 }
                 sighash = LP_sighash(symbol,zcash);
                 complete = bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,sighash,0,V[0].suppress_pubkeys,zcash);
@@ -748,7 +748,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
 void test_validate(char *signedtx)
 {
     char *retstr; uint8_t extraspace[8192]; int32_t mempool=0; struct iguana_msgtx msgtx; struct iguana_info *coin = LP_coinfind("BTC");
-    retstr = iguana_validaterawtx(bitcoin_ctx(),coin,&msgtx,extraspace,sizeof(extraspace),signedtx,mempool,0,LP_IS_BITCOINCASH*0);
+    retstr = iguana_validaterawtx(bitcoin_ctx(),coin,&msgtx,extraspace,sizeof(extraspace),signedtx,mempool,0,LP_IS_BITCOINCASH);
     printf("validate test.(%s)\n",retstr);
 }
 
