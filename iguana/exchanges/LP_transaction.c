@@ -696,20 +696,20 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         if ( (scriptsig= jstr(sobj,"hex")) != 0 )
                         {
                             slen = (int32_t)strlen(scriptsig) >> 1;
-                            printf("slen.%d\n",slen);
                             if ( slen <= sizeof(scriptsig) )
                             {
                                 msgtx->vins[i].scriptlen = slen;
                                 msgtx->vins[i].vinscript = scriptbuf;
                                 decode_hex(scriptbuf,slen,scriptsig);
-                                if ( (sigsize= scriptbuf[0]) >= 70 && sigsize < 76 )
+                                printf("slen.%d siglen.%d\n",slen,scriptbuf[1]);
+                                if ( (sigsize= scriptbuf[1]) >= 70 && sigsize < 76 )
                                 {
-                                    memcpy(V[i].signers[0].sig,scriptbuf+1,sigsize-1);
+                                    memcpy(V[i].signers[0].sig,scriptbuf+2,sigsize-1);
                                     V[i].signers[0].siglen = sigsize - 1;
-                                    V[i].hashtype = scriptbuf[sigsize-1];
+                                    V[i].hashtype = scriptbuf[2 + sigsize-1];
                                     if ( scriptbuf[sigsize] == 33 )
                                     {
-                                        memcpy(V[i].signers[0].pubkey,&scriptbuf[sigsize+1],33);
+                                        memcpy(V[i].signers[0].pubkey,&scriptbuf[sigsize+2],33);
                                     }
                                 } else printf("sigsize.%d unexpected\n",sigsize);
                             }
