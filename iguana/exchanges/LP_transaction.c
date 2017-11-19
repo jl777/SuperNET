@@ -692,6 +692,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     msgtx->vins[i].spendlen = V[i].spendlen;
                     if ( (sobj= jobj(item,"scriptSig")) != 0 )
                     {
+                        printf("sobj.(%s)\n",jprint(sobj,0));
                         if ( (scriptsig= jstr(sobj,"hex")) != 0 )
                         {
                             slen = (int32_t)strlen(scriptsig) >> 1;
