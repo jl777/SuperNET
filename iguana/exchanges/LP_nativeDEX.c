@@ -20,6 +20,12 @@
 // alice waiting for bestprice
 // MNZ getcoin strangeness
 // [{"date":1405699200,"high":0.0045388,"low":0.00403001,"open":0.00404545,"close":0.00435873,"relvol":44.34555992,"basevol":10311.88079097,"aveprice":0.00430043}, // minute,
+// trying to do bot_sell and the output he sent me is this
+//{"base":"KMD","rel":"MNZ","basevolume":"0.08","minprice":5.608418011097937,"gui":"gecko","method":"bot_sell","userpass":"4011dddbfd920f9fab037907c2a13ba7eec207245487efa61cd0c484f8b1d607"}
+//{"error":"not enough funds","coin":"KMD","abalance":0.00204856,"balance":9.9999,"relvolume":0.08,"txfees":0.001,"shortfall":-9.9189,"withdraw":
+//i assume bot_sell detected he didn't had the proper utxos, tried to make some with the withdraw-method and failed with "not enough funds"
+// the reason: bot_sell uses basevolume:0.08 and the withdraw-method uses relvolume:0.08
+
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // improve critical section detection when parallel trades
 // reduce mem: dont redundant store pubkey utxo info
