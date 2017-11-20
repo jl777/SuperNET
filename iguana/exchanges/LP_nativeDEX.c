@@ -17,11 +17,19 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// BCH signing: FORKID_BCC = 0, FORKID_BTG = 79, // Atomic number AU
 // alice waiting for bestprice
 // MNZ getcoin strangeness
+// [{"date":1405699200,"high":0.0045388,"low":0.00403001,"open":0.00404545,"close":0.00435873,"relvol":44.34555992,"basevol":10311.88079097,"aveprice":0.00430043}, // minute,
+// trying to do bot_sell and the output he sent me is this
+//{"base":"KMD","rel":"MNZ","basevolume":"0.08","minprice":5.608418011097937,"gui":"gecko","method":"bot_sell","userpass":"4011dddbfd920f9fab037907c2a13ba7eec207245487efa61cd0c484f8b1d607"}
+//{"error":"not enough funds","coin":"KMD","abalance":0.00204856,"balance":9.9999,"relvolume":0.08,"txfees":0.001,"shortfall":-9.9189,"withdraw":
+//i assume bot_sell detected he didn't had the proper utxos, tried to make some with the withdraw-method and failed with "not enough funds"
+// the reason: bot_sell uses basevolume:0.08 and the withdraw-method uses relvolume:0.08
+
+// https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // improve critical section detection when parallel trades
 // reduce mem: dont redundant store pubkey utxo info
+
 // previously, it used to show amount, kmd equiv, perc
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -679,7 +687,8 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
         printf("%s ",activecoins[i]);
         LP_coinfind(activecoins[i]);
         LP_priceinfoadd(activecoins[i]);
-        //test_validate("02000000010e62f95ff5881de8853ce1a5ddbaad731a62879d719367f539103600f1895477010000006b483045022100c684a0871689519bd97f2e61275752124f0f1498360750c87cf99a8acf06fd8c022047e7e62a7bfd481599130e6f40c95833f6ed6f44aa8b6ead7b0ec86a738b98a041210361857e1ba609aadff520a2ca9886fe7548c7154fab2cbe108c3b0e1e7635eb1ffeffffff02a0860100000000001976a9146cfa0a987f4c8f2ffee7e9944ef0c86fcda9671d88ac1e6f0700000000001976a9147f4b7113f9e26d84b150f2cc6d219baaf27f884488ace6b00700");
+          //test_validate("02000000010e62f95ff5881de8853ce1a5ddbaad731a62879d719367f539103600f1895477010000006b483045022100c684a0871689519bd97f2e61275752124f0f1498360750c87cf99a8acf06fd8c022047e7e62a7bfd481599130e6f40c95833f6ed6f44aa8b6ead7b0ec86a738b98a041210361857e1ba609aadff520a2ca9886fe7548c7154fab2cbe108c3b0e1e7635eb1ffeffffff02a0860100000000001976a9146cfa0a987f4c8f2ffee7e9944ef0c86fcda9671d88ac1e6f0700000000001976a9147f4b7113f9e26d84b150f2cc6d219baaf27f884488ace6b00700");
+        //test_validate("01000000011434b89cc4d41bcbbda87db58b5167bce50ea025d5fba3f4d7bbd9ec1b620d98000000006a47304402205aba01fa2b895df6069dc7458fcc7aac6da1ffbc2811eb43382a5a342a342c6202207da60859f45893785322fede2f82b1f7c76cd9882b6a8ed6d25037f4184b60514121029d1e15b82fc3e11b51b61eb65545b0c93baebb17de5118979f261a086575bcd6ffffffff0210270000000000001976a9146cfa0a987f4c8f2ffee7e9944ef0c86fcda9671d88ac80380100000000001976a9146cfa0a987f4c8f2ffee7e9944ef0c86fcda9671d88ac00000000");
         //getchar();
         if ( (coin= LP_coinfind(activecoins[i])) != 0 )
         {

@@ -44,7 +44,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
 #define LP_AUTOTRADE_TIMEOUT 30
-#define LP_RESERVETIME (LP_AUTOTRADE_TIMEOUT * 2)
+#define LP_RESERVETIME 600  //(LP_AUTOTRADE_TIMEOUT * 2)
 #define ELECTRUM_TIMEOUT 7
 #define LP_ELECTRUM_KEEPALIVE 60
 #define LP_ELECTRUM_MAXERRORS 777
@@ -113,6 +113,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 #define LP_IS_ZCASHPROTOCOL 1
 #define LP_IS_BITCOINCASH 2
+#define LP_IS_BITCOINGOLD 79
 
 #define SIGHASH_FORKID 0x40
 #define ZKSNARK_PROOF_SIZE 296
@@ -398,6 +399,7 @@ struct electrum_info
     uint8_t buf[];
 };
 
+uint32_t LP_sighash(char *symbol,int32_t zcash);
 int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
 int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
@@ -472,7 +474,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag);
 uint16_t LP_randpeer(char *destip);
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired);
 char *LP_unspents_filestr(char *symbol,char *addr);
-cJSON *bitcoin_data2json(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,bits256 *txidp,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,uint8_t *serialized,int32_t len,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash);
+cJSON *bitcoin_data2json(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,bits256 *txidp,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,uint8_t *serialized,int32_t len,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash);
 //int32_t LP_butxo_findeither(bits256 txid,int32_t vout);
 cJSON *LP_listunspent(char *symbol,char *coinaddr);
 int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid);
