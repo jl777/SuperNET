@@ -1240,13 +1240,6 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
         else if ( Ktotal < 0 && Btotal > 0 )
             jaddnum(retjson,"avesell",(double)-Btotal/Ktotal);
     }
-    /*array = cJSON_CreateArray();
-    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
-    {
-        if ( myinfo->linfos[i].base[0] != 0 && myinfo->linfos[i].rel[0] != 0 )
-            jaddi(array,linfo_json(&myinfo->linfos[i]));
-    }
-    jadd(retjson,"quotes",array);*/
     portable_mutex_unlock(&LP_swaplistmutex);
     return(jprint(retjson,1));
 }
