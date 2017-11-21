@@ -95,7 +95,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
          return(clonestr("{\"result\":\" \
 available localhost RPC commands: \n \
 pricearray(base, rel, starttime=0, endtime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
-setprice(base, rel, price)\n\
+setprice(base, rel, price, broadcast=1)\n\
 autoprice(base, rel, fixed, minprice, margin, refbase, refrel, factor, offset)*\n\
 goal(coin=*, val=<autocalc>)\n\
 myprice(base, rel)\n\
@@ -146,7 +146,8 @@ bot_settings(botid, newprice, newvolume)\n\
 bot_status(botid)\n\
 bot_stop(botid)\n\
 bot_pause(botid)\n\
-bot_resume(botid)\n\
+deposit_create(weeks, amount, broadcast=0)\n\
+deposit_claim(address, expiration=0)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
@@ -182,6 +183,26 @@ bot_resume(botid)\n\
                 jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
                 return(jprint(retjson,1));
             }
+        }
+        else if ( strcmp(method,"deposit_create") == 0 )
+        {
+            if ( (ptr= LP_coinsearch("KMD")) != 0 )
+            {
+                if ( jint(argjson,"weeks") < 0 || jdouble(argjson,"amount") < 10. )
+                    return(clonestr("{\"error\":\"deposit_create needs to have weeks and amount\"}"));
+                else return(LP_deposit_create(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jint(argjson,"broadcast")));
+            }
+            return(clonestr("{\"error\":\"cant find KMD\"}"));
+        }
+        else if ( strcmp(method,"deposit_claim") == 0 )
+        {
+            if ( (ptr= LP_coinsearch("KMD")) != 0 )
+            {
+                if ( jstr(argjson,"address") == 0  )
+                    return(clonestr("{\"error\":\"deposit_claim needs to have address\"}"));
+                else return(LP_deposit_claim(ptr,jstr(argjson,"address"),juint(argjson,"expiration")));
+            }
+            return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
         /*else if ( strcmp(method,"sendmessage") == 0 )
         {
@@ -289,7 +310,9 @@ bot_resume(botid)\n\
                     return(clonestr("{\"error\":\"couldnt set price\"}"));
                 //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
                 //    return(clonestr("{\"error\":\"couldnt set price\"}"));
-                else return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
+                else if ( jint(argjson,"broadcast") != 0 || jobj(argjson,"broadcast") == 0 )
+                    return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
+                else return(clonestr("{\"result\":\"success\"}"));
             }
             else if ( strcmp(method,"pricearray") == 0 )
             {
@@ -361,13 +384,19 @@ bot_resume(botid)\n\
                     {
                         ptr->inactive = 0;
                         cJSON *array;
-                        if ( ptr->smartaddr[0] != 0 )
-                            LP_unspents_load(coin,ptr->smartaddr);
                         if ( LP_getheight(ptr) <= 0 )
                         {
                             ptr->inactive = (uint32_t)time(NULL);
                             return(clonestr("{\"error\":\"coin cant be activated till synced\"}"));
-                        } else LP_unspents_load(coin,ptr->smartaddr);
+                        }
+                        else
+                        {
+                            if ( ptr->smartaddr[0] != 0 )
+                                LP_unspents_load(coin,ptr->smartaddr);
+                            LP_unspents_load(coin,ptr->smartaddr);
+                            if ( strcmp(ptr->symbol,"KMD") == 0 )
+                                LP_importaddress("KMD",BOTS_BONDADDRESS);
+                        }
                         array = cJSON_CreateArray();
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));

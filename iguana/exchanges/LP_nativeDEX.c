@@ -17,14 +17,19 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// feature requests
 // alice waiting for bestprice
+// USD paxprice based USDvalue in portfolio
+// portfolio value based on ask?
+// cancel bid/ask
+// https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
+//
+// bugs, validations:
 // MNZ getcoin strangeness
+// verify encrypted destpubkey, broadcast:0 setprice
 // [{"date":1405699200,"high":0.0045388,"low":0.00403001,"open":0.00404545,"close":0.00435873,"relvol":44.34555992,"basevol":10311.88079097,"aveprice":0.00430043}, // minute,
 
-// https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // improve critical section detection when parallel trades
-// reduce mem: dont redundant store pubkey utxo info
-
 // previously, it used to show amount, kmd equiv, perc
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
@@ -176,6 +181,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_transaction.c"
 #include "LP_stats.c"
 #include "LP_remember.c"
+#include "LP_zeroconf.c"
 #include "LP_swap.c"
 #include "LP_peers.c"
 #include "LP_utxos.c"
@@ -642,7 +648,7 @@ void LP_coinsloop(void *_coins)
 
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport)
 {
-    static uint32_t counter;
+    static uint32_t counter,didzeroconf;
     struct iguana_info *coin,*ctmp; char *origipaddr; uint32_t now; int32_t height,nonz = 0;
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
@@ -651,6 +657,11 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         now = (uint32_t)time(NULL);
+        if ( didzeroconf == 0 && strcmp("KMD",coin->symbol) == 0 )
+        {
+            LP_zeroconf_deposits(coin);
+            didzeroconf = now;
+        }
         if ( (coin->addr_listunspent_requested != 0 && now > coin->lastpushtime+LP_ORDERBOOK_DURATION*.5) || now > coin->lastpushtime+LP_ORDERBOOK_DURATION*5 )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
@@ -689,7 +700,12 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
         {
             if ( LP_getheight(coin) <= 0 )
                 coin->inactive = (uint32_t)time(NULL);
-            else LP_unspents_load(coin->symbol,coin->smartaddr);
+            else
+            {
+                LP_unspents_load(coin->symbol,coin->smartaddr);
+                if ( strcmp(coin->symbol,"KMD") == 0 )
+                    LP_importaddress("KMD",BOTS_BONDADDRESS);
+            }
             if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
                 coin->txfee = LP_MIN_TXFEE;
         }

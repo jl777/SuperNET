@@ -389,6 +389,7 @@ uint32_t LP_extract(uint32_t requestid,uint32_t quoteid,char *rootfname,char *fi
                 t = (t << 8) | redeem[2];
                 //printf("extracted timestamp.%u\n",t);
             }
+            free_json(json);
         }
         free(filestr);
     }
@@ -637,6 +638,7 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
                     }
                 }
             }
+            free_json(txobj);
         }
         rswap->origfinishedflag = basilisk_swap_isfinished(rswap->iambob,rswap->txids,rswap->sentflags,rswap->paymentspent,rswap->Apaymentspent,rswap->depositspent);
         rswap->finishedflag = rswap->origfinishedflag;
@@ -773,6 +775,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                         //printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
                     }
                 }
+                free_json(txobj);
             } //else printf("no symbol\n");
             free(fstr);
         } else if ( 0 && rswap->finishedflag == 0 )
@@ -1150,7 +1153,10 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             fclose(fp);
         }
     }
-    return(item);
+    for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+        if ( rswap.txbytes[i] != 0 )
+            free(rswap.txbytes[i]), rswap.txbytes[i] = 0;
+   return(item);
 }
 
 char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)

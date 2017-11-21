@@ -977,6 +977,16 @@ uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance)
     return(KMDvalue);
 }
 
+int64_t LP_kmdvalue(char *symbol,int64_t satoshis)
+{
+    struct iguana_info *coin; int64_t kmdvalue = 0;
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+        kmdvalue = LP_KMDvalue(coin,satoshis);
+    if ( kmdvalue == 0 )
+        kmdvalue = satoshis;
+    return(kmdvalue);
+}
+
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32])
 {
     LP_priceinfoupdate(base,rel,price);

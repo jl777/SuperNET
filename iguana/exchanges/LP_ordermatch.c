@@ -454,7 +454,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,cJSON *argjson,char *base,c
             printf("requestid.%u quoteid.%u is already in progres\n",qp->R.requestid,qp->R.quoteid);
             return(-1);
         }
-        if ( (swap= LP_swapinit(1,0,privkey,&qp->R,qp)) == 0 )
+        if ( (swap= LP_swapinit(1,0,privkey,&qp->R,qp,LP_dynamictrust(qp->desthash,LP_kmdvalue(qp->destcoin,qp->destsatoshis)))) == 0 )
         {
             printf("cant initialize swap\n");
             return(-1);
@@ -614,6 +614,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
         LP_aliceid(Q.tradeid,Q.aliceid,"error5",0,0);
         return(clonestr("{\"error\":\"no price set\"}"));
     }
+    LP_RTmetrics_update(Q.srccoin,Q.destcoin);
     printf("%s/%s bid %.8f ask %.8f values %.8f %.8f\n",Q.srccoin,Q.destcoin,bid,ask,dstr(butxo->payment.value),dstr(butxo->deposit.value));
     price = bid;
     if ( (coin= LP_coinfind(Q.destcoin)) == 0 )
@@ -625,7 +626,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
     if ( bits256_nonz(Q.privkey) != 0 )//&& Q.quotetime >= Q.timestamp-3 )
     {
         retjson = cJSON_CreateObject();
-        if ( (swap= LP_swapinit(0,0,Q.privkey,&Q.R,&Q)) == 0 )
+        if ( (swap= LP_swapinit(0,0,Q.privkey,&Q.R,&Q,LP_dynamictrust(Q.srchash,LP_kmdvalue(Q.srccoin,Q.satoshis)))) == 0 )
         {
             jaddstr(retjson,"error","couldnt swapinit");
             LP_availableset(Q.desttxid,Q.vout);

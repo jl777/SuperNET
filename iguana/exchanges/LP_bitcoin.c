@@ -1959,13 +1959,13 @@ int32_t bitcoin_timelockspend(uint8_t *script,int32_t n,uint8_t rmd160[20],uint3
     return(n);
 }
 
-int32_t bitcoin_performancebond(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,uint32_t unlocktimestamp,uint8_t cltv_rmd160[20],uint8_t anytime_rmd160[20])
+int32_t bitcoin_performancebond(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,uint32_t unlocktimestamp,uint8_t *cltvpub33,uint8_t *elsepub33)
 {
     script[n++] = SCRIPT_OP_IF;
     n = bitcoin_checklocktimeverify(script,n,unlocktimestamp);
-    n = bitcoin_standardspend(script,n,cltv_rmd160);
+    n = bitcoin_pubkeyspend(script,n,cltvpub33);
     script[n++] = SCRIPT_OP_ELSE;
-    n = bitcoin_standardspend(script,n,anytime_rmd160);
+    n = bitcoin_pubkeyspend(script,n,elsepub33);
     script[n++] = SCRIPT_OP_ENDIF;
     calc_rmd160_sha256(p2sh_rmd160,script,n);
     return(n);
