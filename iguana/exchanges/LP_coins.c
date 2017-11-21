@@ -286,20 +286,6 @@ cJSON *LP_coinsjson(int32_t showwif)
     return(array);
 }
 
-uint32_t LP_sighash(char *symbol,int32_t zcash)
-{
-    uint32_t sighash;
-    sighash = SIGHASH_ALL;
-    if ( zcash == LP_IS_BITCOINCASH )
-        sighash |= SIGHASH_FORKID;
-    else if ( zcash == LP_IS_BITCOINGOLD )
-    {
-        sighash |= SIGHASH_FORKID;
-        sighash |= (LP_IS_BITCOINGOLD << 8);
-    }
-    return(sighash);
-}
-
 char *LP_getcoin(char *symbol)
 {
     int32_t numenabled,numdisabled; struct iguana_info *coin,*tmp; cJSON *item=0,*retjson;

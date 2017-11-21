@@ -3355,6 +3355,20 @@ int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgj
     return(len);
 }
 
+uint32_t LP_sighash(char *symbol,int32_t zcash)
+{
+    uint32_t sighash;
+    sighash = SIGHASH_ALL;
+    if ( zcash == LP_IS_BITCOINCASH )
+        sighash |= SIGHASH_FORKID;
+    else if ( zcash == LP_IS_BITCOINGOLD )
+    {
+        sighash |= SIGHASH_FORKID;
+        sighash |= (LP_IS_BITCOINGOLD << 8);
+    }
+    return(sighash);
+}
+
 int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash)
 {
     int32_t i,j,n,segtxlen,len = 0,extraused=0; uint32_t tmp,segitems; uint8_t *segtx=0,segwitflag=0,spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
