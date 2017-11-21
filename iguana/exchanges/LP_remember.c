@@ -484,7 +484,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
         if ( rswap->sentflags[i] != 0 )
             jaddistr(array,txnames[i]);
         if ( rswap->txbytes[i] != 0 )
-            free(rswap->txbytes[i]);
+            free(rswap->txbytes[i]), rswap->txbytes[i] = 0;
     }
     jadd(item,"sentflags",array);
     array = cJSON_CreateArray();
