@@ -20,11 +20,6 @@
 // alice waiting for bestprice
 // MNZ getcoin strangeness
 // [{"date":1405699200,"high":0.0045388,"low":0.00403001,"open":0.00404545,"close":0.00435873,"relvol":44.34555992,"basevol":10311.88079097,"aveprice":0.00430043}, // minute,
-// trying to do bot_sell and the output he sent me is this
-//{"base":"KMD","rel":"MNZ","basevolume":"0.08","minprice":5.608418011097937,"gui":"gecko","method":"bot_sell","userpass":"4011dddbfd920f9fab037907c2a13ba7eec207245487efa61cd0c484f8b1d607"}
-//{"error":"not enough funds","coin":"KMD","abalance":0.00204856,"balance":9.9999,"relvolume":0.08,"txfees":0.001,"shortfall":-9.9189,"withdraw":
-//i assume bot_sell detected he didn't had the proper utxos, tried to make some with the withdraw-method and failed with "not enough funds"
-// the reason: bot_sell uses basevolume:0.08 and the withdraw-method uses relvolume:0.08
 
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // improve critical section detection when parallel trades
@@ -823,6 +818,122 @@ void LP_swapsloop(void *ignore)
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
         sleep(600);
+    }
+}
+
+void gc_loop(void *arg)
+{
+    uint32_t now; struct LP_address_utxo *up,*utmp; struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
+    strcpy(LP_gcloop_stats.name,"gc_loop");
+    LP_gcloop_stats.threshold = 11000.;
+    while ( 1 )
+    {
+        flag = 0;
+        LP_millistats_update(&LP_gcloop_stats);
+        portable_mutex_lock(&LP_gcmutex);
+        DL_FOREACH_SAFE(LP_garbage_collector,req,rtmp)
+        {
+            DL_DELETE(LP_garbage_collector,req);
+            //printf("garbage collect ipbits.%x\n",req->ipbits);
+            free(req);
+            flag++;
+        }
+        now = (uint32_t)time(NULL);
+        DL_FOREACH_SAFE(LP_garbage_collector2,up,utmp)
+        {
+            if ( now > (uint32_t)up->spendheight+120 )
+            {
+                DL_DELETE(LP_garbage_collector2,up);
+                //char str[65]; printf("garbage collect %s/v%d lag.%d\n",bits256_str(str,up->U.txid),up->U.vout,now-up->spendheight);
+                free(up);
+            }
+            flag++;
+        }
+        portable_mutex_unlock(&LP_gcmutex);
+        if ( 0 && flag != 0 )
+            printf("gc_loop.%d\n",flag);
+        sleep(10);
+    }
+}
+
+void queue_loop(void *arg)
+{
+    struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
+    strcpy(queue_loop_stats.name,"queue_loop");
+    queue_loop_stats.threshold = 1000.;
+    while ( 1 )
+    {
+        LP_millistats_update(&queue_loop_stats);
+        //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
+        n = nonz = flag = 0;
+        DL_FOREACH_SAFE(LP_Q,ptr,tmp)
+        {
+            n++;
+            flag = 0;
+            if ( ptr->sock >= 0 )
+            {
+                if ( ptr->notready == 0 || (LP_rand() % ptr->notready) == 0 )
+                {
+                    if ( LP_sockcheck(ptr->sock) > 0 )
+                    {
+                        bits256 magic;
+                        magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
+                        memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
+                        if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
+                            printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
+                        else flag++;
+                        ptr->sock = -1;
+                        if ( ptr->peerind > 0 )
+                            ptr->starttime = (uint32_t)time(NULL);
+                    }
+                    else
+                    {
+                        if ( ptr->notready++ > 1000 )
+                            flag = 1;
+                    }
+                }
+            }
+            else if ( 0 && time(NULL) > ptr->starttime+13 )
+            {
+                LP_crc32find(&duplicate,-1,ptr->crc32);
+                if ( duplicate > 0 )
+                {
+                    LP_Qfound++;
+                    if ( (LP_Qfound % 100) == 0 )
+                        printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
+                    flag++;
+                }
+                else if ( 0 ) // too much beyond duplicate filter when network is busy
+                {
+                    printf("couldnt find.%u peerind.%d Q.%d err.%d match.%d\n",ptr->crc32,ptr->peerind,LP_Qenqueued,LP_Qerrors,LP_Qfound);
+                    ptr->peerind++;
+                    if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
+                    {
+                        printf("%d no more peers to try at peerind.%d %p Q_LP.%p\n",n,ptr->peerind,ptr,LP_Q);
+                        flag++;
+                        LP_Qerrors++;
+                    }
+                }
+            }
+            if ( flag != 0 )
+            {
+                nonz++;
+                portable_mutex_lock(&LP_networkmutex);
+                DL_DELETE(LP_Q,ptr);
+                portable_mutex_unlock(&LP_networkmutex);
+                free(ptr);
+                ptr = 0;
+                break;
+            }
+        }
+        if ( arg == 0 )
+            break;
+        if ( nonz == 0 )
+        {
+            if ( IAMLP == 0 )
+                usleep(50000);
+            else usleep(10000);
+        }
     }
 }
 
