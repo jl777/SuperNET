@@ -625,7 +625,7 @@ int32_t LP_address_isvalid(char *symbol,char *address)
         if ( jobj(retjson,"isvalid") != 0 && is_cJSON_True(jobj(retjson,"isvalid")) != 0 )
         {
             isvalid = 1;
-            //printf("%s ismine (%s)\n",address,jprint(retjson,0));
+            printf("%s ismine (%s)\n",address,jprint(retjson,0));
         }
         //printf("%s\n",jprint(retjson,0));
         free_json(retjson);
