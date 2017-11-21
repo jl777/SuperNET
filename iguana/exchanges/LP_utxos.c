@@ -592,8 +592,8 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         return(0);
     coin->privkeydepth++;
     LP_address(coin,coin->smartaddr);
-    if ( coin->inactive == 0 )
-        LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
+    //if ( coin->inactive == 0 )
+    //    LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
     array = LP_listunspent(coin->symbol,coin->smartaddr);
     if ( array != 0 )
     {
