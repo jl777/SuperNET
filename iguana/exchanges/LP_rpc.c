@@ -599,12 +599,30 @@ cJSON *LP_validateaddress(char *symbol,char *address)
 
 int32_t LP_address_ismine(char *symbol,char *address)
 {
-    int32_t doneflag = 0; cJSON *retjson;
+    int32_t doneflag = 0; cJSON *retjson,*obj;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
-        if ( jobj(retjson,"ismine") != 0 && is_cJSON_True(jobj(retjson,"ismine")) != 0 )
+        if ( (obj= jobj(retjson,"ismine")) != 0 && is_cJSON_True(obj) != 0 )
+        {
+            doneflag = 1;
+            //printf("%s ismine (%s)\n",address,jprint(retjson,0));
+        }
+        //printf("%s\n",jprint(retjson,0));
+        free_json(retjson);
+    }
+    return(doneflag);
+}
+
+int32_t LP_address_iswatched(char *symbol,char *address)
+{
+    int32_t doneflag = 0; cJSON *retjson,*obj;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
+    if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
+    {
+        if ( (obj= jobj(retjson,"iswatched")) != 0 && is_cJSON_True(obj) != 0 )
         {
             doneflag = 1;
             //printf("%s ismine (%s)\n",address,jprint(retjson,0));
@@ -644,7 +662,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
     {
-        if ( LP_address_ismine(symbol,coinaddr) > 0 )
+        if ( LP_address_ismine(symbol,coinaddr) > 0 || LP_address_iswatched(symbol,coinaddr) > 0 )
         {
             if ( strcmp(symbol,"BTC") == 0 )
                 numconfs = 0;
@@ -681,7 +699,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
             else if ( IAMLP == 0 )
             {
                 //printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
-                LP_listunspent_query(coin->symbol,coin->smartaddr);
+                LP_listunspent_query(coin->symbol,coinaddr);
             }
             if ( retjson != 0 )
             {
