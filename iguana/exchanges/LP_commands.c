@@ -432,9 +432,10 @@ zeroconf_claim(address, expiration=0)\n\
                                 LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                                 //LP_smartutxos_push(ptr);
                             }
-                            if ( ptr->electrum != 0 )
-                                return(LP_unspents_filestr(coin,coinaddr));
-                            else return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
+                            return(jprint(LP_listunspent(coin,coinaddr),0));
+                            //if ( ptr->electrum != 0 )
+                            //return(LP_unspents_filestr(coin,coinaddr));
+                            //else return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
                         }
                         return(jprint(LP_address_utxos(ptr,coinaddr,1),1));
                     } else return(clonestr("{\"error\":\"no address specified\"}"));
