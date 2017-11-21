@@ -19,11 +19,12 @@
 //  marketmaker
 //
 
-int32_t LP_deposit_addr(char *depositaddr,uint8_t *script,uint32_t timestamp,uint8_t *pubsecp33)
+int32_t LP_deposit_addr(char *depositaddr,uint8_t *script,uint8_t taddr,uint8_t pubtype,uint32_t timestamp,uint8_t *pubsecp33)
 {
     uint8_t elsepub33[33],p2sh_rmd160[20]; int32_t n;
     decode_hex(elsepub33,33,BOTS_BONDPUBKEY33);
     n = bitcoin_performancebond(p2sh_rmd160,script,0,timestamp,pubsecp33,elsepub33);
+    bitcoin_address(depositaddr,taddr,pubtype,pubsecp33,33);
     return(n);
 }
 
@@ -46,7 +47,7 @@ char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,i
         if ( weeks >= 10000 )
             return(clonestr("{\"error\":\"numweeks must be less than 10000\"}"));
     } else timestamp = (uint32_t)time(NULL) + 300, weeki = 0;
-    scriptlen = LP_deposit_addr(p2shaddr,script,timestamp,G.LP_pubsecp);
+    scriptlen = LP_deposit_addr(p2shaddr,script,coin->taddr,coin->pubtype,timestamp,G.LP_pubsecp);
     argjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     item = cJSON_CreateObject();
@@ -58,6 +59,7 @@ char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,i
     jaddnum(item,BOTS_BONDADDRESS,dstr(amount64));
     jaddi(array,item);
     jadd(argjson,"outputs",array);
+    printf("deposit.(%s)\n",jprint(argjson,0));
     if ( (retstr= LP_withdraw(coin,argjson)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -133,7 +135,7 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
         if ( expiration != 0 )
             timestamp = expiration;
         else timestamp -= LP_WEEKMULT;
-        redeemlen = LP_deposit_addr(vinaddr,redeemscript,timestamp,G.LP_pubsecp);
+        redeemlen = LP_deposit_addr(vinaddr,redeemscript,coin->taddr,coin->pubtype,timestamp,G.LP_pubsecp);
         if ( strcmp(depositaddr,vinaddr) == 0 )
         {
             printf("found %s at timestamp.%u\n",vinaddr,timestamp);
@@ -207,7 +209,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                                         if ( spendscript[11] == 33 )
                                         {
                                             pub33 = &spendscript[12];
-                                            redeemlen = LP_deposit_addr(p2shaddr,redeemscript,timestamp,pub33);
+                                            redeemlen = LP_deposit_addr(p2shaddr,redeemscript,coin->taddr,coin->pubtype,timestamp,pub33);
                                             if ( len == redeemlen && (timestamp % LP_WEEKMULT) == 0 )
                                             {
                                                 bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pub33,33);
