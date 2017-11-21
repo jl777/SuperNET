@@ -27,7 +27,7 @@ int32_t LP_deposit_addr(char *depositaddr,uint8_t *script,uint32_t timestamp,uin
     return(n);
 }
 
-char *LP_deposit_create(struct iguana_info *coin,int32_t weeks,double amount,int32_t broadcast)
+char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,int32_t broadcast)
 {
     char p2shaddr[64],*retstr,*hexstr; uint8_t script[512]; int32_t weeki,scriptlen; cJSON *argjson,*retjson,*array,*item; uint32_t timestamp; bits256 txid,sendtxid; uint64_t amount64;
     if ( strcmp(coin->symbol,"KMD") != 0 )
@@ -116,7 +116,7 @@ char *LP_deposit_create(struct iguana_info *coin,int32_t weeks,double amount,int
     return(clonestr("{\"error\":\"error with LP_withdraw for zeroconf deposit\"}"));
 }
 
-char *LP_deposit_claim(struct iguana_info *coin,char *depositaddr,uint32_t expiration)
+char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expiration)
 {
     static void *ctx;
     uint8_t redeemscript[512],userdata[64]; char vinaddr[64],str[65],*signedtx=0; uint32_t timestamp,now,redeemlen; int32_t i,n,height,utxovout,userdatalen; bits256 signedtxid,utxotxid,sendtxid; int64_t sum,destamount,satoshis; cJSON *array,*item,*txids,*retjson;

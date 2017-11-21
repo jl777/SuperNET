@@ -146,8 +146,8 @@ bot_settings(botid, newprice, newvolume)\n\
 bot_status(botid)\n\
 bot_stop(botid)\n\
 bot_pause(botid)\n\
-deposit_create(weeks, amount, broadcast=0)\n\
-deposit_claim(address, expiration=0)\n\
+zeroconf_deposit(weeks, amount, broadcast=0)\n\
+zeroconf_claim(address, expiration=0)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
@@ -184,23 +184,23 @@ deposit_claim(address, expiration=0)\n\
                 return(jprint(retjson,1));
             }
         }
-        else if ( strcmp(method,"deposit_create") == 0 )
+        else if ( strcmp(method,"zeroconf_deposit") == 0 )
         {
             if ( (ptr= LP_coinsearch("KMD")) != 0 )
             {
                 if ( jint(argjson,"weeks") < 0 || jdouble(argjson,"amount") < 10. )
                     return(clonestr("{\"error\":\"deposit_create needs to have weeks and amount\"}"));
-                else return(LP_deposit_create(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jint(argjson,"broadcast")));
+                else return(LP_zeroconf_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jint(argjson,"broadcast")));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
-        else if ( strcmp(method,"deposit_claim") == 0 )
+        else if ( strcmp(method,"zeroconf_claim") == 0 )
         {
             if ( (ptr= LP_coinsearch("KMD")) != 0 )
             {
                 if ( jstr(argjson,"address") == 0  )
                     return(clonestr("{\"error\":\"deposit_claim needs to have address\"}"));
-                else return(LP_deposit_claim(ptr,jstr(argjson,"address"),juint(argjson,"expiration")));
+                else return(LP_zeroconf_claim(ptr,jstr(argjson,"address"),juint(argjson,"expiration")));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
