@@ -330,7 +330,7 @@ uint64_t LP_unspents_load(char *symbol,char *addr)
                         balance += j64bits(item,"value");
                     }
                 }
-                electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1);
+                electrum_process_array(coin,coin->electrum,addr,retjson,1);
                 free_json(retjson);
             }
             free(arraystr);

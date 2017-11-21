@@ -560,9 +560,9 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     }
     else
     {
-        if ( strcmp(coin->smartaddr,coinaddr) == 0 )
+        //if ( strcmp(coin->smartaddr,coinaddr) == 0 )
             balance = LP_unspents_load(coin->symbol,coinaddr);
-        else
+        /*else
         {
             if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
             {
@@ -576,7 +576,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
                 }
                 free_json(array);
             }
-        }
+        }*/
     }
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
