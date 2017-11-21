@@ -658,7 +658,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         now = (uint32_t)time(NULL);
-        if ( didzeroconf == 0 && strcmp("KMD",coin->symbol) == 0 )
+        if ( coin->inactive == 0 && didzeroconf == 0 && strcmp("KMD",coin->symbol) == 0 )
         {
             LP_zeroconf_deposits(coin);
             didzeroconf = now;

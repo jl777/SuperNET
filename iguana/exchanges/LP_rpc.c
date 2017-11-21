@@ -657,7 +657,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
-    //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
+    printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
     if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
@@ -682,7 +682,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
     {
         if ( coin->electrum != 0 )
         {
-            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1)) != 0 )
+            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,fullflag)) != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
                 //printf("LP_listunspent_issue.%s %s.%d %s\n",symbol,coinaddr,n,jprint(retjson,0));
@@ -690,17 +690,8 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
         }
         else
         {
-            if ( strcmp(coin->smartaddr,coinaddr) == 0 )
-            {
-                retjson = LP_listunspent(symbol,coinaddr);
-                coin->numutxos = cJSON_GetArraySize(retjson);
-                //printf("SELF_LISTUNSPENT.(%s %s)\n",symbol,coinaddr);
-            }
-            else if ( IAMLP == 0 )
-            {
-                //printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
-                LP_listunspent_query(coin->symbol,coinaddr);
-            }
+            retjson = LP_listunspent(symbol,coinaddr);
+            coin->numutxos = cJSON_GetArraySize(retjson);
             if ( retjson != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
