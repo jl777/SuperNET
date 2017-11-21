@@ -30,7 +30,7 @@ int32_t LP_deposit_addr(char *p2shaddr,uint8_t *script,uint8_t taddr,uint8_t p2s
 
 char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,int32_t broadcast)
 {
-    char p2shaddr[64],*retstr,*hexstr; uint8_t script[512]; int32_t weeki,scriptlen; cJSON *argjson,*retjson,*array,*item; uint32_t timestamp; bits256 txid,sendtxid; uint64_t amount64;
+    char p2shaddr[64],*retstr,*hexstr; uint8_t script[512]; int32_t weeki,scriptlen; cJSON *argjson,*retjson,*array,*item,*obj; uint32_t timestamp; bits256 txid,sendtxid; uint64_t amount64;
     if ( strcmp(coin->symbol,"KMD") != 0 )
         return(clonestr("{\"error\":\"zeroconf deposit must be in KMD\"}"));
     if ( amount < 10.0 )
@@ -68,7 +68,7 @@ char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,i
                 jdelete(retjson,"result");
             jaddstr(retjson,"address",p2shaddr);
             jaddnum(retjson,"expiration",timestamp);
-            if ( jint(retjson,"complete") > 0 && (hexstr= jstr(retjson,"hex")) != 0 )
+            if ( (obj= jobj(retjson,"complete")) != 0 && is_cJSON_True(obj) != 0 && (hexstr= jstr(retjson,"hex")) != 0 )
             {
                 txid = jbits256(retjson,"txid");
                 if ( broadcast != 0 )

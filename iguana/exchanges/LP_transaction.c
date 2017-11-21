@@ -420,7 +420,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
         //printf(" scriptlen.%d\n",scriptlen);
         //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         sigtxid = bitcoin_sigtxid(symbol,taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,sighash,vpnstr,suppress_pubkeys,zcash);
-        printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
+        //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         if ( bits256_nonz(sigtxid) != 0 )
         {
             vp = &V[vini];
@@ -461,14 +461,14 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
                 {
                     flag++;
                     numsigs++;
-                    int32_t z; char tmpaddr[64];
+                    /*int32_t z; char tmpaddr[64];
                     for (z=0; z<siglen-1; z++)
                         printf("%02x",sig[z]);
                     printf(" <- sig[%d]\n",j);
                     for (z=0; z<33; z++)
                         printf("%02x",vp->signers[j].pubkey[z]);
                     bitcoin_address(tmpaddr,0,0,vp->signers[j].pubkey,33);
-                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);
+                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);*/
                 }
             }
             if ( numsigs >= vp->M )
@@ -731,7 +731,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     jaddstr(retjson,"error","interpreter rejects tx");
                 else complete = 1;
                 jadd(retjson,"interpreter",log);
-                jaddnum(retjson,"complete",complete);
+                jadd(retjson,"complete",complete!=0?jtrue():jfalse());
                 free(serialized), free(serialized2);
                 if ( signedtx != 0 )
                     free(signedtx);

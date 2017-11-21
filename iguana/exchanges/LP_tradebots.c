@@ -195,7 +195,7 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
     jadd(json,"trades",array);
     if ( bot->basesum > SMALLVAL && bot->relsum > SMALLVAL && bot->completed > 0 )
     {
-        jaddnum(json,"completed",bot->completed);
+        jadd(json,"complete",bot->completed!=0?jtrue():jfalse());
         jaddnum(json,"percentage",100. * (bot->relsum / bot->totalrelvolume));
         if ( bot->dispdir > 0 )
         {
