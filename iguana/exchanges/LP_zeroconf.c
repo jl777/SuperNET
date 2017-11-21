@@ -68,6 +68,7 @@ char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,i
                 jdelete(retjson,"result");
             jaddstr(retjson,"address",p2shaddr);
             jaddnum(retjson,"expiration",timestamp);
+            jaddnum(retjson,"deposit",amount);
             if ( (obj= jobj(retjson,"complete")) != 0 && is_cJSON_True(obj) != 0 && (hexstr= jstr(retjson,"hex")) != 0 )
             {
                 txid = jbits256(retjson,"txid");

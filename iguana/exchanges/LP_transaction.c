@@ -980,8 +980,9 @@ cJSON *LP_inputjson(bits256 txid,int32_t vout,char *spendscriptstr)
 uint64_t _komodo_interestnew(uint64_t nValue,uint32_t nLockTime,uint32_t tiptime)
 {
     int32_t minutes; uint64_t interest = 0;
-    if ( (minutes= (tiptime - nLockTime) / 60) >= 60 )
+    if ( tiptime > nLockTime && (minutes= (tiptime - nLockTime) / 60) >= 60 )
     {
+        //minutes.71582779 tiptime.1511292969 locktime.1511293505
         printf("minutes.%d tiptime.%u locktime.%u\n",minutes,tiptime,nLockTime);
         if ( minutes > 365 * 24 * 60 )
             minutes = 365 * 24 * 60;
