@@ -191,7 +191,7 @@ void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2s
 
 void LP_zeroconf_deposits(struct iguana_info *coin)
 {
-    cJSON *array,*item,*txjson,*vouts,*v; int32_t i,n,numvouts,height,vout,weeki; bits256 txid; char destaddr[64],p2shaddr[64]; int64_t satoshis,amount64;
+    cJSON *array,*item,*txjson,*vouts,*v,*txobj; int32_t i,n,numvouts,height,vout,weeki; bits256 txid; char destaddr[64],p2shaddr[64]; int64_t satoshis,amount64;
     if ( (array= LP_listunspent("KMD",BOTS_BONDADDRESS)) != 0 )
     {
         //printf("ZEROCONF.(%s)\n",jprint(array,0));
@@ -211,7 +211,12 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                             v = jitem(vouts,0);
                             satoshis = LP_value_extract(v,0);
                             if ( LP_destaddr(p2shaddr,v) == 0 )
+                            {
+                                if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) == 0 )
+                                    continue;
+                                else free_json(txobj);
                                 LP_zeroconf_credit(destaddr,satoshis,weeki,p2shaddr);
+                            }
                             /*if ( (sobj= jobj(v,"scriptPubKey")) != 0 )
                             {
                                 if ( (scriptstr= jstr(sobj,"hex")) != 0 )
