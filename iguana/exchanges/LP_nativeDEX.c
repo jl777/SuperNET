@@ -27,7 +27,7 @@
 // waiting for alice and alice disconnects
 // MNZ getcoin strangeness
 // portfolio value based on ask?
-// listunspent triplicate, tradebot timeslice?
+// listunspent triplicate, tradebot timeslice? the tradebot timeslice is just getting too much timeslices
 // disable basilisk
 // verify encrypted destpubkey, broadcast:0 setprice
 

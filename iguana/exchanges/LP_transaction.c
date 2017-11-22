@@ -604,12 +604,12 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
                 sighash = LP_sighash(symbol,zcash);
                 if ( (complete= bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,sighash,1,V->suppress_pubkeys,zcash)) > 0 && signedtx != 0 )
                 {
-                    int32_t tmp; //char str[65];
+                    /*int32_t tmp; //char str[65];
                     if ( (tmp= iguana_interpreter(ctx,cJSON_CreateArray(),iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
                     {
                         printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
                         complete = 0;
-                    } else printf("interpreter passed\n");
+                    } else printf("interpreter passed\n");*/
                 } else printf("complete.%d\n",complete);
             } else printf("rwmsgtx error\n");
         } else printf("no inputs in vins.(%s)\n",vins!=0?jprint(vins,0):"null");
