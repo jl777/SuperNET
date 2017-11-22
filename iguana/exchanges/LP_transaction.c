@@ -1231,7 +1231,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     
     ignore_cltverr = 0;
     suppress_pubkeys = 1;
-    scriptlen = bitcoin_pubkeyspend(script,0,G.LP_pubsecp);
+    scriptlen = bitcoin_standardspend(script,0,G.LP_myrmd160);
     numvins = LP_vins_select(ctx,coin,&total,amount,V,utxos,numutxos,suppress_pubkeys,ignore_cltverr,privkey,privkeys,vins,script,scriptlen,utxotxid,utxovout,dustcombine);
     if ( numvins <= 0 || total < amount )
     {

@@ -202,6 +202,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                     {
                         if ( (vouts= jarray(&numvouts,txjson,"vout")) > 0 )
                         {
+                            // get pubkey from vout.2
                             v = jitem(vouts,0);
                             satoshis = LP_value_extract(v,0);
                             if ( (sobj= jobj(v,"scriptPubKey")) != 0 )
