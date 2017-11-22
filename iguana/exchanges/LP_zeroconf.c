@@ -62,7 +62,7 @@ char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,i
     jaddnum(item,coin->smartaddr,0.0001);
     jaddi(array,item);
     jadd(argjson,"outputs",array);
-    printf("deposit.(%s)\n",jprint(argjson,0));
+    //printf("deposit.(%s)\n",jprint(argjson,0));
     if ( (retstr= LP_withdraw(coin,argjson)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -196,7 +196,7 @@ void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2s
     if ( coin != 0 )
     {
         timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
-        if ( (ap= LP_address(coin,coinaddr)) != 0 )
+        if ( time(NULL) < timestamp-24*3600 && (ap= LP_address(coin,coinaddr)) != 0 )
         {
             ap->zeroconf_credits += satoshis;
             printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
@@ -232,29 +232,6 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                                 else free_json(txobj);
                                 LP_zeroconf_credit(destaddr,satoshis,weeki,p2shaddr);
                             }
-                            /*if ( (sobj= jobj(v,"scriptPubKey")) != 0 )
-                            {
-                                if ( (scriptstr= jstr(sobj,"hex")) != 0 )
-                                {
-                                    printf("amount64 %.8f vout.%d (%s) weeki.%d %.8f (%s)\n",dstr(amount64),vout,jprint(v,0),weeki,dstr(satoshis),scriptstr);
-                                    len = (int32_t)strlen(scriptstr) >> 1;
-                                    if ( len <= sizeof(spendscript)/sizeof(*spendscript) )
-                                    {
-                                        decode_hex(spendscript,len,scriptstr);
-                                        if ( spendscript[11] == 33 )
-                                        {
-                                            pub33 = &spendscript[12];
-                                            redeemlen = LP_deposit_addr(p2shaddr,redeemscript,coin->taddr,coin->p2shtype,timestamp,pub33);
-                                            if ( len == redeemlen && (timestamp % LP_WEEKMULT) == 0 )
-                                            {
-                                                bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pub33,33);
-                                                printf("%s -> matched %s script t.%u weeki.%d deposit %.8f\n",coinaddr,p2shaddr,timestamp,(timestamp-LP_FIRSTWEEKTIME)/LP_WEEKMULT,dstr(satoshis));
-                                                // add to pubp->credits;
-                                            }
-                                        }
-                                    }
-                                }
-                            }*/
                         }
                     }
                 }
@@ -264,7 +241,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
     }
 }
 
-int32_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
+int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
 {
     struct LP_pubswap *ptr,*tmp; struct LP_swapstats *sp; struct LP_pubkey_info *pubp; struct LP_address *ap; char coinaddr[64]; struct iguana_info *coin; int64_t swaps_kmdvalue = 0;
     if ( (coin= LP_coinfind("KMD")) != 0 && (pubp= LP_pubkeyfind(pubkey)) != 0 )
@@ -283,7 +260,7 @@ int32_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
             }
             printf("credits %.8f vs (%.8f + current %.8f)\n",dstr(ap->zeroconf_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
             if ( ap->zeroconf_credits > swaps_kmdvalue+kmdvalue )
-                return(1);
+                return(ap->zeroconf_credits - (swaps_kmdvalue+kmdvalue));
         }
     }
     return(0);
