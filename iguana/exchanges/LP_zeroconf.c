@@ -154,7 +154,7 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
                     {
                         item = jitem(array,i);
                         satoshis = LP_listunspent_parseitem(coin,&utxotxid,&utxovout,&height,item);
-                        if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,0,"zeroconfclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0xffffffff,0,&destamount,satoshis-coin->txfee,coin->smartaddr,vinaddr,0,coin->zcash)) != 0 )
+                        if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,0,"zeroconfclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0xffffffff,0,&destamount,satoshis-coin->txfee,coin->smartaddr,vinaddr,1,coin->zcash)) != 0 )
                         {
                             sendtxid = LP_broadcast("claim","KMD",signedtx,signedtxid);
                             if ( bits256_cmp(sendtxid,signedtxid) == 0 )
@@ -181,31 +181,37 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
     return(clonestr("{\"error\":\"no zeroconf deposits to claim\"}"));
 }
 
+void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2shaddr)
+{
+    uint32_t timestamp;
+    timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
+    printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s)\n",coinaddr,dstr(satoshis),weeki,p2shaddr);
+}
+
 void LP_zeroconf_deposits(struct iguana_info *coin)
 {
-    cJSON *array,*item,*txjson,*vouts,*v,*sobj; uint32_t timestamp; int32_t i,n,redeemlen,len,numvouts,height,vout,weeki; bits256 txid; char *scriptstr,coinaddr[64],p2shaddr[64]; int64_t satoshis,amount64; uint8_t redeemscript[512],spendscript[512],*pub33;
+    cJSON *array,*item,*txjson,*vouts,*v; int32_t i,n,numvouts,height,vout,weeki; bits256 txid; char destaddr[64],p2shaddr[64]; int64_t satoshis,amount64;
     if ( (array= LP_listunspent("KMD",BOTS_BONDADDRESS)) != 0 )
     {
-        printf("ZEROCONF.(%s)\n",jprint(array,0));
+        //printf("ZEROCONF.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
                 amount64 = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
-                printf("amount64 %.8f vout.%d (%s)\n",dstr(amount64),vout,jprint(item,0));
                 if ( vout == 1 )
                 {
                     weeki = (amount64 % 10000);
-                    timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
                     if ( weeki >= 0 && (txjson= LP_gettx(coin->symbol,txid)) != 0 )
                     {
-                        if ( (vouts= jarray(&numvouts,txjson,"vout")) > 0 )
+                        if ( (vouts= jarray(&numvouts,txjson,"vout")) > 0 && numvouts >= 3 && LP_destaddr(destaddr,jitem(vouts,2)) == 0 )
                         {
-                            // get pubkey from vout.2
                             v = jitem(vouts,0);
                             satoshis = LP_value_extract(v,0);
-                            if ( (sobj= jobj(v,"scriptPubKey")) != 0 )
+                            if ( LP_destaddr(p2shaddr,v) == 0 )
+                                LP_zeroconf_credit(destaddr,satoshis,weeki,p2shaddr);
+                            /*if ( (sobj= jobj(v,"scriptPubKey")) != 0 )
                             {
                                 if ( (scriptstr= jstr(sobj,"hex")) != 0 )
                                 {
@@ -227,7 +233,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                                         }
                                     }
                                 }
-                            }
+                            }*/
                         }
                     }
                 }

@@ -28,6 +28,7 @@
 // MNZ getcoin strangeness
 // portfolio value based on ask?
 // listunspent triplicate
+// disable basilisk
 // verify encrypted destpubkey, broadcast:0 setprice
 
 // improve critical section detection when parallel trades
