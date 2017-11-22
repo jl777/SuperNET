@@ -24,6 +24,21 @@
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // bugs, validations:
+/*Buyer Payment    08ccac7534dc6aad0139b7dd6a78344d309fbc6bff27f2fba7c8f178f5d309a0
+
+Seller Payment    f876412f3dc637998b099b05ae0fe3e769e5adafcb49ef156be9f7749f2e3071
+
+Quote ID    2681103143
+Request ID    301413467
+Trade id    3567859514*/
+/*KMD.(electrum2.cipig.net:10001) already an electrum server
+KMD.(electrum1.cipig.net:10001) already an electrum server
+bindflag.0 iguana_socket mismatch (18.216.195.109) -> (electrum1.cipig.net)
+RECONNECT ep.0x7f46950fbbd0 KMD numerrors.32 too big -> new electrum1.cipig.net:10001 sock.110
+KMD.(electrum2.cipig.net:10001) already an electrum server
+KMD.(electrum1.cipig.net:10001) already an electrum server
+KMD.(electrum2.cipig.net:10001) already an electrum server
+KMD.(electrum1.cipig.net:10001) already an electrum serve*/
 // waiting for alice and alice disconnects
 // MNZ getcoin strangeness
 // portfolio value based on ask?
