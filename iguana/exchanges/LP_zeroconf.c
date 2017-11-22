@@ -196,7 +196,7 @@ void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2s
     if ( coin != 0 )
     {
         timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
-        if ( time(NULL) < timestamp-24*3600 && (ap= LP_address(coin,coinaddr)) != 0 )
+        if (  (ap= LP_address(coin,coinaddr)) != 0 ) //time(NULL) < timestamp-24*3600 &&
         {
             ap->zeroconf_credits += satoshis;
             printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
@@ -219,6 +219,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                 if ( vout == 1 )
                 {
                     weeki = (amount64 % 10000);
+                    printf("weeki.%d %.8f %s\n",weeki,dstr(amount64),jprint(item,0));
                     if ( weeki >= 0 && (txjson= LP_gettx(coin->symbol,txid)) != 0 )
                     {
                         if ( (vouts= jarray(&numvouts,txjson,"vout")) > 0 && numvouts >= 3 && LP_destaddr(destaddr,jitem(vouts,2)) == 0 )
