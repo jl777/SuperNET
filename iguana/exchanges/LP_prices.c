@@ -750,7 +750,7 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
         jaddnum(item,"depth",dstr(op->depth)*0.8);
         jaddbits256(item,"pubkey",op->pubkey);
         jaddnum(item,"age",time(NULL)-op->timestamp);
-        jaddnum(item,"netcredits",dstr(LP_dynamictrust(op->pubkey,0));
+        jaddnum(item,"zcredits",dstr(LP_dynamictrust(op->pubkey,0)));
     }
     return(item);
 }
