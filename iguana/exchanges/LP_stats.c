@@ -306,7 +306,6 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 strcpy(sp->alicegui,"nogui");
                 if ( sp->finished == 0 && sp->expired == 0 )
                 {
-                    printf("add RT\n");
                     if ( (pubp= LP_pubkeyadd(sp->Q.srchash)) != 0 )
                     {
                         ptr = calloc(1,sizeof(*ptr));
@@ -319,9 +318,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                         ptr->swap = sp;
                         DL_APPEND(pubp->aliceswaps,ptr);
                     }
-                } else printf("add completed\n");
-                //LP_swapstats_line(numtrades,basevols,relvols,line,sp);
-                //printf("%s\n",line);
+                }
             } else printf("unexpected LP_swapstats_add failure\n");
         }
         if ( sp != 0 )
@@ -412,7 +409,7 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
         LP_stats_dispiter(array,sp,starttime,endtime,refbase,refrel,refgui,refpubkey);
         LP_swapscount++;
     }
-    printf("RT.%d completed.%d\n",LP_RTcount,LP_swapscount);
+    //printf("RT.%d completed.%d\n",LP_RTcount,LP_swapscount);
     jadd(retjson,"swaps",array);
     jaddnum(retjson,"RTcount",LP_RTcount);
     jaddnum(retjson,"swapscount",LP_swapscount);
