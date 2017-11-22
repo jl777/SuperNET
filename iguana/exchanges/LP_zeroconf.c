@@ -195,7 +195,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                 {
                     weeki = (amount64 % 10000);
                     timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
-                    if ( weeki > 0 && (txjson= LP_gettx(coin->symbol,txid)) != 0 )
+                    if ( weeki >= 0 && (txjson= LP_gettx(coin->symbol,txid)) != 0 )
                     {
                         if ( (vouts= jarray(&numvouts,txjson,"vout")) > 0 )
                         {
@@ -205,6 +205,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                             {
                                 if ( (scriptstr= jstr(sobj,"hex")) != 0 )
                                 {
+                                    printf("amount64 %.8f vout.%d (%s) weeki.%d %.8f (%s)\n",dstr(amount64),vout,jprint(v,0),weeki,dstr(satoshis),scriptstr);
                                     len = (int32_t)strlen(scriptstr) >> 1;
                                     if ( len <= sizeof(spendscript)/sizeof(*spendscript) )
                                     {
