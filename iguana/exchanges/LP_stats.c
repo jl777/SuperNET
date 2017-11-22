@@ -362,7 +362,7 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 char *LP_swapstatus_recv(cJSON *argjson)
 {
     struct LP_swapstats *sp; int32_t methodind;
-    printf("swapstatus.(%s)\n",jprint(argjson,0));
+    //printf("swapstatus.(%s)\n",jprint(argjson,0));
     if ( (sp= LP_swapstats_find(j64bits(argjson,"aliceid"))) != 0 )
     {
         sp->lasttime = (uint32_t)time(NULL);
@@ -380,7 +380,7 @@ char *LP_swapstatus_recv(cJSON *argjson)
 char *LP_gettradestatus(uint64_t aliceid)
 {
     struct LP_swapstats *sp; cJSON *reqjson; bits256 zero;
-    printf("gettradestatus.(%llu)\n",(long long)aliceid);
+    //printf("gettradestatus.(%llu)\n",(long long)aliceid);
     if ( (sp= LP_swapstats_find(aliceid)) != 0 && time(NULL) > sp->lasttime+60 )
     {
         if ( (reqjson= LP_swapstats_json(sp)) != 0 )
