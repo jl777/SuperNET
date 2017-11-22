@@ -460,6 +460,7 @@ void LP_ohlc_update(struct LP_ohlc *bar,uint32_t timestamp,double basevol,double
         bar->basesum += basevol;
         bar->relsum += relvol;
         bar->numtrades++;
+        printf("%d %.8f/%.8f -> %.8f\n",bar->numtrades,basevol,relvol,price);
     }
 }
 
@@ -484,7 +485,7 @@ cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,i
             for (i=0; i<n; i++)
             {
                 item = jitem(swaps,i);
-                if ( (timestamp= juint(item,"quotetime")) != 0 && timestamp >= starttime && timestamp <= endtime )
+                if ( (timestamp= juint(item,"timestamp")) != 0 && timestamp >= starttime && timestamp <= endtime )
                 {
                     bari = (timestamp - starttime) / timescale;
                     LP_ohlc_update(&bars[bari],timestamp,jdouble(item,"basevol"),jdouble(item,"relvol"));
