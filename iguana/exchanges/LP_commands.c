@@ -303,19 +303,6 @@ zeroconf_claim(address, expiration=0)\n\
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
-            if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
-                return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
-            price = jdouble(argjson,"price");
-            if ( strcmp(method,"setprice") == 0 )
-            {
-                if ( LP_mypriceset(&changed,base,rel,price) < 0 )
-                    return(clonestr("{\"error\":\"couldnt set price\"}"));
-                //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
-                //    return(clonestr("{\"error\":\"couldnt set price\"}"));
-                else if ( jint(argjson,"broadcast") != 0 || jobj(argjson,"broadcast") == 0 )
-                    return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
-                else return(clonestr("{\"result\":\"success\"}"));
-            }
             else if ( strcmp(method,"pricearray") == 0 )
             {
                 uint32_t firsttime;
@@ -329,6 +316,19 @@ zeroconf_claim(address, expiration=0)\n\
             else if ( strcmp(method,"tradesarray") == 0 )
             {
                 return(jprint(LP_tradesarray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
+            }
+            if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
+                return(clonestr("{\"error\":\"at least one of coins disabled\"}"));
+            price = jdouble(argjson,"price");
+            if ( strcmp(method,"setprice") == 0 )
+            {
+                if ( LP_mypriceset(&changed,base,rel,price) < 0 )
+                    return(clonestr("{\"error\":\"couldnt set price\"}"));
+                //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
+                //    return(clonestr("{\"error\":\"couldnt set price\"}"));
+                else if ( jint(argjson,"broadcast") != 0 || jobj(argjson,"broadcast") == 0 )
+                    return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
+                else return(clonestr("{\"result\":\"success\"}"));
             }
             else if ( strcmp(method,"orderbook") == 0 )
                 return(LP_orderbook(base,rel,jint(argjson,"duration")));
