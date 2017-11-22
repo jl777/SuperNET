@@ -20,7 +20,7 @@
 
 #define LP_STATSLOG_FNAME "stats.log"
 
-struct LP_swapstats *LP_swapstats;
+struct LP_swapstats *LP_swapstats,*LP_RTstats;
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj);
 
 char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "connected", "tradestatus" };
@@ -114,18 +114,22 @@ int32_t LP_statslog_parse()
 struct LP_swapstats *LP_swapstats_find(uint64_t aliceid)
 {
     struct LP_swapstats *sp;
-    HASH_FIND(hh,LP_swapstats,&aliceid,sizeof(aliceid),sp);
+    HASH_FIND(hh,LP_RTstats,&aliceid,sizeof(aliceid),sp);
+    if ( sp == 0 )
+        HASH_FIND(hh,LP_swapstats,&aliceid,sizeof(aliceid),sp);
     return(sp);
 }
 
-struct LP_swapstats *LP_swapstats_add(uint64_t aliceid)
+struct LP_swapstats *LP_swapstats_add(uint64_t aliceid,int32_t RTflag)
 {
     struct LP_swapstats *sp;
     if ( (sp= LP_swapstats_find(aliceid)) == 0 )
     {
         sp = calloc(1,sizeof(*sp));
         sp->aliceid = aliceid;
-        HASH_ADD(hh,LP_swapstats,aliceid,sizeof(aliceid),sp);
+        if ( RTflag != 0 )
+            HASH_ADD(hh,LP_RTstats,aliceid,sizeof(aliceid),sp);
+        else HASH_ADD(hh,LP_swapstats,aliceid,sizeof(aliceid),sp);
     }
     return(LP_swapstats_find(aliceid));
 }
@@ -206,7 +210,7 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
     static uint32_t unexpected;
-    struct LP_swapstats *sp,*tmp; struct LP_pubkey_info *pubp; struct LP_pubswap *ptr; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    struct LP_swapstats *sp,*tmp; struct LP_pubkey_info *pubp; struct LP_pubswap *ptr; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,RTflag,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *statusstr,*gui,*base,*rel; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     memset(numtrades,0,sizeof(numtrades));
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
@@ -274,6 +278,9 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         destvout = jint(lineobj,"destvout");
         feetxid = jbits256(lineobj,"feetxid");
         feevout = jint(lineobj,"feevout");
+        if ( (statusstr= jstr(lineobj,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
+            RTflag = 0;
+        else RTflag = 1;
         qprice = ((double)destsatoshis / (satoshis - txfee));
         //printf("%s/v%d %s/v%d\n",bits256_str(str,desttxid),destvout,bits256_str(str2,feetxid),feevout);
         aliceid =  LP_aliceid_calc(desttxid,destvout,feetxid,feevout);
@@ -289,7 +296,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         }
         else
         {
-            if ( (sp= LP_swapstats_add(aliceid)) != 0 )
+            if ( (sp= LP_swapstats_add(aliceid,RTflag)) != 0 )
             {
                 sp->Q = Q;
                 sp->qprice = qprice;
@@ -297,17 +304,20 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 sp->ind = LP_aliceids++;
                 strcpy(sp->bobgui,"nogui");
                 strcpy(sp->alicegui,"nogui");
-                if ( (pubp= LP_pubkeyadd(sp->Q.srchash)) != 0 )
+                if ( sp->finished == 0 && sp->expired == 0 )
                 {
-                    ptr = calloc(1,sizeof(*ptr));
-                    ptr->swap = sp;
-                    DL_APPEND(pubp->bobswaps,ptr);
-                }
-                if ( (pubp= LP_pubkeyadd(sp->Q.desthash)) != 0 )
-                {
-                    ptr = calloc(1,sizeof(*ptr));
-                    ptr->swap = sp;
-                    DL_APPEND(pubp->aliceswaps,ptr);
+                    if ( (pubp= LP_pubkeyadd(sp->Q.srchash)) != 0 )
+                    {
+                        ptr = calloc(1,sizeof(*ptr));
+                        ptr->swap = sp;
+                        DL_APPEND(pubp->bobswaps,ptr);
+                    }
+                    if ( (pubp= LP_pubkeyadd(sp->Q.desthash)) != 0 )
+                    {
+                        ptr = calloc(1,sizeof(*ptr));
+                        ptr->swap = sp;
+                        DL_APPEND(pubp->aliceswaps,ptr);
+                    }
                 }
                 //LP_swapstats_line(numtrades,basevols,relvols,line,sp);
                 //printf("%s\n",line);
@@ -326,9 +336,57 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     return(duplicate == 0);
 }
 
+int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttime,uint32_t endtime,char *refbase,char *refrel,char *refgui,bits256 refpubkey)
+{
+    int32_t dispflag,retval = 0; cJSON *item;
+    if ( sp->finished == 0 && sp->expired == 0 && time(NULL) > sp->Q.timestamp+LP_atomic_locktime(sp->Q.srccoin,sp->Q.destcoin)*2 )
+        sp->expired = (uint32_t)time(NULL);
+    if ( sp->finished != 0 || sp->expired != 0 )
+        retval = 1;
+    dispflag = 0;
+    if ( starttime == 0 && endtime == 0 )
+        dispflag = 1;
+    else if ( starttime > time(NULL) && endtime == starttime && sp->finished == 0 && sp->expired == 0 )
+        dispflag = 1;
+    else if ( sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime )
+        dispflag = 1;
+    if ( refbase != 0 && strcmp(refbase,sp->Q.srccoin) != 0 && strcmp(refbase,sp->Q.destcoin) != 0 )
+        dispflag = 0;
+    if ( refrel != 0 && strcmp(refrel,sp->Q.srccoin) != 0 && strcmp(refrel,sp->Q.destcoin) != 0 )
+        dispflag = 0;
+    if ( dispflag != 0 )
+    {
+        dispflag = 0;
+        if ( refgui == 0 || refgui[0] == 0 || strcmp(refgui,sp->bobgui) == 0 || strcmp(refgui,sp->alicegui) == 0 )
+        {
+            if ( bits256_nonz(refpubkey) == 0 || bits256_cmp(refpubkey,sp->Q.srchash) == 0 || bits256_cmp(refpubkey,sp->Q.desthash) == 0 )
+                dispflag = 1;
+        }
+    }
+    if ( dispflag != 0 )
+    {
+        //LP_swapstats_line(numtrades,basevols,relvols,line,sp);
+        item = cJSON_CreateObject();
+        jaddnum(item,"timestamp",sp->Q.timestamp);
+        jadd64bits(item,"aliceid",sp->aliceid);
+        jaddbits256(item,"src",sp->Q.srchash);
+        jaddstr(item,"base",sp->Q.srccoin);
+        jaddnum(item,"basevol",dstr(sp->Q.satoshis));
+        jaddbits256(item,"dest",sp->Q.desthash);
+        jaddstr(item,"rel",sp->Q.destcoin);
+        jaddnum(item,"relvol",dstr(sp->Q.destsatoshis));
+        jaddnum(item,"price",sp->qprice);
+        jaddnum(item,"requestid",sp->Q.R.requestid);
+        jaddnum(item,"quoteid",sp->Q.R.quoteid);
+        //jaddstr(item,"line",line);
+        jaddi(array,item);
+    }
+    return(retval);
+}
+
 cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey,char *refbase,char *refrel)
 {
-    cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i,n,dispflag,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i,n,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     if ( starttime > endtime )
         starttime = endtime;
     n = LP_statslog_parse();
@@ -339,48 +397,19 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"newlines",n);
     array = cJSON_CreateArray();
+    LP_RTcount = LP_swapscount = 0;
+    HASH_ITER(hh,LP_RTstats,sp,tmp)
+    {
+        if ( LP_stats_dispiter(array,sp,starttime,endtime,refbase,refrel,refgui,refpubkey) > 0 )
+        {
+            HASH_DELETE(hh,LP_RTstats,sp);
+            HASH_ADD(hh,LP_swapstats,aliceid,sizeof(sp->aliceid),sp);
+        } else LP_RTcount++;
+    }
     HASH_ITER(hh,LP_swapstats,sp,tmp)
     {
-        if ( sp->finished == 0 && time(NULL) > sp->Q.timestamp+LP_atomic_locktime(sp->Q.srccoin,sp->Q.destcoin)*2 )
-            sp->expired = (uint32_t)time(NULL);
-        dispflag = 0;
-        if ( starttime == 0 && endtime == 0 )
-            dispflag = 1;
-        else if ( starttime > time(NULL) && endtime == starttime && sp->finished == 0 && sp->expired == 0 )
-            dispflag = 1;
-        else if ( sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime )
-            dispflag = 1;
-        if ( refbase != 0 && strcmp(refbase,sp->Q.srccoin) != 0 && strcmp(refbase,sp->Q.destcoin) != 0 )
-            dispflag = 0;
-        if ( refrel != 0 && strcmp(refrel,sp->Q.srccoin) != 0 && strcmp(refrel,sp->Q.destcoin) != 0 )
-            dispflag = 0;
-        if ( dispflag != 0 )
-        {
-            dispflag = 0;
-            if ( refgui == 0 || refgui[0] == 0 || strcmp(refgui,sp->bobgui) == 0 || strcmp(refgui,sp->alicegui) == 0 )
-            {
-                if ( bits256_nonz(refpubkey) == 0 || bits256_cmp(refpubkey,sp->Q.srchash) == 0 || bits256_cmp(refpubkey,sp->Q.desthash) == 0 )
-                    dispflag = 1;
-            }
-        }
-        if ( dispflag != 0 )
-        {
-            //LP_swapstats_line(numtrades,basevols,relvols,line,sp);
-            item = cJSON_CreateObject();
-            jaddnum(item,"timestamp",sp->Q.timestamp);
-            jadd64bits(item,"aliceid",sp->aliceid);
-            jaddbits256(item,"src",sp->Q.srchash);
-            jaddstr(item,"base",sp->Q.srccoin);
-            jaddnum(item,"basevol",dstr(sp->Q.satoshis));
-            jaddbits256(item,"dest",sp->Q.desthash);
-            jaddstr(item,"rel",sp->Q.destcoin);
-            jaddnum(item,"relvol",dstr(sp->Q.destsatoshis));
-            jaddnum(item,"price",sp->qprice);
-            jaddnum(item,"requestid",sp->Q.R.requestid);
-            jaddnum(item,"quoteid",sp->Q.R.quoteid);
-            //jaddstr(item,"line",line);
-            jaddi(array,item);
-        }
+        LP_stats_dispiter(array,sp,starttime,endtime,refbase,refrel,refgui,refpubkey);
+        LP_swapscount++;
     }
     jadd(retjson,"swaps",array);
     array = cJSON_CreateArray();

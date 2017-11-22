@@ -104,7 +104,7 @@ struct LP_address_utxo *LP_garbage_collector2;
 
 //uint32_t LP_deadman_switch;
 uint16_t LP_fixed_pairport,LP_publicport;
-uint32_t LP_lastnonce,LP_counter,LP_swap_endcritical,LP_swap_critical;
+uint32_t LP_lastnonce,LP_counter,LP_swap_endcritical,LP_swap_critical,LP_RTcount,LP_swapscount;
 int32_t LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;

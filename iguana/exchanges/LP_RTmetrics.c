@@ -149,7 +149,7 @@ void LP_RTmetrics_swapsinfo(char *refbase,char *refrel,cJSON *swaps,int32_t nums
     }
 }
 
-void LP_RTmetrics_init()
+/*void LP_RTmetrics_init()
 {
     struct LP_pubkey_info *pubp,*tmp; uint32_t futuretime; int32_t i,numswaps; bits256 pubkey,zero; cJSON *statsjson,*swaps;
     memset(&LP_RTmetrics,0,sizeof(LP_RTmetrics));
@@ -188,7 +188,9 @@ void LP_RTmetrics_init()
         }
     }
     //printf("%d pubkeys have pending swaps, whitelist.%d blacklist.%d avoidtxids.%d\n",LP_RTmetrics.numpendings,LP_RTmetrics.numwhitelist,LP_RTmetrics.numblacklist,LP_RTmetrics.numavoidtxids);
-}
+}*/
+
+
 
 double _LP_RTmetric_calc(struct LP_metricinfo *mp,double bestprice,double maxprice,double relvolume)
 {
