@@ -734,7 +734,7 @@ char *LP_bestfit(char *rel,double relvolume)
     if ( relvolume <= 0. || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
     if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * relvolume)) == 0 )
-        return(clonestr("{\"error\":\"cant find utxo that close enough in size\"}"));
+        return(clonestr("{\"error\":\"cant find utxo that is close enough in size\"}"));
     return(jprint(LP_utxojson(autxo),1));
 }
 
