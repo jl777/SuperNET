@@ -154,8 +154,9 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
                     {
                         item = jitem(array,i);
                         satoshis = LP_listunspent_parseitem(coin,&utxotxid,&utxovout,&height,item);
-                        if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,0,"zeroconfclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0xffffffff,0,&destamount,satoshis-coin->txfee,coin->smartaddr,vinaddr,1,coin->zcash)) != 0 )
+                        if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,0,"zeroconfclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,timestamp,0,&destamount,satoshis-coin->txfee,coin->smartaddr,vinaddr,1,coin->zcash)) != 0 )
                         {
+                            printf("signedtx.(%s)\n",signedtx);
                             sendtxid = LP_broadcast("claim","KMD",signedtx,signedtxid);
                             if ( bits256_cmp(sendtxid,signedtxid) == 0 )
                             {
