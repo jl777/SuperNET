@@ -118,7 +118,9 @@ void LP_RTmetrics_swapsinfo(char *refbase,char *refrel,cJSON *swaps,int32_t nums
             base = "";
         if ( (rel= jstr(item,"rel")) == 0 )
             rel = "";
-        if ( strcmp(base,refbase) != 0 && strcmp(base,refrel) != 0 && strcmp(rel,refbase) != 0 && strcmp(rel,refrel) != 0 )
+        if ( refbase[0] != 0 && strcmp(base,refbase) != 0 && strcmp(base,refrel) != 0 )
+            continue;
+        if ( refrel[0] != 0 && strcmp(rel,refbase) != 0 && strcmp(rel,refrel) != 0 )
             continue;
         aliceid = j64bits(item,"aliceid");
         basesatoshis = SATOSHIDEN * jdouble(item,"basevol");
@@ -147,9 +149,9 @@ void LP_RTmetrics_swapsinfo(char *refbase,char *refrel,cJSON *swaps,int32_t nums
     }
 }
 
-void LP_RTmetrics_update(char *base,char *rel)
+void LP_RTmetrics_init()
 {
-    struct LP_pubkeyinfo *pubp,*tmp; uint32_t futuretime; int32_t i,numswaps; bits256 pubkey,zero; cJSON *statsjson,*swaps;
+    struct LP_pubkey_info *pubp,*tmp; uint32_t futuretime; int32_t i,numswaps; bits256 pubkey,zero; cJSON *statsjson,*swaps;
     memset(&LP_RTmetrics,0,sizeof(LP_RTmetrics));
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
     {
@@ -167,7 +169,7 @@ void LP_RTmetrics_update(char *base,char *rel)
         {
             //printf("LP_RTmetrics_update for (%s)\n",jprint(swaps,0));
             if ( numswaps > 0 )
-                LP_RTmetrics_swapsinfo(base,rel,swaps,numswaps);
+                LP_RTmetrics_swapsinfo("","",swaps,numswaps);
         }
         free_json(statsjson);
     }

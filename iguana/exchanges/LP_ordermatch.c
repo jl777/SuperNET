@@ -614,7 +614,7 @@ char *LP_connectedalice(cJSON *argjson) // alice
         LP_aliceid(Q.tradeid,Q.aliceid,"error5",0,0);
         return(clonestr("{\"error\":\"no price set\"}"));
     }
-    LP_RTmetrics_update(Q.srccoin,Q.destcoin);
+    //LP_RTmetrics_update(Q.srccoin,Q.destcoin);
     printf("%s/%s bid %.8f ask %.8f values %.8f %.8f\n",Q.srccoin,Q.destcoin,bid,ask,dstr(butxo->payment.value),dstr(butxo->deposit.value));
     price = bid;
     if ( (coin= LP_coinfind(Q.destcoin)) == 0 )
@@ -908,7 +908,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 if ( counter > 3 || price > bestprice ) // skip if late or bad price
                     return(retval);
             } else return(retval);
-            LP_RTmetrics_update(Q.srccoin,Q.destcoin);
+            //LP_RTmetrics_update(Q.srccoin,Q.destcoin);
             if ( LP_RTmetrics_blacklisted(Q.desthash) >= 0 )
             {
                 printf("request from blacklisted %s, ignore\n",bits256_str(str,Q.desthash));
@@ -1020,7 +1020,7 @@ struct LP_utxoinfo *LP_ordermatch_iter(struct LP_address_utxo **utxos,int32_t ma
 
 struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,char *gui,bits256 *avoids,int32_t numavoids,bits256 destpubkey)
 {
-    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*asks,*rawasks,*item; int32_t maxiters,i,j,numasks,max; struct LP_address_utxo **utxos; double price; struct LP_pubkeyinfo *pubp; uint64_t asatoshis; struct iguana_info *basecoin; struct LP_utxoinfo *bestutxo = 0;
+    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*asks,*rawasks,*item; int32_t maxiters,i,j,numasks,max; struct LP_address_utxo **utxos; double price; struct LP_pubkey_info *pubp; uint64_t asatoshis; struct iguana_info *basecoin; struct LP_utxoinfo *bestutxo = 0;
     maxiters = 100;
     *ordermatchpricep = 0.;
     *bestsatoshisp = *bestdestsatoshisp = 0;
@@ -1182,7 +1182,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     LP_mypriceset(&changed,autxo->coin,base,1. / maxprice);
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid,destpubkey));
 #ifdef oldway
-    LP_RTmetrics_update(base,rel);
+    //LP_RTmetrics_update(base,rel);
     while ( 1 )
     {
         if ( (bestutxo= LP_buyutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,gui,pubkeys,numpubs,destpubkey)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )

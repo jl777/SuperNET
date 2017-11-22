@@ -28,9 +28,7 @@
 // MNZ getcoin strangeness
 // portfolio value based on ask?
 // listunspent triplicate
-// RTmetrics update from tradecommand
 // verify encrypted destpubkey, broadcast:0 setprice
-// [{"date":1405699200,"high":0.0045388,"low":0.00403001,"open":0.00404545,"close":0.00435873,"relvol":44.34555992,"basevol":10311.88079097,"aveprice":0.00430043}, // minute,
 
 // improve critical section detection when parallel trades
 // previously, it used to show amount, kmd equiv, perc
@@ -99,7 +97,7 @@ int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
 struct LP_peerinfo  *LP_peerinfos,*LP_mypeer;
 struct LP_forwardinfo *LP_forwardinfos;
 struct iguana_info *LP_coins;
-struct LP_pubkeyinfo *LP_pubkeyinfos;
+struct LP_pubkey_info *LP_pubkeyinfos;
 struct rpcrequest_info *LP_garbage_collector;
 struct LP_address_utxo *LP_garbage_collector2;
 
@@ -209,7 +207,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
             //if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 &&
                 //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
         }
-    } //else printf("finished tradecommand (%s)\n",jprint(argjson,0));
+    } else LP_statslog_parse();
     return(retstr);
 }
 
@@ -1255,6 +1253,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         exit(-1);
     }
     int32_t nonz;
+    LP_statslog_parse();
     while ( 1 )
     {
         nonz = 0;

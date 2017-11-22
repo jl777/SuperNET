@@ -378,12 +378,26 @@ struct LP_pubkey_quote
     uint8_t baseind,relind,numutxos,scale;
 };
 
+struct LP_swapstats
+{
+    UT_hash_handle hh;
+    struct LP_quoteinfo Q;
+    bits256 bobdeposit,alicepayment,bobpayment,paymentspent,Apaymentspent,depositspent;
+    double qprice;
+    uint64_t aliceid;
+    uint32_t ind,methodind,finished,expired;
+    char alicegui[32],bobgui[32];
+};
+
+struct LP_pubswap { struct LP_pubswap *next,*prev; struct LP_swapstats *swap; };
+
 #define LP_MAXPRICEINFOS 256
-struct LP_pubkeyinfo
+struct LP_pubkey_info
 {
     UT_hash_handle hh;
     bits256 pubkey;
     struct LP_pubkey_quote *quotes;
+    struct LP_pubswap *bobswaps,*aliceswaps;
     uint64_t bondvalue,swaps_kmdvalue;
     uint32_t timestamp,numerrors,lasttime;
     int32_t istrusted;
@@ -404,7 +418,7 @@ struct electrum_info
 };
 
 uint32_t LP_sighash(char *symbol,int32_t zcash);
-int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item);
+int32_t LP_pubkey_sigcheck(struct LP_pubkey_info *pubp,cJSON *item);
 int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson);
 struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr);
@@ -479,7 +493,7 @@ void LP_postutxos(char *symbol,char *coinaddr);
 int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag);
 uint16_t LP_randpeer(char *destip);
 uint32_t LP_atomic_locktime(char *base,char *rel);
-struct LP_pubkeyinfo *LP_pubkeyfind(bits256 pubkey);
+struct LP_pubkey_info *LP_pubkeyfind(bits256 pubkey);
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired);
 char *LP_unspents_filestr(char *symbol,char *addr);
 cJSON *bitcoin_data2json(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,bits256 *txidp,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,uint8_t *serialized,int32_t len,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash);

@@ -103,7 +103,7 @@ disable(coin)\n\
 notarizations(coin)\n\
 parselog()\n\
 statsdisp(starttime=0, endtime=0, gui="", pubkey="", base="", rel="")\n\
-tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice]\n\
+tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]\n\
 pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 getrawtransaction(coin, txid)\n\
 inventory(coin, reset=0, [passphrase=])\n\

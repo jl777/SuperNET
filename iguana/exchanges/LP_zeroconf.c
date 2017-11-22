@@ -233,7 +233,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
 
 int32_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
 {
-    struct LP_pubkeyinfo *pubp;
+    struct LP_pubkey_info *pubp;
     if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
     {
         if ( pubp->bondvalue > pubp->swaps_kmdvalue+kmdvalue )

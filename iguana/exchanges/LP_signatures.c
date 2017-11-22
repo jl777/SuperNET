@@ -276,7 +276,7 @@ bits256 LP_utxos_sighash(uint32_t timestamp,uint8_t *pubsecp,bits256 pubkey,bits
 
 int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits256 pubkey,bits256 utxoshash)
 {
-    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; char str[65]; struct LP_pubkeyinfo *pubp;
+    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; char str[65]; struct LP_pubkey_info *pubp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     pubp = LP_pubkeyfind(pubkey);
@@ -362,7 +362,7 @@ struct LP_utxos_qitem { struct queueitem DL; cJSON *argjson; };
 
 char *LP_postutxos_recv(cJSON *argjson)
 {
-    struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash,pubkey; cJSON *obj; struct LP_pubkeyinfo *pubp;
+    struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash,pubkey; cJSON *obj; struct LP_pubkey_info *pubp;
 printf("LP_postutxos_recv deprecated\n");
     pubkey = jbits256(argjson,"pubkey");
     pubp = LP_pubkeyfind(pubkey);
@@ -416,7 +416,7 @@ int32_t LP_utxosQ_process()
 
 int32_t LP_price_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits256 pubkey,char *base,char *rel,uint64_t price64)
 {
-    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; struct LP_pubkeyinfo *pubp;
+    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; struct LP_pubkey_info *pubp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     pubp = LP_pubkeyfind(pubkey);
@@ -521,7 +521,7 @@ int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub
     return(LP_bitcoinsig_add(item,priv,pubsecp,sighash));
 }
 
-int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
+int32_t LP_pubkey_sigcheck(struct LP_pubkey_info *pubp,cJSON *item)
 {
     int32_t i,len,siglen,retval=-1; uint8_t rmd160[20],checkrmd160[20],pubsecp[33],sig[65],zeroes[20]; char *sigstr,*hexstr,*pubsecpstr;
     if ( (hexstr= jstr(item,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
@@ -603,7 +603,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 
 char *LP_notify_recv(cJSON *argjson)
 {
-    bits256 pub; struct LP_pubkeyinfo *pubp; char *ipaddr;
+    bits256 pub; struct LP_pubkey_info *pubp; char *ipaddr;
     pub = jbits256(argjson,"pub");
     if ( bits256_nonz(pub) != 0 )
     {

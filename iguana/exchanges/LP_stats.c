@@ -20,16 +20,7 @@
 
 #define LP_STATSLOG_FNAME "stats.log"
 
-struct LP_swapstats
-{
-    UT_hash_handle hh;
-    struct LP_quoteinfo Q;
-    bits256 bobdeposit,alicepayment,bobpayment,paymentspent,Apaymentspent,depositspent;
-    double qprice;
-    uint64_t aliceid;
-    uint32_t ind,methodind,finished,expired;
-    char alicegui[32],bobgui[32];
-} *LP_swapstats;
+struct LP_swapstats *LP_swapstats;
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj);
 
 char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "connected", "tradestatus" };
@@ -215,7 +206,7 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
     static uint32_t unexpected;
-    struct LP_swapstats *sp,*tmp; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    struct LP_swapstats *sp,*tmp; struct LP_pubkey_info *pubp; struct LP_pubswap *ptr; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *gui,*base,*rel; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     memset(numtrades,0,sizeof(numtrades));
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
@@ -306,6 +297,18 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 sp->ind = LP_aliceids++;
                 strcpy(sp->bobgui,"nogui");
                 strcpy(sp->alicegui,"nogui");
+                if ( (pubp= LP_pubkeyadd(sp->Q.srchash)) != 0 )
+                {
+                    ptr = calloc(1,sizeof(*ptr));
+                    ptr->swap = sp;
+                    DL_APPEND(pubp->bobswaps,ptr);
+                }
+                if ( (pubp= LP_pubkeyadd(sp->Q.desthash)) != 0 )
+                {
+                    ptr = calloc(1,sizeof(*ptr));
+                    ptr->swap = sp;
+                    DL_APPEND(pubp->aliceswaps,ptr);
+                }
                 //LP_swapstats_line(numtrades,basevols,relvols,line,sp);
                 //printf("%s\n",line);
             } else printf("unexpected LP_swapstats_add failure\n");
