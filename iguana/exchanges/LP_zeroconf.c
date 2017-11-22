@@ -190,6 +190,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
             {
                 item = jitem(array,i);
                 amount64 = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
+                printf("amount64 %.8f vout.%d (%s)\n",dstr(amount64),vout,jprint(item,0));
                 if ( vout == 1 )
                 {
                     weeki = (amount64 % 10000);
