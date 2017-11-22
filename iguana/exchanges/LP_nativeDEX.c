@@ -323,8 +323,8 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                         else
                         {
                             memset(zero.bytes,0,sizeof(zero));
-                            /*if ( (method= jstr(reqjson,"method")) != 0 && (strcmp(method,"request") == 0 || strcmp(method,"requested") == 0 || strcmp(method,"connect") == 0 || strcmp(method,"connected") == 0) )
-                                    printf("broadcast.(%s)\n",Broadcaststr);*/
+                            if ( (method= jstr(reqjson,"method")) != 0 && (strcmp(method,"tradestatus") == 0) )
+                                    printf("broadcast.(%s)\n",Broadcaststr);
                             LP_reserved_msg(0,"","",zero,jprint(reqjson,0));
                         }
                         retstr = clonestr("{\"result\":\"success\"}");
