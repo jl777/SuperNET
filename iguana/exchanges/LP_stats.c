@@ -484,11 +484,11 @@ cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,i
             for (i=0; i<n; i++)
             {
                 item = jitem(swaps,i);
-                if ( (timestamp= juint(item,"timestamp")) != 0 && timestamp >= starttime && timestamp <= endtime )
+                if ( (timestamp= juint(item,"quotetime")) != 0 && timestamp >= starttime && timestamp <= endtime )
                 {
                     bari = (timestamp - starttime) / timescale;
                     LP_ohlc_update(&bars[bari],timestamp,jdouble(item,"basevol"),jdouble(item,"relvol"));
-                }
+                } else printf("skip.(%s)\n",jprint(item,0));
             }
         }
         free_json(statsjson);
