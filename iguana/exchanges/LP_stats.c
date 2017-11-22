@@ -433,6 +433,7 @@ cJSON *LP_ohlc_json(struct LP_ohlc *bar)
         jaddinum(item,bar->basesum);
         jaddinum(item,bar->relsum / bar->basesum);
         jaddinum(item,bar->numtrades);
+        return(item);
     }
     return(0);
 }
@@ -460,7 +461,7 @@ void LP_ohlc_update(struct LP_ohlc *bar,uint32_t timestamp,double basevol,double
         bar->basesum += basevol;
         bar->relsum += relvol;
         bar->numtrades++;
-        printf("%d %.8f/%.8f -> %.8f\n",bar->numtrades,basevol,relvol,price);
+        //printf("%d %.8f/%.8f -> %.8f\n",bar->numtrades,basevol,relvol,price);
     }
 }
 
