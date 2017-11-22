@@ -568,8 +568,15 @@ zeroconf_claim(address, expiration=0)\n\
             argjson = reqjson;
         }
     }
+    else
+    {
+        if ( strcmp(method,"gettradestatus") == 0 )
+            return(LP_gettradestatus(j64bits(argjson,"aliceid")));
+    }
     // received response
-    if ( strcmp(method,"postprice") == 0 )
+    if ( strcmp(method,"swapstatus") == 0 )
+        return(LP_swapstatus_recv(argjson));
+    else if ( strcmp(method,"postprice") == 0 )
         return(LP_postprice_recv(argjson));
     else if ( strcmp(method,"postutxos") == 0 )
         return(LP_postutxos_recv(argjson));
