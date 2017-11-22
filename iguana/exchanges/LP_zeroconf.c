@@ -192,9 +192,16 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
 
 void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2shaddr)
 {
-    uint32_t timestamp;
-    timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
-    printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s)\n",coinaddr,dstr(satoshis),weeki,p2shaddr);
+    uint32_t timestamp; struct LP_address *ap; struct iguana_info *coin = LP_coinfind("KMD");
+    if ( coin != 0 )
+    {
+        timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
+        if ( (ap= LP_address(coin,coinaddr)) != 0 )
+        {
+            ap->zeroconf_credits += satoshis;
+            printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
+        }
+    }
 }
 
 void LP_zeroconf_deposits(struct iguana_info *coin)
