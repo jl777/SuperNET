@@ -173,7 +173,7 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
         quoteid = juint(lineobj,"quoteid");
         satoshis = jdouble(lineobj,"srcamount") * SATOSHIDEN;
         destsatoshis = jdouble(lineobj,"destamount") * SATOSHIDEN;
-        if ( base != 0 && strcmp(base,sp->Q.srccoin) == 0 && rel != 0 && strcmp(rel,sp->Q.destcoin) == 0 && requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid && ((satoshis+2*sp->Q.txfee)|1) == (sp->Q.satoshis|1) && ((destsatoshis+2*sp->Q.desttxfee)|1) == (sp->Q.destsatoshis|1) )
+        if ( base != 0 && strcmp(base,sp->Q.srccoin) == 0 && rel != 0 && strcmp(rel,sp->Q.destcoin) == 0 && requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid && llabs((int64_t)(satoshis+2*sp->Q.txfee) - (int64_t)sp->Q.satoshis) <= sp->Q.txfee && llabs((int64_t)(destsatoshis+2*sp->Q.desttxfee) - (int64_t)sp->Q.destsatoshis) <= sp->Q.desttxfee )
         {
             sp->bobdeposit = LP_swapstats_txid(lineobj,"bobdeposit",sp->bobdeposit);
             sp->alicepayment = LP_swapstats_txid(lineobj,"alicepayment",sp->alicepayment);
