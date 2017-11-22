@@ -125,7 +125,7 @@ char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,i
 char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expiration)
 {
     static void *ctx;
-    uint8_t redeemscript[512],userdata[64]; char vinaddr[64],str[65],*signedtx=0; uint32_t timestamp,now,redeemlen; int32_t i,n,height,utxovout,userdatalen; bits256 signedtxid,utxotxid,sendtxid; int64_t sum,destamount,satoshis; cJSON *array,*item,*txids,*retjson;
+    uint8_t redeemscript[512],userdata[64]; char vinaddr[64],str[65],*signedtx=0; uint32_t timestamp,now,redeemlen,claimtime; int32_t i,n,height,utxovout,userdatalen; bits256 signedtxid,utxotxid,sendtxid; int64_t sum,destamount,satoshis; cJSON *array,*item,*txids,*retjson;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( strcmp(coin->symbol,"KMD") != 0 )
@@ -142,38 +142,46 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
         redeemlen = LP_deposit_addr(vinaddr,redeemscript,coin->taddr,coin->p2shtype,timestamp,G.LP_pubsecp);
         if ( strcmp(depositaddr,vinaddr) == 0 )
         {
-            printf("found %s at timestamp.%u\n",vinaddr,timestamp);
-            if ( (array= LP_listunspent(coin->symbol,vinaddr)) != 0 )
+            claimtime = (uint32_t)time(NULL)-777/2;
+            if ( claimtime <= timestamp )
             {
-                userdata[0] = 0x51;
-                userdatalen = 1;
-                utxovout = 0;
-                if ( (n= cJSON_GetArraySize(array)) > 0 )
+                printf("claimtime.%u vs locktime.%u, need to wait %d seconds\n",claimtime,timestamp,(int32_t)timestamp-claimtime);
+            }
+            else
+            {
+                printf("found %s at timestamp.%u\n",vinaddr,timestamp);
+                if ( (array= LP_listunspent(coin->symbol,vinaddr)) != 0 )
                 {
-                    for (i=0; i<n; i++)
+                    userdata[0] = 0x51;
+                    userdatalen = 1;
+                    utxovout = 0;
+                    if ( (n= cJSON_GetArraySize(array)) > 0 )
                     {
-                        item = jitem(array,i);
-                        satoshis = LP_listunspent_parseitem(coin,&utxotxid,&utxovout,&height,item);
-                        if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,10000,"zeroconfclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0,(uint32_t)time(NULL)-60,&destamount,0,0,vinaddr,1,coin->zcash)) != 0 )
+                        for (i=0; i<n; i++)
                         {
-                            printf("signedtx.(%s)\n",signedtx);
-                            sendtxid = LP_broadcast("claim","KMD",signedtx,signedtxid);
-                            if ( bits256_cmp(sendtxid,signedtxid) == 0 )
+                            item = jitem(array,i);
+                            satoshis = LP_listunspent_parseitem(coin,&utxotxid,&utxovout,&height,item);
+                            if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,10000,"zeroconfclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0,claimtime,&destamount,0,0,vinaddr,1,coin->zcash)) != 0 )
                             {
-                                jaddibits256(txids,sendtxid);
-                                sum += (satoshis-coin->txfee);
-                            }
-                            else printf("error sending %s\n",bits256_str(str,signedtxid));
-                            free(signedtx);
-                        } else printf("error claiming zeroconf deposit %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(satoshis));
+                                printf("signedtx.(%s)\n",signedtx);
+                                sendtxid = LP_broadcast("claim","KMD",signedtx,signedtxid);
+                                if ( bits256_cmp(sendtxid,signedtxid) == 0 )
+                                {
+                                    jaddibits256(txids,sendtxid);
+                                    sum += (satoshis-coin->txfee);
+                                }
+                                else printf("error sending %s\n",bits256_str(str,signedtxid));
+                                free(signedtx);
+                            } else printf("error claiming zeroconf deposit %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(satoshis));
+                        }
                     }
+                    free_json(array);
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result","success");
+                    jaddnum(retjson,"claimed",dstr(sum));
+                    jadd(retjson,"txids",txids);
+                    return(jprint(retjson,1));
                 }
-                free_json(array);
-                retjson = cJSON_CreateObject();
-                jaddstr(retjson,"result","success");
-                jaddnum(retjson,"claimed",dstr(sum));
-                jadd(retjson,"txids",txids);
-                return(jprint(retjson,1));
             }
         }
         if ( expiration != 0 )
