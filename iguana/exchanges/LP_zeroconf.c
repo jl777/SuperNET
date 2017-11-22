@@ -58,6 +58,9 @@ char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,i
     amount64 = (amount64 / 10000) * 10000 + weeki;
     jaddnum(item,BOTS_BONDADDRESS,dstr(amount64));
     jaddi(array,item);
+    item = cJSON_CreateObject();
+    jaddnum(item,coin->smartaddr,0.0001);
+    jaddi(array,item);
     jadd(argjson,"outputs",array);
     printf("deposit.(%s)\n",jprint(argjson,0));
     if ( (retstr= LP_withdraw(coin,argjson)) != 0 )

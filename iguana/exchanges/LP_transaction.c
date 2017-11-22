@@ -1231,7 +1231,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     
     ignore_cltverr = 0;
     suppress_pubkeys = 1;
-    scriptlen = bitcoin_standardspend(script,0,G.LP_myrmd160);
+    scriptlen = bitcoin_pubkeyspend(script,0,G.LP_pubsecp);
     numvins = LP_vins_select(ctx,coin,&total,amount,V,utxos,numutxos,suppress_pubkeys,ignore_cltverr,privkey,privkeys,vins,script,scriptlen,utxotxid,utxovout,dustcombine);
     if ( numvins <= 0 || total < amount )
     {
@@ -1266,6 +1266,12 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             if ( addrtype == coin->pubtype )
                 spendlen = bitcoin_standardspend(spendscript,0,rmd160);
             else spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
+            if ( i == numvouts-1 && strcmp(coinaddr,coin->smartaddr) == 0 && change != 0 )
+            {
+                printf("combine last vout %.8f with change %.8f\n",dstr(value+adjust),dstr(change));
+                value += change;
+                change = 0;
+            }
             txobj = bitcoin_txoutput(txobj,spendscript,spendlen,value + adjust);
         }
         else
