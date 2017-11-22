@@ -154,8 +154,7 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
                     {
                         item = jitem(array,i);
                         satoshis = LP_listunspent_parseitem(coin,&utxotxid,&utxovout,&height,item);
-                        //if ( (rswap.txbytes[BASILISK_BOBRECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"bobrefund",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[1],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBPAYMENT],0,0,rswap.pubkey33,0,rswap.expiration,&rswap.values[BASILISK_BOBRECLAIM],0,0,rswap.bobpaymentaddr,1,bob->zcash)) != 0 )
-                        if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,10000,"zeroconfclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0,timestamp,&destamount,0,0,vinaddr,1,coin->zcash)) != 0 )
+                        if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,10000,"zeroconfclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0,(uint32_t)time(NULL)-60,&destamount,0,0,vinaddr,1,coin->zcash)) != 0 )
                         {
                             printf("signedtx.(%s)\n",signedtx);
                             sendtxid = LP_broadcast("claim","KMD",signedtx,signedtxid);
