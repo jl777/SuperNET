@@ -266,11 +266,25 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
 
 int32_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
 {
-    struct LP_pubkey_info *pubp;
-    if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
+    struct LP_pubswap *ptr,*tmp; struct LP_swapstats *sp; struct LP_pubkey_info *pubp; struct LP_address *ap; char coinaddr[64]; struct iguana_info *coin; int64_t swaps_kmdvalue = 0;
+    if ( (coin= LP_coinfind("KMD")) != 0 && (pubp= LP_pubkeyfind(pubkey)) != 0 )
     {
-        if ( pubp->bondvalue > pubp->swaps_kmdvalue+kmdvalue )
-            return(1);
+        if ((ap= LP_address(coin,coinaddr)) != 0 && ap->zeroconf_credits >= kmdvalue )
+        {
+            DL_FOREACH_SAFE(pubp->bobswaps,ptr,tmp)
+            {
+                if ( (sp= ptr->swap) != 0 && sp->finished == 0 && sp->expired == 0 )
+                    swaps_kmdvalue += LP_kmdvalue(sp->Q.srccoin,sp->Q.satoshis);
+            }
+            DL_FOREACH_SAFE(pubp->aliceswaps,ptr,tmp)
+            {
+                if ( (sp= ptr->swap) != 0 && sp->finished == 0 && sp->expired == 0 )
+                    swaps_kmdvalue += LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis);
+            }
+            printf("credits %.8f vs (%.8f + current %.8f)\n",dstr(ap->zeroconf_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+            if ( ap->zeroconf_credits > swaps_kmdvalue+kmdvalue )
+                return(1);
+        }
     }
     return(0);
 }
