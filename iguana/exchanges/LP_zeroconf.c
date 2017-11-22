@@ -200,7 +200,7 @@ void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2s
         {
             ap->zeroconf_credits += satoshis;
             printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
-        }
+        } else printf("couldnt create address.%s\n",coinaddr);
     }
 }
 
@@ -226,6 +226,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                         {
                             v = jitem(vouts,0);
                             satoshis = LP_value_extract(v,0);
+                            printf("%s funded %.8f\n",destaddr,dstr(satoshis));
                             if ( LP_destaddr(p2shaddr,v) == 0 )
                             {
                                 if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) == 0 )
