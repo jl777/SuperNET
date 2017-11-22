@@ -258,7 +258,7 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
                 if ( (sp= ptr->swap) != 0 && sp->finished == 0 && sp->expired == 0 )
                     swaps_kmdvalue += LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis);
             }
-            printf("credits %.8f vs (%.8f + current %.8f)\n",dstr(ap->zeroconf_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+            //printf("credits %.8f vs (%.8f + current %.8f)\n",dstr(ap->zeroconf_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
             if ( ap->zeroconf_credits > swaps_kmdvalue+kmdvalue )
                 return(ap->zeroconf_credits - (swaps_kmdvalue+kmdvalue));
         }
