@@ -209,7 +209,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
     cJSON *array,*item,*txjson,*vouts,*v,*txobj; int32_t i,n,numvouts,height,vout,weeki; bits256 txid; char destaddr[64],p2shaddr[64]; int64_t satoshis,amount64;
     if ( (array= LP_listunspent("KMD",BOTS_BONDADDRESS)) != 0 )
     {
-        //printf("ZEROCONF.(%s)\n",jprint(array,0));
+        printf("ZEROCONF.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             for (i=0; i<n; i++)
