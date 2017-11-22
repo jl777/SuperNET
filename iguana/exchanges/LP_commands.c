@@ -596,8 +596,15 @@ zeroconf_claim(address, expiration=0)\n\
     
     else if ( strcmp(method,"tradestatus") == 0 )
     {
+        bits256 zero; cJSON *tmpjson;
         LP_tradecommand_log(argjson);
         printf("GOT TRADESTATUS! %s\n",jprint(argjson,0));
+        if ( LP_statslog_parse() > 0 )
+        {
+            memset(zero.bytes,0,sizeof(zero));
+            if ( (tmpjson= LP_statslog_disp(2000000000,2000000000,"",zero,0,0))) // pending swaps
+                free_json(tmpjson);
+        }
         retstr = clonestr("{\"result\":\"success\"}");
     }
     else if ( strcmp(method,"wantnotify") == 0 )
