@@ -398,6 +398,7 @@ struct LP_pubkey_info
     bits256 pubkey;
     struct LP_pubkey_quote *quotes;
     struct LP_pubswap *bobswaps,*aliceswaps;
+    uint64_t dynamictrust;
     uint32_t timestamp,numerrors,lasttime;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;

@@ -18,7 +18,15 @@
 //  marketmaker
 //
 
-struct LP_orderbookentry { bits256 pubkey; double price; uint64_t avesatoshis,maxsatoshis,depth; uint32_t timestamp; int32_t numutxos; char coinaddr[64]; };
+struct LP_orderbookentry
+{
+    bits256 pubkey;
+    double price;
+    uint64_t avesatoshis,maxsatoshis,depth,dynamictrust;
+    uint32_t timestamp;
+    int32_t numutxos;
+    char coinaddr[64];
+};
 
 struct LP_priceinfo
 {
@@ -750,12 +758,12 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
         jaddnum(item,"depth",dstr(op->depth)*0.8);
         jaddbits256(item,"pubkey",op->pubkey);
         jaddnum(item,"age",time(NULL)-op->timestamp);
-        jaddnum(item,"zcredits",dstr(LP_dynamictrust(op->pubkey,0)));
+        jaddnum(item,"zcredits",dstr(op->dynamictrust));
     }
     return(item);
 }
 
-struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,double price,int32_t numutxos,uint64_t avesatoshis,uint64_t maxsatoshis,bits256 pubkey,uint32_t timestamp,uint64_t balance)
+struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,double price,int32_t numutxos,uint64_t avesatoshis,uint64_t maxsatoshis,bits256 pubkey,uint32_t timestamp,uint64_t balance,uint64_t dynamictrust)
 {
     struct LP_orderbookentry *op;
     if ( (op= calloc(1,sizeof(*op))) != 0 )
@@ -768,6 +776,7 @@ struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,d
         op->pubkey = pubkey;
         op->timestamp = timestamp;
         op->depth = balance;
+        op->dynamictrust = dynamictrust;
     }
     return(op);
 }
@@ -828,7 +837,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
                 }
                 //printf("%s/%s %s n.%d ap->n.%d %.8f\n",base,rel,coinaddr,n,ap->n,dstr(ap->total));
             }
-            if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,avesatoshis,maxsatoshis,pubp->pubkey,pubp->timestamp,balance)) != 0 )
+            if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,avesatoshis,maxsatoshis,pubp->pubkey,pubp->timestamp,balance,pubp->dynamictrust)) != 0 )
             {
                 *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                 (*arrayp)[num++] = op;
