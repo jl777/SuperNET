@@ -49,6 +49,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_ELECTRUM_KEEPALIVE 60
 #define LP_ELECTRUM_MAXERRORS 777
 #define LP_MEMPOOL_TIMEINCR 10
+#define LP_SCREENWIDTH 1024
 
 #define LP_MIN_PEERS 8
 #define LP_MAX_PEERS 32
@@ -458,7 +459,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
 struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout);
 int32_t LP_destaddr(char *destaddr,cJSON *item);
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration);
-char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey);
+cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey,char *refbase,char *refrel);
 uint32_t LP_heighttime(char *symbol,int32_t height);
 uint64_t LP_unspents_load(char *symbol,char *addr);
 int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
@@ -477,6 +478,7 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 void LP_postutxos(char *symbol,char *coinaddr);
 int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag);
 uint16_t LP_randpeer(char *destip);
+uint32_t LP_atomic_locktime(char *base,char *rel);
 struct LP_pubkeyinfo *LP_pubkeyfind(bits256 pubkey);
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired);
 char *LP_unspents_filestr(char *symbol,char *addr);

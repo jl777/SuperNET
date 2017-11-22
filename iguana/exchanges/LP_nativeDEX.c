@@ -17,16 +17,18 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// feature requests
+// feature requests:
 // alice waiting for bestprice
-// pricearray [{"date":1405699200,"high":0.0045388,"low":0.00403001,"open":0.00404545,"close":0.00435873,"volume":44.34555992,"quoteVolume":10311.88079097,"weightedAverage":0.00430043},
 // USD paxprice based USDvalue in portfolio
-// portfolio value based on ask?
 // cancel bid/ask
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // bugs, validations:
+// waiting for alice and alice disconnects
 // MNZ getcoin strangeness
+// portfolio value based on ask?
+// listunspent triplicate
+// RTmetrics update from tradecommand
 // verify encrypted destpubkey, broadcast:0 setprice
 // [{"date":1405699200,"high":0.0045388,"low":0.00403001,"open":0.00404545,"close":0.00435873,"relvol":44.34555992,"basevol":10311.88079097,"aveprice":0.00430043}, // minute,
 

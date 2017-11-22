@@ -34,13 +34,6 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj);
 
 char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "connected", "tradestatus" };
 
-uint32_t LP_atomic_locktime(char *base,char *rel)
-{
-    if ( strcmp(base,"BTC") != 0 && strcmp(rel,"BTC") != 0 )
-        return(INSTANTDEX_LOCKTIME);
-    else return(INSTANTDEX_LOCKTIME * 10);
-}
-
 static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_aliceids;
 
 void LP_tradecommand_log(cJSON *argjson)
@@ -330,11 +323,12 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
     return(duplicate == 0);
 }
 
-char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey)
+cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey,char *refbase,char *refrel)
 {
-    cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i,dispflag,numtrades[LP_MAXPRICEINFOS]; char line[1024]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i,n,dispflag,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     if ( starttime > endtime )
         starttime = endtime;
+    n = LP_statslog_parse();
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
     memset(numtrades,0,sizeof(numtrades));
@@ -353,6 +347,10 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgu
             dispflag = 1;
         else if ( sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime )
             dispflag = 1;
+        if ( refbase != 0 && strcmp(refbase,sp->Q.srccoin) != 0 && strcmp(refbase,sp->Q.destcoin) != 0 )
+            dispflag = 0;
+        if ( refrel != 0 && strcmp(refrel,sp->Q.srccoin) != 0 && strcmp(refrel,sp->Q.destcoin) != 0 )
+            dispflag = 0;
         if ( dispflag != 0 )
         {
             dispflag = 0;
@@ -364,8 +362,9 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgu
         }
         if ( dispflag != 0 )
         {
-            LP_swapstats_line(numtrades,basevols,relvols,line,sp);
+            //LP_swapstats_line(numtrades,basevols,relvols,line,sp);
             item = cJSON_CreateObject();
+            jaddnum(item,"timestamp",sp->Q.timestamp);
             jadd64bits(item,"aliceid",sp->aliceid);
             jaddbits256(item,"src",sp->Q.srchash);
             jaddstr(item,"base",sp->Q.srccoin);
@@ -376,7 +375,7 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgu
             jaddnum(item,"price",sp->qprice);
             jaddnum(item,"requestid",sp->Q.R.requestid);
             jaddnum(item,"quoteid",sp->Q.R.quoteid);
-            jaddstr(item,"line",line);
+            //jaddstr(item,"line",line);
             jaddi(array,item);
         }
     }
@@ -405,7 +404,97 @@ char *LP_statslog_disp(int32_t n,uint32_t starttime,uint32_t endtime,char *refgu
     jaddnum(retjson,"uniques",LP_aliceids);
     jaddnum(retjson,"tradestatus",LP_tradestatuses);
     jaddnum(retjson,"unknown",LP_unknowns);
-    return(jprint(retjson,1));
+    return(retjson);
 }
 
+//tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]
+
+struct LP_ohlc
+{
+    uint32_t timestamp,firsttime,lasttime,numtrades;
+    double high,low,open,close,relsum,basesum;
+};
+
+cJSON *LP_ohlc_json(struct LP_ohlc *bar)
+{
+    cJSON *item;
+    if ( bar->numtrades != 0 && bar->relsum > SMALLVAL && bar->basesum > SMALLVAL )
+    {
+        item = cJSON_CreateArray();
+        jaddinum(item,bar->timestamp);
+        jaddinum(item,bar->high);
+        jaddinum(item,bar->low);
+        jaddinum(item,bar->open);
+        jaddinum(item,bar->close);
+        jaddinum(item,bar->relsum);
+        jaddinum(item,bar->basesum);
+        jaddinum(item,bar->relsum / bar->basesum);
+        jaddinum(item,bar->numtrades);
+    }
+    return(0);
+}
+
+void LP_ohlc_update(struct LP_ohlc *bar,uint32_t timestamp,double basevol,double relvol)
+{
+    double price;
+    if ( basevol > SMALLVAL && relvol > SMALLVAL )
+    {
+        price = relvol / basevol;
+        if ( bar->firsttime == 0 || timestamp < bar->firsttime )
+        {
+            bar->firsttime = timestamp;
+            bar->open = price;
+        }
+        if ( bar->lasttime == 0 || timestamp > bar->lasttime )
+        {
+            bar->lasttime = timestamp;
+            bar->close = price;
+        }
+        if ( bar->low == 0. || price < bar->low )
+            bar->low = price;
+        if ( bar->high == 0. || price > bar->high )
+            bar->high = price;
+        bar->basesum += basevol;
+        bar->relsum += relvol;
+        bar->numtrades++;
+    }
+}
+
+cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,int32_t timescale)
+{
+    struct LP_ohlc *bars; cJSON *array,*item,*statsjson,*swaps; uint32_t timestamp; bits256 zero; int32_t i,n,numbars,bari;
+    if ( timescale < 60 )
+        return(cJSON_Parse("{\"error\":\"one minute is shortest timescale\"}"));
+    memset(zero.bytes,0,sizeof(zero));
+    if ( endtime == 0 )
+        endtime = (((uint32_t)time(NULL) / timescale) * timescale);
+    if ( starttime == 0 )
+        starttime = (endtime - LP_SCREENWIDTH*timescale);
+    numbars = ((endtime - starttime) / timescale) + 1;
+    bars = calloc(numbars,sizeof(*bars));
+    for (bari=0; bari<numbars; bari++)
+        bars[bari].timestamp = starttime + bari*timescale;
+    if ( (statsjson= LP_statslog_disp(starttime,endtime,"",zero,base,rel)) != 0 )
+    {
+        if ( (swaps= jarray(&n,statsjson,"swaps")) != 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(swaps,i);
+                if ( (timestamp= juint(item,"timestamp")) != 0 && timestamp >= starttime && timestamp <= endtime )
+                {
+                    bari = (timestamp - starttime) / timescale;
+                    LP_ohlc_update(&bars[bari],timestamp,jdouble(item,"basevol"),jdouble(item,"relvol"));
+                }
+            }
+        }
+        free_json(statsjson);
+    }
+    array = cJSON_CreateArray();
+    for (bari=0; bari<numbars; bari++)
+        if ( (item= LP_ohlc_json(&bars[bari])) != 0 )
+            jaddi(array,item);
+    free(bars);
+    return(array);
+}
 

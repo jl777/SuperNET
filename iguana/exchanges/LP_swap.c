@@ -109,6 +109,13 @@
  */
 
 
+uint32_t LP_atomic_locktime(char *base,char *rel)
+{
+    if ( strcmp(base,"BTC") != 0 && strcmp(rel,"BTC") != 0 )
+        return(INSTANTDEX_LOCKTIME);
+    else return(INSTANTDEX_LOCKTIME * 10);
+}
+
 void basilisk_rawtx_purge(struct basilisk_rawtx *rawtx)
 {
     if ( rawtx->vins != 0 )

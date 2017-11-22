@@ -94,7 +94,6 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
      else if ( strcmp(method,"help") == 0 )
          return(clonestr("{\"result\":\" \
 available localhost RPC commands: \n \
-pricearray(base, rel, starttime=0, endtime=-1, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 setprice(base, rel, price, broadcast=1)\n\
 autoprice(base, rel, fixed, minprice, margin, refbase, refrel, factor, offset)*\n\
 goal(coin=*, val=<autocalc>)\n\
@@ -103,7 +102,9 @@ enable(coin)\n\
 disable(coin)\n\
 notarizations(coin)\n\
 parselog()\n\
-statsdisp(starttime=0, endtime=0, gui="", pubkey="")\n\
+statsdisp(starttime=0, endtime=0, gui="", pubkey="", base="", rel="")\n\
+tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice]\n\
+pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 getrawtransaction(coin, txid)\n\
 inventory(coin, reset=0, [passphrase=])\n\
 bestfit(rel, relvolume)\n\
@@ -263,14 +264,13 @@ zeroconf_claim(address, expiration=0)\n\
         }
         else if ( strcmp(method,"parselog") == 0 )
         {
-            bits256 zero; int32_t n = LP_statslog_parse();
+            bits256 zero;
             memset(zero.bytes,0,sizeof(zero));
-            return(LP_statslog_disp(n,2000000000,2000000000,"",zero));
+            return(jprint(LP_statslog_disp(2000000000,2000000000,"",zero,0,0),1));
         }
         else if ( strcmp(method,"statsdisp") == 0 )
         {
-            int32_t n = LP_statslog_parse();
-            return(LP_statslog_disp(n,juint(argjson,"starttime"),juint(argjson,"endtime"),jstr(argjson,"gui"),jbits256(argjson,"pubkey")));
+            return(jprint(LP_statslog_disp(juint(argjson,"starttime"),juint(argjson,"endtime"),jstr(argjson,"gui"),jbits256(argjson,"pubkey"),jstr(argjson,"base"),jstr(argjson,"rel")),1));
         }
         else if ( strcmp(method,"secretaddresses") == 0 )
         {
@@ -321,15 +321,15 @@ zeroconf_claim(address, expiration=0)\n\
                 uint32_t firsttime;
                 if ( base[0] != 0 && rel[0] != 0 )
                 {
-                    if ( (firsttime= juint(argjson,"firsttime")) < time(NULL)-30*24*3600 )
+                    if ( (firsttime= juint(argjson,"starttime")) < time(NULL)-30*24*3600 )
                         firsttime = (uint32_t)(time(NULL)-30*24*3600);
-                    return(jprint(LP_pricearray(base,rel,firsttime,juint(argjson,"lasttime"),jint(argjson,"timescale")),1));
+                    return(jprint(LP_pricearray(base,rel,firsttime,juint(argjson,"endtime"),jint(argjson,"timescale")),1));
                 } else return(clonestr("{\"error\":\"pricearray needs base and rel\"}"));
             }
-            /*else if ( strcmp(method,"pricearray") == 0 )
+            else if ( strcmp(method,"tradesarray") == 0 )
             {
-                return(jprint(LP_pricearray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
-            }*/
+                return(jprint(LP_tradesarray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
+            }
             else if ( strcmp(method,"orderbook") == 0 )
                 return(LP_orderbook(base,rel,jint(argjson,"duration")));
             else if ( strcmp(method,"myprice") == 0 )

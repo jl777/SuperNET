@@ -149,7 +149,7 @@ void LP_RTmetrics_swapsinfo(char *refbase,char *refrel,cJSON *swaps,int32_t nums
 
 void LP_RTmetrics_update(char *base,char *rel)
 {
-    struct LP_pubkeyinfo *pubp,*tmp; uint32_t futuretime; int32_t i,numswaps; bits256 pubkey,zero; char *retstr; cJSON *statsjson,*swaps;
+    struct LP_pubkeyinfo *pubp,*tmp; uint32_t futuretime; int32_t i,numswaps; bits256 pubkey,zero; cJSON *statsjson,*swaps;
     memset(&LP_RTmetrics,0,sizeof(LP_RTmetrics));
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
     {
@@ -161,19 +161,15 @@ void LP_RTmetrics_update(char *base,char *rel)
     }
     futuretime = (uint32_t)time(NULL) + 3600*100;
     memset(zero.bytes,0,sizeof(zero));
-    if ( (retstr= LP_statslog_disp(100,futuretime,futuretime,"",zero)) != 0 )
+    if ( (statsjson= LP_statslog_disp(futuretime,futuretime,"",zero,0,0)) != 0 )
     {
-        if ( (statsjson= cJSON_Parse(retstr)) != 0 )
+        if ( (swaps= jarray(&numswaps,statsjson,"swaps")) != 0 )
         {
-            if ( (swaps= jarray(&numswaps,statsjson,"swaps")) != 0 )
-            {
-                //printf("LP_RTmetrics_update for (%s)\n",jprint(swaps,0));
-                if ( numswaps > 0 )
-                    LP_RTmetrics_swapsinfo(base,rel,swaps,numswaps);
-            }
-            free_json(statsjson);
+            //printf("LP_RTmetrics_update for (%s)\n",jprint(swaps,0));
+            if ( numswaps > 0 )
+                LP_RTmetrics_swapsinfo(base,rel,swaps,numswaps);
         }
-        free(retstr);
+        free_json(statsjson);
     }
     for (i=0; i<LP_RTmetrics.numpendings; i++)
     {
