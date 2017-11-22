@@ -323,7 +323,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                         else
                         {
                             memset(zero.bytes,0,sizeof(zero));
-                            if ( (method= jstr(reqjson,"method")) != 0 && (strcmp(method,"tradestatus") == 0) )
+                            if ( 0 && (method= jstr(reqjson,"method")) != 0 && (strcmp(method,"tradestatus") == 0) )
                                     printf("broadcast.(%s)\n",Broadcaststr);
                             LP_reserved_msg(0,"","",zero,jprint(reqjson,0));
                         }
