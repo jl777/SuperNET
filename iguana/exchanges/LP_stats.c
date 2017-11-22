@@ -170,6 +170,7 @@ bits256 LP_swapstats_txid(cJSON *argjson,char *name,bits256 oldtxid)
 int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSON *lineobj)
 {
     char *statusstr,*base,*rel,gui[64]; uint32_t requestid,quoteid; uint64_t satoshis,destsatoshis;
+    sp->lasttime = (uint32_t)time(NULL);
     safecopy(gui,sp->Q.gui,sizeof(gui));
     if ( strcmp(LP_stats_methods[sp->methodind],"tradestatus") == 0 )
     {
@@ -304,6 +305,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 sp->qprice = qprice;
                 sp->methodind = methodind;
                 sp->ind = LP_aliceids++;
+                sp->lasttime = (uint32_t)time(NULL);
                 strcpy(sp->bobgui,"nogui");
                 strcpy(sp->alicegui,"nogui");
                 if ( sp->finished == 0 && sp->expired == 0 )
@@ -360,8 +362,10 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 char *LP_swapstatus_recv(cJSON *argjson)
 {
     struct LP_swapstats *sp; int32_t methodind;
+    printf("swapstatus.(%s)\n",jprint(argjson,0));
     if ( (sp= LP_swapstats_find(j64bits(argjson,"aliceid"))) != 0 )
     {
+        sp->lasttime = (uint32_t)time(NULL);
         if ( (methodind= jint(argjson,"ind")) > sp->methodind && methodind < sizeof(LP_stats_methods)/sizeof(*LP_stats_methods) )
         {
             sp->methodind = methodind;
@@ -376,7 +380,8 @@ char *LP_swapstatus_recv(cJSON *argjson)
 char *LP_gettradestatus(uint64_t aliceid)
 {
     struct LP_swapstats *sp; cJSON *reqjson; bits256 zero;
-    if ( (sp= LP_swapstats_find(aliceid)) != 0 )
+    printf("gettradestatus.(%llu)\n",(long long)aliceid);
+    if ( (sp= LP_swapstats_find(aliceid)) != 0 && time(NULL) > sp->lasttime+60 )
     {
         if ( (reqjson= LP_swapstats_json(sp)) != 0 )
         {
@@ -422,7 +427,10 @@ int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttim
 
 cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey,char *refbase,char *refrel)
 {
-    cJSON *retjson,*array,*item; struct LP_swapstats *sp,*tmp; int32_t i,n,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    static int32_t rval;
+    cJSON *retjson,*array,*item,*reqjson; bits256 zero; uint32_t now; struct LP_swapstats *sp,*tmp; int32_t i,n,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    if ( rval == 0 )
+        rval = (LP_rand() % 300) + 60;
     if ( starttime > endtime )
         starttime = endtime;
     n = LP_statslog_parse();
@@ -434,13 +442,26 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
     jaddnum(retjson,"newlines",n);
     array = cJSON_CreateArray();
     LP_RTcount = LP_swapscount = 0;
+    now = (uint32_t)time(NULL);
     HASH_ITER(hh,LP_RTstats,sp,tmp)
     {
         if ( LP_stats_dispiter(array,sp,starttime,endtime,refbase,refrel,refgui,refpubkey) > 0 )
         {
             HASH_DELETE(hh,LP_RTstats,sp);
             HASH_ADD(hh,LP_swapstats,aliceid,sizeof(sp->aliceid),sp);
-        } else LP_RTcount++;
+        }
+        else
+        {
+            LP_RTcount++;
+            if ( now > sp->lasttime+rval )
+            {
+                reqjson = cJSON_CreateObject();
+                jaddstr(reqjson,"method","gettradestatus");
+                jadd64bits(reqjson,"aliceid",sp->aliceid);
+                memset(zero.bytes,0,sizeof(zero));
+                LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+            }
+        }
     }
     HASH_ITER(hh,LP_swapstats,sp,tmp)
     {

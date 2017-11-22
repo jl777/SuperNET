@@ -385,7 +385,7 @@ struct LP_swapstats
     bits256 bobdeposit,alicepayment,bobpayment,paymentspent,Apaymentspent,depositspent;
     double qprice;
     uint64_t aliceid;
-    uint32_t ind,methodind,finished,expired;
+    uint32_t ind,methodind,finished,expired,lasttime;
     char alicegui[32],bobgui[32];
 };
 
