@@ -567,7 +567,7 @@ zeroconf_claim(address, expiration=0)\n\
             }
             argjson = reqjson;
         }
-        else if ( strcmp(method,"gettradestatus") == 0 )
+        if ( strcmp(method,"gettradestatus") == 0 )
             retstr = clonestr("{\"result\":\"success\"}");
     }
     else
