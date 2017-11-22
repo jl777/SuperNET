@@ -502,7 +502,7 @@ cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,i
     memset(zero.bytes,0,sizeof(zero));
     if ( endtime == 0 )
         endtime = (((uint32_t)time(NULL) / timescale) * timescale);
-    if ( starttime == 0 )
+    if ( starttime == 0 || starttime >= endtime )
         starttime = (endtime - LP_SCREENWIDTH*timescale);
     numbars = ((endtime - starttime) / timescale) + 1;
     bars = calloc(numbars,sizeof(*bars));

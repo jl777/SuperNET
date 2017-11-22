@@ -196,7 +196,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 
 char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
-    char *retstr=0;
+    char *retstr=0; cJSON *retjson; bits256 zero;
     if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
         return(0);
     if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
@@ -207,7 +207,13 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
             //if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 &&
                 //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
         }
-    } else LP_statslog_parse();
+    }
+    else if ( LP_statslog_parse() > 0 )
+    {
+        memset(zero.bytes,0,sizeof(zero));
+        if ( (retjson= LP_statslog_disp(2000000000,2000000000,"",zero,0,0))) // pending swaps
+            free_json(retjson);
+    }
     return(retstr);
 }
 
