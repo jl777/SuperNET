@@ -329,7 +329,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
     return(mini);
 }
 
-void LP_butxo_set(struct LP_utxoinfo *butxo,struct iguana_info *coin,struct LP_address_utxo *up,struct LP_address_utxo *up2,int64_t satoshis)
+void LP_butxo_set(struct LP_utxoinfo *butxo,int32_t iambob,struct iguana_info *coin,struct LP_address_utxo *up,struct LP_address_utxo *up2,int64_t satoshis)
 {
     butxo->pubkey = G.LP_mypub25519;
     safecopy(butxo->coin,coin->symbol,sizeof(butxo->coin));
@@ -337,10 +337,18 @@ void LP_butxo_set(struct LP_utxoinfo *butxo,struct iguana_info *coin,struct LP_a
     butxo->payment.txid = up->U.txid;
     butxo->payment.vout = up->U.vout;
     butxo->payment.value = up->U.value;
-    butxo->iambob = 1;
-    butxo->deposit.txid = up2->U.txid;
-    butxo->deposit.vout = up2->U.vout;
-    butxo->deposit.value = up2->U.value;
+    if ( (butxo->iambob= iambob) != 0 )
+    {
+        butxo->deposit.txid = up2->U.txid;
+        butxo->deposit.vout = up2->U.vout;
+        butxo->deposit.value = up2->U.value;
+    }
+    else
+    {
+        butxo->fee.txid = up2->U.txid;
+        butxo->fee.vout = up2->U.vout;
+        butxo->fee.value = up2->U.value;
+    }
     butxo->S.satoshis = satoshis;
 }
 
@@ -388,10 +396,20 @@ uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t d
 
 struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double relvolume,double price,uint64_t desttxfee)
 {
-    struct LP_address *ap; uint64_t targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2;
+    struct LP_address *ap; uint64_t fee,targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2;
     memset(butxo,0,sizeof(*butxo));
-    targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee);
-    targetval2 = (targetval / 8) * 9 + 2*txfee;
+    if ( iambob != 0 )
+    {
+        targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee);
+        targetval2 = (targetval / 8) * 9 + 2*txfee;
+        fee = txfee;
+    }
+    else
+    {
+        targetval = relvolume*SATOSHIDEN + 2*desttxfee;
+        targetval2 = (targetval / 777) + 2*desttxfee;
+        fee = desttxfee;
+    }
     if ( coin != 0 && (ap= LP_address(coin,coinaddr)) != 0 )
     {
         if ( (m= LP_address_utxo_ptrs(coin,iambob,utxos,max,ap,coinaddr)) > 1 )
@@ -405,7 +423,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s %s\n",dstr(targetval),relvolume,price,dstr(txfee),coin->symbol,coinaddr);
             }
             mini = -1;
-            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval+txfee)) >= 0 )
+            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval+fee)) >= 0 )
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
@@ -413,7 +431,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                 if ( (double)up->U.value/targetval < LP_MINVOL-1 )
 
                 {
-                    if ( (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,(targetval2+2*txfee) * 1.01)) >= 0 )
+                    if ( (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,(targetval2+2*fee) * 1.01)) >= 0 )
                     {
                         if ( up != 0 && (up2= utxos[mini]) != 0 )
                         {
@@ -423,7 +441,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                                 char str[65],str2[65]; printf("butxo.%p targetval %.8f, found val %.8f %s | targetval2 %.8f val2 %.8f %s\n",utxo,dstr(targetval),dstr(up->U.value),bits256_str(str,utxo->payment.txid),dstr(targetval2),dstr(up2->U.value),bits256_str(str2,utxo->deposit.txid));
                                 return(butxo);
                             }*/
-                            LP_butxo_set(butxo,coin,up,up2,targetval);
+                            LP_butxo_set(butxo,iambob,coin,up,up2,targetval);
                             return(butxo);
                         }
                     } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
@@ -1109,7 +1127,7 @@ struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,i
 
 char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui,uint32_t nonce,bits256 destpubkey,uint32_t tradeid)
 {
-    uint64_t desttxfee,txfee; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B; struct LP_quoteinfo Q; bits256 pubkeys[100];
+    uint64_t desttxfee,txfee; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B,A; struct LP_quoteinfo Q; bits256 pubkeys[100]; struct LP_address_utxo *utxos[1000]; int32_t max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( gui == 0 )
@@ -1151,7 +1169,10 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     LP_txfees(&txfee,&desttxfee,base,rel);
     destsatoshis = SATOSHIDEN * relvolume;
     //LP_address_utxo_reset(relcoin);
-    if ( (autxo= LP_utxo_bestfit(rel,destsatoshis + 2*desttxfee)) == 0 )
+    memset(&A,0,sizeof(A));
+    LP_address_utxo_reset(relcoin);
+    if ( (autxo= LP_address_myutxopair(&A,1,utxos,max,relcoin,relcoin->smartaddr,txfee,dstr(destsatoshis),maxprice,desttxfee)) != 0 )
+    //if ( (autxo= LP_utxo_bestfit(rel,destsatoshis + 2*desttxfee)) == 0 )
         return(clonestr("{\"error\":\"cant find alice utxo that is close enough in size\"}"));
     //printf("bestfit selected alice (%.8f %.8f) for %.8f sats %.8f\n",dstr(autxo->payment.value),dstr(autxo->fee.value),dstr(destsatoshis),dstr(autxo->S.satoshis));
     if ( destsatoshis - desttxfee < autxo->S.satoshis )
