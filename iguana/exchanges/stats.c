@@ -330,7 +330,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
 {
     static void *ctx;
     cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char *myipaddr="127.0.0.1",symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr=0,*filestr,*token = 0; int32_t i,j,n,num=0;
-    //printf("rpcparse.(%s)\n",urlstr);
+printf("rpcparse.(%s)\n",urlstr);
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
@@ -416,6 +416,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
         {
             free_json(argjson);
             argjson = cJSON_Parse(data);
+            printf("data.(%s)\n",data);
         }
         if ( argjson != 0 )
         {
