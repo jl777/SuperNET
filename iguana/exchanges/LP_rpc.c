@@ -665,7 +665,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
         {
             if ( ap->unspenttime == 0 )
                 usecache = 0;
-            else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+30 )
+            else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+3 )
                 usecache = 0;
             if ( usecache != 0 && (retstr= LP_unspents_filestr(symbol,coinaddr)) != 0 )
             {
