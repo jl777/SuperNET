@@ -32,15 +32,7 @@ Seller Payment    f876412f3dc637998b099b05ae0fe3e769e5adafcb49ef156be9f7749f2e30
 Quote ID    2681103143
 Request ID    301413467
 Trade id    3567859514*/
-/*KMD.(electrum2.cipig.net:10001) already an electrum server
-KMD.(electrum1.cipig.net:10001) already an electrum server
-bindflag.0 iguana_socket mismatch (18.216.195.109) -> (electrum1.cipig.net)
-RECONNECT ep.0x7f46950fbbd0 KMD numerrors.32 too big -> new electrum1.cipig.net:10001 sock.110
-KMD.(electrum2.cipig.net:10001) already an electrum server
-KMD.(electrum1.cipig.net:10001) already an electrum server
-KMD.(electrum2.cipig.net:10001) already an electrum server
-KMD.(electrum1.cipig.net:10001) already an electrum serve*/
-// waiting for alice and alice disconnects
+// waiting for alice and alice disconnects, can find bobpayment based on Q.txid
 // MNZ getcoin strangeness
 // portfolio value based on ask?
 // listunspent triplicate, tradebot timeslice? the tradebot timeslice is just getting too much timeslices

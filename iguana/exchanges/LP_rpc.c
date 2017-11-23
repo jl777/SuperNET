@@ -673,6 +673,36 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
     } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
 }
 
+cJSON *LP_listreceivedbyaddress(char *symbol,char *coinaddr)
+{
+    char buf[128],*addr; cJSON *retjson,*array,*item; int32_t i,n; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
+    if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
+        return(cJSON_Parse("{\"error\":\"no coin\"}"));
+    if ( coin->electrum == 0 )
+    {
+        if ( (array= bitcoin_json(coin,"listreceivedbyaddress",buf)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( (addr= jstr(item,"address")) != 0 && strcmp(addr,coinaddr) == 0 )
+                    {
+                        retjson = jduplicate(jobj(item,"txids"));
+                        free_json(array);
+                        return(retjson);
+                    }
+                }
+            }
+        }
+        return(cJSON_Parse("[]"));
+    } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr));
+}
+
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
 {
     struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0;
