@@ -683,6 +683,7 @@ cJSON *LP_listreceivedbyaddress(char *symbol,char *coinaddr)
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
     {
+        sprintf(buf,"[1, false, true]");
         if ( (array= bitcoin_json(coin,"listreceivedbyaddress",buf)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
