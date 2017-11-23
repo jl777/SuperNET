@@ -1174,20 +1174,20 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     }
     swap->myfee.I.locktime = swap->I.started + 1;
     swap->otherfee.I.locktime = swap->I.started + 1;
-    basilisk_rawtx_setparms("bobdeposit",swap->I.req.quoteid,&swap->bobdeposit,bobcoin,swap->I.bobconfirms,0,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis) + bobcoin->txfee,4,0,jumblrflag);
+    basilisk_rawtx_setparms("bobdeposit",swap->I.req.quoteid,&swap->bobdeposit,bobcoin,swap->I.bobconfirms,0,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis) + 2*bobcoin->txfee,4,0,jumblrflag);
     basilisk_rawtx_setparms("bobrefund",swap->I.req.quoteid,&swap->bobrefund,bobcoin,1,4,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis),1,bobpub33,jumblrflag);
     swap->bobrefund.I.suppress_pubkeys = 1;
     basilisk_rawtx_setparms("aliceclaim",swap->I.req.quoteid,&swap->aliceclaim,bobcoin,1,4,LP_DEPOSITSATOSHIS(swap->I.bobsatoshis),1,alicepub33,jumblrflag);
     swap->aliceclaim.I.suppress_pubkeys = 1;
     swap->aliceclaim.I.locktime = swap->I.started + swap->I.putduration+swap->I.callduration + 1;
     
-    basilisk_rawtx_setparms("bobpayment",swap->I.req.quoteid,&swap->bobpayment,bobcoin,swap->I.bobconfirms,0,swap->I.bobsatoshis + bobcoin->txfee,3,0,jumblrflag);
+    basilisk_rawtx_setparms("bobpayment",swap->I.req.quoteid,&swap->bobpayment,bobcoin,swap->I.bobconfirms,0,swap->I.bobsatoshis + 2*bobcoin->txfee,3,0,jumblrflag);
     basilisk_rawtx_setparms("alicespend",swap->I.req.quoteid,&swap->alicespend,bobcoin,swap->I.bobconfirms,3,swap->I.bobsatoshis,1,alicepub33,jumblrflag);
     swap->alicespend.I.suppress_pubkeys = 1;
     basilisk_rawtx_setparms("bobreclaim",swap->I.req.quoteid,&swap->bobreclaim,bobcoin,swap->I.bobconfirms,3,swap->I.bobsatoshis,1,bobpub33,jumblrflag);
     swap->bobreclaim.I.suppress_pubkeys = 1;
     swap->bobreclaim.I.locktime = swap->I.started + swap->I.putduration + 1;
-    basilisk_rawtx_setparms("alicepayment",swap->I.req.quoteid,&swap->alicepayment,alicecoin,swap->I.aliceconfirms,0,swap->I.alicesatoshis + alicecoin->txfee,2,0,jumblrflag);
+    basilisk_rawtx_setparms("alicepayment",swap->I.req.quoteid,&swap->alicepayment,alicecoin,swap->I.aliceconfirms,0,swap->I.alicesatoshis + 2*alicecoin->txfee,2,0,jumblrflag);
     basilisk_rawtx_setparms("bobspend",swap->I.req.quoteid,&swap->bobspend,alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,bobpub33,jumblrflag);
     swap->bobspend.I.suppress_pubkeys = 1;
     basilisk_rawtx_setparms("alicereclaim",swap->I.req.quoteid,&swap->alicereclaim,alicecoin,swap->I.aliceconfirms,2,swap->I.alicesatoshis,1,alicepub33,jumblrflag);
