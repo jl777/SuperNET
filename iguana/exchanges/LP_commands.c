@@ -574,6 +574,10 @@ zeroconf_claim(address, expiration=0)\n\
     {
         if ( strcmp(method,"gettradestatus") == 0 )
             return(LP_gettradestatus(j64bits(argjson,"aliceid")));
+        else if ( strcmp(method,"tradesarray") == 0 )
+        {
+            return(jprint(LP_tradesarray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
+        }
     }
     // received response
     if ( strcmp(method,"swapstatus") == 0 )
