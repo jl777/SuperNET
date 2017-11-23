@@ -327,7 +327,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                 }
             }
         } //else printf("no spend of %s/v%d detected\n",bits256_str(str,txid),vout);
-    } else printf("utxoind.%d null txid\n",utxoind);
+    } //else printf("utxoind.%d null txid\n",utxoind);
     return(spendtxid);
 }
 
