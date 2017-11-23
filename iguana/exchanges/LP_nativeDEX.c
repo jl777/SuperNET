@@ -24,7 +24,7 @@
 // electrum dynamic trust over 1000
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
-//
+// bob latency to respond
 // bugs, validations:
 // remove LP_utxo_bestfit from portfolio
 // portfolio value based on ask?
