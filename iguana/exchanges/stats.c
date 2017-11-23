@@ -338,7 +338,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
     n = i;
     //printf("URLMETHOD.(%s)\n",urlmethod);
     *postflagp = (strcmp(urlmethod,"POST") == 0);
-    printf("POST.%d rpcparse.(%s)\n",*postflagp,urlstr);
+    //printf("POST.%d rpcparse.(%s)\n",*postflagp,urlstr);
     for (i=0; i<sizeof(url)-1&&urlstr[n+i]!=0&&urlstr[n+i]!=' '; i++)
         url[i] = urlstr[n+i];
     url[i++] = 0;
@@ -416,7 +416,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
         {
             free_json(argjson);
             argjson = cJSON_Parse(data);
-            printf("data.(%s)\n",data);
+            //printf("data.(%s)\n",data);
         }
         if ( argjson != 0 )
         {
@@ -577,8 +577,8 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
 
 int32_t iguana_getcontentlen(char *buf,int32_t recvlen)
 {
-    char *str,*clenstr = "Content-Length: "; int32_t len = -1;
-    if ( (str= strstr(buf,clenstr)) != 0 )
+    char *str,*clenstr = "Content-Length: ",*clenstr2 = "content-length: "; int32_t len = -1;
+    if ( (str= strstr(buf,clenstr)) != 0 || (str= strstr(buf,clenstr2)) != 0 )
     {
         //printf("strstr.(%s)\n",str);
         str += strlen(clenstr);
