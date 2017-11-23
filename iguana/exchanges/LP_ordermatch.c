@@ -400,15 +400,15 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
     memset(butxo,0,sizeof(*butxo));
     if ( iambob != 0 )
     {
-        targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee) + 2*txfee;
-        targetval2 = (targetval / 8) * 9 + 2*txfee;
+        targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee) + 3*txfee;
+        targetval2 = (targetval / 8) * 9 + 3*txfee;
         fee = txfee;
         ratio = LP_MINVOL;
     }
     else
     {
-        targetval = relvolume*SATOSHIDEN + 2*desttxfee;
-        targetval2 = (targetval / 777) + 2*desttxfee;
+        targetval = relvolume*SATOSHIDEN + 3*desttxfee;
+        targetval2 = (targetval / 777) + 3*desttxfee;
         fee = desttxfee;
         ratio = LP_MINCLIENTVOL;
     }
