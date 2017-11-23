@@ -321,7 +321,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
         }
         if ( replacei >= 0 )
         {
-            //printf("REPLACE bestdist %.8f height %d with dist %.8f height %d\n",dstr(bestdist),bestup->U.height,dstr(utxos[replacei]->U.value - targetval),utxos[replacei]->U.height);
+            printf("REPLACE bestdist %.8f height %d with dist %.8f height %d\n",dstr(bestdist),bestup->U.height,dstr(utxos[replacei]->U.value - targetval),utxos[replacei]->U.height);
             return(replacei);
         }
     }
@@ -396,19 +396,21 @@ uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t d
 
 struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double relvolume,double price,uint64_t desttxfee)
 {
-    struct LP_address *ap; uint64_t fee,targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2;
+    struct LP_address *ap; uint64_t fee,targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2; double ratio;
     memset(butxo,0,sizeof(*butxo));
     if ( iambob != 0 )
     {
         targetval = LP_basesatoshis(relvolume,price,txfee,desttxfee);
         targetval2 = (targetval / 8) * 9 + 2*txfee;
         fee = txfee;
+        ratio = LP_MINVOL;
     }
     else
     {
         targetval = relvolume*SATOSHIDEN + 2*desttxfee;
         targetval2 = (targetval / 777) + 2*desttxfee;
         fee = desttxfee;
+        ratio = LP_MINCLIENTVOL;
     }
     if ( coin != 0 && (ap= LP_address(coin,coinaddr)) != 0 )
     {
@@ -428,7 +430,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                 up = utxos[mini];
                 utxos[mini] = 0;
 printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
-                if ( (double)up->U.value/targetval < LP_MINVOL-1 )
+                if ( (double)up->U.value/targetval < ratio-1 )
 
                 {
                     if ( (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,(targetval2+2*fee) * 1.01)) >= 0 )
