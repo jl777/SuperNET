@@ -613,7 +613,7 @@ void LP_rpc_processreq(void *_ptr)
     retstr = 0;
     //space = calloc(1,size);
     jsonbuf = calloc(1,size);
-    printf("alloc jsonbuf.%p\n",jsonbuf);
+    //printf("alloc jsonbuf.%p\n",jsonbuf);
     remains = size-1;
     buf = jsonbuf;
     spawned++;
@@ -718,7 +718,7 @@ void LP_rpc_processreq(void *_ptr)
             strcat(response,"\n");
             if ( retstr != space )
             {
-                printf("free retstr0.%p\n",retstr);
+                //printf("free retstr0.%p\n",retstr);
                 free(retstr);
             }
             retstr = response;
@@ -746,12 +746,12 @@ void LP_rpc_processreq(void *_ptr)
         }
         if ( retstr != space && retstr != space2 )
         {
-            printf("free retstr.%p\n",retstr);
+            //printf("free retstr.%p\n",retstr);
             free(retstr);
         }
     }
     //free(space);
-    printf("free jsonbuf.%p\n",jsonbuf);
+    //printf("free jsonbuf.%p\n",jsonbuf);
     free(jsonbuf);
     closesocket(sock);
     if ( 0 )
