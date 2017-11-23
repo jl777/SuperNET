@@ -265,7 +265,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
             {
                 for (i=0; i<n; i++)
                 {
-                    txid = jbits256(jitem(array,i),0);
+                    txid = jbits256(jitem(array,i),"tx_hash");
                     printf("i.%d of %d: %s\n",i,n,bits256_str(str,txid));
                     if ( bits256_cmp(txid,txids[utxoind]) != 0 )
                     {
