@@ -653,7 +653,7 @@ int32_t LP_address_isvalid(char *symbol,char *address)
 
 cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
-    char buf[128]; cJSON *retjson; int32_t numconfs; struct iguana_info *coin;
+    char buf[128],*retstr; struct LP_address *ap; cJSON *retjson; int32_t numconfs,usecache=1; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -661,14 +661,33 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
     {
+        if ( (ap= LP_addressfind(coin,symbol)) != 0 )
+        {
+            if ( ap->unspenttime == 0 )
+                usecache = 0;
+            else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+30 )
+                usecache = 0;
+            if ( usecache != 0 && (retstr= LP_unspents_filestr(symbol,coinaddr)) != 0 )
+            {
+                retjson = cJSON_Parse(retstr);
+                free(retstr);
+                return(retjson);
+            }
+        }
         if ( LP_address_ismine(symbol,coinaddr) > 0 || LP_address_iswatched(symbol,coinaddr) > 0 )
         {
             if ( strcmp(symbol,"BTC") == 0 )
                 numconfs = 0;
             else numconfs = 1;
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
-            printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
-            return(bitcoin_json(coin,"listunspent",buf));
+            //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
+            retjson = bitcoin_json(coin,"listunspent",buf);
+            retstr = jprint(retjson,0);
+            LP_unspents_cache(coin->symbol,coinaddr,retstr,1);
+            free(retstr);
+            if ( ap != 0 )
+                ap->unspenttime = (uint32_t)time(NULL);
+            return(retjson);
         } else return(LP_address_utxos(coin,coinaddr,0));
     } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
 }
