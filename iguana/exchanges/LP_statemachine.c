@@ -3039,6 +3039,13 @@ if ( (0) )
  #undef aptr
  #undef bptr
  }*/
+/*if ( (utxo= LP_utxoadd(1,coin->symbol,up->U.txid,up->U.vout,up->U.value,up2->U.txid,up2->U.vout,up2->U.value,coinaddr,ap->pubkey,G.gui,0,targetval)) != 0 )
+ {
+ utxo->S.satoshis = targetval;
+ char str[65],str2[65]; printf("butxo.%p targetval %.8f, found val %.8f %s | targetval2 %.8f val2 %.8f %s\n",utxo,dstr(targetval),dstr(up->U.value),bits256_str(str,utxo->payment.txid),dstr(targetval2),dstr(up2->U.value),bits256_str(str2,utxo->deposit.txid));
+ return(butxo);
+ }*/
+
 /*if ( (sobj= jobj(v,"scriptPubKey")) != 0 )
  {
  if ( (scriptstr= jstr(sobj,"hex")) != 0 )

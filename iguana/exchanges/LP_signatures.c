@@ -695,7 +695,7 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
 
 void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_quoteinfo *qp)
 {
-    cJSON *reqjson; bits256 zero; char *msg,*msg2; int32_t flag = 0;
+    cJSON *reqjson; bits256 zero; char *msg; int32_t flag = 0;
     if ( strcmp(method,"request") == 0 )
     {
         if ( LP_allocated(qp->desttxid,qp->destvout) == 0 && LP_allocated(qp->feetxid,qp->feevout) == 0 )
@@ -717,17 +717,20 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     if ( jobj(reqjson,"timestamp") == 0 )
         jaddnum(reqjson,"timestamp",time(NULL));
     msg = jprint(reqjson,1);
-    msg2 = clonestr(msg);
     printf("QUERY.(%s)\n",msg);
     if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )
     {
         memset(&zero,0,sizeof(zero));
-        portable_mutex_lock(&LP_reservedmutex);
+        LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,clonestr(msg));
+        LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
+        LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,clonestr(msg));
+        free(msg);
+        /*portable_mutex_lock(&LP_reservedmutex);
         if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )
             Reserved_msgs[1][num_Reserved_msgs[1]++] = msg;
         if ( num_Reserved_msgs[0] < sizeof(Reserved_msgs[0])/sizeof(*Reserved_msgs[0])-2 )
             Reserved_msgs[0][num_Reserved_msgs[0]++] = msg2;
-        portable_mutex_unlock(&LP_reservedmutex);
-    } else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg2);
+        portable_mutex_unlock(&LP_reservedmutex);*/
+    } else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
 }
 

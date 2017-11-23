@@ -192,7 +192,7 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
     return(clonestr("{\"error\":\"no zeroconf deposits to claim\"}"));
 }
 
-void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2shaddr)
+void LP_zeroconf_credit(int32_t dispflag,char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2shaddr)
 {
     uint32_t timestamp; struct LP_address *ap; struct iguana_info *coin = LP_coinfind("KMD");
     if ( coin != 0 )
@@ -201,13 +201,15 @@ void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2s
         if (  time(NULL) < timestamp-24*3600 && (ap= LP_address(coin,coinaddr)) != 0 )
         {
             ap->zeroconf_credits += satoshis;
-            printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
+            if ( dispflag != 0 )
+                printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
         }
     }
 }
 
 void LP_zeroconf_deposits(struct iguana_info *coin)
 {
+    static int dispflag = 1;
     cJSON *array,*item,*txjson,*vouts,*v,*txobj; int32_t i,n,numvouts,height,vout,weeki; bits256 txid; char destaddr[64],p2shaddr[64]; struct LP_address *ap,*tmp; int64_t satoshis,amount64;
     HASH_ITER(hh,coin->addresses,ap,tmp)
     {
@@ -240,7 +242,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                             if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )
                             {
                                 free_json(txobj);
-                                LP_zeroconf_credit(destaddr,satoshis,weeki,p2shaddr);
+                                LP_zeroconf_credit(dispflag,destaddr,satoshis,weeki,p2shaddr);
                             }
                         }
                     }
@@ -250,6 +252,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
         }
         free_json(array);
     }
+    dispflag = 0;
 }
 
 int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
