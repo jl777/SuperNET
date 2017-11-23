@@ -68,9 +68,13 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
     }
     if ( strcmp(method,"hello") == 0 )
     {
+        int32_t i; cJSON *array = cJSON_CreateArray();
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"status","got hello");
+        for (i=0; i<10000; i++)
+            jaddinum(array,i);
+        jadd(retjson,"array",array);
         return(jprint(retjson,1));
         //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
         return(clonestr("{\"result\":\"success\",\"status\":\"got hello\"}"));
