@@ -1038,7 +1038,7 @@ bits256 LP_getbestblockhash(struct iguana_info *coin)
 
 char *LP_blockhashstr(char *symbol,int32_t height)
 {
-    char params[64],*retstr; struct iguana_info *coin; //cJSON *array; 
+    char params[64],*retstr; struct iguana_info *coin; //cJSON *array;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     coin = LP_coinfind(symbol);
@@ -1050,7 +1050,7 @@ char *LP_blockhashstr(char *symbol,int32_t height)
     sprintf(params,"[%d]",height);
     retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"getblockhash",params);
     //free(paramstr);
-    printf("blockhashstr.(%s)\n",retstr);
+    //printf("blockhashstr.(%s)\n",retstr);
     return(retstr);
 }
 

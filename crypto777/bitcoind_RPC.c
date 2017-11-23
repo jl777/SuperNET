@@ -96,7 +96,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
         if ( (error->type&0xff) == cJSON_NULL && (result->type&0xff) != cJSON_NULL )
         {
             retstr = jprint(result,0);
-            printf("%s %s rpc retstr.%p\n",command,params,retstr);
+            //printf("%s %s rpc retstr.%p\n",command,params,retstr);
             len = strlen(retstr);
             if ( retstr[0] == '"' && retstr[len-1] == '"' )
             {
@@ -114,7 +114,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
         }
         if ( rpcstr != 0 )
         {
-            printf("free rpcstr.%p\n",rpcstr);
+            //printf("free rpcstr.%p\n",rpcstr);
             free(rpcstr);
         }
     } else retstr = rpcstr;
@@ -338,7 +338,7 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
     {
         //printf("curl needs %d more\n",(int32_t)realsize);
         mem->memory = (ptr != 0) ? realloc(mem->memory,needed) : malloc(needed);
-        printf("mem->memory.%p len.%d\n",mem->memory,(int32_t)needed);
+        //printf("mem->memory.%p len.%d\n",mem->memory,(int32_t)needed);
         mem->allocsize = needed;
     }
     //mem->memory = (ptr != 0) ? realloc(mem->memory,mem->size + realsize + 1) : malloc(mem->size + realsize + 1);
