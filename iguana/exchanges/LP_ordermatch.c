@@ -514,12 +514,13 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,cJSON *argjson,char *base,c
 
 char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration,uint32_t tradeid,bits256 destpubkey)
 {
-    struct LP_utxoinfo *aliceutxo; double price;
-    if ( (aliceutxo= LP_utxopairfind(0,qp->desttxid,qp->destvout,qp->feetxid,qp->feevout)) == 0 )
+    //struct LP_utxoinfo *aliceutxo;
+    double price;
+    /*if ( (aliceutxo= LP_utxopairfind(0,qp->desttxid,qp->destvout,qp->feetxid,qp->feevout)) == 0 )
     {
         char str[65],str2[65]; printf("dest.(%s)/v%d fee.(%s)/v%d\n",bits256_str(str,qp->desttxid),qp->destvout,bits256_str(str2,qp->feetxid),qp->feevout);
         return(clonestr("{\"error\":\"cant find alice utxopair\"}"));
-    }
+    }*/
     price = 0.;
     memset(qp->txid.bytes,0,sizeof(qp->txid));
     qp->txid2 = qp->txid;
