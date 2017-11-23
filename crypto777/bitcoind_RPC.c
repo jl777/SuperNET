@@ -231,30 +231,30 @@ try_again:
         free(databuf);
         databuf = 0;
     }
+    retstr = chunk.memory; // retstr = s.ptr;
     if ( res != CURLE_OK )
     {
         numretries++;
         if ( specialcase != 0 || timeout != 0 )
         {
-            //printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,s.ptr,res);
-            free(chunk.memory); //free(s.ptr);
+            //printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,retstr,res);
+            free(retstr);
             return(0);
         }
         else if ( numretries >= 4 )
         {
             printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
             //printf("Maximum number of retries exceeded!\n");
-            free(chunk.memory);//free(s.ptr);
+            free(retstr);
             return(0);
         }
-        free(chunk.memory);//free(s.ptr);
+        free(retstr);
         sleep((1<<numretries));
         goto try_again;
         
     }
     else
     {
-        retstr = chunk.memory; // retstr = s.ptr;
         if ( command != 0 && specialcase == 0 )
         {
             count++;
@@ -279,9 +279,6 @@ try_again:
             return(retstr);
         }
     }
-    //printf("bitcoind_RPC: impossible case\n");
-    //free(s.ptr);
-    //return(0);
 }
 
 /************************************************************************

@@ -99,9 +99,10 @@ struct LP_inuse_info *_LP_inuse_add(uint32_t expiration,bits256 otherpub,bits256
         {
             if ( bits256_nonz(otherpub) != 0 )
                 lp->otherpub = otherpub;
-            if ( expiration > lp->expiration || expiration == 0 )
+            //if ( expiration > lp->expiration || expiration == 0 )
                 lp->expiration = expiration;
         }
+        char str[65]; printf("set inuse until %u lag.%d for %s/v%d\n",expiration,(int32_t)(expiration-(uint32_t)time(NULL)),bits256_str(str,txid),vout);
         return(lp);
     } else printf("_LP_inuse_add [%d] overflow\n",LP_numinuse);
     return(0);
