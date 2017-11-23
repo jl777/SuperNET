@@ -237,7 +237,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
             sp->Q.R.quoteid = quoteid;
             if ( LP_swapstats_update(sp,&Q,lineobj) == 0 )
                 flag = 1;
-            else printf("LP_swapstats_update error\n");
+            //else printf("LP_swapstats_update error\n");
         }
         if ( flag == 0 )
         {
