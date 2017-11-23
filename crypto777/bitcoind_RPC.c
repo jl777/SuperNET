@@ -334,6 +334,7 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
     {
         //printf("curl needs %d more\n",(int32_t)realsize);
         mem->memory = (ptr != 0) ? realloc(mem->memory,needed) : malloc(needed);
+        printf("mem->memory.%p len.%d\n",mem->memory,(int32_t)needed);
         mem->allocsize = needed;
     }
     //mem->memory = (ptr != 0) ? realloc(mem->memory,mem->size + realsize + 1) : malloc(mem->size + realsize + 1);

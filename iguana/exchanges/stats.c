@@ -718,7 +718,7 @@ void LP_rpc_processreq(void *_ptr)
             strcat(response,"\n");
             if ( retstr != space )
             {
-                //printf("free retstr0.%p\n",retstr);
+                printf("free retstr0.%p\n",retstr);
                 free(retstr);
             }
             retstr = response;
