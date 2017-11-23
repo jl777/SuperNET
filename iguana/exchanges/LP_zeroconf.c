@@ -196,7 +196,7 @@ void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2s
     if ( coin != 0 )
     {
         timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
-        if (  (ap= LP_address(coin,coinaddr)) != 0 ) //time(NULL) < timestamp-24*3600 &&
+        if (  time(NULL) < timestamp-24*3600 && (ap= LP_address(coin,coinaddr)) != 0 )
         {
             ap->zeroconf_credits += satoshis;
             printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
@@ -209,7 +209,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
     cJSON *array,*item,*txjson,*vouts,*v,*txobj; int32_t i,n,numvouts,height,vout,weeki; bits256 txid; char destaddr[64],p2shaddr[64]; int64_t satoshis,amount64;
     if ( (array= LP_listreceivedbyaddress("KMD",BOTS_BONDADDRESS)) != 0 )
     {
-        printf("ZEROCONF.(%s)\n",jprint(array,0));
+        //printf("ZEROCONF.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             for (i=0; i<n; i++)
@@ -228,7 +228,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                         weeki = (amount64 % 10000);
                         v = jitem(vouts,0);
                         satoshis = LP_value_extract(v,0);
-                        printf("%s funded %.8f weeki.%d\n",destaddr,dstr(satoshis),weeki);
+                        //printf("%s funded %.8f weeki.%d\n",destaddr,dstr(satoshis),weeki);
                         if ( LP_destaddr(p2shaddr,v) == 0 )
                         {
                             if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )
