@@ -700,8 +700,8 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     {
         if ( LP_allocated(qp->desttxid,qp->destvout) == 0 && LP_allocated(qp->feetxid,qp->feevout) == 0 )
         {
-            LP_unavailableset(qp->desttxid,qp->destvout,qp->timestamp+LP_AUTOTRADE_TIMEOUT,qp->srchash);
-            LP_unavailableset(qp->feetxid,qp->feevout,qp->timestamp+LP_AUTOTRADE_TIMEOUT,qp->srchash);
+            LP_unavailableset(qp->desttxid,qp->destvout,qp->timestamp+LP_AUTOTRADE_TIMEOUT*4,qp->srchash);
+            LP_unavailableset(qp->feetxid,qp->feevout,qp->timestamp+LP_AUTOTRADE_TIMEOUT*4,qp->srchash);
         }
         else
         {

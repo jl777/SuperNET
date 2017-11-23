@@ -749,7 +749,12 @@ void LP_rpc_processreq(void *_ptr)
         portable_mutex_lock(&LP_gcmutex);
         DL_APPEND(LP_garbage_collector,req);
         portable_mutex_unlock(&LP_gcmutex);
-    } free(req);
+    }
+    else
+    {
+        printf("free req.%p\n",req);
+        free(req);
+    }
     spawned--;
 }
 
