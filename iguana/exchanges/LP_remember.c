@@ -1126,7 +1126,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     LP_txbytes_update("bobrefund",rswap.bobcoin,rswap.txbytes[BASILISK_BOBREFUND],&rswap.txids[BASILISK_BOBREFUND],&rswap.depositspent,&rswap.sentflags[BASILISK_BOBREFUND]);
                 }
-                else if ( flag == 0 )
+                else if ( 0 && flag == 0 )
                     printf("bobrefund's time %u vs expiration %u\n",(uint32_t)time(NULL),rswap.expiration);
             }
         }
