@@ -718,7 +718,7 @@ void LP_rpc_processreq(void *_ptr)
             strcat(response,"\n");
             if ( retstr != space )
             {
-                printf("free retstr0.%p\n",retstr);
+                //printf("free retstr0.%p\n",retstr);
                 free(retstr);
             }
             retstr = response;
@@ -754,7 +754,7 @@ void LP_rpc_processreq(void *_ptr)
     //printf("free jsonbuf.%p\n",jsonbuf);
     free(jsonbuf);
     closesocket(sock);
-    if ( 0 )
+    if ( 1 )
     {
         portable_mutex_lock(&LP_gcmutex);
         DL_APPEND(LP_garbage_collector,req);
