@@ -714,7 +714,8 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
         flag = 1;
     jaddbits256(reqjson,"pubkey",qp->srchash);
     jaddstr(reqjson,"method",method);
-    jaddnum(reqjson,"timestamp",time(NULL));
+    if ( jobj(reqjson,"timestamp") == 0 )
+        jaddnum(reqjson,"timestamp",time(NULL));
     msg = jprint(reqjson,1);
     msg2 = clonestr(msg);
     printf("QUERY.(%s)\n",msg);
