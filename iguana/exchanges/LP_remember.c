@@ -266,23 +266,23 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                 for (i=0; i<n; i++)
                 {
                     txid = jbits256(jitem(array,i),"tx_hash");
-                    printf("i.%d of %d: %s\n",i,n,bits256_str(str,txid));
+                    //printf("i.%d of %d: %s\n",i,n,bits256_str(str,txid));
                     if ( bits256_cmp(txid,txids[utxoind]) != 0 )
                     {
                         if ( (txobj= LP_gettx(symbol,txid)) != 0 )
                         {
-                            printf("txobj.(%s)\n",jprint(txobj,0));
+                            //printf("txobj.(%s)\n",jprint(txobj,0));
                             if ( (vins= jarray(&m,txobj,"vin")) != 0 )
                             {
                                 vin = jitem(vins,0);
-                                printf("vin0.(%s)\n",jprint(vin,0));
+                                //printf("vin0.(%s)\n",jprint(vin,0));
                             }
                             free_json(txobj);
                         }
                     }
                 }
             }
-            printf("processed history.(%s) %s\n",jprint(array,0),bits256_str(str,txids[utxoind]));
+            //printf("processed history.(%s) %s\n",jprint(array,0),bits256_str(str,txids[utxoind]));
             free_json(array);
         }
     }
