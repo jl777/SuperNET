@@ -24,6 +24,7 @@
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // bugs, validations:
+// remove LP_utxo_bestfit from portfolio
 // portfolio value based on ask?
 // verify encrypted destpubkey, broadcast:0 setprice
 
