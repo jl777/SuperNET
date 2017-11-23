@@ -447,7 +447,7 @@ printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",
                         {
                             LP_butxo_set(butxo,iambob,coin,up,up2,targetval);
                             return(butxo);
-                        }
+                        } else printf("cant find utxos[mini %d]\n",mini);
                     } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
                 } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
             } else if ( targetval != 0 && mini >= 0 )
