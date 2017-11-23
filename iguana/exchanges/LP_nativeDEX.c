@@ -18,7 +18,6 @@
 //  marketmaker
 //
 // feature requests:
-// electrum memleak?
 // alice waiting for bestprice
 // USD paxprice based USDvalue in portfolio
 // cancel bid/ask
@@ -27,7 +26,6 @@
 // bugs, validations:
 // waiting for alice and alice disconnects, can find bobpayment based on Q.txid
 // portfolio value based on ask?
-// disable basilisk
 // verify encrypted destpubkey, broadcast:0 setprice
 
 // improve critical section detection when parallel trades

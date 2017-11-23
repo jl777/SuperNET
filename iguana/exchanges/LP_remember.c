@@ -258,6 +258,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
     bits256 spendtxid,txid; char destaddr[64],str[65]; struct iguana_info *coin; cJSON *histobj;
     if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
     {
+        printf("spentaddr.%s aliceaddr.%s bobaddr.%s Adest.%s Bdest.%s\n",spentaddr,aliceaddr,bobaddr,Adest,dest);
         if ( (histobj= electrum_address_gethistory(symbol,coin->electrum,&histobj,spentaddr)) != 0 )
         {
             //printf("processed history.(%s)\n",jprint(histobj,0));
@@ -276,14 +277,14 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
             //printf("utxoind.%d Alice.(%s %s) Bob.(%s %s) vs destaddr.(%s)\n",utxoind,aliceaddr,Adest,bobaddr,dest,destaddr);
             if ( aliceaddr != 0 && (strcmp(destaddr,aliceaddr) == 0 || strcmp(Adest,destaddr) == 0) )
             {
-                //printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[alicespent] = 1;
                 sentflags[bobspent] = 0;
                 txids[alicespent] = spendtxid;
             }
             else if ( bobaddr != 0 && (strcmp(destaddr,bobaddr) == 0 || strcmp(dest,destaddr) == 0) )
             {
-                //printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[bobspent] = 1;
                 sentflags[alicespent] = 0;
                 txids[bobspent] = spendtxid;
