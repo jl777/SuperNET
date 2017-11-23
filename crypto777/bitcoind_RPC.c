@@ -96,6 +96,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
         if ( (error->type&0xff) == cJSON_NULL && (result->type&0xff) != cJSON_NULL )
         {
             retstr = jprint(result,0);
+            printf("rpc retstr.%p\n",retstr);
             len = strlen(retstr);
             if ( retstr[0] == '"' && retstr[len-1] == '"' )
             {
@@ -112,7 +113,10 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
             rpcstr = 0;
         }
         if ( rpcstr != 0 )
+        {
+            printf("free rpcstr.%p\n",rpcstr);
             free(rpcstr);
+        }
     } else retstr = rpcstr;
     free_json(json);
     //fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: postprocess returns.(%s)\n",retstr);
