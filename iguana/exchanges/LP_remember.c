@@ -255,14 +255,33 @@ bits256 basilisk_swap_privBn_extract(bits256 *bobrefundp,char *bobcoin,bits256 b
 
 bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,int32_t *sentflags,bits256 *txids,int32_t utxoind,int32_t alicespent,int32_t bobspent,int32_t vout,char *aliceaddr,char *bobaddr,char *Adest,char *dest)
 {
-    bits256 spendtxid,txid; char destaddr[64],str[65]; struct iguana_info *coin; cJSON *histobj;
+    bits256 spendtxid,txid; char destaddr[64],str[65]; int32_t i,n,m; struct iguana_info *coin; cJSON *array,*txobj,*vins,*vin;
     if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
     {
         //printf("spentaddr.%s aliceaddr.%s bobaddr.%s Adest.%s Bdest.%s\n",spentaddr,aliceaddr,bobaddr,Adest,dest);
-        if ( (histobj= electrum_address_gethistory(symbol,coin->electrum,&histobj,spentaddr)) != 0 )
+        if ( (array= electrum_address_gethistory(symbol,coin->electrum,&array,spentaddr)) != 0 )
         {
-            printf("processed history.(%s)\n",jprint(histobj,0));
-            free_json(histobj);
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    txid = jbits256(jitem(array,i),0);
+                    if ( bits256_cmp(txid,txids[utxoind]) != 0 )
+                    {
+                        if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+                        {
+                            if ( (vins= jarray(&m,txobj,"vin")) != 0 )
+                            {
+                                vin = jitem(vins,0);
+                                printf("vin0.(%s)\n",jprint(vin,0));
+                            }
+                            free_json(txobj);
+                        }
+                    }
+                }
+            }
+            printf("processed history.(%s) %s\n",jprint(array,0),bits256_str(str,txids[utxoind]));
+            free_json(array);
         }
     }
     txid = txids[utxoind];
