@@ -68,16 +68,16 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
     }
     if ( strcmp(method,"hello") == 0 )
     {
-        int32_t i; cJSON *array = cJSON_CreateArray();
+        //int32_t i; cJSON *array = cJSON_CreateArray();
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"status","got hello");
-        for (i=0; i<10000; i++)
-            jaddinum(array,i);
-        jadd(retjson,"array",array);
+        //for (i=0; i<10000; i++)
+        //    jaddinum(array,i);
+        //jadd(retjson,"array",array);
         return(jprint(retjson,1));
         //printf("got hello from %s:%u\n",ipaddr!=0?ipaddr:"",argport);
-        return(clonestr("{\"result\":\"success\",\"status\":\"got hello\"}"));
+        //return(clonestr("{\"result\":\"success\",\"status\":\"got hello\"}"));
     }
     /*else if ( strcmp(method,"sendmessage") == 0 && jobj(argjson,"userpass") == 0 )
      {
@@ -455,7 +455,7 @@ zeroconf_claim(address, expiration=0)\n\
                                 //LP_listunspent_issue(coin,coinaddr,2);
                                 //LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                             }
-                            return(jprint(LP_listunspent(coin,coinaddr),0));
+                            return(jprint(LP_listunspent(coin,coinaddr),1));
                         }
                     }
                     return(clonestr("{\"error\":\"no address specified\"}"));
@@ -631,7 +631,7 @@ zeroconf_claim(address, expiration=0)\n\
     {
         bits256 zero; cJSON *tmpjson;
         LP_tradecommand_log(argjson);
-        printf("GOT TRADESTATUS! %s\n",jprint(argjson,0));
+        //printf("GOT TRADESTATUS! %s\n",jprint(argjson,0));
         if ( LP_statslog_parse() > 0 )
         {
             memset(zero.bytes,0,sizeof(zero));
