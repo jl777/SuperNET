@@ -1038,17 +1038,19 @@ bits256 LP_getbestblockhash(struct iguana_info *coin)
 
 char *LP_blockhashstr(char *symbol,int32_t height)
 {
-    cJSON *array; char *paramstr,*retstr; struct iguana_info *coin;
+    char params[64],*retstr; struct iguana_info *coin; //cJSON *array; 
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     coin = LP_coinfind(symbol);
     if ( coin == 0 || coin->electrum != 0 )
         return(0);
-    array = cJSON_CreateArray();
-    jaddinum(array,height);
-    paramstr = jprint(array,1);
-    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"getblockhash",paramstr);
-    free(paramstr);
+    //array = cJSON_CreateArray();
+    //jaddinum(array,height);
+    //paramstr = jprint(array,1);
+    sprintf(params,"[%d]",height);
+    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"getblockhash",params);
+    //free(paramstr);
+    printf("blockhashstr.(%s)\n",retstr);
     return(retstr);
 }
 
