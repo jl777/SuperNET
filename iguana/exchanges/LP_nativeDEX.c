@@ -835,7 +835,7 @@ void LP_privkeysloop(void *ctx)
 
 void LP_swapsloop(void *ignore)
 {
-    char *retstr;
+    char *retstr; struct iguana_info *coin;
     strcpy(LP_swapsloop_stats.name,"LP_swapsloop");
     LP_swapsloop_stats.threshold = 605000.;
     sleep(50);
@@ -847,6 +847,8 @@ void LP_swapsloop(void *ignore)
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
         sleep(600);
+        if ( (coin= LP_coinfind("KMD")) != 0 )
+            LP_zeroconf_deposits(coin);
     }
 }
 
