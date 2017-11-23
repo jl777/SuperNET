@@ -18,6 +18,7 @@
 //  marketmaker
 //
 // feature requests:
+// listtransactions for zeroconf credits in native
 // alice waiting for bestprice
 // USD paxprice based USDvalue in portfolio
 // cancel bid/ask
