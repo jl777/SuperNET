@@ -244,14 +244,16 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 {
                     sp->methodind = methodind;
                     if ( LP_swapstats_update(sp,&Q,lineobj) == 0 )
+                    {
                         flag = 1;
-                    else printf("error after delayed match\n");
-                    break;
+                        break;
+                    }
+                    printf("error after delayed match\n");
                 }
             }
         }
         if ( flag == 0 )
-            printf("unexpected.%d tradestatus aliceid.%llu\n",unexpected++,(long long)j64bits(lineobj,"aliceid"));//,jprint(lineobj,0));
+            printf("unexpected.%d tradestatus aliceid.%llu requestid.%u quoteid.%u\n",unexpected++,(long long)aliceid,requestid,quoteid);//,jprint(lineobj,0));
         return(0);
     }
     if ( LP_quoteparse(&Q,lineobj) < 0 )
