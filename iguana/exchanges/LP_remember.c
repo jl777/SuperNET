@@ -258,10 +258,10 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
     bits256 spendtxid,txid; char destaddr[64],str[65]; struct iguana_info *coin; cJSON *histobj;
     if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
     {
-        printf("spentaddr.%s aliceaddr.%s bobaddr.%s Adest.%s Bdest.%s\n",spentaddr,aliceaddr,bobaddr,Adest,dest);
+        //printf("spentaddr.%s aliceaddr.%s bobaddr.%s Adest.%s Bdest.%s\n",spentaddr,aliceaddr,bobaddr,Adest,dest);
         if ( (histobj= electrum_address_gethistory(symbol,coin->electrum,&histobj,spentaddr)) != 0 )
         {
-            //printf("processed history.(%s)\n",jprint(histobj,0));
+            printf("processed history.(%s)\n",jprint(histobj,0));
             free_json(histobj);
         }
     }
