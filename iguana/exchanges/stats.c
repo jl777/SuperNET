@@ -637,7 +637,7 @@ void LP_rpc_processreq(void *_ptr)
         }
         else
         {
-            printf("received len.%d\n%s\n",len,buf);
+            //printf("received len.%d\n%s\n",len,buf);
             if ( len > 0 )
             {
                 buf[len] = 0;
