@@ -881,7 +881,7 @@ int main(int argc, const char * argv[])
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
     cJSON *retjson,*loginjson; int32_t i;
     OS_init();
-    if ( argc == 2 && strncmp(argv[0],"btc2kmd",7) == 0 )
+    if ( strncmp(argv[0],"btc2kmd",7) == 0 && argv[1] != 0 )
     {
         uint8_t addrtype,rmd160[20]; char coinaddr[64];
         bitcoin_addr2rmd160(0,&addrtype,rmd160,(char *)argv[1]);
