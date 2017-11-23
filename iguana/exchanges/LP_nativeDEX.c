@@ -1044,6 +1044,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("LP_MAXPRICEINFOS %d wont fit in a uint8_t, need to increase the width of the baseind and relind for struct LP_pubkey_quote\n",LP_MAXPRICEINFOS);
         exit(-1);
     }
+    if ( 0 )
     {
         char *p2sh = "bJVtQF2o8B6sdNjeXupzNw5rnidJUNwPJD",p2shaddr[64]; uint8_t script[512],pub33[33]; uint32_t timestamp;
         decode_hex(pub33,33,"03fe754763c176e1339a3f62ee6b9484720e17ee4646b65a119e9f6370c7004abc");
