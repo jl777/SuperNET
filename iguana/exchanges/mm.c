@@ -881,13 +881,15 @@ int main(int argc, const char * argv[])
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
     cJSON *retjson,*loginjson; int32_t i;
     OS_init();
-    printf("%s\n",(char *)argv[0]);
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
     {
-        uint8_t addrtype,rmd160[20]; char coinaddr[64];
+        uint8_t addrtype,rmd160[20],rmd160b[20]; char coinaddr[64],coinaddr2[64],coinaddr3[64];
         bitcoin_addr2rmd160(0,&addrtype,rmd160,(char *)argv[1]);
         bitcoin_address(coinaddr,0,60,rmd160,20);
-        printf("%s\n",coinaddr);
+        bitcoin_address(coinaddr2,0,0,rmd160,20);
+        bitcoin_addr2rmd160(0,&addrtype,rmd160b,coinaddr);
+        bitcoin_address(coinaddr3,0,0,rmd160b,20);
+        printf("%s %s %s\n",coinaddr,coinaddr2,coinaddr3);
         exit(0);
     }
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
