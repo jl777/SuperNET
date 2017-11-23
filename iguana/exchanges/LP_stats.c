@@ -235,6 +235,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
             sp->methodind = methodind;
             if ( LP_swapstats_update(sp,&Q,lineobj) == 0 )
                 flag = 1;
+            else printf("LP_swapstats_update error\n");
         }
         if ( flag == 0 )
         {
@@ -301,6 +302,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         }
         else
         {
+            printf("create aliceid.%llu\n",(long long)aliceid);
             if ( (sp= LP_swapstats_add(aliceid,RTflag)) != 0 )
             {
                 sp->Q = Q;
