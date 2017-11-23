@@ -18,16 +18,13 @@
 //  marketmaker
 //
 // feature requests:
-// electrum memleak?
 // alice waiting for bestprice
 // USD paxprice based USDvalue in portfolio
 // cancel bid/ask
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // bugs, validations:
-// waiting for alice and alice disconnects, can find bobpayment based on Q.txid
 // portfolio value based on ask?
-// disable basilisk
 // verify encrypted destpubkey, broadcast:0 setprice
 
 // improve critical section detection when parallel trades
@@ -1046,6 +1043,20 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     {
         printf("LP_MAXPRICEINFOS %d wont fit in a uint8_t, need to increase the width of the baseind and relind for struct LP_pubkey_quote\n",LP_MAXPRICEINFOS);
         exit(-1);
+    }
+    if ( 0 )
+    {
+        char *p2sh = "bJVtQF2o8B6sdNjeXupzNw5rnidJUNwPJD",p2shaddr[64]; uint8_t script[512],pub33[33]; uint32_t timestamp;
+        decode_hex(pub33,33,"03fe754763c176e1339a3f62ee6b9484720e17ee4646b65a119e9f6370c7004abc");
+        for (timestamp=1510934803-3600*24; timestamp<1510934803+3600*24; timestamp++)
+        {
+            LP_deposit_addr(p2shaddr,script,0,85,timestamp,pub33);
+            if ( strcmp(p2shaddr,p2sh) == 0 )
+            {
+                printf("matched timestamp.%u\n",timestamp);
+                break;
+            } else printf("%s ",p2shaddr);
+        }
     }
     LP_showwif = juint(argjson,"wif");
     if ( passphrase == 0 || passphrase[0] == 0 )
