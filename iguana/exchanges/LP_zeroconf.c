@@ -142,7 +142,7 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
         redeemlen = LP_deposit_addr(vinaddr,redeemscript,coin->taddr,coin->p2shtype,timestamp,G.LP_pubsecp);
         if ( strcmp(depositaddr,vinaddr) == 0 )
         {
-            claimtime = (uint32_t)time(NULL)-777/2;
+            claimtime = (uint32_t)time(NULL)-777;
             if ( claimtime <= timestamp )
             {
                 printf("claimtime.%u vs locktime.%u, need to wait %d seconds\n",claimtime,timestamp,(int32_t)timestamp-claimtime);
@@ -155,7 +155,7 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
                     userdata[0] = 0x51;
                     userdatalen = 1;
                     utxovout = 0;
-                    printf("unspents.(%s)\n",jprint(array,0));
+                    //printf("unspents.(%s)\n",jprint(array,0));
                     if ( (n= cJSON_GetArraySize(array)) > 0 )
                     {
                         for (i=0; i<n; i++)
