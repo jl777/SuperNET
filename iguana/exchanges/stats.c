@@ -562,7 +562,9 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
     }
     free_json(argjson);
     if ( tmpjson != 0 )
-        free(tmpjson);
+        free_json(tmpjson);
+    if ( tokens != 0 )
+        free_json(tokens);
     *jsonflagp = 1;
     return(clonestr("{\"error\":\"couldnt process packet\"}"));
 }
@@ -597,15 +599,16 @@ void LP_rpc_processreq(void *_ptr)
     static uint32_t spawned,maxspawned;
     char filetype[128],content_type[128];
     int32_t recvlen,flag,postflag=0,contentlen,remains,sock,numsent,jsonflag=0,hdrsize,len;
-    char helpname[512],remoteaddr[64],*buf,*retstr,*space,*jsonbuf; struct rpcrequest_info *req = _ptr;
+    char helpname[512],remoteaddr[64],*buf,*retstr,space[4096],*jsonbuf; struct rpcrequest_info *req = _ptr;
     uint32_t ipbits,i,size = IGUANA_MAXPACKETSIZE + 512;
     ipbits = req->ipbits;;
     expand_ipbits(remoteaddr,ipbits);
     sock = req->sock;
     recvlen = flag = 0;
     retstr = 0;
-    space = calloc(1,size);
+    //space = calloc(1,size);
     jsonbuf = calloc(1,size);
+    printf("alloc jsonbuf.%p\n",jsonbuf);
     remains = size-1;
     buf = jsonbuf;
     spawned++;
@@ -696,16 +699,18 @@ void LP_rpc_processreq(void *_ptr)
         //printf("RETURN.(%s) jsonflag.%d postflag.%d\n",retstr,jsonflag,postflag);
         if ( jsonflag != 0 || postflag != 0 )
         {
-            if ( retstr == 0 )
-                retstr = clonestr("{}");
             response = malloc(strlen(retstr)+1024+1+1);
+            printf("alloc response.%p\n",response);
             sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr));
             response[0] = '\0';
             strcat(response,hdrs);
             strcat(response,retstr);
             strcat(response,"\n");
             if ( retstr != space )
+            {
+                printf("free retstr0.%p\n",retstr);
                 free(retstr);
+            }
             retstr = response;
             //printf("RET.(%s)\n",retstr);
         }
@@ -729,10 +734,14 @@ void LP_rpc_processreq(void *_ptr)
                     printf("iguana sent.%d remains.%d of recvlen.%d (%s)\n",numsent,remains,recvlen,jsonbuf);
             }
         }
-        if ( retstr != space)
+        if ( retstr != space )
+        {
+            printf("free retstr.%p\n",retstr);
             free(retstr);
+        }
     }
-    free(space);
+    //free(space);
+    printf("free jsonbuf.%p\n",jsonbuf);
     free(jsonbuf);
     closesocket(sock);
     if ( 0 )
@@ -797,6 +806,7 @@ void stats_rpcloop(void *args)
             continue;
         }
         req = calloc(1,sizeof(*req));
+        printf("alloc req.%p\n",req);
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
