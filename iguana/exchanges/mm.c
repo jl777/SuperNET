@@ -882,7 +882,7 @@ int main(int argc, const char * argv[])
     cJSON *retjson,*loginjson; int32_t i;
     OS_init();
     printf("%s\n",(char *)argv[0]);
-    if ( strstr("btc2kmd",argv[0]) != 0 && argv[1] != 0 )
+    if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
     {
         uint8_t addrtype,rmd160[20]; char coinaddr[64];
         bitcoin_addr2rmd160(0,&addrtype,rmd160,(char *)argv[1]);
