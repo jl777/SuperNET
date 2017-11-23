@@ -442,6 +442,7 @@ zeroconf_claim(address, expiration=0)\n\
                         if ( coinaddr[0] != 0 )
                         {
                             LP_address(ptr,coinaddr);
+                            LP_listunspent_issue(coin,coinaddr,2);
                             if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                             {
                                 //LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
