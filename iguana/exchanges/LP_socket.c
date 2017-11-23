@@ -589,7 +589,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
             usecache = 0;
         else if ( ap->unspentheight < height )
             usecache = 0;
-        else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+30 )
+        else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+13 )
             usecache = 0;
     }
     if ( usecache == 0 || electrumflag > 1 )
