@@ -855,7 +855,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
         else if ( IAMLP == 0 || coin->inactive == 0 )
         {
             //printf("from updates %s\n",coin->symbol);
-            if ( LP_privkey_init(pubsock,coin,G.LP_privkey,G.LP_mypub25519) == 0 && (LP_rand() % 10) == 0 )
+            if ( 0 && LP_privkey_init(pubsock,coin,G.LP_privkey,G.LP_mypub25519) == 0 && (LP_rand() % 10) == 0 )
             {
                 //LP_postutxos(coin->symbol,coin->smartaddr);
             }
