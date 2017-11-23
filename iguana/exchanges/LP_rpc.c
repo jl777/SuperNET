@@ -657,7 +657,6 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
-    //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
     if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
@@ -668,6 +667,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
                 numconfs = 0;
             else numconfs = 1;
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
+            printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
             return(bitcoin_json(coin,"listunspent",buf));
         } else return(LP_address_utxos(coin,coinaddr,0));
     } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
