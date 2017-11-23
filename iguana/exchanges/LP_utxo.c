@@ -99,9 +99,10 @@ struct LP_inuse_info *_LP_inuse_add(uint32_t expiration,bits256 otherpub,bits256
         {
             if ( bits256_nonz(otherpub) != 0 )
                 lp->otherpub = otherpub;
-            if ( expiration > lp->expiration || expiration == 0 )
+            //if ( expiration > lp->expiration || expiration == 0 )
                 lp->expiration = expiration;
         }
+        char str[65]; printf("set inuse until %u lag.%d for %s/v%d\n",expiration,(int32_t)(expiration-(uint32_t)time(NULL)),bits256_str(str,txid),vout);
         return(lp);
     } else printf("_LP_inuse_add [%d] overflow\n",LP_numinuse);
     return(0);
@@ -446,20 +447,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
             {
                 //{"tx_hash":"38d1b7c73015e1b1d6cb7fc314cae402a635b7d7ea294970ab857df8777a66f4","tx_pos":0,"height":577975,"value":238700}
                 item = jitem(array,i);
-                if ( coin->electrum != 0 )
-                {
-                    txid = jbits256(item,"tx_hash");
-                    vout = juint(item,"tx_pos");
-                    value = j64bits(item,"value");
-                    height = jint(item,"height");
-                }
-                else
-                {
-                    txid = jbits256(item,"txid");
-                    vout = juint(item,"vout");
-                    value = LP_value_extract(item,0);
-                    height = LP_txheight(coin,txid);
-                }
+                value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
                 LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
@@ -573,9 +561,9 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     }
     else
     {
-        if ( strcmp(coin->smartaddr,coinaddr) == 0 )
+        //if ( strcmp(coin->smartaddr,coinaddr) == 0 )
             balance = LP_unspents_load(coin->symbol,coinaddr);
-        else
+        /*else
         {
             if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
             {
@@ -589,7 +577,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
                 }
                 free_json(array);
             }
-        }
+        }*/
     }
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");

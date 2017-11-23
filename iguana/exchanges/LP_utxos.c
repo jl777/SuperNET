@@ -559,6 +559,26 @@ int32_t LP_nearestvalue(int32_t iambob,uint64_t *values,int32_t n,uint64_t targe
     return(mini);
 }
 
+int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t *voutp,int32_t *heightp,cJSON *item)
+{
+    int64_t satoshis = 0;
+    if ( coin->electrum == 0 )
+    {
+        *txidp = jbits256(item,"txid");
+        *voutp = juint(item,"vout");
+        satoshis = LP_value_extract(item,0);
+        *heightp = LP_txheight(coin,*txidp);
+    }
+    else
+    {
+        *txidp = jbits256(item,"tx_hash");
+        *voutp = juint(item,"tx_pos");
+        satoshis = j64bits(item,"value");
+        *heightp = jint(item,"height");
+    }
+    return(satoshis);
+}
+
 int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
     int32_t enable_utxos = 0;
@@ -572,8 +592,8 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
         return(0);
     coin->privkeydepth++;
     LP_address(coin,coin->smartaddr);
-    if ( coin->inactive == 0 )
-        LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
+    //if ( coin->inactive == 0 )
+    //    LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
     array = LP_listunspent(coin->symbol,coin->smartaddr);
     if ( array != 0 )
     {
@@ -591,20 +611,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    if ( coin->electrum == 0 )
-                    {
-                        txid = jbits256(item,"txid");
-                        vout = juint(item,"vout");
-                        value = LP_value_extract(item,0);
-                        height = LP_txheight(coin,txid);//LP_getheight(coin) - jint(item,"confirmations") + 1;
-                    }
-                    else
-                    {
-                        txid = jbits256(item,"tx_hash");
-                        vout = juint(item,"tx_pos");
-                        value = j64bits(item,"value");
-                        height = jint(item,"height");
-                    }
+                    value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
                     satoshis = LP_txvalue(destaddr,coin->symbol,txid,vout);
                     if ( satoshis != 0 && satoshis != value )
                         printf("%s %s  privkey_init value  %.8f vs %.8f (%s) %.8f %.8f\n",coin->symbol,coin->smartaddr,dstr(satoshis),dstr(value),jprint(item,0),jdouble(item,"amount"),jdouble(item,"interest"));
@@ -848,7 +855,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
         else if ( IAMLP == 0 || coin->inactive == 0 )
         {
             //printf("from updates %s\n",coin->symbol);
-            if ( LP_privkey_init(pubsock,coin,G.LP_privkey,G.LP_mypub25519) == 0 && (LP_rand() % 10) == 0 )
+            if ( 0 && LP_privkey_init(pubsock,coin,G.LP_privkey,G.LP_mypub25519) == 0 && (LP_rand() % 10) == 0 )
             {
                 //LP_postutxos(coin->symbol,coin->smartaddr);
             }

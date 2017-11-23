@@ -420,7 +420,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
         //printf(" scriptlen.%d\n",scriptlen);
         //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         sigtxid = bitcoin_sigtxid(symbol,taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,sighash,vpnstr,suppress_pubkeys,zcash);
-        printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
+        //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         if ( bits256_nonz(sigtxid) != 0 )
         {
             vp = &V[vini];
@@ -461,14 +461,14 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
                 {
                     flag++;
                     numsigs++;
-                    int32_t z; char tmpaddr[64];
+                    /*int32_t z; char tmpaddr[64];
                     for (z=0; z<siglen-1; z++)
                         printf("%02x",sig[z]);
                     printf(" <- sig[%d]\n",j);
                     for (z=0; z<33; z++)
                         printf("%02x",vp->signers[j].pubkey[z]);
                     bitcoin_address(tmpaddr,0,0,vp->signers[j].pubkey,33);
-                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);
+                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);*/
                 }
             }
             if ( numsigs >= vp->M )
@@ -731,7 +731,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     jaddstr(retjson,"error","interpreter rejects tx");
                 else complete = 1;
                 jadd(retjson,"interpreter",log);
-                jaddnum(retjson,"complete",complete);
+                jadd(retjson,"complete",complete!=0?jtrue():jfalse());
                 free(serialized), free(serialized2);
                 if ( signedtx != 0 )
                     free(signedtx);
@@ -980,8 +980,10 @@ cJSON *LP_inputjson(bits256 txid,int32_t vout,char *spendscriptstr)
 uint64_t _komodo_interestnew(uint64_t nValue,uint32_t nLockTime,uint32_t tiptime)
 {
     int32_t minutes; uint64_t interest = 0;
-    if ( (minutes= (tiptime - nLockTime) / 60) >= 60 )
+    if ( tiptime > nLockTime && (minutes= (tiptime - nLockTime) / 60) >= 60 )
     {
+        //minutes.71582779 tiptime.1511292969 locktime.1511293505
+        printf("minutes.%d tiptime.%u locktime.%u\n",minutes,tiptime,nLockTime);
         if ( minutes > 365 * 24 * 60 )
             minutes = 365 * 24 * 60;
         minutes -= 59;
@@ -1124,20 +1126,21 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
             if ( LP_validSPV(coin->symbol,coin->smartaddr,up->U.txid,up->U.vout) < 0 )
                 continue;
         }
-        
+        if ( LP_allocated(up->U.txid,up->U.vout) != 0 )
+            continue;
         up->spendheight = 1;
         total += up->U.value;
         remains -= up->U.value;
         interest = 0;
         if ( up->U.height < 7777777 && strcmp(coin->symbol,"KMD") == 0 )
         {
-            if ( 0 && (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
+            if ( (interest= LP_komodo_interest(up->U.txid,up->U.value)) > 0 )
             {
                 interestsum += interest;
                 char str[65]; printf("%s/%d %.8f interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
             }
         }
-        //printf("numunspents.%d vini.%d value %.8f, total %.8f remains %.8f interest %.8f sum %.8f %s/v%d\n",numunspents,n,dstr(up->U.value),dstr(total),dstr(remains),dstr(interest),dstr(interestsum),bits256_str(str,up->U.txid),up->U.vout);
+        printf("numunspents.%d vini.%d value %.8f, total %.8f remains %.8f interest %.8f sum %.8f %s/v%d\n",numunspents,n,dstr(up->U.value),dstr(total),dstr(remains),dstr(interest),dstr(interestsum),bits256_str(str,up->U.txid),up->U.vout);
         vp = &V[n++];
         vp->N = vp->M = 1;
         vp->signers[0].privkey = privkey;
@@ -1146,7 +1149,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         vp->suppress_pubkeys = suppress_pubkeys;
         vp->ignore_cltverr = ignore_cltverr;
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
-        LP_unavailableset(up->U.txid,up->U.vout,(uint32_t)time(NULL)+600,G.LP_mypub25519);
+        LP_unavailableset(up->U.txid,up->U.vout,(uint32_t)time(NULL)+LP_RESERVETIME,G.LP_mypub25519);
         if ( remains <= 0 && i >= numpre-1 )
             break;
         if ( numunspents < 0 )
@@ -1264,6 +1267,12 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             if ( addrtype == coin->pubtype )
                 spendlen = bitcoin_standardspend(spendscript,0,rmd160);
             else spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
+            if ( i == numvouts-1 && strcmp(coinaddr,coin->smartaddr) == 0 && change != 0 )
+            {
+                printf("combine last vout %.8f with change %.8f\n",dstr(value+adjust),dstr(change));
+                value += change;
+                change = 0;
+            }
             txobj = bitcoin_txoutput(txobj,spendscript,spendlen,value + adjust);
         }
         else

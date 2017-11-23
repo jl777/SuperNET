@@ -606,12 +606,9 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
                     //LP_postutxos(coin->symbol,addr);
                     updatedflag = 1;
                 }
-                if ( strcmp(addr,coin->smartaddr) == 0 )
-                {
-                    retstr = jprint(retjson,0);
-                    LP_unspents_cache(coin->symbol,coin->smartaddr,retstr,1);
-                    free(retstr);
-                }
+                retstr = jprint(retjson,0);
+                LP_unspents_cache(coin->symbol,addr,retstr,1);
+                free(retstr);
                 if ( ap != 0 )
                 {
                     ap->unspenttime = (uint32_t)time(NULL);
@@ -627,7 +624,7 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
     }
     if ( retjson == 0 )
     {
-        if ( strcmp(addr,coin->smartaddr) == 0 && (retstr= LP_unspents_filestr(symbol,coin->smartaddr)) != 0 )
+        if ( (retstr= LP_unspents_filestr(symbol,addr)) != 0 )
         {
             retjson = cJSON_Parse(retstr);
             free(retstr);

@@ -3039,6 +3039,29 @@ if ( (0) )
  #undef aptr
  #undef bptr
  }*/
+/*if ( (sobj= jobj(v,"scriptPubKey")) != 0 )
+ {
+ if ( (scriptstr= jstr(sobj,"hex")) != 0 )
+ {
+ printf("amount64 %.8f vout.%d (%s) weeki.%d %.8f (%s)\n",dstr(amount64),vout,jprint(v,0),weeki,dstr(satoshis),scriptstr);
+ len = (int32_t)strlen(scriptstr) >> 1;
+ if ( len <= sizeof(spendscript)/sizeof(*spendscript) )
+ {
+ decode_hex(spendscript,len,scriptstr);
+ if ( spendscript[11] == 33 )
+ {
+ pub33 = &spendscript[12];
+ redeemlen = LP_deposit_addr(p2shaddr,redeemscript,coin->taddr,coin->p2shtype,timestamp,pub33);
+ if ( len == redeemlen && (timestamp % LP_WEEKMULT) == 0 )
+ {
+ bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pub33,33);
+ printf("%s -> matched %s script t.%u weeki.%d deposit %.8f\n",coinaddr,p2shaddr,timestamp,(timestamp-LP_FIRSTWEEKTIME)/LP_WEEKMULT,dstr(satoshis));
+ // add to pubp->credits;
+ }
+ }
+ }
+ }
+ }*/
 
 /*portable_mutex_lock(&ep->pendingQ.mutex);
  if ( ep->pendingQ.list != 0 )

@@ -276,7 +276,7 @@ bits256 LP_utxos_sighash(uint32_t timestamp,uint8_t *pubsecp,bits256 pubkey,bits
 
 int32_t LP_utxos_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits256 pubkey,bits256 utxoshash)
 {
-    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; char str[65]; struct LP_pubkeyinfo *pubp;
+    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; char str[65]; struct LP_pubkey_info *pubp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     pubp = LP_pubkeyfind(pubkey);
@@ -362,7 +362,7 @@ struct LP_utxos_qitem { struct queueitem DL; cJSON *argjson; };
 
 char *LP_postutxos_recv(cJSON *argjson)
 {
-    struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash,pubkey; cJSON *obj; struct LP_pubkeyinfo *pubp;
+    struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash,pubkey; cJSON *obj; struct LP_pubkey_info *pubp;
 printf("LP_postutxos_recv deprecated\n");
     pubkey = jbits256(argjson,"pubkey");
     pubp = LP_pubkeyfind(pubkey);
@@ -416,7 +416,7 @@ int32_t LP_utxosQ_process()
 
 int32_t LP_price_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits256 pubkey,char *base,char *rel,uint64_t price64)
 {
-    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; struct LP_pubkeyinfo *pubp;
+    static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; struct LP_pubkey_info *pubp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     pubp = LP_pubkeyfind(pubkey);
@@ -454,7 +454,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
     struct iguana_info *basecoin,*relcoin; struct LP_address *ap; char pubsecpstr[67]; uint32_t numutxos,timestamp; uint64_t price64,balance,minsize,maxsize; bits256 zero; cJSON *reqjson;
     reqjson = cJSON_CreateObject();
     // LP_addsig
-    if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 && basecoin->electrum == 0 )//&& relcoin->electrum == 0 )
+    if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 )//&& basecoin->electrum == 0 )//&& relcoin->electrum == 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
         jaddbits256(reqjson,"pubkey",G.LP_mypub25519);
@@ -521,7 +521,7 @@ int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub
     return(LP_bitcoinsig_add(item,priv,pubsecp,sighash));
 }
 
-int32_t LP_pubkey_sigcheck(struct LP_pubkeyinfo *pubp,cJSON *item)
+int32_t LP_pubkey_sigcheck(struct LP_pubkey_info *pubp,cJSON *item)
 {
     int32_t i,len,siglen,retval=-1; uint8_t rmd160[20],checkrmd160[20],pubsecp[33],sig[65],zeroes[20]; char *sigstr,*hexstr,*pubsecpstr;
     if ( (hexstr= jstr(item,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
@@ -603,7 +603,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
 
 char *LP_notify_recv(cJSON *argjson)
 {
-    bits256 pub; struct LP_pubkeyinfo *pubp; char *ipaddr;
+    bits256 pub; struct LP_pubkey_info *pubp; char *ipaddr;
     pub = jbits256(argjson,"pub");
     if ( bits256_nonz(pub) != 0 )
     {
@@ -700,8 +700,8 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     {
         if ( LP_allocated(qp->desttxid,qp->destvout) == 0 && LP_allocated(qp->feetxid,qp->feevout) == 0 )
         {
-            LP_unavailableset(qp->desttxid,qp->destvout,qp->timestamp+LP_AUTOTRADE_TIMEOUT,qp->srchash);
-            LP_unavailableset(qp->feetxid,qp->feevout,qp->timestamp+LP_AUTOTRADE_TIMEOUT,qp->srchash);
+            LP_unavailableset(qp->desttxid,qp->destvout,qp->timestamp+LP_AUTOTRADE_TIMEOUT*4,qp->srchash);
+            LP_unavailableset(qp->feetxid,qp->feevout,qp->timestamp+LP_AUTOTRADE_TIMEOUT*4,qp->srchash);
         }
         else
         {
@@ -718,13 +718,15 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     msg = jprint(reqjson,1);
     msg2 = clonestr(msg);
     printf("QUERY.(%s)\n",msg);
-    memset(&zero,0,sizeof(zero));
-    portable_mutex_lock(&LP_reservedmutex);
-    if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )
-        Reserved_msgs[1][num_Reserved_msgs[1]++] = msg;
-    if ( num_Reserved_msgs[0] < sizeof(Reserved_msgs[0])/sizeof(*Reserved_msgs[0])-2 )
-        Reserved_msgs[0][num_Reserved_msgs[0]++] = msg2;
-    //LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,zero,msg2);
-    portable_mutex_unlock(&LP_reservedmutex);
+    if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )
+    {
+        memset(&zero,0,sizeof(zero));
+        portable_mutex_lock(&LP_reservedmutex);
+        if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )
+            Reserved_msgs[1][num_Reserved_msgs[1]++] = msg;
+        if ( num_Reserved_msgs[0] < sizeof(Reserved_msgs[0])/sizeof(*Reserved_msgs[0])-2 )
+            Reserved_msgs[0][num_Reserved_msgs[0]++] = msg2;
+        portable_mutex_unlock(&LP_reservedmutex);
+    } else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg2);
 }
 

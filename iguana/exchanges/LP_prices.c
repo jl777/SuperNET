@@ -18,7 +18,15 @@
 //  marketmaker
 //
 
-struct LP_orderbookentry { bits256 pubkey; double price; uint64_t avesatoshis,maxsatoshis,depth; uint32_t timestamp; int32_t numutxos; char coinaddr[64]; };
+struct LP_orderbookentry
+{
+    bits256 pubkey;
+    double price;
+    uint64_t avesatoshis,maxsatoshis,depth,dynamictrust;
+    uint32_t timestamp;
+    int32_t numutxos;
+    char coinaddr[64];
+};
 
 struct LP_priceinfo
 {
@@ -49,7 +57,7 @@ struct LP_cacheinfo
 } *LP_cacheinfos;
 
 
-float LP_pubkey_price(int32_t *numutxosp,int64_t *avesatoshisp,int64_t *maxsatoshisp,struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relind)
+float LP_pubkey_price(int32_t *numutxosp,int64_t *avesatoshisp,int64_t *maxsatoshisp,struct LP_pubkey_info *pubp,uint32_t baseind,uint32_t relind)
 {
     struct LP_pubkey_quote *pq,*tmp; int32_t scale; int64_t scale64;
     *numutxosp = 0;
@@ -75,7 +83,7 @@ float LP_pubkey_price(int32_t *numutxosp,int64_t *avesatoshisp,int64_t *maxsatos
     return(0);
 }
 
-void LP_pubkey_update(struct LP_pubkeyinfo *pubp,uint32_t baseind,uint32_t relind,float price,int64_t balance,char *utxocoin,int32_t numutxos,int64_t minutxo,int64_t maxutxo)
+void LP_pubkey_update(struct LP_pubkey_info *pubp,uint32_t baseind,uint32_t relind,float price,int64_t balance,char *utxocoin,int32_t numutxos,int64_t minutxo,int64_t maxutxo)
 {
     struct LP_pubkey_quote *pq,*tmp; int64_t aveutxo,scale64,ave64,max64; int32_t scale;
     DL_FOREACH_SAFE(pubp->quotes,pq,tmp)
@@ -214,9 +222,9 @@ struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout
     return(ptr);
 }
 
-struct LP_pubkeyinfo *LP_pubkey_rmd160find(uint8_t rmd160[20])
+struct LP_pubkey_info *LP_pubkey_rmd160find(uint8_t rmd160[20])
 {
-    struct LP_pubkeyinfo *pubp=0,*tmp;
+    struct LP_pubkey_info *pubp=0,*tmp;
     portable_mutex_lock(&LP_pubkeymutex);
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
     {
@@ -230,7 +238,7 @@ struct LP_pubkeyinfo *LP_pubkey_rmd160find(uint8_t rmd160[20])
 
 struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
 {
-    uint8_t rmd160[20],addrtype; struct LP_address *ap; struct LP_pubkeyinfo *pubp;
+    uint8_t rmd160[20],addrtype; struct LP_address *ap; struct LP_pubkey_info *pubp;
     HASH_FIND(hh,coin->addresses,coinaddr,strlen(coinaddr),ap);
     if ( ap != 0 && bits256_nonz(ap->pubkey) == 0 )
     {
@@ -246,7 +254,7 @@ struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
 
 struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
 {
-    uint8_t rmd160[20],addrtype; struct LP_address *ap; struct LP_pubkeyinfo *pubp;
+    uint8_t rmd160[20],addrtype; struct LP_address *ap; struct LP_pubkey_info *pubp;
     ap = calloc(1,sizeof(*ap));
     safecopy(ap->coinaddr,coinaddr,sizeof(ap->coinaddr));
     bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,coinaddr);
@@ -260,18 +268,18 @@ struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
     return(ap);
 }
 
-struct LP_pubkeyinfo *LP_pubkeyfind(bits256 pubkey)
+struct LP_pubkey_info *LP_pubkeyfind(bits256 pubkey)
 {
-    struct LP_pubkeyinfo *pubp=0;
+    struct LP_pubkey_info *pubp=0;
     portable_mutex_lock(&LP_pubkeymutex);
     HASH_FIND(hh,LP_pubkeyinfos,&pubkey,sizeof(pubkey),pubp);
     portable_mutex_unlock(&LP_pubkeymutex);
     return(pubp);
 }
 
-struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
+struct LP_pubkey_info *LP_pubkeyadd(bits256 pubkey)
 {
-    char str[65]; struct LP_pubkeyinfo *pubp=0;
+    char str[65]; struct LP_pubkey_info *pubp=0;
     portable_mutex_lock(&LP_pubkeymutex);
     HASH_FIND(hh,LP_pubkeyinfos,&pubkey,sizeof(pubkey),pubp);
     if ( pubp == 0 )
@@ -294,7 +302,7 @@ struct LP_pubkeyinfo *LP_pubkeyadd(bits256 pubkey)
 
 int32_t LP_pubkey_istrusted(bits256 pubkey)
 {
-    struct LP_pubkeyinfo *pubp;
+    struct LP_pubkey_info *pubp;
     if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         return(pubp->istrusted != 0);
     return(0);
@@ -302,7 +310,7 @@ int32_t LP_pubkey_istrusted(bits256 pubkey)
 
 char *LP_pubkey_trustset(bits256 pubkey,uint32_t trustval)
 {
-    struct LP_pubkeyinfo *pubp;
+    struct LP_pubkey_info *pubp;
     if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
     {
         pubp->istrusted = trustval;
@@ -313,7 +321,7 @@ char *LP_pubkey_trustset(bits256 pubkey,uint32_t trustval)
 
 char *LP_pubkey_trusted()
 {
-    struct LP_pubkeyinfo *pubp,*tmp; cJSON *array = cJSON_CreateArray();
+    struct LP_pubkey_info *pubp,*tmp; cJSON *array = cJSON_CreateArray();
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
     {
         if ( pubp->istrusted != 0 )
@@ -343,7 +351,7 @@ uint64_t LP_unspents_metric(struct iguana_info *coin,char *coinaddr)
     return(metric);
 }
 
-cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
+cJSON *LP_pubkeyjson(struct LP_pubkey_info *pubp)
 {
     int32_t baseid,relid,numutxos; int64_t avesatoshis,maxsatoshis; char *base,hexstr[67],hexstr2[67],sigstr[256]; double price; cJSON *item,*array,*obj;
     obj = cJSON_CreateObject();
@@ -380,7 +388,7 @@ cJSON *LP_pubkeyjson(struct LP_pubkeyinfo *pubp)
 
 char *LP_prices()
 {
-    struct LP_pubkeyinfo *pubp,*tmp; cJSON *array = cJSON_CreateArray();
+    struct LP_pubkey_info *pubp,*tmp; cJSON *array = cJSON_CreateArray();
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
     {
         jaddi(array,LP_pubkeyjson(pubp));
@@ -390,7 +398,7 @@ char *LP_prices()
 
 /*void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
 {
-    struct LP_pubkeyinfo *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid,mismatch; char *base,*rel,*hexstr; double askprice; uint32_t now;
+    struct LP_pubkey_info *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid,mismatch; char *base,*rel,*hexstr; double askprice; uint32_t now;
     now = (uint32_t)time(NULL);
     pubkey = jbits256(obj,"pubkey");
     if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
@@ -555,7 +563,7 @@ char *LP_myprices()
 
 int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
 {
-    struct LP_priceinfo *basepp,*relpp; struct LP_pubkeyinfo *pubp;
+    struct LP_priceinfo *basepp,*relpp; struct LP_pubkey_info *pubp;
     *changedp = 0;
     if ( base != 0 && rel != 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
@@ -750,11 +758,12 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
         jaddnum(item,"depth",dstr(op->depth)*0.8);
         jaddbits256(item,"pubkey",op->pubkey);
         jaddnum(item,"age",time(NULL)-op->timestamp);
+        jaddnum(item,"zcredits",dstr(op->dynamictrust));
     }
     return(item);
 }
 
-struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,double price,int32_t numutxos,uint64_t avesatoshis,uint64_t maxsatoshis,bits256 pubkey,uint32_t timestamp,uint64_t balance)
+struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,double price,int32_t numutxos,uint64_t avesatoshis,uint64_t maxsatoshis,bits256 pubkey,uint32_t timestamp,uint64_t balance,uint64_t dynamictrust)
 {
     struct LP_orderbookentry *op;
     if ( (op= calloc(1,sizeof(*op))) != 0 )
@@ -767,13 +776,14 @@ struct LP_orderbookentry *LP_orderbookentry(char *address,char *base,char *rel,d
         op->pubkey = pubkey;
         op->timestamp = timestamp;
         op->depth = balance;
+        op->dynamictrust = dynamictrust;
     }
     return(op);
 }
 
 void LP_pubkeys_query()
 {
-    uint8_t zeroes[20]; bits256 zero; cJSON *reqjson; struct LP_pubkeyinfo *pubp=0,*tmp;
+    uint8_t zeroes[20]; bits256 zero; cJSON *reqjson; struct LP_pubkey_info *pubp=0,*tmp;
     memset(zero.bytes,0,sizeof(zero));
     memset(zeroes,0,sizeof(zeroes));
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
@@ -792,7 +802,7 @@ void LP_pubkeys_query()
 
 int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *rel,struct LP_orderbookentry *(**arrayp),int32_t num,int32_t cachednum,int32_t duration)
 {
-    char coinaddr[64]; uint8_t zeroes[20]; struct LP_pubkeyinfo *pubp=0,*tmp; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; struct LP_address *ap; struct iguana_info *basecoin; uint32_t oldest; double price; int32_t baseid,relid,n; int64_t maxsatoshis,balance,avesatoshis;
+    char coinaddr[64]; uint8_t zeroes[20]; struct LP_pubkey_info *pubp=0,*tmp; struct LP_priceinfo *basepp; struct LP_orderbookentry *op; struct LP_address *ap; struct iguana_info *basecoin; uint32_t oldest; double price; int32_t baseid,relid,n; int64_t maxsatoshis,balance,avesatoshis;
     if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
         baseid = basepp->ind;
     else return(num);
@@ -827,7 +837,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
                 }
                 //printf("%s/%s %s n.%d ap->n.%d %.8f\n",base,rel,coinaddr,n,ap->n,dstr(ap->total));
             }
-            if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,avesatoshis,maxsatoshis,pubp->pubkey,pubp->timestamp,balance)) != 0 )
+            if ( (op= LP_orderbookentry(coinaddr,base,rel,polarity > 0 ? price : 1./price,n,avesatoshis,maxsatoshis,pubp->pubkey,pubp->timestamp,balance,pubp->dynamictrust)) != 0 )
             {
                 *arrayp = realloc(*arrayp,sizeof(*(*arrayp)) * (num+1));
                 (*arrayp)[num++] = op;
@@ -977,6 +987,16 @@ uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance)
     return(KMDvalue);
 }
 
+int64_t LP_kmdvalue(char *symbol,int64_t satoshis)
+{
+    struct iguana_info *coin; int64_t kmdvalue = 0;
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+        kmdvalue = LP_KMDvalue(coin,satoshis);
+    if ( kmdvalue == 0 )
+        kmdvalue = satoshis;
+    return(kmdvalue);
+}
+
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32])
 {
     LP_priceinfoupdate(base,rel,price);
@@ -1112,7 +1132,7 @@ cJSON *LP_pricearray(char *base,char *rel,uint32_t firsttime,uint32_t lasttime,i
 
 void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *utxocoin,int32_t numrelutxos,int64_t balance,int64_t minutxo,int64_t maxutxo)
 {
-    struct LP_priceinfo *basepp,*relpp; uint32_t now; uint64_t price64; struct LP_pubkeyinfo *pubp; char str[65],fname[512]; FILE *fp;
+    struct LP_priceinfo *basepp,*relpp; uint32_t now; uint64_t price64; struct LP_pubkey_info *pubp; char str[65],fname[512]; FILE *fp;
     //printf("check PRICEFEED UPDATE.(%s/%s) %.8f %s\n",base,rel,price,bits256_str(str,pubkey));
     if ( LP_pricevalid(price) > 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {

@@ -94,7 +94,7 @@ char *LP_portfolio()
             if ( iter == 0 )
             {
                 //printf("from portfolio\n");
-                LP_privkey_init(-1,coin,G.LP_privkey,G.LP_mypub25519);
+                //LP_privkey_init(-1,coin,G.LP_privkey,G.LP_mypub25519);
                 coin->balanceA = LP_balance(&coin->valuesumA,0,coin->symbol,coin->smartaddr);
                 coin->balanceB = LP_balance(&coin->valuesumB,1,coin->symbol,coin->smartaddr);
                 if ( strcmp(coin->symbol,"KMD") != 0 )
