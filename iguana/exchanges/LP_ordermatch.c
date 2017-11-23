@@ -311,7 +311,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
                 dist = (up->U.value - targetval);
                 if ( dist > 0 && up->U.height < bestheight )
                 {
-                    if ( (double)dist/bestdist < sqrt(bestheight - up->U.height) )
+                    if ( (double)dist/bestdist < sqrt(((double)bestheight - up->U.height)/1000) )
                     {
                         replacei = i;
                         bestheight = up->U.height;
