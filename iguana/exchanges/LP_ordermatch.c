@@ -287,7 +287,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
         if ( (up= utxos[i]) != 0 )
         {
             dist = (up->U.value - targetval);
-            //printf("nearest i.%d target %.8f val %.8f dist %.8f mindist %.8f mini.%d spent.%d\n",i,dstr(targetval),dstr(up->U.value),dstr(dist),dstr(mindist),mini,up->spendheight);
+            printf("nearest i.%d target %.8f val %.8f dist %.8f mindist %.8f mini.%d spent.%d\n",i,dstr(targetval),dstr(up->U.value),dstr(dist),dstr(mindist),mini,up->spendheight);
             if ( up->spendheight <= 0 )
             {
                 if ( dist >= 0 && dist < mindist )
