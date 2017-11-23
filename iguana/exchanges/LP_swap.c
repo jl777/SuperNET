@@ -754,7 +754,7 @@ int32_t LP_swapwait(uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t
             {
                 if ( jstr(retjson,"status") != 0 && strcmp(jstr(retjson,"status"),"finished") == 0 )
                     break;
-                else printf("NOT FINISHED.(%s)\n",jprint(retjson,0));
+                //else printf("NOT FINISHED.(%s)\n",jprint(retjson,0));
                 free_json(retjson);
                 retjson = 0;
             }
