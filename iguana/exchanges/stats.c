@@ -310,7 +310,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
                 jaddstr(json,key,value);
             else jaddistr(array,key);
             len += (n + 1);
-            if ( strcmp(key,"Content-Length") == 0 && (datalen= atoi(value)) > 0 )
+            if ( (strcmp(key,"Content-Length") == 0 || strcmp(key,"content-length") == 0) && (datalen= atoi(value)) > 0 )
             {
                 data = &urlstr[totallen - datalen];
                 data[-1] = 0;
@@ -330,7 +330,6 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
 {
     static void *ctx;
     cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char *myipaddr="127.0.0.1",symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr=0,*filestr,*token = 0; int32_t i,j,n,num=0;
-printf("rpcparse.(%s)\n",urlstr);
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
@@ -339,6 +338,7 @@ printf("rpcparse.(%s)\n",urlstr);
     n = i;
     //printf("URLMETHOD.(%s)\n",urlmethod);
     *postflagp = (strcmp(urlmethod,"POST") == 0);
+    printf("POST.%d rpcparse.(%s)\n",*postflagp,urlstr);
     for (i=0; i<sizeof(url)-1&&urlstr[n+i]!=0&&urlstr[n+i]!=' '; i++)
         url[i] = urlstr[n+i];
     url[i++] = 0;
