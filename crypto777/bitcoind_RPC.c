@@ -96,7 +96,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
         if ( (error->type&0xff) == cJSON_NULL && (result->type&0xff) != cJSON_NULL )
         {
             retstr = jprint(result,0);
-            printf("rpc retstr.%p\n",retstr);
+            printf("%s %s rpc retstr.%p\n",command,params,retstr);
             len = strlen(retstr);
             if ( retstr[0] == '"' && retstr[len-1] == '"' )
             {
