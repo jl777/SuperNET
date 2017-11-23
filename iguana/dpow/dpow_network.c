@@ -584,6 +584,8 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
 {
     char buf[65],*retstr = 0; int32_t i,datalen; bits256 hash2; cJSON *retjson=0; struct iguana_info *coin; struct dex_request dexreq;
     *broadcastflagp = 0;
+return(clonestr("{\"error\":\"basilisk disabled\"}"));
+
     if ( strcmp(dexp->handler,"request") == 0 )
     {
         datalen = dex_rwrequest(0,dexp->packet,&dexreq);

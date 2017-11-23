@@ -18,23 +18,15 @@
 //  marketmaker
 //
 // feature requests:
+// electrum memleak?
 // alice waiting for bestprice
 // USD paxprice based USDvalue in portfolio
 // cancel bid/ask
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // bugs, validations:
-/*Buyer Payment    08ccac7534dc6aad0139b7dd6a78344d309fbc6bff27f2fba7c8f178f5d309a0
-
-Seller Payment    f876412f3dc637998b099b05ae0fe3e769e5adafcb49ef156be9f7749f2e3071
-
-Quote ID    2681103143
-Request ID    301413467
-Trade id    3567859514*/
 // waiting for alice and alice disconnects, can find bobpayment based on Q.txid
-// MNZ getcoin strangeness
 // portfolio value based on ask?
-// listunspent triplicate, tradebot timeslice? the tradebot timeslice is just getting too much timeslices
 // disable basilisk
 // verify encrypted destpubkey, broadcast:0 setprice
 
