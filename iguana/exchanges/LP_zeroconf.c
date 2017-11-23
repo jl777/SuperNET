@@ -200,7 +200,7 @@ void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2s
         {
             ap->zeroconf_credits += satoshis;
             printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
-        } else printf("couldnt create address.%s\n",coinaddr);
+        }
     }
 }
 
@@ -264,7 +264,7 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
                 if ( (sp= ptr->swap) != 0 && sp->finished == 0 && sp->expired == 0 )
                     swaps_kmdvalue += LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis);
             }
-            printf("%s zeroconf_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->zeroconf_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+            //printf("%s zeroconf_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->zeroconf_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
             if ( ap->zeroconf_credits > swaps_kmdvalue+kmdvalue )
                 return(ap->zeroconf_credits - (swaps_kmdvalue+kmdvalue));
         }
