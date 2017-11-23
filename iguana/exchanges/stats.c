@@ -624,7 +624,7 @@ void LP_rpc_processreq(void *_ptr)
                 printf("EAGAIN for len %d, remains.%d\n",len,remains);
                 usleep(10000);
             }
-            printf("errno.%d len.%d remains.%d\n",errno,len,remains);
+            //printf("errno.%d len.%d remains.%d\n",errno,len,remains);
             break;
         }
         else
@@ -789,7 +789,7 @@ void stats_rpcloop(void *args)
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         if ( port == RPC_port && ipbits != localhostbits )
         {
-            printf("port.%u RPC_port.%u ipbits %x != %x\n",port,RPC_port,ipbits,localhostbits);
+            //printf("port.%u RPC_port.%u ipbits %x != %x\n",port,RPC_port,ipbits,localhostbits);
             closesocket(sock);
             continue;
         }
