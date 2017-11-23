@@ -292,6 +292,22 @@ zeroconf_claim(address, expiration=0)\n\
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
             else return(basilisk_swaplist(0,0));
         }
+        else if ( strcmp(method,"dynamictrust") == 0 )
+        {
+            struct LP_address *ap; char *coinaddr;
+            if ( (ptr= LP_coinsearch("KMD")) != 0 && (coinaddr= jstr(argjson,"address")) != 0 )
+            {
+                if ( (ap= LP_addressfind(ptr,coinaddr)) != 0 )
+                {
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result","success");
+                    jaddstr(retjson,"address",coinaddr);
+                    jaddnum(retjson,"zcredits",dstr(ap->zeroconf_credits));
+                    return(jprint(retjson,1));
+                }
+            }
+            return(clonestr("{\"error\":\"cant find address\"}"));
+        }
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
         if ( base[0] != 0 && rel[0] != 0 )

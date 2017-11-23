@@ -206,7 +206,11 @@ void LP_zeroconf_credit(char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2s
 
 void LP_zeroconf_deposits(struct iguana_info *coin)
 {
-    cJSON *array,*item,*txjson,*vouts,*v,*txobj; int32_t i,n,numvouts,height,vout,weeki; bits256 txid; char destaddr[64],p2shaddr[64]; int64_t satoshis,amount64;
+    cJSON *array,*item,*txjson,*vouts,*v,*txobj; int32_t i,n,numvouts,height,vout,weeki; bits256 txid; char destaddr[64],p2shaddr[64]; struct LP_address *ap,*tmp; int64_t satoshis,amount64;
+    HASH_ITER(hh,coin->addresses,ap,tmp)
+    {
+        ap->zeroconf_credits = 0;
+    }
     if ( (array= LP_listreceivedbyaddress("KMD",BOTS_BONDADDRESS)) != 0 )
     {
         //printf("ZEROCONF.(%s)\n",jprint(array,0));
@@ -252,7 +256,7 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
     if ( (coin= LP_coinfind("KMD")) != 0 && (pubp= LP_pubkeyfind(pubkey)) != 0 )
     {
         bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->pubsecp,33);
-        if ((ap= LP_address(coin,coinaddr)) != 0 && ap->zeroconf_credits >= kmdvalue )
+        if ((ap= LP_address(coin,coinaddr)) != 0 )//&& ap->zeroconf_credits >= kmdvalue )
         {
             DL_FOREACH_SAFE(pubp->bobswaps,ptr,tmp)
             {
