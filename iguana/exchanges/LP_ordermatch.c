@@ -422,7 +422,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                 for (i=0; i<m; i++)
                     if ( utxos[i]->U.value >= targetval )
                         printf("%.8f ",dstr(utxos[i]->U.value));
-                printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s %s\n",dstr(targetval),relvolume,price,dstr(txfee),coin->symbol,coinaddr);
+                printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s %s\n",dstr(targetval),relvolume,price,dstr(fee),coin->symbol,coinaddr);
             }
             mini = -1;
             if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval+fee)) >= 0 )
@@ -433,6 +433,14 @@ printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",
                 if ( (double)up->U.value/targetval < ratio-1 )
 
                 {
+                    if ( 1 )
+                    {
+                        int32_t i;
+                        for (i=0; i<m; i++)
+                            if ( utxos[i] != 0 && utxos[i]->U.value >= targetval2 )
+                                printf("%.8f ",dstr(utxos[i]->U.value));
+                        printf("targetval2 %.8f vol %.8f price %.8f txfee %.8f %s %s\n",dstr(targetval2),relvolume,price,dstr(fee),coin->symbol,coinaddr);
+                    }
                     if ( (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,(targetval2+2*fee) * 1.01)) >= 0 )
                     {
                         if ( up != 0 && (up2= utxos[mini]) != 0 )
