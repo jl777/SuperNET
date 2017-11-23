@@ -251,7 +251,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
             }
         }
         if ( flag == 0 )
-            printf("unexpected.%d tradestatus.(%s)\n",unexpected++,jprint(lineobj,0));
+            printf("unexpected.%d tradestatus\n",unexpected++);//,jprint(lineobj,0));
         return(0);
     }
     if ( LP_quoteparse(&Q,lineobj) < 0 )
