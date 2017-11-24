@@ -451,7 +451,7 @@ int32_t LP_price_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,uint8_t *pub
 
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price)
 {
-    struct iguana_info *basecoin,*relcoin; struct LP_address *ap; char pubsecpstr[67]; uint32_t numutxos,timestamp; uint64_t price64,balance,minsize,maxsize; bits256 zero; cJSON *reqjson;
+    struct iguana_info *basecoin,*relcoin; char pubsecpstr[67]; uint32_t numutxos,timestamp; uint64_t price64,balance,minsize,maxsize; bits256 zero; cJSON *reqjson;
     reqjson = cJSON_CreateObject();
     // LP_addsig
     if ( (basecoin= LP_coinfind(base)) != 0 && (relcoin= LP_coinfind(rel)) != 0 )//&& basecoin->electrum == 0 )//&& relcoin->electrum == 0 )
@@ -468,11 +468,11 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
         jaddnum(reqjson,"timestamp",timestamp);
         init_hexbytes_noT(pubsecpstr,G.LP_pubsecp,33);
         jaddstr(reqjson,"pubsecp",pubsecpstr);
-        if ( (ap= LP_address(basecoin,basecoin->smartaddr)) != 0 )
+        //if ( (ap= LP_address(basecoin,basecoin->smartaddr)) != 0 )
         {
-            if ( (numutxos= LP_address_minmax(&balance,&minsize,&maxsize,ap)) != 0 )
+            if ( (numutxos= LP_address_minmax(&balance,&minsize,&maxsize,basecoin,basecoin->smartaddr)) != 0 )
             {
-                //printf("%s numutxos.%d balance %.8f min %.8f max %.8f\n",base,numutxos,dstr(balance),dstr(minsize),dstr(maxsize));
+                //printf("send %s numutxos.%d balance %.8f min %.8f max %.8f\n",base,numutxos,dstr(balance),dstr(minsize),dstr(maxsize));
                 jaddstr(reqjson,"utxocoin",base);
                 jaddnum(reqjson,"n",numutxos);
                 jaddnum(reqjson,"bal",dstr(balance));
@@ -497,9 +497,15 @@ char *LP_postprice_recv(cJSON *argjson)
         {
             if ( LP_price_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,base,rel,j64bits(argjson,"price64")) == 0 )
             {
+                //printf("call pricefeed update\n");
                 LP_pricefeedupdate(pubkey,base,rel,price,jstr(argjson,"utxocoin"),jint(argjson,"n"),jdouble(argjson,"bal")*SATOSHIDEN,jdouble(argjson,"min")*SATOSHIDEN,jdouble(argjson,"max")*SATOSHIDEN);
                 return(clonestr("{\"result\":\"success\"}"));
-            } else return(clonestr("{\"error\":\"sig failure\"}"));
+            }
+            else
+            {
+                printf("sig failure\n");
+                return(clonestr("{\"error\":\"sig failure\"}"));
+            }
         }
     }
     return(clonestr("{\"error\":\"missing fields in posted price\"}"));
@@ -723,7 +729,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
         memset(&zero,0,sizeof(zero));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,clonestr(msg));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
-        //LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,clonestr(msg));
+        LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,clonestr(msg));
         free(msg);
         /*portable_mutex_lock(&LP_reservedmutex);
         if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )

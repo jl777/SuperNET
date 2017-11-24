@@ -496,7 +496,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,cJSON *argjson,char *base,c
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,base,rel,zero,jprint(retjson,0));
-                //LP_reserved_msg(0,base,rel,zero,jprint(retjson,0));
+                LP_reserved_msg(0,base,rel,zero,jprint(retjson,0));
                 free_json(retjson);
                 retval = 0;
             } else printf("error launching swaploop\n");
@@ -1005,7 +1005,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,Q.srccoin,Q.destcoin,zero,clonestr(msg));
-                //LP_reserved_msg(0,Q.srccoin,Q.destcoin,zero,clonestr(msg));
+                LP_reserved_msg(0,Q.srccoin,Q.destcoin,zero,clonestr(msg));
                 free(msg);
                 butxo->T.lasttime = (uint32_t)time(NULL);
                 return(retval);

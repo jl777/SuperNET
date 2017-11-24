@@ -238,24 +238,28 @@ struct LP_address *LP_address(struct iguana_info *coin,char *coinaddr)
     return(ap);
 }
 
-int32_t LP_address_minmax(uint64_t *balancep,uint64_t *minp,uint64_t *maxp,struct LP_address *ap)
+int32_t LP_address_minmax(uint64_t *balancep,uint64_t *minp,uint64_t *maxp,struct iguana_info *coin,char *coinaddr)
 {
-    struct LP_address_utxo *up,*tmp; int32_t n = 0;
+    cJSON *array,*item; bits256 txid; int64_t value; int32_t i,vout,height,n = 0;
     *minp = *maxp = *balancep = 0;
-    DL_FOREACH_SAFE(ap->utxos,up,tmp)
+    if ( (array= LP_listunspent(coin->symbol,coinaddr)) != 0 )
     {
-        if ( up->spendheight <= 0 )
+        //printf("address minmax.(%s)\n",jprint(array,0));
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
-            if ( up->U.value > *maxp )
-                *maxp = up->U.value;
-            if ( *minp == 0 || up->U.value < *minp )
-                *minp = up->U.value;
-            *balancep += up->U.value;
-            n++;
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
+                if ( value > *maxp )
+                    *maxp = value;
+                if ( *minp == 0 || value < *minp )
+                    *minp = value;
+                *balancep += value;
+            }
         }
+        free_json(array);
     }
-    if ( 0 && n > 0 )
-        printf("n.%d %s min %.8f max %.8f\n",n,ap->coinaddr,dstr(*minp),dstr(*maxp));
     return(n);
 }
 
