@@ -902,7 +902,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         {
             //printf("bid ping %s %s\n",rel,bids[i]->coinaddr);
             LP_address(relcoin,bids[i]->coinaddr);
-            if ( 0 && relcoin->electrum == 0 )
+            if ( 1 && relcoin->electrum == 0 )
             {
                 LP_listunspent_issue(rel,bids[i]->coinaddr,0);
             //else if ( (tmpjson= LP_listunspent(rel,bids[i]->coinaddr)) != 0 )
@@ -926,7 +926,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         {
             //printf("ask ping %s %s\n",base,asks[i]->coinaddr);
             LP_address(basecoin,asks[i]->coinaddr);
-            if ( 0 && basecoin->electrum == 0 )
+            if ( 1 && basecoin->electrum == 0 )
             {
                 LP_listunspent_issue(base,asks[i]->coinaddr,0);
             //else if ( (tmpjson= LP_listunspent(base,asks[i]->coinaddr)) != 0 )
