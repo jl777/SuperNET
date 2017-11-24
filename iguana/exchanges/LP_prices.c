@@ -99,7 +99,9 @@ void LP_pubkey_update(struct LP_pubkey_info *pubp,uint32_t baseind,uint32_t reli
         pq->relind = relind;
         pq->scale = 6; // millions of SATOSHIS, ie. 0.01
         DL_APPEND(pubp->quotes,pq); // already serialized as only path is via stats_JSON()
+        printf("create pubp quotes %d/%d\n",baseind,relind);
     }
+    printf("%d/%d price %.8f balance %d %s num.%d %.8f %.8f\n",baseind,relind,price,dstr(balance),utxocoin,numutxos,dstr(minutxo),dstr(maxutxo));
     pq->price = price;
     if ( utxocoin != 0 && utxocoin[0] != 0 )
     {
@@ -123,9 +125,9 @@ void LP_pubkey_update(struct LP_pubkey_info *pubp,uint32_t baseind,uint32_t reli
         pq->aveutxo = (uint32_t)ave64;
         pq->maxutxo = (uint32_t)max64;
         printf("price %.8f base.%s rel.%s utxocoin.%s balance %.8f numutxos.%u %u scale64 = %llu, ave %llu, ave32 %u (%llu) max32 %u (%llu)\n",price,LP_priceinfos[baseind].symbol,LP_priceinfos[relind].symbol,utxocoin,dstr(balance),numutxos,pq->numutxos,(long long)scale64,(long long)aveutxo,pq->aveutxo,(long long)pq->aveutxo * scale64,pq->maxutxo,(long long)pq->maxutxo * scale64);
-        //int64_t avesatoshis,maxsatoshis;
-        //price = LP_pubkey_price(&numutxos,&avesatoshis,&maxsatoshis,pubp,baseind,relind);
-        //printf("checkprice %.8f numutxos.%d ave %.8f max %.8f\n",price,numutxos,dstr(avesatoshis),dstr(maxsatoshis));
+        int64_t avesatoshis,maxsatoshis;
+        price = LP_pubkey_price(&numutxos,&avesatoshis,&maxsatoshis,pubp,baseind,relind);
+        printf("checkprice %.8f numutxos.%d ave %.8f max %.8f\n",price,numutxos,dstr(avesatoshis),dstr(maxsatoshis));
     }
 }
 
