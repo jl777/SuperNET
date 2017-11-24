@@ -472,7 +472,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
         {
             if ( (numutxos= LP_address_minmax(&balance,&minsize,&maxsize,basecoin,basecoin->smartaddr)) != 0 )
             {
-                printf("send %s numutxos.%d balance %.8f min %.8f max %.8f\n",base,numutxos,dstr(balance),dstr(minsize),dstr(maxsize));
+                //printf("send %s numutxos.%d balance %.8f min %.8f max %.8f\n",base,numutxos,dstr(balance),dstr(minsize),dstr(maxsize));
                 jaddstr(reqjson,"utxocoin",base);
                 jaddnum(reqjson,"n",numutxos);
                 jaddnum(reqjson,"bal",dstr(balance));
