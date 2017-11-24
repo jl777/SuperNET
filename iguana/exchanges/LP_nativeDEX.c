@@ -553,11 +553,8 @@ void LP_coinsloop(void *_coins)
                 }
                 if ( (backupep= ep->prev) == 0 )
                     backupep = ep;
-                if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
-                {
-                    if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
-                        free_json(retjson);
-                }
+                if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,1)) != 0 )
+                    free_json(retjson);
                 HASH_ITER(hh,coin->addresses,ap,atmp)
                 {
                     break;
@@ -791,14 +788,15 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 
 void LP_pubkeysloop(void *ctx)
 {
-    static uint32_t lasttime; cJSON *retjson; struct iguana_info *coin,*tmp;
+    static uint32_t lasttime;
+    struct LP_pubkey_info *pubp,*ptmp; //cJSON *retjson; struct iguana_info *coin,*tmp;
     strcpy(LP_pubkeysloop_stats.name,"LP_pubkeysloop");
     LP_pubkeysloop_stats.threshold = 15000.;
     sleep(10);
     while ( 1 )
     {
         LP_millistats_update(&LP_pubkeysloop_stats);
-        HASH_ITER(hh,LP_coins,coin,tmp) // firstrefht,firstscanht,lastscanht
+        /*HASH_ITER(hh,LP_coins,coin,tmp) // firstrefht,firstscanht,lastscanht
         {
             if ( coin->electrum != 0 && time(NULL) > coin->lastunspent+30 )
             {
@@ -807,6 +805,10 @@ void LP_pubkeysloop(void *ctx)
                     free_json(retjson);
                 coin->lastunspent = (uint32_t)time(NULL);
             }
+        }*/
+        HASH_ITER(hh,LP_pubkeyinfos,pubp,ptmp)
+        {
+            pubp->dynamictrust = LP_dynamictrust(pubp->pubkey,0);
         }
         if ( time(NULL) > lasttime+LP_ORDERBOOK_DURATION*0.5 )
         {
@@ -1271,7 +1273,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_pubkeysloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,(void *)myipaddr) != 0 )
+    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_privkeysloop for ctx.%p\n",ctx);
         exit(-1);
