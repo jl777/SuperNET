@@ -25,7 +25,7 @@
 #define LP_MINOR_VERSION "1"
 #define LP_BUILD_NUMBER "15477"
 #define LP_BARTERDEX_VERSION 1
-#define LP_MAGICBITS 4
+#define LP_MAGICBITS 1
 
 #ifdef FROM_JS
 #include <emscripten.h>
