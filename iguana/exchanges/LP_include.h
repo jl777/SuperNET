@@ -23,7 +23,7 @@
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "15477"
+#define LP_BUILD_NUMBER "15577"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -83,7 +83,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_SWAPSTEP_TIMEOUT 30
 #define LP_MIN_TXFEE 10000
 #define LP_MINVOL 20
-#define LP_MINCLIENTVOL 20
+#define LP_MINCLIENTVOL 200
 #define LP_MINSIZE_TXFEEMULT 10
 #define LP_REQUIRED_TXFEE 0.8
 
