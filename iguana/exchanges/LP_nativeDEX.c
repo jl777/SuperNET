@@ -21,12 +21,11 @@
 // alice waiting for bestprice
 // USD paxprice based USDvalue in portfolio
 // cancel bid/ask
+// delay swap credit back until notarization
 // electrum dynamic trust over 1000
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
-// delay swap credit back until notarization
 // bugs, validations:
-// remove LP_utxo_bestfit from portfolio
 // portfolio value based on ask?
 // verify encrypted destpubkey, broadcast:0 setprice
 

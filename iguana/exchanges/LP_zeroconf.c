@@ -198,7 +198,7 @@ void LP_zeroconf_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,int32_t
     if ( coin != 0 )
     {
         timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
-        if (  time(NULL) < timestamp-24*3600 && (ap= LP_address(coin,coinaddr)) != 0 )
+        if (  time(NULL) < timestamp-60*3600 && (ap= LP_address(coin,coinaddr)) != 0 )
         {
             ap->zeroconf_credits += satoshis;
             if ( dispflag != 0 )
