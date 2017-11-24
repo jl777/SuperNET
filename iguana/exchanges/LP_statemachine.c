@@ -3238,6 +3238,18 @@ while ( 1 )
 }
 return(clonestr("{\"error\":\"cant get here\"}"));
 #endif
+/*DL_FOREACH_SAFE(ap->utxos,up,tmp)
+ {
+ if ( up->spendheight <= 0 )
+ {
+ if ( up->U.value > *maxp )
+ *maxp = up->U.value;
+ if ( *minp == 0 || up->U.value < *minp )
+ *minp = up->U.value;
+ *balancep += up->U.value;
+ n++;
+ }
+ }*/
 
 char *LP_ordermatch(char *base,int64_t txfee,double maxprice,double maxvolume,char *rel,bits256 txid,int32_t vout,bits256 feetxid,int32_t feevout,int64_t desttxfee,int32_t duration)
 {

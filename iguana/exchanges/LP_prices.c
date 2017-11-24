@@ -99,9 +99,9 @@ void LP_pubkey_update(struct LP_pubkey_info *pubp,uint32_t baseind,uint32_t reli
         pq->relind = relind;
         pq->scale = 6; // millions of SATOSHIS, ie. 0.01
         DL_APPEND(pubp->quotes,pq); // already serialized as only path is via stats_JSON()
-        printf("create pubp quotes %d/%d\n",baseind,relind);
+        //printf("create pubp quotes %d/%d\n",baseind,relind);
     }
-    printf("%d/%d price %.8f balance %.8f %s num.%d %.8f %.8f\n",baseind,relind,price,dstr(balance),utxocoin,numutxos,dstr(minutxo),dstr(maxutxo));
+    //printf("%d/%d price %.8f balance %.8f %s num.%d %.8f %.8f\n",baseind,relind,price,dstr(balance),utxocoin,numutxos,dstr(minutxo),dstr(maxutxo));
     pq->price = price;
     if ( utxocoin != 0 && utxocoin[0] != 0 )
     {
