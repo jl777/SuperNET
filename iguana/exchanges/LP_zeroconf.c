@@ -192,7 +192,7 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
     return(clonestr("{\"error\":\"no zeroconf deposits to claim\"}"));
 }
 
-void LP_zeroconf_credit(int32_t dispflag,char *coinaddr,uint64_t satoshis,int32_t weeki,char *p2shaddr)
+void LP_zeroconf_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,int32_t weeki,char *p2shaddr)
 {
     uint32_t timestamp; struct LP_address *ap; struct iguana_info *coin = LP_coinfind("KMD");
     if ( coin != 0 )
