@@ -1288,7 +1288,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t iter,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
+    int32_t iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 )
@@ -1342,6 +1342,11 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
                 printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
             } else break;
         } else break;
+        for (i=0; i<numvins; i++)
+        {
+            item = jitem(vins,i);
+            LP_availableset(jbits256(item,"txid"),jint(item,"vout"));
+        }
         free_json(vins), vins = 0;
         free_json(txobj), txobj = 0;
         free_json(privkeys), privkeys = 0;
