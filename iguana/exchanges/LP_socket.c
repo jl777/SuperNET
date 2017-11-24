@@ -417,7 +417,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-printf("%s %s",symbol,stratumreq);
+//printf("%s %s",symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = electrum_sitem(ep,stratumreq,timeout,retjsonp);
             portable_mutex_lock(&ep->mutex); // this helps performance!
