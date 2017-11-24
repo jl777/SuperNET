@@ -122,7 +122,7 @@ void LP_pubkey_update(struct LP_pubkey_info *pubp,uint32_t baseind,uint32_t reli
             max64 = (1LL << 32) - 1;
         pq->aveutxo = (uint32_t)ave64;
         pq->maxutxo = (uint32_t)max64;
-        //printf("price %.8f base.%s rel.%s utxocoin.%s balance %.8f numutxos.%u %u scale64 = %llu, ave %llu, ave32 %u (%llu) max32 %u (%llu)\n",price,LP_priceinfos[baseind].symbol,LP_priceinfos[relind].symbol,utxocoin,dstr(balance),numutxos,pq->numutxos,(long long)scale64,(long long)aveutxo,pq->aveutxo,(long long)pq->aveutxo * scale64,pq->maxutxo,(long long)pq->maxutxo * scale64);
+        printf("price %.8f base.%s rel.%s utxocoin.%s balance %.8f numutxos.%u %u scale64 = %llu, ave %llu, ave32 %u (%llu) max32 %u (%llu)\n",price,LP_priceinfos[baseind].symbol,LP_priceinfos[relind].symbol,utxocoin,dstr(balance),numutxos,pq->numutxos,(long long)scale64,(long long)aveutxo,pq->aveutxo,(long long)pq->aveutxo * scale64,pq->maxutxo,(long long)pq->maxutxo * scale64);
         //int64_t avesatoshis,maxsatoshis;
         //price = LP_pubkey_price(&numutxos,&avesatoshis,&maxsatoshis,pubp,baseind,relind);
         //printf("checkprice %.8f numutxos.%d ave %.8f max %.8f\n",price,numutxos,dstr(avesatoshis),dstr(maxsatoshis));
@@ -902,7 +902,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         {
             //printf("bid ping %s %s\n",rel,bids[i]->coinaddr);
             LP_address(relcoin,bids[i]->coinaddr);
-            if ( 1 && relcoin->electrum == 0 )
+            if ( 0 && relcoin->electrum == 0 )
             {
                 LP_listunspent_issue(rel,bids[i]->coinaddr,0);
             //else if ( (tmpjson= LP_listunspent(rel,bids[i]->coinaddr)) != 0 )
@@ -926,7 +926,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         {
             //printf("ask ping %s %s\n",base,asks[i]->coinaddr);
             LP_address(basecoin,asks[i]->coinaddr);
-            if ( 1 && basecoin->electrum == 0 )
+            if ( 0 && basecoin->electrum == 0 )
             {
                 LP_listunspent_issue(base,asks[i]->coinaddr,0);
             //else if ( (tmpjson= LP_listunspent(base,asks[i]->coinaddr)) != 0 )
