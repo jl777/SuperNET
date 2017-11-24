@@ -401,6 +401,8 @@ int32_t electrum_kickstart(struct electrum_info *ep)
     return(0);
 }
 
+int32_t zeroval();
+
 cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *method,char *params,int32_t timeout)
 {
     // queue id and string and callback
