@@ -519,7 +519,7 @@ struct LP_ohlc
 cJSON *LP_ohlc_json(struct LP_ohlc *bar)
 {
     cJSON *item;
-    if ( bar->numtrades != 0 && bar->relsum > SMALLVAL && bar->basesum > SMALLVAL )
+    //if ( bar->numtrades != 0 && bar->relsum > SMALLVAL && bar->basesum > SMALLVAL )
     {
         item = cJSON_CreateArray();
         jaddinum(item,bar->timestamp);
@@ -529,7 +529,9 @@ cJSON *LP_ohlc_json(struct LP_ohlc *bar)
         jaddinum(item,bar->close);
         jaddinum(item,bar->relsum);
         jaddinum(item,bar->basesum);
-        jaddinum(item,bar->relsum / bar->basesum);
+        if ( bar->basesum != 0 )
+            jaddinum(item,bar->relsum / bar->basesum);
+        else jaddinum(item,0);
         jaddinum(item,bar->numtrades);
         return(item);
     }
