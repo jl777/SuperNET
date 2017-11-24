@@ -1126,7 +1126,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
             if ( LP_validSPV(coin->symbol,coin->smartaddr,up->U.txid,up->U.vout) < 0 )
                 continue;
         }
-        if ( LP_allocated(up->U.txid,up->U.vout) != 0 )
+        if ( bits256_cmp(utxotxid,up->U.txid) != 0 && LP_allocated(up->U.txid,up->U.vout) != 0 )
             continue;
         up->spendheight = 1;
         total += up->U.value;

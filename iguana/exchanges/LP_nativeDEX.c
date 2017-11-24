@@ -17,23 +17,25 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// feature requests:
 // alice waiting for bestprice
-// USD paxprice based USDvalue in portfolio
 // cancel bid/ask
 // delay swap credit back until notarization
 // electrum dynamic trust over 1000
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
-// bugs, validations:
 // portfolio value based on ask?
 // verify encrypted destpubkey, broadcast:0 setprice
+// USD paxprice based USDvalue in portfolio
 
 // improve critical section detection when parallel trades
-// previously, it used to show amount, kmd equiv, perc
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
-
+// dont change error messages:
+// if (enable_electrum_coin_output_data.error == 'couldnt find coin locally installed') { //{error: "couldnt find coin locally installed", coin: "BTC"}
+//if (enable_native_coin_output_data.error == 'couldnt find coin locally installed') { //{error: "couldnt find coin locally installed", coin: "BTC"}
+// if (!data.error === true && data.error !== 'coin is disabled') {
+// if (bot_output_data.error == 'not enough funds') {
+            
 #include <stdio.h>
 
 long LP_cjson_allocated,LP_cjson_total,LP_cjson_count;
@@ -89,7 +91,7 @@ void LP_millistats_update(struct LP_millistats *mp)
 }
 
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex,LP_statslogmutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[2][1000];
 int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
@@ -1127,6 +1129,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_tradebotsmutex);
     portable_mutex_init(&LP_cJSONmutex);
     portable_mutex_init(&LP_logmutex);
+    portable_mutex_init(&LP_statslogmutex);
     myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
 #ifndef FROM_JS

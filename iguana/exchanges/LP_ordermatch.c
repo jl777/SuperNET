@@ -496,7 +496,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,cJSON *argjson,char *base,c
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,base,rel,zero,jprint(retjson,0));
-                //LP_reserved_msg(0,base,rel,zero,jprint(retjson,0));
+                LP_reserved_msg(0,base,rel,zero,jprint(retjson,0));
                 free_json(retjson);
                 retval = 0;
             } else printf("error launching swaploop\n");
