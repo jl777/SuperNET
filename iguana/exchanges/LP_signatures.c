@@ -728,6 +728,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     {
         memset(&zero,0,sizeof(zero));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,clonestr(msg));
+        sleep(1);
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
         //LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,clonestr(msg));
         free(msg);
