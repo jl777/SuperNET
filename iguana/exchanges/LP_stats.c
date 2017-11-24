@@ -372,7 +372,7 @@ char *LP_swapstatus_recv(cJSON *argjson)
         sp->lasttime = (uint32_t)time(NULL);
         if ( (methodind= jint(argjson,"ind")) > sp->methodind && methodind < sizeof(LP_stats_methods)/sizeof(*LP_stats_methods) )
         {
-            if ( sp->finished == 0 && sp->expired == 0 )
+            if ( 0 && sp->finished == 0 && sp->expired == 0 )
                 printf("SWAPSTATUS updated %llu %s %u %u\n",(long long)sp->aliceid,LP_stats_methods[sp->methodind],juint(argjson,"finished"),juint(argjson,"expired"));
             sp->methodind = methodind;
             sp->finished = juint(argjson,"finished");
