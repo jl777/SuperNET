@@ -1166,7 +1166,7 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
         }
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {
-            //if ( (LP_rand() % 1000) == 0 )
+            if ( (LP_rand() % 1000) == 0 )
                 printf("PRICEFEED UPDATE.(%-6s/%6s) %12.8f %s %12.8f\n",base,rel,price,bits256_str(str,pubkey),1./price);
             pubp->timestamp = (uint32_t)time(NULL);
             LP_pubkey_update(pubp,basepp->ind,relpp->ind,price,balance,utxocoin,numrelutxos,minutxo,maxutxo);
