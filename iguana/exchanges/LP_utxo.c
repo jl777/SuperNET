@@ -244,6 +244,7 @@ int32_t LP_address_minmax(uint64_t *balancep,uint64_t *minp,uint64_t *maxp,struc
     *minp = *maxp = *balancep = 0;
     if ( (array= LP_listunspent(coin->symbol,coinaddr)) != 0 )
     {
+        //printf("address minmax.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             for (i=0; i<n; i++)
@@ -255,9 +256,9 @@ int32_t LP_address_minmax(uint64_t *balancep,uint64_t *minp,uint64_t *maxp,struc
                 if ( *minp == 0 || value < *minp )
                     *minp = value;
                 *balancep += value;
-                n++;
             }
         }
+        free_json(array);
     }
     return(n);
 }

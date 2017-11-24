@@ -343,7 +343,7 @@ zeroconf_claim(address, expiration=0)\n\
                     return(clonestr("{\"error\":\"couldnt set price\"}"));
                 //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
                 //    return(clonestr("{\"error\":\"couldnt set price\"}"));
-                else if ( jint(argjson,"broadcast") != 0 || jobj(argjson,"broadcast") == 0 )
+                else if ( jobj(argjson,"broadcast") == 0 || jint(argjson,"broadcast") != 0 )
                     return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
