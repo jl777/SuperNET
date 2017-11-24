@@ -1210,7 +1210,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             return(0);
         }
     }
-    if ( (ap= LP_address_utxo_reset(coin)) == 0 )
+    if ( (ap= LP_address(coin,coin->smartaddr)) == 0 )
         return(0);
     memset(utxos,0,sizeof(utxos));
     if ( (numutxos= LP_address_utxo_ptrs(coin,0,utxos,max,ap,coin->smartaddr)) <= 0 )
@@ -1288,7 +1288,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
+    int32_t iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 )
@@ -1317,6 +1317,8 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     V = malloc(maxV * sizeof(*V));
     for (iter=0; iter<2; iter++)
     {
+        if ( (ap= LP_address_utxo_reset(coin)) == 0 )
+            return(0);
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
