@@ -281,13 +281,13 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
         if ( (backupep= ep->prev) == 0 )
             backupep = ep;
     }
-    //printf("LP_nearest_utxovalue %s utxos[%d] target %.8f\n",coin->symbol,n,dstr(targetval));
+    printf("LP_nearest_utxovalue %s %s utxos[%d] target %.8f\n",coin->symbol,coinaddr,n,dstr(targetval));
     for (i=0; i<n; i++)
     {
         if ( (up= utxos[i]) != 0 )
         {
             dist = (up->U.value - targetval);
-            //printf("nearest i.%d target %.8f val %.8f dist %.8f mindist %.8f mini.%d spent.%d\n",i,dstr(targetval),dstr(up->U.value),dstr(dist),dstr(mindist),mini,up->spendheight);
+            printf("nearest i.%d target %.8f val %.8f dist %.8f mindist %.8f mini.%d spent.%d\n",i,dstr(targetval),dstr(up->U.value),dstr(dist),dstr(mindist),mini,up->spendheight);
             if ( up->spendheight <= 0 )
             {
                 if ( dist >= 0 && dist < mindist )
@@ -325,7 +325,7 @@ int32_t LP_nearest_utxovalue(struct iguana_info *coin,char *coinaddr,struct LP_a
             return(replacei);
         }
     }
-    //printf("return mini.%d\n",mini);
+    printf("return mini.%d\n",mini);
     return(mini);
 }
 
@@ -416,7 +416,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
     {
         if ( (m= LP_address_utxo_ptrs(coin,iambob,utxos,max,ap,coinaddr)) > 1 )
         {
-            if ( 0 )
+            if ( 1 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)
@@ -429,11 +429,11 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
             {
                 up = utxos[mini];
                 utxos[mini] = 0;
-//printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
+printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
                 if ( (double)up->U.value/targetval < ratio-1 )
 
                 {
-                    if ( 0 )
+                    if ( 1 )
                     {
                         int32_t i;
                         for (i=0; i<m; i++)
