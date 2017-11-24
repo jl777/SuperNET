@@ -17,20 +17,17 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// feature requests:
 // alice waiting for bestprice
-// USD paxprice based USDvalue in portfolio
 // cancel bid/ask
 // delay swap credit back until notarization
 // electrum dynamic trust over 1000
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
-// bugs, validations:
 // portfolio value based on ask?
 // verify encrypted destpubkey, broadcast:0 setprice
+// USD paxprice based USDvalue in portfolio
 
 // improve critical section detection when parallel trades
-// previously, it used to show amount, kmd equiv, perc
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 
