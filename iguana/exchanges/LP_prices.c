@@ -952,9 +952,9 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     return(jprint(retjson,1));
 }
 
-uint64_t LP_KMDvalue(struct iguana_info *coin,uint64_t balance)
+int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
 {
-    cJSON *bids,*asks,*orderbook,*item; double bid=0,ask=0,price = 0.; int32_t numasks,numbids; char *retstr; uint64_t KMDvalue=0;
+    cJSON *bids,*asks,*orderbook,*item; double bid=0,ask=0,price = 0.; int32_t numasks,numbids; char *retstr; int64_t KMDvalue=0;
     if ( balance != 0 )
     {
         if ( strcmp(coin->symbol,"KMD") == 0 )
