@@ -30,7 +30,7 @@ static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatu
 void LP_tradecommand_log(cJSON *argjson)
 {
     static FILE *logfp; char *jsonstr;
-    portable_mutex_lock(&LP_statslogmutex);
+    //portable_mutex_lock(&LP_statslogmutex);
     if ( logfp == 0 )
     {
         if ( (logfp= fopen(LP_STATSLOG_FNAME,"rb+")) != 0 )
@@ -44,7 +44,7 @@ void LP_tradecommand_log(cJSON *argjson)
         free(jsonstr);
         fflush(logfp);
     }
-    portable_mutex_unlock(&LP_statslogmutex);
+    //portable_mutex_unlock(&LP_statslogmutex);
 }
 
 void LP_statslog_parseline(cJSON *lineobj)
