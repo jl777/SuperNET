@@ -631,15 +631,18 @@ zeroconf_claim(address, expiration=0)\n\
     
     else if ( strcmp(method,"tradestatus") == 0 )
     {
-        bits256 zero; cJSON *tmpjson;
+        bits256 zero; cJSON *tmpjson; struct LP_quoteinfo Q;
         LP_tradecommand_log(argjson);
-        //printf("GOT TRADESTATUS! %s\n",jprint(argjson,0));
+        LP_quoteparse(&Q,argjson);
+        LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,0);
+        LP_tradecommand_log(argjson);
         if ( LP_statslog_parse() > 0 )
         {
             memset(zero.bytes,0,sizeof(zero));
             if ( (tmpjson= LP_statslog_disp(2000000000,2000000000,"",zero,0,0))) // pending swaps
                 free_json(tmpjson);
         }
+        printf("%-4d (%-10u %10u) %12s id.%22llu %5s/%-5s %12.8f -> %11.8f price %11.8f | RT.%d %d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,LP_RTcount,LP_swapscount);
         retstr = clonestr("{\"result\":\"success\"}");
     }
     else if ( strcmp(method,"wantnotify") == 0 )
