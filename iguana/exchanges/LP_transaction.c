@@ -1341,15 +1341,15 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
             if ( strcmp(coin->symbol,"BTC") == 0 )
             {
                 newtxfee = LP_txfeecalc(coin,0,datalen);
-                printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
+                printf("txfee %.8f -> newtxfee %.8f, numvins.%d\n",dstr(txfee),dstr(newtxfee),numvins);
+                for (i=0; i<numvins; i++)
+                {
+                    item = jitem(vins,i);
+                    printf("set available %s\n",jprint(item,0));
+                    LP_availableset(jbits256(item,"txid"),jint(item,"vout"));
+                }
             } else break;
         } else break;
-        for (i=0; i<numvins; i++)
-        {
-            item = jitem(vins,i);
-            printf("set available %s\n",jprint(item,0));
-            LP_availableset(jbits256(item,"txid"),jint(item,"vout"));
-        }
         free_json(vins), vins = 0;
         free_json(txobj), txobj = 0;
         free_json(privkeys), privkeys = 0;
