@@ -3238,6 +3238,22 @@ while ( 1 )
 }
 return(clonestr("{\"error\":\"cant get here\"}"));
 #endif
+
+if ( 0 )
+{
+    char *p2sh = "bJVtQF2o8B6sdNjeXupzNw5rnidJUNwPJD",p2shaddr[64]; uint8_t script[512],pub33[33]; uint32_t timestamp;
+    decode_hex(pub33,33,"03fe754763c176e1339a3f62ee6b9484720e17ee4646b65a119e9f6370c7004abc");
+    for (timestamp=1510934803-3600*24; timestamp<1510934803+3600*24; timestamp++)
+    {
+        LP_deposit_addr(p2shaddr,script,0,85,timestamp,pub33);
+        if ( strcmp(p2shaddr,p2sh) == 0 )
+        {
+            printf("matched timestamp.%u\n",timestamp);
+            break;
+        } else printf("%s ",p2shaddr);
+    }
+}
+
 /*DL_FOREACH_SAFE(ap->utxos,up,tmp)
  {
  if ( up->spendheight <= 0 )
