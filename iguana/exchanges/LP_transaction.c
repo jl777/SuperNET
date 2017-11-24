@@ -1315,10 +1315,10 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     privkey = LP_privkey(vinaddr,coin->taddr);
     maxV = LP_MAXVINS;
     V = malloc(maxV * sizeof(*V));
+    if ( (ap= LP_address_utxo_reset(coin)) == 0 )
+        return(0);
     for (iter=0; iter<2; iter++)
     {
-        if ( (ap= LP_address_utxo_reset(coin)) == 0 )
-            return(0);
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
@@ -1347,6 +1347,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         for (i=0; i<numvins; i++)
         {
             item = jitem(vins,i);
+            printf("set available %s\n",jprint(item,0));
             LP_availableset(jbits256(item,"txid"),jint(item,"vout"));
         }
         free_json(vins), vins = 0;

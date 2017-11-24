@@ -41,18 +41,18 @@ struct LP_inuse_info *_LP_inuse_find(bits256 txid,int32_t vout)
 
 int32_t _LP_inuse_delete(bits256 txid,int32_t vout)
 {
-    struct LP_inuse_info *lp; int32_t ind;
+    struct LP_inuse_info *lp; int32_t ind; char str[65];
     if ( (lp= _LP_inuse_find(txid,vout)) != 0 )
     {
         ind = lp->ind;
-        char str[65]; printf("_LP_inuse_delete removing %s/v%d\n",bits256_str(str,txid),vout);
+        printf("_LP_inuse_delete removing %s/v%d\n",bits256_str(str,txid),vout);
         *lp = LP_inuse[--LP_numinuse];
         lp->ind = ind;
         memset(&LP_inuse[LP_numinuse],0,sizeof(struct LP_inuse_info));
         for (ind=0; ind<LP_numinuse; ind++)
             if ( LP_inuse[ind].ind != ind )
                 printf("ind.%d of %d: mismatched ind.%d\n",ind,LP_numinuse,LP_inuse[ind].ind);
-    }
+    } else printf("_LP_inuse_delete removing %s/v%d\n",bits256_str(str,txid),vout);
     return(-1);
 }
 
@@ -268,12 +268,12 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
     struct LP_address_utxo *up,*tmp; struct LP_transaction *tx; cJSON *txout; int32_t n = 0;
     if ( strcmp(ap->coinaddr,coinaddr) != 0 )
         printf("UNEXPECTED coinaddr mismatch (%s) != (%s)\n",ap->coinaddr,coinaddr);
-    if ( coin->electrum != 0 )
+    if ( 0 && coin->electrum != 0 )
         LP_listunspent_issue(coin->symbol,coin->smartaddr,2);
     //portable_mutex_lock(&LP_utxomutex);
     DL_FOREACH_SAFE(ap->utxos,up,tmp)
     {
-        char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d spendheight.%d allocated.%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout,up->spendheight,LP_allocated(up->U.txid,up->U.vout));
+        //char str[65]; printf("LP_address_utxo_ptrs %s n.%d %.8f %s v%d spendheight.%d allocated.%d\n",ap->coinaddr,n,dstr(up->U.value),bits256_str(str,up->U.txid),up->U.vout,up->spendheight,LP_allocated(up->U.txid,up->U.vout));
         if ( up->spendheight <= 0 && LP_RTmetrics_avoidtxid(up->U.txid) < 0 )
         {
             if ( coin->electrum == 0 )
@@ -282,7 +282,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                 {
                     if ( LP_value_extract(txout,0) == 0 )
                     {
-                        printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
+                        //printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
                         free_json(txout);
                         up->spendheight = 1;
                         if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
@@ -293,7 +293,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                 }
                 else
                 {
-                    printf("LP_address_utxo_ptrs skips %s %s payment %s/v%d is spent\n",coin->symbol,coinaddr,bits256_str(str,up->U.txid),up->U.vout);
+                    //printf("LP_address_utxo_ptrs skips %s %s payment %s/v%d is spent\n",coin->symbol,coinaddr,bits256_str(str,up->U.txid),up->U.vout);
                     up->spendheight = 1;
                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                         tx->outpoints[up->U.vout].spendheight = 1;
@@ -304,7 +304,7 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( up->SPV < 0 || up->U.height == 0 )
                 {
-printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str,up->U.txid),up->U.vout,up->SPV,up->U.height);
+//printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str,up->U.txid),up->U.vout,up->SPV,up->U.height);
                     if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                         tx->outpoints[up->U.vout].spendheight = 1;
                     continue;
@@ -315,7 +315,7 @@ printf("LP_address_utxo_ptrs skips %s/v%u due to SPV.%d ht.%d\n",bits256_str(str
                 utxos[n++] = up;
                 if ( n >= max )
                     break;
-            } else printf("LP_allocated skip\n");
+            } //else printf("LP_allocated skip\n");
         }
         else
         {
