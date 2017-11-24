@@ -751,7 +751,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag)
     return(n);
 }
 
-char *LP_bestfit(char *rel,double relvolume)
+/*char *LP_bestfit(char *rel,double relvolume)
 {
     struct LP_utxoinfo *autxo;
     if ( relvolume <= 0. || LP_priceinfofind(rel) == 0 )
@@ -759,7 +759,7 @@ char *LP_bestfit(char *rel,double relvolume)
     if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * relvolume)) == 0 )
         return(clonestr("{\"error\":\"cant find utxo that is close enough in size\"}"));
     return(jprint(LP_utxojson(autxo),1));
-}
+}*/
 
 int32_t LP_aliceonly(char *symbol)
 {
