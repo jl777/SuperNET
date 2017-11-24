@@ -18,11 +18,12 @@
 //  marketmaker
 //
 // alice waiting for bestprice
-// cancel bid/ask
+// big BTC swaps
 // delay swap credit back until notarization
-// electrum dynamic trust over 1000
+// electrum dynamic trust over 1000 tx
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
+// cancel bid/ask
 // portfolio value based on ask?
 // verify encrypted destpubkey, broadcast:0 setprice
 // USD paxprice based USDvalue in portfolio
@@ -790,7 +791,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 void LP_pubkeysloop(void *ctx)
 {
     static uint32_t lasttime;
-    struct LP_pubkey_info *pubp,*ptmp; //cJSON *retjson; struct iguana_info *coin,*tmp;
+    //struct LP_pubkey_info *pubp,*ptmp; //cJSON *retjson; struct iguana_info *coin,*tmp;
     strcpy(LP_pubkeysloop_stats.name,"LP_pubkeysloop");
     LP_pubkeysloop_stats.threshold = 15000.;
     sleep(10);
