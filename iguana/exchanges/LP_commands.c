@@ -304,6 +304,7 @@ zeroconf_claim(address, expiration=0)\n\
             struct LP_address *ap; char *coinaddr;
             if ( (ptr= LP_coinsearch("KMD")) != 0 && (coinaddr= jstr(argjson,"address")) != 0 )
             {
+                LP_statslog_parse();
                 LP_zeroconf_deposits(ptr);
                 if ( (ap= LP_addressfind(ptr,coinaddr)) != 0 )
                 {

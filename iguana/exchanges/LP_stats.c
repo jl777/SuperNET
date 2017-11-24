@@ -84,6 +84,7 @@ void LP_statslog_parseline(cJSON *lineobj)
 int32_t LP_statslog_parse()
 {
     static long lastpos; FILE *fp; char line[8192]; cJSON *lineobj; int32_t n = 0;
+    portable_mutex_lock(&LP_logmutex);
     if ( (fp= fopen(LP_STATSLOG_FNAME,"rb")) != 0 )
     {
         if ( lastpos > 0 )
@@ -110,6 +111,7 @@ int32_t LP_statslog_parse()
         }
         fclose(fp);
     }
+    portable_mutex_unlock(&LP_logmutex);
     return(n);
 }
 
