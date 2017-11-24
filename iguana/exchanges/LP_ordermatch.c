@@ -492,11 +492,12 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,cJSON *argjson,char *base,c
                 jaddstr(retjson,"method","connected");
                 jaddstr(retjson,"pair",pairstr);
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
-                LP_reserved_msg(1,base,rel,qp->desthash,jprint(retjson,0));
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,base,rel,zero,jprint(retjson,0));
-                LP_reserved_msg(0,base,rel,zero,jprint(retjson,0));
+                //sleep(1);
+                //LP_reserved_msg(1,base,rel,qp->desthash,jprint(retjson,0));
+                //LP_reserved_msg(0,base,rel,zero,jprint(retjson,0));
                 free_json(retjson);
                 retval = 0;
             } else printf("error launching swaploop\n");
@@ -928,7 +929,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 price += (r * range) / 100.;
                 bestprice = LP_bob_competition(&counter,aliceid,price,0);
                 printf("%llu >>>>>>> price %.8f qprice %.8f r.%d range %.8f -> %.8f, bestprice %.8f counter.%d\n",(long long)aliceid,ask,qprice,r,range,price,bestprice,counter);
-                if ( counter > 2 || price > bestprice*.99 ) // skip if late or bad price
+                if ( counter > 3 || price > bestprice*1.1 ) // skip if late or bad price
                     return(retval);
             } else return(retval);
             //LP_RTmetrics_update(Q.srccoin,Q.destcoin);
@@ -1000,12 +1001,12 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 jaddstr(retjson,"method","reserved");
                 msg = jprint(retjson,1);
                 printf("return after queued RESERVED: set swappending.%u accept qprice %.8f, min %.8f\n(%s)\n",Q.timestamp + LP_RESERVETIME,qprice,ask,msg);
-                LP_reserved_msg(1,Q.srccoin,Q.destcoin,Q.desthash,clonestr(msg));
-                //sleep(1);
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,Q.srccoin,Q.destcoin,zero,clonestr(msg));
-                LP_reserved_msg(0,Q.srccoin,Q.destcoin,zero,clonestr(msg));
+                //LP_reserved_msg(0,Q.srccoin,Q.destcoin,zero,clonestr(msg));
+                sleep(1);
+                LP_reserved_msg(1,Q.srccoin,Q.destcoin,Q.desthash,clonestr(msg));
                 free(msg);
                 butxo->T.lasttime = (uint32_t)time(NULL);
                 return(retval);
