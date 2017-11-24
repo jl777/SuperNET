@@ -1210,13 +1210,8 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             return(0);
         }
     }
-    //if ( bits256_nonz(utxotxid) == 0 )
-    {
-        if ( (ap= LP_address_utxo_reset(coin)) == 0 )
-            return(0);
-    }
-    //else if ( (ap= LP_address(coin,coin->smartaddr)) == 0 )
-    //    return(0);
+    if ( (ap= LP_address_utxo_reset(coin)) == 0 )
+        return(0);
     memset(utxos,0,sizeof(utxos));
     if ( (numutxos= LP_address_utxo_ptrs(coin,0,utxos,max,ap,coin->smartaddr)) <= 0 )
     {
@@ -1247,11 +1242,6 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     txobj = bitcoin_txcreate(coin->symbol,coin->isPoS,locktime,1,timestamp);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",jduplicate(vins));
-    if ( change < 6000 )
-    {
-        adjust = change / numvouts;
-        change = 0;
-    }
     printf("change %.8f = total %.8f - amount %.8f, adjust %.8f numvouts.%d\n",dstr(change),dstr(total),dstr(amount),dstr(adjust),numvouts);
     for (i=0; i<numvouts; i++)
     {
@@ -1280,6 +1270,11 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             printf("cant get fieldname.%d of %d %s\n",i,numvouts,jprint(outputs,0));
             return(0);
         }
+    }
+    if ( change < 6000 )
+    {
+        //adjust = change / numvouts; adjust messes up vout encoding!
+        change = 0;
     }
     if ( change != 0 )
         txobj = bitcoin_txoutput(txobj,script,scriptlen,change);

@@ -115,7 +115,6 @@ tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=
 pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 getrawtransaction(coin, txid)\n\
 inventory(coin, reset=0, [passphrase=])\n\
-bestfit(rel, relvolume)\n\
 lastnonce()\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
@@ -385,13 +384,13 @@ zeroconf_claim(address, expiration=0)\n\
                 } else return(clonestr("{\"error\":\"no price set\"}"));
             }
         }
-        else if ( rel[0] != 0 && strcmp(method,"bestfit") == 0 )
+        /*else if ( rel[0] != 0 && strcmp(method,"bestfit") == 0 )
         {
             double relvolume;
             if ( (relvolume= jdouble(argjson,"relvolume")) > SMALLVAL )
                 return(LP_bestfit(rel,relvolume));
             else return(clonestr("{\"error\":\"no relvolume set\"}"));
-        }
+        }*/
         else if ( coin[0] != 0 )
         {
             if ( strcmp(method,"enable") == 0 )
@@ -548,9 +547,11 @@ zeroconf_claim(address, expiration=0)\n\
                     jaddstr(retjson,"result","success");
                     jaddstr(retjson,"coin",coin);
                     jaddnum(retjson,"timestamp",time(NULL));
-                    jadd(retjson,"alice",LP_inventory(coin));
+                    jadd(retjson,"alice",cJSON_Parse("[]"));
+                    //jadd(retjson,"alice",LP_inventory(coin));
                     //jadd(retjson,"bob",LP_inventory(coin,1));
-                    LP_smartutxos_push(ptr);
+                    //LP_smartutxos_push(ptr);
+                    LP_address_utxo_reset(ptr);
                     return(jprint(retjson,1));
                 }
             }

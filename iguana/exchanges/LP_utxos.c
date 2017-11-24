@@ -194,7 +194,7 @@ void LP_availableset(struct LP_utxoinfo *utxo)
         }
     }
 }
-*/
+
 
 cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
 {
@@ -327,16 +327,6 @@ struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t 
         return(0);
     }
     txfee = LP_txfeecalc(coin,0,0);
-    /*if ( iambob != 0 && value2 < 9 * (satoshis >> 3) + 2*txfee ) // big txfee padding
-    {
-        if ( value2 > 2*txfee )
-            tmpsatoshis = (((value2 - 2*txfee) / 9) << 3);
-        else
-        {
-            printf("value2 %.8f <= 2 * %.8f\n",dstr(value2),dstr(txfee));
-            return(0);
-        }
-    } else tmpsatoshis = (satoshis - txfee);*/
     char str[65],str2[65],dispflag = 0;//(iambob == 0);
     if ( iambob == 0 && bits256_cmp(pubkey,G.LP_mypub25519) != 0 )
     {
@@ -527,7 +517,7 @@ cJSON *LP_inventory(char *symbol)
             printf("skip %s %s %d %d %d %d\n",utxo->coin,bits256_str(str,utxo->payment.txid),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
     }
     return(array);
-}
+}*/
 
 int32_t LP_maxvalue(uint64_t *values,int32_t n)
 {
@@ -582,7 +572,7 @@ int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t
 int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
     int32_t enable_utxos = 0;
-    char *script,destaddr[64]; struct LP_utxoinfo *utxo; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,flag=0,height,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,biggerval,value,total = 0; int64_t targetval;
+    char *script,destaddr[64]; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,flag=0,height,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,biggerval,value,total = 0; int64_t targetval; //struct LP_utxoinfo *utxo;
     if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
     {
         //printf("coin not active\n");
@@ -682,7 +672,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                             {
                                 value = values[i];
                                 values[i] = 0, used++;
-                                portable_mutex_lock(&LP_UTXOmutex);
+                                /*portable_mutex_lock(&LP_UTXOmutex);
                                 if ( iambob != 0 )
                                 {
                                     if ( (utxo= LP_utxoadd(1,coin->symbol,txid,vout,value,deposittxid,depositvout,biggerval,coin->smartaddr,mypub,LP_gui,G.LP_sessionid,value)) != 0 )
@@ -696,7 +686,7 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
                                     {
                                     }
                                 }
-                                portable_mutex_unlock(&LP_UTXOmutex);
+                                portable_mutex_unlock(&LP_UTXOmutex);*/
                                 total += value;
                             } // else printf("scriptmismatch.(%s) vs %s\n",script,jprint(item,0));
                         } //else printf("nothing near i.%d\n",i);
