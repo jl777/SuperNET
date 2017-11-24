@@ -1282,6 +1282,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     {
     } else printf("error making rawtx suppress.%d\n",suppress_pubkeys);
     *txobjp = txobj;
+    *numvinsp = numvins;
     return(rawtxbytes);
 }
 
@@ -1350,6 +1351,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
                 }
             } else break;
         } else break;
+        printf("free vars for second iter\n");
         free_json(vins), vins = 0;
         free_json(txobj), txobj = 0;
         free_json(privkeys), privkeys = 0;
