@@ -18,11 +18,12 @@
 //  marketmaker
 //
 // alice waiting for bestprice
-// cancel bid/ask
+// big BTC swaps
 // delay swap credit back until notarization
-// electrum dynamic trust over 1000
+// electrum dynamic trust over 1000 tx
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
+// cancel bid/ask
 // portfolio value based on ask?
 // verify encrypted destpubkey, broadcast:0 setprice
 // USD paxprice based USDvalue in portfolio
