@@ -45,14 +45,15 @@ int32_t _LP_inuse_delete(bits256 txid,int32_t vout)
     if ( (lp= _LP_inuse_find(txid,vout)) != 0 )
     {
         ind = lp->ind;
-        printf("_LP_inuse_delete removing %s/v%d\n",bits256_str(str,txid),vout);
-        *lp = LP_inuse[--LP_numinuse];
+        if ( LP_numinuse > 0 )
+            *lp = LP_inuse[--LP_numinuse];
         lp->ind = ind;
         memset(&LP_inuse[LP_numinuse],0,sizeof(struct LP_inuse_info));
+        printf("_LP_inuse_delete deleted %s/v%d find.%p\n",bits256_str(str,txid),vout,_LP_inuse_find(txid,vout));
         for (ind=0; ind<LP_numinuse; ind++)
             if ( LP_inuse[ind].ind != ind )
                 printf("ind.%d of %d: mismatched ind.%d\n",ind,LP_numinuse,LP_inuse[ind].ind);
-    } else printf("_LP_inuse_delete removing %s/v%d\n",bits256_str(str,txid),vout);
+    } else printf("_LP_inuse_delete couldnt find %s/v%d\n",bits256_str(str,txid),vout);
     return(-1);
 }
 
