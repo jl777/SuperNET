@@ -427,6 +427,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,m,vout,height; cJSON *array,*item,*txobj; int64_t value; bits256 txid; uint32_t now;
     LP_address(coin,coin->smartaddr);
+    printf("call listunspent issue %s (%s)\n",coin->symbol,coin->smartaddr);
     LP_listunspent_issue(coin->symbol,coin->smartaddr,2);
     if ( (ap= LP_addressfind(coin,coin->smartaddr)) == 0 )
     {
