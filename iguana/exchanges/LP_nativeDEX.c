@@ -30,7 +30,12 @@
 // improve critical section detection when parallel trades
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
-
+// dont change error messages:
+// if (enable_electrum_coin_output_data.error == 'couldnt find coin locally installed') { //{error: "couldnt find coin locally installed", coin: "BTC"}
+//if (enable_native_coin_output_data.error == 'couldnt find coin locally installed') { //{error: "couldnt find coin locally installed", coin: "BTC"}
+// if (!data.error === true && data.error !== 'coin is disabled') {
+// if (bot_output_data.error == 'not enough funds') {
+            
 #include <stdio.h>
 
 long LP_cjson_allocated,LP_cjson_total,LP_cjson_count;
