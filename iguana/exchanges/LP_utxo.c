@@ -419,7 +419,7 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
 
 struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
 {
-    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,vout,height; cJSON *array,*item; int64_t value; bits256 txid; uint32_t now;
+    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,vout,height; cJSON *array,*item,*txobj; int64_t value; bits256 txid; uint32_t now;
     LP_address(coin,coin->smartaddr);
     LP_listunspent_issue(coin->symbol,coin->smartaddr,2);
     if ( (ap= LP_addressfind(coin,coin->smartaddr)) == 0 )
@@ -448,6 +448,9 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 //{"tx_hash":"38d1b7c73015e1b1d6cb7fc314cae402a635b7d7ea294970ab857df8777a66f4","tx_pos":0,"height":577975,"value":238700}
                 item = jitem(array,i);
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
+                if ( (txobj= LP_gettxout(coin->symbol,coin->symbol,txid,vout)) == 0 )
+                    continue;
+                else free_json(txobj);
                 LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
