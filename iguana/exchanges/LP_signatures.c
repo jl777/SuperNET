@@ -489,7 +489,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 char *LP_postprice_recv(cJSON *argjson)
 {
     bits256 pubkey; double price; char *base,*rel;
-    //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
+    printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
     if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
     {
         pubkey = jbits256(argjson,"pubkey");
@@ -499,7 +499,12 @@ char *LP_postprice_recv(cJSON *argjson)
             {
                 LP_pricefeedupdate(pubkey,base,rel,price,jstr(argjson,"utxocoin"),jint(argjson,"n"),jdouble(argjson,"bal")*SATOSHIDEN,jdouble(argjson,"min")*SATOSHIDEN,jdouble(argjson,"max")*SATOSHIDEN);
                 return(clonestr("{\"result\":\"success\"}"));
-            } else return(clonestr("{\"error\":\"sig failure\"}"));
+            }
+            else
+            {
+                printf("sig failure\n");
+                return(clonestr("{\"error\":\"sig failure\"}"));
+            }
         }
     }
     return(clonestr("{\"error\":\"missing fields in posted price\"}"));
