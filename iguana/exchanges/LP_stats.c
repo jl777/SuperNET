@@ -523,6 +523,7 @@ cJSON *LP_ohlc_json(struct LP_ohlc *bar,struct LP_ohlc *prevbar)
     if ( bar->numtrades == 0 )
     {
         tmp = *prevbar;
+        tmp.timestamp = bar->timestamp;
         tmp.numtrades = 0;
         tmp.relsum = tmp.basesum = 0.;
     } else tmp = *bar;
