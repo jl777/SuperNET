@@ -357,63 +357,6 @@ return;
     }
 }
 
-queue_t utxosQ;
-struct LP_utxos_qitem { struct queueitem DL; cJSON *argjson; };
-
-char *LP_postutxos_recv(cJSON *argjson)
-{
-    struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash,pubkey; cJSON *obj; struct LP_pubkey_info *pubp;
-printf("LP_postutxos_recv deprecated\n");
-    pubkey = jbits256(argjson,"pubkey");
-    pubp = LP_pubkeyfind(pubkey);
-    if ( pubp != 0 && pubp->numerrors > LP_MAXPUBKEY_ERRORS )
-        return(clonestr("{\"error\":\"blacklisted\"}"));
-    if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 )
-    {
-        if ( strcmp(coinaddr,coin->smartaddr) == 0 )
-        {
-            //printf("ignore my utxo from external source %s %s\n",symbol,coinaddr);
-            return(clonestr("{\"result\":\"success\"}"));
-        }
-    }
-    if ( (obj= jobj(argjson,"utxos")) != 0 )
-    {
-        utxoshash = LP_utxoshash_calc(obj);
-        //char str[65]; //printf("got utxoshash %s\n",bits256_str(str,utxoshash));
-        if ( LP_utxos_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,utxoshash) == 0 )
-        {
-            uitem = calloc(1,sizeof(*uitem));
-            uitem->argjson = jduplicate(argjson);
-            queue_enqueue("utxosQ",&utxosQ,&uitem->DL);
-            return(clonestr("{\"result\":\"success\"}"));
-        } //else printf("valid utxos sig %s\n",bits256_str(str,pubp->pubkey));
-    }
-    return(clonestr("{\"error\":\"sig failure\"}"));
-}
-
-int32_t LP_utxosQ_process()
-{
-    struct LP_utxos_qitem *uitem; int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
-    if ( (uitem= queue_dequeue(&utxosQ)) != 0 )
-    {
-        //printf("LP_utxosQ_process.(%s)\n",jprint(uitem->argjson,0));
-        if ( (coinaddr= jstr(uitem->argjson,"coinaddr")) != 0 && (symbol= jstr(uitem->argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
-        {
-            if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )
-            {
-                if ( (array= jarray(&n,uitem->argjson,"utxos")) != 0 )
-                    LP_unspents_array(coin,coinaddr,array);
-            }
-            else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr,1)) != 0 )
-                free_json(array);
-        }
-        free_json(uitem->argjson);
-        free(uitem);
-        return(1);
-    }
-    return(0);
-}
-
 int32_t LP_price_sigcheck(uint32_t timestamp,char *sigstr,char *pubsecpstr,bits256 pubkey,char *base,char *rel,uint64_t price64)
 {
     static void *ctx; int32_t retval=-1; uint8_t pub33[33],pubsecp[33],sig[65]; bits256 sighash; struct LP_pubkey_info *pubp;

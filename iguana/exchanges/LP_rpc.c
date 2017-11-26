@@ -723,6 +723,26 @@ cJSON *LP_listreceivedbyaddress(char *symbol,char *coinaddr)
     } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr));
 }
 
+int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t *voutp,int32_t *heightp,cJSON *item)
+{
+    int64_t satoshis = 0;
+    if ( coin->electrum == 0 )
+    {
+        *txidp = jbits256(item,"txid");
+        *voutp = juint(item,"vout");
+        satoshis = LP_value_extract(item,0);
+        *heightp = LP_txheight(coin,*txidp);
+    }
+    else
+    {
+        *txidp = jbits256(item,"tx_hash");
+        *voutp = juint(item,"tx_pos");
+        satoshis = j64bits(item,"value");
+        *heightp = jint(item,"height");
+    }
+    return(satoshis);
+}
+
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
 {
     struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0;

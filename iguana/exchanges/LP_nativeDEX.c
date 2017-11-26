@@ -117,7 +117,7 @@ struct LP_privkey { bits256 privkey; uint8_t rmd160[20]; };
 
 struct LP_globals
 {
-    struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
+    //struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
     bits256 LP_mypub25519,LP_privkey,LP_mypriv25519;
     uint64_t LP_skipstatus[10000];
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
@@ -187,7 +187,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_zeroconf.c"
 #include "LP_swap.c"
 #include "LP_peers.c"
-#include "LP_utxos.c"
+#include "LP_privkey.c"
 #include "LP_forwarding.c"
 #include "LP_signatures.c"
 #include "LP_ordermatch.c"
@@ -486,18 +486,6 @@ void command_rpcloop(void *myipaddr)
     }
 }
 
-void utxosQ_loop(void *myipaddr)
-{
-    strcpy(utxosQ_loop_stats.name,"utxosQ_loop");
-    utxosQ_loop_stats.threshold = 5000.;
-    while ( 1 )
-    {
-        LP_millistats_update(&utxosQ_loop_stats);
-        if ( LP_utxosQ_process() == 0 )
-            usleep(50000);
-    }
-}
-
 void LP_coinsloop(void *_coins)
 {
     struct LP_address *ap=0,*atmp; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
@@ -791,27 +779,12 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
 void LP_pubkeysloop(void *ctx)
 {
     static uint32_t lasttime;
-    //struct LP_pubkey_info *pubp,*ptmp; //cJSON *retjson; struct iguana_info *coin,*tmp;
     strcpy(LP_pubkeysloop_stats.name,"LP_pubkeysloop");
     LP_pubkeysloop_stats.threshold = 15000.;
     sleep(10);
     while ( 1 )
     {
         LP_millistats_update(&LP_pubkeysloop_stats);
-        /*HASH_ITER(hh,LP_coins,coin,tmp) // firstrefht,firstscanht,lastscanht
-        {
-            if ( coin->electrum != 0 && time(NULL) > coin->lastunspent+30 )
-            {
-                //printf("call electrum listunspent.%s\n",coin->symbol);
-                if ( (retjson= electrum_address_listunspent(coin->symbol,coin->electrum,&retjson,coin->smartaddr,2)) != 0 )
-                    free_json(retjson);
-                coin->lastunspent = (uint32_t)time(NULL);
-            }
-        }*/
-        /*HASH_ITER(hh,LP_pubkeyinfos,pubp,ptmp)
-        {
-            pubp->dynamictrust = LP_dynamictrust(pubp->pubkey,0);
-        }*/
         if ( time(NULL) > lasttime+LP_ORDERBOOK_DURATION*0.5 )
         {
 //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
@@ -1204,11 +1177,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_reserved_msgs,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_reserved_msgs for (%s)\n",myipaddr);
-        exit(-1);
-    }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)utxosQ_loop,(void *)myipaddr) != 0 )
-    {
-        printf("error launching utxosQ_loop for (%s)\n",myipaddr);
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )

@@ -294,7 +294,7 @@ struct LP_utxobob { struct _LP_utxoinfo utxo,deposit; };
 
 struct LP_utxoalice { struct _LP_utxoinfo utxo,fee; };
 
-struct LP_utxoswap { bits256 otherpubkey; uint64_t satoshis; };
+//struct LP_utxoswap { bits256 otherpubkey; uint64_t satoshis; };
 
 struct LP_utxoinfo
 {
@@ -302,7 +302,8 @@ struct LP_utxoinfo
     bits256 pubkey;
     struct _LP_utxoinfo payment,deposit,fee;
     struct LP_utxostats T;
-    struct LP_utxoswap S;
+    int64_t swap_satoshis;
+    //struct LP_utxoswap S;
     int32_t iambob,iamlp;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
@@ -429,12 +430,9 @@ uint32_t basilisk_quoteid(struct basilisk_request *rp);
 struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp,struct LP_quoteinfo *qp,int32_t dynamictrust);
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params);
 uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits,int32_t suppress_swapsend);
-//double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits256 mypub);
 int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys);
 void LP_quotesinit(char *base,char *rel);
 int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,bits256 pubkey,char *jsonstr,int32_t freeflag);
-int32_t LP_ismine(struct LP_utxoinfo *utxo);
-int32_t LP_isavailable(struct LP_utxoinfo *utxo);
 struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port);
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest);
 int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
