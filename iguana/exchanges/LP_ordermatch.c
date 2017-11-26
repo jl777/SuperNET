@@ -121,7 +121,7 @@ int32_t LP_quote_checkmempool(struct LP_quoteinfo *qp,struct LP_utxoinfo *autxo,
 double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP_quoteinfo *qp,int32_t iambob)
 {
     double qprice=0.; char str[65]; cJSON *txout; uint64_t txfee,desttxfee,srcvalue=0,srcvalue2=0,destvalue=0,destvalue2=0;
-    printf(">>>>>>> quote satoshis.(%.8f %.8f) %s %.8f -> %s %.8f\n",dstr(qp->satoshis),dstr(qp->destsatoshis),qp->srccoin,dstr(qp->satoshis),qp->destcoin,dstr(qp->destsatoshis));
+    //printf(">>>>>>> quote satoshis.(%.8f %.8f) %s %.8f -> %s %.8f\n",dstr(qp->satoshis),dstr(qp->destsatoshis),qp->srccoin,dstr(qp->satoshis),qp->destcoin,dstr(qp->destsatoshis));
     if ( butxo != 0 )
     {
         if ( LP_iseligible(&srcvalue,&srcvalue2,1,qp->srccoin,qp->txid,qp->vout,qp->satoshis,qp->txid2,qp->vout2) == 0 )
@@ -177,7 +177,7 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
             return(-24);
         }
     }
-    printf("checked autxo and butxo\n");
+    //printf("checked autxo and butxo\n");
     if ( LP_quote_checkmempool(qp,autxo,butxo) < 0 )
         return(-4);
     if ( iambob == 0 && autxo != 0 )
@@ -576,7 +576,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
     }
     printf("CONNECTED numpending.%d tradeid.%u requestid.%u quoteid.%u pairstr.%s\n",G.LP_pendingswaps,qp->tradeid,qp->R.requestid,qp->R.quoteid,pairstr!=0?pairstr:"");
     LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
-    printf("calculated requestid.%u quoteid.%u\n",qp->R.requestid,qp->R.quoteid);
+    //printf("calculated requestid.%u quoteid.%u\n",qp->R.requestid,qp->R.quoteid);
     if ( LP_pendingswap(qp->R.requestid,qp->R.quoteid) > 0 )
     {
         printf("requestid.%u quoteid.%u is already in progres\n",qp->R.requestid,qp->R.quoteid);
@@ -1003,13 +1003,13 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
     qp = newqp;
     if ( LP_trades_alicevalidate(ctx,qp) > 0. )
     {
-        printf("LP_trades_alicevalidate fine\n");
+        //printf("LP_trades_alicevalidate fine\n");
         LP_aliceid(qp->tradeid,qp->aliceid,"connected",0,0);
         if ( (retstr= LP_connectedalice(qp,pairstr)) != 0 )
             free(retstr);
         return(qp);
     }
-    printf("LP_trades_alicevalidate error\n");
+    //printf("LP_trades_alicevalidate error\n");
     return(0);
 }
 
@@ -1053,7 +1053,7 @@ void LP_tradesloop(void *ctx)
             now = (uint32_t)time(NULL);
             Q = qtp->Q;
             funcid = qtp->funcid;
-printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
+//printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
             portable_mutex_lock(&LP_tradesmutex);
             DL_DELETE(LP_tradesQ,qtp);
             HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
@@ -1073,14 +1073,14 @@ printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp
                 }
                 nonz++;
                 tp->firstprocessed = tp->lastprocessed = (uint32_t)time(NULL);
-printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
+//printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
                 continue;
             }
             portable_mutex_unlock(&LP_tradesmutex);
             tp->Q = qtp->Q;
             if ( qtp->iambob == tp->iambob && qtp->pairstr[0] != 0 )
                 safecopy(tp->pairstr,qtp->pairstr,sizeof(tp->pairstr));
-printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
+//printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
             free(qtp);
             if ( tp->negotiationdone != 0 )
                 continue;
