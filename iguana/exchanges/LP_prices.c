@@ -576,7 +576,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         if ( fabs(basepp->myprices[relpp->ind] - price)/price > 0.001 )
             *changedp = 1;
         basepp->myprices[relpp->ind] = price;          // ask
-        printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
+        //printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
         //relpp->myprices[basepp->ind] = (1. / price);   // bid
         if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
         {
