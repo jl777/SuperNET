@@ -1030,7 +1030,7 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
             tp->Qs[LP_CONNECT] = tp->Q;
             tp->bestprice = qprice;
             tp->besttrust = dynamictrust;
-            //printf("aliceid.%llu got price %.8f dynamictrust %.8f\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust));
+            printf("aliceid.%llu got new bestprice %.8f dynamictrust %.8f\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust));
             return(qprice);
         } //else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
     } else printf("alice didnt validate\n");
@@ -1052,7 +1052,7 @@ void LP_tradesloop(void *ctx)
             now = (uint32_t)time(NULL);
             Q = qtp->Q;
             funcid = qtp->funcid;
-            //printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
+            printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
             portable_mutex_lock(&LP_tradesmutex);
             DL_DELETE(LP_tradesQ,qtp);
             HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
@@ -1127,29 +1127,26 @@ void LP_tradesloop(void *ctx)
             now = (uint32_t)time(NULL);
             if ( now > tp->lastprocessed )
             {
-                if ( now < tp->firstprocessed+timeout )
+                if ( tp->iambob == 0 )
                 {
-                    if ( tp->iambob == 0 )
+                    if ( tp->bestprice > 0. )
                     {
-                        if ( tp->bestprice > 0. )
+                        if ( tp->connectsent == 0 )
                         {
-                            if ( tp->connectsent == 0 )
-                            {
-                                LP_Alicemaxprice = tp->bestprice;
-                                LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
-                                tp->connectsent = now;
-                                //printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
-                            }
-                            else if ( ((tp->firstprocessed - now) % 5) == 4 )
-                            {
-                                LP_Alicemaxprice = tp->bestprice;
-                                LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
-                                printf("repeat LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
-                            }
+                            LP_Alicemaxprice = tp->bestprice;
+                            LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
+                            tp->connectsent = now;
+                            //printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
+                        }
+                        else if ( now < tp->firstprocessed+timeout && ((tp->firstprocessed - now) % 5) == 4 )
+                        {
+                            LP_Alicemaxprice = tp->bestprice;
+                            LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
+                            printf("repeat LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
                         }
                     }
                 }
-                else if ( now > tp->firstprocessed+600 )
+                else if ( now > tp->firstprocessed+timeout*10 )
                 {
                     //printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
                     portable_mutex_lock(&LP_tradesmutex);
