@@ -1048,10 +1048,9 @@ void LP_tradesloop(void *ctx)
     while ( 1 )
     {
         LP_millistats_update(&LP_tradesloop_stats);
+        nonz = 0;
         DL_FOREACH_SAFE(LP_tradesQ,qtp,tmp)
         {
-            nonz = 0;
-            printf("dequeued %p\n",qtp);
             now = (uint32_t)time(NULL);
             Q = qtp->Q;
             funcid = qtp->funcid;
@@ -1171,31 +1170,17 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
         iambob = 1;
     else iambob = 0;
     aliceid = qp->aliceid;
-    if ( funcid == LP_REQUEST || funcid == LP_RESERVED )
-    {
-        portable_mutex_lock(&LP_tradesmutex);
-        qtp = calloc(1,sizeof(*qtp));
-        qtp->funcid = funcid;
-        qtp->iambob = iambob;
-        qtp->aliceid = aliceid;
-        qtp->newtime = (uint32_t)time(NULL);
-        qtp->Q = *qp;
-        if ( pairstr != 0 )
-            safecopy(qtp->pairstr,pairstr,sizeof(qtp->pairstr));
-        DL_APPEND(LP_tradesQ,qtp);
-        portable_mutex_unlock(&LP_tradesmutex);
-        printf("queued %p\n",qtp);
-    }
-   /* }
-    else if ( tp->iambob == iambob )
-    {
-        tp->Q = *qp;
-        tp->newfuncid = funcid;
-        printf("received newfuncid.%d\n",funcid);
-        tp->newtime = (uint32_t)time(NULL);
-        if ( pairstr != 0 )
-            safecopy(tp->pairstr,pairstr,sizeof(tp->pairstr));
-    }*/
+    portable_mutex_lock(&LP_tradesmutex);
+    qtp = calloc(1,sizeof(*qtp));
+    qtp->funcid = funcid;
+    qtp->iambob = iambob;
+    qtp->aliceid = aliceid;
+    qtp->newtime = (uint32_t)time(NULL);
+    qtp->Q = *qp;
+    if ( pairstr != 0 )
+        safecopy(qtp->pairstr,pairstr,sizeof(qtp->pairstr));
+    DL_APPEND(LP_tradesQ,qtp);
+    portable_mutex_unlock(&LP_tradesmutex);
 }
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
