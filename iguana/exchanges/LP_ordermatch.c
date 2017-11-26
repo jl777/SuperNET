@@ -814,7 +814,7 @@ double LP_trades_alicevalidate(void *ctx,struct LP_quoteinfo *qp)
 void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp)
 {
     double price=0.,maxprice = LP_Alicemaxprice;
-    if ( LP_quotecmp(0,qp,&LP_Alicequery) == 0 )
+    //if ( LP_quotecmp(0,qp,&LP_Alicequery) == 0 )
     {
         price = LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout);
         if ( LP_pricevalid(price) > 0 && maxprice > SMALLVAL && price <= maxprice )
@@ -824,8 +824,8 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
             LP_alicequery_clear();
             printf("send CONNECT\n");
             LP_query(ctx,myipaddr,mypubsock,"connect",qp);
-        } else printf("LP_reserved price %.8f vs maxprice %.8f\n",price,maxprice*1.005);
-    } else printf("probably a timeout, reject reserved due to not eligible.%d or mismatched quote price %.8f vs maxprice %.8f\n",LP_alice_eligible(qp->quotetime),price,maxprice);
+        } else printf("LP_reserved %llu price %.8f vs maxprice %.8f\n",(long long)qp->aliceid,price,maxprice*1.005);
+    } //else printf("probably a timeout, reject reserved due to not eligible.%d or mismatched quote price %.8f vs maxprice %.8f\n",LP_alice_eligible(qp->quotetime),price,maxprice);
 }
 
 double LP_trades_bobprice(double *bidp,double *askp,struct LP_quoteinfo *qp)
@@ -1019,6 +1019,22 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
     return(0);
 }
 
+void LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
+{
+    double qprice; struct LP_quoteinfo Q;
+    if ( (qprice= LP_trades_alicevalidate(ctx,&tp->Q[LP_RESERVED])) > 0. )
+    {
+        LP_trades_gotreserved(ctx,&tp->Q[LP_RESERVED],&Q);
+        // update if best price
+        if ( qprice > tp->bestprice )
+        {
+            tp->Q[LP_CONNECT] = tp->Q[LP_RESERVED];
+            tp->bestprice = qprice;
+            printf("aliceid.%llu got price %.8f\n",(long long)tp->aliceid,tp->bestprice);
+        }
+    }
+}
+
 void LP_tradesloop(void *ctx)
 {
     struct LP_trade *tp,*tmp; double qprice; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t flag,nonz = 0;
@@ -1046,16 +1062,7 @@ void LP_tradesloop(void *ctx)
                 else if ( tp->iambob == 0 && tp->firstfuncid == LP_RESERVED ) // alice maybe sends LP_CONNECT
                 {
                     flag = 1;
-                    if ( (qprice= LP_trades_alicevalidate(ctx,&tp->Q[LP_RESERVED])) > 0. )
-                    {
-                        // update if best price
-                        if ( qprice > tp->bestprice )
-                        {
-                            tp->Q[LP_CONNECT] = tp->Q[LP_RESERVED];
-                            tp->bestprice = qprice;
-                            printf("aliceid.%llu got price %.8f\n",(long long)tp->aliceid,tp->bestprice);
-                        }
-                    }
+                    LP_trades_bestpricecheck(ctx,tp);
                     tp->firstprocessed = (uint32_t)time(NULL);
                 }
             }
@@ -1066,16 +1073,8 @@ void LP_tradesloop(void *ctx)
                     if ( tp->newfuncid == LP_RESERVED ) // maybe sends LP_CONNECT
                     {
                         flag = 1;
-                        if ( (qprice= LP_trades_alicevalidate(ctx,&tp->Q[LP_RESERVED])) > 0. )
-                        {
-                            // update if best price
-                            if ( qprice > tp->bestprice )
-                            {
-                                tp->Q[LP_CONNECT] = tp->Q[LP_RESERVED];
-                                tp->bestprice = qprice;
-                                printf("aliceid.%llu got better price %.8f\n",(long long)tp->aliceid,tp->bestprice);
-                            }
-                        }
+                        if ( tp->connectsent == 0 )
+                            LP_trades_bestpricecheck(ctx,tp);
                     }
                     else if ( tp->newfuncid == LP_CONNECTED ) // alice all done
                     {
@@ -1098,13 +1097,22 @@ void LP_tradesloop(void *ctx)
             {
                 if ( now < tp->lastprocessed+60 )
                 {
-                    flag = 1;
                     if ( tp->iambob == 0 )
                     {
-                        if ( tp->connectsent == 0 && tp->bestprice > 0. )
+                        if ( tp->bestprice > 0. )
                         {
-                            LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Q[LP_CONNECT]); // send LP_CONNECT
-                            tp->connectsent = now;
+                            if ( tp->connectsent == 0 )
+                            {
+                                flag = 1;
+                                LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Q[LP_CONNECT]); // send LP_CONNECT
+                                tp->connectsent = now;
+                                printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
+                            }
+                            else if ( ((tp->lastprocessed - now) % 10) == 9 )
+                            {
+                                LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Q[LP_CONNECT]); // send LP_CONNECT
+                                printf("repeat LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
+                            }
                         }
                     }
                 }
@@ -1201,7 +1209,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     if ( Q.quotetime > time(NULL)-20 && LP_alice_eligible(Q.quotetime) > 0 )
                     {
                         LP_trades_gotreserved(ctx,&Q,&Q2);
-                        LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&Q);
+                        if ( LP_quotecmp(0,&Q,&LP_Alicequery) == 0 )
+                            LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&Q);
                     }
                 } else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_RESERVED);
             }
