@@ -1240,9 +1240,14 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             }
         }
         price = LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin);
-        if ( (coin= LP_coinfind(Q.srccoin)) == 0 || price <= SMALLVAL || ask <= SMALLVAL )
+        if ( (coin= LP_coinfind(Q.srccoin)) == 0 || coin->inactive != 0 )
         {
-            printf("this node has no price for %s/%s\n",Q.srccoin,Q.destcoin);
+            printf("%s is not active\n",Q.srccoin);
+            return(retval);
+        }
+        if ( price <= SMALLVAL || ask <= SMALLVAL )
+        {
+            //printf("this node has no price for %s/%s\n",Q.srccoin,Q.destcoin);
             return(retval);
         }
         if ( LP_aliceonly(Q.srccoin) > 0 )
