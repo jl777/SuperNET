@@ -837,7 +837,7 @@ double LP_trades_bobprice(double *bidp,double *askp,struct LP_quoteinfo *qp)
         return(0.);
     }
     price = *askp;
-    //printf("MYPRICE %s/%s %.8f vs qprice %.8f\n",qp->srccoin,qp->destcoin,price,qprice);
+    printf("MYPRICE %s/%s %.8f vs qprice %.8f\n",qp->srccoin,qp->destcoin,price,(double)qp->destsatoshis/qp->satoshis);
     if ( LP_validSPV(qp->destcoin,qp->destaddr,qp->desttxid,qp->destvout) < 0 )
     {
         printf("%s dest %s failed SPV check\n",qp->destcoin,bits256_str(str,qp->desttxid));
@@ -887,9 +887,9 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     double price,qprice,bestprice,range,bid,ask; struct iguana_info *coin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65]; struct LP_address_utxo *utxos[1000]; int32_t r,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
     *newqp = *qp;
     qp = newqp;
-    printf("LP_trades_gotrequest\n");
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
         return(0);
+    printf("LP_trades_gotrequest %s/%s %.8f\n",qp->srccoin,qp->destcoin,LP_trades_bobprice(&bid,&ask,qp));
     if ( (price= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
         return(0);
     printf("LP_trades_gotrequest price %.8f\n",price);
