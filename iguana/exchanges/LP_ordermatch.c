@@ -1100,6 +1100,7 @@ void LP_tradesloop(void *ctx)
             }
             else if ( now > tp->lastprocessed+1 )
             {
+                printf("lag.%d iambob.%d bestprice %.8f besttrust %.8f\n",now-tp->lastprocessed,tp->iambob,tp->bestprice,dstr(tp->besttrust));
                 if ( now < tp->lastprocessed+60 )
                 {
                     if ( tp->iambob == 0 )
