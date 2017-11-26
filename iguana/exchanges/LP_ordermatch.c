@@ -930,7 +930,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         qp->vout = butxo->payment.vout;
         qp->txid2 = butxo->deposit.txid;
         qp->vout2 = butxo->deposit.vout;
-        qp->satoshis = butxo->swap_satoshis + qp->txfee;
+        qp->satoshis = butxo->swap_satoshis;// + qp->txfee;
         qp->quotetime = (uint32_t)time(NULL);
     }
     else
@@ -1051,7 +1051,7 @@ void LP_tradesloop(void *ctx)
             now = (uint32_t)time(NULL);
             Q = qtp->Q;
             funcid = qtp->funcid;
-            printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
+            //printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
             portable_mutex_lock(&LP_tradesmutex);
             DL_DELETE(LP_tradesQ,qtp);
             HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
