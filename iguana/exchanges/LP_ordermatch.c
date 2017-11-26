@@ -903,7 +903,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         memset(&qp->txid2,0,sizeof(qp->txid2));
         qp->vout = qp->vout2 = -1;
     } else return(0);
-    printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
+    //printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
     if ( qprice > myprice )
     {
         r = (LP_rand() % 100);
@@ -1242,7 +1242,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         price = LP_myprice(&bid,&ask,Q.srccoin,Q.destcoin);
         if ( (coin= LP_coinfind(Q.srccoin)) == 0 || coin->inactive != 0 )
         {
-            printf("%s is not active\n",Q.srccoin);
+            //printf("%s is not active\n",Q.srccoin);
             return(retval);
         }
         if ( price <= SMALLVAL || ask <= SMALLVAL )
