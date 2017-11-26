@@ -1022,6 +1022,7 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
 {
     double qprice; struct LP_quoteinfo Q; int64_t dynamictrust;
     Q = tp->Q[LP_RESERVED];
+    printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
     if ( (qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
     {
         LP_trades_gotreserved(ctx,&tp->Q[LP_RESERVED],&Q);
@@ -1033,8 +1034,8 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
             tp->besttrust = dynamictrust;
             printf("aliceid.%llu got price %.8f dynamictrust %.8f\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust));
             return(qprice);
-        }
-    }
+        } else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
+    } else printf("alice didnt validate\n");
     return(0);
 }
 
@@ -1064,9 +1065,11 @@ void LP_tradesloop(void *ctx)
                 }
                 else if ( tp->iambob == 0 && tp->firstfuncid == LP_RESERVED ) // alice maybe sends LP_CONNECT
                 {
-                    flag = 1;
-                    LP_trades_bestpricecheck(ctx,tp);
-                    tp->firstprocessed = (uint32_t)time(NULL);
+                    if ( LP_trades_bestpricecheck(ctx,tp) != 0 )
+                    {
+                        flag = 1;
+                        tp->firstprocessed = (uint32_t)time(NULL);
+                    }
                 }
             }
             else if ( tp->newtime != 0 ) // alice: LP_RESERVED or LP_CONNECTED, bob: LP_CONNECT
@@ -1171,6 +1174,7 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
     {
         tp->Q[funcid] = *qp;
         tp->newfuncid = funcid;
+        printf("received newfuncid.%d\n",funcid);
         tp->newtime = (uint32_t)time(NULL);
         if ( pairstr != 0 )
             safecopy(tp->pairstr,pairstr,sizeof(tp->pairstr));
