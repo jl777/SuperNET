@@ -887,10 +887,12 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     double price,qprice,bestprice,range,bid,ask; struct iguana_info *coin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65]; struct LP_address_utxo *utxos[1000]; int32_t r,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
     *newqp = *qp;
     qp = newqp;
+    printf("LP_trades_gotrequest\n");
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
         return(0);
     if ( (price= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
         return(0);
+    printf("LP_trades_gotrequest price %.8f\n",price);
     autxo = &A;
     butxo = &B;
     memset(autxo,0,sizeof(*autxo));
@@ -907,6 +909,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         memset(&qp->txid2,0,sizeof(qp->txid2));
         qp->vout = qp->vout2 = -1;
     } else return(0);
+    printf("LP_trades_gotrequest qprice %.8f vs price %.8f\n",qprice,price);
     if ( qprice > price )
     {
         r = (LP_rand() % 100);
@@ -1127,8 +1130,6 @@ void LP_tradesloop(void *ctx)
             now = (uint32_t)time(NULL);
             if ( now > tp->lastprocessed )
             {
-                if ( tp->connectsent == 0 )
-                    printf("lag.%d iambob.%d bestprice %.8f besttrust %.8f\n",now-tp->lastprocessed,tp->iambob,tp->bestprice,dstr(tp->besttrust));
                 if ( now < tp->firstprocessed+timeout )
                 {
                     if ( tp->iambob == 0 )
