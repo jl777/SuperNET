@@ -600,7 +600,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
         LP_aliceid(qp->tradeid,qp->aliceid,"error1",0,0);
         return(clonestr("{\"result\",\"update stats\"}"));
     }
-  printf("CONNECTED numpending.%d tradeid.%u requestid.%u quoteid.%u\n",G.LP_pendingswaps,qp->tradeid,qp->R.requestid,qp->R.quoteid);
+    printf("CONNECTED numpending.%d tradeid.%u requestid.%u quoteid.%u pairstr.%s\n",G.LP_pendingswaps,qp->tradeid,qp->R.requestid,qp->R.quoteid,pairstr!=0?pairstr:"");
     LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
     printf("calculated requestid.%u quoteid.%u\n",qp->R.requestid,qp->R.quoteid);
     if ( LP_pendingswap(qp->R.requestid,qp->R.quoteid) > 0 )
@@ -865,7 +865,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     if ( (retstr= LP_quotereceived(argjson)) != 0 )
                         free(retstr);
                     LP_reserved(ctx,myipaddr,pubsock,&Q);
-                } else LP_tradecommandQ(&Q,jstr(argjson,"pairstr"));
+                } else LP_tradecommandQ(&Q,jstr(argjson,"pair"));
             }
             return(retval);
         }
@@ -892,9 +892,9 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                         return(retval);
                     }
                     //printf("alice %s received CONNECTED.(%s)\n",bits256_str(str,G.LP_mypub25519),jprint(argjson,0));
-                    if ( (retstr= LP_connectedalice(&Q,jstr(argjson,"pairstr"))) != 0 )
+                    if ( (retstr= LP_connectedalice(&Q,jstr(argjson,"pair"))) != 0 )
                         free(retstr);
-                } else LP_tradecommandQ(&Q,jstr(argjson,"pairstr"));
+                } else LP_tradecommandQ(&Q,jstr(argjson,"pair"));
             }
             return(retval);
         }
@@ -906,7 +906,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         if ( Qtrades != 0 )
         {
-            LP_tradecommandQ(&Q,jstr(argjson,"pairstr"));
+            LP_tradecommandQ(&Q,jstr(argjson,"pair"));
             return(retval);
         }
         price = ask;
