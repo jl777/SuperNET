@@ -115,8 +115,8 @@ pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebi
 getrawtransaction(coin, txid)\n\
 inventory(coin, reset=0, [passphrase=])\n\
 lastnonce()\n\
-buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
-sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
+buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
+sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
 withdraw(coin, outputs[])\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus()\n\

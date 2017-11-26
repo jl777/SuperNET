@@ -405,7 +405,7 @@ struct LP_pubkey_info
     struct LP_pubkey_quote *quotes;
     struct LP_pubswap *bobswaps,*aliceswaps;
     uint64_t dynamictrust;
-    uint32_t timestamp,numerrors,lasttime;
+    uint32_t timestamp,numerrors,lasttime,slowresponse;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };
@@ -430,7 +430,7 @@ struct LP_trade
     uint64_t aliceid;
     int64_t besttrust;
     double bestprice;
-    uint32_t negotiationdone,connectsent,firsttime,lasttime,firstprocessed,lastprocessed,newtime;
+    uint32_t negotiationdone,bestresponse,connectsent,firsttime,lasttime,firstprocessed,lastprocessed,newtime;
     char pairstr[64],funcid,iambob;
     struct LP_quoteinfo Qs[4],Q;
 };

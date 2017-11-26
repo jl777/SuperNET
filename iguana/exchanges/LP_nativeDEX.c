@@ -17,19 +17,23 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// optimize electrum swap
+// penalize unresponsive pubkeys more!
 // big BTC swaps
-// delay swap credit back until notarization
 // electrum dynamic trust over 1000 tx
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // cancel bid/ask
+// portfolio:
+// portfolio to set prices from historical
 // portfolio value based on ask?
-// verify encrypted destpubkey, broadcast:0 setprice
 // USD paxprice based USDvalue in portfolio
 
 // improve critical section detection when parallel trades
+// delay swap credit back until notarization
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
+//
 // dont change error messages:
 // if (enable_electrum_coin_output_data.error == 'couldnt find coin locally installed') { //{error: "couldnt find coin locally installed", coin: "BTC"}
 //if (enable_native_coin_output_data.error == 'couldnt find coin locally installed') { //{error: "couldnt find coin locally installed", coin: "BTC"}
