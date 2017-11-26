@@ -101,7 +101,7 @@ struct iguana_info *LP_coins;
 struct LP_pubkey_info *LP_pubkeyinfos;
 struct rpcrequest_info *LP_garbage_collector;
 struct LP_address_utxo *LP_garbage_collector2;
-struct LP_trade *LP_trades;
+struct LP_trade *LP_trades,*LP_tradesQ;
 
 //uint32_t LP_deadman_switch;
 uint16_t LP_fixed_pairport,LP_publicport;

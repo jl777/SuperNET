@@ -1041,47 +1041,56 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
 
 void LP_tradesloop(void *ctx)
 {
-    struct LP_trade *tp,*tmp; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t flag,nonz = 0;
+    struct LP_trade *qtp,*tp,*tmp; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t funcid,flag,nonz = 0;
     strcpy(LP_tradesloop_stats.name,"LP_tradesloop");
     LP_tradesloop_stats.threshold = 10000;
     sleep(5);
     while ( 1 )
     {
         LP_millistats_update(&LP_tradesloop_stats);
-        now = (uint32_t)time(NULL);
-        HASH_ITER(hh,LP_trades,tp,tmp)
+        DL_FOREACH_SAFE(LP_tradesQ,qtp,tmp)
         {
+            now = (uint32_t)time(NULL);
+            Q = qtp->Q;
+            funcid = qtp->funcid;
+            portable_mutex_lock(&LP_tradesmutex);
+            DL_DELETE(LP_tradesQ,qtp);
+            HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
+            if ( tp == 0 )
+            {
+                tp = qtp;
+                HASH_ADD(hh,LP_trades,aliceid,sizeof(tp->aliceid),tp);
+                portable_mutex_unlock(&LP_tradesmutex);
+                if ( tp->iambob != 0 && funcid == LP_REQUEST ) // bob maybe sends LP_RESERVED
+                {
+                    if ( (qp= LP_trades_gotrequest(ctx,&tp->Qs[LP_REQUEST],&Q,tp->pairstr)) != 0 )
+                        tp->Qs[LP_RESERVED] = Q;
+                }
+                else if ( tp->iambob == 0 && funcid == LP_RESERVED ) // alice maybe sends LP_CONNECT
+                {
+                    LP_trades_bestpricecheck(ctx,tp);
+                }
+                nonz++;
+                tp->firstprocessed = tp->lastprocessed = (uint32_t)time(NULL);
+                continue;
+            }
+            portable_mutex_unlock(&LP_tradesmutex);
+            if ( qtp->iambob == tp->iambob && qtp->pairstr[0] != 0 )
+                safecopy(tp->pairstr,qtp->pairstr,sizeof(tp->pairstr));
+            free(qtp);
             if ( tp->negotiationdone != 0 )
                 continue;
             flag = 0;
-            if ( tp->firstprocessed == 0 )
-            {
-                if ( tp->iambob != 0 && tp->firstfuncid == LP_REQUEST ) // bob maybe sends LP_RESERVED
-                {
-                    flag = 1;
-                    if ( (qp= LP_trades_gotrequest(ctx,&tp->Qs[LP_REQUEST],&Q,tp->pairstr)) != 0 )
-                        tp->Qs[LP_RESERVED] = Q;
-                    tp->firstprocessed = (uint32_t)time(NULL);
-                }
-                else if ( tp->iambob == 0 && tp->firstfuncid == LP_RESERVED ) // alice maybe sends LP_CONNECT
-                {
-                    if ( LP_trades_bestpricecheck(ctx,tp) != 0 )
-                    {
-                        flag = 1;
-                        tp->firstprocessed = (uint32_t)time(NULL);
-                    }
-                }
-            }
-            else if ( tp->newtime != 0 ) // alice: LP_RESERVED or LP_CONNECTED, bob: LP_CONNECT
+            if ( qtp->iambob == tp->iambob )
             {
                 if ( tp->iambob == 0 )
                 {
-                    if ( tp->newfuncid == LP_RESERVED ) // maybe sends LP_CONNECT
+                    if ( funcid == LP_RESERVED )
                     {
                         if ( tp->connectsent == 0 )
                             flag = LP_trades_bestpricecheck(ctx,tp);
                     }
-                    else if ( tp->newfuncid == LP_CONNECTED ) // alice all done
+                    else if ( funcid == LP_CONNECTED && tp->connectsent != 0 && tp->negotiationdone == 0 ) // alice all done
                     {
                         flag = 1;
                         tp->negotiationdone = now;
@@ -1090,18 +1099,29 @@ void LP_tradesloop(void *ctx)
                 }
                 else
                 {
-                    if ( tp->newfuncid == LP_CONNECT ) // bob all cone
+                    if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all cone
                     {
                         flag = 1;
                         tp->negotiationdone = now;
                         LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
                     }
                 }
+                if ( flag != 0 )
+                {
+                    tp->lastprocessed = (uint32_t)time(NULL);
+                    nonz++;
+                }
             }
-            else if ( now > tp->lastprocessed+1 )
+        }
+        HASH_ITER(hh,LP_trades,tp,tmp)
+        {
+            if ( tp->negotiationdone != 0 )
+                continue;
+            now = (uint32_t)time(NULL);
+            if ( now > tp->lastprocessed+1 )
             {
                 printf("lag.%d iambob.%d bestprice %.8f besttrust %.8f\n",now-tp->lastprocessed,tp->iambob,tp->bestprice,dstr(tp->besttrust));
-                if ( now < tp->lastprocessed+60 )
+                if ( now < tp->firstprocessed+60 )
                 {
                     if ( tp->iambob == 0 )
                     {
@@ -1109,7 +1129,6 @@ void LP_tradesloop(void *ctx)
                         {
                             if ( tp->connectsent == 0 )
                             {
-                                flag = 1;
                                 LP_Alicemaxprice = tp->bestprice;
                                 LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
                                 tp->connectsent = now;
@@ -1124,7 +1143,7 @@ void LP_tradesloop(void *ctx)
                         }
                     }
                 }
-                else if ( now > tp->lastprocessed+600 )
+                else if ( now > tp->firstprocessed+600 )
                 {
                     printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
                     portable_mutex_lock(&LP_tradesmutex);
@@ -1132,12 +1151,6 @@ void LP_tradesloop(void *ctx)
                     portable_mutex_unlock(&LP_tradesmutex);
                     free(tp);
                 }
-            }
-            if ( flag != 0 )
-            {
-                nonz++;
-                tp->lastprocessed = (uint32_t)time(NULL);
-                tp->newtime = 0;
             }
         }
         if ( nonz == 0 )
@@ -1147,30 +1160,28 @@ void LP_tradesloop(void *ctx)
 
 void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
 {
-    struct LP_trade *tp; uint64_t aliceid; int32_t iambob;
-    if ( funcid < 0 || funcid >= sizeof(tp->Qs)/sizeof(*tp->Qs) )
+    struct LP_trade *qtp; uint64_t aliceid; int32_t iambob;
+    if ( funcid < 0 || funcid >= sizeof(qtp->Qs)/sizeof(*qtp->Qs) )
         return;
     if ( funcid == LP_REQUEST || funcid == LP_CONNECT )
         iambob = 1;
     else iambob = 0;
     aliceid = qp->aliceid;
-    portable_mutex_lock(&LP_tradesmutex);
-    HASH_FIND(hh,LP_trades,&aliceid,sizeof(aliceid),tp);
-    if ( tp == 0 )
+    if ( funcid == LP_REQUEST || funcid == LP_RESERVED )
     {
-        if ( funcid == LP_REQUEST || funcid == LP_RESERVED )
-        {
-            tp = calloc(1,sizeof(*tp));
-            tp->firstfuncid = funcid;
-            tp->iambob = iambob;
-            tp->aliceid = aliceid;
-            tp->firsttime = tp->lasttime = (uint32_t)time(NULL);
-            tp->Q = *qp;
-            if ( pairstr != 0 )
-                safecopy(tp->pairstr,pairstr,sizeof(tp->pairstr));
-            HASH_ADD(hh,LP_trades,aliceid,sizeof(aliceid),tp);
-        }
+        portable_mutex_lock(&LP_tradesmutex);
+        qtp = calloc(1,sizeof(*qtp));
+        qtp->funcid = funcid;
+        qtp->iambob = iambob;
+        qtp->aliceid = aliceid;
+        qtp->newtime = (uint32_t)time(NULL);
+        qtp->Q = *qp;
+        if ( pairstr != 0 )
+            safecopy(qtp->pairstr,pairstr,sizeof(qtp->pairstr));
+        DL_APPEND(LP_tradesQ,qtp);
+        portable_mutex_unlock(&LP_tradesmutex);
     }
+   /* }
     else if ( tp->iambob == iambob )
     {
         tp->Q = *qp;
@@ -1179,8 +1190,7 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
         tp->newtime = (uint32_t)time(NULL);
         if ( pairstr != 0 )
             safecopy(tp->pairstr,pairstr,sizeof(tp->pairstr));
-    }
-    portable_mutex_unlock(&LP_tradesmutex);
+    }*/
 }
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)

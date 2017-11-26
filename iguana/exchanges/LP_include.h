@@ -425,12 +425,13 @@ struct electrum_info
 
 struct LP_trade
 {
+    struct LP_trade *next,*prev;
     UT_hash_handle hh;
     uint64_t aliceid;
     int64_t besttrust;
     double bestprice;
     uint32_t negotiationdone,connectsent,firsttime,lasttime,firstprocessed,lastprocessed,newtime;
-    char pairstr[63],firstfuncid,newfuncid,iambob;
+    char pairstr[64],funcid,iambob;
     struct LP_quoteinfo Qs[4],Q;
 };
 
