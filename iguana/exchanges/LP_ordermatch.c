@@ -1022,7 +1022,7 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
 {
     double qprice; struct LP_quoteinfo Q; int64_t dynamictrust;
     Q = tp->Q;
-    printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
+    //printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
     if ( (qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
     {
         LP_trades_gotreserved(ctx,&Q,&tp->Qs[LP_RESERVED]);
@@ -1032,16 +1032,16 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
             tp->Qs[LP_CONNECT] = tp->Q;
             tp->bestprice = qprice;
             tp->besttrust = dynamictrust;
-            printf("aliceid.%llu got price %.8f dynamictrust %.8f\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust));
+            //printf("aliceid.%llu got price %.8f dynamictrust %.8f\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust));
             return(qprice);
-        } else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
+        } //else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
     } else printf("alice didnt validate\n");
     return(0);
 }
 
 void LP_tradesloop(void *ctx)
 {
-    struct LP_trade *qtp,*tp,*tmp; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t funcid,flag,nonz;
+    struct LP_trade *qtp,*tp,*tmp; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t timeout,funcid,flag,nonz; struct iguana_info *coin;
     strcpy(LP_tradesloop_stats.name,"LP_tradesloop");
     LP_tradesloop_stats.threshold = 10000;
     sleep(5);
@@ -1119,12 +1119,17 @@ void LP_tradesloop(void *ctx)
         {
             if ( tp->negotiationdone != 0 )
                 continue;
+            timeout = LP_AUTOTRADE_TIMEOUT;
+            if ( (coin= LP_coinfind(tp->Q.srccoin)) != 0 && coin->electrum != 0 )
+                timeout += LP_AUTOTRADE_TIMEOUT * .5;
+            if ( (coin= LP_coinfind(tp->Q.destcoin)) != 0 && coin->electrum != 0 )
+                timeout += LP_AUTOTRADE_TIMEOUT * .5;
             now = (uint32_t)time(NULL);
-            if ( now > tp->lastprocessed+1 )
+            if ( now > tp->lastprocessed )
             {
                 if ( tp->connectsent == 0 )
                     printf("lag.%d iambob.%d bestprice %.8f besttrust %.8f\n",now-tp->lastprocessed,tp->iambob,tp->bestprice,dstr(tp->besttrust));
-                if ( now < tp->firstprocessed+60 )
+                if ( now < tp->firstprocessed+timeout )
                 {
                     if ( tp->iambob == 0 )
                     {
@@ -1135,9 +1140,9 @@ void LP_tradesloop(void *ctx)
                                 LP_Alicemaxprice = tp->bestprice;
                                 LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
                                 tp->connectsent = now;
-                                printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
+                                //printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
                             }
-                            else if ( ((tp->lastprocessed - now) % 10) == 9 )
+                            else if ( ((tp->firstprocessed - now) % 5) == 4 )
                             {
                                 LP_Alicemaxprice = tp->bestprice;
                                 LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
