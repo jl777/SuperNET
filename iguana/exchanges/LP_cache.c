@@ -45,10 +45,9 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
         tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
-        tx->serialized = 0;//serialized;
-        free(serialized);
+        tx->serialized = serialized, tx->len = 0;
+        //free(serialized), tx->len = 0;
         tx->fpos = fpos;
-        tx->len = 0;//tx->len;
         tx->SPV = tx->height = height;
         //printf("tx.%s numvins.%d numvouts.%d\n",bits256_str(str,txid),numvins,numvouts);
         for (i=0; i<numvouts; i++)
@@ -262,7 +261,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
                     if ( tx != 0 )
                     {
                         tx->SPV = height;
-                        if ( tx->serialized != 0 )
+                        if ( 0 && tx->serialized != 0 )
                         {
                             free(tx->serialized);
                             tx->serialized = 0;
