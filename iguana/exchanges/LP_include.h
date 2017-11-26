@@ -23,7 +23,7 @@
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "15577"
+#define LP_BUILD_NUMBER "16577"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -54,8 +54,8 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_MIN_PEERS 8
 #define LP_MAX_PEERS 32
 
-#define LP_MAXDESIRED_UTXOS (IAMLP != 0 ? 128 : 64)
-#define LP_MINDESIRED_UTXOS (IAMLP != 0 ? 32 : 16)
+#define LP_MAXDESIRED_UTXOS (IAMLP != 0 ? 256 : 64)
+#define LP_MINDESIRED_UTXOS (IAMLP != 0 ? 64 : 16)
 #define LP_DUSTCOMBINE_THRESHOLD 1000000
 
 // RTmetrics
