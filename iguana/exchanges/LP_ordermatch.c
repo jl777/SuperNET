@@ -1021,15 +1021,15 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
 int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
 {
     double qprice; struct LP_quoteinfo Q; int64_t dynamictrust;
-    Q = tp->Q[LP_RESERVED];
+    Q = tp->Q;
     printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
     if ( (qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
     {
-        LP_trades_gotreserved(ctx,&tp->Q[LP_RESERVED],&Q);
+        LP_trades_gotreserved(ctx,&Q,&tp->Qs[LP_RESERVED]);
         dynamictrust = LP_dynamictrust(Q.srchash,LP_kmdvalue(Q.srccoin,Q.satoshis));
-        if ( qprice < tp->bestprice || (qprice < tp->bestprice*1.01 && dynamictrust > tp->besttrust) )
+        if ( tp->bestprice == 0. || (qprice < tp->bestprice || (qprice < tp->bestprice*1.01 && dynamictrust > tp->besttrust)) )
         {
-            tp->Q[LP_CONNECT] = tp->Q[LP_RESERVED];
+            tp->Qs[LP_CONNECT] = tp->Q;
             tp->bestprice = qprice;
             tp->besttrust = dynamictrust;
             printf("aliceid.%llu got price %.8f dynamictrust %.8f\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust));
@@ -1059,8 +1059,8 @@ void LP_tradesloop(void *ctx)
                 if ( tp->iambob != 0 && tp->firstfuncid == LP_REQUEST ) // bob maybe sends LP_RESERVED
                 {
                     flag = 1;
-                    if ( (qp= LP_trades_gotrequest(ctx,&tp->Q[LP_REQUEST],&Q,tp->pairstr)) != 0 )
-                        tp->Q[LP_RESERVED] = Q;
+                    if ( (qp= LP_trades_gotrequest(ctx,&tp->Qs[LP_REQUEST],&Q,tp->pairstr)) != 0 )
+                        tp->Qs[LP_RESERVED] = Q;
                     tp->firstprocessed = (uint32_t)time(NULL);
                 }
                 else if ( tp->iambob == 0 && tp->firstfuncid == LP_RESERVED ) // alice maybe sends LP_CONNECT
@@ -1085,7 +1085,7 @@ void LP_tradesloop(void *ctx)
                     {
                         flag = 1;
                         tp->negotiationdone = now;
-                        LP_trades_gotconnected(ctx,&tp->Q[LP_CONNECTED],&Q,tp->pairstr);
+                        LP_trades_gotconnected(ctx,&tp->Q,&tp->Qs[LP_CONNECTED],tp->pairstr);
                     }
                 }
                 else
@@ -1094,7 +1094,7 @@ void LP_tradesloop(void *ctx)
                     {
                         flag = 1;
                         tp->negotiationdone = now;
-                        LP_trades_gotconnect(ctx,&tp->Q[LP_CONNECTED],&Q,tp->pairstr);
+                        LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
                     }
                 }
             }
@@ -1111,14 +1111,14 @@ void LP_tradesloop(void *ctx)
                             {
                                 flag = 1;
                                 LP_Alicemaxprice = tp->bestprice;
-                                LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Q[LP_CONNECT]); // send LP_CONNECT
+                                LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
                                 tp->connectsent = now;
                                 printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
                             }
                             else if ( ((tp->lastprocessed - now) % 10) == 9 )
                             {
                                 LP_Alicemaxprice = tp->bestprice;
-                                LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Q[LP_CONNECT]); // send LP_CONNECT
+                                LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
                                 printf("repeat LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
                             }
                         }
@@ -1148,7 +1148,7 @@ void LP_tradesloop(void *ctx)
 void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
 {
     struct LP_trade *tp; uint64_t aliceid; int32_t iambob;
-    if ( funcid < 0 || funcid >= sizeof(tp->Q)/sizeof(*tp->Q) )
+    if ( funcid < 0 || funcid >= sizeof(tp->Qs)/sizeof(*tp->Qs) )
         return;
     if ( funcid == LP_REQUEST || funcid == LP_CONNECT )
         iambob = 1;
@@ -1165,15 +1165,15 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
             tp->iambob = iambob;
             tp->aliceid = aliceid;
             tp->firsttime = tp->lasttime = (uint32_t)time(NULL);
-            tp->Q[funcid] = *qp;
+            tp->Q = *qp;
             if ( pairstr != 0 )
                 safecopy(tp->pairstr,pairstr,sizeof(tp->pairstr));
             HASH_ADD(hh,LP_trades,aliceid,sizeof(aliceid),tp);
         }
     }
-    else if ( tp->Q[funcid].aliceid == 0 && tp->iambob == iambob )
+    else if ( tp->iambob == iambob )
     {
-        tp->Q[funcid] = *qp;
+        tp->Q = *qp;
         tp->newfuncid = funcid;
         printf("received newfuncid.%d\n",funcid);
         tp->newtime = (uint32_t)time(NULL);

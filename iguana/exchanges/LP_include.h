@@ -431,7 +431,7 @@ struct LP_trade
     double bestprice;
     uint32_t negotiationdone,connectsent,firsttime,lasttime,firstprocessed,lastprocessed,newtime;
     char pairstr[63],firstfuncid,newfuncid,iambob;
-    struct LP_quoteinfo Q[4];
+    struct LP_quoteinfo Qs[4],Q;
 };
 
 uint32_t LP_sighash(char *symbol,int32_t zcash);
