@@ -427,6 +427,7 @@ struct LP_trade
 {
     UT_hash_handle hh;
     uint64_t aliceid;
+    int64_t besttrust;
     double bestprice;
     uint32_t negotiationdone,connectsent,firsttime,lasttime,firstprocessed,lastprocessed,newtime;
     char pairstr[63],firstfuncid,newfuncid,iambob;

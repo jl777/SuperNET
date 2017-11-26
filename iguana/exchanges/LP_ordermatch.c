@@ -593,10 +593,10 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
         jaddstr(retjson,"error","swap already in progress");
         return(jprint(retjson,1));
     }
-    if ( LP_quotecmp(1,qp,&LP_Alicereserved) == 0 )
+    /*if ( LP_quotecmp(1,qp,&LP_Alicereserved) == 0 )
     {
         printf("mismatched between reserved and connected\n");
-    }
+    }*/
     memset(&LP_Alicereserved,0,sizeof(LP_Alicereserved));
     LP_aliceid(qp->tradeid,qp->aliceid,"connected",qp->R.requestid,qp->R.quoteid);
     autxo = &A;
@@ -823,7 +823,7 @@ void LP_reserved(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo 
             LP_alicequery_clear();
             printf("send CONNECT\n");
             LP_query(ctx,myipaddr,mypubsock,"connect",qp);
-        } else printf("LP_reserved %llu price %.8f vs maxprice %.8f\n",(long long)qp->aliceid,price,maxprice*1.005);
+        } else printf("LP_reserved %llu price %.8f vs maxprice %.8f\n",(long long)qp->aliceid,price,maxprice);
     } //else printf("probably a timeout, reject reserved due to not eligible.%d or mismatched quote price %.8f vs maxprice %.8f\n",LP_alice_eligible(qp->quotetime),price,maxprice);
 }
 
@@ -1011,7 +1011,6 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
     if ( LP_trades_alicevalidate(ctx,qp) > 0. )
     {
         LP_aliceid(qp->tradeid,qp->aliceid,"connected",0,0);
-        LP_Alicereserved = *qp;
         if ( (retstr= LP_connectedalice(qp,pairstr)) != 0 )
             free(retstr);
         return(qp);
@@ -1021,16 +1020,18 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
 
 void LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
 {
-    double qprice; struct LP_quoteinfo Q;
-    if ( (qprice= LP_trades_alicevalidate(ctx,&tp->Q[LP_RESERVED])) > 0. )
+    double qprice; struct LP_quoteinfo Q; int64_t dynamictrust;
+    Q = tp->Q[LP_RESERVED];
+    if ( (qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
     {
         LP_trades_gotreserved(ctx,&tp->Q[LP_RESERVED],&Q);
-        // update if best price
-        if ( qprice > tp->bestprice )
+        dynamictrust = LP_dynamictrust(Q.srchash,LP_kmdvalue(Q.srccoin,Q.satoshis));
+        if ( qprice > tp->bestprice || (qprice < tp->bestprice*.99 && dynamictrust > tp->besttrust) )
         {
             tp->Q[LP_CONNECT] = tp->Q[LP_RESERVED];
             tp->bestprice = qprice;
-            printf("aliceid.%llu got price %.8f\n",(long long)tp->aliceid,tp->bestprice);
+            tp->besttrust = dynamictrust;
+            printf("aliceid.%llu got price %.8f dynamictrust %.8f\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust));
         }
     }
 }
@@ -1104,12 +1105,14 @@ void LP_tradesloop(void *ctx)
                             if ( tp->connectsent == 0 )
                             {
                                 flag = 1;
+                                LP_Alicemaxprice = tp->bestprice;
                                 LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Q[LP_CONNECT]); // send LP_CONNECT
                                 tp->connectsent = now;
                                 printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
                             }
                             else if ( ((tp->lastprocessed - now) % 10) == 9 )
                             {
+                                LP_Alicemaxprice = tp->bestprice;
                                 LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Q[LP_CONNECT]); // send LP_CONNECT
                                 printf("repeat LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
                             }
