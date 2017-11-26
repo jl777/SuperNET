@@ -786,8 +786,7 @@ int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
 
 double LP_trades_alicevalidate(void *ctx,struct LP_quoteinfo *qp)
 {
-    double qprice; struct LP_utxoinfo A,B,*autxo,*butxo;
-    char str[65]; printf("alice %s received RESERVED.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
+    double qprice; struct LP_utxoinfo A,B,*autxo,*butxo; char str[65];
     autxo = &A;
     butxo = &B;
     memset(autxo,0,sizeof(*autxo));
@@ -969,7 +968,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
 struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp)
 {
     char *retstr;
-    char str[65]; printf("alice %s received RESERVED.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
+    char str[65]; printf("alice %s received RESERVED.(%llu) %.8f\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid,(double)qp->destsatoshis/(qp->satoshis+1));
     *newqp = *qp;
     qp = newqp;
     if ( LP_trades_alicevalidate(ctx,qp) > 0. )
@@ -1012,6 +1011,7 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
     if ( LP_trades_alicevalidate(ctx,qp) > 0. )
     {
         LP_aliceid(qp->tradeid,qp->aliceid,"connected",0,0);
+        LP_Alicereserved = *qp;
         if ( (retstr= LP_connectedalice(qp,pairstr)) != 0 )
             free(retstr);
         return(qp);
@@ -1037,7 +1037,7 @@ void LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
 
 void LP_tradesloop(void *ctx)
 {
-    struct LP_trade *tp,*tmp; double qprice; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t flag,nonz = 0;
+    struct LP_trade *tp,*tmp; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t flag,nonz = 0;
     strcpy(LP_tradesloop_stats.name,"LP_tradesloop");
     LP_tradesloop_stats.threshold = 10000;
     sleep(5);
@@ -1168,6 +1168,8 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
         tp->Q[funcid] = *qp;
         tp->newfuncid = funcid;
         tp->newtime = (uint32_t)time(NULL);
+        if ( pairstr != 0 )
+            safecopy(tp->pairstr,pairstr,sizeof(tp->pairstr));
     }
     portable_mutex_unlock(&LP_tradesmutex);
 }
