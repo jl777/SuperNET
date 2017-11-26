@@ -1033,7 +1033,7 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
             tp->besttrust = dynamictrust;
             printf("aliceid.%llu got new bestprice %.8f dynamictrust %.8f\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust));
             return(qprice);
-        } else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
+        } //else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
     } else printf("alice didnt validate\n");
     return(0);
 }
@@ -1140,7 +1140,7 @@ void LP_tradesloop(void *ctx)
                             tp->connectsent = now;
                             //printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
                         }
-                        else if ( now < tp->firstprocessed+timeout && ((tp->firstprocessed - now) % 5) == 4 )
+                        else if ( now < tp->firstprocessed+timeout && ((tp->firstprocessed - now) % 10) == 9 )
                         {
                             LP_Alicemaxprice = tp->bestprice;
                             LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
