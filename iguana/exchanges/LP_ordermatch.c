@@ -884,15 +884,14 @@ double LP_trades_pricevalidate(struct LP_quoteinfo *qp,struct iguana_info *coin,
 
 struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr)
 {
-    double price,qprice,bestprice,range,bid,ask; struct iguana_info *coin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65]; struct LP_address_utxo *utxos[1000]; int32_t r,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
+    double price,qprice,myprice,bestprice,range,bid,ask; struct iguana_info *coin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65]; struct LP_address_utxo *utxos[1000]; int32_t r,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
     *newqp = *qp;
     qp = newqp;
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
         return(0);
     printf("LP_trades_gotrequest %s/%s %.8f\n",qp->srccoin,qp->destcoin,LP_trades_bobprice(&bid,&ask,qp));
-    if ( (price= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
+    if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
         return(0);
-    printf("LP_trades_gotrequest price %.8f\n",price);
     autxo = &A;
     butxo = &B;
     memset(autxo,0,sizeof(*autxo));
@@ -909,12 +908,12 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         memset(&qp->txid2,0,sizeof(qp->txid2));
         qp->vout = qp->vout2 = -1;
     } else return(0);
-    printf("LP_trades_gotrequest qprice %.8f vs price %.8f\n",qprice,price);
-    if ( qprice > price )
+    printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
+    if ( qprice > myprice )
     {
         r = (LP_rand() % 100);
-        range = (qprice - price);
-        price += (r * range) / 100.;
+        range = (qprice - myprice);
+        price = myprice + (r * range) / 100.;
         bestprice = LP_bob_competition(&counter,qp->aliceid,price,0);
         printf("%llu >>>>>>> qprice %.8f r.%d range %.8f -> %.8f, bestprice %.8f counter.%d\n",(long long)qp->aliceid,qprice,r,range,price,bestprice,counter);
         if ( counter > 3 && price >= bestprice-SMALLVAL ) // skip if late or bad price
@@ -944,7 +943,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         printf("cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f\n",(long long)qp->aliceid,qp->srccoin,qp->destcoin,dstr(LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee)),dstr(qp->destsatoshis));
         return(0);
     }
-    if ( (qprice= LP_trades_pricevalidate(qp,coin,price)) < 0. )
+    if ( (qprice= LP_trades_pricevalidate(qp,coin,myprice)) < 0. )
         return(0);
     if ( LP_allocated(qp->txid,qp->vout) == 0 && LP_allocated(qp->txid2,qp->vout2) == 0 )
     {
@@ -986,16 +985,16 @@ struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,str
 
 struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr)
 {
-    double price,qprice,bid,ask; struct iguana_info *coin;
+    double myprice,qprice,bid,ask; struct iguana_info *coin;
     *newqp = *qp;
     qp = newqp;
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
        return(0);
-    if ( (price= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
+    if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
         return(0);
     if ( bits256_cmp(G.LP_mypub25519,qp->srchash) != 0 || bits256_cmp(G.LP_mypub25519,qp->desthash) == 0 )
         return(0);
-    if ( (qprice= LP_trades_pricevalidate(qp,coin,price)) < 0. )
+    if ( (qprice= LP_trades_pricevalidate(qp,coin,myprice)) < 0. )
         return(0);
     if ( LP_reservation_check(qp->txid,qp->vout,qp->desthash) == 0 && LP_reservation_check(qp->txid2,qp->vout2,qp->desthash) == 0  )
     {
