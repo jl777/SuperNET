@@ -514,7 +514,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
 
 char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *qp,double maxprice,int32_t timeout,int32_t duration,uint32_t tradeid,bits256 destpubkey)
 {
-    double price; int32_t changed;
+    double price;
     price = 0.;
     memset(qp->txid.bytes,0,sizeof(qp->txid));
     qp->txid2 = qp->txid;
@@ -523,7 +523,6 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
         qp->tradeid = LP_rand();
     LP_query(ctx,myipaddr,mypubsock,"request",qp);
     LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = destpubkey;
-    LP_mypriceset(&changed,qp->destcoin,qp->srccoin,1. / maxprice);
     char str[65]; printf("LP_trade %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f\n",qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),maxprice);
     return(LP_recent_swaps(0));
 }
@@ -1017,13 +1016,16 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
 
 int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
 {
-    double qprice; struct LP_quoteinfo Q; int64_t dynamictrust;
+    double qprice; struct LP_quoteinfo Q; int64_t dynamictrust; char *retstr;
     Q = tp->Q;
     //printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
     if ( Q.satoshis != 0 )//(qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
     {
         qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee);
-        LP_trades_gotreserved(ctx,&Q,&tp->Qs[LP_RESERVED]);
+        LP_aliceid(Q.tradeid,tp->aliceid,"reserved",0,0);
+        if ( (retstr= LP_quotereceived(&Q)) != 0 )
+            free(retstr);
+        //LP_trades_gotreserved(ctx,&Q,&tp->Qs[LP_RESERVED]);
         dynamictrust = LP_dynamictrust(Q.srchash,LP_kmdvalue(Q.srccoin,Q.satoshis));
         if ( tp->bestprice == 0. || (qprice < tp->bestprice || (qprice < tp->bestprice*1.01 && dynamictrust > tp->besttrust)) )
         {
@@ -1032,7 +1034,7 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
             tp->besttrust = dynamictrust;
             printf("aliceid.%llu got new bestprice %.8f dynamictrust %.8f\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust));
             return(qprice);
-        } //else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
+        } else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
     } else printf("alice didnt validate\n");
     return(0);
 }
@@ -1052,7 +1054,7 @@ void LP_tradesloop(void *ctx)
             now = (uint32_t)time(NULL);
             Q = qtp->Q;
             funcid = qtp->funcid;
-            //printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
+printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
             portable_mutex_lock(&LP_tradesmutex);
             DL_DELETE(LP_tradesQ,qtp);
             HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
@@ -1061,7 +1063,6 @@ void LP_tradesloop(void *ctx)
                 tp = qtp;
                 HASH_ADD(hh,LP_trades,aliceid,sizeof(tp->aliceid),tp);
                 portable_mutex_unlock(&LP_tradesmutex);
-                //printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
                 if ( tp->iambob != 0 && funcid == LP_REQUEST ) // bob maybe sends LP_RESERVED
                 {
                     if ( (qp= LP_trades_gotrequest(ctx,&Q,&tp->Qs[LP_REQUEST],tp->pairstr)) != 0 )
@@ -1073,12 +1074,14 @@ void LP_tradesloop(void *ctx)
                 }
                 nonz++;
                 tp->firstprocessed = tp->lastprocessed = (uint32_t)time(NULL);
+printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
                 continue;
             }
             portable_mutex_unlock(&LP_tradesmutex);
             tp->Q = qtp->Q;
             if ( qtp->iambob == tp->iambob && qtp->pairstr[0] != 0 )
                 safecopy(tp->pairstr,qtp->pairstr,sizeof(tp->pairstr));
+printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
             free(qtp);
             if ( tp->negotiationdone != 0 )
                 continue;
