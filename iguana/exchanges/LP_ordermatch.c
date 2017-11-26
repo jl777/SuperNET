@@ -1056,7 +1056,7 @@ void LP_tradesloop(void *ctx)
             now = (uint32_t)time(NULL);
             Q = qtp->Q;
             funcid = qtp->funcid;
-            printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
+            //printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
             portable_mutex_lock(&LP_tradesmutex);
             DL_DELETE(LP_tradesQ,qtp);
             HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
@@ -1065,7 +1065,7 @@ void LP_tradesloop(void *ctx)
                 tp = qtp;
                 HASH_ADD(hh,LP_trades,aliceid,sizeof(tp->aliceid),tp);
                 portable_mutex_unlock(&LP_tradesmutex);
-                printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
+                //printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
                 if ( tp->iambob != 0 && funcid == LP_REQUEST ) // bob maybe sends LP_RESERVED
                 {
                     if ( (qp= LP_trades_gotrequest(ctx,&Q,&tp->Qs[LP_REQUEST],tp->pairstr)) != 0 )
@@ -1155,7 +1155,7 @@ void LP_tradesloop(void *ctx)
                 }
                 else if ( now > tp->firstprocessed+600 )
                 {
-                    printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
+                    //printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
                     portable_mutex_lock(&LP_tradesmutex);
                     HASH_DELETE(hh,LP_trades,tp);
                     portable_mutex_unlock(&LP_tradesmutex);
@@ -1188,7 +1188,7 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
         safecopy(qtp->pairstr,pairstr,sizeof(qtp->pairstr));
     DL_APPEND(LP_tradesQ,qtp);
     portable_mutex_unlock(&LP_tradesmutex);
-    printf("queue.%d %p\n",funcid,qtp);
+    //printf("queue.%d %p\n",funcid,qtp);
 }
 
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
