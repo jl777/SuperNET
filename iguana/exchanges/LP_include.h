@@ -124,6 +124,11 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define ZKSNARK_PROOF_SIZE 296
 #define ZCASH_SOLUTION_ELEMENTS 1344
 
+#define LP_REQUEST 0
+#define LP_RESERVED 1
+#define LP_CONNECT 2
+#define LP_CONNECTED 3
+
 extern char GLOBAL_DBDIR[];
 extern int32_t IAMLP;
 
@@ -416,6 +421,15 @@ struct electrum_info
     char ipaddr[64],symbol[66];
     uint16_t port;
     uint8_t buf[];
+};
+
+struct LP_trade
+{
+    UT_hash_handle hh;
+    uint64_t aliceid;
+    uint32_t firsttime,lasttime;
+    char pairstr[63],funcid,iambob;
+    struct LP_quoteinfo Q[4];
 };
 
 uint32_t LP_sighash(char *symbol,int32_t zcash);

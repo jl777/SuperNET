@@ -194,15 +194,15 @@ int32_t LP_quotedestinfo(struct LP_quoteinfo *qp,bits256 desttxid,int32_t destvo
     return(0);
 }
 
-char *LP_quotereceived(cJSON *argjson)
+char *LP_quotereceived(struct LP_quoteinfo *qp)
 {
-    struct LP_cacheinfo *ptr; double price; struct LP_quoteinfo Q;
-    LP_quoteparse(&Q,argjson);
-    price = (double)Q.destsatoshis / (Q.satoshis - Q.txfee);
-    if ( (ptr= LP_cacheadd(Q.srccoin,Q.destcoin,Q.txid,Q.vout,price,&Q)) != 0 )
+    struct LP_cacheinfo *ptr; double price;
+    //LP_quoteparse(&Q,argjson);
+    price = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
+    if ( (ptr= LP_cacheadd(qp->srccoin,qp->destcoin,qp->txid,qp->vout,price,qp)) != 0 )
     {
-        ptr->Q = Q;
-        printf(">>>>>>>>>> received quote %s/%s %.8f\n",Q.srccoin,Q.destcoin,price);
+        ptr->Q = *qp;
+        printf(">>>>>>>>>> received quote %s/%s %.8f\n",qp->srccoin,qp->destcoin,price);
         return(clonestr("{\"result\":\"updated\"}"));
     } else return(clonestr("{\"error\":\"nullptr\"}"));
 }
