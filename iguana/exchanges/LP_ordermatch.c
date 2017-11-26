@@ -900,7 +900,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     LP_abutxo_set(autxo,butxo,qp);
     if ( bits256_nonz(qp->srchash) == 0 || bits256_cmp(qp->srchash,G.LP_mypub25519) == 0 )
     {
-        qprice = (double)qp->destsatoshis / qp->satoshis;
+        qprice = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
         strcpy(qp->gui,G.gui);
         strcpy(qp->coinaddr,coin->smartaddr);
         strcpy(butxo->coinaddr,coin->smartaddr);
@@ -936,7 +936,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         qp->vout = butxo->payment.vout;
         qp->txid2 = butxo->deposit.txid;
         qp->vout2 = butxo->deposit.vout;
-        qp->satoshis = butxo->swap_satoshis;
+        qp->satoshis = butxo->swap_satoshis + qp->txfee;
         qp->quotetime = (uint32_t)time(NULL);
     }
     else
