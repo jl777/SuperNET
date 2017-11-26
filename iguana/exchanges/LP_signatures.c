@@ -670,9 +670,9 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     //if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )
     {
         memset(&zero,0,sizeof(zero));
-        LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,clonestr(msg));
-        sleep(1);
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
+        sleep(1);
+        //LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,clonestr(msg));
         //LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,clonestr(msg));
         free(msg);
         /*portable_mutex_lock(&LP_reservedmutex);
