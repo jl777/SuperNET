@@ -1868,6 +1868,20 @@ struct LP_utxoinfo *LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)
     portable_mutex_unlock(&LP_utxomutex);
     return(utxo);
 }
+
+/*void LP_privkeysloop(void *ctx)
+ {
+ strcpy(LP_privkeysloop_stats.name,"LP_privkeysloop");
+ LP_privkeysloop_stats.threshold = (LP_ORDERBOOK_DURATION * .8 * 1000) + 10000;
+ sleep(20);
+ while ( 1 )
+ {
+ LP_millistats_update(&LP_privkeysloop_stats);
+ //printf("LP_privkeysloop %u\n",LP_counter);
+ LP_privkey_updates(ctx,LP_mypubsock,0);
+ sleep(LP_ORDERBOOK_DURATION * .777);
+ }
+ }*/
 /*void basilisk_swap_purge(struct basilisk_swap *swap)
  {
  int32_t i,n;

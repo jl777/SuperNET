@@ -17,7 +17,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// alice waiting for bestprice
 // big BTC swaps
 // delay swap credit back until notarization
 // electrum dynamic trust over 1000 tx
@@ -46,7 +45,7 @@ struct LP_millistats
     double lastmilli,millisum,threshold;
     uint32_t count;
     char name[64];
-} LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloopBTC_stats,LP_coinsloopKMD_stats,LP_pubkeysloop_stats,LP_privkeysloop_stats,LP_swapsloop_stats,LP_gcloop_stats;
+} LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloopBTC_stats,LP_coinsloopKMD_stats,LP_pubkeysloop_stats,LP_swapsloop_stats,LP_gcloop_stats,LP_tradesloop_stats;
 extern int32_t IAMLP;
 
 void LP_millistats_update(struct LP_millistats *mp)
@@ -67,7 +66,7 @@ void LP_millistats_update(struct LP_millistats *mp)
         mp = &LP_coinsloopBTC_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
         mp = &LP_coinsloopKMD_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
         mp = &LP_pubkeysloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
-        mp = &LP_privkeysloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
+        mp = &LP_tradesloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
         mp = &LP_swapsloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
         mp = &LP_gcloop_stats, printf("%32s lag %10.2f millis, threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,OS_milliseconds() - mp->lastmilli,mp->threshold,mp->millisum/(mp->count > 0 ? mp->count: 1),mp->count);
     }
@@ -106,7 +105,7 @@ struct LP_trade *LP_trades;
 
 //uint32_t LP_deadman_switch;
 uint16_t LP_fixed_pairport,LP_publicport;
-uint32_t LP_lastnonce,LP_counter,LP_swap_endcritical,LP_swap_critical,LP_RTcount,LP_swapscount;
+uint32_t LP_lastnonce,LP_swap_endcritical,LP_swap_critical,LP_RTcount,LP_swapscount;
 int32_t LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
@@ -463,10 +462,9 @@ int32_t LP_nanomsg_recvs(void *ctx)
     return(nonz);
 }
 
-void command_rpcloop(void *myipaddr)
+void command_rpcloop(void *ctx)
 {
-    int32_t nonz = 0; void *ctx;
-    ctx = bitcoin_ctx();
+    int32_t nonz = 0;
     strcpy(command_rpcloop_stats.name,"command_rpcloop");
     command_rpcloop_stats.threshold = 1000.;
     while ( 1 )
@@ -795,22 +793,7 @@ void LP_pubkeysloop(void *ctx)
     }
 }
 
-/*void LP_privkeysloop(void *ctx)
-{
-    strcpy(LP_privkeysloop_stats.name,"LP_privkeysloop");
-    LP_privkeysloop_stats.threshold = (LP_ORDERBOOK_DURATION * .8 * 1000) + 10000;
-    sleep(20);
-    while ( 1 )
-    {
-        LP_millistats_update(&LP_privkeysloop_stats);
-        LP_counter += 1000;
-//printf("LP_privkeysloop %u\n",LP_counter);
-        LP_privkey_updates(ctx,LP_mypubsock,0);
-        sleep(LP_ORDERBOOK_DURATION * .777);
-    }
-}*/
-
-void LP_swapsloop(void *ignore)
+void LP_swapsloop(void *ctx)
 {
     char *retstr; struct iguana_info *coin;
     strcpy(LP_swapsloop_stats.name,"LP_swapsloop");
@@ -819,8 +802,6 @@ void LP_swapsloop(void *ignore)
     while ( 1 )
     {
         LP_millistats_update(&LP_swapsloop_stats);
-        LP_counter += 10000;
-//printf("LP_swapsloop %u\n",LP_counter);
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
         sleep(600);
@@ -829,7 +810,7 @@ void LP_swapsloop(void *ignore)
     }
 }
 
-void gc_loop(void *arg)
+void gc_loop(void *ctx)
 {
     uint32_t now; struct LP_address_utxo *up,*utmp; struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
     strcpy(LP_gcloop_stats.name,"gc_loop");
@@ -864,7 +845,7 @@ void gc_loop(void *arg)
     }
 }
 
-void queue_loop(void *arg)
+void queue_loop(void *ctx)
 {
     struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
     strcpy(queue_loop_stats.name,"queue_loop");
@@ -934,8 +915,6 @@ void queue_loop(void *arg)
                 break;
             }
         }
-        if ( arg == 0 )
-            break;
         if ( nonz == 0 )
         {
             if ( IAMLP == 0 )
@@ -1191,54 +1170,59 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,ctx) != 0 )
     {
-        printf("error launching command_rpcloop for port.%u\n",myport);
+        printf("error launching command_rpcloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)queue_loop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)queue_loop,ctx) != 0 )
     {
-        printf("error launching queue_loop for port.%u\n",myport);
+        printf("error launching queue_loop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)gc_loop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)gc_loop,ctx) != 0 )
     {
-        printf("error launching gc_loop for port.%u\n",myport);
+        printf("error launching gc_loop for port.%p\n",ctx);
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,ctx) != 0 )
     {
-        printf("error launching prices_loop for port.%u\n",myport);
+        printf("error launching prices_loop for ctx.%p\n",ctx);
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)"") != 0 )
     {
-        printf("error launching LP_coinsloop for port.%u\n",myport);
+        printf("error launching LP_coinsloop for (%s)\n","");
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)"BTC") != 0 )
     {
-        printf("error launching BTC LP_coinsloop for port.%u\n",myport);
+        printf("error launching LP_coinsloop for (%s)\n","BTC");
         exit(-1);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)"KMD") != 0 )
     {
-        printf("error launching KMD LP_coinsloop for port.%u\n",myport);
+        printf("error launching LP_coinsloop for (%s)\n","KMD");
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_pubkeysloop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_pubkeysloop,ctx) != 0 )
     {
         printf("error launching LP_pubkeysloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    /*if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradesloop,ctx) != 0 )
+    {
+        printf("error launching LP_tradessloop for ctx.%p\n",ctx);
+        exit(-1);
+    }
+    /*if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,ctx) != 0 )
     {
         printf("error launching LP_privkeysloop for ctx.%p\n",ctx);
         exit(-1);
     }*/
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,ctx) != 0 )
     {
-        printf("error launching LP_swapsloop for port.%u\n",myport);
+        printf("error launching LP_swapsloop for ctx.%p\n",ctx);
         exit(-1);
     }
     int32_t nonz;
@@ -1309,8 +1293,6 @@ void LP_fromjs_iter()
     }
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( 0 && (LP_counter % 100) == 0 )
-        printf("LP_fromjs_iter got called LP_counter.%d userpass.(%s) ctx.%p\n",LP_counter,G.USERPASS,ctx);
     //if ( Nanomsg_threadarg != 0 )
     //    nn_thread_main_routine(Nanomsg_threadarg);
     //LP_pubkeys_query();
@@ -1318,10 +1300,10 @@ void LP_fromjs_iter()
     //LP_nanomsg_recvs(ctx);
     LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
     //queue_loop(0);
-    if ( 0 && (LP_counter % 10) == 0 ) // 10 seconds
+    if ( 0 ) // 10 seconds
     {
         LP_coinsloop(0);
-        if ( (LP_counter % 100) == 0 ) // 100 seconds
+        if ( 0 ) // 100 seconds
         {
             LP_notify_pubkeys(ctx,LP_mypubsock);
             LP_privkey_updates(ctx,LP_mypubsock,0);
@@ -1329,7 +1311,6 @@ void LP_fromjs_iter()
                 free(retstr);
         }
     }
-    LP_counter++;
 }
 
 #endif
