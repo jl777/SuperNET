@@ -1018,7 +1018,7 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
     return(0);
 }
 
-void LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
+int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
 {
     double qprice; struct LP_quoteinfo Q; int64_t dynamictrust;
     Q = tp->Q[LP_RESERVED];
@@ -1026,14 +1026,16 @@ void LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
     {
         LP_trades_gotreserved(ctx,&tp->Q[LP_RESERVED],&Q);
         dynamictrust = LP_dynamictrust(Q.srchash,LP_kmdvalue(Q.srccoin,Q.satoshis));
-        if ( qprice > tp->bestprice || (qprice < tp->bestprice*.99 && dynamictrust > tp->besttrust) )
+        if ( qprice < tp->bestprice || (qprice < tp->bestprice*1.01 && dynamictrust > tp->besttrust) )
         {
             tp->Q[LP_CONNECT] = tp->Q[LP_RESERVED];
             tp->bestprice = qprice;
             tp->besttrust = dynamictrust;
             printf("aliceid.%llu got price %.8f dynamictrust %.8f\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust));
+            return(qprice);
         }
     }
+    return(0);
 }
 
 void LP_tradesloop(void *ctx)
@@ -1073,9 +1075,8 @@ void LP_tradesloop(void *ctx)
                 {
                     if ( tp->newfuncid == LP_RESERVED ) // maybe sends LP_CONNECT
                     {
-                        flag = 1;
                         if ( tp->connectsent == 0 )
-                            LP_trades_bestpricecheck(ctx,tp);
+                            flag = LP_trades_bestpricecheck(ctx,tp);
                     }
                     else if ( tp->newfuncid == LP_CONNECTED ) // alice all done
                     {
@@ -1094,7 +1095,7 @@ void LP_tradesloop(void *ctx)
                     }
                 }
             }
-            else if ( now > tp->lastprocessed+3 )
+            else if ( now > tp->lastprocessed+1 )
             {
                 if ( now < tp->lastprocessed+60 )
                 {
