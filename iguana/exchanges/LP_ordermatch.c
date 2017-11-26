@@ -1041,7 +1041,7 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
 
 void LP_tradesloop(void *ctx)
 {
-    struct LP_trade *qtp,*tp,*tmp; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t funcid,flag,nonz = 0;
+    struct LP_trade *qtp,*tp,*tmp; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t funcid,flag,nonz;
     strcpy(LP_tradesloop_stats.name,"LP_tradesloop");
     LP_tradesloop_stats.threshold = 10000;
     sleep(5);
@@ -1050,6 +1050,8 @@ void LP_tradesloop(void *ctx)
         LP_millistats_update(&LP_tradesloop_stats);
         DL_FOREACH_SAFE(LP_tradesQ,qtp,tmp)
         {
+            nonz = 0;
+            printf("dequeued %p\n",qtp);
             now = (uint32_t)time(NULL);
             Q = qtp->Q;
             funcid = qtp->funcid;
@@ -1075,6 +1077,7 @@ void LP_tradesloop(void *ctx)
                 continue;
             }
             portable_mutex_unlock(&LP_tradesmutex);
+            tp->Q = qtp->Q;
             if ( qtp->iambob == tp->iambob && qtp->pairstr[0] != 0 )
                 safecopy(tp->pairstr,qtp->pairstr,sizeof(tp->pairstr));
             free(qtp);
@@ -1120,7 +1123,8 @@ void LP_tradesloop(void *ctx)
             now = (uint32_t)time(NULL);
             if ( now > tp->lastprocessed+1 )
             {
-                printf("lag.%d iambob.%d bestprice %.8f besttrust %.8f\n",now-tp->lastprocessed,tp->iambob,tp->bestprice,dstr(tp->besttrust));
+                if ( tp->connectsent == 0 )
+                    printf("lag.%d iambob.%d bestprice %.8f besttrust %.8f\n",now-tp->lastprocessed,tp->iambob,tp->bestprice,dstr(tp->besttrust));
                 if ( now < tp->firstprocessed+60 )
                 {
                     if ( tp->iambob == 0 )
@@ -1180,6 +1184,7 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
             safecopy(qtp->pairstr,pairstr,sizeof(qtp->pairstr));
         DL_APPEND(LP_tradesQ,qtp);
         portable_mutex_unlock(&LP_tradesmutex);
+        printf("queued %p\n",qtp);
     }
    /* }
     else if ( tp->iambob == iambob )
