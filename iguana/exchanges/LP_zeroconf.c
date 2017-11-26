@@ -227,7 +227,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                     item = jitem(array,i);
                     LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
                 } else txid = jbits256i(array,i);
-                if ( (txjson= LP_gettx(coin->symbol,txid)) != 0 )
+                if ( (txjson= LP_gettx(coin->symbol,txid,0)) != 0 )
                 {
                     // vout0 deposit, vout1 botsfee, vout2 smartaddress
                     if ( (vouts= jarray(&numvouts,txjson,"vout")) > 0 && numvouts >= 3 && LP_destaddr(destaddr,jitem(vouts,2)) == 0 )

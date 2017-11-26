@@ -733,7 +733,7 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
             free_json(hexjson);
             //printf("return from electrum_transaction\n");
             return(*retjsonp);
-        } else printf("%s %s non-hex tx.(%s)\n",coin->symbol,bits256_str(str,txid),jprint(hexjson,0));
+        } //else printf("%s %s non-hex tx.(%s)\n",coin->symbol,bits256_str(str,txid),jprint(hexjson,0));
         free(hexstr);
         free_json(hexjson);
     }

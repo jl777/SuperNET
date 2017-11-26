@@ -474,7 +474,7 @@ zeroconf_claim(address, expiration=0)\n\
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
-                return(jprint(LP_gettx(coin,jbits256(argjson,"txid")),1));
+                return(jprint(LP_gettx(coin,jbits256(argjson,"txid"),0),1));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {

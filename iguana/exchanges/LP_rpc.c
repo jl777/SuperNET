@@ -410,7 +410,7 @@ cJSON *LP_paxprice(char *fiat)
     return(bitcoin_json(coin,"paxprice",buf));
 }
 
-cJSON *LP_gettx(char *symbol,bits256 txid)
+cJSON *LP_gettx(char *symbol,bits256 txid,int32_t suppress_errors)
 {
     struct iguana_info *coin; char buf[512],str[65]; cJSON *retjson;
     //printf("LP_gettx %s %s\n",symbol,bits256_str(str,txid));
@@ -431,7 +431,8 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     {
         if ( (retjson= electrum_transaction(symbol,coin->electrum,&retjson,txid,0)) != 0 )
             return(retjson);
-        else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,bits256_str(str,txid));
+        else if ( suppress_errors == 0 )
+            printf("failed blockchain.transaction.get %s %s\n",coin->symbol,bits256_str(str,txid));
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
     }
 }
@@ -439,7 +440,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
 uint32_t LP_locktime(char *symbol,bits256 txid)
 {
     cJSON *txobj; uint32_t locktime = 0;
-    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+    if ( (txobj= LP_gettx(symbol,txid,0)) != 0 )
     {
         locktime = juint(txobj,"locktime");
         free_json(txobj);
@@ -1242,7 +1243,7 @@ const char *Notaries_elected[][2] =
 int32_t LP_txhasnotarization(struct iguana_info *coin,bits256 txid)
 {
     cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
-    if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
+    if ( (txobj= LP_gettx(coin->symbol,txid,0)) != 0 )
     {
         if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
         {
@@ -1254,7 +1255,7 @@ int32_t LP_txhasnotarization(struct iguana_info *coin,bits256 txid)
                     vin = jitem(vins,i);
                     spenttxid = jbits256(vin,"txid");
                     spentvout = jint(vin,"vout");
-                    if ( (spentobj= LP_gettx(coin->symbol,spenttxid)) != 0 )
+                    if ( (spentobj= LP_gettx(coin->symbol,spenttxid,0)) != 0 )
                     {
                         if ( (vouts= jarray(&numvouts,spentobj,"vout")) != 0 )
                         {
