@@ -18,9 +18,9 @@
 //  marketmaker
 //
 // optimize electrum swap
-// penalize unresponsive pubkeys more!
 // big BTC swaps
 // electrum dynamic trust over 1000 tx
+// compress packets
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // cancel bid/ask

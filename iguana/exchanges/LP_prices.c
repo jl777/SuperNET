@@ -401,76 +401,6 @@ char *LP_prices()
     return(jprint(array,1));
 }
 
-/*void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
-{
-    struct LP_pubkey_info *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid,mismatch; char *base,*rel,*hexstr; double askprice; uint32_t now;
-    now = (uint32_t)time(NULL);
-    pubkey = jbits256(obj,"pubkey");
-    if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
-    {
-        if ( (hexstr= jstr(obj,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
-            decode_hex(rmd160,sizeof(rmd160),hexstr);
-        if ( memcmp(pubp->rmd160,rmd160,sizeof(rmd160)) != 0 )
-            mismatch = 1;
-        else mismatch = 0;
-        if ( bits256_cmp(pubkey,G.LP_mypub25519) == 0 && mismatch == 0 )
-            peer->needping = 0;
-        LP_pubkey_sigcheck(pubp,obj);
-        timestamp = juint(obj,"timestamp");
-        if ( timestamp > now )
-            timestamp = now;
-        if ( timestamp >= pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
-        {
-            for (i=0; i<n; i++)
-            {
-                item = jitem(asks,i);
-                base = jstri(item,0);
-                rel = jstri(item,1);
-                askprice = jdoublei(item,2);
-                if ( LP_pricevalid(askprice) > 0 )
-                {
-                    if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
-                    {
-                        //char str[65]; printf("gotprice %s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
-                        pubp->matrix[basepp->ind][relid] = askprice;
-                        //pubp->timestamps[basepp->ind][relid] = timestamp;
-                        if ( (relpp= LP_priceinfofind(rel)) != 0 )
-                        {
-                            dxblend(&basepp->relvals[relpp->ind],askprice,0.9);
-                            dxblend(&relpp->relvals[basepp->ind],1. / askprice,0.9);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-void LP_peer_pricesquery(struct LP_peerinfo *peer)
-{
-    char *retstr; cJSON *array; int32_t i,n;
-    if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
-        return;
-    peer->needping = (uint32_t)time(NULL);
-    if ( (retstr= issue_LP_getprices(peer->ipaddr,peer->port)) != 0 )
-    {
-        if ( (array= cJSON_Parse(retstr)) != 0 )
-        {
-            if ( is_cJSON_Array(array) && (n= cJSON_GetArraySize(array)) > 0 )
-            {
-                for (i=0; i<n; i++)
-                    LP_prices_parse(peer,jitem(array,i));
-            }
-            free_json(array);
-        }
-        free(retstr);
-    }
-    if ( peer->needping != 0 )
-    {
-        //printf("%s needs ping\n",peer->ipaddr);
-    }
-}*/
-
 double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,int32_t vout)
 {
     struct LP_cacheinfo *ptr;
@@ -499,10 +429,10 @@ void LP_priceinfoupdate(char *base,char *rel,double price)
     {
         if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
         {
-            //dxblend(&basepp->relvals[relpp->ind],price,0.9);
-            //dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
-            basepp->relvals[relpp->ind] = price;
-            relpp->relvals[basepp->ind] = 1. / price;
+            dxblend(&basepp->relvals[relpp->ind],price,0.9);
+            dxblend(&relpp->relvals[basepp->ind],1. / price,0.9);
+            //basepp->relvals[relpp->ind] = price;
+            //relpp->relvals[basepp->ind] = 1. / price;
         }
     }
 }
@@ -917,6 +847,11 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
             }
             n++;
         }
+        if ( i == 0 )
+        {
+            LP_priceinfoupdate(rel,base,1. / bids[i]->price);
+            printf("update %s/%s %.8f [%.8f]\n",rel,base,1./bids[i]->price,bids[i]->price);
+        }
         free(bids[i]);
         bids[i] = 0;
     }
@@ -943,6 +878,11 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
             }
             n++;
         }
+        if ( i == 0 )
+        {
+            LP_priceinfoupdate(base,rel,asks[i]->price);
+            printf("update %s/%s %.8f [%.8f]\n",base,rel,asks[i]->price,1./asks[i]->price);
+        }
         free(asks[i]);
         asks[i] = 0;
     }
@@ -963,12 +903,12 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
 
 int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
 {
-    cJSON *bids,*asks,*orderbook,*item; double bid=0,ask=0,price = 0.; int32_t numasks,numbids; char *retstr; int64_t KMDvalue=0;
+    double price = 0.; int64_t KMDvalue=0;
     if ( balance != 0 )
     {
         if ( strcmp(coin->symbol,"KMD") == 0 )
             KMDvalue = balance;
-        else if ( (retstr= LP_orderbook(coin->symbol,"KMD",-1)) != 0 )
+        /*else if ( (retstr= LP_orderbook(coin->symbol,"KMD",-1)) != 0 )
         {
             if ( (orderbook= cJSON_Parse(retstr)) != 0 )
             {
@@ -991,6 +931,11 @@ int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
                 free_json(orderbook);
             }
             free(retstr);
+        }*/
+        else
+        {
+            price = LP_price(coin->symbol,"KMD");
+            KMDvalue = price * balance;
         }
     }
     return(KMDvalue);

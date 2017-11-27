@@ -3176,6 +3176,75 @@ cJSON *LP_inventory(char *symbol)
  {
  pubp->dynamictrust = LP_dynamictrust(pubp->pubkey,0);
  }*/
+/*void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
+ {
+ struct LP_pubkey_info *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid,mismatch; char *base,*rel,*hexstr; double askprice; uint32_t now;
+ now = (uint32_t)time(NULL);
+ pubkey = jbits256(obj,"pubkey");
+ if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
+ {
+ if ( (hexstr= jstr(obj,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
+ decode_hex(rmd160,sizeof(rmd160),hexstr);
+ if ( memcmp(pubp->rmd160,rmd160,sizeof(rmd160)) != 0 )
+ mismatch = 1;
+ else mismatch = 0;
+ if ( bits256_cmp(pubkey,G.LP_mypub25519) == 0 && mismatch == 0 )
+ peer->needping = 0;
+ LP_pubkey_sigcheck(pubp,obj);
+ timestamp = juint(obj,"timestamp");
+ if ( timestamp > now )
+ timestamp = now;
+ if ( timestamp >= pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ item = jitem(asks,i);
+ base = jstri(item,0);
+ rel = jstri(item,1);
+ askprice = jdoublei(item,2);
+ if ( LP_pricevalid(askprice) > 0 )
+ {
+ if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
+ {
+ //char str[65]; printf("gotprice %s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
+ pubp->matrix[basepp->ind][relid] = askprice;
+ //pubp->timestamps[basepp->ind][relid] = timestamp;
+ if ( (relpp= LP_priceinfofind(rel)) != 0 )
+ {
+ dxblend(&basepp->relvals[relpp->ind],askprice,0.9);
+ dxblend(&relpp->relvals[basepp->ind],1. / askprice,0.9);
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ 
+ void LP_peer_pricesquery(struct LP_peerinfo *peer)
+ {
+ char *retstr; cJSON *array; int32_t i,n;
+ if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+ return;
+ peer->needping = (uint32_t)time(NULL);
+ if ( (retstr= issue_LP_getprices(peer->ipaddr,peer->port)) != 0 )
+ {
+ if ( (array= cJSON_Parse(retstr)) != 0 )
+ {
+ if ( is_cJSON_Array(array) && (n= cJSON_GetArraySize(array)) > 0 )
+ {
+ for (i=0; i<n; i++)
+ LP_prices_parse(peer,jitem(array,i));
+ }
+ free_json(array);
+ }
+ free(retstr);
+ }
+ if ( peer->needping != 0 )
+ {
+ //printf("%s needs ping\n",peer->ipaddr);
+ }
+ }*/
 
 if ( aliceutxo->S.swap == 0 )
 LP_availableset(aliceutxo);
