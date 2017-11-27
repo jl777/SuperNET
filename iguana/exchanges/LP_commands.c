@@ -135,7 +135,8 @@ setconfirms(coin, numconfirms, maxconfirms=6)\n\
 trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
 balance(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
-getprices(base, rel)\n\
+getprices()\n\
+getprice(base, rel)\n\
 //sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 //getmessages(firsti=0, num=100)\n\
 //deletemessages(firsti=0, num=100)\n\
@@ -319,6 +320,18 @@ zeroconf_claim(address, expiration=0)\n\
                 if ( LP_autoprice(base,rel,argjson) < 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
+            }
+            else if ( strcmp(method,"getprice") == 0 )
+            {
+                double price;
+                price = LP_price(base,rel);
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"base",base);
+                jaddstr(retjson,"rel",rel);
+                jaddnum(retjson,"timestamp",time(NULL));
+                jaddnum(retjson,"price",price);
+                return(jprint(retjson,1));
             }
             else if ( strcmp(method,"pricearray") == 0 )
             {
