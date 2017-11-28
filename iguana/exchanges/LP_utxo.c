@@ -951,8 +951,6 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
         {
             if ( bypass == 0 && strcmp(destaddr,destaddr2) != 0 )
                 printf("mismatched %s destaddr (%s) vs (%s)\n",symbol,destaddr,destaddr2);
-            else if ( bypass == 0 && ((iambob == 0 && val2 > val) || (iambob != 0 && val2 <= satoshis)) )
-                printf("iambob.%d ineligible due to offsides: val %.8f and val2 %.8f vs %.8f diff %lld\n",iambob,dstr(val),dstr(val2),dstr(satoshis),(long long)(val2 - val));
             else
             {
                 *valp = val;
