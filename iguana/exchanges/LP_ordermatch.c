@@ -932,8 +932,6 @@ struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,stru
        return(0);
     if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
         return(0);
-    if ( bits256_cmp(G.LP_mypub25519,qp->srchash) != 0 || bits256_cmp(G.LP_mypub25519,qp->desthash) == 0 )
-        return(0);
     if ( (qprice= LP_trades_pricevalidate(qp,coin,myprice)) < 0. )
         return(0);
     if ( LP_reservation_check(qp->txid,qp->vout,qp->desthash) == 0 && LP_reservation_check(qp->txid2,qp->vout2,qp->desthash) == 0  )
@@ -1228,12 +1226,15 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         else if ( strcmp(method,"connect") == 0 )
         {
             LP_bob_competition(&counter,aliceid,qprice,1000);
-            printf("CONNECT.(%s)\n",jprint(argjson,0));
-            if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
-                LP_instantdex_proofcheck(Q.destaddr,proof,num);
-            if ( Qtrades == 0 )
-                LP_trades_gotconnect(ctx,&Q,&Q2,jstr(argjson,"pair"));
-            else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECT);
+            if ( bits256_cmp(G.LP_mypub25519,Q.srchash) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0 )
+            {
+                printf("CONNECT.(%s)\n",jprint(argjson,0));
+                if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
+                    LP_instantdex_proofcheck(Q.destaddr,proof,num);
+                if ( Qtrades == 0 )
+                    LP_trades_gotconnect(ctx,&Q,&Q2,jstr(argjson,"pair"));
+                else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECT);
+            }
         }
         return(retval);
     }
