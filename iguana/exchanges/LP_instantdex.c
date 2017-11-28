@@ -15,9 +15,54 @@
  ******************************************************************************/
 
 //
-//  LP_zeroconf.c
+//  LP_instantdex.c
 //  marketmaker
 //
+
+void LP_instantdex_txidaddfname(char *fname)
+{
+    sprintf(fname,"%s/instantdex.json",GLOBAL_DBDIR);
+}
+
+cJSON *LP_instantdex_txidaddjson()
+{
+    char *filestr,fname[1024]; long fsize; cJSON *retjson=0;
+    LP_instantdex_txidaddfname(fname);
+    if ( (filestr= OS_filestr(&fsize,fname)) != 0 )
+    {
+        retjson = cJSON_Parse(filestr);
+        free(filestr);
+    }
+    return(retjson);
+}
+
+void LP_instantdex_txidadd(bits256 txid)
+{
+    cJSON *array; int32_t i,n; char fname[1024],*filestr; FILE *fp;
+    if ( (array= LP_instantdex_txidaddjson()) == 0 )
+        array = cJSON_CreateArray();
+    if ( (n= cJSON_GetArraySize(array)) > 0 )
+    {
+        for (i=0; i<n; i++)
+            if ( bits256_cmp(jbits256i(array,i),txid) == 0 )
+                break;
+        if ( i == n )
+        {
+            LP_instantdex_txidaddfname(fname);
+            char str[65]; printf("add %s -> %s\n",bits256_str(str,txid),fname);
+            jaddibits256(array,txid);
+            if ( (fp= fopen(fname,"wb")) != 0 )
+            {
+                filestr = jprint(array,0);
+                fwrite(filestr,1,strlen(filestr)+1,fp);
+                fclose(fp);
+                free(filestr);
+            }
+        }
+    }
+    if ( array != 0 )
+        free_json(array);
+}
 
 int32_t LP_deposit_addr(char *p2shaddr,uint8_t *script,uint8_t taddr,uint8_t p2shtype,uint32_t timestamp,uint8_t *pubsecp33)
 {
@@ -28,13 +73,13 @@ int32_t LP_deposit_addr(char *p2shaddr,uint8_t *script,uint8_t taddr,uint8_t p2s
     return(n);
 }
 
-char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,int32_t broadcast)
+char *LP_instantdex_deposit(struct iguana_info *coin,int32_t weeks,double amount,int32_t broadcast)
 {
     char p2shaddr[64],*retstr,*hexstr; uint8_t script[512]; int32_t weeki,scriptlen; cJSON *argjson,*retjson,*array,*item,*obj; uint32_t timestamp; bits256 txid,sendtxid; uint64_t amount64;
     if ( strcmp(coin->symbol,"KMD") != 0 )
-        return(clonestr("{\"error\":\"zeroconf deposit must be in KMD\"}"));
+        return(clonestr("{\"error\":\"instantdex deposit must be in KMD\"}"));
     if ( amount < 10.0 )
-        return(clonestr("{\"error\":\"minimum zeroconf deposit is 10 KMD\"}"));
+        return(clonestr("{\"error\":\"minimum instantdex deposit is 10 KMD\"}"));
     if ( weeks < 0 || weeks > 52 )
         return(clonestr("{\"error\":\"weeks must be between 0 and 52\"}"));
     if ( weeks > 0 )
@@ -75,6 +120,8 @@ char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,i
             if ( (obj= jobj(retjson,"complete")) != 0 && is_cJSON_True(obj) != 0 && (hexstr= jstr(retjson,"hex")) != 0 )
             {
                 txid = jbits256(retjson,"txid");
+                if ( bits256_nonz(txid) != 0 )
+                    LP_instantdex_txidadd(txid);
                 if ( broadcast != 0 )
                 {
                     if (bits256_nonz(txid) != 0 )
@@ -119,17 +166,17 @@ char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,i
         }
         free(retstr);
     }
-    return(clonestr("{\"error\":\"error with LP_withdraw for zeroconf deposit\"}"));
+    return(clonestr("{\"error\":\"error with LP_withdraw for instantdex deposit\"}"));
 }
 
-char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expiration)
+char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t expiration)
 {
     static void *ctx;
     uint8_t redeemscript[512],userdata[64]; char vinaddr[64],str[65],*signedtx=0; uint32_t timestamp,now,redeemlen,claimtime; int32_t i,n,height,utxovout,userdatalen; bits256 signedtxid,utxotxid,sendtxid,zero; int64_t sum,destamount,satoshis; cJSON *array,*item,*txids,*retjson;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( strcmp(coin->symbol,"KMD") != 0 )
-        return(clonestr("{\"error\":\"zeroconf deposit must be in KMD\"}"));
+        return(clonestr("{\"error\":\"instantdex deposit must be in KMD\"}"));
     now = (uint32_t)time(NULL);
     sum = 0;
     txids = cJSON_CreateArray();
@@ -164,7 +211,7 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
                             item = jitem(array,i);
                             satoshis = LP_listunspent_parseitem(coin,&utxotxid,&utxovout,&height,item);
                             printf("satoshis %.8f %s/v%d\n",dstr(satoshis),bits256_str(str,utxotxid),utxovout);
-                            if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,10000,"zeroconfclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0,claimtime,&destamount,0,0,vinaddr,1,coin->zcash)) != 0 )
+                            if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,10000,"instantdexclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0,claimtime,&destamount,0,0,vinaddr,1,coin->zcash)) != 0 )
                             {
                                 printf("signedtx.(%s)\n",signedtx);
                                 sendtxid = LP_broadcast("claim","KMD",signedtx,signedtxid);
@@ -175,7 +222,7 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
                                 }
                                 else printf("error sending %s\n",bits256_str(str,signedtxid));
                                 free(signedtx);
-                            } else printf("error claiming zeroconf deposit %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(satoshis));
+                            } else printf("error claiming instantdex deposit %s/v%d %.8f\n",bits256_str(str,utxotxid),utxovout,dstr(satoshis));
                         }
                     }
                     free_json(array);
@@ -190,10 +237,10 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
         if ( expiration != 0 )
             break;
     }
-    return(clonestr("{\"error\":\"no zeroconf deposits to claim\"}"));
+    return(clonestr("{\"error\":\"no instantdex deposits to claim\"}"));
 }
 
-void LP_zeroconf_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,int32_t weeki,char *p2shaddr)
+int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,int32_t weeki,char *p2shaddr)
 {
     uint32_t timestamp; struct LP_address *ap; struct iguana_info *coin = LP_coinfind("KMD");
     if ( coin != 0 )
@@ -204,11 +251,13 @@ void LP_zeroconf_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,int32_t
             ap->instantdex_credits += satoshis;
             if ( dispflag != 0 )
                 printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->instantdex_credits));
+            return(satoshis);
         }
     }
+    return(0);
 }
 
-int64_t LP_zeroconf_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256 txid)
+int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256 txid,char *refaddr)
 {
     cJSON *txjson,*vouts,*txobj,*item; int64_t satoshis=0,amount64; int32_t weeki,numvouts; char destaddr[64],p2shaddr[64];
     if ( (txjson= LP_gettx(coin->symbol,txid,0)) != 0 )
@@ -216,17 +265,27 @@ int64_t LP_zeroconf_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256
         // vout0 deposit, vout1 botsfee, vout2 smartaddress
         if ( (vouts= jarray(&numvouts,txjson,"vout")) > 0 && numvouts >= 3 && LP_destaddr(destaddr,jitem(vouts,2)) == 0 )
         {
-            amount64 = LP_value_extract(jitem(vouts,1),0);
-            weeki = (amount64 % 10000);
-            item = jitem(vouts,0);
-            satoshis = LP_value_extract(item,0);
-            //printf("%s funded %.8f weeki.%d\n",destaddr,dstr(satoshis),weeki);
-            if ( LP_destaddr(p2shaddr,item) == 0 )
+            if ( refaddr != 0 && strcmp(refaddr,destaddr) != 0 )
             {
-                if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )
+                printf("LP_instantdex_creditcalc for (%s) but deposit sent for (%s)\n",refaddr,destaddr);
+            }
+            else
+            {
+                amount64 = LP_value_extract(jitem(vouts,1),0);
+                weeki = (amount64 % 10000);
+                item = jitem(vouts,0);
+                satoshis = LP_value_extract(item,0);
+                //printf("%s funded %.8f weeki.%d\n",destaddr,dstr(satoshis),weeki);
+                if ( LP_destaddr(p2shaddr,item) == 0 )
                 {
-                    free_json(txobj);
-                    LP_zeroconf_credit(dispflag,destaddr,satoshis,weeki,p2shaddr);
+                    if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )
+                    {
+                        free_json(txobj);
+                        if ( LP_instantdex_credit(dispflag,destaddr,satoshis,weeki,p2shaddr) > 0 && strcmp(coin->symbol,"KMD") == 0 && strcmp(destaddr,coin->smartaddr) == 0 )
+                        {
+                            LP_instantdex_txidadd(txid);
+                        }
+                    }
                 }
             }
         }
@@ -235,11 +294,29 @@ int64_t LP_zeroconf_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256
     return(satoshis);
 }
 
-void LP_zeroconf_deposits(struct iguana_info *coin)
+void LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
+{
+    uint8_t rmd160[20],addrtype; int32_t i; char othersmartaddr[64]; struct iguana_info *coin; struct LP_address *ap = 0;
+    if ( (coin= LP_coinfind("KMD")) != 0 && coin->electrum != 0 )
+    {
+        bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
+        bitcoin_address(othersmartaddr,0,60,rmd160,20);
+        if ((ap= LP_address(coin,othersmartaddr)) != 0 && ap->didinstantdex == 0 )
+        {
+            ap->instantdex_credits = 0;
+            for (i=0; i<num; i++)
+                LP_instantdex_creditcalc(coin,1,jbits256i(proof,i),othersmartaddr);
+            ap->didinstantdex = 1;
+            printf("validated instantdex %s.[%d] proof.(%s)\n",othersmartaddr,num,jprint(proof,0));
+        }
+    }
+}
+
+void LP_instantdex_deposits(struct iguana_info *coin)
 {
     static int dispflag = 1;
     cJSON *array,*item; int32_t i,n,height,vout; bits256 txid; struct LP_address *ap,*tmp;
-    if ( coin->electrum != 0 )//&& coin->electrumzeroconf != 0 )
+    if ( coin->electrum != 0 )//&& coin->electruminstantdex != 0 )
         return;
     HASH_ITER(hh,coin->addresses,ap,tmp)
     {
@@ -247,7 +324,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
     }
     if ( (array= LP_listreceivedbyaddress("KMD",BOTS_BONDADDRESS)) != 0 )
     {
-        //printf("ZEROCONF.(%s)\n",jprint(array,0));
+        //printf("instantdex.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             for (i=0; i<n; i++)
@@ -257,7 +334,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                     item = jitem(array,i);
                     LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
                 } else txid = jbits256i(array,i);
-                LP_zeroconf_creditcalc(coin,dispflag,txid);
+                LP_instantdex_creditcalc(coin,dispflag,txid,0);
             }
         }
         free_json(array);
@@ -283,8 +360,8 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
                 if ( (sp= ptr->swap) != 0 && sp->finished == 0 && sp->expired == 0 )
                     swaps_kmdvalue += LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis);
             }
-            //printf("%s zeroconf_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->zeroconf_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
-            //if ( ap->zeroconf_credits > swaps_kmdvalue+kmdvalue )
+            //printf("%s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->instantdex_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+            //if ( ap->instantdex_credits > swaps_kmdvalue+kmdvalue )
                 return(ap->instantdex_credits - (swaps_kmdvalue+kmdvalue));
         }
     }

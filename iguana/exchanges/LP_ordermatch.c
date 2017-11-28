@@ -887,6 +887,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     if ( LP_allocated(qp->txid,qp->vout) == 0 && LP_allocated(qp->txid2,qp->vout2) == 0 )
     {
         reqjson = LP_quotejson(qp);
+        jadd(reqjson,"proof",LP_instantdex_txidaddjson());
         LP_unavailableset(qp->txid,qp->vout,qp->timestamp + LP_RESERVETIME,qp->desthash);
         LP_unavailableset(qp->txid2,qp->vout2,qp->timestamp + LP_RESERVETIME,qp->desthash);
         if ( qp->quotetime == 0 )
@@ -963,7 +964,7 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
 
 int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
 {
-    double qprice; struct LP_quoteinfo Q; int64_t dynamictrust; char *retstr; struct LP_pubkey_info *pubp;
+    double qprice; int32_t flag = 0; struct LP_quoteinfo Q; int64_t dynamictrust; char *retstr; struct LP_pubkey_info *pubp;
     Q = tp->Q;
     //printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
     if ( Q.satoshis != 0 && (pubp= LP_pubkeyfind(Q.srchash)) != 0 )//(qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
@@ -974,13 +975,22 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
             free(retstr);
         //LP_trades_gotreserved(ctx,&Q,&tp->Qs[LP_RESERVED]);
         dynamictrust = LP_dynamictrust(Q.srchash,LP_kmdvalue(Q.srccoin,Q.satoshis));
-        if ( tp->bestprice == 0. || (qprice < tp->bestprice && pubp->slowresponse <= tp->bestresponse*1.05) || (qprice < tp->bestprice*1.01 && dynamictrust > tp->besttrust && pubp->slowresponse <= tp->bestresponse*1.1) )
+        if ( tp->bestprice == 0. )
+            flag = 1;
+        else if ( qprice < tp->bestprice && pubp->slowresponse <= tp->bestresponse*1.05 )
+            flag = 1;
+        else if ( qprice < tp->bestprice*1.01 && dynamictrust > tp->besttrust && pubp->slowresponse <= tp->bestresponse*1.1 )
+            flag = 1;
+        else if ( qprice <= tp->bestprice && pubp->unconfcredits > tp->bestunconfcredits && pubp->slowresponse <= tp->bestresponse )
+            flag = 1;
+        if ( flag != 0 )
         {
             tp->Qs[LP_CONNECT] = tp->Q;
             tp->bestprice = qprice;
             tp->besttrust = dynamictrust;
+            tp->bestunconfcredits = pubp->unconfcredits;
             tp->bestresponse = pubp->slowresponse;
-            printf("aliceid.%llu got new bestprice %.8f dynamictrust %.8f slowresponse.%d\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust),tp->bestresponse);
+            printf("aliceid.%llu got new bestprice %.8f dynamictrust %.8f (unconf %.8f) slowresponse.%d\n",(long long)tp->aliceid,tp->bestprice,dstr(dynamictrust),dstr(tp->bestunconfcredits),tp->bestresponse);
             return(qprice);
         } //else printf("qprice %.8f dynamictrust %.8f not good enough\n",qprice,dstr(dynamictrust));
     } else printf("alice didnt validate\n");
@@ -1140,7 +1150,7 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
     int32_t Qtrades = 1;
-    char *method,str[65]; int32_t DEXselector = 0; uint64_t aliceid; double qprice,bestprice,price,bid,ask; struct iguana_info *coin; struct LP_quoteinfo Q,Q2; int32_t counter,retval=-1;
+    char *method,str[65]; int32_t num,DEXselector = 0; uint64_t aliceid; double qprice,bestprice,price,bid,ask; cJSON *proof; struct iguana_info *coin; struct LP_quoteinfo Q,Q2; int32_t counter,retval=-1;
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"reserved") == 0 ||strcmp(method,"connected") == 0 || strcmp(method,"request") == 0 || strcmp(method,"connect") == 0) )
     {
         LP_quoteparse(&Q,argjson);
@@ -1169,6 +1179,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             }
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
+                if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
+                    LP_instantdex_proofcheck(Q.coinaddr,proof,num);
                 if ( Qtrades == 0 )
                 {
                     if ( Q.quotetime > time(NULL)-20 && LP_alice_eligible(Q.quotetime) > 0 )
@@ -1215,6 +1227,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         else if ( strcmp(method,"connect") == 0 )
         {
             LP_bob_competition(&counter,aliceid,qprice,1000);
+            if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
+                LP_instantdex_proofcheck(Q.coinaddr,proof,num);
             if ( Qtrades == 0 )
                 LP_trades_gotconnect(ctx,&Q,&Q2,jstr(argjson,"pair"));
             else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECT);

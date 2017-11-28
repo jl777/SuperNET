@@ -188,7 +188,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_transaction.c"
 #include "LP_stats.c"
 #include "LP_remember.c"
-#include "LP_zeroconf.c"
+#include "LP_instantdex.c"
 #include "LP_swap.c"
 #include "LP_peers.c"
 #include "LP_privkey.c"
@@ -651,7 +651,7 @@ void LP_coinsloop(void *_coins)
 
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport)
 {
-    static uint32_t counter,didzeroconf;
+    static uint32_t counter,didinstantdex;
     struct iguana_info *coin,*ctmp; char *origipaddr; uint32_t now; int32_t height,nonz = 0;
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
@@ -660,10 +660,10 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         now = (uint32_t)time(NULL);
-        if ( coin->inactive == 0 && didzeroconf == 0 && strcmp("KMD",coin->symbol) == 0 )
+        if ( coin->inactive == 0 && didinstantdex == 0 && strcmp("KMD",coin->symbol) == 0 )
         {
-            LP_zeroconf_deposits(coin);
-            didzeroconf = now;
+            LP_instantdex_deposits(coin);
+            didinstantdex = now;
         }
         if ( (coin->addr_listunspent_requested != 0 && now > coin->lastpushtime+LP_ORDERBOOK_DURATION*.5) || now > coin->lastpushtime+LP_ORDERBOOK_DURATION*5 )
         {
@@ -811,7 +811,7 @@ void LP_swapsloop(void *ctx)
             free(retstr);
         sleep(600);
         if ( (coin= LP_coinfind("KMD")) != 0 )
-            LP_zeroconf_deposits(coin);
+            LP_instantdex_deposits(coin);
     }
 }
 

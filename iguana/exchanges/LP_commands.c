@@ -198,7 +198,7 @@ zeroconf_claim(address, expiration=0)\n\
             {
                 if ( jint(argjson,"weeks") < 0 || jdouble(argjson,"amount") < 10. )
                     return(clonestr("{\"error\":\"deposit_create needs to have weeks and amount\"}"));
-                else return(LP_zeroconf_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jint(argjson,"broadcast")));
+                else return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jint(argjson,"broadcast")));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
@@ -208,7 +208,7 @@ zeroconf_claim(address, expiration=0)\n\
             {
                 if ( jstr(argjson,"address") == 0  )
                     return(clonestr("{\"error\":\"deposit_claim needs to have address\"}"));
-                else return(LP_zeroconf_claim(ptr,jstr(argjson,"address"),juint(argjson,"expiration")));
+                else return(LP_instantdex_claim(ptr,jstr(argjson,"address"),juint(argjson,"expiration")));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }

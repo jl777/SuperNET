@@ -332,7 +332,7 @@ struct LP_address
     uint32_t timestamp,n,unspenttime;
     int32_t unspentheight;
     char coinaddr[40];
-    uint8_t pubsecp[33],pad;
+    uint8_t pubsecp[33],didinstantdex;
 };
 
 struct LP_peerinfo
@@ -404,7 +404,7 @@ struct LP_pubkey_info
     bits256 pubkey;
     struct LP_pubkey_quote *quotes;
     struct LP_pubswap *bobswaps,*aliceswaps;
-    int64_t dynamictrust,unconfdeposits;
+    int64_t dynamictrust,unconfcredits;
     uint32_t timestamp,numerrors,lasttime,slowresponse;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
@@ -428,7 +428,7 @@ struct LP_trade
     struct LP_trade *next,*prev;
     UT_hash_handle hh;
     uint64_t aliceid;
-    int64_t besttrust;
+    int64_t besttrust,bestunconfcredits;
     double bestprice;
     uint32_t negotiationdone,bestresponse,connectsent,firsttime,lasttime,firstprocessed,lastprocessed,newtime;
     char pairstr[64],funcid,iambob;
