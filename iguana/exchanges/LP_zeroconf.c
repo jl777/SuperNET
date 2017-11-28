@@ -211,6 +211,8 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
 {
     static int dispflag = 1;
     cJSON *array,*item,*txjson,*vouts,*v,*txobj; int32_t i,n,numvouts,height,vout,weeki; bits256 txid; char destaddr[64],p2shaddr[64]; struct LP_address *ap,*tmp; int64_t satoshis,amount64;
+    if ( coin->electrum != 0 && coin->electrumzeroconf == 0 )
+        return;
     HASH_ITER(hh,coin->addresses,ap,tmp)
     {
         ap->zeroconf_credits = 0;
