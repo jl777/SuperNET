@@ -32,7 +32,7 @@ double LP_bob_competition(int32_t *counterp,uint64_t aliceid,double price,int32_
     {
         if ( Bob_competition[i].aliceid == aliceid )
         {
-            if ( now > Bob_competition[i].starttime+LP_AUTOTRADE_TIMEOUT )
+            if ( counter < 0 || now > Bob_competition[i].starttime+LP_AUTOTRADE_TIMEOUT )
             {
                 //printf("aliceid.%llu expired\n",(long long)aliceid);
                 Bob_competition[i].bestprice = 0.;
@@ -1229,6 +1229,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         if ( strcmp(method,"request") == 0 )
         {
+            bestprice = LP_bob_competition(&counter,aliceid,qprice,-1);
             if ( Qtrades == 0 )
                 LP_trades_gotrequest(ctx,&Q,&Q2,jstr(argjson,"pair"));
             else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_REQUEST);
