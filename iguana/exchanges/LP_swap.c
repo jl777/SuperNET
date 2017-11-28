@@ -1101,7 +1101,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobinsurance = LP_MIN_TXFEE;
     if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
         swap->I.aliceinsurance = LP_MIN_TXFEE;
-    swap->I.started = (uint32_t)time(NULL);
+    swap->I.started = qp->timestamp;//(uint32_t)time(NULL);
     swap->I.expiration = swap->I.req.timestamp + swap->I.putduration + swap->I.callduration;
     OS_randombytes((uint8_t *)&swap->I.choosei,sizeof(swap->I.choosei));
     if ( swap->I.choosei < 0 )

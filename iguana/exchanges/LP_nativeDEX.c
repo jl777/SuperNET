@@ -17,8 +17,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// ordermatch exact timestamp
 // big BTC swaps
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
+// prune expired/spent deposits
 //
 // cancel bid/ask
 // portfolio:
