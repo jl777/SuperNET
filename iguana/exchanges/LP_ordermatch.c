@@ -1179,8 +1179,6 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             }
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
-                if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
-                    LP_instantdex_proofcheck(Q.coinaddr,proof,num);
                 if ( Qtrades == 0 )
                 {
                     if ( Q.quotetime > time(NULL)-20 && LP_alice_eligible(Q.quotetime) > 0 )
@@ -1197,6 +1195,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             bestprice = LP_bob_competition(&counter,aliceid,qprice,1000);
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
+                if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
+                    LP_instantdex_proofcheck(Q.coinaddr,proof,num);
                 if ( Qtrades == 0 )
                     LP_trades_gotconnected(ctx,&Q,&Q2,jstr(argjson,"pair"));
                 else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECTED);
