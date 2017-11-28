@@ -203,15 +203,42 @@ void LP_zeroconf_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,int32_t
         {
             ap->zeroconf_credits += satoshis;
             if ( dispflag != 0 )
-                printf("ZEROCONF credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
+                printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
         }
     }
+}
+
+int64_t LP_zeroconf_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256 txid)
+{
+    cJSON *txjson,*vouts,*txobj,*item; int64_t satoshis=0,amount64; int32_t weeki,numvouts; char destaddr[64],p2shaddr[64];
+    if ( (txjson= LP_gettx(coin->symbol,txid,0)) != 0 )
+    {
+        // vout0 deposit, vout1 botsfee, vout2 smartaddress
+        if ( (vouts= jarray(&numvouts,txjson,"vout")) > 0 && numvouts >= 3 && LP_destaddr(destaddr,jitem(vouts,2)) == 0 )
+        {
+            amount64 = LP_value_extract(jitem(vouts,1),0);
+            weeki = (amount64 % 10000);
+            item = jitem(vouts,0);
+            satoshis = LP_value_extract(item,0);
+            //printf("%s funded %.8f weeki.%d\n",destaddr,dstr(satoshis),weeki);
+            if ( LP_destaddr(p2shaddr,item) == 0 )
+            {
+                if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )
+                {
+                    free_json(txobj);
+                    LP_zeroconf_credit(dispflag,destaddr,satoshis,weeki,p2shaddr);
+                }
+            }
+        }
+        free_json(txjson);
+    }
+    return(satoshis);
 }
 
 void LP_zeroconf_deposits(struct iguana_info *coin)
 {
     static int dispflag = 1;
-    cJSON *array,*item,*txjson,*vouts,*v,*txobj; int32_t i,n,numvouts,height,vout,weeki; bits256 txid; char destaddr[64],p2shaddr[64]; struct LP_address *ap,*tmp; int64_t satoshis,amount64;
+    cJSON *array,*item; int32_t i,n,height,vout; bits256 txid; struct LP_address *ap,*tmp; 
     if ( coin->electrum != 0 && coin->electrumzeroconf != 0 )
         return;
     HASH_ITER(hh,coin->addresses,ap,tmp)
@@ -230,27 +257,7 @@ void LP_zeroconf_deposits(struct iguana_info *coin)
                     item = jitem(array,i);
                     LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
                 } else txid = jbits256i(array,i);
-                if ( (txjson= LP_gettx(coin->symbol,txid,0)) != 0 )
-                {
-                    // vout0 deposit, vout1 botsfee, vout2 smartaddress
-                    if ( (vouts= jarray(&numvouts,txjson,"vout")) > 0 && numvouts >= 3 && LP_destaddr(destaddr,jitem(vouts,2)) == 0 )
-                    {
-                        amount64 = LP_value_extract(jitem(vouts,1),0);
-                        weeki = (amount64 % 10000);
-                        v = jitem(vouts,0);
-                        satoshis = LP_value_extract(v,0);
-                        //printf("%s funded %.8f weeki.%d\n",destaddr,dstr(satoshis),weeki);
-                        if ( LP_destaddr(p2shaddr,v) == 0 )
-                        {
-                            if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )
-                            {
-                                free_json(txobj);
-                                LP_zeroconf_credit(dispflag,destaddr,satoshis,weeki,p2shaddr);
-                            }
-                        }
-                    }
-                    free_json(txjson);
-                }
+                LP_zeroconf_creditcalc(coin,dispflag,txid);
             }
         }
         free_json(array);
