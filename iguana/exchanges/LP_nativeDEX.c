@@ -660,7 +660,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
     {
         now = (uint32_t)time(NULL);
-        if ( coin->inactive == 0 && didinstantdex == 0 && strcmp("KMD",coin->symbol) == 0 )
+        if ( coin->inactive == 0 && coin->electrum == 0 && didinstantdex == 0 && strcmp("KMD",coin->symbol) == 0 )
         {
             LP_instantdex_deposits(coin);
             didinstantdex = now;
@@ -800,7 +800,7 @@ void LP_pubkeysloop(void *ctx)
 
 void LP_swapsloop(void *ctx)
 {
-    char *retstr; struct iguana_info *coin;
+    char *retstr;
     strcpy(LP_swapsloop_stats.name,"LP_swapsloop");
     LP_swapsloop_stats.threshold = 605000.;
     sleep(50);
@@ -810,8 +810,6 @@ void LP_swapsloop(void *ctx)
         if ( (retstr= basilisk_swapentry(0,0)) != 0 )
             free(retstr);
         sleep(600);
-        if ( (coin= LP_coinfind("KMD")) != 0 )
-            LP_instantdex_deposits(coin);
     }
 }
 
