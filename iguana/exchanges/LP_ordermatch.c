@@ -739,13 +739,21 @@ double LP_trades_alicevalidate(void *ctx,struct LP_quoteinfo *qp)
     }
     if ( LP_validSPV(qp->srccoin,qp->coinaddr,qp->txid,qp->vout) < 0 )
     {
-        printf("%s src %s failed SPV check\n",qp->srccoin,bits256_str(str,qp->txid));
-        return(-44);
+        sleep(1);
+        if ( LP_validSPV(qp->srccoin,qp->coinaddr,qp->txid,qp->vout) < 0 )
+        {
+            printf("LP_trades_alicevalidate %s src %s failed SPV check\n",qp->srccoin,bits256_str(str,qp->txid));
+            return(-44);
+        }
     }
     else if ( LP_validSPV(qp->srccoin,qp->coinaddr,qp->txid2,qp->vout2) < 0 )
     {
-        printf("%s src2 %s failed SPV check\n",qp->srccoin,bits256_str(str,qp->txid2));
-        return(-55);
+        sleep(1);
+        if ( LP_validSPV(qp->srccoin,qp->coinaddr,qp->txid2,qp->vout2) < 0 )
+        {
+            printf("LP_trades_alicevalidate %s src2 %s failed SPV check\n",qp->srccoin,bits256_str(str,qp->txid2));
+            return(-55);
+        }
     }
     return(qprice);
 }
@@ -780,12 +788,12 @@ double LP_trades_bobprice(double *bidp,double *askp,struct LP_quoteinfo *qp)
     //printf("MYPRICE %s/%s %.8f vs qprice %.8f\n",qp->srccoin,qp->destcoin,price,(double)qp->destsatoshis/qp->satoshis);
     if ( LP_validSPV(qp->destcoin,qp->destaddr,qp->desttxid,qp->destvout) < 0 )
     {
-        printf("%s dest %s failed SPV check\n",qp->destcoin,bits256_str(str,qp->desttxid));
+        printf("LP_trades_bobprice %s dest %s failed SPV check\n",qp->destcoin,bits256_str(str,qp->desttxid));
         return(0.);
     }
     else if (LP_validSPV(qp->destcoin,qp->destaddr,qp->feetxid,qp->feevout) < 0 )
     {
-        printf("%s dexfee %s failed SPV check\n",qp->destcoin,bits256_str(str,qp->feetxid));
+        printf("LP_trades_bobprice %s dexfee %s failed SPV check\n",qp->destcoin,bits256_str(str,qp->feetxid));
         return(0.);
     }
     return(*askp);
