@@ -17,9 +17,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// optimize electrum swap
 // big BTC swaps
-// electrum dynamic trust over 1000 tx
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // cancel bid/ask

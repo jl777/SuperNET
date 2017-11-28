@@ -1195,6 +1195,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             bestprice = LP_bob_competition(&counter,aliceid,qprice,1000);
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
+                printf("CONNECTED.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     LP_instantdex_proofcheck(Q.coinaddr,proof,num);
                 if ( Qtrades == 0 )
@@ -1227,6 +1228,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         else if ( strcmp(method,"connect") == 0 )
         {
             LP_bob_competition(&counter,aliceid,qprice,1000);
+            printf("CONNECT.(%s)\n",jprint(argjson,0));
             if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                 LP_instantdex_proofcheck(Q.coinaddr,proof,num);
             if ( Qtrades == 0 )

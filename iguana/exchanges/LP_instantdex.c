@@ -297,7 +297,7 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
 void LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
 {
     uint8_t rmd160[20],addrtype; int32_t i; char othersmartaddr[64]; struct iguana_info *coin; struct LP_address *ap = 0;
-    if ( (coin= LP_coinfind("KMD")) != 0 && coin->electrum != 0 )
+    if ( (coin= LP_coinfind("KMD")) != 0 )
     {
         bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
         bitcoin_address(othersmartaddr,0,60,rmd160,20);
@@ -308,7 +308,7 @@ void LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
                 LP_instantdex_creditcalc(coin,1,jbits256i(proof,i),othersmartaddr);
             ap->didinstantdex = 1;
             printf("validated instantdex %s.[%d] proof.(%s)\n",othersmartaddr,num,jprint(proof,0));
-        }
+        } else printf("cant find ap.%p or already did %d %.8f\n",ap,ap!=0?ap->didinstantdex:-1,ap!=0?dstr(ap->instantdex_credits):-1);
     }
 }
 
