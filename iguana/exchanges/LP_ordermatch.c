@@ -683,58 +683,6 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
     }
 }
 
-int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag)
-{
-    int32_t i,v,numconfs,height,n=0; uint64_t value; bits256 txid; char buf[512]; cJSON *array,*item; uint32_t now; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin != 0 )//&& (IAMLP != 0 || coin->inactive == 0) )
-    {
-        if ( coin->electrum != 0 || LP_address_ismine(symbol,coinaddr) <= 0 )
-        {
-            //printf("issue path electrum.%p\n",coin->electrum);
-            //if ( coin->electrum != 0 && (array= electrum_address_gethistory(symbol,coin->electrum,&array,coinaddr)) != 0 )
-            //    free_json(array);
-            n = LP_listunspent_issue(symbol,coinaddr,fullflag);
-        }
-        else
-        {
-            if ( strcmp(symbol,"BTC") == 0 )
-                numconfs = 0;
-            else numconfs = 1;
-            //printf("my coin electrum.%p\n",coin->electrum);
-            sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
-            if ( (array= bitcoin_json(coin,"listunspent",buf)) != 0 )
-            {
-                if ( (n= cJSON_GetArraySize(array)) > 0 )
-                {
-                    now = (uint32_t)time(NULL);
-                    for (i=0; i<n; i++)
-                    {
-                        item = jitem(array,i);
-                        txid = jbits256(item,"txid");
-                        v = jint(item,"vout");
-                        value = LP_value_extract(item,0);
-                        height = LP_txheight(coin,txid);
-                        //char str[65]; printf("LP_listunspent_both: %s/v%d ht.%d %.8f\n",bits256_str(str,txid),v,height,dstr(value));
-                        LP_address_utxoadd(now,"LP_listunspent_both",coin,coinaddr,txid,v,value,height,-1);
-                    }
-                }
-                free_json(array);
-            }
-        }
-    } //else printf("%s coin.%p inactive.%d\n",symbol,coin,coin!=0?coin->inactive:-1);
-    return(n);
-}
-
-/*char *LP_bestfit(char *rel,double relvolume)
-{
-    struct LP_utxoinfo *autxo;
-    if ( relvolume <= 0. || LP_priceinfofind(rel) == 0 )
-        return(clonestr("{\"error\":\"invalid parameter\"}"));
-    if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * relvolume)) == 0 )
-        return(clonestr("{\"error\":\"cant find utxo that is close enough in size\"}"));
-    return(jprint(LP_utxojson(autxo),1));
-}*/
-
 int32_t LP_aliceonly(char *symbol)
 {
     if ( strcmp(symbol,"GAME") == 0 )

@@ -338,7 +338,7 @@ char *LP_pubkey_trusted()
 int64_t LP_unspents_metric(struct iguana_info *coin,char *coinaddr)
 {
     cJSON *array,*item; int32_t i,n; int64_t metric=0,total;
-    LP_listunspent_both(coin->symbol,coinaddr,0);
+    //LP_listunspent_both(coin->symbol,coinaddr,0);
     if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
     {
         total = 0;
