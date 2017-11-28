@@ -419,7 +419,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-//printf("%s %s",symbol,stratumreq);
+printf("%s %s",symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = electrum_sitem(ep,stratumreq,timeout,retjsonp);
             portable_mutex_lock(&ep->mutex); // this helps performance!
@@ -683,7 +683,7 @@ cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *seria
 cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid)
 {
     char *hexstr,str[65]; int32_t len; cJSON *hexjson,*txobj=0; struct iguana_info *coin; uint8_t *serialized; struct LP_transaction *tx;
-    //printf("electrum_transaction %s %s\n",symbol,bits256_str(str,txid));
+printf("_electrum_transaction %s %s\n",symbol,bits256_str(str,txid));
     if ( bits256_nonz(txid) != 0 && (coin= LP_coinfind(symbol)) != 0 )
     {
         if ( (tx= LP_transactionfind(coin,txid)) != 0 && tx->serialized != 0 )
@@ -731,7 +731,7 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
             //printf("DATA.(%s) from (%s)\n",hexstr+1,jprint(hexjson,0));
             *retjsonp = LP_cache_transaction(coin,txid,serialized,len); // eats serialized
             free_json(hexjson);
-            //printf("return from electrum_transaction\n");
+printf("return from LP_cache_transaction\n");
             return(*retjsonp);
         } //else printf("%s %s non-hex tx.(%s)\n",coin->symbol,bits256_str(str,txid),jprint(hexjson,0));
         free(hexstr);
@@ -744,6 +744,7 @@ cJSON *_electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjs
 cJSON *electrum_transaction(char *symbol,struct electrum_info *ep,cJSON **retjsonp,bits256 txid,char *SPVcheck)
 {
     cJSON *retjson,*array; struct LP_transaction *tx; struct iguana_info *coin;
+    char str[65]; printf("electrum_transaction %s\n",bits256_str(str,txid));
     coin = LP_coinfind(symbol);
     if ( ep != 0 )
         portable_mutex_lock(&ep->txmutex);
@@ -897,7 +898,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     ep->lasttime = (uint32_t)time(NULL);
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
-        //printf("%s RECV.(%ld) id.%d\n",ep->symbol,strlen(str),jint(strjson,"id"));
+printf("%s RECV.(%ld) id.%d\n",ep->symbol,strlen(str),jint(strjson,"id"));
         resultjson = jobj(strjson,"result");
         //printf("strjson.(%s)\n",jprint(strjson,0));
         if ( (method= jstr(strjson,"method")) != 0 )

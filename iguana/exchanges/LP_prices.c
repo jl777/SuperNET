@@ -850,7 +850,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         if ( i == 0 )
         {
             LP_priceinfoupdate(rel,base,1. / bids[i]->price);
-            printf("update %s/%s %.8f [%.8f]\n",rel,base,1./bids[i]->price,bids[i]->price);
+            //printf("update %s/%s %.8f [%.8f]\n",rel,base,1./bids[i]->price,bids[i]->price);
         }
         free(bids[i]);
         bids[i] = 0;
@@ -881,7 +881,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
         if ( i == 0 )
         {
             LP_priceinfoupdate(base,rel,asks[i]->price);
-            printf("update %s/%s %.8f [%.8f]\n",base,rel,asks[i]->price,1./asks[i]->price);
+            //printf("update %s/%s %.8f [%.8f]\n",base,rel,asks[i]->price,1./asks[i]->price);
         }
         free(asks[i]);
         asks[i] = 0;
