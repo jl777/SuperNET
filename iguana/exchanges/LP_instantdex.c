@@ -307,7 +307,7 @@ void LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
             for (i=0; i<num; i++)
                 LP_instantdex_creditcalc(coin,1,jbits256i(proof,i),othersmartaddr);
             ap->didinstantdex = 1;
-            if ( ap->instantdex_credits > 0 )
+            //if ( ap->instantdex_credits > 0 )
                 printf("validated instantdex %s.[%d] proof.(%s) credits %.8f\n",othersmartaddr,num,jprint(proof,0),dstr(ap->instantdex_credits));
         } else printf("cant find ap.%p or already did %d %.8f\n",ap,ap!=0?ap->didinstantdex:-1,ap!=0?dstr(ap->instantdex_credits):-1);
     }
