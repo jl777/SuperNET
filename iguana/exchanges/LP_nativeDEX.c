@@ -649,7 +649,7 @@ void LP_coinsloop(void *_coins)
 
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport)
 {
-    static uint32_t counter,didinstantdex;
+    static uint32_t counter;//,didinstantdex;
     struct iguana_info *coin,*ctmp; char *origipaddr; uint32_t now; int32_t height,nonz = 0;
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
