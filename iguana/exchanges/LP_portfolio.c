@@ -48,9 +48,10 @@ cJSON *LP_portfolio_entry(struct iguana_info *coin)
 
 uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
 {
-    cJSON *array,*item; int32_t i,n; uint64_t valuesum,satoshisum,value;
+    cJSON *array,*item; bits256 zero; int32_t i,n; uint64_t valuesum,satoshisum,value;
     valuesum = satoshisum = 0;
-    if ( (array= LP_listunspent(symbol,coinaddr)) != 0 )
+    memset(zero.bytes,0,sizeof(zero));
+    if ( (array= LP_listunspent(symbol,coinaddr,zero,zero)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {

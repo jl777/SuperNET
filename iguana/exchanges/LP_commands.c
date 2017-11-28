@@ -450,7 +450,8 @@ zeroconf_claim(address, expiration=0)\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-                    char *coinaddr;
+                    char *coinaddr; bits256 zero;
+                    memset(zero.bytes,0,sizeof(zero));
                     if ( (coinaddr= jstr(argjson,"address")) != 0 )
                     {
                         if ( coinaddr[0] != 0 )
@@ -461,7 +462,7 @@ zeroconf_claim(address, expiration=0)\n\
                                 //LP_listunspent_issue(coin,coinaddr,2);
                                 //LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                             }
-                            return(jprint(LP_listunspent(coin,coinaddr),1));
+                            return(jprint(LP_listunspent(coin,coinaddr,zero,zero),1));
                         }
                     }
                     return(clonestr("{\"error\":\"no address specified\"}"));

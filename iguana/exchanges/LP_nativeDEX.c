@@ -546,13 +546,13 @@ void LP_coinsloop(void *_coins)
                 }
                 if ( (backupep= ep->prev) == 0 )
                     backupep = ep;
-                if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,1)) != 0 )
+                if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,1,zero,zero)) != 0 )
                     free_json(retjson);
                 HASH_ITER(hh,coin->addresses,ap,atmp)
                 {
                     break;
                     //printf("call unspent %s\n",ap->coinaddr);
-                    if ( strcmp(coin->smartaddr,ap->coinaddr) != 0 && (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1)) != 0 )
+                    if ( strcmp(coin->smartaddr,ap->coinaddr) != 0 && (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1,zero,zero)) != 0 )
                         free_json(retjson);
                 }
                 if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
@@ -594,7 +594,7 @@ void LP_coinsloop(void *_coins)
                     if ( time(NULL) > ep->keepalive+LP_ELECTRUM_KEEPALIVE )
                     {
                         //printf("%s electrum.%p needs a keepalive: lag.%d\n",ep->symbol,ep,(int32_t)(time(NULL) - ep->keepalive));
-                        if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,1)) != 0 )
+                        if ( (retjson= electrum_banner(coin->symbol,ep,&retjson)) != 0 )
                             free_json(retjson);
                     }
                     ep = ep->prev;

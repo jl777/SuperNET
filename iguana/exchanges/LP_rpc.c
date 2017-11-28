@@ -388,7 +388,7 @@ uint64_t LP_RTsmartbalance(struct iguana_info *coin)
     return(valuesum);
 }
 
-cJSON *LP_getmempool(char *symbol,char *coinaddr)
+cJSON *LP_getmempool(char *symbol,char *coinaddr,bits256 txid,bits256 txid2)
 {
     cJSON *array; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
@@ -398,7 +398,7 @@ cJSON *LP_getmempool(char *symbol,char *coinaddr)
         return(cJSON_Parse("{\"error\":\"no native coin\"}"));
     if ( coin->electrum == 0 )
         return(bitcoin_json(coin,"getrawmempool","[]"));
-    else return(electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr));
+    else return(electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr,txid,txid2));
 }
 
 cJSON *LP_paxprice(char *fiat)
@@ -486,7 +486,7 @@ cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,
 
 cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
 {
-    char buf[128],str[65]; cJSON *item,*array,*vouts,*txobj,*retjson=0; int32_t i,v,n; bits256 t; struct iguana_info *coin; struct LP_transaction *tx; struct LP_address_utxo *up;
+    char buf[128],str[65]; cJSON *item,*array,*vouts,*txobj,*retjson=0; int32_t i,v,n; bits256 t,zero; struct iguana_info *coin; struct LP_transaction *tx; struct LP_address_utxo *up;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     if ( (coin= LP_coinfind(symbol)) == 0 )
@@ -523,7 +523,8 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
                     return(0);
                 //return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
             }
-            if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr,1)) != 0 )
+            memset(zero.bytes,0,sizeof(zero));
+            if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr,1,txid,zero)) != 0 )
             {
                 //printf("array.(%s)\n",jprint(array,0));
                 if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
@@ -652,7 +653,7 @@ int32_t LP_address_isvalid(char *symbol,char *address)
     return(isvalid);
 }
 
-cJSON *LP_listunspent(char *symbol,char *coinaddr)
+cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxid2)
 {
     char buf[128],*retstr; struct LP_address *ap; cJSON *retjson; int32_t numconfs,usecache=1; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
@@ -690,17 +691,18 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr)
                 ap->unspenttime = (uint32_t)time(NULL);
             return(retjson);
         } else return(LP_address_utxos(coin,coinaddr,0));
-    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
+    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1,reftxid,reftxid2));
 }
 
 cJSON *LP_listreceivedbyaddress(char *symbol,char *coinaddr)
 {
-    char buf[128],*addr; cJSON *retjson,*array,*item; int32_t i,n; struct iguana_info *coin;
+    char buf[128],*addr; bits256 zero; cJSON *retjson,*array,*item; int32_t i,n; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
     if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
+    memset(zero.bytes,0,sizeof(zero));
     if ( coin->electrum == 0 )
     {
         sprintf(buf,"[1, false, true]");
@@ -721,7 +723,7 @@ cJSON *LP_listreceivedbyaddress(char *symbol,char *coinaddr)
             }
         }
         return(cJSON_Parse("[]"));
-    } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr));
+    } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
 }
 
 int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t *voutp,int32_t *heightp,cJSON *item)
@@ -744,7 +746,7 @@ int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t
     return(satoshis);
 }
 
-int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
+int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag,bits256 reftxid,bits256 reftxid2)
 {
     struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0;
     if ( symbol == 0 || symbol[0] == 0 )
@@ -753,7 +755,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
     {
         if ( coin->electrum != 0 )
         {
-            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,fullflag)) != 0 )
+            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,fullflag,reftxid,reftxid2)) != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
                 //printf("LP_listunspent_issue.%s %s.%d %s\n",symbol,coinaddr,n,jprint(retjson,0));
@@ -761,12 +763,12 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
         }
         else
         {
-            retjson = LP_listunspent(symbol,coinaddr);
+            retjson = LP_listunspent(symbol,coinaddr,reftxid,reftxid2);
             coin->numutxos = cJSON_GetArraySize(retjson);
             if ( retjson != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
-                if ( electrum_process_array(coin,0,coinaddr,retjson,1) != 0 )
+                if ( electrum_process_array(coin,0,coinaddr,retjson,1,reftxid,reftxid2) != 0 )
                 {
                     //LP_postutxos(symbol,coinaddr); // might be good to not saturate
                 }

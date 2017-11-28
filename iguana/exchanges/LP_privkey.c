@@ -21,7 +21,7 @@
 int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 myprivkey,bits256 mypub)
 {
     int32_t enable_utxos = 0;
-    char *script,destaddr[64]; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,flag=0,height,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,biggerval,value,total = 0; int64_t targetval; //struct LP_utxoinfo *utxo;
+    char *script,destaddr[64]; cJSON *array,*item; bits256 txid,deposittxid,zero; int32_t used,i,flag=0,height,n,cmpflag,iambob,vout,depositvout; uint64_t *values=0,satoshis,txfee,biggerval,value,total = 0; int64_t targetval; //struct LP_utxoinfo *utxo;
     if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
     {
         //printf("coin not active\n");
@@ -33,7 +33,8 @@ int32_t LP_privkey_init(int32_t mypubsock,struct iguana_info *coin,bits256 mypri
     LP_address(coin,coin->smartaddr);
     //if ( coin->inactive == 0 )
     //    LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
-    array = LP_listunspent(coin->symbol,coin->smartaddr);
+    memset(zero.bytes,0,sizeof(zero));
+    array = LP_listunspent(coin->symbol,coin->smartaddr,zero,zero);
     if ( array != 0 )
     {
         txfee = LP_txfeecalc(coin,0,0);
@@ -204,7 +205,7 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     //static uint32_t counter;
-    bits256 privkey,userpub,userpass,checkkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype;
+    bits256 privkey,userpub,zero,userpass,checkkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype;
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
         conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
@@ -252,7 +253,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     }
     if ( coin->importedprivkey == 0 && coin->electrum == 0 && coin->userpass[0] != 0 && LP_getheight(coin) > 0 )
     {
-        LP_listunspent_issue(coin->symbol,coin->smartaddr,0);
+        memset(zero.bytes,0,sizeof(zero));
+        LP_listunspent_issue(coin->symbol,coin->smartaddr,0,zero,zero);
         if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coin->smartaddr,-1)) != 0 )
         {
             if ( jobj(retjson,"error") != 0 )

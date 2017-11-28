@@ -413,11 +413,12 @@ void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid)
 void LP_tradebots_timeslice(void *ctx)
 {
     static uint32_t lastnumfinished = 0;
-    struct iguana_info *relcoin; struct LP_tradebot *bot,*tmp;
+    struct iguana_info *relcoin; bits256 zero; struct LP_tradebot *bot,*tmp;
     DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
     {
+        memset(zero.bytes,0,sizeof(zero));
         if ( (relcoin= LP_coinfind(bot->rel)) != 0 )
-            LP_listunspent_issue(bot->rel,relcoin->smartaddr,1);
+            LP_listunspent_issue(bot->rel,relcoin->smartaddr,1,zero,zero);
         if ( bot->relsum >= 0.99*bot->totalrelvolume-SMALLVAL || bot->basesum >= 0.99*bot->totalbasevolume-SMALLVAL )
             bot->dead = (uint32_t)time(NULL);
         else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )

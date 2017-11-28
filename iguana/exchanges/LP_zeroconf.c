@@ -125,7 +125,7 @@ char *LP_zeroconf_deposit(struct iguana_info *coin,int32_t weeks,double amount,i
 char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expiration)
 {
     static void *ctx;
-    uint8_t redeemscript[512],userdata[64]; char vinaddr[64],str[65],*signedtx=0; uint32_t timestamp,now,redeemlen,claimtime; int32_t i,n,height,utxovout,userdatalen; bits256 signedtxid,utxotxid,sendtxid; int64_t sum,destamount,satoshis; cJSON *array,*item,*txids,*retjson;
+    uint8_t redeemscript[512],userdata[64]; char vinaddr[64],str[65],*signedtx=0; uint32_t timestamp,now,redeemlen,claimtime; int32_t i,n,height,utxovout,userdatalen; bits256 signedtxid,utxotxid,sendtxid,zero; int64_t sum,destamount,satoshis; cJSON *array,*item,*txids,*retjson;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( strcmp(coin->symbol,"KMD") != 0 )
@@ -150,7 +150,8 @@ char *LP_zeroconf_claim(struct iguana_info *coin,char *depositaddr,uint32_t expi
             else
             {
                 printf("found %s at timestamp.%u\n",vinaddr,timestamp);
-                if ( (array= LP_listunspent(coin->symbol,vinaddr)) != 0 )
+                memset(zero.bytes,0,sizeof(zero));
+                if ( (array= LP_listunspent(coin->symbol,vinaddr,zero,zero)) != 0 )
                 {
                     userdata[0] = 0x51;
                     userdatalen = 1;

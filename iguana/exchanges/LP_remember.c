@@ -259,7 +259,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
     if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
     {
         //printf("spentaddr.%s aliceaddr.%s bobaddr.%s Adest.%s Bdest.%s\n",spentaddr,aliceaddr,bobaddr,Adest,dest);
-        if ( (array= electrum_address_gethistory(symbol,coin->electrum,&array,spentaddr)) != 0 )
+        if ( (array= electrum_address_gethistory(symbol,coin->electrum,&array,spentaddr,txids[utxoind])) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {

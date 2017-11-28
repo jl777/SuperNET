@@ -45,8 +45,8 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
         tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
-        tx->serialized = serialized, tx->len = 0;
-        //free(serialized), tx->len = 0;
+        tx->serialized = serialized, tx->len = len;
+        // free(serialized), tx->len = 0;
         tx->fpos = fpos;
         tx->SPV = tx->height = height;
         //printf("tx.%s numvins.%d numvouts.%d\n",bits256_str(str,txid),numvins,numvouts);
@@ -261,7 +261,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
                     if ( tx != 0 )
                     {
                         tx->SPV = height;
-                        if ( 0 && tx->serialized != 0 )
+                        if ( strcmp(coinaddr,coin->smartaddr) != 0 && tx->serialized != 0 )
                         {
                             free(tx->serialized);
                             tx->serialized = 0;
@@ -313,7 +313,7 @@ void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedfla
 
 uint64_t LP_unspents_load(char *symbol,char *addr)
 {
-    char *arraystr; uint64_t balance = 0; int32_t i,n; cJSON *retjson,*item; struct iguana_info *coin;
+    char *arraystr; uint64_t balance = 0; int32_t i,n; bits256 zero; cJSON *retjson,*item; struct iguana_info *coin;
     if ( (coin= LP_coinfind(symbol)) != 0 )
     {
         if ( (arraystr= LP_unspents_filestr(symbol,addr)) != 0 )
@@ -329,7 +329,8 @@ uint64_t LP_unspents_load(char *symbol,char *addr)
                         balance += j64bits(item,"value");
                     }
                 }
-                electrum_process_array(coin,coin->electrum,addr,retjson,1);
+                memset(zero.bytes,0,sizeof(zero));
+                electrum_process_array(coin,coin->electrum,addr,retjson,1,zero,zero);
                 free_json(retjson);
             }
             free(arraystr);
