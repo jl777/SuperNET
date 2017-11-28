@@ -804,7 +804,7 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
         }
         else if ( mempool != 0 && LP_mempoolscan(symbol,txid) >= 0 )
             numconfirms = 0;
-        else if ( (txobj= LP_gettx(symbol,txid,0)) != 0 )
+        else if ( (txobj= LP_gettx(symbol,txid,1)) != 0 )
         {
             numconfirms = jint(txobj,"confirmations");
             free_json(txobj);
