@@ -301,7 +301,7 @@ void LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
     {
         bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
         bitcoin_address(othersmartaddr,0,60,rmd160,20);
-        if ((ap= LP_address(coin,othersmartaddr)) != 0 && ap->didinstantdex == 0 )
+        if ((ap= LP_address(coin,othersmartaddr)) != 0 && (coin->electrum == 0 || ap->didinstantdex == 0) )
         {
             ap->instantdex_credits = 0;
             for (i=0; i<num; i++)
