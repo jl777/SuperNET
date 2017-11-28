@@ -307,11 +307,12 @@ void LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
             for (i=0; i<num; i++)
                 LP_instantdex_creditcalc(coin,1,jbits256i(proof,i),othersmartaddr);
             ap->didinstantdex = 1;
-            printf("validated instantdex %s.[%d] proof.(%s)\n",othersmartaddr,num,jprint(proof,0));
+            printf("validated instantdex %s.[%d] proof.(%s) credits %.8f\n",othersmartaddr,num,jprint(proof,0),dstr(ap->instantdex_credits));
         } else printf("cant find ap.%p or already did %d %.8f\n",ap,ap!=0?ap->didinstantdex:-1,ap!=0?dstr(ap->instantdex_credits):-1);
     }
 }
 
+#ifdef bruteforce
 void LP_instantdex_deposits(struct iguana_info *coin)
 {
     static int dispflag = 1;
@@ -341,6 +342,7 @@ void LP_instantdex_deposits(struct iguana_info *coin)
     }
     dispflag = 0;
 }
+#endif
 
 int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
 {
@@ -360,7 +362,7 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
                 if ( (sp= ptr->swap) != 0 && sp->finished == 0 && sp->expired == 0 )
                     swaps_kmdvalue += LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis);
             }
-            //printf("%s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->instantdex_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+            printf("%s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->instantdex_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
             //if ( ap->instantdex_credits > swaps_kmdvalue+kmdvalue )
                 return(ap->instantdex_credits - (swaps_kmdvalue+kmdvalue));
         }
