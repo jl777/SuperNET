@@ -456,7 +456,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
 
 int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double price,struct LP_quoteinfo *qp)
 {
-    char pairstr[512]; cJSON *retjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
+    char pairstr[512]; cJSON *reqjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
     qp->quotetime = (uint32_t)time(NULL);
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
     {
@@ -484,17 +484,18 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
             //swap->utxo = utxo;
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_bobloop,(void *)swap) == 0 )
             {
-                retjson = LP_quotejson(qp);
-                jaddstr(retjson,"method","connected");
-                jaddstr(retjson,"pair",pairstr);
+                reqjson = LP_quotejson(qp);
+                jaddstr(reqjson,"method","connected");
+                jaddstr(reqjson,"pair",pairstr);
+                jadd(reqjson,"proof",LP_instantdex_txidaddjson());
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
-                LP_reserved_msg(1,base,rel,zero,jprint(retjson,0));
+                LP_reserved_msg(1,base,rel,zero,jprint(reqjson,0));
                 //sleep(1);
-                //LP_reserved_msg(1,base,rel,qp->desthash,jprint(retjson,0));
-                //LP_reserved_msg(0,base,rel,zero,jprint(retjson,0));
-                free_json(retjson);
+                //LP_reserved_msg(1,base,rel,qp->desthash,jprint(reqjson,0));
+                //LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
+                free_json(reqjson);
                 retval = 0;
             } else printf("error launching swaploop\n");
         } else printf("couldnt bind to any port %s\n",pairstr);
@@ -887,7 +888,6 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     if ( LP_allocated(qp->txid,qp->vout) == 0 && LP_allocated(qp->txid2,qp->vout2) == 0 )
     {
         reqjson = LP_quotejson(qp);
-        jadd(reqjson,"proof",LP_instantdex_txidaddjson());
         LP_unavailableset(qp->txid,qp->vout,qp->timestamp + LP_RESERVETIME,qp->desthash);
         LP_unavailableset(qp->txid2,qp->vout2,qp->timestamp + LP_RESERVETIME,qp->desthash);
         if ( qp->quotetime == 0 )

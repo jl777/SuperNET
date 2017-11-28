@@ -41,7 +41,7 @@ void LP_instantdex_txidadd(bits256 txid)
     cJSON *array; int32_t i,n; char fname[1024],*filestr; FILE *fp;
     if ( (array= LP_instantdex_txidaddjson()) == 0 )
         array = cJSON_CreateArray();
-    if ( (n= cJSON_GetArraySize(array)) > 0 )
+    if ( (n= cJSON_GetArraySize(array)) >= 0 )
     {
         for (i=0; i<n; i++)
             if ( bits256_cmp(jbits256i(array,i),txid) == 0 )
@@ -240,7 +240,7 @@ char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t ex
     return(clonestr("{\"error\":\"no instantdex deposits to claim\"}"));
 }
 
-int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,int32_t weeki,char *p2shaddr)
+int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,int32_t weeki,char *p2shaddr,bits256 txid)
 {
     uint32_t timestamp; struct LP_address *ap; struct iguana_info *coin = LP_coinfind("KMD");
     if ( coin != 0 )
@@ -250,6 +250,8 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
         {
             ap->instantdex_credits += satoshis;
             ap->didinstantdex = 1;
+            if ( strcmp(coinaddr,coin->smartaddr) == 0 )
+                LP_instantdex_txidadd(txid);
             if ( dispflag != 0 )
                 printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->instantdex_credits));
             return(satoshis);
@@ -282,10 +284,7 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
                     if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )
                     {
                         free_json(txobj);
-                        if ( LP_instantdex_credit(dispflag,destaddr,satoshis,weeki,p2shaddr) > 0 && strcmp(coin->symbol,"KMD") == 0 && strcmp(destaddr,coin->smartaddr) == 0 )
-                        {
-                            LP_instantdex_txidadd(txid);
-                        }
+                        LP_instantdex_credit(dispflag,destaddr,satoshis,weeki,p2shaddr,txid);
                     }
                 }
             }
