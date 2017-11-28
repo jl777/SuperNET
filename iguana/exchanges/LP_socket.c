@@ -1071,7 +1071,7 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
             jadd(retjson,"electrums",array);
         }
         //printf("would have disabled %s electrum here\n",coin->symbol);
-        return(cJSON_Parse("{\"result\":\"success\",\"status\":\"electrum mode disabled, now in disabled native coin mode\"}"));
+        return(retjson);
     }
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"ipaddr",ipaddr);
