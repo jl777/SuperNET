@@ -1284,8 +1284,12 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
             timeout = 1.5*LP_AUTOTRADE_TIMEOUT;
     }
     if ( time(NULL) < Alice_expiration )
-        return(clonestr("{\"error\":\"only one pending request at a time\"}"));
-    else LP_alicequery_clear();
+    {
+        cJSON *retjson = cJSON_CreateObject();
+        jaddstr(retjson,"error","only one pending request at a time");
+        jaddnum(retjson,"wait",Alice_expiration-time(NULL));
+        return(jprint(retjson,1));
+    } else LP_alicequery_clear();
     if ( maxprice <= 0. || relvolume <= 0. || LP_priceinfofind(base) == 0 || LP_priceinfofind(rel) == 0 )
         return(clonestr("{\"error\":\"invalid parameter\"}"));
     if ( strcmp("BTC",rel) == 0 )
