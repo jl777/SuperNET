@@ -254,7 +254,11 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
             }
         }
         if ( flag == 0 )
-            printf("unexpected.%d tradestatus aliceid.%llu requestid.%u quoteid.%u\n",unexpected++,(long long)aliceid,requestid,quoteid);//,jprint(lineobj,0));
+        {
+            static uint32_t counter;
+            if ( counter++ < 3 )
+                printf("unexpected.%d tradestatus aliceid.%llu requestid.%u quoteid.%u\n",unexpected++,(long long)aliceid,requestid,quoteid);//,jprint(lineobj,0));
+        }
         return(0);
     }
     if ( LP_quoteparse(&Q,lineobj) < 0 )
