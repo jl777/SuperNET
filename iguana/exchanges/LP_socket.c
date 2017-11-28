@@ -1045,13 +1045,33 @@ void LP_dedicatedloop(void *arg)
 
 cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
 {
-    struct electrum_info *ep; int32_t kickval,already; cJSON *retjson;
+    struct electrum_info *ep,*prev; int32_t kickval,already; cJSON *retjson,*array,*item;
     if ( ipaddr == 0 || ipaddr[0] == 0 || port == 0 )
     {
+        ep = coin->electrum;
         coin->electrum = 0;
         coin->inactive = (uint32_t)time(NULL);
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","success");
+        jaddstr(retjson,"status","electrum mode disabled, now in disabled native coin mode");
+        if ( ep != 0 )
+        {
+            array = cJSON_CreateArray();
+            while ( ep != 0 )
+            {
+                item = cJSON_CreateObject();
+                jaddstr(item,"ipaddr",ep->ipaddr);
+                jaddnum(item,"port",ep->port);
+                jaddnum(item,"kickstart",electrum_kickstart(ep));
+                jaddi(array,item);
+                prev = ep->prev;
+                ep->prev = 0;
+                ep = prev;
+            }
+            jadd(retjson,"electrums",array);
+        }
         //printf("would have disabled %s electrum here\n",coin->symbol);
-        return(cJSON_Parse("{\"result\":\"success\",\"status\":\"electrum mode disabled, now in native coin mode\"}"));
+        return(cJSON_Parse("{\"result\":\"success\",\"status\":\"electrum mode disabled, now in disabled native coin mode\"}"));
     }
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"ipaddr",ipaddr);

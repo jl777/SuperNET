@@ -201,9 +201,9 @@ void LP_zeroconf_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,int32_t
         timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
         if (  time(NULL) < timestamp-60*3600 && (ap= LP_address(coin,coinaddr)) != 0 )
         {
-            ap->zeroconf_credits += satoshis;
+            ap->instantdex_credits += satoshis;
             if ( dispflag != 0 )
-                printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->zeroconf_credits));
+                printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->instantdex_credits));
         }
     }
 }
@@ -238,12 +238,12 @@ int64_t LP_zeroconf_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256
 void LP_zeroconf_deposits(struct iguana_info *coin)
 {
     static int dispflag = 1;
-    cJSON *array,*item; int32_t i,n,height,vout; bits256 txid; struct LP_address *ap,*tmp; 
-    if ( coin->electrum != 0 && coin->electrumzeroconf != 0 )
+    cJSON *array,*item; int32_t i,n,height,vout; bits256 txid; struct LP_address *ap,*tmp;
+    if ( coin->electrum != 0 )//&& coin->electrumzeroconf != 0 )
         return;
     HASH_ITER(hh,coin->addresses,ap,tmp)
     {
-        ap->zeroconf_credits = 0;
+        ap->instantdex_credits = 0;
     }
     if ( (array= LP_listreceivedbyaddress("KMD",BOTS_BONDADDRESS)) != 0 )
     {
@@ -271,7 +271,7 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
     if ( (coin= LP_coinfind("KMD")) != 0 && (pubp= LP_pubkeyfind(pubkey)) != 0 )
     {
         bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->pubsecp,33);
-        if ((ap= LP_address(coin,coinaddr)) != 0 )//&& ap->zeroconf_credits >= kmdvalue )
+        if ((ap= LP_address(coin,coinaddr)) != 0 )//&& ap->instantdex_credits >= kmdvalue )
         {
             DL_FOREACH_SAFE(pubp->bobswaps,ptr,tmp)
             {
@@ -285,7 +285,7 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
             }
             //printf("%s zeroconf_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->zeroconf_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
             //if ( ap->zeroconf_credits > swaps_kmdvalue+kmdvalue )
-                return(ap->zeroconf_credits - (swaps_kmdvalue+kmdvalue));
+                return(ap->instantdex_credits - (swaps_kmdvalue+kmdvalue));
         }
     }
     return(0);

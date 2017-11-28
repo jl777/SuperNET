@@ -539,11 +539,11 @@ void LP_coinsloop(void *_coins)
                 coin->longestchain = LP_getheight(coin);
             if ( (ep= coin->electrum) != 0 )
             {
-                if ( strcmp("KMD",coin->symbol) == 0 && coin->electrumzeroconf == 0 )
+                /*if ( strcmp("KMD",coin->symbol) == 0 && coin->electrumzeroconf == 0 )
                 {
                     LP_zeroconf_deposits(coin);
                     coin->electrumzeroconf = (uint32_t)time(NULL);
-                }
+                }*/
                 if ( (backupep= ep->prev) == 0 )
                     backupep = ep;
                 if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,1,zero,zero)) != 0 )

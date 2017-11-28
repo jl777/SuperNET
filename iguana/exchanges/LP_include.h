@@ -328,7 +328,7 @@ struct LP_address
     UT_hash_handle hh;
     struct LP_address_utxo *utxos;
     bits256 pubkey;
-    int64_t balance,total,zeroconf_credits;
+    int64_t balance,total,instantdex_credits;
     uint32_t timestamp,n,unspenttime;
     int32_t unspentheight;
     char coinaddr[40];
@@ -404,7 +404,7 @@ struct LP_pubkey_info
     bits256 pubkey;
     struct LP_pubkey_quote *quotes;
     struct LP_pubswap *bobswaps,*aliceswaps;
-    uint64_t dynamictrust;
+    int64_t dynamictrust,unconfdeposits;
     uint32_t timestamp,numerrors,lasttime,slowresponse;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
