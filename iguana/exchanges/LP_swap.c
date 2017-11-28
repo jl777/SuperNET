@@ -250,7 +250,7 @@ int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
             if ( swap->I.otheristrusted != 0 )
             {
                 swap->I.aliceconfirms = swap->I.bobconfirms = 0;
-                printf("Otherside trusts us, adjust required confirms to: alice.%d bob.%d\n",swap->I.aliceconfirms,swap->I.bobconfirms);
+                printf("mutually trusted swap, adjust required confirms to: alice.%d bob.%d\n",swap->I.aliceconfirms,swap->I.bobconfirms);
             }
         }
         printf("NUMCONFIRMS for SWAP alice.%d bob.%d, otheristrusted.%d othertrusts.%d\n",swap->I.aliceconfirms,swap->I.bobconfirms,swap->I.otheristrusted,swap->I.otherstrust);
