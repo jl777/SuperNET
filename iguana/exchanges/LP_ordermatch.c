@@ -712,12 +712,14 @@ int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         }
         if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) != 0 )
         {
+            if ( up->SPV > 0 )
+                return(0);
             if ( up->SPV < 0 )
                 return(-1);
             if ( (backupep= ep->prev) == 0 )
                 backupep = ep;
             up->SPV = LP_merkleproof(coin,coinaddr,backupep,up->U.txid,up->U.height);
-            if ( up->SPV <= 0 )
+            if ( up->SPV < 0 )
                 return(-1);
         }
     }
