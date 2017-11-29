@@ -3324,7 +3324,10 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     {
         bits256 prevouthash,seqhash,outputhash;
         for (i=len=0; i<dest.tx_in; i++)
+        {
+            len += iguana_rwbignum(1,&serialized[len],sizeof(dest.vins[i].prev_hash),dest.vins[i].prev_hash.bytes);
             len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].prev_vout),&dest.vins[i].prev_vout);
+        }
         prevouthash = bits256_doublesha256(0,serialized,len);
         //for (i=0; i<sizeof(prevouthash); i++)
         //    prevouthash.bytes[31-i] = prevouthash.bytes[i];
