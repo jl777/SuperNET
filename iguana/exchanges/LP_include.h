@@ -21,9 +21,13 @@
 #ifndef LP_INCLUDE_H
 #define LP_INCLUDE_H
 
+#ifdef FROMGUI
+#define printf(...)
+#endif
+
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "16577"
+#define LP_BUILD_NUMBER "17577"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
