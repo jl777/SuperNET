@@ -294,25 +294,6 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
     return(satoshis);
 }
 
-void LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
-{
-    uint8_t rmd160[20],addrtype; int32_t i; char othersmartaddr[64]; struct iguana_info *coin; struct LP_address *ap = 0;
-    if ( (coin= LP_coinfind("KMD")) != 0 )
-    {
-        bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
-        bitcoin_address(othersmartaddr,0,60,rmd160,20);
-        if ((ap= LP_address(coin,othersmartaddr)) != 0 && (coin->electrum == 0 || ap->didinstantdex == 0) )
-        {
-            ap->instantdex_credits = 0;
-            for (i=0; i<num; i++)
-                LP_instantdex_creditcalc(coin,1,jbits256i(proof,i),othersmartaddr);
-            ap->didinstantdex = 1;
-            //if ( ap->instantdex_credits > 0 )
-                printf("validated instantdex %s.[%d] proof.(%s) credits %.8f\n",othersmartaddr,num,jprint(proof,0),dstr(ap->instantdex_credits));
-        } else printf("cant find ap.%p or already did %d %.8f\n",ap,ap!=0?ap->didinstantdex:-1,ap!=0?dstr(ap->instantdex_credits):-1);
-    }
-}
-
 #ifdef bruteforce
 void LP_instantdex_deposits(struct iguana_info *coin)
 {
@@ -371,3 +352,22 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
     return(0);
 }
 
+int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
+{
+    uint8_t rmd160[20],addrtype; int32_t i; int64_t net = 0; char othersmartaddr[64]; struct iguana_info *coin; struct LP_address *ap = 0;
+    if ( (coin= LP_coinfind("KMD")) != 0 )
+    {
+        bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
+        bitcoin_address(othersmartaddr,0,60,rmd160,20);
+        if ((ap= LP_address(coin,othersmartaddr)) != 0 && (coin->electrum == 0 || ap->didinstantdex == 0) )
+        {
+            ap->instantdex_credits = 0;
+            for (i=0; i<num; i++)
+                LP_instantdex_creditcalc(coin,1,jbits256i(proof,i),othersmartaddr);
+            ap->didinstantdex = 1;
+            //if ( ap->instantdex_credits > 0 )
+            printf("validated instantdex %s.[%d] proof.(%s) credits %.8f net %.8f\n",othersmartaddr,num,jprint(proof,0),dstr(ap->instantdex_credits),dstr(net));
+        } else printf("cant find ap.%p or already did %d %.8f\n",ap,ap!=0?ap->didinstantdex:-1,ap!=0?dstr(ap->instantdex_credits):-1);
+    }
+    return(net);
+}

@@ -926,6 +926,23 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
     return(0);
 }
 
+int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout)
+{
+    int64_t amount=0; int32_t numvouts; char coinaddr[64]; cJSON *vouts,*txjson;
+    if ( (amount= LP_txvalue(coinaddr,symbol,txid,vout)) != 0 )
+        return(amount);
+    else
+    {
+        if ( (txjson= LP_gettx(symbol,txid,1)) != 0 )
+        {
+            if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && vout < numvouts )
+                amount = LP_value_extract(jitem(vouts,vout),0);
+            free_json(txjson);
+        }
+    }
+    return(amount);
+}
+
 int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol,bits256 txid,int32_t vout,uint64_t satoshis,bits256 txid2,int32_t vout2)
 {
     uint64_t val,val2=0,txfee,threshold=0; cJSON *txobj; int32_t bypass = 0; char destaddr[64],destaddr2[64]; struct iguana_info *coin = LP_coinfind(symbol);

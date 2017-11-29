@@ -408,7 +408,7 @@ zeroconf_claim(address, expiration=0)\n\
                     if ( ptr->userpass[0] == 0 )
                     {
                         cJSON *retjson = cJSON_CreateObject();
-                        jaddstr(retjson,"error","couldnt find coin locally installed");
+                        jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG0);
                         jaddstr(retjson,"coin",coin);
                         return(jprint(retjson,1));
                     }
@@ -535,7 +535,11 @@ zeroconf_claim(address, expiration=0)\n\
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             if ( LP_isdisabled(coin,0) != 0 )
-                return(clonestr("{\"error\":\"coin is disabled\"}"));
+            {
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG1);
+                return(jprint(retjson,1));
+            }
             if ( strcmp(method,"inventory") == 0 )
             {
                 struct iguana_info *ptr;

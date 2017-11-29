@@ -129,10 +129,18 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_CONNECT 2
 #define LP_CONNECTED 3
 
+#define LP_DONTCHANGE_ERRMSG0 "couldnt find coin locally installed"
+#define LP_DONTCHANGE_ERRMSG1 "coin is disabled"
+
 extern char GLOBAL_DBDIR[];
 extern int32_t IAMLP;
 
-struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; };
+struct iguana_msgvin
+{
+    bits256 prev_hash;
+    uint8_t *vinscript,*userdata,*spendscript,*redeemscript;
+    uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen;
+};
 
 struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_script; };
 
@@ -521,6 +529,7 @@ struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout);
 struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid,int32_t vout);
 int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue);
 struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr);
+int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout);
 
 void LP_listunspent_query(char *symbol,char *coinaddr);
 int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype);
