@@ -3358,7 +3358,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     revsigtxid = bits256_doublesha256(0,serialized,len);
     for (i=0; i<sizeof(revsigtxid); i++)
         sigtxid.bytes[31-i] = revsigtxid.bytes[i];
-    char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
+    //char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
     free(dest.vins);
     free(dest.vouts);
     return(sigtxid);
