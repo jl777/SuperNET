@@ -976,7 +976,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
 
 void LP_dedicatedloop(void *arg)
 {
-    struct pollfd fds; int32_t i,len,flag,timeout = 10; struct iguana_info *coin; struct stritem *sitem; struct electrum_info *ep = arg;
+    struct pollfd fds; int32_t i,len,n,flag,timeout = 10; struct iguana_info *coin; struct stritem *sitem; struct electrum_info *ep = arg;
     if ( (coin= LP_coinfind(ep->symbol)) != 0 )
         ep->heightp = &coin->height, ep->heighttimep = &coin->heighttime;
     electrum_initial_requests(ep);
@@ -1008,7 +1008,17 @@ void LP_dedicatedloop(void *arg)
         {
             if ( (fds.revents & POLLIN) != 0 )
             {
-                if ( (len= LP_socketrecv(ep->sock,ep->buf,ep->bufsize)) > 0 )
+                len = 0;
+                while ( 1 )
+                {
+                    if ( (n= LP_socketrecv(ep->sock,&ep->buf[len],ep->bufsize-len)) > 0 )
+                    {
+                        len += n;
+                        if ( ep->buf[len - 1] == '\n' )
+                            break;
+                    }
+                }
+                if ( len > 0 )
                 {
                     ep->pending = 0;
                     LP_recvfunc(ep,(char *)ep->buf,len);
