@@ -259,7 +259,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
     if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
     {
         //printf("spentaddr.%s aliceaddr.%s bobaddr.%s Adest.%s Bdest.%s\n",spentaddr,aliceaddr,bobaddr,Adest,dest);
-        if ( (array= electrum_address_gethistory(symbol,coin->electrum,&array,spentaddr)) != 0 )
+        if ( (array= electrum_address_gethistory(symbol,coin->electrum,&array,spentaddr,txids[utxoind])) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
@@ -269,7 +269,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                     //printf("i.%d of %d: %s\n",i,n,bits256_str(str,txid));
                     if ( bits256_cmp(txid,txids[utxoind]) != 0 )
                     {
-                        if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+                        if ( (txobj= LP_gettx(symbol,txid,1)) != 0 )
                         {
                             //printf("txobj.(%s)\n",jprint(txobj,0));
                             if ( (vins= jarray(&m,txobj,"vin")) != 0 )
@@ -777,7 +777,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                         safecopy(rswap->alicecoin,symbol,sizeof(rswap->alicecoin));
                     if ( rswap->finishedflag == 0 )
                     {
-                        if ( (sentobj= LP_gettx(symbol,txid)) == 0 )
+                        if ( (sentobj= LP_gettx(symbol,txid,1)) == 0 )
                         {
                             char str2[65]; printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
                         }
@@ -1151,15 +1151,17 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     if ( (numspent= LP_spends_set(&rswap)) == 3 )
         rswap.finishedflag = 1;
     else rswap.finishedflag = basilisk_swap_isfinished(rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
-    item = LP_swap_json(&rswap);
     if ( rswap.origfinishedflag == 0 && rswap.finishedflag != 0 )
     {
         char fname[1024],*itemstr; FILE *fp;
         LP_numfinished++;
         printf("SWAP %u-%u finished LP_numfinished.%d !\n",requestid,quoteid,LP_numfinished);
+        if ( rswap.finishtime == 0 )
+            rswap.finishtime = (uint32_t)time(NULL);
         if ( rswap.tradeid != 0 )
             LP_tradebot_finished(rswap.tradeid,rswap.requestid,rswap.quoteid);
         sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,rswap.requestid,rswap.quoteid), OS_compatible_path(fname);
+        item = LP_swap_json(&rswap);
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
             jaddstr(item,"method","tradestatus");
@@ -1176,7 +1178,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             //LP_broadcast_message(LP_mypubsock,rswap.src,rswap.dest,zero,itemstr);
             fclose(fp);
         }
-    }
+    } else item = LP_swap_json(&rswap);
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
         if ( rswap.txbytes[i] != 0 )
             free(rswap.txbytes[i]), rswap.txbytes[i] = 0;

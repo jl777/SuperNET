@@ -21,9 +21,13 @@
 #ifndef LP_INCLUDE_H
 #define LP_INCLUDE_H
 
+#ifdef FROMGUI
+#define printf(...)
+#endif
+
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "15577"
+#define LP_BUILD_NUMBER "17577"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -43,7 +47,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
-#define LP_AUTOTRADE_TIMEOUT 30
+#define LP_AUTOTRADE_TIMEOUT 60
 #define LP_RESERVETIME 600  //(LP_AUTOTRADE_TIMEOUT * 2)
 #define ELECTRUM_TIMEOUT 7
 #define LP_ELECTRUM_KEEPALIVE 60
@@ -54,8 +58,8 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_MIN_PEERS 8
 #define LP_MAX_PEERS 32
 
-#define LP_MAXDESIRED_UTXOS (IAMLP != 0 ? 128 : 64)
-#define LP_MINDESIRED_UTXOS (IAMLP != 0 ? 32 : 16)
+#define LP_MAXDESIRED_UTXOS (IAMLP != 0 ? 256 : 64)
+#define LP_MINDESIRED_UTXOS (IAMLP != 0 ? 64 : 16)
 #define LP_DUSTCOMBINE_THRESHOLD 1000000
 
 // RTmetrics
@@ -124,10 +128,23 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define ZKSNARK_PROOF_SIZE 296
 #define ZCASH_SOLUTION_ELEMENTS 1344
 
+#define LP_REQUEST 0
+#define LP_RESERVED 1
+#define LP_CONNECT 2
+#define LP_CONNECTED 3
+
+#define LP_DONTCHANGE_ERRMSG0 "couldnt find coin locally installed"
+#define LP_DONTCHANGE_ERRMSG1 "coin is disabled"
+
 extern char GLOBAL_DBDIR[];
 extern int32_t IAMLP;
 
-struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; };
+struct iguana_msgvin
+{
+    bits256 prev_hash;
+    uint8_t *vinscript,*userdata,*spendscript,*redeemscript;
+    uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen;
+};
 
 struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_script; };
 
@@ -273,7 +290,7 @@ struct iguana_info
     portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t numutxos,longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
-    uint32_t loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime,electrumzeroconf;
+    uint32_t loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
     char symbol[128],smartaddr[64],userpass[1024],serverport[128];
     // portfolio
@@ -294,7 +311,7 @@ struct LP_utxobob { struct _LP_utxoinfo utxo,deposit; };
 
 struct LP_utxoalice { struct _LP_utxoinfo utxo,fee; };
 
-struct LP_utxoswap { bits256 otherpubkey; uint64_t satoshis; };
+//struct LP_utxoswap { bits256 otherpubkey; uint64_t satoshis; };
 
 struct LP_utxoinfo
 {
@@ -302,7 +319,8 @@ struct LP_utxoinfo
     bits256 pubkey;
     struct _LP_utxoinfo payment,deposit,fee;
     struct LP_utxostats T;
-    struct LP_utxoswap S;
+    int64_t swap_satoshis;
+    //struct LP_utxoswap S;
     int32_t iambob,iamlp;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
     uint8_t key2[sizeof(bits256) + sizeof(int32_t)];
@@ -322,11 +340,11 @@ struct LP_address
     UT_hash_handle hh;
     struct LP_address_utxo *utxos;
     bits256 pubkey;
-    int64_t balance,total,zeroconf_credits;
+    int64_t balance,total,instantdex_credits;
     uint32_t timestamp,n,unspenttime;
     int32_t unspentheight;
     char coinaddr[40];
-    uint8_t pubsecp[33],pad;
+    uint8_t pubsecp[33],didinstantdex;
 };
 
 struct LP_peerinfo
@@ -398,8 +416,8 @@ struct LP_pubkey_info
     bits256 pubkey;
     struct LP_pubkey_quote *quotes;
     struct LP_pubswap *bobswaps,*aliceswaps;
-    uint64_t dynamictrust;
-    uint32_t timestamp,numerrors,lasttime;
+    int64_t dynamictrust,unconfcredits;
+    uint32_t timestamp,numerrors,lasttime,slowresponse;
     int32_t istrusted;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };
@@ -417,6 +435,18 @@ struct electrum_info
     uint8_t buf[];
 };
 
+struct LP_trade
+{
+    struct LP_trade *next,*prev;
+    UT_hash_handle hh;
+    uint64_t aliceid;
+    int64_t besttrust,bestunconfcredits;
+    double bestprice;
+    uint32_t negotiationdone,bestresponse,connectsent,firsttime,lasttime,firstprocessed,lastprocessed,newtime;
+    char pairstr[64],funcid,iambob;
+    struct LP_quoteinfo Qs[4],Q;
+};
+
 uint32_t LP_sighash(char *symbol,int32_t zcash);
 int32_t LP_pubkey_sigcheck(struct LP_pubkey_info *pubp,cJSON *item);
 int32_t LP_pubkey_sigadd(cJSON *item,uint32_t timestamp,bits256 priv,bits256 pub,uint8_t *rmd160,uint8_t *pubsecp);
@@ -429,12 +459,9 @@ uint32_t basilisk_quoteid(struct basilisk_request *rp);
 struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp,struct LP_quoteinfo *qp,int32_t dynamictrust);
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params);
 uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits,int32_t suppress_swapsend);
-//double LP_query(char *method,struct LP_quoteinfo *qp,char *base,char *rel,bits256 mypub);
 int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys);
 void LP_quotesinit(char *base,char *rel);
 int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,bits256 pubkey,char *jsonstr,int32_t freeflag);
-int32_t LP_ismine(struct LP_utxoinfo *utxo);
-int32_t LP_isavailable(struct LP_utxoinfo *utxo);
 struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port);
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest);
 int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
@@ -460,7 +487,7 @@ struct iguana_info *LP_coinfind(char *symbol);
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
 int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height);
-cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr);
+cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr,bits256 reftxid);
 int32_t _LP_utxos_remove(bits256 txid,int32_t vout);
 int32_t LP_utxos_remove(bits256 txid,int32_t vout);
 struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,int32_t height,int32_t numvouts,int32_t numvins);
@@ -499,13 +526,14 @@ char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired);
 char *LP_unspents_filestr(char *symbol,char *addr);
 cJSON *bitcoin_data2json(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,bits256 *txidp,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,uint8_t *serialized,int32_t len,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash);
 //int32_t LP_butxo_findeither(bits256 txid,int32_t vout);
-cJSON *LP_listunspent(char *symbol,char *coinaddr);
+cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxid2);
 int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid);
 double LP_getestimatedrate(struct iguana_info *coin);
 struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout);
 struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid,int32_t vout);
 int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue);
 struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr);
+int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout);
 
 void LP_listunspent_query(char *symbol,char *coinaddr);
 int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype);

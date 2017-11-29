@@ -115,8 +115,8 @@ pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebi
 getrawtransaction(coin, txid)\n\
 inventory(coin, reset=0, [passphrase=])\n\
 lastnonce()\n\
-buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
-sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce, destpubkey="")\n\
+buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
+sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
 withdraw(coin, outputs[])\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus()\n\
@@ -135,7 +135,8 @@ setconfirms(coin, numconfirms, maxconfirms=6)\n\
 trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
 balance(coin, address)\n\
 orderbook(base, rel, duration=3600)\n\
-getprices(base, rel)\n\
+getprices()\n\
+getprice(base, rel)\n\
 //sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 //getmessages(firsti=0, num=100)\n\
 //deletemessages(firsti=0, num=100)\n\
@@ -197,7 +198,7 @@ zeroconf_claim(address, expiration=0)\n\
             {
                 if ( jint(argjson,"weeks") < 0 || jdouble(argjson,"amount") < 10. )
                     return(clonestr("{\"error\":\"deposit_create needs to have weeks and amount\"}"));
-                else return(LP_zeroconf_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jint(argjson,"broadcast")));
+                else return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jint(argjson,"broadcast")));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
@@ -207,7 +208,7 @@ zeroconf_claim(address, expiration=0)\n\
             {
                 if ( jstr(argjson,"address") == 0  )
                     return(clonestr("{\"error\":\"deposit_claim needs to have address\"}"));
-                else return(LP_zeroconf_claim(ptr,jstr(argjson,"address"),juint(argjson,"expiration")));
+                else return(LP_instantdex_claim(ptr,jstr(argjson,"address"),juint(argjson,"expiration")));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
@@ -292,23 +293,23 @@ zeroconf_claim(address, expiration=0)\n\
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
             else return(basilisk_swaplist(0,0));
         }
-        /*else if ( strcmp(method,"dynamictrust") == 0 )
+        else if ( strcmp(method,"dynamictrust") == 0 )
         {
             struct LP_address *ap; char *coinaddr;
             if ( (ptr= LP_coinsearch("KMD")) != 0 && (coinaddr= jstr(argjson,"address")) != 0 )
             {
-                LP_zeroconf_deposits(ptr);
+                //LP_zeroconf_deposits(ptr);
                 if ( (ap= LP_addressfind(ptr,coinaddr)) != 0 )
                 {
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
                     jaddstr(retjson,"address",coinaddr);
-                    jaddnum(retjson,"zcredits",dstr(ap->zeroconf_credits));
+                    jaddnum(retjson,"zcredits",dstr(ap->instantdex_credits));
                     return(jprint(retjson,1));
                 }
             }
             return(clonestr("{\"error\":\"cant find address\"}"));
-        }*/
+        }
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
         if ( base[0] != 0 && rel[0] != 0 )
@@ -319,6 +320,18 @@ zeroconf_claim(address, expiration=0)\n\
                 if ( LP_autoprice(base,rel,argjson) < 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
+            }
+            else if ( strcmp(method,"getprice") == 0 )
+            {
+                double price;
+                price = LP_price(base,rel);
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"base",base);
+                jaddstr(retjson,"rel",rel);
+                jaddnum(retjson,"timestamp",time(NULL));
+                jaddnum(retjson,"price",price);
+                return(jprint(retjson,1));
             }
             else if ( strcmp(method,"pricearray") == 0 )
             {
@@ -395,7 +408,7 @@ zeroconf_claim(address, expiration=0)\n\
                     if ( ptr->userpass[0] == 0 )
                     {
                         cJSON *retjson = cJSON_CreateObject();
-                        jaddstr(retjson,"error","couldnt find coin locally installed");
+                        jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG0);
                         jaddstr(retjson,"coin",coin);
                         return(jprint(retjson,1));
                     }
@@ -437,7 +450,8 @@ zeroconf_claim(address, expiration=0)\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-                    char *coinaddr;
+                    char *coinaddr; bits256 zero;
+                    memset(zero.bytes,0,sizeof(zero));
                     if ( (coinaddr= jstr(argjson,"address")) != 0 )
                     {
                         if ( coinaddr[0] != 0 )
@@ -448,7 +462,7 @@ zeroconf_claim(address, expiration=0)\n\
                                 //LP_listunspent_issue(coin,coinaddr,2);
                                 //LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                             }
-                            return(jprint(LP_listunspent(coin,coinaddr),1));
+                            return(jprint(LP_listunspent(coin,coinaddr,zero,zero),1));
                         }
                     }
                     return(clonestr("{\"error\":\"no address specified\"}"));
@@ -474,7 +488,7 @@ zeroconf_claim(address, expiration=0)\n\
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
-                return(jprint(LP_gettx(coin,jbits256(argjson,"txid")),1));
+                return(jprint(LP_gettx(coin,jbits256(argjson,"txid"),0),1));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {
@@ -521,7 +535,11 @@ zeroconf_claim(address, expiration=0)\n\
                 else return(clonestr("{\"error\":\"cant find coind\"}"));
             }
             if ( LP_isdisabled(coin,0) != 0 )
-                return(clonestr("{\"error\":\"coin is disabled\"}"));
+            {
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG1);
+                return(jprint(retjson,1));
+            }
             if ( strcmp(method,"inventory") == 0 )
             {
                 struct iguana_info *ptr;
@@ -599,8 +617,6 @@ zeroconf_claim(address, expiration=0)\n\
         return(LP_swapstatus_recv(argjson));
     else if ( strcmp(method,"postprice") == 0 )
         return(LP_postprice_recv(argjson));
-    else if ( strcmp(method,"postutxos") == 0 )
-        return(LP_postutxos_recv(argjson));
     else if ( strcmp(method,"uitem") == 0 )
         return(LP_uitem_recv(argjson));
     else if ( strcmp(method,"notify") == 0 )

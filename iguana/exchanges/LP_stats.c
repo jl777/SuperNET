@@ -197,7 +197,7 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
         }
         else
         {
-            //if ( requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid )
+            if ( requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid )
                 printf("mismatched tradestatus aliceid.%22llu b%s/%s r%s/%s r%u/%u q%u/%u %.8f/%.8f -> %.8f/%.8f\n",(long long)sp->aliceid,base,sp->Q.srccoin,rel,sp->Q.destcoin,requestid,sp->Q.R.requestid,quoteid,sp->Q.R.quoteid,dstr(satoshis+2*sp->Q.txfee),dstr(sp->Q.satoshis),dstr(destsatoshis+2*sp->Q.desttxfee),dstr(sp->Q.destsatoshis));
             return(-1);
         }
@@ -254,7 +254,11 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
             }
         }
         if ( flag == 0 )
-            printf("unexpected.%d tradestatus aliceid.%llu requestid.%u quoteid.%u\n",unexpected++,(long long)aliceid,requestid,quoteid);//,jprint(lineobj,0));
+        {
+            static uint32_t counter;
+            if ( counter++ < 3 )
+                printf("unexpected.%d tradestatus aliceid.%llu requestid.%u quoteid.%u\n",unexpected++,(long long)aliceid,requestid,quoteid);//,jprint(lineobj,0));
+        }
         return(0);
     }
     if ( LP_quoteparse(&Q,lineobj) < 0 )
@@ -516,26 +520,31 @@ struct LP_ohlc
     double high,low,open,close,relsum,basesum;
 };
 
-cJSON *LP_ohlc_json(struct LP_ohlc *bar)
+cJSON *LP_ohlc_json(struct LP_ohlc *bar,struct LP_ohlc *prevbar)
 {
-    cJSON *item;
-    //if ( bar->numtrades != 0 && bar->relsum > SMALLVAL && bar->basesum > SMALLVAL )
+    cJSON *item; struct LP_ohlc tmp;
+    memset(&tmp,0,sizeof(tmp));
+    if ( bar->numtrades == 0 )
     {
-        item = cJSON_CreateArray();
-        jaddinum(item,bar->timestamp);
-        jaddinum(item,bar->high);
-        jaddinum(item,bar->low);
-        jaddinum(item,bar->open);
-        jaddinum(item,bar->close);
-        jaddinum(item,bar->relsum);
-        jaddinum(item,bar->basesum);
-        if ( bar->basesum != 0 )
-            jaddinum(item,bar->relsum / bar->basesum);
-        else jaddinum(item,0);
-        jaddinum(item,bar->numtrades);
-        return(item);
-    }
-    return(0);
+        tmp = *prevbar;
+        tmp.timestamp = bar->timestamp;
+        tmp.numtrades = 0;
+        tmp.relsum = tmp.basesum = 0.;
+    } else tmp = *bar;
+    bar = &tmp;
+    item = cJSON_CreateArray();
+    jaddinum(item,bar->timestamp);
+    jaddinum(item,bar->high);
+    jaddinum(item,bar->low);
+    jaddinum(item,bar->open);
+    jaddinum(item,bar->close);
+    jaddinum(item,bar->relsum);
+    jaddinum(item,bar->basesum);
+    if ( bar->basesum != 0 )
+        jaddinum(item,bar->relsum / bar->basesum);
+    else jaddinum(item,0);
+    jaddinum(item,bar->numtrades);
+    return(item);
 }
 
 void LP_ohlc_update(struct LP_ohlc *bar,uint32_t timestamp,double basevol,double relvol)
@@ -567,7 +576,7 @@ void LP_ohlc_update(struct LP_ohlc *bar,uint32_t timestamp,double basevol,double
 
 cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,int32_t timescale)
 {
-    struct LP_ohlc *bars; cJSON *array,*item,*statsjson,*swaps; uint32_t timestamp; bits256 zero; int32_t i,n,numbars,bari;
+    struct LP_ohlc *bars,nonz; cJSON *array,*item,*statsjson,*swaps; uint32_t timestamp; bits256 zero; int32_t i,n,numbars,bari;
     if ( timescale < 60 )
         return(cJSON_Parse("{\"error\":\"one minute is shortest timescale\"}"));
     memset(zero.bytes,0,sizeof(zero));
@@ -596,9 +605,16 @@ cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,i
         free_json(statsjson);
     }
     array = cJSON_CreateArray();
+    memset(&nonz,0,sizeof(nonz));
     for (bari=0; bari<numbars; bari++)
-        if ( (item= LP_ohlc_json(&bars[bari])) != 0 )
+    {
+        if ( (item= LP_ohlc_json(&bars[bari],&nonz)) != 0 )
+        {
             jaddi(array,item);
+            if ( bars[bari].numtrades > 0 )
+                nonz = bars[bari];
+        }
+    }
     free(bars);
     return(array);
 }

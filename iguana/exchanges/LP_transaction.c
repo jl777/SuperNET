@@ -63,7 +63,7 @@ bits256 LP_pubkey(bits256 privkey)
 int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid)
 {
     cJSON *txobj; bits256 txid; int32_t flag = 0;
-    if ( (txobj= LP_gettx(symbol,expectedtxid)) != 0 )
+    if ( (txobj= LP_gettx(symbol,expectedtxid,0)) != 0 )
     {
         txid = jbits256(txobj,"txid");
         if ( jobj(txobj,"error") == 0 && bits256_cmp(txid,expectedtxid) == 0 )
@@ -419,7 +419,8 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
         //    printf("%02x",script[j]);
         //printf(" scriptlen.%d\n",scriptlen);
         //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
-        sigtxid = bitcoin_sigtxid(symbol,taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,sighash,vpnstr,suppress_pubkeys,zcash);
+        //spendamount = LP_outpoint_amount(symbol,msgtx->vins[vini].prev_hash,msgtx->vins[vini].prev_vout);
+        sigtxid = bitcoin_sigtxid(symbol,taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,V[vini].amount,sighash,vpnstr,suppress_pubkeys,zcash);
         //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         if ( bits256_nonz(sigtxid) != 0 )
         {
@@ -772,7 +773,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     if ( (coin= LP_coinfind(symbol)) != 0 )
     {
 #ifndef BASILISK_DISABLESENDTX
-        if ( (txobj= LP_gettx(symbol,utxotxid)) != 0 )
+        if ( (txobj= LP_gettx(symbol,utxotxid,0)) != 0 )
         {
             if ( (vouts= jarray(&n,txobj,"vout")) != 0 && utxovout < n )
             {
@@ -1530,7 +1531,7 @@ int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vou
 {
     cJSON *retjson;
     coinaddr[0] = 0;
-    if ( (retjson= LP_gettx(symbol,txid)) != 0 )
+    if ( (retjson= LP_gettx(symbol,txid,0)) != 0 )
     {
         LP_txdestaddr(coinaddr,txid,vout,retjson);
         free_json(retjson);
@@ -1541,7 +1542,7 @@ int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vou
 int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,bits256 txid,int32_t vini)
 {
     cJSON *retjson,*vins,*item,*skey; int32_t n,scriptlen = 0; char *hexstr;
-    if ( (retjson= LP_gettx(symbol,txid)) != 0 )
+    if ( (retjson= LP_gettx(symbol,txid,0)) != 0 )
     {
         if ( (vins= jarray(&n,retjson,"vin")) != 0 && vini < n )
         {

@@ -250,7 +250,7 @@ int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
             if ( swap->I.otheristrusted != 0 )
             {
                 swap->I.aliceconfirms = swap->I.bobconfirms = 0;
-                printf("Otherside trusts us, adjust required confirms to: alice.%d bob.%d\n",swap->I.aliceconfirms,swap->I.bobconfirms);
+                printf("mutually trusted swap, adjust required confirms to: alice.%d bob.%d\n",swap->I.aliceconfirms,swap->I.bobconfirms);
             }
         }
         printf("NUMCONFIRMS for SWAP alice.%d bob.%d, otheristrusted.%d othertrusts.%d\n",swap->I.aliceconfirms,swap->I.bobconfirms,swap->I.otheristrusted,swap->I.otherstrust);
@@ -775,7 +775,7 @@ int32_t LP_swapwait(struct basilisk_swap *swap,uint32_t requestid,uint32_t quote
     {
         printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>\nSWAP completed! %u-%u %s\n",requestid,quoteid,jprint(retjson,0));
         free_json(retjson);
-        if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
+        if ( 0 && (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
         {
             printf("second call.(%s)\n",retstr);
             free(retstr);
@@ -794,7 +794,7 @@ void LP_bobloop(void *_swap)
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
     if ( swap != 0 )
     {
-        if ( LP_waitsend("pubkeys",60,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
+        if ( LP_waitsend("pubkeys",120,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
             printf("error waitsend pubkeys\n");
         else if ( LP_waitsend("choosei",LP_SWAPSTEP_TIMEOUT,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
             printf("error waitsend choosei\n");
@@ -864,7 +864,7 @@ void LP_aliceloop(void *_swap)
     if ( swap != 0 )
     {
         printf("start swap iamalice pair.%d\n",swap->N.pair);
-        if ( LP_sendwait("pubkeys",60,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
+        if ( LP_sendwait("pubkeys",120,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
             printf("error LP_sendwait pubkeys\n");
         else if ( LP_sendwait("choosei",LP_SWAPSTEP_TIMEOUT,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
             printf("error LP_sendwait choosei\n");
@@ -1101,7 +1101,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobinsurance = LP_MIN_TXFEE;
     if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < LP_MIN_TXFEE )
         swap->I.aliceinsurance = LP_MIN_TXFEE;
-    swap->I.started = (uint32_t)time(NULL);
+    swap->I.started = qp->timestamp;//(uint32_t)time(NULL);
     swap->I.expiration = swap->I.req.timestamp + swap->I.putduration + swap->I.callduration;
     OS_randombytes((uint8_t *)&swap->I.choosei,sizeof(swap->I.choosei));
     if ( swap->I.choosei < 0 )
