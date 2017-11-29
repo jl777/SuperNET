@@ -902,7 +902,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     ep->lasttime = (uint32_t)time(NULL);
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
-printf("%s RECV.(%ld) id.%d\n",ep->symbol,strlen(str),jint(strjson,"id"));
+        printf("%s RECV.(%ld) id.%d (%s)\n",ep->symbol,strlen(str),jint(strjson,"id"),jint(strjson,"id")==0?str:"");
         resultjson = jobj(strjson,"result");
         //printf("strjson.(%s)\n",jprint(strjson,0));
         if ( (method= jstr(strjson,"method")) != 0 )
