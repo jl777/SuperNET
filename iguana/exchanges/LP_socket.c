@@ -422,7 +422,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
         {
             *retjsonp = 0;
             sprintf(stratumreq,"{ \"jsonrpc\":\"2.0\", \"id\": %u, \"method\":\"%s\", \"params\": %s }\n",ep->stratumid,method,params);
-//printf("%s %s",symbol,stratumreq);
+printf("%s %s",symbol,stratumreq);
             memset(ep->buf,0,ep->bufsize);
             sitem = electrum_sitem(ep,stratumreq,timeout,retjsonp);
             portable_mutex_lock(&ep->mutex); // this helps performance!
@@ -902,7 +902,7 @@ int32_t LP_recvfunc(struct electrum_info *ep,char *str,int32_t len)
     ep->lasttime = (uint32_t)time(NULL);
     if ( (strjson= cJSON_Parse(str)) != 0 )
     {
-        //printf("%s RECV.(%ld) id.%d\n",ep->symbol,strlen(str),jint(strjson,"id"));
+printf("%s RECV.(%ld) id.%d\n",ep->symbol,strlen(str),jint(strjson,"id"));
         resultjson = jobj(strjson,"result");
         //printf("strjson.(%s)\n",jprint(strjson,0));
         if ( (method= jstr(strjson,"method")) != 0 )
