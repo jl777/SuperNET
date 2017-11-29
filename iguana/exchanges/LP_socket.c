@@ -1009,7 +1009,7 @@ void LP_dedicatedloop(void *arg)
             if ( (fds.revents & POLLIN) != 0 )
             {
                 len = 0;
-                while ( 1 )
+                while ( len+65536 < ep->bufsize )
                 {
                     if ( (n= LP_socketrecv(ep->sock,&ep->buf[len],ep->bufsize-len)) > 0 )
                     {
