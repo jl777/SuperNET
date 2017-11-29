@@ -1153,7 +1153,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         LP_unavailableset(up->U.txid,up->U.vout,(uint32_t)time(NULL)+LP_RESERVETIME,G.LP_mypub25519);
         if ( remains <= 0 && i >= numpre-1 )
             break;
-        if ( numunspents < 0 )
+        if ( numunspents < 0 || n >= LP_MAXVINS )
         {
             printf("total %.8f not enough for amount %.8f\n",dstr(total),dstr(amount));
             return(0);
@@ -1166,7 +1166,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
 char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,uint32_t locktime)
 {
     static void *ctx;
-    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[64],spendscript[256]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS]; struct LP_address *ap;
+    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[64],spendscript[256]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS*16]; struct LP_address *ap;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     *numvinsp = 0;
