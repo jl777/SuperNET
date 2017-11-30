@@ -248,11 +248,14 @@ void NXTventure_liquidation()
                     {
                         item = jitem(array,i);
                         qty = j64bits(item,"quantityQNT");
-                        ratio = (double)qty / 1000000.;
+                        ratio = (double)qty / (1000000. - 13000.);
                         if ( (account= jstr(item,"accountRS")) != 0 && qtyA*ratio > 1 )
                         {
-                            printf("%s %.6f\n",account,(double)qty / 1000000.);
-                            sprintf(url,"http://127.0.0.1:7876/nxt?requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
+                            if ( strcmp(account,"NXT-XRK4-5HYK-5965-9FH4Z") != 0 )
+                            {
+                                printf("%s %.6f\n",account,(double)qty / 1000000.);
+                                sprintf(url,"http://127.0.0.1:7876/nxt?requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
+                            }
                         }
                     }
                 }
