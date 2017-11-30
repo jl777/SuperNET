@@ -219,21 +219,31 @@ int64_t NXTventure_qty(uint64_t assetid)
         }
         free(retstr);
     }
+    //NXT_venture_qty({"accountAssets":[{"quantityQNT":"3900000000","unconfirmedQuantityQNT":"3900000000","decimals":4,"name":"ATOMIC","asset":"11694807213441909013"},{"quantityQNT":"2900000000","unconfirmedQuantityQNT":"2900000000","decimals":8,"name":"NSC","asset":"6775372232354238105"},{"quantityQNT":"750000000","unconfirmedQuantityQNT":"750000000","decimals":4,"name":"omnigames","asset":"7441230892853180965"},{"quantityQNT":"607438148","unconfirmedQuantityQNT":"607438148","decimals":4,"name":"ARDR","asset":"12422608354438203866"},{"quantityQNT":"451991779","unconfirmedQuantityQNT":"451991779","decimals":4,"name":"SuperNET","asset":"12071612744977229797"},{"quantityQNT":"146960000","unconfirmedQuantityQNT":"146960000","decimals":4,"name":"Privatebet","asset":"17083334802666450484"},{"quantityQNT":"79500188","unconfirmedQuantityQNT":"79500188","decimals":3,"name":"crypto777","asset":"13476425053110940554"},{"quantityQNT":"1495473","unconfirmedQuantityQNT":"1495473","decimals":0,"name":"jl777hodl","asset":"6932037131189568014"},{"quantityQNT":"500000","unconfirmedQuantityQNT":"500000","decimals":0,"name":"Boost","asset":"9719950459730291994"},{"quantityQNT":"200000","unconfirmedQuantityQNT":"200000","decimals":0,"name":"NXTforex","asset":"15245281832566929110"},{"quantityQNT":"150000","unconfirmedQuantityQNT":"150000","decimals":0,"name":"NXTsharks","asset":"8049009002993773168"},{"quantityQNT":"100000","unconfirmedQuantityQNT":"100000","decimals":5,"name":"solarweb","asset":"13604572534081373849"},{"quantityQNT":"75000","unconfirmedQuantityQNT":"75000","decimals":0,"name":"SNN","asset":"15113552914305929842"},{"quantityQNT":"57299","unconfirmedQuantityQNT":"57299","decimals":2,"name":"SLEUTH","asset":"4174874835406708311"},{"quantityQNT":"18801","unconfirmedQuantityQNT":"18801","decimals":2,"name":"BTCDdev","asset":"15131486578879082754"},{"quantityQNT":"18767","unconfirmedQuantityQNT":"18767","decimals":2,"name":"longzai","asset":"10955830010602647139"},{"quantityQNT":"13000","unconfirmedQuantityQNT":"13000","decimals":0,"name":"NXTventure","asset":"16212446818542881180"},{"quantityQNT":"7250","unconfirmedQuantityQNT":"7250","decimals":0,"name":"InstantDEX","asset":"15344649963748848799"},{"quantityQNT":"2873","unconfirmedQuantityQNT":"2873","decimals":4,"name":"EDinar","asset":"17740527756732147253"},{"quantityQNT":"39","unconfirmedQuantityQNT":"39","decimals":0,"name":"JebBush","asset":"1929419574701797581"},{"quantityQNT":"30","unconfirmedQuantityQNT":"30","decimals":0,"name":"Hilary","asset":"11814755740231942504"}],"requestProcessingTime":1})
     return(qty);
 }
 
 void NXTventure_liquidation()
 {
-    uint64_t assetids[] =
+    /*{"quantityQNT":"607438148","unconfirmedQuantityQNT":"607438148","decimals":4,"name":"ARDR","asset":""},
+    {"quantityQNT":"451991779","unconfirmedQuantityQNT":"451991779","decimals":4,"name":"SuperNET","asset":"12071612744977229797"},
+    {"quantityQNT":"146960000","unconfirmedQuantityQNT":"146960000","decimals":4,"name":"Privatebet","asset":"17083334802666450484"},
+    {"quantityQNT":"79500188","unconfirmedQuantityQNT":"79500188","decimals":3,"name":"crypto777","asset":"13476425053110940554"},
+    {"quantityQNT":"1495473","unconfirmedQuantityQNT":"1495473","decimals":0,"name":"jl777hodl","asset":"6932037131189568014"},
+    {"quantityQNT":"7250","unconfirmedQuantityQNT":"7250","decimals":0,"name":"InstantDEX","asset":"15344649963748848799"},*/
+    char *assetids[][3] =
     {
-        
+        { "12422608354438203866", "607438148", "ARDR" },
+        { "12071612744977229797", "451991779", "SuperNET" },
+        { "17083334802666450484", "146960000", "Privatebet" },
+        { "13476425053110940554", "79500188", "crypto777" },
+        { "6932037131189568014", "1495473", "jl777hodl" },
+        { "15344649963748848799", "7250", "InstantDEX" },
     };
     char *retstr,url[1024],*account; uint64_t qty,qtyA,assetid; double ratio; cJSON *array,*item,*retjson; int32_t i,j,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
     char *passphrase = "";
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAssetAccounts&asset=16212446818542881180");
     // {"quantityQNT":"380910","accountRS":"NXT-74VC-NKPE-RYCA-5LMPT","unconfirmedQuantityQNT":"380910","asset":"16212446818542881180","account":"4383817337783094122"}
-    NXTventure_qty(0);
-    return;
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -242,18 +252,19 @@ void NXTventure_liquidation()
             {
                 for (j=0; j<numassetids; j++)
                 {
-                    assetid = assetids[j];
-                    qtyA = NXTventure_qty(assetid);
+                    assetid = calc_nxt64bits(assetids[j][0]);
+                    qtyA = calc_nxt64bits(assetids[j][1]);
+                    printf("distribute %llu QNT of assetid %llu\n",(long long)qtyA,(long long)assetid);
                     for (i=0; i<n; i++)
                     {
                         item = jitem(array,i);
                         qty = j64bits(item,"quantityQNT");
                         ratio = (double)qty / (1000000. - 13000.);
-                        if ( (account= jstr(item,"accountRS")) != 0 && qtyA*ratio > 1 )
+                        if ( (account= jstr(item,"accountRS")) != 0 && qtyA*ratio >= 1 )
                         {
                             if ( strcmp(account,"NXT-XRK4-5HYK-5965-9FH4Z") != 0 )
                             {
-                                printf("%s %.6f\n",account,(double)qty / 1000000.);
+                                printf("%s %.6f %8llu QNT %s -> %.8f\n",account,ratio,(long long)qtyA,assetids[j][2],qtyA * ratio);
                                 sprintf(url,"http://127.0.0.1:7876/nxt?requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
                             }
                         }
