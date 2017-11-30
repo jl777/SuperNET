@@ -270,7 +270,7 @@ void NXTventure_liquidation()
                             {
                                 printf("%s %.6f %8llu QNT %s -> %llu %.8f\n",account,ratio,(long long)qtyA,assetids[j][2],(long long)(qtyA * ratio),((double)(long long)(qtyA * ratio))/decimals);
                                 sum += (long long)(qtyA * ratio);
-                                sprintf(url,"requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
+                                sprintf(url,"requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000&deadline=60",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
                                 if ( (retstr2= curl_post(&cHandle,"http://127.0.0.1:7876/nxt","",url,"","","","")) != 0 )
                                 {
                                     printf("%s\n",retstr2);
