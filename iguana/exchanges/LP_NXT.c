@@ -36,6 +36,8 @@ static char *assetids[][4] =
     { "3006420581923704757", "MSHARK", "10000", "10000000" },
     { "17571711292785902558", "BOTS", "1", "100000000" },
     { "10524562908394749924", "MGW", "1", "100000000" },
+    { "8217222248380501882", "MESH", "10000", "10000" },
+    { "15641806960898178066", "TOKEN", "1", "100000000" },
 };
 
 void LP_sendtoaddress_line(char *validaddress,char *assetname,uint64_t satoshis,uint64_t txnum)
@@ -49,7 +51,9 @@ void LP_sendtoaddress_line(char *validaddress,char *assetname,uint64_t satoshis,
     }
     else
     {
-        strcpy(lowerstr,assetname);
+        if ( strcmp(assetname,"TOKEN") == 0 )
+            strcpy(lowerstr,"supernet");
+        else strcpy(lowerstr,assetname);
         tolowercase(lowerstr);
         sprintf(line,"fiat/%s sendtoaddress %s %.8f # txnum.%llu",lowerstr,validaddress,dstr(satoshis),(long long)txnum);
     }
@@ -197,7 +201,7 @@ void NXTventure_liquidation()
 
 cJSON *LP_NXT_redeems()
 {
-    char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
+    char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[sizeof(assetids)/sizeof(*assetids)],mult,txnum,assetid,qty; int32_t i,ind,numtx=0,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
     uint64_t txnum_marker = calc_nxt64bits("0");
     uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143");
     char *passphrase = "";
@@ -293,7 +297,7 @@ cJSON *LP_NXT_redeems()
         }
         free(retstr);
     }
-    printf("\nTotal redeemed\n");
+    printf("\nTotal redeemed.%d\n",numtx);
     for (i=0; i<sizeof(totals)/sizeof(*totals); i++)
     {
         if ( totals[i] != 0 )
