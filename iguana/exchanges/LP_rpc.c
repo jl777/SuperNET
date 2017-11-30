@@ -206,23 +206,55 @@ cJSON *LP_NXT_decrypt(uint64_t txnum,char *account,char *data,char *nonce,char *
     return(retjson);
 }
 
+int64_t NXTventure_qty(uint64_t assetid)
+{
+    char url[1024],*retstr; uint64_t qty=0; cJSON *retjson;
+    sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAccounts&accountRS=NXT-XRK4-5HYK-5965-9FH4Z");
+    if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+    {
+        printf("NXT_venture_qty(%s)\n",retstr);
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    return(qty);
+}
+
 void NXTventure_liquidation()
 {
-    char *retstr,url[1024],*account; uint64_t qty; cJSON *array,*item,*retjson; int32_t i,n=0;
+    uint64_t assetids[] =
+    {
+        
+    };
+    char *retstr,url[1024],*account; uint64_t qty,qtyA,assetid; double ratio; cJSON *array,*item,*retjson; int32_t i,j,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
+    char *passphrase = "";
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAssetAccounts&asset=16212446818542881180");
     // {"quantityQNT":"380910","accountRS":"NXT-74VC-NKPE-RYCA-5LMPT","unconfirmedQuantityQNT":"380910","asset":"16212446818542881180","account":"4383817337783094122"}
+    NXTventure_qty(0);
+    return;
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (array= jarray(&n,retjson,"accountAssets")) != 0 )
             {
-                for (i=0; i<n; i++)
+                for (j=0; j<numassetids; j++)
                 {
-                    item = jitem(array,i);
-                    qty = j64bits(item,"quantityQNT");
-                    if ( (account= jstr(item,"accountRS")) != 0 )
-                        printf("%s %.6f\n",account,(double)qty / 1000000.);
+                    assetid = assetids[j];
+                    qtyA = NXTventure_qty(assetid);
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(array,i);
+                        qty = j64bits(item,"quantityQNT");
+                        ratio = (double)qty / 1000000.;
+                        if ( (account= jstr(item,"accountRS")) != 0 && qtyA*ratio > 1 )
+                        {
+                            printf("%s %.6f\n",account,(double)qty / 1000000.);
+                            sprintf(url,"http://127.0.0.1:7876/nxt?requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
+                        }
+                    }
                 }
             }
             free_json(retjson);
