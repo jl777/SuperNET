@@ -208,14 +208,14 @@ cJSON *LP_NXT_decrypt(uint64_t txnum,char *account,char *data,char *nonce,char *
 
 void NXTventure_liquidation()
 {
-    char *retstr,url[1024],*account; uint64_t qty; cJSON *array,*item; int32_t i,n=0;
+    char *retstr,url[1024],*account; uint64_t qty; cJSON *array,*item,*retjson; int32_t i,n=0;
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAssetAccounts&asset=16212446818542881180");
     // {"quantityQNT":"380910","accountRS":"NXT-74VC-NKPE-RYCA-5LMPT","unconfirmedQuantityQNT":"380910","asset":"16212446818542881180","account":"4383817337783094122"}
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
-        if ( (array= cJSON_Parse(retstr)) != 0 )
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
-            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            if ( (array= jarray(&n,retjson,"accountAssets")) != 0 )
             {
                 for (i=0; i<n; i++)
                 {
@@ -225,9 +225,9 @@ void NXTventure_liquidation()
                         printf("%s %.6f\n",account,(double)qty / 1000000.);
                 }
             }
-            free_json(array);
+            free_json(retjson);
         }
-        printf("NXTventure assethodlers.%d: (%s)\n",n,retstr);
+        printf("NXTventure assethodlers.%d\n",n);
         free(retstr);
     }
 }
