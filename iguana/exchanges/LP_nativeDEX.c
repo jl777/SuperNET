@@ -18,13 +18,13 @@
 //  marketmaker
 //
 // prune expired/spent deposits from instantdex.json
+// CPU usage spike after 12 hours
 // verify claim works
 // big BTC swaps
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // compress packets
 // cancel bid/ask
-// portfolio:
 // portfolio to set prices from historical
 // portfolio value based on ask?
 // USD paxprice based USDvalue in portfolio

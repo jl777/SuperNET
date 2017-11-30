@@ -1016,6 +1016,19 @@ void LP_dedicatedloop(void *arg)
                         len += n;
                         if ( ep->buf[len - 1] == '\n' )
                             break;
+                        memset(&fds,0,sizeof(fds));
+                        fds.fd = ep->sock;
+                        fds.events = POLLIN;
+                        if ( poll(&fds,1,1000) <= 0 )
+                        {
+                            printf("no more electrum data after a second\n");
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        printf("no more electrum data when expected\n");
+                        break;
                     }
                 }
                 if ( len > 0 )
