@@ -211,6 +211,12 @@ cJSON *LP_NXT_redeems()
     char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
     uint64_t txnum_marker = calc_nxt64bits("0");
     uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143");
+    sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAssetAccounts&asset=16212446818542881180");
+    if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+    {
+        printf("NXTventure assethodlers.(%s)\n",retstr);
+        free(retstr);
+    }
 char *passphrase = "";
 char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
     memset(totals,0,sizeof(totals));
