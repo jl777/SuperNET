@@ -240,7 +240,7 @@ void NXTventure_liquidation()
         { "6932037131189568014", "1495473", "jl777hodl", "1" },
         { "15344649963748848799", "7250", "InstantDEX", "1" },
     };
-    char *retstr,url[1024],*account; uint64_t qty,qtyA,assetid; double ratio; cJSON *array,*item,*retjson; int32_t i,j,decimals,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
+    char *retstr,url[1024],*account; uint64_t qty,qtyA,assetid,sum; double ratio; cJSON *array,*item,*retjson; int32_t i,j,decimals,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
     char *passphrase = "";
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAssetAccounts&asset=16212446818542881180");
     // {"quantityQNT":"380910","accountRS":"NXT-74VC-NKPE-RYCA-5LMPT","unconfirmedQuantityQNT":"380910","asset":"16212446818542881180","account":"4383817337783094122"}
@@ -255,7 +255,8 @@ void NXTventure_liquidation()
                     assetid = calc_nxt64bits(assetids[j][0]);
                     qtyA = calc_nxt64bits(assetids[j][1]);
                     decimals = (int32_t)calc_nxt64bits(assetids[j][3]);
-                    printf("distribute %llu QNT of assetid %llu %.8f\n",(long long)qtyA,(long long)assetid,(double)qtyA / decimals);
+                    printf("distribute %llu QNT of %s assetid %llu %.8f\n",(long long)qtyA,assetids[j][2],(long long)assetid,(double)qtyA / decimals);
+                    sum = 0;
                     for (i=0; i<n; i++)
                     {
                         item = jitem(array,i);
@@ -266,10 +267,12 @@ void NXTventure_liquidation()
                             if ( strcmp(account,"NXT-XRK4-5HYK-5965-9FH4Z") != 0 )
                             {
                                 printf("%s %.6f %8llu QNT %s -> %llu %.8f\n",account,ratio,(long long)qtyA,assetids[j][2],(long long)(qtyA * ratio),((double)(long long)(qtyA * ratio))/decimals);
+                                sum += (long long)(qtyA * ratio);
                                 sprintf(url,"http://127.0.0.1:7876/nxt?requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
                             }
                         }
                     }
+                    printf("%s distribution total %llu QNT %.8f\n",assetids[j][2],(long long)sum,(double)sum/decimals);
                 }
             }
             free_json(retjson);
