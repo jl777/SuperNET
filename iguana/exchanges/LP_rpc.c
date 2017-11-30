@@ -209,7 +209,7 @@ cJSON *LP_NXT_decrypt(uint64_t txnum,char *account,char *data,char *nonce,char *
 int64_t NXTventure_qty(uint64_t assetid)
 {
     char url[1024],*retstr; uint64_t qty=0; cJSON *retjson;
-    sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAccounts&account=NXT-XRK4-5HYK-5965-9FH4Z&includeAssets=true");
+    sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAccountAssets&account=NXT-XRK4-5HYK-5965-9FH4Z");
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         printf("NXT_venture_qty(%s)\n",retstr);
