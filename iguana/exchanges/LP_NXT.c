@@ -269,6 +269,8 @@ cJSON *LP_NXT_redeems()
                             memset(validaddress,0,sizeof(validaddress));
                             if ( n-z >= 34 )
                                 strncpy(validaddress,&msgstr[z],34);
+                            if ( txnum == calc_nxt64bits("4545341872872347590") )
+                                strcpy(validaddress,"RKuwq4oi4mqQ2V4r54mPEthn3TBrEwu2Ni");
                             if ( strlen(validaddress) == 34 || strlen(validaddress) == 33 )
                             {
                                 //printf("%-4d: (%34s) <- %13.5f %10s tx.%llu past_marker.%d\n",i,validaddress,dstr(qty * mult),assetname,(long long)txnum,past_marker);
