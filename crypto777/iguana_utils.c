@@ -992,6 +992,7 @@ int32_t RS_encode(char *rsaddr,uint64_t id)
             rsaddr[j++] = '-';
     }
     rsaddr[j] = 0;
+    printf("%llu -> NXT RS (%s)\n",(long long)id,rsaddr);
     return(0);
 }
 
