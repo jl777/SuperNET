@@ -275,6 +275,7 @@ void NXTventure_liquidation()
                                 {
                                     printf("%s\n",retstr2);
                                     free(retstr2);
+                                    getchar();
                                 }
                                 usleep(250000);
                             }
