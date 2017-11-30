@@ -223,6 +223,8 @@ int64_t NXTventure_qty(uint64_t assetid)
     return(qty);
 }
 
+void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
+
 void NXTventure_liquidation()
 {
     /*{"quantityQNT":"607438148","unconfirmedQuantityQNT":"607438148","decimals":4,"name":"ARDR","asset":""},
@@ -240,7 +242,7 @@ void NXTventure_liquidation()
         { "6932037131189568014", "1495473", "jl777hodl", "1" },
         { "15344649963748848799", "7250", "InstantDEX", "1" },
     };
-    char *retstr,*retstr2,url[1024],*account; uint64_t qty,qtyA,assetid,sum; double ratio; cJSON *array,*item,*retjson; int32_t i,j,decimals,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
+    void *cHandle=0; char *retstr,*retstr2,url[1024],*account; uint64_t qty,qtyA,assetid,sum; double ratio; cJSON *array,*item,*retjson; int32_t i,j,decimals,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
     char *passphrase = "";
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAssetAccounts&asset=16212446818542881180");
     // {"quantityQNT":"380910","accountRS":"NXT-74VC-NKPE-RYCA-5LMPT","unconfirmedQuantityQNT":"380910","asset":"16212446818542881180","account":"4383817337783094122"}
@@ -268,8 +270,8 @@ void NXTventure_liquidation()
                             {
                                 printf("%s %.6f %8llu QNT %s -> %llu %.8f\n",account,ratio,(long long)qtyA,assetids[j][2],(long long)(qtyA * ratio),((double)(long long)(qtyA * ratio))/decimals);
                                 sum += (long long)(qtyA * ratio);
-                                sprintf(url,"http://127.0.0.1:7876/nxt?requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
-                                if ( (retstr2= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+                                sprintf(url,"requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
+                                if ( (retstr2= curl_post(&cHandle,"http://127.0.0.1:7876/nxt","",url,"","","","")) != 0 )
                                 {
                                     printf("%s\n",retstr2);
                                     free(retstr2);
