@@ -255,13 +255,35 @@ bits256 basilisk_swap_privBn_extract(bits256 *bobrefundp,char *bobcoin,bits256 b
 
 bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,int32_t *sentflags,bits256 *txids,int32_t utxoind,int32_t alicespent,int32_t bobspent,int32_t vout,char *aliceaddr,char *bobaddr,char *Adest,char *dest)
 {
-    bits256 spendtxid,txid; char destaddr[64],str[65]; struct iguana_info *coin; cJSON *histobj;
+    bits256 spendtxid,txid; char destaddr[64],str[65]; int32_t i,n,m; struct iguana_info *coin; cJSON *array,*txobj,*vins,*vin;
     if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
     {
-        if ( (histobj= electrum_address_gethistory(symbol,coin->electrum,&histobj,spentaddr)) != 0 )
+        //printf("spentaddr.%s aliceaddr.%s bobaddr.%s Adest.%s Bdest.%s\n",spentaddr,aliceaddr,bobaddr,Adest,dest);
+        if ( (array= electrum_address_gethistory(symbol,coin->electrum,&array,spentaddr,txids[utxoind])) != 0 )
         {
-            //printf("processed history.(%s)\n",jprint(histobj,0));
-            free_json(histobj);
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    txid = jbits256(jitem(array,i),"tx_hash");
+                    //printf("i.%d of %d: %s\n",i,n,bits256_str(str,txid));
+                    if ( bits256_cmp(txid,txids[utxoind]) != 0 )
+                    {
+                        if ( (txobj= LP_gettx(symbol,txid,1)) != 0 )
+                        {
+                            //printf("txobj.(%s)\n",jprint(txobj,0));
+                            if ( (vins= jarray(&m,txobj,"vin")) != 0 )
+                            {
+                                vin = jitem(vins,0);
+                                //printf("vin0.(%s)\n",jprint(vin,0));
+                            }
+                            free_json(txobj);
+                        }
+                    }
+                }
+            }
+            //printf("processed history.(%s) %s\n",jprint(array,0),bits256_str(str,txids[utxoind]));
+            free_json(array);
         }
     }
     txid = txids[utxoind];
@@ -305,7 +327,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                 }
             }
         } //else printf("no spend of %s/v%d detected\n",bits256_str(str,txid),vout);
-    } else printf("utxoind.%d null txid\n",utxoind);
+    } //else printf("utxoind.%d null txid\n",utxoind);
     return(spendtxid);
 }
 
@@ -389,6 +411,7 @@ uint32_t LP_extract(uint32_t requestid,uint32_t quoteid,char *rootfname,char *fi
                 t = (t << 8) | redeem[2];
                 //printf("extracted timestamp.%u\n",t);
             }
+            free_json(json);
         }
         free(filestr);
     }
@@ -483,7 +506,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
         if ( rswap->sentflags[i] != 0 )
             jaddistr(array,txnames[i]);
         if ( rswap->txbytes[i] != 0 )
-            free(rswap->txbytes[i]);
+            free(rswap->txbytes[i]), rswap->txbytes[i] = 0;
     }
     jadd(item,"sentflags",array);
     array = cJSON_CreateArray();
@@ -637,6 +660,7 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
                     }
                 }
             }
+            free_json(txobj);
         }
         rswap->origfinishedflag = basilisk_swap_isfinished(rswap->iambob,rswap->txids,rswap->sentflags,rswap->paymentspent,rswap->Apaymentspent,rswap->depositspent);
         rswap->finishedflag = rswap->origfinishedflag;
@@ -753,7 +777,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                         safecopy(rswap->alicecoin,symbol,sizeof(rswap->alicecoin));
                     if ( rswap->finishedflag == 0 )
                     {
-                        if ( (sentobj= LP_gettx(symbol,txid)) == 0 )
+                        if ( (sentobj= LP_gettx(symbol,txid,1)) == 0 )
                         {
                             char str2[65]; printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
                         }
@@ -773,6 +797,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
                         //printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
                     }
                 }
+                free_json(txobj);
             } //else printf("no symbol\n");
             free(fstr);
         } else if ( 0 && rswap->finishedflag == 0 )
@@ -1101,7 +1126,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     LP_txbytes_update("bobrefund",rswap.bobcoin,rswap.txbytes[BASILISK_BOBREFUND],&rswap.txids[BASILISK_BOBREFUND],&rswap.depositspent,&rswap.sentflags[BASILISK_BOBREFUND]);
                 }
-                else if ( flag == 0 )
+                else if ( 0 && flag == 0 )
                     printf("bobrefund's time %u vs expiration %u\n",(uint32_t)time(NULL),rswap.expiration);
             }
         }
@@ -1126,20 +1151,24 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     if ( (numspent= LP_spends_set(&rswap)) == 3 )
         rswap.finishedflag = 1;
     else rswap.finishedflag = basilisk_swap_isfinished(rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
-    item = LP_swap_json(&rswap);
     if ( rswap.origfinishedflag == 0 && rswap.finishedflag != 0 )
     {
         char fname[1024],*itemstr; FILE *fp;
         LP_numfinished++;
         printf("SWAP %u-%u finished LP_numfinished.%d !\n",requestid,quoteid,LP_numfinished);
+        if ( rswap.finishtime == 0 )
+            rswap.finishtime = (uint32_t)time(NULL);
         if ( rswap.tradeid != 0 )
             LP_tradebot_finished(rswap.tradeid,rswap.requestid,rswap.quoteid);
         sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,rswap.requestid,rswap.quoteid), OS_compatible_path(fname);
+        item = LP_swap_json(&rswap);
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
             jaddstr(item,"method","tradestatus");
             jaddnum(item,"finishtime",rswap.finishtime);
             jaddstr(item,"gui",G.gui);
+            //jaddbits256(item,"srchash",rswap.Q.srchash);
+            //jaddbits256(item,"desthash",rswap.desthash);
             itemstr = jprint(item,0);
             fprintf(fp,"%s\n",itemstr);
             LP_tradecommand_log(item);
@@ -1149,8 +1178,11 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             //LP_broadcast_message(LP_mypubsock,rswap.src,rswap.dest,zero,itemstr);
             fclose(fp);
         }
-    }
-    return(item);
+    } else item = LP_swap_json(&rswap);
+    for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+        if ( rswap.txbytes[i] != 0 )
+            free(rswap.txbytes[i]), rswap.txbytes[i] = 0;
+   return(item);
 }
 
 char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
@@ -1234,13 +1266,6 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
         else if ( Ktotal < 0 && Btotal > 0 )
             jaddnum(retjson,"avesell",(double)-Btotal/Ktotal);
     }
-    /*array = cJSON_CreateArray();
-    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
-    {
-        if ( myinfo->linfos[i].base[0] != 0 && myinfo->linfos[i].rel[0] != 0 )
-            jaddi(array,linfo_json(&myinfo->linfos[i]));
-    }
-    jadd(retjson,"quotes",array);*/
     portable_mutex_unlock(&LP_swaplistmutex);
     return(jprint(retjson,1));
 }

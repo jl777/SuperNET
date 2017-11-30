@@ -265,122 +265,6 @@ int32_t LP_peerindsock(int32_t *peerindp)
     return(-1);
 }
 
-void gc_loop(void *arg)
-{
-    uint32_t now; struct LP_address_utxo *up,*utmp; struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
-    strcpy(LP_gcloop_stats.name,"gc_loop");
-    LP_gcloop_stats.threshold = 11000.;
-    while ( 1 )
-    {
-        flag = 0;
-        LP_millistats_update(&LP_gcloop_stats);
-        portable_mutex_lock(&LP_gcmutex);
-        DL_FOREACH_SAFE(LP_garbage_collector,req,rtmp)
-        {
-            DL_DELETE(LP_garbage_collector,req);
-            //printf("garbage collect ipbits.%x\n",req->ipbits);
-            free(req);
-            flag++;
-        }
-        now = (uint32_t)time(NULL);
-        DL_FOREACH_SAFE(LP_garbage_collector2,up,utmp)
-        {
-            if ( now > (uint32_t)up->spendheight+120 )
-            {
-                DL_DELETE(LP_garbage_collector2,up);
-                //char str[65]; printf("garbage collect %s/v%d lag.%d\n",bits256_str(str,up->U.txid),up->U.vout,now-up->spendheight);
-                free(up);
-            }
-            flag++;
-        }
-        portable_mutex_unlock(&LP_gcmutex);
-        if ( 0 && flag != 0 )
-            printf("gc_loop.%d\n",flag);
-        sleep(10);
-    }
-}
-
-void queue_loop(void *arg)
-{
-    struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
-    strcpy(queue_loop_stats.name,"queue_loop");
-    queue_loop_stats.threshold = 1000.;
-    while ( 1 )
-    {
-        LP_millistats_update(&queue_loop_stats);
-        //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
-        n = nonz = flag = 0;
-        DL_FOREACH_SAFE(LP_Q,ptr,tmp)
-        {
-            n++;
-            flag = 0;
-            if ( ptr->sock >= 0 )
-            {
-                if ( ptr->notready == 0 || (LP_rand() % ptr->notready) == 0 )
-                {
-                    if ( LP_sockcheck(ptr->sock) > 0 )
-                    {
-                        bits256 magic;
-                        magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
-                        memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
-                        if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
-                            printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                        else flag++;
-                        ptr->sock = -1;
-                        if ( ptr->peerind > 0 )
-                            ptr->starttime = (uint32_t)time(NULL);
-                    }
-                    else
-                    {
-                        if ( ptr->notready++ > 1000 )
-                            flag = 1;
-                    }
-                }
-            }
-            else if ( 0 && time(NULL) > ptr->starttime+13 )
-            {
-                LP_crc32find(&duplicate,-1,ptr->crc32);
-                if ( duplicate > 0 )
-                {
-                    LP_Qfound++;
-                    if ( (LP_Qfound % 100) == 0 )
-                        printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
-                    flag++;
-                }
-                else if ( 0 ) // too much beyond duplicate filter when network is busy
-                {
-                    printf("couldnt find.%u peerind.%d Q.%d err.%d match.%d\n",ptr->crc32,ptr->peerind,LP_Qenqueued,LP_Qerrors,LP_Qfound);
-                    ptr->peerind++;
-                    if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
-                    {
-                        printf("%d no more peers to try at peerind.%d %p Q_LP.%p\n",n,ptr->peerind,ptr,LP_Q);
-                        flag++;
-                        LP_Qerrors++;
-                     }
-                }
-            }
-            if ( flag != 0 )
-            {
-                nonz++;
-                portable_mutex_lock(&LP_networkmutex);
-                DL_DELETE(LP_Q,ptr);
-                portable_mutex_unlock(&LP_networkmutex);
-                free(ptr);
-                ptr = 0;
-                break;
-            }
-        }
-        if ( arg == 0 )
-            break;
-        if ( nonz == 0 )
-        {
-            if ( IAMLP == 0 )
-                usleep(50000);
-            else usleep(10000);
-        }
-    }
-}
-
 void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
     int32_t maxind,peerind = 0; //sentbytes,
@@ -573,7 +457,7 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
+                            //printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
                             buf = 0;
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {

@@ -33,7 +33,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char 
 char *stats_validmethods[] =
 {
     "psock", "getprices", "notify", "getpeers",  // from issue_  "uitem", "listunspent",
-    "orderbook", "help", "getcoins", "pricearray", "balance", "tradestatus"
+    "orderbook", "help", "getcoins", "pricearray", "balance", "tradesarray"
 };
 
 int32_t LP_valid_remotemethod(cJSON *argjson)
@@ -310,7 +310,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
                 jaddstr(json,key,value);
             else jaddistr(array,key);
             len += (n + 1);
-            if ( strcmp(key,"Content-Length") == 0 && (datalen= atoi(value)) > 0 )
+            if ( (strcmp(key,"Content-Length") == 0 || strcmp(key,"content-length") == 0) && (datalen= atoi(value)) > 0 )
             {
                 data = &urlstr[totallen - datalen];
                 data[-1] = 0;
@@ -329,8 +329,7 @@ extern void *bitcoin_ctx();
 char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
     static void *ctx;
-    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char *myipaddr="127.0.0.1",symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
-    //printf("rpcparse.(%s)\n",urlstr);
+    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char *myipaddr="127.0.0.1",symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr=0,*filestr,*token = 0; int32_t i,j,n,num=0;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
@@ -339,6 +338,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
     n = i;
     //printf("URLMETHOD.(%s)\n",urlmethod);
     *postflagp = (strcmp(urlmethod,"POST") == 0);
+    //printf("POST.%d rpcparse.(%s)\n",*postflagp,urlstr);
     for (i=0; i<sizeof(url)-1&&urlstr[n+i]!=0&&urlstr[n+i]!=' '; i++)
         url[i] = urlstr[n+i];
     url[i++] = 0;
@@ -412,7 +412,13 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
     {
         jadd(json,"tokens",tokens);
         jaddstr(json,"urlmethod",urlmethod);
-        if ( (data= jstr(json,"POST")) == 0 || (argjson= cJSON_Parse(data)) == 0 )
+        if ( (data= jstr(json,"POST")) != 0 )
+        {
+            free_json(argjson);
+            argjson = cJSON_Parse(data);
+            //printf("data.(%s)\n",data);
+        }
+        if ( argjson != 0 )
         {
             userpass = jstr(argjson,"userpass");
             //printf("userpass.(%s)\n",userpass);
@@ -499,62 +505,62 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     }
                 }
             }
-        }
-        if ( is_cJSON_Array(argjson) != 0 && (n= cJSON_GetArraySize(argjson)) > 0 )
-        {
-            cJSON *retitem,*retarray = cJSON_CreateArray();
-            origargjson = argjson;
-            symbol[0] = 0;
-            for (i=0; i<n; i++)
+            if ( is_cJSON_Array(argjson) != 0 && (n= cJSON_GetArraySize(argjson)) > 0 )
             {
-                argjson = jitem(origargjson,i);
-                if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
-                    jaddstr(argjson,"userpass",userpass);
-                //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
-#ifdef FROM_MARKETMAKER
-                if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(argjson) > 0 )
+                cJSON *retitem,*retarray = cJSON_CreateArray();
+                origargjson = argjson;
+                symbol[0] = 0;
+                for (i=0; i<n; i++)
                 {
+                    argjson = jitem(origargjson,i);
+                    if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
+                        jaddstr(argjson,"userpass",userpass);
+                    //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
+#ifdef FROM_MARKETMAKER
+                    if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(argjson) > 0 )
+                    {
+                        if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
+                        {
+                            if ( (retitem= cJSON_Parse(retstr)) != 0 )
+                                jaddi(retarray,retitem);
+                            free(retstr);
+                        }
+                    } else retstr = clonestr("{\"error\":\"invalid remote method\"}");
+#else
                     if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
                     {
                         if ( (retitem= cJSON_Parse(retstr)) != 0 )
                             jaddi(retarray,retitem);
                         free(retstr);
                     }
-                } else retstr = clonestr("{\"error\":\"invalid remote method\"}");
-#else
-                if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
-                {
-                    if ( (retitem= cJSON_Parse(retstr)) != 0 )
-                        jaddi(retarray,retitem);
-                    free(retstr);
+#endif
+                    //printf("(%s) {%s} -> (%s) postflag.%d (%s)\n",urlstr,jprint(argjson,0),jprint(json,0),*postflagp,retstr);
                 }
-#endif
-                //printf("(%s) {%s} -> (%s) postflag.%d (%s)\n",urlstr,jprint(argjson,0),jprint(json,0),*postflagp,retstr);
+                free_json(origargjson);
+                retstr = jprint(retarray,1);
             }
-            free_json(origargjson);
-            retstr = jprint(retarray,1);
-        }
-        else
-        {
-            cJSON *arg;
-            if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
+            else
             {
-                arg = jobj(argjson,"params");
-                if ( is_cJSON_Array(arg) != 0 && cJSON_GetArraySize(arg) == 1 )
-                    arg = jitem(arg,0);
-            } else arg = argjson;
-            //printf("ARGJSON.(%s)\n",jprint(arg,0));
-            if ( userpass != 0 && jstr(arg,"userpass") == 0 )
-                jaddstr(arg,"userpass",userpass);
+                cJSON *arg;
+                if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
+                {
+                    arg = jobj(argjson,"params");
+                    if ( is_cJSON_Array(arg) != 0 && cJSON_GetArraySize(arg) == 1 )
+                        arg = jitem(arg,0);
+                } else arg = argjson;
+                //printf("ARGJSON.(%s)\n",jprint(arg,0));
+                if ( userpass != 0 && jstr(arg,"userpass") == 0 )
+                    jaddstr(arg,"userpass",userpass);
 #ifdef FROM_MARKETMAKER
-            if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(arg) > 0 )
-                retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
-            else retstr = clonestr("{\"error\":\"invalid remote method\"}");
+                if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(arg) > 0 )
+                    retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
+                else retstr = clonestr("{\"error\":\"invalid remote method\"}");
 #else
-            retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
+                retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
 #endif
+            }
+            free_json(argjson);
         }
-        free_json(argjson);
         free_json(json);
         if ( tmpjson != 0 )
             free(tmpjson);
@@ -562,15 +568,17 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
     }
     free_json(argjson);
     if ( tmpjson != 0 )
-        free(tmpjson);
+        free_json(tmpjson);
+    if ( tokens != 0 )
+        free_json(tokens);
     *jsonflagp = 1;
     return(clonestr("{\"error\":\"couldnt process packet\"}"));
 }
 
 int32_t iguana_getcontentlen(char *buf,int32_t recvlen)
 {
-    char *str,*clenstr = "Content-Length: "; int32_t len = -1;
-    if ( (str= strstr(buf,clenstr)) != 0 )
+    char *str,*clenstr = "Content-Length: ",*clenstr2 = "content-length: "; int32_t len = -1;
+    if ( (str= strstr(buf,clenstr)) != 0 || (str= strstr(buf,clenstr2)) != 0 )
     {
         //printf("strstr.(%s)\n",str);
         str += strlen(clenstr);
@@ -597,15 +605,16 @@ void LP_rpc_processreq(void *_ptr)
     static uint32_t spawned,maxspawned;
     char filetype[128],content_type[128];
     int32_t recvlen,flag,postflag=0,contentlen,remains,sock,numsent,jsonflag=0,hdrsize,len;
-    char helpname[512],remoteaddr[64],*buf,*retstr,*space,*jsonbuf; struct rpcrequest_info *req = _ptr;
+    char helpname[512],remoteaddr[64],*buf,*retstr,space[8192],space2[32786],*jsonbuf; struct rpcrequest_info *req = _ptr;
     uint32_t ipbits,i,size = IGUANA_MAXPACKETSIZE + 512;
     ipbits = req->ipbits;;
     expand_ipbits(remoteaddr,ipbits);
     sock = req->sock;
     recvlen = flag = 0;
     retstr = 0;
-    space = calloc(1,size);
+    //space = calloc(1,size);
     jsonbuf = calloc(1,size);
+    //printf("alloc jsonbuf.%p\n",jsonbuf);
     remains = size-1;
     buf = jsonbuf;
     spawned++;
@@ -624,10 +633,12 @@ void LP_rpc_processreq(void *_ptr)
                 printf("EAGAIN for len %d, remains.%d\n",len,remains);
                 usleep(10000);
             }
+            //printf("errno.%d len.%d remains.%d\n",errno,len,remains);
             break;
         }
         else
         {
+            //printf("received len.%d\n%s\n",len,buf);
             if ( len > 0 )
             {
                 buf[len] = 0;
@@ -694,16 +705,23 @@ void LP_rpc_processreq(void *_ptr)
         //printf("RETURN.(%s) jsonflag.%d postflag.%d\n",retstr,jsonflag,postflag);
         if ( jsonflag != 0 || postflag != 0 )
         {
-            if ( retstr == 0 )
-                retstr = clonestr("{}");
-            response = malloc(strlen(retstr)+1024+1+1);
+            if ( strlen(retstr)+1024+1+1 < sizeof(space2) )
+                response = space2;
+            else
+            {
+                response = malloc(strlen(retstr)+1024+1+1);
+                //printf("alloc response.%p\n",response);
+            }
             sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr));
             response[0] = '\0';
             strcat(response,hdrs);
             strcat(response,retstr);
             strcat(response,"\n");
             if ( retstr != space )
+            {
+                //printf("free retstr0.%p\n",retstr);
                 free(retstr);
+            }
             retstr = response;
             //printf("RET.(%s)\n",retstr);
         }
@@ -727,16 +745,28 @@ void LP_rpc_processreq(void *_ptr)
                     printf("iguana sent.%d remains.%d of recvlen.%d (%s)\n",numsent,remains,recvlen,jsonbuf);
             }
         }
-        if ( retstr != space)
+        if ( retstr != space && retstr != space2 )
+        {
+            //printf("free retstr.%p\n",retstr);
             free(retstr);
+        }
     }
-    free(space);
+    //free(space);
+    //printf("free jsonbuf.%p\n",jsonbuf);
     free(jsonbuf);
     closesocket(sock);
-    portable_mutex_lock(&LP_gcmutex);
-    DL_APPEND(LP_garbage_collector,req);
+    if ( 1 )
+    {
+        portable_mutex_lock(&LP_gcmutex);
+        DL_APPEND(LP_garbage_collector,req);
+        portable_mutex_unlock(&LP_gcmutex);
+    }
+    else
+    {
+        //printf("free req.%p\n",req);
+        free(req);
+    }
     spawned--;
-    portable_mutex_unlock(&LP_gcmutex);
 }
 
 extern int32_t IAMLP;
@@ -787,10 +817,12 @@ void stats_rpcloop(void *args)
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         if ( port == RPC_port && ipbits != localhostbits )
         {
+            //printf("port.%u RPC_port.%u ipbits %x != %x\n",port,RPC_port,ipbits,localhostbits);
             closesocket(sock);
             continue;
         }
         req = calloc(1,sizeof(*req));
+        //printf("alloc req.%p\n",req);
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;

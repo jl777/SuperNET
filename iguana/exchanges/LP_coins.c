@@ -99,7 +99,34 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
 {
     if ( confpath != 0 && confpath[0] != 0 )
     {
-        strcpy(fname,confpath);
+		#if defined(NATIVE_WINDOWS)
+		// need to do something with "confpath":"`${process.env.HOME}`/.muecore/mue.conf" under Windows
+		char *ht = "`${process.env.HOME}`", *ht_start, *p_ht;
+		char ht_symbol[2];
+		
+		ht_start = strstr(confpath, ht);
+
+		if (ht_start) {
+			ht_start = ht_start + strlen(ht);
+			sprintf(fname, "%s\\", LP_getdatadir());
+			p_ht = ht_start;
+			if (p_ht[0] == '/' && p_ht[1] == '.') {
+				p_ht += 2;
+				//printf("%s\n", p_ht);
+				while (p_ht[0] != '\0') {
+					if (p_ht[0] == '/') strcat(fname, "\\"); else
+					{
+						ht_symbol[0] = p_ht[0]; ht_symbol[1] = '\0';
+						strcat(fname, ht_symbol);
+					}
+					p_ht++;
+				}
+				//printf("%s\n", fname);
+			}
+		} else strcpy(fname, confpath);
+		#else
+		strcpy(fname,confpath);
+		#endif	
         return;
     }
     sprintf(fname,"%s",LP_getdatadir());
@@ -119,7 +146,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
     else if ( name != 0 )
     {
         char name2[64];
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(NATIVE_WINDOWS)
         int32_t len;
         strcpy(name2,name);
         name2[0] = toupper(name2[0]);
@@ -164,7 +191,7 @@ uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,
     sprintf(confname,"%s.conf",confroot);
     if ( 0 )
         printf("%s (%s) %s confname.(%s) confroot.(%s)\n",symbol,assetname,name,confname,confroot);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(NATIVE_WINDOWS)
     int32_t len;
     confname[0] = toupper(confname[0]);
     len = (int32_t)strlen(confname);
@@ -352,6 +379,11 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     {
         coin->zcash = LP_IS_BITCOINCASH;
         //printf("set coin.%s <- LP_IS_BITCOINCASH %d\n",symbol,coin->zcash);
+    }
+    else if ( strcmp(symbol,"BTG") == 0 )
+    {
+        coin->zcash = LP_IS_BITCOINGOLD;
+        printf("set coin.%s <- LP_IS_BITCOINGOLD %d\n",symbol,coin->zcash);
     }
     return(port);
 }

@@ -48,9 +48,10 @@ cJSON *LP_portfolio_entry(struct iguana_info *coin)
 
 uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
 {
-    cJSON *array,*item; int32_t i,n; uint64_t valuesum,satoshisum,value;
+    cJSON *array,*item; bits256 zero; int32_t i,n; uint64_t valuesum,satoshisum,value;
     valuesum = satoshisum = 0;
-    if ( (array= LP_listunspent(symbol,coinaddr)) != 0 )
+    memset(zero.bytes,0,sizeof(zero));
+    if ( (array= LP_listunspent(symbol,coinaddr,zero,zero)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -63,7 +64,7 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
         }
         free_json(array);
     }
-    if ( (array= LP_inventory(symbol)) != 0 )
+    /*if ( (array= LP_inventory(symbol)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 && is_cJSON_Array(array) != 0 )
         {
@@ -75,8 +76,9 @@ uint64_t LP_balance(uint64_t *valuep,int32_t iambob,char *symbol,char *coinaddr)
             }
         }
         free_json(array);
-    }
+    }*/
     *valuep = valuesum;
+    satoshisum = valuesum;
     return(satoshisum);
 }
 
@@ -94,7 +96,7 @@ char *LP_portfolio()
             if ( iter == 0 )
             {
                 //printf("from portfolio\n");
-                LP_privkey_init(-1,coin,G.LP_privkey,G.LP_mypub25519);
+                //LP_privkey_init(-1,coin,G.LP_privkey,G.LP_mypub25519);
                 coin->balanceA = LP_balance(&coin->valuesumA,0,coin->symbol,coin->smartaddr);
                 coin->balanceB = LP_balance(&coin->valuesumB,1,coin->symbol,coin->smartaddr);
                 if ( strcmp(coin->symbol,"KMD") != 0 )
@@ -489,7 +491,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 
 int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,struct iguana_info *buy,struct iguana_info *sell,double relvolume,int32_t setbaserel,char *gui)
 {
-    char *retstr2; double bid,ask,maxprice; bits256 zero; uint32_t requestid,quoteid,iter,i; cJSON *retjson2;
+    char *retstr2; uint64_t txfee,desttxfee; double bid,ask,maxprice; bits256 zero; uint32_t requestid,quoteid,iter,i; cJSON *retjson2; struct LP_utxoinfo A; struct LP_address_utxo *utxos[1000]; int32_t max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
+    LP_txfees(&txfee,&desttxfee,buy->symbol,sell->symbol);
     requestid = quoteid = 0;
     LP_myprice(&bid,&ask,buy->symbol,sell->symbol);
     maxprice = ask;
@@ -507,7 +510,8 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
         {
             if ( relvolume < dstr(LP_MIN_TXFEE) )
                 break;
-            if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
+            if ( LP_address_myutxopair(&A,0,utxos,max,sell,sell->symbol,txfee,relvolume,maxprice,desttxfee) == 0 )
+            //if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
             {
                 memset(zero.bytes,0,sizeof(zero));
                 if ( (retstr2= LP_autobuy(ctx,"127.0.0.1",-1,buy->symbol,sell->symbol,maxprice,relvolume,60,24*3600,gui,LP_lastnonce+1,zero,1)) != 0 )
@@ -531,7 +535,8 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
                 for (i=0; i<100; i++)
                 {
                     relvolume *= .99;
-                    if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
+                    if ( LP_address_myutxopair(&A,0,utxos,max,sell,sell->symbol,txfee,relvolume,maxprice,desttxfee) == 0 )
+                    //if ( LP_utxo_bestfit(sell->symbol,SATOSHIDEN * relvolume) != 0 )
                     {
                         printf("i.%d relvolume %.8f from %.8f\n",i,relvolume,sell->relvolume);
                         break;

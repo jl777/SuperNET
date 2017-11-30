@@ -206,6 +206,93 @@ cJSON *LP_NXT_decrypt(uint64_t txnum,char *account,char *data,char *nonce,char *
     return(retjson);
 }
 
+int64_t NXTventure_qty(uint64_t assetid)
+{
+    char url[1024],*retstr; uint64_t qty=0; cJSON *retjson;
+    sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAccountAssets&account=NXT-XRK4-5HYK-5965-9FH4Z&includeAssetInfo=true");
+    if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+    {
+        printf("NXT_venture_qty(%s)\n",retstr);
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    //NXT_venture_qty({"accountAssets":[{"quantityQNT":"3900000000","unconfirmedQuantityQNT":"3900000000","decimals":4,"name":"ATOMIC","asset":"11694807213441909013"},{"quantityQNT":"2900000000","unconfirmedQuantityQNT":"2900000000","decimals":8,"name":"NSC","asset":"6775372232354238105"},{"quantityQNT":"750000000","unconfirmedQuantityQNT":"750000000","decimals":4,"name":"omnigames","asset":"7441230892853180965"},{"quantityQNT":"607438148","unconfirmedQuantityQNT":"607438148","decimals":4,"name":"ARDR","asset":"12422608354438203866"},{"quantityQNT":"451991779","unconfirmedQuantityQNT":"451991779","decimals":4,"name":"SuperNET","asset":"12071612744977229797"},{"quantityQNT":"146960000","unconfirmedQuantityQNT":"146960000","decimals":4,"name":"Privatebet","asset":"17083334802666450484"},{"quantityQNT":"79500188","unconfirmedQuantityQNT":"79500188","decimals":3,"name":"crypto777","asset":"13476425053110940554"},{"quantityQNT":"1495473","unconfirmedQuantityQNT":"1495473","decimals":0,"name":"jl777hodl","asset":"6932037131189568014"},{"quantityQNT":"500000","unconfirmedQuantityQNT":"500000","decimals":0,"name":"Boost","asset":"9719950459730291994"},{"quantityQNT":"200000","unconfirmedQuantityQNT":"200000","decimals":0,"name":"NXTforex","asset":"15245281832566929110"},{"quantityQNT":"150000","unconfirmedQuantityQNT":"150000","decimals":0,"name":"NXTsharks","asset":"8049009002993773168"},{"quantityQNT":"100000","unconfirmedQuantityQNT":"100000","decimals":5,"name":"solarweb","asset":"13604572534081373849"},{"quantityQNT":"75000","unconfirmedQuantityQNT":"75000","decimals":0,"name":"SNN","asset":"15113552914305929842"},{"quantityQNT":"57299","unconfirmedQuantityQNT":"57299","decimals":2,"name":"SLEUTH","asset":"4174874835406708311"},{"quantityQNT":"18801","unconfirmedQuantityQNT":"18801","decimals":2,"name":"BTCDdev","asset":"15131486578879082754"},{"quantityQNT":"18767","unconfirmedQuantityQNT":"18767","decimals":2,"name":"longzai","asset":"10955830010602647139"},{"quantityQNT":"13000","unconfirmedQuantityQNT":"13000","decimals":0,"name":"NXTventure","asset":"16212446818542881180"},{"quantityQNT":"7250","unconfirmedQuantityQNT":"7250","decimals":0,"name":"InstantDEX","asset":"15344649963748848799"},{"quantityQNT":"2873","unconfirmedQuantityQNT":"2873","decimals":4,"name":"EDinar","asset":"17740527756732147253"},{"quantityQNT":"39","unconfirmedQuantityQNT":"39","decimals":0,"name":"JebBush","asset":"1929419574701797581"},{"quantityQNT":"30","unconfirmedQuantityQNT":"30","decimals":0,"name":"Hilary","asset":"11814755740231942504"}],"requestProcessingTime":1})
+    return(qty);
+}
+
+void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
+
+void NXTventure_liquidation()
+{
+    /*{"quantityQNT":"607438148","unconfirmedQuantityQNT":"607438148","decimals":4,"name":"ARDR","asset":""},
+    {"quantityQNT":"451991779","unconfirmedQuantityQNT":"451991779","decimals":4,"name":"SuperNET","asset":"12071612744977229797"},
+    {"quantityQNT":"146960000","unconfirmedQuantityQNT":"146960000","decimals":4,"name":"Privatebet","asset":"17083334802666450484"},
+    {"quantityQNT":"79500188","unconfirmedQuantityQNT":"79500188","decimals":3,"name":"crypto777","asset":"13476425053110940554"},
+    {"quantityQNT":"1495473","unconfirmedQuantityQNT":"1495473","decimals":0,"name":"jl777hodl","asset":"6932037131189568014"},
+    {"quantityQNT":"7250","unconfirmedQuantityQNT":"7250","decimals":0,"name":"InstantDEX","asset":"15344649963748848799"},*/
+    char *assetids[][4] =
+    {
+        { "12422608354438203866", "607438148", "ARDR", "10000" },
+        { "12071612744977229797", "451991779", "SuperNET", "10000" },
+        { "17083334802666450484", "146960000", "Privatebet", "10000" },
+        { "13476425053110940554", "79500188", "crypto777", "1000" },
+        { "6932037131189568014", "1495473", "jl777hodl", "1" },
+        { "15344649963748848799", "7250", "InstantDEX", "1" },
+    };
+    void *cHandle=0; char *retstr,*retstr2,url[1024],*account; uint64_t txid,qty,qtyA,assetid,sum; double ratio; cJSON *array,*retjson2,*item,*retjson; int32_t i,j,decimals,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
+    char *passphrase = "";
+    sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAssetAccounts&asset=16212446818542881180");
+    if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (array= jarray(&n,retjson,"accountAssets")) != 0 )
+            {
+                for (j=0; j<numassetids; j++)
+                {
+                    assetid = calc_nxt64bits(assetids[j][0]);
+                    qtyA = calc_nxt64bits(assetids[j][1]);
+                    decimals = (int32_t)calc_nxt64bits(assetids[j][3]);
+                    printf("distribute %llu QNT of %s assetid %llu %.8f\n",(long long)qtyA,assetids[j][2],(long long)assetid,(double)qtyA / decimals);
+                    sum = 0;
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(array,i);
+                        qty = j64bits(item,"quantityQNT");
+                        ratio = (double)qty / (1000000. - 13000.);
+                        if ( (account= jstr(item,"accountRS")) != 0 && qtyA*ratio >= 1 )
+                        {
+                            if ( strcmp(account,"NXT-XRK4-5HYK-5965-9FH4Z") != 0 )
+                            {
+                                sum += (long long)(qtyA * ratio);
+                                sprintf(url,"requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000&deadline=60",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
+                                if ( (retstr2= curl_post(&cHandle,"http://127.0.0.1:7876/nxt","",url,"","","","")) != 0 )
+                                {
+                                    if ( (retjson2= cJSON_Parse(retstr2)) != 0 )
+                                    {
+                                        txid = j64bits(retjson2,"transaction");
+                                        printf("%s %.6f %8llu QNT %s -> %llu %.8f txid %llu\n",account,ratio,(long long)qtyA,assetids[j][2],(long long)(qtyA * ratio),((double)(long long)(qtyA * ratio))/decimals,(long long)txid);
+                                        free_json(retjson2);
+                                    }
+                                    free(retstr2);
+                                }
+                                usleep(250000);
+                            }
+                        }
+                    }
+                    printf("%s distribution total %llu QNT %.8f\n",assetids[j][2],(long long)sum,(double)sum/decimals);
+                }
+            }
+            free_json(retjson);
+        }
+        printf("NXTventure assethodlers.%d\n",n);
+        free(retstr);
+    }
+}
+
 cJSON *LP_NXT_redeems()
 {
     char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
@@ -388,7 +475,7 @@ uint64_t LP_RTsmartbalance(struct iguana_info *coin)
     return(valuesum);
 }
 
-cJSON *LP_getmempool(char *symbol,char *coinaddr)
+cJSON *LP_getmempool(char *symbol,char *coinaddr,bits256 txid,bits256 txid2)
 {
     cJSON *array; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
@@ -398,7 +485,7 @@ cJSON *LP_getmempool(char *symbol,char *coinaddr)
         return(cJSON_Parse("{\"error\":\"no native coin\"}"));
     if ( coin->electrum == 0 )
         return(bitcoin_json(coin,"getrawmempool","[]"));
-    else return(electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr));
+    else return(electrum_address_getmempool(symbol,coin->electrum,&array,coinaddr,txid,txid2));
 }
 
 cJSON *LP_paxprice(char *fiat)
@@ -410,7 +497,7 @@ cJSON *LP_paxprice(char *fiat)
     return(bitcoin_json(coin,"paxprice",buf));
 }
 
-cJSON *LP_gettx(char *symbol,bits256 txid)
+cJSON *LP_gettx(char *symbol,bits256 txid,int32_t suppress_errors)
 {
     struct iguana_info *coin; char buf[512],str[65]; cJSON *retjson;
     //printf("LP_gettx %s %s\n",symbol,bits256_str(str,txid));
@@ -431,7 +518,8 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
     {
         if ( (retjson= electrum_transaction(symbol,coin->electrum,&retjson,txid,0)) != 0 )
             return(retjson);
-        else printf("failed blockchain.transaction.get %s %s\n",coin->symbol,bits256_str(str,txid));
+        else if ( suppress_errors == 0 )
+            printf("failed blockchain.transaction.get %s %s\n",coin->symbol,bits256_str(str,txid));
         return(cJSON_Parse("{\"error\":\"no transaction bytes\"}"));
     }
 }
@@ -439,7 +527,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid)
 uint32_t LP_locktime(char *symbol,bits256 txid)
 {
     cJSON *txobj; uint32_t locktime = 0;
-    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+    if ( (txobj= LP_gettx(symbol,txid,0)) != 0 )
     {
         locktime = juint(txobj,"locktime");
         free_json(txobj);
@@ -485,7 +573,7 @@ cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,
 
 cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
 {
-    char buf[128],str[65]; cJSON *item,*array,*vouts,*txobj,*retjson=0; int32_t i,v,n; bits256 t; struct iguana_info *coin; struct LP_transaction *tx; struct LP_address_utxo *up;
+    char buf[128],str[65]; cJSON *item,*array,*vouts,*txobj,*retjson=0; int32_t i,v,n; bits256 t,zero; struct iguana_info *coin; struct LP_transaction *tx; struct LP_address_utxo *up;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     if ( (coin= LP_coinfind(symbol)) == 0 )
@@ -522,7 +610,8 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
                     return(0);
                 //return(LP_gettxout_json(txid,vout,up->U.height,coinaddr,up->U.value));
             }
-            if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr,1)) != 0 )
+            memset(zero.bytes,0,sizeof(zero));
+            if ( (array= electrum_address_listunspent(coin->symbol,0,&array,coinaddr,1,txid,zero)) != 0 )
             {
                 //printf("array.(%s)\n",jprint(array,0));
                 if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
@@ -586,7 +675,7 @@ cJSON *LP_validateaddress(char *symbol,char *address)
         }
         bitcoin_address(coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,20);
         jadd(retjson,"ismine",strcmp(address,coin->smartaddr) == 0 ? cJSON_CreateTrue() : cJSON_CreateFalse());
-        jadd(retjson,"iswatchonly",cJSON_CreateFalse());
+        jadd(retjson,"iswatchonly",cJSON_CreateTrue());
         jadd(retjson,"isscript",addrtype == coin->p2shtype ? cJSON_CreateTrue() : cJSON_CreateFalse());
         return(retjson);
     }
@@ -599,12 +688,30 @@ cJSON *LP_validateaddress(char *symbol,char *address)
 
 int32_t LP_address_ismine(char *symbol,char *address)
 {
-    int32_t doneflag = 0; cJSON *retjson;
+    int32_t doneflag = 0; cJSON *retjson,*obj;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
-        if ( jobj(retjson,"ismine") != 0 && is_cJSON_True(jobj(retjson,"ismine")) != 0 )
+        if ( (obj= jobj(retjson,"ismine")) != 0 && is_cJSON_True(obj) != 0 )
+        {
+            doneflag = 1;
+            //printf("%s ismine (%s)\n",address,jprint(retjson,0));
+        }
+        //printf("%s\n",jprint(retjson,0));
+        free_json(retjson);
+    }
+    return(doneflag);
+}
+
+int32_t LP_address_iswatched(char *symbol,char *address)
+{
+    int32_t doneflag = 0; cJSON *retjson,*obj;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(0);
+    if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
+    {
+        if ( (obj= jobj(retjson,"iswatched")) != 0 && is_cJSON_True(obj) != 0 )
         {
             doneflag = 1;
             //printf("%s ismine (%s)\n",address,jprint(retjson,0));
@@ -633,29 +740,100 @@ int32_t LP_address_isvalid(char *symbol,char *address)
     return(isvalid);
 }
 
-cJSON *LP_listunspent(char *symbol,char *coinaddr)
+cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxid2)
 {
-    char buf[128]; cJSON *retjson; int32_t numconfs; struct iguana_info *coin;
+    char buf[128],*retstr; struct LP_address *ap; cJSON *retjson; int32_t numconfs,usecache=1; struct iguana_info *coin;
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
-    //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
     if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
     {
-        if ( LP_address_ismine(symbol,coinaddr) > 0 )
+        if ( (ap= LP_addressfind(coin,symbol)) != 0 )
+        {
+            if ( ap->unspenttime == 0 )
+                usecache = 0;
+            else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+1 )
+                usecache = 0;
+            if ( usecache != 0 && (retstr= LP_unspents_filestr(symbol,coinaddr)) != 0 )
+            {
+                retjson = cJSON_Parse(retstr);
+                free(retstr);
+                return(retjson);
+            }
+        }
+        if ( LP_address_ismine(symbol,coinaddr) > 0 || LP_address_iswatched(symbol,coinaddr) > 0 )
         {
             if ( strcmp(symbol,"BTC") == 0 )
                 numconfs = 0;
             else numconfs = 1;
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
-            return(bitcoin_json(coin,"listunspent",buf));
+            //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
+            retjson = bitcoin_json(coin,"listunspent",buf);
+            retstr = jprint(retjson,0);
+            LP_unspents_cache(coin->symbol,coinaddr,retstr,1);
+            free(retstr);
+            if ( ap != 0 )
+                ap->unspenttime = (uint32_t)time(NULL);
+            return(retjson);
         } else return(LP_address_utxos(coin,coinaddr,0));
-    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1));
+    } else return(electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1,reftxid,reftxid2));
 }
 
-int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
+cJSON *LP_listreceivedbyaddress(char *symbol,char *coinaddr)
+{
+    char buf[128],*addr; bits256 zero; cJSON *retjson,*array,*item; int32_t i,n; struct iguana_info *coin;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
+    if ( coin == 0 || (IAMLP == 0 && coin->inactive != 0) )
+        return(cJSON_Parse("{\"error\":\"no coin\"}"));
+    memset(zero.bytes,0,sizeof(zero));
+    if ( coin->electrum == 0 )
+    {
+        sprintf(buf,"[1, false, true]");
+        if ( (array= bitcoin_json(coin,"listreceivedbyaddress",buf)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( (addr= jstr(item,"address")) != 0 && strcmp(addr,coinaddr) == 0 )
+                    {
+                        retjson = jduplicate(jobj(item,"txids"));
+                        free_json(array);
+                        return(retjson);
+                    }
+                }
+            }
+        }
+        return(cJSON_Parse("[]"));
+    } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
+}
+
+int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t *voutp,int32_t *heightp,cJSON *item)
+{
+    int64_t satoshis = 0;
+    if ( coin->electrum == 0 )
+    {
+        *txidp = jbits256(item,"txid");
+        *voutp = juint(item,"vout");
+        satoshis = LP_value_extract(item,0);
+        *heightp = LP_txheight(coin,*txidp);
+    }
+    else
+    {
+        *txidp = jbits256(item,"tx_hash");
+        *voutp = juint(item,"tx_pos");
+        satoshis = j64bits(item,"value");
+        *heightp = jint(item,"height");
+    }
+    return(satoshis);
+}
+
+int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag,bits256 reftxid,bits256 reftxid2)
 {
     struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0;
     if ( symbol == 0 || symbol[0] == 0 )
@@ -664,7 +842,7 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
     {
         if ( coin->electrum != 0 )
         {
-            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,1)) != 0 )
+            if ( (retjson= electrum_address_listunspent(symbol,coin->electrum,&retjson,coinaddr,fullflag,reftxid,reftxid2)) != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
                 //printf("LP_listunspent_issue.%s %s.%d %s\n",symbol,coinaddr,n,jprint(retjson,0));
@@ -672,21 +850,12 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag)
         }
         else
         {
-            if ( strcmp(coin->smartaddr,coinaddr) == 0 )
-            {
-                retjson = LP_listunspent(symbol,coinaddr);
-                coin->numutxos = cJSON_GetArraySize(retjson);
-                //printf("SELF_LISTUNSPENT.(%s %s)\n",symbol,coinaddr);
-            }
-            else if ( IAMLP == 0 )
-            {
-                //printf("LP_listunspent_query.(%s %s)\n",symbol,coinaddr);
-                LP_listunspent_query(coin->symbol,coin->smartaddr);
-            }
+            retjson = LP_listunspent(symbol,coinaddr,reftxid,reftxid2);
+            coin->numutxos = cJSON_GetArraySize(retjson);
             if ( retjson != 0 )
             {
                 n = cJSON_GetArraySize(retjson);
-                if ( electrum_process_array(coin,0,coinaddr,retjson,1) != 0 )
+                if ( electrum_process_array(coin,0,coinaddr,retjson,1,reftxid,reftxid2) != 0 )
                 {
                     //LP_postutxos(symbol,coinaddr); // might be good to not saturate
                 }
@@ -805,9 +974,9 @@ double _LP_getestimatedrate(struct iguana_info *coin)
                 rate = atof(retstr) / 1024.;
                 if ( rate < 0.00000020 )
                     rate = 0.00000020;
-                rate *= 1.1;
+                rate *= 1.5;
                 if ( coin->electrum != 0 )
-                    rate *= 1.667;
+                    rate *= 1.5;
                 if ( fabs(rate - coin->rate) > SMALLVAL )
                     printf("t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",coin->ratetime,coin->symbol,retstr,rate,coin->rate);
                 coin->rate = rate;
@@ -998,17 +1167,19 @@ bits256 LP_getbestblockhash(struct iguana_info *coin)
 
 char *LP_blockhashstr(char *symbol,int32_t height)
 {
-    cJSON *array; char *paramstr,*retstr; struct iguana_info *coin;
+    char params[64],*retstr; struct iguana_info *coin; //cJSON *array;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     coin = LP_coinfind(symbol);
     if ( coin == 0 || coin->electrum != 0 )
         return(0);
-    array = cJSON_CreateArray();
-    jaddinum(array,height);
-    paramstr = jprint(array,1);
-    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"getblockhash",paramstr);
-    free(paramstr);
+    //array = cJSON_CreateArray();
+    //jaddinum(array,height);
+    //paramstr = jprint(array,1);
+    sprintf(params,"[%d]",height);
+    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"getblockhash",params);
+    //free(paramstr);
+    //printf("blockhashstr.(%s)\n",retstr);
     return(retstr);
 }
 
@@ -1161,7 +1332,7 @@ const char *Notaries_elected[][2] =
 int32_t LP_txhasnotarization(struct iguana_info *coin,bits256 txid)
 {
     cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
-    if ( (txobj= LP_gettx(coin->symbol,txid)) != 0 )
+    if ( (txobj= LP_gettx(coin->symbol,txid,0)) != 0 )
     {
         if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
         {
@@ -1173,7 +1344,7 @@ int32_t LP_txhasnotarization(struct iguana_info *coin,bits256 txid)
                     vin = jitem(vins,i);
                     spenttxid = jbits256(vin,"txid");
                     spentvout = jint(vin,"vout");
-                    if ( (spentobj= LP_gettx(coin->symbol,spenttxid)) != 0 )
+                    if ( (spentobj= LP_gettx(coin->symbol,spenttxid,0)) != 0 )
                     {
                         if ( (vouts= jarray(&numvouts,spentobj,"vout")) != 0 )
                         {
