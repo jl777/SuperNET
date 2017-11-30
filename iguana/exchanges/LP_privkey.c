@@ -170,6 +170,7 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
         n = 16;
     else if ( n > 777 )
         n = 777;
+    calc_NXTaddr(G.LP_NXTaddr,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
     printf("generator (%s) secrets.[%d] <%s> t.%u p.%u\n",coinaddr,n,passphrase,taddr,pubtype);

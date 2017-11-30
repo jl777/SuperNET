@@ -242,10 +242,9 @@ void NXTventure_liquidation()
         { "6932037131189568014", "1495473", "jl777hodl", "1" },
         { "15344649963748848799", "7250", "InstantDEX", "1" },
     };
-    void *cHandle=0; char *retstr,*retstr2,url[1024],*account; uint64_t qty,qtyA,assetid,sum; double ratio; cJSON *array,*item,*retjson; int32_t i,j,decimals,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
+    void *cHandle=0; char *retstr,*retstr2,url[1024],*account; uint64_t txid,qty,qtyA,assetid,sum; double ratio; cJSON *array,*retjson2,*item,*retjson; int32_t i,j,decimals,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
     char *passphrase = "";
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAssetAccounts&asset=16212446818542881180");
-    // {"quantityQNT":"380910","accountRS":"NXT-74VC-NKPE-RYCA-5LMPT","unconfirmedQuantityQNT":"380910","asset":"16212446818542881180","account":"4383817337783094122"}
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -268,14 +267,17 @@ void NXTventure_liquidation()
                         {
                             if ( strcmp(account,"NXT-XRK4-5HYK-5965-9FH4Z") != 0 )
                             {
-                                printf("%s %.6f %8llu QNT %s -> %llu %.8f\n",account,ratio,(long long)qtyA,assetids[j][2],(long long)(qtyA * ratio),((double)(long long)(qtyA * ratio))/decimals);
                                 sum += (long long)(qtyA * ratio);
                                 sprintf(url,"requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000&deadline=60",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
                                 if ( (retstr2= curl_post(&cHandle,"http://127.0.0.1:7876/nxt","",url,"","","","")) != 0 )
                                 {
-                                    printf("%s\n",retstr2);
+                                    if ( (retjson2= cJSON_Parse(retstr2)) != 0 )
+                                    {
+                                        txid = j64bits(retjson2,"transaction");
+                                        printf("%s %.6f %8llu QNT %s -> %llu %.8f txid %llu\n",account,ratio,(long long)qtyA,assetids[j][2],(long long)(qtyA * ratio),((double)(long long)(qtyA * ratio))/decimals,(long long)txid);
+                                        free_json(retjson2);
+                                    }
                                     free(retstr2);
-                                    getchar();
                                 }
                                 usleep(250000);
                             }
@@ -296,7 +298,6 @@ cJSON *LP_NXT_redeems()
     char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[20],mult,txnum,assetid,qty; int32_t i,ind,numtx,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
     uint64_t txnum_marker = calc_nxt64bits("0");
     uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143");
-    NXTventure_liquidation();
 char *passphrase = "";
 char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
     memset(totals,0,sizeof(totals));
