@@ -231,16 +231,16 @@ void NXTventure_liquidation()
     {"quantityQNT":"79500188","unconfirmedQuantityQNT":"79500188","decimals":3,"name":"crypto777","asset":"13476425053110940554"},
     {"quantityQNT":"1495473","unconfirmedQuantityQNT":"1495473","decimals":0,"name":"jl777hodl","asset":"6932037131189568014"},
     {"quantityQNT":"7250","unconfirmedQuantityQNT":"7250","decimals":0,"name":"InstantDEX","asset":"15344649963748848799"},*/
-    char *assetids[][3] =
+    char *assetids[][4] =
     {
-        { "12422608354438203866", "607438148", "ARDR" },
-        { "12071612744977229797", "451991779", "SuperNET" },
-        { "17083334802666450484", "146960000", "Privatebet" },
-        { "13476425053110940554", "79500188", "crypto777" },
-        { "6932037131189568014", "1495473", "jl777hodl" },
-        { "15344649963748848799", "7250", "InstantDEX" },
+        { "12422608354438203866", "607438148", "ARDR", "10000" },
+        { "12071612744977229797", "451991779", "SuperNET", "10000" },
+        { "17083334802666450484", "146960000", "Privatebet", "10000" },
+        { "13476425053110940554", "79500188", "crypto777", "1000" },
+        { "6932037131189568014", "1495473", "jl777hodl", "1" },
+        { "15344649963748848799", "7250", "InstantDEX", "1" },
     };
-    char *retstr,url[1024],*account; uint64_t qty,qtyA,assetid; double ratio; cJSON *array,*item,*retjson; int32_t i,j,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
+    char *retstr,url[1024],*account; uint64_t qty,qtyA,assetid; double ratio; cJSON *array,*item,*retjson; int32_t i,j,decimals,numassetids=(int32_t)(sizeof(assetids)/sizeof(*assetids)),n=0;
     char *passphrase = "";
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAssetAccounts&asset=16212446818542881180");
     // {"quantityQNT":"380910","accountRS":"NXT-74VC-NKPE-RYCA-5LMPT","unconfirmedQuantityQNT":"380910","asset":"16212446818542881180","account":"4383817337783094122"}
@@ -254,7 +254,8 @@ void NXTventure_liquidation()
                 {
                     assetid = calc_nxt64bits(assetids[j][0]);
                     qtyA = calc_nxt64bits(assetids[j][1]);
-                    printf("distribute %llu QNT of assetid %llu\n",(long long)qtyA,(long long)assetid);
+                    decimals = (int32_t)calc_nxt64bits(assetids[j][3]);
+                    printf("distribute %llu QNT of assetid %llu %.8f\n",(long long)qtyA,(long long)assetid,(double)qtyA / decimals);
                     for (i=0; i<n; i++)
                     {
                         item = jitem(array,i);
@@ -264,7 +265,7 @@ void NXTventure_liquidation()
                         {
                             if ( strcmp(account,"NXT-XRK4-5HYK-5965-9FH4Z") != 0 )
                             {
-                                printf("%s %.6f %8llu QNT %s -> %.8f\n",account,ratio,(long long)qtyA,assetids[j][2],qtyA * ratio);
+                                printf("%s %.6f %8llu QNT %s -> %llu %.8f\n",account,ratio,(long long)qtyA,assetids[j][2],(long long)(qtyA * ratio),((double)(long long)(qtyA * ratio))/decimals);
                                 sprintf(url,"http://127.0.0.1:7876/nxt?requestType=transferAsset&secretPhrase=%s&recipient=%s&asset=%llu&quantityQNT=%llu&feeNQT=100000000",passphrase,account,(long long)assetid,(long long)(qtyA * ratio));
                             }
                         }
