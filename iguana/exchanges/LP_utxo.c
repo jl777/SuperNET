@@ -479,6 +479,8 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,txid,vout)) == 0 )
                     continue;
                 else free_json(txobj);
+                if ( LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0) <= 0 )
+                    return(0);
                 LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
@@ -976,38 +978,16 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
                     strcpy(destaddr,destaddr2);
                 if ( coin != 0 )
                 {
-                    /*if ( coin->electrum != 0 )
-                    {
-                        if ( (tx= LP_transactionfind(coin,txid)) != 0 && vout < tx->numvouts && tx->outpoints[vout].spendheight > 0 )
-                        {
-                            //printf("txid spent\n");
-                            return(0);
-                        }
-                        if ( (tx= LP_transactionfind(coin,txid2)) != 0 && vout2 < tx->numvouts && tx->outpoints[vout2].spendheight > 0 )
-                        {
-                            //printf("txid2 spent\n");
-                            return(0);
-                        }
-                        if ( (up= LP_address_utxofind(coin,destaddr,txid,vout)) != 0 && up->spendheight > 0 )
-                        {
-                            //printf("txid %s spentB\n",destaddr);
-                            return(0);
-                        }
-                        if ( (up= LP_address_utxofind(coin,destaddr,txid2,vout2)) != 0 && up->spendheight > 0 )
-                        {
-                            //printf("txid2 %s spentB\n",destaddr);
-                            return(0);
-                        }
-                    }
-                    else*/
-                    {
-                        if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid,vout)) == 0 )
-                            return(0);
-                        else free_json(txobj);
-                        if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid2,vout2)) == 0 )
-                            return(0);
-                        else free_json(txobj);
-                    }
+                    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid,vout)) == 0 )
+                        return(0);
+                    else free_json(txobj);
+                    if ( (txobj= LP_gettxout(coin->symbol,destaddr,txid2,vout2)) == 0 )
+                        return(0);
+                    else free_json(txobj);
+                    if ( LP_numconfirms(coin->symbol,destaddr,txid,vout,0) <= 0 )
+                        return(0);
+                    if ( LP_numconfirms(coin->symbol,destaddr,txid2,vout2,0) <= 0 )
+                        return(0);
                 }
                 return(1);
             }

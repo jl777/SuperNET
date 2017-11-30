@@ -208,6 +208,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     bits256 privkey,userpub,zero,userpass,checkkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype;
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
+        calc_NXTaddr(G.LP_NXTaddr,userpub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
         conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
         //vcalc_sha256(0,checkkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
         //printf("SHA256.(%s) ",bits256_str(pstr,checkkey));

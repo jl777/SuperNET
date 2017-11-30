@@ -477,6 +477,7 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
+int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool);
 void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid,uint32_t quoteid);
 cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len);
 cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len);
