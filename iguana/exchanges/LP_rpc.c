@@ -208,12 +208,11 @@ cJSON *LP_NXT_decrypt(uint64_t txnum,char *account,char *data,char *nonce,char *
 
 void NXTventure_liquidation()
 {
-    char *retstr,url[1024],*account; uint64_t qty; cJSON *array,*item; int32_t i,n;
+    char *retstr,url[1024],*account; uint64_t qty; cJSON *array,*item; int32_t i,n=0;
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getAssetAccounts&asset=16212446818542881180");
     // {"quantityQNT":"380910","accountRS":"NXT-74VC-NKPE-RYCA-5LMPT","unconfirmedQuantityQNT":"380910","asset":"16212446818542881180","account":"4383817337783094122"}
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
-        printf("NXTventure assethodlers:\n");
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -228,6 +227,7 @@ void NXTventure_liquidation()
             }
             free_json(array);
         }
+        printf("NXTventure assethodlers.%d: (%s)\n",n,retstr);
         free(retstr);
     }
 }
