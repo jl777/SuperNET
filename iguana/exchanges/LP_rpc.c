@@ -887,9 +887,9 @@ double _LP_getestimatedrate(struct iguana_info *coin)
                 rate = atof(retstr) / 1024.;
                 if ( rate < 0.00000020 )
                     rate = 0.00000020;
-                rate *= 1.1;
+                rate *= 1.5;
                 if ( coin->electrum != 0 )
-                    rate *= 1.667;
+                    rate *= 1.5;
                 if ( fabs(rate - coin->rate) > SMALLVAL )
                     printf("t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",coin->ratetime,coin->symbol,retstr,rate,coin->rate);
                 coin->rate = rate;
