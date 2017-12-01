@@ -1,4 +1,3 @@
-
 /******************************************************************************
  * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
@@ -17,30 +16,6 @@
 //  LP_rpc.c
 //  marketmaker
 //
-
-/*char *LP_issue_curl(char *debugstr,char *destip,uint16_t port,char *url)
-{
-    char *retstr = 0; int32_t maxerrs; struct LP_peerinfo *peer = 0;
-    peer = LP_peerfind((uint32_t)calc_ipbits(destip),port);
-    if ( strcmp(destip,"127.0.0.1") != 0 )
-        port--;
-    maxerrs = LP_MAXPEER_ERRORS;
-    if ( peer == 0 || (peer->errors < maxerrs || peer->good >= LP_MINPEER_GOOD) )
-    {
-        printf("issue.(%s)\n",url);
-        if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) == 0 )
-        {
-            if ( peer != 0 )
-            {
-                peer->errors++;
-                peer->good *= LP_PEERGOOD_ERRORDECAY;
-            } else printf("%s error on (%s:%u) without peer\n",debugstr,destip,port);
-        }
-        else if ( peer != 0 )
-            peer->good++;
-    }
-    return(retstr);
-}*/
 
 char *LP_isitme(char *destip,uint16_t destport)
 {
@@ -99,13 +74,6 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
                         free_json(retjson);
                         retjson = 0;
                     }
-                //printf("electrum %s.%s -> (%s)\n",method,params,jprint(retjson,0));
-                    /*if ( (resultjson= jobj(retjson,"result")) != 0 )
-                    {
-                        resultjson = jduplicate(resultjson);
-                        free_json(retjson);
-                        retjson = resultjson;
-                    }*/
                 }
             }
         } else retjson = cJSON_Parse("{\"result\":\"disabled\"}");
@@ -225,23 +193,6 @@ uint32_t LP_locktime(char *symbol,bits256 txid)
     return(locktime);
 }
 
-/*uint32_t LP_txtime(char *symbol,bits256 txid)
-{
-    struct LP_transaction *tx; struct iguana_info *coin; int32_t timestamp=0,height = 0;
-    char str[65]; printf("LP_txtime (%s %s)\n",symbol,bits256_str(str,txid));
-    if ( (timestamp= LP_locktime(symbol,txid)) != 0 )
-        return(timestamp);
-    if ( (coin= LP_coinfind(symbol)) != 0 )
-    {
-        if ( (tx= LP_transactionfind(coin,txid)) != 0 )
-        {
-            height = tx->height;
-            timestamp = LP_heighttime(symbol,height);
-        }
-    }
-    return(height);
-}*/
-
 cJSON *LP_gettxout_json(bits256 txid,int32_t vout,int32_t height,char *coinaddr,uint64_t value)
 {
     cJSON *retjson,*addresses,*sobj;
@@ -327,17 +278,6 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
         return(cJSON_Parse("{\"error\":\"couldnt get tx\"}"));
     }
 }
-
-/*cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t skip)
-{
-    char buf[128]; struct iguana_info *coin = LP_coinfind(symbol);
-    if ( coin == 0 )
-        return(cJSON_Parse("{\"error\":\"no coin\"}"));
-    if ( count == 0 )
-        count = 100;
-    sprintf(buf,"[\"%s\", %d, %d, true]",coinaddr,count,skip);
-    return(bitcoin_json(coin,"listtransactions",buf));
-}*/
 
 cJSON *LP_validateaddress(char *symbol,char *address)
 {
@@ -604,10 +544,10 @@ int32_t LP_importaddress(char *symbol,char *address)
     if ( coin->electrum != 0 )
     {
         /*if ( (retjson= electrum_address_subscribe(symbol,coin->electrum,&retjson,address)) != 0 )
-        {
-            printf("importaddress.(%s) -> %s\n",address,jprint(retjson,0));
-            free_json(retjson);
-        }*/
+         {
+         printf("importaddress.(%s) -> %s\n",address,jprint(retjson,0));
+         free_json(retjson);
+         }*/
         return(0);
     }
     else
