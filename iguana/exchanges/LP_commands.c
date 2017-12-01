@@ -212,7 +212,7 @@ zeroconf_claim(address, expiration=0)\n\
         {
             if ( (ptr= LP_coinsearch("KMD")) != 0 )
             {
-                return(LP_instantdex_claim(ptr,jstr(argjson,"address"),juint(argjson,"expiration")));
+                return(LP_instantdex_claim(ptr));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }

@@ -198,10 +198,11 @@ int64_t LP_claimtx(void *ctx,struct iguana_info *coin,cJSON *txids,bits256 utxot
     return(sum);
 }
 
-char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t expiration)
+char *LP_instantdex_claim(struct iguana_info *coin)
 {
     static void *ctx;
-    uint8_t redeemscript[512]; char vinaddr[64],checkaddr[64],destaddr[64],str[65]; uint32_t now,redeemlen,claimtime; int32_t i,j,n,flagi,flag,weeki,numvouts,utxovout; bits256 utxotxid; int64_t sum,satoshis,weeksatoshis; cJSON *array,*txids,*retjson,*newarray,*txjson,*vouts,*vout0,*vout1,*vout2;
+    uint8_t redeemscript[512]; char vinaddr[64],checkaddr[64],destaddr[64],str[65]; uint32_t now,redeemlen,claimtime,expiration=0; int32_t i,j,n,flagi,flag,weeki,numvouts,utxovout; bits256 utxotxid; int64_t sum,satoshis,weeksatoshis; cJSON *array,*txids,*retjson,*newarray,*txjson,*vouts,*vout0,*vout1,*vout2;
+    printf("inside instantdex claim\n");
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( strcmp(coin->symbol,"KMD") != 0 )
