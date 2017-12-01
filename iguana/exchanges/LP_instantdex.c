@@ -214,14 +214,14 @@ char *LP_instantdex_claim(struct iguana_info *coin)
     newarray = cJSON_CreateArray();
     if ( (array= LP_instantdex_txids()) != 0 )
     {
-        printf("claiming from.(%s)\n",jprint(array,0));
+        //printf("claiming from.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             flag = 0;
             for (i=0; i<n; i++)
             {
                 utxotxid = jbits256i(array,i);
-                printf("%d of %d: %s\n",i,n,bits256_str(str,utxotxid));
+                //printf("%d of %d: %s\n",i,n,bits256_str(str,utxotxid));
                 if ( flag == 1 )
                 {
                     jaddibits256(newarray,utxotxid);
@@ -256,7 +256,7 @@ char *LP_instantdex_claim(struct iguana_info *coin)
                                     jaddnum(item,"interest",dstr(satoshis)-dstr(LP_value_extract(vout0,0)));
                                     if ( claimtime <= expiration )
                                     {
-                                        printf("claimtime.%u vs locktime.%u, need to wait %d seconds to %s claim %.8f\n",claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
+                                        printf("claimtime.%u vs %u, wait %d seconds to %s claim %.8f\n",claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
                                         jaddnum(item,"waittime",(int32_t)expiration-claimtime);
                                         jaddi(txids,item);
                                         break;
