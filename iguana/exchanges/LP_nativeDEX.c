@@ -174,6 +174,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_bitcoin.c"
 #include "LP_coins.c"
 #include "LP_rpc.c"
+#include "LP_NXT.c"
 #include "LP_cache.c"
 #include "LP_RTmetrics.c"
 #include "LP_utxo.c"
