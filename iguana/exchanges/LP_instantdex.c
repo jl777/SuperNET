@@ -22,7 +22,7 @@
 void LP_instantdex_txidaddfname(char *fname,char *afname)
 {
     sprintf(fname,"%s/instantdex.json",GLOBAL_DBDIR);
-    sprintf(fname,"%s/instantdex_append.json",GLOBAL_DBDIR);
+    sprintf(afname,"%s/instantdex_append.json",GLOBAL_DBDIR);
 }
 
 cJSON *LP_instantdex_txids()
