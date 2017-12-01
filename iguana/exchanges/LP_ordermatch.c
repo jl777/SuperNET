@@ -492,9 +492,12 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,base,rel,zero,jprint(reqjson,0));
-                //sleep(1);
-                //LP_reserved_msg(1,base,rel,qp->desthash,jprint(reqjson,0));
-                //LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
+                if ( IAMLP == 0 )
+                {
+                    sleep(1);
+                    LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+                }
+                LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
                 free_json(reqjson);
                 retval = 0;
             } else printf("error launching swaploop\n");
@@ -910,8 +913,11 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
         printf("send reserved\n");
         //LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
-        sleep(1);
-        LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+        if ( IAMLP == 0 )
+        {
+            sleep(1);
+            LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+        }
         free_json(reqjson);
         return(qp);
     } else printf("request processing selected ineligible utxos?\n");
