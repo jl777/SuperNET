@@ -17,7 +17,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// verify claim works (display interest in electrum)
+// verify claim works
 // big BTC swaps
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //

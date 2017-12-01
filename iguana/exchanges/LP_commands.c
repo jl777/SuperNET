@@ -154,8 +154,8 @@ bot_settings(botid, newprice, newvolume)\n\
 bot_status(botid)\n\
 bot_stop(botid)\n\
 bot_pause(botid)\n\
-zeroconf_deposit(weeks, amount, broadcast=0)\n\
-zeroconf_claim(address, expiration=0)\n\
+instantdex_deposit(weeks, amount, broadcast=0)\n\
+instantdex_claim()\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
@@ -198,17 +198,17 @@ zeroconf_claim(address, expiration=0)\n\
                 return(jprint(retjson,1));
             }
         }
-        else if ( strcmp(method,"zeroconf_deposit") == 0 )
+        else if ( strcmp(method,"instantdex_deposit") == 0 )
         {
             if ( (ptr= LP_coinsearch("KMD")) != 0 )
             {
-                if ( jint(argjson,"weeks") < 0 || jdouble(argjson,"amount") < 10. )
-                    return(clonestr("{\"error\":\"deposit_create needs to have weeks and amount\"}"));
+                if ( jint(argjson,"weeks") <= 0 || jdouble(argjson,"amount") < 10. )
+                    return(clonestr("{\"error\":\"instantdex_deposit needs to have weeks and amount\"}"));
                 else return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jint(argjson,"broadcast")));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
-        else if ( strcmp(method,"zeroconf_claim") == 0 )
+        else if ( strcmp(method,"instantdex_claim") == 0 )
         {
             if ( (ptr= LP_coinsearch("KMD")) != 0 )
             {
