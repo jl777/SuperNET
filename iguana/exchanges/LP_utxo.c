@@ -480,7 +480,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                     continue;
                 else free_json(txobj);
                 if ( LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0) <= 0 )
-                    return(0);
+                    continue;
                 LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
@@ -619,6 +619,8 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     jaddstr(retjson,"coin",coin->symbol);
     jaddstr(retjson,"address",coinaddr);
     jaddnum(retjson,"balance",dstr(balance));
+    if ( strcmp(coin->symbol,"KMD") == 0 && strcmp(coin->smartaddr,coinaddr) == 0 )
+        jaddnum(retjson,"zcredits",dstr(LP_myzcredits()));
     return(retjson);
 }
 

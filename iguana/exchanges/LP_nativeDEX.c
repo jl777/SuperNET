@@ -17,8 +17,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// prune expired/spent deposits from instantdex.json
-// -CPU usage spike after 12 hours
 // verify claim works
 // big BTC swaps
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
@@ -174,6 +172,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_bitcoin.c"
 #include "LP_coins.c"
 #include "LP_rpc.c"
+#include "LP_NXT.c"
 #include "LP_cache.c"
 #include "LP_RTmetrics.c"
 #include "LP_utxo.c"

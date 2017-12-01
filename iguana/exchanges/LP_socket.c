@@ -1022,12 +1022,14 @@ void LP_dedicatedloop(void *arg)
                         if ( poll(&fds,1,1000) <= 0 )
                         {
                             printf("no more electrum data after a second\n");
+                            electrum_kickstart(ep);
                             break;
                         }
                     }
                     else
                     {
-                        printf("no more electrum data when expected\n");
+                        printf("no more electrum data when expected2\n");
+                        electrum_kickstart(ep);
                         break;
                     }
                 }

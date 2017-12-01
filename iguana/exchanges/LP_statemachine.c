@@ -3540,6 +3540,65 @@ void LP_price_broadcastloop(void *ctx)
         sleep(LP_ORDERBOOK_DURATION * .9);
     }
 }
+/*if ( expiration != 0 )
+ {
+ redeemlen = LP_deposit_addr(vinaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
+ if ( strcmp(depositaddr,vinaddr) == 0 )
+ {
+ claimtime = (uint32_t)time(NULL)-777;
+ if ( claimtime <= expiration )
+ {
+ printf("claimtime.%u vs locktime.%u, need to wait %d seconds\n",claimtime,timestamp,(int32_t)timestamp-claimtime);
+ return(clonestr("{\"error\":\"need to wait to claim\"}"));
+ }
+ sum += LP_claimtx(ctx,coin,txids,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
+ 
+ }*/
+/*timestamp = (now / LP_WEEKMULT) * LP_WEEKMULT + LP_WEEKMULT;
+ while ( timestamp > LP_FIRSTWEEKTIME )
+ {
+ if ( expiration != 0 )
+ timestamp = expiration;
+ else timestamp -= LP_WEEKMULT;
+ redeemlen = LP_deposit_addr(vinaddr,redeemscript,coin->taddr,coin->p2shtype,timestamp,G.LP_pubsecp);
+ if ( strcmp(depositaddr,vinaddr) == 0 )
+ {
+ claimtime = (uint32_t)time(NULL)-777;
+ if ( claimtime <= timestamp )
+ {
+ printf("claimtime.%u vs locktime.%u, need to wait %d seconds\n",claimtime,timestamp,(int32_t)timestamp-claimtime);
+ }
+ else
+ {
+ printf("found %s at timestamp.%u\n",vinaddr,timestamp);
+ memset(zero.bytes,0,sizeof(zero));
+ if ( (array= LP_listunspent(coin->symbol,vinaddr,zero,zero)) != 0 )
+ {
+ //printf("unspents.(%s)\n",jprint(array,0));
+ if ( (n= cJSON_GetArraySize(array)) > 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ item = jitem(array,i);
+ satoshis = LP_listunspent_parseitem(coin,&utxotxid,&utxovout,&height,item);
+ sum += LP_claimtx(ctx,coin,txids,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
+ }
+ }
+ free_json(array);
+ retjson = cJSON_CreateObject();
+ jaddstr(retjson,"result","success");
+ jaddnum(retjson,"claimed",dstr(sum));
+ jadd(retjson,"txids",txids);
+ return(jprint(retjson,1));
+ }
+ }
+ }
+ if ( expiration != 0 )
+ break;
+ }
+ return(clonestr("{\"error\":\"no instantdex deposits to claim\"}"));*/
+
+
 //else if ( strcmp(method,"checktxid") == 0 )
 //    retstr = LP_spentcheck(argjson);
 //else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
