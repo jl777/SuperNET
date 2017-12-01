@@ -248,7 +248,7 @@ char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t ex
                                     claimtime = (uint32_t)time(NULL)-777;
                                     if ( claimtime <= expiration )
                                     {
-                                        printf("claimtime.%u vs locktime.%u, need to wait %d seconds\n",claimtime,expiration,(int32_t)expiration-claimtime);
+                                        char str[65]; printf("claimtime.%u vs locktime.%u, need to wait %d seconds to %s claim %.8f\n",claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
                                         break;
                                     }
                                     else
