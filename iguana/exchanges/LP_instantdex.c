@@ -258,6 +258,7 @@ char *LP_instantdex_claim(struct iguana_info *coin)
                                     {
                                         printf("claimtime.%u vs locktime.%u, need to wait %d seconds to %s claim %.8f\n",claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
                                         jaddnum(item,"waittime",(int32_t)expiration-claimtime);
+                                        jaddi(txids,item);
                                         break;
                                     }
                                     else
@@ -265,8 +266,8 @@ char *LP_instantdex_claim(struct iguana_info *coin)
                                         flagi = 1;
                                         sum += LP_claimtx(ctx,coin,&claimtxid,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
                                         jaddbits256(item,"claimtxid",claimtxid);
+                                        jaddi(txids,item);
                                     }
-                                    jaddi(txids,item);
                                 } else printf("expiration.%u j.%d checkaddr.(%s) != vinaddr.%s\n",expiration,j,checkaddr,vinaddr);
                                 if ( flagi != 0 )
                                     break;
