@@ -1401,7 +1401,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
     jaddnum(item,rawtx->I.destaddr,dstr(rawtx->I.amount));
     jaddi(outputs,item);
     jadd(argjson,"outputs",outputs);
-    printf("call LP_withdraw.(%s)\n",jprint(argjson,0));
+    //printf("call LP_withdraw.(%s)\n",jprint(argjson,0));
     if ( (retstr= LP_withdraw(coin,argjson)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
