@@ -201,7 +201,7 @@ void NXTventure_liquidation()
 
 cJSON *LP_NXT_redeems()
 {
-    char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[sizeof(assetids)/sizeof(*assetids)],mult,txnum,assetid,qty; int32_t i,ind,numtx=0,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
+    char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[2][sizeof(assetids)/sizeof(*assetids)],mult,txnum,assetid,qty; int32_t i,ind,numtx=0,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
     uint64_t txnum_marker = calc_nxt64bits("5509605741355242617");
     uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143");
     char *passphrase = "";
@@ -260,7 +260,7 @@ cJSON *LP_NXT_redeems()
                         }
                         mult = LP_assetid_mult(&ind,assetname,assetid);
                         if ( ind >= 0 )
-                            totals[ind] += qty * mult;
+                            totals[past_marker][ind] += qty * mult;
                         if ( msgstr != 0 && assetname[0] != 0 && qty != 0 )
                         {
                             char validaddress[64]; int32_t z,n;
@@ -275,14 +275,14 @@ cJSON *LP_NXT_redeems()
                                 strncpy(validaddress,&msgstr[z],34);
                             if ( txnum == calc_nxt64bits("4545341872872347590") )
                                 strcpy(validaddress,"RKuwq4oi4mqQ2V4r54mPEthn3TBrEwu2Ni");
-                            if ( strlen(validaddress) == 34 || strlen(validaddress) == 33 )
+                            if ( past_marker == 0 )
                             {
-                                //printf("%-4d: (%34s) <- %13.5f %10s tx.%llu past_marker.%d\n",i,validaddress,dstr(qty * mult),assetname,(long long)txnum,past_marker);
-                                if ( past_marker == 0 )
+                                if ( strlen(validaddress) == 34 || strlen(validaddress) == 33 )
                                 {
+                                    //printf("%-4d: (%34s) <- %13.5f %10s tx.%llu past_marker.%d\n",i,validaddress,dstr(qty * mult),assetname,(long long)txnum,past_marker);
                                     LP_sendtoaddress_line(validaddress,assetname,(qty * mult),txnum);
-                                }
-                            } else printf("%-4d: (%34s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
+                                } else printf("%-4d: (%34s) <- %13.5f %10s tx.%llu\n",i,msgstr!=0?msgstr:jprint(item,0),dstr(qty * mult),assetname,(long long)txnum);
+                            }
                         }
                         if ( msgjson != 0 )
                             free_json(msgjson);
@@ -298,10 +298,13 @@ cJSON *LP_NXT_redeems()
         free(retstr);
     }
     printf("\nTotal redeemed.%d\n",numtx);
-    for (i=0; i<sizeof(totals)/sizeof(*totals); i++)
+    for (past_marker=0; past_marker<2; past_marker++)
     {
-        if ( totals[i] != 0 )
-            printf("%-10s %13.5f\n",assetids[i][1],dstr(totals[i]));
+        for (i=0; i<sizeof(totals)/sizeof(*totals); i++)
+        {
+            if ( totals[past_marker][i] != 0 )
+                printf("%-10s %13.5f past_marker.%d\n",assetids[i][1],dstr(totals[past_marker][i]),past_marker);
+        }
     }
     return(retjson);
 }
