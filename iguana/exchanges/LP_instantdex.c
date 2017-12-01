@@ -255,7 +255,7 @@ char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t ex
                                         flagi = 1;
                                         sum += LP_claimtx(ctx,coin,txids,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
                                     }
-                                } else printf("j.%d checkaddr.(%s) != vinaddr.%s\n",j,checkaddr,vinaddr);
+                                } else printf("expiration.%u j.%d checkaddr.(%s) != vinaddr.%s\n",expiration,j,checkaddr,vinaddr);
                                 if ( flagi != 0 )
                                     break;
                             }
