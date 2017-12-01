@@ -253,7 +253,9 @@ char *LP_instantdex_claim(struct iguana_info *coin)
                                     item = cJSON_CreateObject();
                                     jaddbits256(item,"txid",utxotxid);
                                     jaddnum(item,"deposit",dstr(LP_value_extract(vout0,0)));
-                                    jaddnum(item,"interest",dstr(satoshis)-dstr(LP_value_extract(vout0,0)));
+                                    if ( coin->electrum == 0 )
+                                        jaddnum(item,"interest",dstr(satoshis)-dstr(LP_value_extract(vout0,0)));
+                                    else jaddnum(item,"interest",dstr(LP_komodo_interest(utxotxid,satoshis)));
                                     if ( claimtime <= expiration )
                                     {
                                         printf("claimtime.%u vs %u, wait %d seconds to %s claim %.8f\n",claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
