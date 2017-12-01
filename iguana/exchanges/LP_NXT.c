@@ -305,6 +305,7 @@ cJSON *LP_NXT_redeems()
             if ( totals[past_marker][i] != 0 )
                 printf("%-10s %13.5f past_marker.%d\n",assetids[i][1],dstr(totals[past_marker][i]),past_marker);
         }
+        printf("\n>>>>>>>>>> already processed:\n");
     }
     return(retjson);
 }
