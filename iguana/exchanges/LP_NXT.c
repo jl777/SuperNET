@@ -300,7 +300,7 @@ cJSON *LP_NXT_redeems()
     printf("\nTotal redeemed.%d\n",numtx);
     for (past_marker=0; past_marker<2; past_marker++)
     {
-        for (i=0; i<sizeof(totals)/sizeof(*totals); i++)
+        for (i=0; i<sizeof(totals[0])/sizeof(*totals[0]); i++)
         {
             if ( totals[past_marker][i] != 0 )
                 printf("%-10s %13.5f past_marker.%d\n",assetids[i][1],dstr(totals[past_marker][i]),past_marker);
