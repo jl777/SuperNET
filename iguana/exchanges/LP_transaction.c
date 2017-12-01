@@ -1212,7 +1212,10 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         }
     }
     if ( (ap= LP_address(coin,coin->smartaddr)) == 0 )
+    {
+        printf("LP_createrawtransaction LP_address null?\n");
         return(0);
+    }
     memset(utxos,0,sizeof(utxos));
     if ( (numutxos= LP_address_utxo_ptrs(coin,0,utxos,max,ap,coin->smartaddr)) <= 0 )
     {
@@ -1320,7 +1323,10 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     for (iter=0; iter<2; iter++)
     {
         if ( (ap= LP_address_utxo_reset(coin)) == 0 )
+        {
+            printf("LP_withdraw error utxo reset %s\n",coin->symbol);
             return(0);
+        }
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
@@ -1395,6 +1401,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
     jaddnum(item,rawtx->I.destaddr,dstr(rawtx->I.amount));
     jaddi(outputs,item);
     jadd(argjson,"outputs",outputs);
+    printf("call LP_withdraw.(%s)\n",jprint(argjson,0));
     if ( (retstr= LP_withdraw(coin,argjson)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -1406,7 +1413,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
                 rawtx->I.completed = 1;
                 rawtx->I.signedtxid = jbits256(retjson,"txid");
                 retval = 0;
-            }
+            } else printf("rawtx withdraw error? (%s)\n",retstr);
             free_json(retjson);
         }
         free(retstr);
