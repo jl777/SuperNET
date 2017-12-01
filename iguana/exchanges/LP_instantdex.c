@@ -253,9 +253,10 @@ char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t ex
                                     flagi = 1;
                                     sum += LP_claimtx(ctx,coin,txids,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
                                 }
-                            }
-                        }
-                    }
+                            } else printf("checkaddr.(%s) != vinaddr.%s\n",checkaddr,vinaddr);
+                        } else printf("vout2 dest.(%s) != %s\n",destaddr,coin->smartaddr);
+                    } else printf("numvouts %d != 3\n",numvouts);
+                    free_json(txjson);
                 }
                 if ( flagi == 0 )
                     jaddibits256(newarray,utxotxid);
