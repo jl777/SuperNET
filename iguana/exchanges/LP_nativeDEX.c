@@ -18,7 +18,6 @@
 //  marketmaker
 //
 // prune expired/spent deposits from instantdex.json
-// -CPU usage spike after 12 hours
 // verify claim works
 // big BTC swaps
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG

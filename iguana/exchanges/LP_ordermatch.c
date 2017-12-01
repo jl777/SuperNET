@@ -866,7 +866,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         price = myprice + (r * range) / 100.;
         bestprice = LP_bob_competition(&counter,qp->aliceid,price,0);
         printf("%llu >>>>>>> qprice %.8f r.%d range %.8f -> %.8f, bestprice %.8f counter.%d\n",(long long)qp->aliceid,qprice,r,range,price,bestprice,counter);
-        if ( counter > 3 && price >= bestprice-SMALLVAL ) // skip if late or bad price
+        if ( counter > 3 && price >= bestprice+SMALLVAL ) // skip if late or bad price
             return(0);
     } else return(0);
     //LP_RTmetrics_update(qp->srccoin,qp->destcoin);
@@ -908,9 +908,10 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         bits256 zero;
         memset(zero.bytes,0,sizeof(zero));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
+        printf("send reserved\n");
         //LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
-        //sleep(1);
-        //LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+        sleep(1);
+        LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
         free_json(reqjson);
         return(qp);
     } else printf("request processing selected ineligible utxos?\n");
