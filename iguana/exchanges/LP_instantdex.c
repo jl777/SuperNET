@@ -424,5 +424,20 @@ int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
             printf("validated instantdex %s.[%d] proof.(%s) credits %.8f net %.8f\n",othersmartaddr,num,jprint(proof,0),dstr(ap->instantdex_credits),dstr(net));
         } else printf("cant find ap.%p or already did %d %.8f\n",ap,ap!=0?ap->didinstantdex:-1,ap!=0?dstr(ap->instantdex_credits):-1);
     }
-    return(net);
+    return(ap->instantdex_credits);
+}
+
+int64_t LP_myzcredits()
+{
+    cJSON *proof; struct iguana_info *coin; int64_t zcredits;
+    if ( (coin= LP_coinfind("KMD")) != 0 )
+    {
+        if ( (proof= LP_instantdex_txids()) != 0 )
+        {
+            zcredits = LP_instantdex_proofcheck(coin->smartaddr,proof,cJSON_GetArraySize(proof));
+            free_json(proof);
+            return(zcredits);
+        }
+    }
+    return(0);
 }
