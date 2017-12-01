@@ -619,7 +619,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     jaddstr(retjson,"coin",coin->symbol);
     jaddstr(retjson,"address",coinaddr);
     jaddnum(retjson,"balance",dstr(balance));
-    if ( strcmp(coin->symbol,"KMD") == 0 )
+    if ( strcmp(coin->symbol,"KMD") == 0 && strcmp(coin->smartaddr,coinaddr) == 0 )
         jaddnum(retjson,"zcredits",dstr(LP_myzcredits()));
     return(retjson);
 }
