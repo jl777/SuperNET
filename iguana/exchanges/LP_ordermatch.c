@@ -487,14 +487,17 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 reqjson = LP_quotejson(qp);
                 jaddstr(reqjson,"method","connected");
                 jaddstr(reqjson,"pair",pairstr);
-                jadd(reqjson,"proof",LP_instantdex_txidaddjson());
+                jadd(reqjson,"proof",LP_instantdex_txids());
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,base,rel,zero,jprint(reqjson,0));
-                //sleep(1);
-                //LP_reserved_msg(1,base,rel,qp->desthash,jprint(reqjson,0));
-                //LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
+                if ( IAMLP == 0 )
+                {
+                    sleep(1);
+                    LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+                }
+                LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
                 free_json(reqjson);
                 retval = 0;
             } else printf("error launching swaploop\n");
@@ -858,7 +861,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         memset(&qp->txid2,0,sizeof(qp->txid2));
         qp->vout = qp->vout2 = -1;
     } else return(0);
-    //printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
+    printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
     if ( qprice > myprice )
     {
         r = (LP_rand() % 100);
@@ -866,7 +869,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         price = myprice + (r * range) / 100.;
         bestprice = LP_bob_competition(&counter,qp->aliceid,price,0);
         printf("%llu >>>>>>> qprice %.8f r.%d range %.8f -> %.8f, bestprice %.8f counter.%d\n",(long long)qp->aliceid,qprice,r,range,price,bestprice,counter);
-        if ( counter > 3 && price >= bestprice-SMALLVAL ) // skip if late or bad price
+        if ( counter > 3 && price >= bestprice+SMALLVAL ) // skip if late or bad price
             return(0);
     } else return(0);
     //LP_RTmetrics_update(qp->srccoin,qp->destcoin);
@@ -908,9 +911,12 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         bits256 zero;
         memset(zero.bytes,0,sizeof(zero));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
-        //LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
-        //sleep(1);
-        //LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+        if ( IAMLP == 0 )
+        {
+            sleep(1);
+            LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+        }
+        LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
         free_json(reqjson);
         return(qp);
     } else printf("request processing selected ineligible utxos?\n");
@@ -975,7 +981,7 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
     double qprice; int32_t flag = 0; struct LP_quoteinfo Q; int64_t dynamictrust; char *retstr; struct LP_pubkey_info *pubp;
     Q = tp->Q;
     //printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
-    if ( Q.satoshis != 0 && (pubp= LP_pubkeyfind(Q.srchash)) != 0 )//(qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
+    if ( Q.satoshis != 0 && (pubp= LP_pubkeyadd(Q.srchash)) != 0 )//(qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
     {
         qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee);
         LP_aliceid(Q.tradeid,tp->aliceid,"reserved",0,0);
