@@ -981,7 +981,7 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
     double qprice; int32_t flag = 0; struct LP_quoteinfo Q; int64_t dynamictrust; char *retstr; struct LP_pubkey_info *pubp;
     Q = tp->Q;
     //printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
-    if ( Q.satoshis != 0 && (pubp= LP_pubkeyfind(Q.srchash)) != 0 )//(qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
+    if ( Q.satoshis != 0 && (pubp= LP_pubkeyadd(Q.srchash)) != 0 )//(qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
     {
         qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee);
         LP_aliceid(Q.tradeid,tp->aliceid,"reserved",0,0);
