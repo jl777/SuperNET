@@ -665,7 +665,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     if ( jobj(reqjson,"timestamp") == 0 )
         jaddnum(reqjson,"timestamp",time(NULL));
     if ( strcmp(method,"connect") == 0 )
-        jadd(reqjson,"proof",LP_instantdex_txidaddjson());
+        jadd(reqjson,"proof",LP_instantdex_txids());
     msg = jprint(reqjson,1);
     printf("QUERY.(%s)\n",msg);
     //if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )

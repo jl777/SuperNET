@@ -487,7 +487,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 reqjson = LP_quotejson(qp);
                 jaddstr(reqjson,"method","connected");
                 jaddstr(reqjson,"pair",pairstr);
-                jadd(reqjson,"proof",LP_instantdex_txidaddjson());
+                jadd(reqjson,"proof",LP_instantdex_txids());
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
