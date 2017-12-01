@@ -239,9 +239,9 @@ char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t ex
                             vout1 = jitem(vouts,1);
                             weeksatoshis = LP_value_extract(vout1,0);
                             weeki = (int32_t)(weeksatoshis % 10000);
-                            for (j=-1; j<=1; j++)
+                            for (j=0; j<168; j++)
                             {
-                                expiration = ((weeki+j) * LP_WEEKMULT) + LP_FIRSTWEEKTIME;
+                                expiration = ((weeki * LP_WEEKMULT + j*3600) + LP_FIRSTWEEKTIME);
                                 redeemlen = LP_deposit_addr(checkaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
                                 if ( strcmp(checkaddr,vinaddr) == 0 )
                                 {
