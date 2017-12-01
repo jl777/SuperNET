@@ -201,7 +201,7 @@ int64_t LP_claimtx(void *ctx,struct iguana_info *coin,cJSON *txids,bits256 utxot
 char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t expiration)
 {
     static void *ctx;
-    uint8_t redeemscript[512]; char vinaddr[64],checkaddr[64],destaddr[64]; uint32_t now,redeemlen,claimtime; int32_t i,n,flagi,flag,weeki,numvouts,utxovout; bits256 utxotxid; int64_t sum,satoshis,weeksatoshis; cJSON *array,*txids,*retjson,*newarray,*txjson,*vouts,*vout0,*vout1,*vout2;
+    uint8_t redeemscript[512]; char vinaddr[64],checkaddr[64],destaddr[64]; uint32_t now,redeemlen,claimtime; int32_t i,j,n,flagi,flag,weeki,numvouts,utxovout; bits256 utxotxid; int64_t sum,satoshis,weeksatoshis; cJSON *array,*txids,*retjson,*newarray,*txjson,*vouts,*vout0,*vout1,*vout2;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( strcmp(coin->symbol,"KMD") != 0 )
@@ -232,28 +232,33 @@ char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t ex
                         vout0 = jitem(vouts,0);
                         LP_destaddr(vinaddr,vout0);
                         satoshis = LP_value_extract(vout0,1);
-                        vout1 = jitem(vouts,1);
-                        weeksatoshis = LP_value_extract(vout1,0);
-                        weeki = (int32_t)(weeksatoshis % 10000);
-                        expiration = (weeki * LP_WEEKMULT) + LP_FIRSTWEEKTIME;
                         vout2 = jitem(vouts,2);
                         LP_destaddr(destaddr,vout2);
                         if ( strcmp(destaddr,coin->smartaddr) == 0 )
                         {
-                            redeemlen = LP_deposit_addr(checkaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
-                            if ( strcmp(checkaddr,vinaddr) == 0 )
+                            vout1 = jitem(vouts,1);
+                            weeksatoshis = LP_value_extract(vout1,0);
+                            weeki = (int32_t)(weeksatoshis % 10000);
+                            for (j=-1; j<=1; j++)
                             {
-                                claimtime = (uint32_t)time(NULL)-777;
-                                if ( claimtime <= expiration )
+                                expiration = ((weeki+j) * LP_WEEKMULT) + LP_FIRSTWEEKTIME;
+                                redeemlen = LP_deposit_addr(checkaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
+                                if ( strcmp(checkaddr,vinaddr) == 0 )
                                 {
-                                    printf("claimtime.%u vs locktime.%u, need to wait %d seconds\n",claimtime,expiration,(int32_t)expiration-claimtime);
-                                }
-                                else
-                                {
-                                    flagi = 1;
-                                    sum += LP_claimtx(ctx,coin,txids,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
-                                }
-                            } else printf("checkaddr.(%s) != vinaddr.%s\n",checkaddr,vinaddr);
+                                    claimtime = (uint32_t)time(NULL)-777;
+                                    if ( claimtime <= expiration )
+                                    {
+                                        printf("claimtime.%u vs locktime.%u, need to wait %d seconds\n",claimtime,expiration,(int32_t)expiration-claimtime);
+                                    }
+                                    else
+                                    {
+                                        flagi = 1;
+                                        sum += LP_claimtx(ctx,coin,txids,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
+                                    }
+                                } else printf("j.%d checkaddr.(%s) != vinaddr.%s\n",j,checkaddr,vinaddr);
+                                if ( flagi != 0 )
+                                    break;
+                            }
                         } else printf("vout2 dest.(%s) != %s\n",destaddr,coin->smartaddr);
                     } else printf("numvouts %d != 3\n",numvouts);
                     free_json(txjson);
