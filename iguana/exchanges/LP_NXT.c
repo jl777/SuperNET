@@ -55,7 +55,7 @@ void LP_sendtoaddress_line(char *validaddress,char *assetname,uint64_t satoshis,
             strcpy(lowerstr,"supernet");
         else strcpy(lowerstr,assetname);
         tolowercase(lowerstr);
-        sprintf(line,"fiat/%s sendtoaddress %s %.8f # txnum.%llu",lowerstr,validaddress,dstr(satoshis),(long long)txnum);
+        sprintf(line,"sleep 1; fiat/%s sendtoaddress %s %.8f # txnum.%llu",lowerstr,validaddress,dstr(satoshis),(long long)txnum);
     }
     printf("%s\n",line);
 }
@@ -202,7 +202,7 @@ void NXTventure_liquidation()
 cJSON *LP_NXT_redeems()
 {
     char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[sizeof(assetids)/sizeof(*assetids)],mult,txnum,assetid,qty; int32_t i,ind,numtx=0,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
-    uint64_t txnum_marker = calc_nxt64bits("0");
+    uint64_t txnum_marker = calc_nxt64bits("5509605741355242617");
     uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143");
     char *passphrase = "";
     char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";

@@ -201,7 +201,7 @@ int64_t LP_claimtx(void *ctx,struct iguana_info *coin,cJSON *txids,bits256 utxot
 char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t expiration)
 {
     static void *ctx;
-    uint8_t redeemscript[512]; char vinaddr[64],checkaddr[64],destaddr[64]; uint32_t now,redeemlen,claimtime; int32_t i,j,n,flagi,flag,weeki,numvouts,utxovout; bits256 utxotxid; int64_t sum,satoshis,weeksatoshis; cJSON *array,*txids,*retjson,*newarray,*txjson,*vouts,*vout0,*vout1,*vout2;
+    uint8_t redeemscript[512]; char vinaddr[64],checkaddr[64],destaddr[64],str[65]; uint32_t now,redeemlen,claimtime; int32_t i,j,n,flagi,flag,weeki,numvouts,utxovout; bits256 utxotxid; int64_t sum,satoshis,weeksatoshis; cJSON *array,*txids,*retjson,*newarray,*txjson,*vouts,*vout0,*vout1,*vout2;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( strcmp(coin->symbol,"KMD") != 0 )
@@ -212,12 +212,14 @@ char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t ex
     newarray = cJSON_CreateArray();
     if ( (array= LP_instantdex_txids()) != 0 )
     {
+        printf("claiming from.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             flag = 0;
             for (i=0; i<n; i++)
             {
                 utxotxid = jbits256i(array,i);
+                printf("%d of %d: %s\n",i,n,bits256_str(str,utxotxid));
                 if ( flag == 1 )
                 {
                     jaddibits256(newarray,utxotxid);
@@ -248,7 +250,7 @@ char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t ex
                                     claimtime = (uint32_t)time(NULL)-777;
                                     if ( claimtime <= expiration )
                                     {
-                                        char str[65]; printf("claimtime.%u vs locktime.%u, need to wait %d seconds to %s claim %.8f\n",claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
+                                        printf("claimtime.%u vs locktime.%u, need to wait %d seconds to %s claim %.8f\n",claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
                                         break;
                                     }
                                     else
@@ -263,7 +265,7 @@ char *LP_instantdex_claim(struct iguana_info *coin,char *depositaddr,uint32_t ex
                         } else printf("vout2 dest.(%s) != %s\n",destaddr,coin->smartaddr);
                     } else printf("numvouts %d != 3\n",numvouts);
                     free_json(txjson);
-                }
+                } else printf("cant get transaction\n");
                 if ( flagi == 0 )
                     jaddibits256(newarray,utxotxid);
                 else flag++;
