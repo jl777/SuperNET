@@ -33,7 +33,7 @@ cJSON *LP_instantdex_txids()
     {
         retjson = cJSON_Parse(filestr);
         free(filestr);
-    }
+    } else printf("couldnt open (%s)\n",fname);
     return(retjson);
 }
 
