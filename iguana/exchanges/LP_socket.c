@@ -445,7 +445,7 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
                 }
                 return(*retjsonp);
             }
-        } else printf("couldnt find electrum server for (%s %s) or no retjsonp.%p\n",method,params,retjsonp);
+        } //else printf("couldnt find electrum server for (%s %s) or no retjsonp.%p\n",method,params,retjsonp);
         ep = ep->prev;
         //if ( ep != 0 )
         //    printf("using prev ep.%s\n",ep->symbol);
