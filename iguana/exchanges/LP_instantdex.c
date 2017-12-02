@@ -214,7 +214,7 @@ char *LP_instantdex_claim(struct iguana_info *coin)
     newarray = cJSON_CreateArray();
     if ( (array= LP_instantdex_txids()) != 0 )
     {
-        //printf("claiming from.(%s)\n",jprint(array,0));
+        printf("claiming from.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             flag = 0;
