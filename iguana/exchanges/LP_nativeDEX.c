@@ -589,6 +589,7 @@ void LP_coinsloop(void *_coins)
                         //printf("%s electrum.%p needs a keepalive: lag.%d\n",ep->symbol,ep,(int32_t)(time(NULL) - ep->keepalive));
                         if ( (retjson= electrum_banner(coin->symbol,ep,&retjson)) != 0 )
                             free_json(retjson);
+                        ep->keepalive = (uint32_t)time(NULL);
                     }
                     ep = ep->prev;
                 }
