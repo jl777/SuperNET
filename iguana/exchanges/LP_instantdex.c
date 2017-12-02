@@ -178,8 +178,11 @@ char *LP_instantdex_deposit(struct iguana_info *coin,int32_t weeks,double amount
 
 int64_t LP_claimtx(void *ctx,struct iguana_info *coin,bits256 *claimtxidp,bits256 utxotxid,int32_t utxovout,uint64_t satoshis,char *vinaddr,uint32_t claimtime,uint8_t *redeemscript,int32_t redeemlen)
 {
-    uint8_t userdata[2];  char *signedtx; bits256 signedtxid,sendtxid; int32_t userdatalen; int64_t destamount,sum = 0;
-    userdata[0] = 0x51;
+    uint8_t userdata[2];  char *signedtx; bits256 signedtxid,sendtxid; int32_t isbots,userdatalen; int64_t destamount,sum = 0;
+    if ( strcmp(coin->smartaddr,BOTS_BONDADDRESS) == 0 )
+        isbots = 1;
+    else isbots = 0;
+    userdata[0] = (isbots == 0) ? 0x51 : 0;
     userdatalen = 1;
     utxovout = 0;
     memset(claimtxidp,0,sizeof(*claimtxidp));
@@ -229,9 +232,10 @@ char *LP_instantdex_claim(struct iguana_info *coin)
                 }
                 flagi = 0;
                 utxovout = 0;
+                // make into function, and separate calling path by txid
                 if ( (txjson= LP_gettx(coin->symbol,utxotxid,1)) != 0 )
                 {
-                    if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts == 3 )
+                    if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts >= 3 )
                     {
                         vout0 = jitem(vouts,0);
                         LP_destaddr(vinaddr,vout0);
@@ -410,6 +414,7 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
 int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
 {
     uint8_t rmd160[20],addrtype; int32_t i; int64_t net = 0; char othersmartaddr[64]; struct iguana_info *coin; struct LP_address *ap = 0;
+    printf("proofcheck.(%s) %d %s\n",coinaddr,num,jprint(proof,0));
     if ( (coin= LP_coinfind("KMD")) != 0 )
     {
         bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
@@ -437,7 +442,7 @@ int64_t LP_myzcredits()
             zcredits = LP_instantdex_proofcheck(coin->smartaddr,proof,cJSON_GetArraySize(proof));
             free_json(proof);
             return(zcredits);
-        }
+        } else printf("cant find my instantdex proof\n");
     }
     return(0);
 }

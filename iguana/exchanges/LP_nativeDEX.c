@@ -17,7 +17,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// verify claim works
+// delay swap credit back until notarization, else path
 // big BTC swaps
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
@@ -28,7 +28,6 @@
 // USD paxprice based USDvalue in portfolio
 //
 // improve critical section detection when parallel trades
-// delay swap credit back until notarization
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 //
