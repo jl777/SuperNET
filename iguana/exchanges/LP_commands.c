@@ -620,6 +620,8 @@ instantdex_claim()\n\
         return(LP_postprice_recv(argjson));
     else if ( strcmp(method,"uitem") == 0 )
         return(LP_uitem_recv(argjson));
+    else if ( strcmp(method,"dPoW") == 0 )
+        return(LP_dPoW_recv(argjson));
     else if ( strcmp(method,"notify") == 0 )
         return(LP_notify_recv(argjson));
     else if ( strcmp(method,"getpeers") == 0 )

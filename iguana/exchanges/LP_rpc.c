@@ -106,6 +106,8 @@ int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
             {
                 printf("new notarized %s %d -> %d\n",coin->symbol,coin->notarized,*notarizedp);
                 coin->notarized = *notarizedp;
+                coin->notarizationtxid = jbits256(retjson,"notarizedtxid");
+                coin->notarizedhash = jbits256(retjson,"notarizedhash");
             }
             free_json(retjson);
             if ( coin->height > 0 )
@@ -965,9 +967,10 @@ const char *Notaries_elected[][2] =
     { "xxspot2_XX", "03d85b221ea72ebcd25373e7961f4983d12add66a92f899deaf07bab1d8b6f5573" }
 };
 
-int32_t LP_txhasnotarization(struct iguana_info *coin,bits256 txid)
+int32_t LP_txhasnotarization(bits256 *notarizedhashp,struct iguana_info *coin,bits256 txid)
 {
-    cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
+    cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[1024]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
+    memset(notarizedhashp,0,sizeof(*notarizedhashp));
     if ( (txobj= LP_gettx(coin->symbol,txid,0)) != 0 )
     {
         if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
@@ -987,7 +990,7 @@ int32_t LP_txhasnotarization(struct iguana_info *coin,bits256 txid)
                             if ( spentvout < numvouts )
                             {
                                 vout = jitem(vouts,spentvout);
-                                if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) == sizeof(script)*2 )
+                                if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) == 35*2 )
                                 {
                                     len >>= 1;
                                     decode_hex(script,len,hexstr);
@@ -1021,20 +1024,76 @@ int32_t LP_txhasnotarization(struct iguana_info *coin,bits256 txid)
                 }
             }
         }
+        if ( (vouts= jarray(&numvouts,txobj,"vout")) != 0 )
+        {
+            vout = jitem(vouts,1);
+            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) >= 35 )
+            {
+                len >>= 1;
+                decode_hex(script,len,hexstr);
+                iguana_rwbignum(0,&script[3],32,(uint8_t *)notarizedhashp);
+            }
+        }
         free_json(txobj);
     }
     return(hasnotarization);
 }
 
+int32_t LP_notarization_validate(char *symbol,int32_t notarized,bits256 notarizedhash,bits256 notarizationtxid)
+{
+    struct iguana_info *coin; int32_t valid = 0; cJSON *blockjson; bits256 notarizedhash2; char str[65],str2[65];
+    if ( strcmp(symbol,"KMD") == 0 )
+        coin = LP_coinfind("BTC");
+    else coin = LP_coinfind("KMD");
+    if ( coin != 0 )
+    {
+        if (LP_txhasnotarization(&notarizedhash2,coin,notarizationtxid) == 0 )
+        {
+            printf("missing %s notarization txid %s\n",symbol,bits256_str(str,notarizationtxid));
+            return(-1);
+        }
+        else if ( bits256_cmp(notarizedhash,notarizedhash2) != 0 )
+        {
+            printf("mismatched %s notarizedhash %s vs %s\n",symbol,bits256_str(str,notarizedhash),bits256_str(str2,notarizedhash2));
+            return(-1);
+        }
+    }
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        if ( coin->electrum == 0 )
+        {
+            if ( (blockjson= LP_getblock(coin->symbol,notarizedhash)) != 0 )
+            {
+                if ( jint(blockjson,"height") != notarized )
+                    valid = 1;
+                free_json(blockjson);
+            }
+        }
+        else
+        {
+            if ( (blockjson= electrum_getheader(symbol,coin->electrum,&blockjson,notarized+1)) != 0 )
+            {
+                notarizedhash2 = jbits256(blockjson,"prev_block_hash");
+                if ( bits256_cmp(notarizedhash,notarizedhash2) == 0 )
+                    valid = 1;
+                free_json(blockjson);
+            }
+        }
+    }
+    if ( valid == 1 )
+        return(0);
+    else return(-1);
+}
+
 int32_t LP_hasnotarization(struct iguana_info *coin,cJSON *blockjson)
 {
-    int32_t i,n,hasnotarization = 0; bits256 txid; cJSON *txarray;
+    int32_t i,n,hasnotarization = 0; bits256 txid,notarizedhash; cJSON *txarray;
     if ( (txarray= jarray(&n,blockjson,"tx")) != 0 )
     {
         for (i=0; i<n; i++)
         {
             txid = jbits256i(txarray,i);
-            hasnotarization += LP_txhasnotarization(coin,txid);
+            hasnotarization += LP_txhasnotarization(&notarizedhash,coin,txid);
         }
     }
     return(hasnotarization);

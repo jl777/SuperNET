@@ -301,8 +301,8 @@ struct iguana_info
     uint64_t maxamount,kmd_equiv,balanceA,balanceB,valuesumA,valuesumB;
     uint8_t pubkey33[33],zcash;
     int32_t privkeydepth;
-    bits256 cachedtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
-    bits256 cachedmerkle; int32_t cachedmerkleheight;
+    bits256 cachedtxid,notarizationtxid; uint8_t *cachedtxiddata; int32_t cachedtxidlen;
+    bits256 cachedmerkle,notarizedhash; int32_t cachedmerkleheight;
 };
 
 struct _LP_utxoinfo { bits256 txid; uint64_t value; int32_t vout,height; };

@@ -17,8 +17,8 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// too much stats.log
-// big BTC swaps
+// validate notarization
+// big BTC swaps, assetchain markets
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // compress packets
@@ -683,6 +683,8 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                         jaddstr(reqjson,"method","dPoW");
                         jaddstr(reqjson,"coin",coin->symbol);
                         jaddnum(reqjson,"notarized",coin->notarized);
+                        jaddbits256(reqjson,"notarizedhash",coin->notarizedhash);
+                        jaddbits256(reqjson,"notarizationtxid",coin->notarizationtxid);
                         memset(zero.bytes,0,sizeof(zero));
                         LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
                     }

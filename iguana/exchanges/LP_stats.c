@@ -28,6 +28,24 @@ char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "conne
 
 static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_aliceids;
 
+char *LP_dPoW_recv(cJSON *argjson)
+{
+    int32_t notarized; bits256 notarizedhash,notarizationtxid; char *symbol; struct iguana_info *coin;
+    if ( (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
+    {
+        notarized = jint(argjson,"notarized");
+        notarizedhash = jbits256(argjson,"notarizedhash");
+        notarizationtxid = jbits256(argjson,"notarizationtxid");
+        if ( notarized > coin->notarized && LP_notarization_validate(symbol,notarized,notarizedhash,notarizationtxid) == 0 )
+        {
+            coin->notarized = notarized;
+            coin->notarizedhash = notarizedhash;
+            coin->notarizationtxid = notarizationtxid;
+        }
+    }
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
 void LP_tradecommand_log(cJSON *argjson)
 {
     static FILE *logfp; char *jsonstr;
