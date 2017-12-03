@@ -255,8 +255,16 @@ int32_t LP_finished_lastheight(struct LP_swapstats *sp,int32_t iambob)
 int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
 {
     struct iguana_info *bob,*alice;
-    bob = LP_coinfind(sp->Q.srccoin);
-    alice = LP_coinfind(sp->Q.destcoin);
+    if ( (bob= LP_coinfind(sp->Q.srccoin)) == 0 )
+    {
+        printf("no bobcoin.%s\n",sp->Q.srccoin);
+        return(0);
+    }
+    if ( (alice= LP_coinfind(sp->Q.destcoin)) == 0 )
+    {
+        printf("no alicecoin.%s\n",sp->Q.destcoin);
+        return(0);
+    }
     sp->bob_dPoWheight = LP_dPoWheight(bob);
     sp->alice_dPoWheight = LP_dPoWheight(alice);
     if ( sp->finished == 0 )
