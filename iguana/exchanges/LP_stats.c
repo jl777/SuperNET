@@ -24,6 +24,7 @@ struct LP_swapstats *LP_swapstats,*LP_RTstats;
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj);
 
 char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "connected", "tradestatus" };
+#define LP_TRADESTATUS_METHODIND 5
 
 static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_aliceids;
 
@@ -325,10 +326,51 @@ int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
     return(0);
 }
 
+struct LP_swapstats *LP_swapstats_create(uint64_t aliceid,int32_t RTflag,struct LP_quoteinfo *qp,double qprice,int32_t methodind)
+{
+    struct LP_pubswap *ptr; struct iguana_info *alice,*bob; struct LP_pubkey_info *pubp; char *base,*rel; struct LP_swapstats *sp = 0;
+    base = qp->srccoin, rel = qp->destcoin;
+    if ( (sp= LP_swapstats_add(aliceid,RTflag)) != 0 )
+    {
+        sp->Q = *qp;
+        sp->qprice = qprice;
+        sp->methodind = methodind;
+        sp->ind = LP_aliceids++;
+        sp->lasttime = (uint32_t)time(NULL);
+        if ( sp->lasttime > sp->Q.timestamp+LP_atomic_locktime(base,rel)*2 )
+            sp->expired = sp->lasttime;
+        else
+        {
+            if ( (alice= LP_coinfind(rel)) != 0 && (alice->isassetchain != 0 || strcmp("KMD",alice->symbol) == 0) )
+                sp->aliceneeds_dPoW = 1;
+            if ( (bob= LP_coinfind(rel)) != 0 && (bob->isassetchain != 0 || strcmp(bob->symbol,"KMD") == 0) )
+                sp->bobneeds_dPoW = 1;
+        }
+        strcpy(sp->bobgui,"nogui");
+        strcpy(sp->alicegui,"nogui");
+        if ( LP_swap_finished(sp,1) == 0 ) //sp->finished == 0 && sp->expired == 0 )
+        {
+            if ( (pubp= LP_pubkeyadd(qp->srchash)) != 0 )
+            {
+                ptr = calloc(1,sizeof(*ptr));
+                ptr->swap = sp;
+                DL_APPEND(pubp->bobswaps,ptr);
+            }
+            if ( (pubp= LP_pubkeyadd(qp->desthash)) != 0 )
+            {
+                ptr = calloc(1,sizeof(*ptr));
+                ptr->swap = sp;
+                DL_APPEND(pubp->aliceswaps,ptr);
+            }
+        }
+    } else printf("unexpected LP_swapstats_add failure\n");
+    return(sp);
+}
+
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
     static uint32_t unexpected;
-    struct LP_swapstats *sp,*tmp; struct iguana_info *alice,*bob; struct LP_pubkey_info *pubp; struct LP_pubswap *ptr; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,RTflag,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *statusstr,*gui,*base,*rel; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    struct LP_swapstats *sp,*tmp; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,RTflag,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *statusstr,*gui,*base,*rel; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     memset(numtrades,0,sizeof(numtrades));
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
@@ -423,41 +465,8 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         }
         else
         {
+            sp = LP_swapstats_create(aliceid,RTflag,&Q,qprice,methodind);
             //printf("create aliceid.%llu\n",(long long)aliceid);
-            if ( (sp= LP_swapstats_add(aliceid,RTflag)) != 0 )
-            {
-                sp->Q = Q;
-                sp->qprice = qprice;
-                sp->methodind = methodind;
-                sp->ind = LP_aliceids++;
-                sp->lasttime = (uint32_t)time(NULL);
-                if ( sp->lasttime > sp->Q.timestamp+LP_atomic_locktime(base,rel)*2 )
-                    sp->expired = sp->lasttime;
-                else
-                {
-                    if ( (alice= LP_coinfind(rel)) != 0 && (alice->isassetchain != 0 || strcmp("KMD",alice->symbol) == 0) )
-                        sp->aliceneeds_dPoW = 1;
-                    if ( (bob= LP_coinfind(rel)) != 0 && (bob->isassetchain != 0 || strcmp(bob->symbol,"KMD") == 0) )
-                        sp->bobneeds_dPoW = 1;
-                }
-                strcpy(sp->bobgui,"nogui");
-                strcpy(sp->alicegui,"nogui");
-                if ( LP_swap_finished(sp,1) == 0 ) //sp->finished == 0 && sp->expired == 0 )
-                {
-                    if ( (pubp= LP_pubkeyadd(sp->Q.srchash)) != 0 )
-                    {
-                        ptr = calloc(1,sizeof(*ptr));
-                        ptr->swap = sp;
-                        DL_APPEND(pubp->bobswaps,ptr);
-                    }
-                    if ( (pubp= LP_pubkeyadd(sp->Q.desthash)) != 0 )
-                    {
-                        ptr = calloc(1,sizeof(*ptr));
-                        ptr->swap = sp;
-                        DL_APPEND(pubp->aliceswaps,ptr);
-                    }
-                }
-            } else printf("unexpected LP_swapstats_add failure\n");
         }
         if ( sp != 0 )
         {
@@ -509,8 +518,22 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 
 char *LP_swapstatus_recv(cJSON *argjson)
 {
-    struct LP_swapstats *sp; int32_t methodind; bits256 txid; char str[65];
-    if ( (sp= LP_swapstats_find(j64bits(argjson,"aliceid"))) != 0 )
+    struct LP_swapstats *sp; char *statusstr; uint64_t aliceid; double qprice; struct LP_quoteinfo Q; int32_t methodind,RTflag; bits256 txid; //char str[65];
+    if ( (aliceid= j64bits(argjson,"aliceid")) == 0 )
+        return(clonestr("{\"error\":\"LP_swapstatus_recv null aliceid\"}"));
+    if ( (sp= LP_swapstats_find(aliceid)) == 0 )
+    {
+        LP_quoteparse(&Q,argjson);
+        if ( Q.satoshis > Q.txfee )
+            return(clonestr("{\"error\":\"LP_swapstatus_recv null satoshis\"}"));
+        qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee);
+        if ( (statusstr= jstr(argjson,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
+            RTflag = 0;
+        else RTflag = 1;
+        sp = LP_swapstats_create(aliceid,RTflag,&Q,qprice,LP_TRADESTATUS_METHODIND);
+        printf("create swapstatus from recv\n");
+    }
+    if ( sp != 0 )
     {
         if ( 0 && IAMLP == 0 )
             printf("swapstatus.(%s)\n",jprint(argjson,0));
@@ -563,20 +586,42 @@ char *LP_swapstatus_recv(cJSON *argjson)
     return(clonestr("{\"result\":\"success\"}"));
 }
 
-char *LP_gettradestatus(uint64_t aliceid)
+char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
 {
-    struct LP_swapstats *sp; cJSON *reqjson; bits256 zero;
+    struct LP_swapstats *sp; char *swapstr,*statusstr; cJSON *reqjson,*swapjson; bits256 zero;
     //printf("gettradestatus.(%llu)\n",(long long)aliceid);
-    if ( (sp= LP_swapstats_find(aliceid)) != 0 && time(NULL) > sp->lasttime+60 )
+    if ( IAMLP != 0 )
     {
-        if ( (reqjson= LP_swapstats_json(sp)) != 0 )
+        if ( (sp= LP_swapstats_find(aliceid)) != 0 )
         {
-            jaddstr(reqjson,"method","swapstatus");
-            memset(zero.bytes,0,sizeof(zero));
-            LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+            if ( time(NULL) > sp->lasttime+60 )
+            {
+                if ( (reqjson= LP_swapstats_json(sp)) != 0 )
+                {
+                    jaddstr(reqjson,"method","swapstatus");
+                    memset(zero.bytes,0,sizeof(zero));
+                    LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+                }
+            }
+            return(clonestr("{\"result\":\"success\"}"));
         }
     }
-    return(clonestr("{\"error\":\"cant find aliceid\"}"));
+    if ( (swapstr= basilisk_swapentry(requestid,quoteid,0)) != 0 )
+    {
+        if ( (swapjson= cJSON_Parse(swapstr)) != 0 )
+        {
+            if ( (statusstr= jstr(swapjson,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
+            {
+                jaddstr(swapjson,"method","swapstatus");
+                memset(zero.bytes,0,sizeof(zero));
+                printf("send local swapstatus\n");
+                LP_reserved_msg(0,"","",zero,jprint(swapjson,0));
+            }
+            free_json(swapjson);
+        }
+        free(swapstr);
+    }
+    return(clonestr("{\"result\":\"success\"}"));
 }
 
 int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttime,uint32_t endtime,char *refbase,char *refrel,char *refgui,bits256 refpubkey)

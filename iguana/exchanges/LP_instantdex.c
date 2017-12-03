@@ -447,7 +447,7 @@ int64_t LP_myzcredits()
 
 cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
 {
-    struct iguana_info *bob,*alice; int32_t flag = 0; cJSON *item; char *retstr;
+    struct iguana_info *bob,*alice; int32_t flag = 0; bits256 zero; cJSON *item,*reqjson;
     item = cJSON_CreateObject();
     jaddnum(item,"iambob",iambob);
     jaddnum(item,"aliceid",sp->aliceid);
@@ -475,8 +475,14 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
             if ( sp->aliceneeds_dPoW == 1 )
                 flag = 1;
         }
-        if ( flag != 0 && (retstr= LP_gettradestatus(sp->aliceid)) != 0 )
-            free(retstr);
+        if ( flag != 0 )
+        {
+            reqjson = cJSON_CreateObject();
+            jaddstr(reqjson,"method","gettradestatus");
+            jadd64bits(reqjson,"aliceid",sp->aliceid);
+            memset(zero.bytes,0,sizeof(zero));
+            LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+        }
     }
     return(item);
 }

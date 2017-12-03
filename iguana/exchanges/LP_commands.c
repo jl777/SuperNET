@@ -288,13 +288,13 @@ instantdex_claim()\n\
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
             {
-                return(basilisk_swapentry(requestid,quoteid));
+                return(basilisk_swapentry(requestid,quoteid,1));
             }
             else if ( coin[0] != 0 )
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
             else if ( base[0] != 0 && rel[0] != 0 )
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
-            else return(basilisk_swaplist(0,0));
+            else return(basilisk_swaplist(0,0,0));
         }
         else if ( strcmp(method,"dynamictrust") == 0 )
         {
@@ -603,14 +603,10 @@ instantdex_claim()\n\
             }
             argjson = reqjson;
         }
-        if ( strcmp(method,"gettradestatus") == 0 )
-            retstr = clonestr("{\"result\":\"success\"}");
     }
     else
     {
-        if ( strcmp(method,"gettradestatus") == 0 )
-            return(LP_gettradestatus(j64bits(argjson,"aliceid")));
-        else if ( strcmp(method,"tradesarray") == 0 )
+        if ( strcmp(method,"tradesarray") == 0 )
         {
             return(jprint(LP_tradesarray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
         }
@@ -618,6 +614,8 @@ instantdex_claim()\n\
     // received response
     if ( strcmp(method,"swapstatus") == 0 )
         return(LP_swapstatus_recv(argjson));
+    else if ( strcmp(method,"gettradestatus") == 0 )
+        return(LP_gettradestatus(j64bits(argjson,"aliceid"),juint(argjson,"requestid"),juint(argjson,"quoteid")));
     else if ( strcmp(method,"postprice") == 0 )
         return(LP_postprice_recv(argjson));
     else if ( strcmp(method,"uitem") == 0 )

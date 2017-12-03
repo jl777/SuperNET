@@ -85,7 +85,7 @@ uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen)
     return(txfee);
 }
 
-double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
+/*double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
 {
     uint64_t destsatoshis,satoshis;
     a_value -= (desttxfee + 1);
@@ -100,7 +100,7 @@ double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uin
     if ( satoshis > 0 )
         return((double)destsatoshis / satoshis);
     else return(0.);
-}
+}*/
 
 int32_t LP_quote_checkmempool(struct LP_quoteinfo *qp,struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo)
 {

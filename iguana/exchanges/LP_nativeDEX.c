@@ -816,7 +816,7 @@ void LP_swapsloop(void *ctx)
     while ( 1 )
     {
         LP_millistats_update(&LP_swapsloop_stats);
-        if ( (retstr= basilisk_swapentry(0,0)) != 0 )
+        if ( (retstr= basilisk_swapentry(0,0,0)) != 0 )
             free(retstr);
         sleep(600);
     }
@@ -1319,7 +1319,7 @@ void LP_fromjs_iter()
         {
             LP_notify_pubkeys(ctx,LP_mypubsock);
             LP_privkey_updates(ctx,LP_mypubsock,0);
-            if ( (retstr= basilisk_swapentry(0,0)) != 0 )
+            if ( (retstr= basilisk_swapentry(0,0,0)) != 0 )
                 free(retstr);
         }
     }

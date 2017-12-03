@@ -529,7 +529,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     return(item);
 }
 
-int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t quoteid)
+int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t quoteid,int32_t forceflag)
 {
     char fname[1024],*fstr,*secretstr,*srcstr,*deststr,*dest33,*txname; long fsize; cJSON *item,*txobj,*array; bits256 privkey; struct iguana_info *coin; uint32_t r,q; int32_t i,j,n; uint8_t other33[33];
     memset(rswap,0,sizeof(*rswap));
@@ -664,6 +664,8 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
         }
         rswap->origfinishedflag = basilisk_swap_isfinished(rswap->iambob,rswap->txids,rswap->sentflags,rswap->paymentspent,rswap->Apaymentspent,rswap->depositspent);
         rswap->finishedflag = rswap->origfinishedflag;
+        if ( forceflag != 0 )
+            rswap->finishedflag = rswap->origfinishedflag = 0;
         free(fstr);
     }
     return(rswap->iambob);
@@ -694,7 +696,7 @@ int32_t LP_refht_update(char *symbol,bits256 txid)
     return(0);
 }
 
-int32_t LP_swap_load(struct LP_swap_remember *rswap)
+int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
 {
     int32_t i,needflag,addflag; long fsize; char fname[1024],*fstr,*symbol,*rstr; cJSON *txobj,*sentobj,*fileobj; bits256 txid,checktxid; uint64_t value;
     rswap->iambob = -1;
@@ -704,7 +706,8 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap)
         if ( (fileobj= cJSON_Parse(fstr)) != 0 )
         {
             rswap->finishtime = juint(fileobj,"finishtime");
-            rswap->origfinishedflag = rswap->finishedflag = 1;
+            if ( forceflag == 0 )
+                rswap->origfinishedflag = rswap->finishedflag = 1;
             free_json(fileobj);
         }
         free(fstr);
@@ -872,16 +875,16 @@ int32_t LP_spends_set(struct LP_swap_remember *rswap)
     return(numspent);
 }
 
-cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requestid,uint32_t quoteid)
+cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requestid,uint32_t quoteid,int32_t forceflag)
 {
     static void *ctx;
     struct LP_swap_remember rswap; int32_t i,j,flag,numspent,len,secretstart,redeemlen; char str[65],*srcAdest,*srcBdest,*destAdest,*destBdest,otheraddr[64]; cJSON *item,*txoutobj; bits256 rev,signedtxid,zero,deadtxid; struct iguana_info *bob=0,*alice=0; uint8_t redeemscript[1024],userdata[1024];
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( (rswap.iambob= LP_rswap_init(&rswap,requestid,quoteid)) < 0 )
+    if ( (rswap.iambob= LP_rswap_init(&rswap,requestid,quoteid,forceflag)) < 0 )
         return(cJSON_Parse("{\"error\":\"couldnt initialize rswap, are all coins active?\"}"));
     decode_hex(deadtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
-    LP_swap_load(&rswap);
+    LP_swap_load(&rswap,forceflag);
     memset(zero.bytes,0,sizeof(zero));
     otheraddr[0] = 0;
     srcAdest = srcBdest = destAdest = destBdest = 0;
@@ -1185,7 +1188,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
    return(item);
 }
 
-char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
+char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forceflag)
 {
     uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS],Btotal,Ktotal; int32_t i,j,count=0;
     portable_mutex_lock(&LP_swaplistmutex);
@@ -1198,7 +1201,7 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
     if ( origrequestid != 0 && origquoteid != 0 )
     {
         //printf("orig req.%u q.%u\n",origrequestid,origquoteid);
-        if ( (item= basilisk_remember(KMDtotals,BTCtotals,origrequestid,origquoteid)) != 0 )
+        if ( (item= basilisk_remember(KMDtotals,BTCtotals,origrequestid,origquoteid,forceflag)) != 0 )
             jaddi(array,item);
         //printf("got.(%s)\n",jprint(item,0));
     }
@@ -1237,7 +1240,7 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
                     {
                         if ( count < sizeof(ridqids)/sizeof(*ridqids) )
                             ridqids[count++] = ridqid;
-                        if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+                        if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid,0)) != 0 )
                             jaddi(array,item);
                     }
                 }
@@ -1270,12 +1273,12 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid)
     return(jprint(retjson,1));
 }
 
-char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid)
+char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid,int32_t forceflag)
 {
     cJSON *item; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS];
     memset(KMDtotals,0,sizeof(KMDtotals));
     memset(BTCtotals,0,sizeof(BTCtotals));
-    if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+    if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid,forceflag)) != 0 )
         return(jprint(item,1));
     else return(clonestr("{\"error\":\"cant find requestid-quoteid\"}"));
 }
@@ -1365,7 +1368,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
         limit = 10;
     memset(ridqids,0,sizeof(ridqids));
     retarray = cJSON_CreateArray();
-    if ( (liststr= basilisk_swaplist(0,0)) != 0 )
+    if ( (liststr= basilisk_swaplist(0,0,0)) != 0 )
     {
         //printf("swapentry.(%s)\n",liststr);
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
@@ -1408,7 +1411,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                     //printf("j.%d count.%d %u %u ridqid.%16llx\n",j,count,requestid,quoteid,(long long)ridqid);
                     if ( j == count )
                     {
-                        if ( (retstr2= basilisk_swapentry(requestid,quoteid)) != 0 )
+                        if ( (retstr2= basilisk_swapentry(requestid,quoteid,0)) != 0 )
                         {
                             if ( (swapjson= cJSON_Parse(retstr2)) != 0 )
                             {
