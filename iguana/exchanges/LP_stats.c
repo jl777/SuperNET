@@ -70,7 +70,7 @@ char *LP_dPoW_recv(cJSON *argjson)
             coin->notarized = notarized;
             coin->notarizedhash = notarizedhash;
             coin->notarizationtxid = notarizationtxid;
-            printf("VALIDATED\n");
+            printf("VALIDATED dPoW %s\n",jprint(argjson,0));
         }
     }
     return(clonestr("{\"result\":\"success\"}"));
