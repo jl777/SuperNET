@@ -309,11 +309,12 @@ int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
             return(1);
         else if ( sp->finished != 0 )
         {
-            if ( bob->isassetchain != 0  )
+            if ( bob->isassetchain != 0 || strcmp(sp->Q.srccoin,"KMD") == 0 )
                 sp->bobneeds_dPoW = LP_finished_lastheight(sp,1);
-            if ( alice->isassetchain != 0 )
+            if ( alice->isassetchain != 0 || strcmp(sp->Q.destcoin,"KMD") == 0 )
                 sp->aliceneeds_dPoW = LP_finished_lastheight(sp,0);
-            printf("bob needs %d @ %d, alice needs %d @ %d\n",sp->bobneeds_dPoW,bob->notarized,sp->aliceneeds_dPoW,alice->notarized);
+            if ( IAMLP == 0 )
+                printf("bob needs %d @ %d, alice needs %d @ %d\n",sp->bobneeds_dPoW,bob->notarized,sp->aliceneeds_dPoW,alice->notarized);
         }
         if ( (sp->bobneeds_dPoW == 0 || (sp->bobneeds_dPoW > 1 && bob->notarized >= sp->bobneeds_dPoW)) && (sp->aliceneeds_dPoW == 0 || (sp->aliceneeds_dPoW > 1 && alice->notarized >= sp->aliceneeds_dPoW)) )
         {
@@ -511,7 +512,8 @@ char *LP_swapstatus_recv(cJSON *argjson)
     struct LP_swapstats *sp; int32_t methodind; bits256 txid;
     if ( (sp= LP_swapstats_find(j64bits(argjson,"aliceid"))) != 0 )
     {
-        printf("swapstatus.(%s)\n",jprint(argjson,0));
+        if ( IAMLP == 0 )
+            printf("swapstatus.(%s)\n",jprint(argjson,0));
         sp->lasttime = (uint32_t)time(NULL);
         if ( (methodind= jint(argjson,"ind")) > sp->methodind && methodind < sizeof(LP_stats_methods)/sizeof(*LP_stats_methods) )
         {
