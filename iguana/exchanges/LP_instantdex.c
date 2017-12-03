@@ -447,7 +447,8 @@ int64_t LP_myzcredits()
 
 cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
 {
-    struct iguana_info *bob,*alice; cJSON *item = cJSON_CreateObject();
+    struct iguana_info *bob,*alice; int32_t flag = 0; cJSON *item; char *retstr;
+    item = cJSON_CreateObject();
     jaddnum(item,"iambob",iambob);
     jaddnum(item,"aliceid",sp->aliceid);
     jaddnum(item,"requestid",sp->Q.R.requestid);
@@ -464,12 +465,18 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
         {
             jaddnum(item,"bobneeds_dPoW",sp->bobneeds_dPoW);
             jaddnum(item,"bob_dPoWheight",bob->notarized);
+            if ( sp->bobneeds_dPoW == 1 )
+                flag = 1;
         }
         if ( sp->aliceneeds_dPoW != 0 && (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
         {
             jaddnum(item,"aliceneeds_dPoW",sp->aliceneeds_dPoW);
             jaddnum(item,"alice_dPoWheight",alice->notarized);
+            if ( sp->aliceneeds_dPoW == 1 )
+                flag = 1;
         }
+        if ( flag != 0 && (retstr= LP_gettradestatus(sp->aliceid)) != 0 )
+            free(retstr);
     }
     return(item);
 }
