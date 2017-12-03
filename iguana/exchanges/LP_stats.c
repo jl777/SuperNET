@@ -42,7 +42,7 @@ void LP_dPoW_request(struct iguana_info *coin)
 void LP_dPoW_broadcast(struct iguana_info *coin)
 {
     bits256 zero; cJSON *reqjson;
-    if ( coin->isassetchain != 0 || strcmp(coin->symbol,"KMD") == 0 )
+    if ( time(NULL) > coin->dPoWtime+60 && (coin->isassetchain != 0 || strcmp(coin->symbol,"KMD") == 0) )
     {
         reqjson = cJSON_CreateObject();
         jaddstr(reqjson,"method","dPoW");
@@ -53,6 +53,7 @@ void LP_dPoW_broadcast(struct iguana_info *coin)
         memset(zero.bytes,0,sizeof(zero));
         printf("broadcast %s\n",jprint(reqjson,0));
         LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
+        coin->dPoWtime = (uint32_t)time(NULL);
     }
 }
 

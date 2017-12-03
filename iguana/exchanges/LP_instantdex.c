@@ -468,6 +468,8 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
             jaddnum(item,"bob_dPoWheight",bob->notarized);
             if ( sp->bobneeds_dPoW == 1 )
                 flag = 1;
+            if ( bob->notarized == 0 )
+                LP_dPoW_request(bob);
         }
         if ( sp->aliceneeds_dPoW != 0 && (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
         {
@@ -475,6 +477,8 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
             jaddnum(item,"alice_dPoWheight",alice->notarized);
             if ( sp->aliceneeds_dPoW == 1 )
                 flag = 1;
+            if ( alice->notarized == 0 )
+                LP_dPoW_request(alice);
         }
         if ( flag != 0 )
         {
