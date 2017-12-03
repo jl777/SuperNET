@@ -229,17 +229,24 @@ bits256 LP_merkleroot(struct iguana_info *coin,struct electrum_info *ep,int32_t 
 
 int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height)
 {
-    struct LP_transaction *tx=0; cJSON *merkobj,*merkles,*retjson; bits256 roothash,merkleroot; int32_t m,SPV = 0;
+    struct LP_transaction *tx=0; cJSON *merkobj,*merkles,*retjson; bits256 roothash,merkleroot; int32_t m,ht=0,SPV = 0;
     if ( height <= 0 )
         return(0);
     if ( (tx= LP_transactionfind(coin,txid)) == 0 && strcmp(coinaddr,coin->smartaddr) == 0 )
     {
-        if ( (retjson= electrum_transaction(coin->symbol,ep,&retjson,txid,0)) != 0 )
+        if ( (retjson= electrum_transaction(&ht,coin->symbol,ep,&retjson,txid,0)) != 0 )
             free_json(retjson);
     }
     if ( tx != 0 )
     {
-        tx->height = height;
+        if ( tx->height == 0 )
+        {
+            if ( height != 0 )
+                tx->height = height;
+            else if ( ht != 0 )
+                tx->height = ht;
+            height = tx->height;
+        }
         if ( tx->SPV > 0 )
             return(tx->SPV);
     }

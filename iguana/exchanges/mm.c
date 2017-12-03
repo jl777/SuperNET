@@ -20,7 +20,6 @@
 //
 
 
-
 void PNACL_message(char *arg,...)
 {
     

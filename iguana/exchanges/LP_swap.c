@@ -751,7 +751,7 @@ int32_t LP_swapwait(struct basilisk_swap *swap,uint32_t requestid,uint32_t quote
     //    sleeptime = divisor * 60;
     while ( time(NULL) < expiration )
     {
-        if ( (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
+        if ( (retstr= basilisk_swapentry(requestid,quoteid,1)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
@@ -775,7 +775,7 @@ int32_t LP_swapwait(struct basilisk_swap *swap,uint32_t requestid,uint32_t quote
     {
         printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>\nSWAP completed! %u-%u %s\n",requestid,quoteid,jprint(retjson,0));
         free_json(retjson);
-        if ( 0 && (retstr= basilisk_swapentry(requestid,quoteid)) != 0 )
+        if ( 0 && (retstr= basilisk_swapentry(requestid,quoteid,1)) != 0 )
         {
             printf("second call.(%s)\n",retstr);
             free(retstr);
