@@ -30,14 +30,18 @@ static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatu
 
 void LP_dPoW_broadcast(struct iguana_info *coin)
 {
-    bits256 zero; cJSON *reqjson = cJSON_CreateObject();
-    jaddstr(reqjson,"method","dPoW");
-    jaddstr(reqjson,"coin",coin->symbol);
-    jaddnum(reqjson,"notarized",coin->notarized);
-    jaddbits256(reqjson,"notarizedhash",coin->notarizedhash);
-    jaddbits256(reqjson,"notarizationtxid",coin->notarizationtxid);
-    memset(zero.bytes,0,sizeof(zero));
-    LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
+    bits256 zero; cJSON *reqjson;
+    if ( coin->isassetchain != 0 || strcmp(coin->symbol,"KMD") == 0 )
+    {
+        reqjson = cJSON_CreateObject();
+        jaddstr(reqjson,"method","dPoW");
+        jaddstr(reqjson,"coin",coin->symbol);
+        jaddnum(reqjson,"notarized",coin->notarized);
+        jaddbits256(reqjson,"notarizedhash",coin->notarizedhash);
+        jaddbits256(reqjson,"notarizationtxid",coin->notarizationtxid);
+        memset(zero.bytes,0,sizeof(zero));
+        LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
+    }
 }
 
 char *LP_dPoW_recv(cJSON *argjson)
