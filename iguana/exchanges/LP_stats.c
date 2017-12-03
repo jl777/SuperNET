@@ -35,7 +35,7 @@ void LP_dPoW_request(struct iguana_info *coin)
     jaddstr(reqjson,"method","getdPoW");
     jaddstr(reqjson,"coin",coin->symbol);
     memset(zero.bytes,0,sizeof(zero));
-    printf("request %s\n",jprint(reqjson,0));
+    //printf("request %s\n",jprint(reqjson,0));
     LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
 }
 
@@ -51,7 +51,7 @@ void LP_dPoW_broadcast(struct iguana_info *coin)
         jaddbits256(reqjson,"notarizedhash",coin->notarizedhash);
         jaddbits256(reqjson,"notarizationtxid",coin->notarizationtxid);
         memset(zero.bytes,0,sizeof(zero));
-        printf("broadcast %s\n",jprint(reqjson,0));
+        //printf("broadcast %s\n",jprint(reqjson,0));
         LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
         coin->dPoWtime = (uint32_t)time(NULL);
     }
