@@ -211,7 +211,8 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
 int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
 {
     int32_t notarized;
-    coin->height = LP_getheight(&notarized,coin);
+    LP_getheight(&notarized,coin);
+    printf("dPoWheight.%s %d\n",coin->symbol,notarized);
     return(notarized);
 }
 

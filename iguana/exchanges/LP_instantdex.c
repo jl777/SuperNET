@@ -463,12 +463,12 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
         if ( sp->bobneeds_dPoW != 0 )
         {
             jaddnum(item,"bobneeds_dPoW",sp->bobneeds_dPoW);
-            jaddnum(item,"bobdPoW_height",sp->bob_dPoWheight);
+            jaddnum(item,"bob_dPoWheight",sp->bob_dPoWheight);
         }
         if ( sp->aliceneeds_dPoW != 0 )
         {
             jaddnum(item,"aliceneeds_dPoW",sp->aliceneeds_dPoW);
-            jaddnum(item,"alicedPoW_height",sp->alice_dPoWheight);
+            jaddnum(item,"alice_dPoWheight",sp->alice_dPoWheight);
         }
     }
     return(item);
