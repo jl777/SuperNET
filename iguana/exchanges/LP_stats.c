@@ -275,12 +275,12 @@ int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
     struct iguana_info *bob,*alice;
     if ( (bob= LP_coinfind(sp->Q.srccoin)) == 0 )
     {
-        printf("no bobcoin.%s\n",sp->Q.srccoin);
+        //printf("no bobcoin.%s\n",sp->Q.srccoin);
         return(0);
     }
     if ( (alice= LP_coinfind(sp->Q.destcoin)) == 0 )
     {
-        printf("no alicecoin.%s\n",sp->Q.destcoin);
+        //printf("no alicecoin.%s\n",sp->Q.destcoin);
         return(0);
     }
     if ( sp->finished == 0 )
