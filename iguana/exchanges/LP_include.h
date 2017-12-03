@@ -65,7 +65,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 // RTmetrics
 #define LP_RTMETRICS_TOPGROUP 1.01
 //#define LP_MAXPENDING_SWAPS 13
-#define LP_CLIENT_STATSPARSE (100 * 1024 * 1024)
+#define LP_CLIENT_STATSPARSE (90 * 1024 * 1024)
 
 #define LP_COMMAND_SENDSOCK NN_PUSH
 #define LP_COMMAND_RECVSOCK NN_PULL

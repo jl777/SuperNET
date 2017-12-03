@@ -531,7 +531,7 @@ char *LP_swapstatus_recv(cJSON *argjson)
             RTflag = 0;
         else RTflag = 1;
         sp = LP_swapstats_create(aliceid,RTflag,&Q,qprice,LP_TRADESTATUS_METHODIND);
-        printf("create swapstatus from recv\n");
+        //printf("create swapstatus from recv\n");
     }
     if ( sp != 0 )
     {
