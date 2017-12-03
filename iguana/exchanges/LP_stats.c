@@ -250,22 +250,22 @@ int32_t LP_finished_lastheight(struct LP_swapstats *sp,int32_t iambob)
             if ( bits256_nonz(sp->bobdeposit) != 0 && (ht= LP_txheight(coin,sp->bobdeposit)) > 1 && ht > height )
             {
                 height = ht;
-                printf("bobdeposit.%d height.%d\n",ht,height);
+                //printf("bobdeposit.%d height.%d\n",ht,height);
             }
             if ( bits256_nonz(sp->bobpayment) != 0 && (ht= LP_txheight(coin,sp->bobpayment)) > 1 && ht > height )
             {
                 height = ht;
-                printf("bobpayment.%d height.%d\n",ht,height);
+                //printf("bobpayment.%d height.%d\n",ht,height);
             }
             if ( bits256_nonz(sp->paymentspent) != 0 && (ht= LP_txheight(coin,sp->paymentspent)) > 1 && ht > height )
             {
                 height = ht;
-                printf("paymentspent.%d height.%d\n",ht,height);
+                //printf("paymentspent.%d height.%d\n",ht,height);
             }
             if ( bits256_nonz(sp->depositspent) != 0 && (ht= LP_txheight(coin,sp->depositspent)) > 1 && ht > height )
             {
                 height = ht;
-                printf("depositspent.%d height.%d\n",ht,height);
+                //printf("depositspent.%d height.%d\n",ht,height);
             }
         }
         else
@@ -509,9 +509,9 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 char *LP_swapstatus_recv(cJSON *argjson)
 {
     struct LP_swapstats *sp; int32_t methodind; bits256 txid;
-    //printf("swapstatus.(%s)\n",jprint(argjson,0));
     if ( (sp= LP_swapstats_find(j64bits(argjson,"aliceid"))) != 0 )
     {
+        printf("swapstatus.(%s)\n",jprint(argjson,0));
         sp->lasttime = (uint32_t)time(NULL);
         if ( (methodind= jint(argjson,"ind")) > sp->methodind && methodind < sizeof(LP_stats_methods)/sizeof(*LP_stats_methods) )
         {
