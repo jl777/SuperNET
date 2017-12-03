@@ -319,7 +319,7 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
 
 int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256 txid,char *refaddr)
 {
-    cJSON *txjson,*vouts,*txobj,*item; int64_t satoshis=0,amount64; int32_t weeki,numvouts; char destaddr[64],p2shaddr[64];
+    cJSON *txjson,*vouts,*txobj,*item; int64_t satoshis=0,amount64; int32_t weeki,numvouts; char destaddr[64],p2shaddr[64],str[65];
     if ( (txjson= LP_gettx(coin->symbol,txid,0)) != 0 )
     {
         // vout0 deposit, vout1 botsfee, vout2 smartaddress
@@ -335,7 +335,7 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
                 weeki = (amount64 % 10000);
                 item = jitem(vouts,0);
                 satoshis = LP_value_extract(item,0);
-                //printf("%s funded %.8f weeki.%d\n",destaddr,dstr(satoshis),weeki);
+                printf("%s %s funded %.8f weeki.%d (%s)\n",bits256_str(str,txid),destaddr,dstr(satoshis),weeki,jprint(item,0));
                 if ( LP_destaddr(p2shaddr,item) == 0 )
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )

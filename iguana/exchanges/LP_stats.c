@@ -518,7 +518,7 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 
 char *LP_swapstatus_recv(cJSON *argjson)
 {
-    struct LP_swapstats *sp; char *statusstr; uint64_t aliceid; double qprice; struct LP_quoteinfo Q; int32_t methodind,RTflag; bits256 txid; char str[65];
+    struct LP_swapstats *sp; char *statusstr; uint64_t aliceid; double qprice; struct LP_quoteinfo Q; int32_t methodind,RTflag; bits256 txid; //char str[65];
     if ( (aliceid= j64bits(argjson,"aliceid")) == 0 )
         return(clonestr("{\"error\":\"LP_swapstatus_recv null aliceid\"}"));
     if ( (sp= LP_swapstats_find(aliceid)) == 0 )
@@ -589,7 +589,7 @@ char *LP_swapstatus_recv(cJSON *argjson)
 char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
 {
     struct LP_swapstats *sp; char *swapstr,*statusstr; cJSON *reqjson,*swapjson; bits256 zero;
-    printf("gettradestatus.(%llu)\n",(long long)aliceid);
+    //printf("gettradestatus.(%llu)\n",(long long)aliceid);
     if ( IAMLP != 0 )
     {
         if ( (sp= LP_swapstats_find(aliceid)) != 0 )
