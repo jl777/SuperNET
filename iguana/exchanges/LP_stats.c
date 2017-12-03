@@ -535,7 +535,7 @@ char *LP_swapstatus_recv(cJSON *argjson)
     }
     if ( sp != 0 )
     {
-        if ( 0 && IAMLP == 0 )
+        if ( IAMLP == 0 )
             printf("swapstatus.(%s)\n",jprint(argjson,0));
         sp->lasttime = (uint32_t)time(NULL);
         if ( (methodind= jint(argjson,"ind")) > sp->methodind && methodind < sizeof(LP_stats_methods)/sizeof(*LP_stats_methods) )
@@ -589,7 +589,7 @@ char *LP_swapstatus_recv(cJSON *argjson)
 char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
 {
     struct LP_swapstats *sp; char *swapstr,*statusstr; cJSON *reqjson,*swapjson; bits256 zero;
-    //printf("gettradestatus.(%llu)\n",(long long)aliceid);
+    printf("gettradestatus.(%llu)\n",(long long)aliceid);
     if ( IAMLP != 0 )
     {
         if ( (sp= LP_swapstats_find(aliceid)) != 0 )
