@@ -93,7 +93,7 @@ int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
     if ( coin == 0 )
         return(-1);
     height = coin->height;
-    if ( coin->electrum == 0 && time(NULL) > coin->heighttime+60 )
+    if ( coin->electrum == 0 && time(NULL) > coin->heighttime+60 && coin->userpass[0] != 0 )
     {
         if ( strcmp(coin->symbol,"BTC") == 0 )
             method = "getblockchaininfo";
