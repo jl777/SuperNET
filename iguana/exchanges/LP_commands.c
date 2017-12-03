@@ -603,6 +603,8 @@ instantdex_claim()\n\
             }
             argjson = reqjson;
         }
+        else if ( strcmp(method,"getdPoW") == 0 )
+            retstr = clonestr("{\"result\":\"success\"}");
     }
     else
     {
@@ -610,7 +612,13 @@ instantdex_claim()\n\
         {
             return(jprint(LP_tradesarray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
         }
-    }
+        else if ( strcmp(method,"getdPoW") == 0 )
+        {
+            if ( (ptr= LP_coinfind(jstr(argjson,"coin"))) != 0 )
+                LP_dPoW_broadcast(ptr);
+            retstr = clonestr("{\"result\":\"success\"}");
+        }
+   }
     // received response
     if ( strcmp(method,"swapstatus") == 0 )
         return(LP_swapstatus_recv(argjson));

@@ -28,6 +28,17 @@ char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "conne
 
 static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_aliceids;
 
+void LP_dPoW_request(struct iguana_info *coin)
+{
+    bits256 zero; cJSON *reqjson;
+    reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","getdPoW");
+    jaddstr(reqjson,"coin",coin->symbol);
+    memset(zero.bytes,0,sizeof(zero));
+    printf("request %s\n",jprint(reqjson,0));
+    LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
+}
+
 void LP_dPoW_broadcast(struct iguana_info *coin)
 {
     bits256 zero; cJSON *reqjson;
@@ -40,6 +51,7 @@ void LP_dPoW_broadcast(struct iguana_info *coin)
         jaddbits256(reqjson,"notarizedhash",coin->notarizedhash);
         jaddbits256(reqjson,"notarizationtxid",coin->notarizationtxid);
         memset(zero.bytes,0,sizeof(zero));
+        printf("broadcast %s\n",jprint(reqjson,0));
         LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
     }
 }
@@ -62,6 +74,25 @@ char *LP_dPoW_recv(cJSON *argjson)
         }
     }
     return(clonestr("{\"result\":\"success\"}"));
+}
+
+int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
+{
+    int32_t notarized,oldnotarized;
+    if ( coin->electrum == 0 )
+    {
+        coin->heighttime = (uint32_t)(time(NULL) - 61);
+        oldnotarized = coin->notarized;
+        LP_getheight(&notarized,coin);
+        if ( notarized != 0 && notarized != oldnotarized )
+        {
+            printf("dPoWheight.%s %d <- %d\n",coin->symbol,oldnotarized,notarized);
+            coin->notarized = notarized;
+        }
+    }
+    else if ( coin->notarized == 0 )
+        LP_dPoW_request(coin);
+    return(coin->notarized);
 }
 
 void LP_tradecommand_log(cJSON *argjson)
@@ -258,23 +289,6 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
     if ( sp->Q.gui[0] == 0 || strcmp(sp->Q.gui,"nogui") == 0 )
         strcpy(sp->Q.gui,gui);
     return(0);
-}
-
-int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
-{
-    int32_t notarized,oldnotarized;
-    if ( coin->electrum == 0 )
-    {
-        coin->heighttime = (uint32_t)(time(NULL) - 61);
-        oldnotarized = coin->notarized;
-        LP_getheight(&notarized,coin);
-        if ( notarized != 0 && notarized != oldnotarized )
-        {
-            printf("dPoWheight.%s %d <- %d\n",coin->symbol,oldnotarized,notarized);
-            coin->notarized = notarized;
-        }
-    }
-    return(coin->notarized);
 }
 
 int32_t LP_finished_lastheight(struct LP_swapstats *sp)
