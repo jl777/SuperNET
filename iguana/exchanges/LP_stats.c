@@ -302,23 +302,23 @@ int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
     {
         if ( sp->expired != 0 )
             return(1);
-        if ( dPoWflag != 0 )
+    }
+    if ( dPoWflag != 0 )
+    {
+        if ( sp->dPoWfinished != 0 )
+            return(1);
+        else if ( sp->finished != 0 )
         {
-            if ( sp->finished != 0 && sp->dPoWfinished != 0 )
-                return(1);
-            else if ( sp->finished != 0 )
-            {
-                if ( bob->isassetchain != 0  )
-                    sp->bobneeds_dPoW = LP_finished_lastheight(sp,1);
-                if ( alice->isassetchain != 0 )
-                    sp->aliceneeds_dPoW = LP_finished_lastheight(sp,0);
-                printf("bob needs %d @ %d, alice needs %d @ %d\n",sp->bobneeds_dPoW,bob->notarized,sp->aliceneeds_dPoW,alice->notarized);
-            }
-            if ( (sp->bobneeds_dPoW == 0 || (sp->bobneeds_dPoW > 1 && bob->notarized >= sp->bobneeds_dPoW)) && (sp->aliceneeds_dPoW == 0 || (sp->aliceneeds_dPoW > 1 && alice->notarized >= sp->aliceneeds_dPoW)) )
-            {
-                sp->dPoWfinished = (uint32_t)time(NULL);
-                return(1);
-            }
+            if ( bob->isassetchain != 0  )
+                sp->bobneeds_dPoW = LP_finished_lastheight(sp,1);
+            if ( alice->isassetchain != 0 )
+                sp->aliceneeds_dPoW = LP_finished_lastheight(sp,0);
+            printf("bob needs %d @ %d, alice needs %d @ %d\n",sp->bobneeds_dPoW,bob->notarized,sp->aliceneeds_dPoW,alice->notarized);
+        }
+        if ( (sp->bobneeds_dPoW == 0 || (sp->bobneeds_dPoW > 1 && bob->notarized >= sp->bobneeds_dPoW)) && (sp->aliceneeds_dPoW == 0 || (sp->aliceneeds_dPoW > 1 && alice->notarized >= sp->aliceneeds_dPoW)) )
+        {
+            sp->dPoWfinished = (uint32_t)time(NULL);
+            return(1);
         }
     }
     return(0);
