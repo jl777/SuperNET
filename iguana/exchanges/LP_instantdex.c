@@ -252,7 +252,7 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                                 jaddi(txids,item);
                             }
                         }
-                    } //else printf("expiration.%u j.%d checkaddr.(%s) != vinaddr.%s\n",expiration,j,checkaddr,vinaddr);
+                    } else printf("expiration.%u j.%d checkaddr.(%s) != vinaddr.%s\n",expiration,j,checkaddr,vinaddr);
                     if ( flagi != 0 )
                         break;
                 }
@@ -267,7 +267,6 @@ char *LP_instantdex_claim(struct iguana_info *coin)
 {
     static void *ctx;
     int32_t i,n; cJSON *array,*txids,*newarray,*retjson; int64_t sum; bits256 utxotxid;
-    printf("inside instantdex claim\n");
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( strcmp(coin->symbol,"KMD") != 0 )
