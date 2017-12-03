@@ -228,6 +228,7 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                     if ( strcmp(checkaddr,vinaddr) == 0 )
                     {
                         flagi = 1;
+                        printf("j.%d matched %s\n",j,vinaddr);
                         claimtime = (uint32_t)time(NULL)-777;
                         item = cJSON_CreateObject();
                         jaddbits256(item,"txid",utxotxid);
