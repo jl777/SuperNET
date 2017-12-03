@@ -197,7 +197,7 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
         }
         else
         {
-            if ( requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid )
+            if ( 0 && requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid )
                 printf("mismatched tradestatus aliceid.%22llu b%s/%s r%s/%s r%u/%u q%u/%u %.8f/%.8f -> %.8f/%.8f\n",(long long)sp->aliceid,base,sp->Q.srccoin,rel,sp->Q.destcoin,requestid,sp->Q.R.requestid,quoteid,sp->Q.R.quoteid,dstr(satoshis+2*sp->Q.txfee),dstr(sp->Q.satoshis),dstr(destsatoshis+2*sp->Q.desttxfee),dstr(sp->Q.destsatoshis));
             return(-1);
         }
@@ -233,20 +233,38 @@ int32_t LP_finished_lastheight(struct LP_swapstats *sp,int32_t iambob)
         if ( iambob != 0 )
         {
             if ( bits256_nonz(sp->bobdeposit) != 0 && (ht= LP_txheight(coin,sp->bobdeposit)) > 1 && ht > height )
+            {
                 height = ht;
+                printf("bobdeposit.%d height.%d\n",ht,height);
+            }
             if ( bits256_nonz(sp->bobpayment) != 0 && (ht= LP_txheight(coin,sp->bobpayment)) > 1 && ht > height )
+            {
                 height = ht;
+                printf("bobpayment.%d height.%d\n",ht,height);
+            }
             if ( bits256_nonz(sp->paymentspent) != 0 && (ht= LP_txheight(coin,sp->paymentspent)) > 1 && ht > height )
+            {
                 height = ht;
+                printf("paymentspent.%d height.%d\n",ht,height);
+            }
             if ( bits256_nonz(sp->depositspent) != 0 && (ht= LP_txheight(coin,sp->depositspent)) > 1 && ht > height )
+            {
                 height = ht;
+                printf("depositspent.%d height.%d\n",ht,height);
+            }
         }
         else
         {
             if ( bits256_nonz(sp->alicepayment) != 0 && (ht= LP_txheight(coin,sp->alicepayment)) > 1 && ht > height )
+            {
                 height = ht;
+                printf("alicepayment.%d height.%d\n",ht,height);
+            }
             if ( bits256_nonz(sp->Apaymentspent) != 0 && (ht= LP_txheight(coin,sp->Apaymentspent)) > 1 && ht > height )
+            {
                 height = ht;
+                printf("Apaymentspent.%d height.%d\n",ht,height);
+            }
         }
     }
     return(height);
