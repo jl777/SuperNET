@@ -247,37 +247,43 @@ int32_t LP_finished_lastheight(struct LP_swapstats *sp,int32_t iambob)
     {
         if ( iambob != 0 )
         {
-            if ( bits256_nonz(sp->bobdeposit) != 0 && (ht= LP_txheight(coin,sp->bobdeposit)) > 1 && ht > height )
+            if ( bits256_nonz(sp->bobdeposit) != 0 && (ht= LP_txheight(coin,sp->bobdeposit)) > 1 )
             {
-                height = ht;
-                //printf("bobdeposit.%d height.%d\n",ht,height);
+                if ( ht > height )
+                    height = ht;
+                printf("bobdeposit.%d height.%d\n",ht,height);
             }
-            if ( bits256_nonz(sp->bobpayment) != 0 && (ht= LP_txheight(coin,sp->bobpayment)) > 1 && ht > height )
+            if ( bits256_nonz(sp->bobpayment) != 0 && (ht= LP_txheight(coin,sp->bobpayment)) > 1 )
             {
-                height = ht;
-                //printf("bobpayment.%d height.%d\n",ht,height);
+                if ( ht > height )
+                    height = ht;
+                printf("bobpayment.%d height.%d\n",ht,height);
             }
-            if ( bits256_nonz(sp->paymentspent) != 0 && (ht= LP_txheight(coin,sp->paymentspent)) > 1 && ht > height )
+            if ( bits256_nonz(sp->paymentspent) != 0 && (ht= LP_txheight(coin,sp->paymentspent)) > 1 )
             {
-                height = ht;
-                //printf("paymentspent.%d height.%d\n",ht,height);
+                if ( ht > height )
+                    height = ht;
+                printf("paymentspent.%d height.%d\n",ht,height);
             }
-            if ( bits256_nonz(sp->depositspent) != 0 && (ht= LP_txheight(coin,sp->depositspent)) > 1 && ht > height )
+            if ( bits256_nonz(sp->depositspent) != 0 && (ht= LP_txheight(coin,sp->depositspent)) > 1 )
             {
-                height = ht;
-                //printf("depositspent.%d height.%d\n",ht,height);
+                if ( ht > height )
+                    height = ht;
+                printf("depositspent.%d height.%d\n",ht,height);
             }
         }
         else
         {
-            if ( bits256_nonz(sp->alicepayment) != 0 && (ht= LP_txheight(coin,sp->alicepayment)) > 1 && ht > height )
+            if ( bits256_nonz(sp->alicepayment) != 0 && (ht= LP_txheight(coin,sp->alicepayment)) > 1 )
             {
-                height = ht;
+                if ( ht > height )
+                    height = ht;
                 printf("alicepayment.%d height.%d\n",ht,height);
             }
-            if ( bits256_nonz(sp->Apaymentspent) != 0 && (ht= LP_txheight(coin,sp->Apaymentspent)) > 1 && ht > height )
+            if ( bits256_nonz(sp->Apaymentspent) != 0 && (ht= LP_txheight(coin,sp->Apaymentspent)) > 1 )
             {
-                height = ht;
+                if ( ht > height )
+                    height = ht;
                 printf("Apaymentspent.%d height.%d\n",ht,height);
             }
         }
