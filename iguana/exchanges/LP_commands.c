@@ -603,7 +603,7 @@ instantdex_claim()\n\
             }
             argjson = reqjson;
         }
-        else if ( strcmp(method,"getdPoW") == 0 )
+        if ( strcmp(method,"getdPoW") == 0 )
             retstr = clonestr("{\"result\":\"success\"}");
     }
     else
@@ -618,7 +618,7 @@ instantdex_claim()\n\
                 LP_dPoW_broadcast(ptr);
             retstr = clonestr("{\"result\":\"success\"}");
         }
-   }
+    }
     // received response
     if ( strcmp(method,"swapstatus") == 0 )
         return(LP_swapstatus_recv(argjson));

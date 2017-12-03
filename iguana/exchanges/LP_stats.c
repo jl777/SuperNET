@@ -77,7 +77,7 @@ char *LP_dPoW_recv(cJSON *argjson)
     return(clonestr("{\"result\":\"success\"}"));
 }
 
-int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
+/*int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
 {
     int32_t notarized,oldnotarized;
     if ( coin->electrum == 0 )
@@ -94,7 +94,7 @@ int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
     else if ( coin->notarized == 0 )
         LP_dPoW_request(coin);
     return(coin->notarized);
-}
+}*/
 
 void LP_tradecommand_log(cJSON *argjson)
 {

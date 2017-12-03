@@ -1031,7 +1031,7 @@ int32_t LP_txhasnotarization(bits256 *notarizedhashp,struct iguana_info *coin,bi
             {
                 len >>= 1;
                 decode_hex(script,len,hexstr);
-                iguana_rwbignum(0,&script[4],32,(uint8_t *)notarizedhashp);
+                iguana_rwbignum(0,&script[2],32,(uint8_t *)notarizedhashp);
             }
         }
         free_json(txobj);
