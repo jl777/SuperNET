@@ -28,6 +28,18 @@ char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "conne
 
 static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_aliceids;
 
+void LP_dPoW_broadcast(struct iguana_info *coin)
+{
+    bits256 zero; cJSON *reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","dPoW");
+    jaddstr(reqjson,"coin",coin->symbol);
+    jaddnum(reqjson,"notarized",coin->notarized);
+    jaddbits256(reqjson,"notarizedhash",coin->notarizedhash);
+    jaddbits256(reqjson,"notarizationtxid",coin->notarizationtxid);
+    memset(zero.bytes,0,sizeof(zero));
+    LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
+}
+
 char *LP_dPoW_recv(cJSON *argjson)
 {
     int32_t notarized; bits256 notarizedhash,notarizationtxid; char *symbol; struct iguana_info *coin;
@@ -608,7 +620,7 @@ char *LP_swapstatus_recv(cJSON *argjson)
 
 char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
 {
-    struct LP_swapstats *sp; char *swapstr,*statusstr; cJSON *reqjson,*swapjson; bits256 zero;
+    struct LP_swapstats *sp; struct iguana_info *bob,*alice; char *swapstr,*statusstr; cJSON *reqjson,*swapjson; bits256 zero;
     //printf("gettradestatus.(%llu)\n",(long long)aliceid);
     if ( IAMLP != 0 )
     {
@@ -622,6 +634,10 @@ char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
                     memset(zero.bytes,0,sizeof(zero));
                     LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
                 }
+                if ( (bob= LP_coinfind(sp->Q.srccoin)) != 0 )
+                    LP_dPoW_broadcast(bob);
+                if ( (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
+                    LP_dPoW_broadcast(alice);
             }
             return(clonestr("{\"result\":\"success\"}"));
         }

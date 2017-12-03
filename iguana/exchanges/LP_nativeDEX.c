@@ -678,16 +678,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
                 {
                     coin->notarized = notarized;
                     if ( IAMLP != 0 )
-                    {
-                        reqjson = cJSON_CreateObject();
-                        jaddstr(reqjson,"method","dPoW");
-                        jaddstr(reqjson,"coin",coin->symbol);
-                        jaddnum(reqjson,"notarized",coin->notarized);
-                        jaddbits256(reqjson,"notarizedhash",coin->notarizedhash);
-                        jaddbits256(reqjson,"notarizationtxid",coin->notarizationtxid);
-                        memset(zero.bytes,0,sizeof(zero));
-                        LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
-                    }
+                        LP_dPoW_broadcast(coin);
                 }
                 if ( 0 && coin->firstrefht != 0 )
                     printf(">>>>>>>>>> set %s longestchain %d (ref.%d [%d, %d])\n",coin->symbol,height,coin->firstrefht,coin->firstscanht,coin->lastscanht);

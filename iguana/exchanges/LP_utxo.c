@@ -795,7 +795,7 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
         {
             if ( (retjson= electrum_transaction(&height,coin->symbol,coin->electrum,&retjson,txid,0)) != 0 )
             {
-                printf("process %s\n",jprint(retjson,0));
+                //printf("process %s\n",jprint(retjson,0));
                 free_json(retjson);
             }
             if ( (tx= LP_transactionfind(coin,txid)) != 0 )
