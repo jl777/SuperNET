@@ -102,7 +102,11 @@ int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
         {
             retjson = cJSON_Parse(retstr);
             coin->height = height = jint(retjson,"blocks");
-            *notarizedp = jint(retjson,"notarized");
+            if ( (*notarizedp= jint(retjson,"notarized")) != 0 && *notarizedp != coin->notarized )
+            {
+                printf("new notarized %s %d -> %d\n",coin->symbol,coin->notarized,*notarizedp);
+                coin->notarized = *notarizedp;
+            }
             free_json(retjson);
             if ( coin->height > 0 )
                 coin->heighttime = (uint32_t)time(NULL);

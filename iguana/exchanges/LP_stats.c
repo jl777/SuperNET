@@ -210,10 +210,19 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
 
 int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
 {
-    int32_t notarized;
-    LP_getheight(&notarized,coin);
-    printf("dPoWheight.%s %d\n",coin->symbol,notarized);
-    return(notarized);
+    int32_t notarized,oldnotarized;
+    if ( coin->electrum == 0 )
+    {
+        coin->heighttime = (uint32_t)(time(NULL) - 61);
+        oldnotarized = coin->notarized;
+        LP_getheight(&notarized,coin);
+        if ( notarized != 0 && notarized != oldnotarized )
+        {
+            printf("dPoWheight.%s %d <- %d\n",coin->symbol,oldnotarized,notarized);
+            coin->notarized = notarized;
+        }
+    }
+    return(coin->notarized);
 }
 
 int32_t LP_finished_lastheight(struct LP_swapstats *sp,int32_t iambob)
@@ -248,6 +257,8 @@ int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
     struct iguana_info *bob,*alice;
     bob = LP_coinfind(sp->Q.srccoin);
     alice = LP_coinfind(sp->Q.destcoin);
+    sp->bob_dPoWheight = LP_dPoWheight(bob);
+    sp->alice_dPoWheight = LP_dPoWheight(alice);
     if ( sp->finished == 0 )
     {
         if ( sp->expired != 0 )
@@ -258,8 +269,6 @@ int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
                 return(1);
             else if ( sp->finished != 0 )
             {
-                sp->bob_dPoWheight = LP_dPoWheight(bob);
-                sp->alice_dPoWheight = LP_dPoWheight(alice);
                 if ( bob->isassetchain != 0  )
                     sp->bobneeds_dPoW = LP_finished_lastheight(sp,1);
                 if ( alice->isassetchain != 0 )
@@ -267,7 +276,10 @@ int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
                 printf("bob needs %d @ %d, alice needs %d @ %d\n",sp->bobneeds_dPoW,sp->bob_dPoWheight,sp->aliceneeds_dPoW,sp->alice_dPoWheight);
             }
             if ( (sp->bobneeds_dPoW == 0 || (sp->bobneeds_dPoW > 1 && sp->bob_dPoWheight >= sp->bobneeds_dPoW)) && (sp->aliceneeds_dPoW == 0 || (sp->aliceneeds_dPoW > 1 && sp->alice_dPoWheight >= sp->aliceneeds_dPoW)) )
+            {
+                sp->dPoWfinished = (uint32_t)time(NULL);
                 return(1);
+            }
         }
     }
     return(0);
