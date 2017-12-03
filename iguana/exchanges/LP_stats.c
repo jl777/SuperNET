@@ -265,8 +265,6 @@ int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
         printf("no alicecoin.%s\n",sp->Q.destcoin);
         return(0);
     }
-    sp->bob_dPoWheight = LP_dPoWheight(bob);
-    sp->alice_dPoWheight = LP_dPoWheight(alice);
     if ( sp->finished == 0 )
     {
         if ( sp->expired != 0 )
@@ -281,6 +279,8 @@ int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
                     sp->bobneeds_dPoW = LP_finished_lastheight(sp,1);
                 if ( alice->isassetchain != 0 )
                     sp->aliceneeds_dPoW = LP_finished_lastheight(sp,0);
+                sp->bob_dPoWheight = LP_dPoWheight(bob);
+                sp->alice_dPoWheight = LP_dPoWheight(alice);
                 printf("bob needs %d @ %d, alice needs %d @ %d\n",sp->bobneeds_dPoW,sp->bob_dPoWheight,sp->aliceneeds_dPoW,sp->alice_dPoWheight);
             }
             if ( (sp->bobneeds_dPoW == 0 || (sp->bobneeds_dPoW > 1 && sp->bob_dPoWheight >= sp->bobneeds_dPoW)) && (sp->aliceneeds_dPoW == 0 || (sp->aliceneeds_dPoW > 1 && sp->alice_dPoWheight >= sp->aliceneeds_dPoW)) )
