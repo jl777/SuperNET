@@ -518,7 +518,7 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 
 char *LP_swapstatus_recv(cJSON *argjson)
 {
-    struct LP_swapstats *sp; char *statusstr; uint64_t aliceid; double qprice; struct LP_quoteinfo Q; int32_t methodind,RTflag; bits256 txid; //char str[65];
+    struct LP_swapstats *sp; char *statusstr; uint64_t aliceid; double qprice; struct LP_quoteinfo Q; int32_t methodind,RTflag; bits256 txid; char str[65];
     if ( (aliceid= j64bits(argjson,"aliceid")) == 0 )
         return(clonestr("{\"error\":\"LP_swapstatus_recv null aliceid\"}"));
     if ( (sp= LP_swapstats_find(aliceid)) == 0 )
@@ -549,31 +549,31 @@ char *LP_swapstatus_recv(cJSON *argjson)
             if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->bobdeposit) == 0 )
             {
                 sp->bobdeposit = txid;
-                //printf("set aliceid.%llu bobdeposit %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+                printf("set aliceid.%llu bobdeposit %s\n",(long long)sp->aliceid,bits256_str(str,txid));
             }
             txid = jbits256(argjson,"alicepayment");
             if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->alicepayment) == 0 )
             {
                 sp->alicepayment = txid;
-                //printf("set aliceid.%llu alicepayment %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+                printf("set aliceid.%llu alicepayment %s\n",(long long)sp->aliceid,bits256_str(str,txid));
             }
             txid = jbits256(argjson,"bobpayment");
             if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->bobpayment) == 0 )
             {
                 sp->bobpayment = txid;
-                //printf("set aliceid.%llu bobpayment %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+                printf("set aliceid.%llu bobpayment %s\n",(long long)sp->aliceid,bits256_str(str,txid));
             }
             txid = jbits256(argjson,"paymentspent");
             if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->paymentspent) == 0 )
             {
                 sp->paymentspent = txid;
-                //printf("set aliceid.%llu paymentspent %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+                printf("set aliceid.%llu paymentspent %s\n",(long long)sp->aliceid,bits256_str(str,txid));
             }
             txid = jbits256(argjson,"Apaymentspent");
             if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->Apaymentspent) == 0 )
             {
                 sp->Apaymentspent = txid;
-                //printf("set aliceid.%llu Apaymentspent %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+                printf("set aliceid.%llu Apaymentspent %s\n",(long long)sp->aliceid,bits256_str(str,txid));
             }
             txid = jbits256(argjson,"depositspent");
             if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->depositspent) == 0 )
