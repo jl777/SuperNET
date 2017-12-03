@@ -1,0 +1,47 @@
+#!/bin/bash
+
+cd secp256k1; ./m_unix; cd ..
+cd ../crypto777; ./m_LP; cd ../iguana
+#gcc -g -fno-aggressive-loop-optimizations -Wno-deprecated -c -O2 -DISNOTARYNODE=1 -DLIQUIDITY_PROVIDER=1 *.c ../basilisk/basilisk.c ../gecko/gecko.c ../datachain/datachain.c
+clang -g -Wno-deprecated -c -O2 -DISNOTARYNODE=1 -DLIQUIDITY_PROVIDER=1 *.c ../basilisk/basilisk.c ../gecko/gecko.c ../datachain/datachain.c
+#gcc -g -fno-aggressive-loop-optimizations -Wno-deprecated -c -DISNOTARYNODE=1 -DLIQUIDITY_PROVIDER=1  main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c
+clang -g  -Wno-deprecated -c -DISNOTARYNODE=1 -DLIQUIDITY_PROVIDER=1  main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c
+clang -g -o ../agents/iguana *.o ../agents/libcrypto777.a -lnanomsg -lcurl -lssl -lcrypto -lpthread -lz -lm
+
+../agents/iguana notary  & #> iguana.log 2> error.log  &
+
+myip=`curl -s4 checkip.amazonaws.com`
+source pubkey.txt
+
+sleep 4
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
+sleep 3
+tests/addnotarys_7776
+coins/btc_7776
+coins/ltc_7776
+coins/kmd_7776
+coins/chips_7776
+./wp_7776
+
+coins/revs_7776
+coins/supernet_7776
+coins/dex_7776
+coins/bet_7776
+coins/bots_7776
+coins/hodl_7776
+coins/shark_7776
+coins/mshark_7776
+coins/jumblr_7776
+coins/crypto_7776
+coins/pangea_7776
+coins/mgw_7776
+coins/coqui_7776
+coins/wlc_7776
+coins/kv_7776
+coins/ceal_7776
+coins/mesh_7776
+coins/mnz_7776
+#curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
+
+#curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"

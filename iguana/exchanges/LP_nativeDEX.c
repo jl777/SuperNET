@@ -571,7 +571,7 @@ void LP_coinsloop(void *_coins)
                                 nonz++;
                                 printf("SPV failure for %s %s\n",coin->symbol,bits256_str(str,up->U.txid));
                                 oldht = up->U.height;
-                                LP_txheight_check(coin,ap->coinaddr,up);
+                                LP_txheight_check(coin,ap->coinaddr,up->U.txid);
                                 if ( oldht != up->U.height )
                                     up->SPV = LP_merkleproof(coin,coin->smartaddr,backupep,up->U.txid,up->U.height);
                                 if ( up->SPV <= 0 )

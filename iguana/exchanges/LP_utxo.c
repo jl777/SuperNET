@@ -620,7 +620,10 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     jaddstr(retjson,"address",coinaddr);
     jaddnum(retjson,"balance",dstr(balance));
     if ( strcmp(coin->symbol,"KMD") == 0 && strcmp(coin->smartaddr,coinaddr) == 0 )
+    {
         jaddnum(retjson,"zcredits",dstr(LP_myzcredits()));
+        jadd(retjson,"zdebits",LP_myzdebits());
+    }
     return(retjson);
 }
 
@@ -763,7 +766,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
 
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
 {
-    bits256 blockhash; struct LP_transaction *tx; cJSON *blockobj,*txobj; int32_t height = 0;
+    bits256 blockhash; struct LP_transaction *tx; cJSON *blockobj,*retjson,*txobj; int32_t height = 0;
     if ( coin == 0 )
         return(-1);
     if ( coin->electrum == 0 )
@@ -788,6 +791,11 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
     {
         if ( (tx= LP_transactionfind(coin,txid)) != 0 )
             height = tx->height;
+        if ( height == 0 )
+        {
+            if ( (retjson= electrum_transaction(&height,coin->symbol,coin->electrum,&retjson,txid,0)) != 0 )
+                free_json(retjson);
+        }
     }
     return(height);
 }

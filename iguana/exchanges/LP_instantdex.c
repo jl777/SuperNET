@@ -202,16 +202,74 @@ int64_t LP_claimtx(void *ctx,struct iguana_info *coin,bits256 *claimtxidp,bits25
     return(sum);
 }
 
+int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info *coin,bits256 utxotxid)
+{
+    uint8_t redeemscript[512]; bits256 claimtxid; cJSON *txjson,*vout0,*vout1,*vout2,*vouts,*item; int32_t numvouts; char str[65],vinaddr[64],destaddr[64],checkaddr[64]; int32_t j,utxovout,flagi = 0,redeemlen,weeki; int64_t weeksatoshis,satoshis; uint32_t expiration,claimtime;
+    if ( (txjson= LP_gettx(coin->symbol,utxotxid,1)) != 0 )
+    {
+        if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts >= 3 )
+        {
+            vout0 = jitem(vouts,0);
+            LP_destaddr(vinaddr,vout0);
+            satoshis = LP_value_extract(vout0,1);
+            vout2 = jitem(vouts,2);
+            LP_destaddr(destaddr,vout2);
+            if ( strcmp(destaddr,coin->smartaddr) == 0 )
+            {
+                vout1 = jitem(vouts,1);
+                weeksatoshis = LP_value_extract(vout1,0);
+                weeki = (int32_t)(weeksatoshis % 10000);
+                for (j=28; j<=28; j++)
+                {
+                    expiration = ((weeki * LP_WEEKMULT + j*3600) + LP_FIRSTWEEKTIME);
+                    redeemlen = LP_deposit_addr(checkaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
+                    if ( strcmp(checkaddr,vinaddr) == 0 )
+                    {
+                        claimtime = (uint32_t)time(NULL)-777;
+                        item = cJSON_CreateObject();
+                        jaddbits256(item,"txid",utxotxid);
+                        jaddnum(item,"deposit",dstr(LP_value_extract(vout0,0)));
+                        if ( coin->electrum == 0 )
+                            jaddnum(item,"interest",dstr(satoshis)-dstr(LP_value_extract(vout0,0)));
+                        else jaddnum(item,"interest",dstr(LP_komodo_interest(utxotxid,satoshis)));
+                        if ( claimtime <= expiration )
+                        {
+                            printf("claimtime.%u vs %u, wait %d seconds to %s claim %.8f\n",claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
+                            jaddnum(item,"waittime",(int32_t)expiration-claimtime);
+                            jaddi(txids,item);
+                            break;
+                        }
+                        else
+                        {
+                            utxovout = 0;
+                            *sump += LP_claimtx(ctx,coin,&claimtxid,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
+                            if ( bits256_nonz(claimtxid) != 0 )
+                            {
+                                flagi = 1;
+                                jaddbits256(item,"claimtxid",claimtxid);
+                                jaddi(txids,item);
+                            }
+                        }
+                    } else printf("expiration.%u j.%d checkaddr.(%s) != vinaddr.%s\n",expiration,j,checkaddr,vinaddr);
+                    if ( flagi != 0 )
+                        break;
+                }
+            } else printf("vout2 dest.(%s) != %s\n",destaddr,coin->smartaddr);
+        } else printf("numvouts %d != 3\n",numvouts);
+        free_json(txjson);
+    } else printf("cant get transaction\n");
+    return(flagi);
+}
+
 char *LP_instantdex_claim(struct iguana_info *coin)
 {
     static void *ctx;
-    uint8_t redeemscript[512]; char vinaddr[64],checkaddr[64],destaddr[64],str[65]; uint32_t now,redeemlen,claimtime,expiration=0; int32_t i,j,n,flagi,flag,weeki,numvouts,utxovout; bits256 utxotxid,claimtxid; int64_t sum,satoshis,weeksatoshis; cJSON *array,*txids,*retjson,*newarray,*txjson,*vouts,*vout0,*vout1,*vout2,*item;
+    int32_t i,n; cJSON *array,*txids,*newarray,*retjson; int64_t sum; bits256 utxotxid;
     printf("inside instantdex claim\n");
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( strcmp(coin->symbol,"KMD") != 0 )
         return(clonestr("{\"error\":\"instantdex deposit must be in KMD\"}"));
-    now = (uint32_t)time(NULL);
     sum = 0;
     txids = cJSON_CreateArray();
     newarray = cJSON_CreateArray();
@@ -220,71 +278,11 @@ char *LP_instantdex_claim(struct iguana_info *coin)
         printf("claiming from.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
-            flag = 0;
             for (i=0; i<n; i++)
             {
                 utxotxid = jbits256i(array,i);
-                //printf("%d of %d: %s\n",i,n,bits256_str(str,utxotxid));
-                if ( flag == 1 )
-                {
+                if ( LP_claim_submit(ctx,txids,&sum,coin,utxotxid) == 0 )
                     jaddibits256(newarray,utxotxid);
-                    continue;
-                }
-                flagi = 0;
-                utxovout = 0;
-                // make into function, and separate calling path by txid
-                if ( (txjson= LP_gettx(coin->symbol,utxotxid,1)) != 0 )
-                {
-                    if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts == 3 )
-                    {
-                        vout0 = jitem(vouts,0);
-                        LP_destaddr(vinaddr,vout0);
-                        satoshis = LP_value_extract(vout0,1);
-                        vout2 = jitem(vouts,2);
-                        LP_destaddr(destaddr,vout2);
-                        if ( strcmp(destaddr,coin->smartaddr) == 0 )
-                        {
-                            vout1 = jitem(vouts,1);
-                            weeksatoshis = LP_value_extract(vout1,0);
-                            weeki = (int32_t)(weeksatoshis % 10000);
-                            for (j=28; j<=28; j++)
-                            {
-                                expiration = ((weeki * LP_WEEKMULT + j*3600) + LP_FIRSTWEEKTIME);
-                                redeemlen = LP_deposit_addr(checkaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
-                                if ( strcmp(checkaddr,vinaddr) == 0 )
-                                {
-                                    claimtime = (uint32_t)time(NULL)-777;
-                                    item = cJSON_CreateObject();
-                                    jaddbits256(item,"txid",utxotxid);
-                                    jaddnum(item,"deposit",dstr(LP_value_extract(vout0,0)));
-                                    if ( coin->electrum == 0 )
-                                        jaddnum(item,"interest",dstr(satoshis)-dstr(LP_value_extract(vout0,0)));
-                                    else jaddnum(item,"interest",dstr(LP_komodo_interest(utxotxid,satoshis)));
-                                    if ( claimtime <= expiration )
-                                    {
-                                        printf("claimtime.%u vs %u, wait %d seconds to %s claim %.8f\n",claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
-                                        jaddnum(item,"waittime",(int32_t)expiration-claimtime);
-                                        jaddi(txids,item);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        flagi = 1;
-                                        sum += LP_claimtx(ctx,coin,&claimtxid,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
-                                        jaddbits256(item,"claimtxid",claimtxid);
-                                        jaddi(txids,item);
-                                    }
-                                } else printf("expiration.%u j.%d checkaddr.(%s) != vinaddr.%s\n",expiration,j,checkaddr,vinaddr);
-                                if ( flagi != 0 )
-                                    break;
-                            }
-                        } else printf("vout2 dest.(%s) != %s\n",destaddr,coin->smartaddr);
-                    } else printf("numvouts %d != 3\n",numvouts);
-                    free_json(txjson);
-                } else printf("cant get transaction\n");
-                if ( flagi == 0 )
-                    jaddibits256(newarray,utxotxid);
-                else flag++;
             }
         }
         free_json(array);
@@ -395,12 +393,12 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
         {
             DL_FOREACH_SAFE(pubp->bobswaps,ptr,tmp)
             {
-                if ( (sp= ptr->swap) != 0 && sp->finished == 0 && sp->expired == 0 )
+                if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
                     swaps_kmdvalue += LP_kmdvalue(sp->Q.srccoin,sp->Q.satoshis);
             }
             DL_FOREACH_SAFE(pubp->aliceswaps,ptr,tmp)
             {
-                if ( (sp= ptr->swap) != 0 && sp->finished == 0 && sp->expired == 0 )
+                if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
                     swaps_kmdvalue += LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis);
             }
             if ( ap->instantdex_credits != 0 && (swaps_kmdvalue+kmdvalue) > ap->instantdex_credits )
@@ -445,4 +443,71 @@ int64_t LP_myzcredits()
         }
     }
     return(0);
+}
+
+cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
+{
+    cJSON *item = cJSON_CreateObject();
+    jaddnum(item,"iambob",iambob);
+    jaddnum(item,"aliceid",sp->aliceid);
+    jaddnum(item,"requestid",sp->Q.R.requestid);
+    jaddnum(item,"quoteid",sp->Q.R.quoteid);
+    jaddstr(item,"base",sp->Q.srccoin);
+    jaddnum(item,"satoshis",sp->Q.satoshis);
+    jaddstr(item,"rel",sp->Q.destcoin);
+    jaddnum(item,"destsatoshis",sp->Q.destsatoshis);
+    jaddnum(item,"price",sp->Q.destsatoshis/((double)sp->Q.satoshis+1));
+    if ( LP_swap_finished(sp,1) == 0 )
+    {
+        jaddnum(item,"finished",sp->finished);
+        if ( sp->bobneeds_dPoW != 0 )
+        {
+            jaddnum(item,"bobneeds_dPoW",sp->bobneeds_dPoW);
+            jaddnum(item,"bobdPoW_height",sp->bob_dPoWheight);
+        }
+        if ( sp->aliceneeds_dPoW != 0 )
+        {
+            jaddnum(item,"aliceneeds_dPoW",sp->aliceneeds_dPoW);
+            jaddnum(item,"alicedPoW_height",sp->alice_dPoWheight);
+        }
+    }
+    return(item);
+}
+
+cJSON *LP_myzdebits()
+{
+    struct LP_pubswap *ptr,*tmp; struct LP_pubkey_info *pubp; struct LP_swapstats *sp; int64_t kmdvalue,swaps_kmdvalue = 0; struct iguana_info *coin; cJSON *retjson,*array,*item;
+    array = cJSON_CreateArray();
+    if ( (coin= LP_coinfind("KMD")) != 0 )
+    {
+        if ( (pubp= LP_pubkeyfind(G.LP_mypub25519)) != 0 )
+        {
+            DL_FOREACH_SAFE(pubp->bobswaps,ptr,tmp)
+            {
+                if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
+                {
+                    kmdvalue = LP_kmdvalue(sp->Q.srccoin,sp->Q.satoshis);
+                    item = LP_swapstats_item(sp,1);
+                    jaddnum(item,"kmdvalue",dstr(kmdvalue));
+                    jaddi(array,item);
+                    swaps_kmdvalue += kmdvalue;
+                }
+            }
+            DL_FOREACH_SAFE(pubp->aliceswaps,ptr,tmp)
+            {
+                if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
+                {
+                    kmdvalue = LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis);
+                    item = LP_swapstats_item(sp,0);
+                    jaddnum(item,"kmdvalue",dstr(kmdvalue));
+                    jaddi(array,item);
+                    swaps_kmdvalue += kmdvalue;
+                }
+            }
+        }
+    }
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jadd(retjson,"swaps",array);
+    jaddnum(retjson,"pendingswaps",dstr(swaps_kmdvalue));
 }

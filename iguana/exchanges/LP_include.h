@@ -403,7 +403,8 @@ struct LP_swapstats
     bits256 bobdeposit,alicepayment,bobpayment,paymentspent,Apaymentspent,depositspent;
     double qprice;
     uint64_t aliceid;
-    uint32_t ind,methodind,finished,expired,lasttime;
+    int32_t bobneeds_dPoW,aliceneeds_dPoW,bob_dPoWheight,alice_dPoWheight;
+    uint32_t ind,methodind,finished,expired,lasttime,dPoWfinished;
     char alicegui[32],bobgui[32];
 };
 
@@ -489,6 +490,7 @@ int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32);
 char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *rel,double price);
 int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height);
 cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr,bits256 reftxid);
+cJSON *LP_myzdebits();
 int32_t _LP_utxos_remove(bits256 txid,int32_t vout);
 int32_t LP_utxos_remove(bits256 txid,int32_t vout);
 struct LP_transaction *LP_transactionadd(struct iguana_info *coin,bits256 txid,int32_t height,int32_t numvouts,int32_t numvins);
