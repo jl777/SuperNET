@@ -97,7 +97,7 @@ int32_t LP_statslog_parse()
                 return(0);
             }
         }
-        else if ( 0 )
+        else if ( 1 )
         {
             if ( IAMLP == 0 )
             {
@@ -108,7 +108,7 @@ int32_t LP_statslog_parse()
                     while ( (c= fgetc(fp)) >= 0 && c != '\n' )
                         ;
                     printf("start scanning %s from %ld, found boundary %ld\n",LP_STATSLOG_FNAME,fpos-LP_CLIENT_STATSPARSE,ftell(fp));
-                }
+                } else rewind(fp);
             }
         }
         while ( fgets(line,sizeof(line),fp) > 0 )
