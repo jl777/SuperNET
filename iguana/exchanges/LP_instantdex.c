@@ -303,7 +303,7 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
     if ( coin != 0 )
     {
         timestamp = LP_FIRSTWEEKTIME + weeki*LP_WEEKMULT;
-        if (  time(NULL) < timestamp-60*3600 && (ap= LP_address(coin,coinaddr)) != 0 )
+        if ( (ap= LP_address(coin,coinaddr)) != 0 && time(NULL) < timestamp-60*3600 )
         {
             ap->instantdex_credits += satoshis;
             ap->didinstantdex = 1;
@@ -312,7 +312,7 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
             if ( dispflag != 0 )
                 printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->instantdex_credits));
             return(satoshis);
-        }
+        } else printf("null ap.%p or expired %ld\n",ap,time(NULL) - (timestamp-60*3600));
     }
     return(0);
 }
@@ -342,8 +342,8 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
                     {
                         free_json(txobj);
                         LP_instantdex_credit(dispflag,destaddr,satoshis,weeki,p2shaddr,txid);
-                    }
-                }
+                    } else printf("already spent\n");
+                } else printf("error getting p2shaddr.(%s)\n",p2shaddr);
             }
         }
         free_json(txjson);
