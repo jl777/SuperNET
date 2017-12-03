@@ -258,15 +258,13 @@ instantdex_claim()\n\
             return(jprint(LP_coinsjson(0),1));
         else if ( strcmp(method,"notarizations") == 0 )
         {
-            int32_t height,bestheight;
             if ( (ptr= LP_coinsearch(coin)) != 0 )
             {
-                height = LP_notarization_latest(&bestheight,ptr);
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"result","success");
                 jaddstr(retjson,"coin",coin);
-                jaddnum(retjson,"lastnotarization",height);
-                jaddnum(retjson,"bestheight",bestheight);
+                jaddnum(retjson,"lastnotarization",ptr->notarized);
+                jaddnum(retjson,"bestheight",ptr->height);
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"cant find coin\"}"));
         }
