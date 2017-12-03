@@ -402,6 +402,7 @@ struct LP_swapstats
     UT_hash_handle hh;
     struct LP_quoteinfo Q;
     bits256 bobdeposit,alicepayment,bobpayment,paymentspent,Apaymentspent,depositspent;
+    int32_t bobdeposit_ht,alicepayment_ht,bobpayment_ht,paymentspent_ht,Apaymentspent_ht,depositspent_ht;
     double qprice;
     uint64_t aliceid;
     int32_t bobneeds_dPoW,aliceneeds_dPoW;

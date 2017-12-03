@@ -242,48 +242,48 @@ int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
 
 int32_t LP_finished_lastheight(struct LP_swapstats *sp)
 {
-    int32_t ht,height = 1; struct iguana_info *bob,*alice; //char str[65];
+    int32_t height = 1; struct iguana_info *bob,*alice; //char str[65];
     if ( (bob= LP_coinfind(sp->Q.srccoin)) != 0 && (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
     {
         if ( sp->bobneeds_dPoW != 0 )
         {
-            if ( bits256_nonz(sp->bobdeposit) != 0 )
+            if ( bits256_nonz(sp->bobdeposit) != 0 && sp->bobdeposit_ht == 0 )
             {
-                if ( (ht= LP_txheight(bob,sp->bobdeposit)) > sp->bobneeds_dPoW )
-                    sp->bobneeds_dPoW = ht;
+                if ( (sp->bobdeposit_ht= LP_txheight(bob,sp->bobdeposit)) > sp->bobneeds_dPoW )
+                    sp->bobneeds_dPoW = sp->bobdeposit_ht;
                 //printf("%s bobdeposit.%d height.%d\n",bits256_str(str,sp->bobdeposit),ht,sp->bobneeds_dPoW);
             }
-            if ( bits256_nonz(sp->bobpayment) != 0 )
+            if ( bits256_nonz(sp->bobpayment) != 0 && sp->bobpayment_ht == 0 )
             {
-                if ( (ht= LP_txheight(bob,sp->bobpayment)) > sp->bobneeds_dPoW )
-                    sp->bobneeds_dPoW = ht;
+                if ( (sp->bobpayment_ht= LP_txheight(bob,sp->bobpayment)) > sp->bobneeds_dPoW )
+                    sp->bobneeds_dPoW = sp->bobpayment_ht;
                 //printf("%s bobpayment.%d height.%d\n",bits256_str(str,sp->bobpayment),ht,sp->bobneeds_dPoW);
             }
-            if ( bits256_nonz(sp->paymentspent) != 0 )
+            if ( bits256_nonz(sp->paymentspent) != 0 && sp->paymentspent_ht == 0 )
             {
-                if ( (ht= LP_txheight(bob,sp->paymentspent)) > sp->bobneeds_dPoW )
-                    sp->bobneeds_dPoW = ht;
+                if ( (sp->paymentspent_ht= LP_txheight(bob,sp->paymentspent)) > sp->bobneeds_dPoW )
+                    sp->bobneeds_dPoW = sp->paymentspent_ht;
                 //printf("%s paymentspent.%d height.%d\n",bits256_str(str,sp->paymentspent),ht,sp->bobneeds_dPoW);
             }
-            if ( bits256_nonz(sp->depositspent) != 0 )
+            if ( bits256_nonz(sp->depositspent) != 0 && sp->depositspent_ht == 0 )
             {
-                if ( (ht= LP_txheight(bob,sp->depositspent)) > sp->bobneeds_dPoW )
-                    sp->bobneeds_dPoW = ht;
+                if ( (sp->depositspent_ht= LP_txheight(bob,sp->depositspent)) > sp->bobneeds_dPoW )
+                    sp->bobneeds_dPoW = sp->depositspent_ht;
                 //printf("%s depositspent.%d height.%d\n",bits256_str(str,sp->depositspent),ht,sp->bobneeds_dPoW);
             }
         }
         if ( sp->aliceneeds_dPoW != 0 )
         {
-            if ( bits256_nonz(sp->alicepayment) != 0 )
+            if ( bits256_nonz(sp->alicepayment) != 0 && sp->alicepayment_ht == 0 )
             {
-                if ( (ht= LP_txheight(alice,sp->alicepayment)) > sp->aliceneeds_dPoW )
-                    sp->aliceneeds_dPoW = ht;
+                if ( (sp->alicepayment_ht= LP_txheight(alice,sp->alicepayment)) > sp->aliceneeds_dPoW )
+                    sp->aliceneeds_dPoW = sp->alicepayment_ht;
                 //printf("%s alicepayment.%d height.%d\n",bits256_str(str,sp->alicepayment),ht,sp->aliceneeds_dPoW);
             }
-            if ( bits256_nonz(sp->Apaymentspent) != 0 )
+            if ( bits256_nonz(sp->Apaymentspent) != 0 && sp->Apaymentspent_ht == 0 )
             {
-                if ( (ht= LP_txheight(alice,sp->Apaymentspent)) > sp->aliceneeds_dPoW )
-                    sp->aliceneeds_dPoW = ht;
+                if ( (sp->Apaymentspent_ht= LP_txheight(alice,sp->Apaymentspent)) > sp->aliceneeds_dPoW )
+                    sp->aliceneeds_dPoW = sp->Apaymentspent_ht;
                 //printf("%s Apaymentspent.%d height.%d\n",bits256_str(str,sp->Apaymentspent),ht,sp->aliceneeds_dPoW);
             }
         }
@@ -294,6 +294,10 @@ int32_t LP_finished_lastheight(struct LP_swapstats *sp)
 int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
 {
     struct iguana_info *bob,*alice;
+    if ( sp->dPoWfinished != 0 || sp->expired != 0 )
+        return(1);
+    else if ( dPoWflag == 0 && sp->finished != 0 )
+        return(1);
     if ( (bob= LP_coinfind(sp->Q.srccoin)) == 0 )
     {
         //printf("no bobcoin.%s\n",sp->Q.srccoin);
@@ -304,16 +308,9 @@ int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
         //printf("no alicecoin.%s\n",sp->Q.destcoin);
         return(0);
     }
-    if ( sp->finished == 0 )
-    {
-        if ( sp->expired != 0 )
-            return(1);
-    }
     if ( dPoWflag != 0 )
     {
-        if ( sp->dPoWfinished != 0 )
-            return(1);
-        else if ( sp->finished != 0 )
+        if ( sp->finished != 0 )
         {
             LP_finished_lastheight(sp);
             if ( 0 && IAMLP == 0 )
