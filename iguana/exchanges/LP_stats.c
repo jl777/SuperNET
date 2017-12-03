@@ -24,8 +24,77 @@ struct LP_swapstats *LP_swapstats,*LP_RTstats;
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj);
 
 char *LP_stats_methods[] = { "unknown", "request", "reserved", "connect", "connected", "tradestatus" };
+#define LP_TRADESTATUS_METHODIND 5
 
 static uint32_t LP_requests,LP_reserveds,LP_connects,LP_connecteds,LP_tradestatuses,LP_parse_errors,LP_unknowns,LP_duplicates,LP_aliceids;
+
+void LP_dPoW_request(struct iguana_info *coin)
+{
+    bits256 zero; cJSON *reqjson;
+    reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","getdPoW");
+    jaddstr(reqjson,"coin",coin->symbol);
+    memset(zero.bytes,0,sizeof(zero));
+    //printf("request %s\n",jprint(reqjson,0));
+    LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
+}
+
+void LP_dPoW_broadcast(struct iguana_info *coin)
+{
+    bits256 zero; cJSON *reqjson;
+    if ( time(NULL) > coin->dPoWtime+60 && (coin->isassetchain != 0 || strcmp(coin->symbol,"KMD") == 0) )
+    {
+        reqjson = cJSON_CreateObject();
+        jaddstr(reqjson,"method","dPoW");
+        jaddstr(reqjson,"coin",coin->symbol);
+        jaddnum(reqjson,"notarized",coin->notarized);
+        jaddbits256(reqjson,"notarizedhash",coin->notarizedhash);
+        jaddbits256(reqjson,"notarizationtxid",coin->notarizationtxid);
+        memset(zero.bytes,0,sizeof(zero));
+        //printf("broadcast %s\n",jprint(reqjson,0));
+        LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
+        coin->dPoWtime = (uint32_t)time(NULL);
+    }
+}
+
+char *LP_dPoW_recv(cJSON *argjson)
+{
+    int32_t notarized; bits256 notarizedhash,notarizationtxid; char *symbol; struct iguana_info *coin;
+    if ( (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
+    {
+        notarized = jint(argjson,"notarized");
+        notarizedhash = jbits256(argjson,"notarizedhash");
+        notarizationtxid = jbits256(argjson,"notarizationtxid");
+        //printf("dPoW %s\n",jprint(argjson,0));
+        if ( notarized > coin->notarized && LP_notarization_validate(symbol,notarized,notarizedhash,notarizationtxid) == 0 )
+        {
+            coin->notarized = notarized;
+            coin->notarizedhash = notarizedhash;
+            coin->notarizationtxid = notarizationtxid;
+            printf("VALIDATED dPoW %s\n",jprint(argjson,0));
+        }
+    }
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
+/*int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
+{
+    int32_t notarized,oldnotarized;
+    if ( coin->electrum == 0 )
+    {
+        coin->heighttime = (uint32_t)(time(NULL) - 61);
+        oldnotarized = coin->notarized;
+        LP_getheight(&notarized,coin);
+        if ( notarized != 0 && notarized != oldnotarized )
+        {
+            printf("dPoWheight.%s %d <- %d\n",coin->symbol,oldnotarized,notarized);
+            coin->notarized = notarized;
+        }
+    }
+    else if ( coin->notarized == 0 )
+        LP_dPoW_request(coin);
+    return(coin->notarized);
+}*/
 
 void LP_tradecommand_log(cJSON *argjson)
 {
@@ -81,18 +150,33 @@ void LP_statslog_parseline(cJSON *lineobj)
 
 int32_t LP_statslog_parse()
 {
-    static long lastpos; FILE *fp; char line[8192]; cJSON *lineobj; int32_t n = 0;
+    static long lastpos;
+    FILE *fp; long fpos; char line[8192]; cJSON *lineobj; int32_t c,n = 0;
     if ( (fp= fopen(LP_STATSLOG_FNAME,"rb")) != 0 )
     {
         if ( lastpos > 0 )
         {
             fseek(fp,0,SEEK_END);
-            if ( ftell(fp) > lastpos )
+            if ( ftell(fp) >= lastpos )
                 fseek(fp,lastpos,SEEK_SET);
             else
             {
                 fclose(fp);
                 return(0);
+            }
+        }
+        else if ( 1 )
+        {
+            if ( IAMLP == 0 )
+            {
+                fseek(fp,0,SEEK_END);
+                if ( (fpos= ftell(fp)) > LP_CLIENT_STATSPARSE )
+                {
+                    fseek(fp,fpos-LP_CLIENT_STATSPARSE,SEEK_SET);
+                    while ( (c= fgetc(fp)) >= 0 && c != '\n' )
+                        ;
+                    printf("start scanning %s from %ld, found boundary %ld\n",LP_STATSLOG_FNAME,fpos-LP_CLIENT_STATSPARSE,ftell(fp));
+                } else rewind(fp);
             }
         }
         while ( fgets(line,sizeof(line),fp) > 0 )
@@ -197,7 +281,7 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
         }
         else
         {
-            if ( requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid )
+            if ( 0 && requestid == sp->Q.R.requestid && quoteid == sp->Q.R.quoteid )
                 printf("mismatched tradestatus aliceid.%22llu b%s/%s r%s/%s r%u/%u q%u/%u %.8f/%.8f -> %.8f/%.8f\n",(long long)sp->aliceid,base,sp->Q.srccoin,rel,sp->Q.destcoin,requestid,sp->Q.R.requestid,quoteid,sp->Q.R.quoteid,dstr(satoshis+2*sp->Q.txfee),dstr(sp->Q.satoshis),dstr(destsatoshis+2*sp->Q.desttxfee),dstr(sp->Q.destsatoshis));
             return(-1);
         }
@@ -208,10 +292,136 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
     return(0);
 }
 
+int32_t LP_finished_lastheight(struct LP_swapstats *sp)
+{
+    int32_t height = 1; struct iguana_info *bob,*alice; //char str[65];
+    if ( (bob= LP_coinfind(sp->Q.srccoin)) != 0 && (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
+    {
+        if ( sp->bobneeds_dPoW != 0 )
+        {
+            if ( bits256_nonz(sp->bobdeposit) != 0 && sp->bobdeposit_ht == 0 )
+            {
+                if ( (sp->bobdeposit_ht= LP_txheight(bob,sp->bobdeposit)) > sp->bobneeds_dPoW )
+                    sp->bobneeds_dPoW = sp->bobdeposit_ht;
+                //printf("%s bobdeposit.%d height.%d\n",bits256_str(str,sp->bobdeposit),ht,sp->bobneeds_dPoW);
+            }
+            if ( bits256_nonz(sp->bobpayment) != 0 && sp->bobpayment_ht == 0 )
+            {
+                if ( (sp->bobpayment_ht= LP_txheight(bob,sp->bobpayment)) > sp->bobneeds_dPoW )
+                    sp->bobneeds_dPoW = sp->bobpayment_ht;
+                //printf("%s bobpayment.%d height.%d\n",bits256_str(str,sp->bobpayment),ht,sp->bobneeds_dPoW);
+            }
+            if ( bits256_nonz(sp->paymentspent) != 0 && sp->paymentspent_ht == 0 )
+            {
+                if ( (sp->paymentspent_ht= LP_txheight(bob,sp->paymentspent)) > sp->bobneeds_dPoW )
+                    sp->bobneeds_dPoW = sp->paymentspent_ht;
+                //printf("%s paymentspent.%d height.%d\n",bits256_str(str,sp->paymentspent),ht,sp->bobneeds_dPoW);
+            }
+            if ( bits256_nonz(sp->depositspent) != 0 && sp->depositspent_ht == 0 )
+            {
+                if ( (sp->depositspent_ht= LP_txheight(bob,sp->depositspent)) > sp->bobneeds_dPoW )
+                    sp->bobneeds_dPoW = sp->depositspent_ht;
+                //printf("%s depositspent.%d height.%d\n",bits256_str(str,sp->depositspent),ht,sp->bobneeds_dPoW);
+            }
+        }
+        if ( sp->aliceneeds_dPoW != 0 )
+        {
+            if ( bits256_nonz(sp->alicepayment) != 0 && sp->alicepayment_ht == 0 )
+            {
+                if ( (sp->alicepayment_ht= LP_txheight(alice,sp->alicepayment)) > sp->aliceneeds_dPoW )
+                    sp->aliceneeds_dPoW = sp->alicepayment_ht;
+                //printf("%s alicepayment.%d height.%d\n",bits256_str(str,sp->alicepayment),ht,sp->aliceneeds_dPoW);
+            }
+            if ( bits256_nonz(sp->Apaymentspent) != 0 && sp->Apaymentspent_ht == 0 )
+            {
+                if ( (sp->Apaymentspent_ht= LP_txheight(alice,sp->Apaymentspent)) > sp->aliceneeds_dPoW )
+                    sp->aliceneeds_dPoW = sp->Apaymentspent_ht;
+                //printf("%s Apaymentspent.%d height.%d\n",bits256_str(str,sp->Apaymentspent),ht,sp->aliceneeds_dPoW);
+            }
+        }
+    }
+    return(height);
+}
+
+int32_t LP_swap_finished(struct LP_swapstats *sp,int32_t dPoWflag)
+{
+    struct iguana_info *bob,*alice;
+    if ( sp->dPoWfinished != 0 || sp->expired != 0 )
+        return(1);
+    else if ( dPoWflag == 0 && sp->finished != 0 )
+        return(1);
+    if ( (bob= LP_coinfind(sp->Q.srccoin)) == 0 )
+    {
+        //printf("no bobcoin.%s\n",sp->Q.srccoin);
+        return(0);
+    }
+    if ( (alice= LP_coinfind(sp->Q.destcoin)) == 0 )
+    {
+        //printf("no alicecoin.%s\n",sp->Q.destcoin);
+        return(0);
+    }
+    if ( dPoWflag != 0 )
+    {
+        if ( sp->finished != 0 )
+        {
+            LP_finished_lastheight(sp);
+            if ( 0 && IAMLP == 0 )
+                printf("bob needs %d @ %d, alice needs %d @ %d\n",sp->bobneeds_dPoW,bob->notarized,sp->aliceneeds_dPoW,alice->notarized);
+        }
+        if ( (sp->bobneeds_dPoW == 0 || (sp->bobneeds_dPoW > 1 && bob->notarized >= sp->bobneeds_dPoW)) && (sp->aliceneeds_dPoW == 0 || (sp->aliceneeds_dPoW > 1 && alice->notarized >= sp->aliceneeds_dPoW)) )
+        {
+            sp->dPoWfinished = (uint32_t)time(NULL);
+            return(1);
+        }
+    }
+    return(0);
+}
+
+struct LP_swapstats *LP_swapstats_create(uint64_t aliceid,int32_t RTflag,struct LP_quoteinfo *qp,double qprice,int32_t methodind)
+{
+    struct LP_pubswap *ptr; struct iguana_info *alice,*bob; struct LP_pubkey_info *pubp; char *base,*rel; struct LP_swapstats *sp = 0;
+    base = qp->srccoin, rel = qp->destcoin;
+    if ( (sp= LP_swapstats_add(aliceid,RTflag)) != 0 )
+    {
+        sp->Q = *qp;
+        sp->qprice = qprice;
+        sp->methodind = methodind;
+        sp->ind = LP_aliceids++;
+        sp->lasttime = (uint32_t)time(NULL);
+        if ( sp->lasttime > sp->Q.timestamp+LP_atomic_locktime(base,rel)*2 )
+            sp->expired = sp->lasttime;
+        else
+        {
+            if ( (alice= LP_coinfind(rel)) != 0 && (alice->isassetchain != 0 || strcmp("KMD",alice->symbol) == 0) )
+                sp->aliceneeds_dPoW = 1;
+            if ( (bob= LP_coinfind(rel)) != 0 && (bob->isassetchain != 0 || strcmp(bob->symbol,"KMD") == 0) )
+                sp->bobneeds_dPoW = 1;
+        }
+        strcpy(sp->bobgui,"nogui");
+        strcpy(sp->alicegui,"nogui");
+        if ( LP_swap_finished(sp,1) == 0 ) //sp->finished == 0 && sp->expired == 0 )
+        {
+            if ( (pubp= LP_pubkeyadd(qp->srchash)) != 0 )
+            {
+                ptr = calloc(1,sizeof(*ptr));
+                ptr->swap = sp;
+                DL_APPEND(pubp->bobswaps,ptr);
+            }
+            if ( (pubp= LP_pubkeyadd(qp->desthash)) != 0 )
+            {
+                ptr = calloc(1,sizeof(*ptr));
+                ptr->swap = sp;
+                DL_APPEND(pubp->aliceswaps,ptr);
+            }
+        }
+    } else printf("unexpected LP_swapstats_add failure\n");
+    return(sp);
+}
+
 int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
 {
     static uint32_t unexpected;
-    struct LP_swapstats *sp,*tmp; struct LP_pubkey_info *pubp; struct LP_pubswap *ptr; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,RTflag,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *statusstr,*gui,*base,*rel; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    struct LP_swapstats *sp,*tmp; double qprice; uint32_t requestid,quoteid,timestamp; int32_t i,RTflag,flag,numtrades[LP_MAXPRICEINFOS],methodind,destvout,feevout,duplicate=0; char *statusstr,*gui,*base,*rel; uint64_t aliceid,txfee,satoshis,destsatoshis; bits256 desttxid,feetxid; struct LP_quoteinfo Q; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     memset(numtrades,0,sizeof(numtrades));
     memset(basevols,0,sizeof(basevols));
     memset(relvols,0,sizeof(relvols));
@@ -306,32 +516,8 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         }
         else
         {
+            sp = LP_swapstats_create(aliceid,RTflag,&Q,qprice,methodind);
             //printf("create aliceid.%llu\n",(long long)aliceid);
-            if ( (sp= LP_swapstats_add(aliceid,RTflag)) != 0 )
-            {
-                sp->Q = Q;
-                sp->qprice = qprice;
-                sp->methodind = methodind;
-                sp->ind = LP_aliceids++;
-                sp->lasttime = (uint32_t)time(NULL);
-                strcpy(sp->bobgui,"nogui");
-                strcpy(sp->alicegui,"nogui");
-                if ( sp->finished == 0 && sp->expired == 0 )
-                {
-                    if ( (pubp= LP_pubkeyadd(sp->Q.srchash)) != 0 )
-                    {
-                        ptr = calloc(1,sizeof(*ptr));
-                        ptr->swap = sp;
-                        DL_APPEND(pubp->bobswaps,ptr);
-                    }
-                    if ( (pubp= LP_pubkeyadd(sp->Q.desthash)) != 0 )
-                    {
-                        ptr = calloc(1,sizeof(*ptr));
-                        ptr->swap = sp;
-                        DL_APPEND(pubp->aliceswaps,ptr);
-                    }
-                }
-            } else printf("unexpected LP_swapstats_add failure\n");
         }
         if ( sp != 0 )
         {
@@ -362,6 +548,20 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
     jaddnum(item,"quoteid",sp->Q.R.quoteid);
     jaddnum(item,"finished",sp->finished);
     jaddnum(item,"expired",sp->expired);
+    if ( bits256_nonz(sp->bobdeposit) != 0 )
+        jaddbits256(item,"bobdeposit",sp->bobdeposit);
+    if ( bits256_nonz(sp->alicepayment) != 0 )
+        jaddbits256(item,"alicepayment",sp->alicepayment);
+    if ( bits256_nonz(sp->bobpayment) != 0 )
+        jaddbits256(item,"bobpayment",sp->bobpayment);
+    if ( bits256_nonz(sp->paymentspent) != 0 )
+        jaddbits256(item,"paymentspent",sp->paymentspent);
+    if ( bits256_nonz(sp->Apaymentspent) != 0 )
+        jaddbits256(item,"Apaymentspent",sp->Apaymentspent);
+    if ( bits256_nonz(sp->depositspent) != 0 )
+        jaddbits256(item,"depositspent",sp->depositspent);
+    if ( sp->finished == 0 && sp->expired == 0 )
+        jaddnum(item,"expires",sp->Q.timestamp + LP_atomic_locktime(sp->Q.srccoin,sp->Q.destcoin)*2 - time(NULL));
     jaddnum(item,"ind",sp->methodind);
     //jaddstr(item,"line",line);
     return(item);
@@ -369,10 +569,25 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 
 char *LP_swapstatus_recv(cJSON *argjson)
 {
-    struct LP_swapstats *sp; int32_t methodind;
-    //printf("swapstatus.(%s)\n",jprint(argjson,0));
-    if ( (sp= LP_swapstats_find(j64bits(argjson,"aliceid"))) != 0 )
+    struct LP_swapstats *sp; char *statusstr; uint64_t aliceid; double qprice; struct LP_quoteinfo Q; int32_t methodind,RTflag; bits256 txid; //char str[65];
+    if ( (aliceid= j64bits(argjson,"aliceid")) == 0 )
+        return(clonestr("{\"error\":\"LP_swapstatus_recv null aliceid\"}"));
+    if ( (sp= LP_swapstats_find(aliceid)) == 0 )
     {
+        LP_quoteparse(&Q,argjson);
+        if ( Q.satoshis > Q.txfee )
+            return(clonestr("{\"error\":\"LP_swapstatus_recv null satoshis\"}"));
+        qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee);
+        if ( (statusstr= jstr(argjson,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
+            RTflag = 0;
+        else RTflag = 1;
+        sp = LP_swapstats_create(aliceid,RTflag,&Q,qprice,LP_TRADESTATUS_METHODIND);
+        //printf("create swapstatus from recv\n");
+    }
+    if ( sp != 0 )
+    {
+        if ( 0 && IAMLP == 0 )
+            printf("swapstatus.(%s)\n",jprint(argjson,0));
         sp->lasttime = (uint32_t)time(NULL);
         if ( (methodind= jint(argjson,"ind")) > sp->methodind && methodind < sizeof(LP_stats_methods)/sizeof(*LP_stats_methods) )
         {
@@ -381,25 +596,87 @@ char *LP_swapstatus_recv(cJSON *argjson)
             sp->methodind = methodind;
             sp->finished = juint(argjson,"finished");
             sp->expired = juint(argjson,"expired");
+            txid = jbits256(argjson,"bobdeposit");
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->bobdeposit) == 0 )
+            {
+                sp->bobdeposit = txid;
+                //printf("set aliceid.%llu bobdeposit %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
+            txid = jbits256(argjson,"alicepayment");
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->alicepayment) == 0 )
+            {
+                sp->alicepayment = txid;
+                //printf("set aliceid.%llu alicepayment %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
+            txid = jbits256(argjson,"bobpayment");
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->bobpayment) == 0 )
+            {
+                sp->bobpayment = txid;
+                //printf("set aliceid.%llu bobpayment %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
+            txid = jbits256(argjson,"paymentspent");
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->paymentspent) == 0 )
+            {
+                sp->paymentspent = txid;
+                //printf("set aliceid.%llu paymentspent %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
+            txid = jbits256(argjson,"Apaymentspent");
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->Apaymentspent) == 0 )
+            {
+                sp->Apaymentspent = txid;
+                //printf("set aliceid.%llu Apaymentspent %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
+            txid = jbits256(argjson,"depositspent");
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->depositspent) == 0 )
+            {
+                sp->depositspent = txid;
+                //printf("set aliceid.%llu depositspent %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
         }
     }
     return(clonestr("{\"result\":\"success\"}"));
 }
 
-char *LP_gettradestatus(uint64_t aliceid)
+char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
 {
-    struct LP_swapstats *sp; cJSON *reqjson; bits256 zero;
+    struct LP_swapstats *sp; struct iguana_info *bob,*alice; char *swapstr,*statusstr; cJSON *reqjson,*swapjson; bits256 zero;
     //printf("gettradestatus.(%llu)\n",(long long)aliceid);
-    if ( (sp= LP_swapstats_find(aliceid)) != 0 && time(NULL) > sp->lasttime+60 )
+    if ( IAMLP != 0 )
     {
-        if ( (reqjson= LP_swapstats_json(sp)) != 0 )
+        if ( (sp= LP_swapstats_find(aliceid)) != 0 )
         {
-            jaddstr(reqjson,"method","swapstatus");
-            memset(zero.bytes,0,sizeof(zero));
-            LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+            if ( time(NULL) > sp->lasttime+60 )
+            {
+                if ( (reqjson= LP_swapstats_json(sp)) != 0 )
+                {
+                    jaddstr(reqjson,"method","swapstatus");
+                    memset(zero.bytes,0,sizeof(zero));
+                    LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+                }
+                if ( (bob= LP_coinfind(sp->Q.srccoin)) != 0 )
+                    LP_dPoW_broadcast(bob);
+                if ( (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
+                    LP_dPoW_broadcast(alice);
+            }
+            return(clonestr("{\"result\":\"success\"}"));
         }
     }
-    return(clonestr("{\"error\":\"cant find aliceid\"}"));
+    if ( (swapstr= basilisk_swapentry(requestid,quoteid,0)) != 0 )
+    {
+        if ( (swapjson= cJSON_Parse(swapstr)) != 0 )
+        {
+            if ( (statusstr= jstr(swapjson,"status")) != 0 && strcmp(statusstr,"finished") == 0 )
+            {
+                jaddstr(swapjson,"method","swapstatus");
+                memset(zero.bytes,0,sizeof(zero));
+                printf("send local swapstatus\n");
+                LP_reserved_msg(0,"","",zero,jprint(swapjson,0));
+            }
+            free_json(swapjson);
+        }
+        free(swapstr);
+    }
+    return(clonestr("{\"result\":\"success\"}"));
 }
 
 int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttime,uint32_t endtime,char *refbase,char *refrel,char *refgui,bits256 refpubkey)
@@ -407,7 +684,7 @@ int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttim
     int32_t dispflag,retval = 0;
     if ( sp->finished == 0 && sp->expired == 0 && time(NULL) > sp->Q.timestamp+LP_atomic_locktime(sp->Q.srccoin,sp->Q.destcoin)*2 )
         sp->expired = (uint32_t)time(NULL);
-    if ( sp->finished != 0 || sp->expired != 0 )
+    if ( LP_swap_finished(sp,1) > 0 )
         retval = 1;
     dispflag = 0;
     if ( starttime == 0 && endtime == 0 )

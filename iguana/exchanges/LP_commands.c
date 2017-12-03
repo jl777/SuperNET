@@ -124,6 +124,7 @@ swapstatus(coin, limit=10)\n\
 swapstatus(base, rel, limit=10)\n\
 swapstatus(requestid, quoteid)\n\
 recentswaps(limit=3)\n\
+notarizations(coin)\n\
 public API:\n \
 getcoins()\n\
 getcoin(coin)\n\
@@ -257,15 +258,13 @@ instantdex_claim()\n\
             return(jprint(LP_coinsjson(0),1));
         else if ( strcmp(method,"notarizations") == 0 )
         {
-            int32_t height,bestheight;
             if ( (ptr= LP_coinsearch(coin)) != 0 )
             {
-                height = LP_notarization_latest(&bestheight,ptr);
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"result","success");
                 jaddstr(retjson,"coin",coin);
-                jaddnum(retjson,"lastnotarization",height);
-                jaddnum(retjson,"bestheight",bestheight);
+                jaddnum(retjson,"lastnotarization",ptr->notarized);
+                jaddnum(retjson,"bestheight",ptr->height);
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"cant find coin\"}"));
         }
@@ -289,13 +288,13 @@ instantdex_claim()\n\
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
             {
-                return(basilisk_swapentry(requestid,quoteid));
+                return(basilisk_swapentry(requestid,quoteid,1));
             }
             else if ( coin[0] != 0 )
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
             else if ( base[0] != 0 && rel[0] != 0 )
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
-            else return(basilisk_swaplist(0,0));
+            else return(basilisk_swaplist(0,0,0));
         }
         else if ( strcmp(method,"dynamictrust") == 0 )
         {
@@ -419,8 +418,8 @@ instantdex_claim()\n\
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
                         ptr->inactive = 0;
-                        cJSON *array;
-                        if ( LP_getheight(ptr) <= 0 )
+                        cJSON *array; int32_t notarized;
+                        if ( LP_getheight(&notarized,ptr) <= 0 )
                         {
                             ptr->inactive = (uint32_t)time(NULL);
                             return(clonestr("{\"error\":\"coin cant be activated till synced\"}"));
@@ -604,25 +603,33 @@ instantdex_claim()\n\
             }
             argjson = reqjson;
         }
-        if ( strcmp(method,"gettradestatus") == 0 )
+        if ( strcmp(method,"getdPoW") == 0 )
             retstr = clonestr("{\"result\":\"success\"}");
     }
     else
     {
-        if ( strcmp(method,"gettradestatus") == 0 )
-            return(LP_gettradestatus(j64bits(argjson,"aliceid")));
-        else if ( strcmp(method,"tradesarray") == 0 )
+        if ( strcmp(method,"tradesarray") == 0 )
         {
             return(jprint(LP_tradesarray(base,rel,juint(argjson,"starttime"),juint(argjson,"endtime"),jint(argjson,"timescale")),1));
+        }
+        else if ( strcmp(method,"getdPoW") == 0 )
+        {
+            if ( (ptr= LP_coinfind(jstr(argjson,"coin"))) != 0 )
+                LP_dPoW_broadcast(ptr);
+            retstr = clonestr("{\"result\":\"success\"}");
         }
     }
     // received response
     if ( strcmp(method,"swapstatus") == 0 )
         return(LP_swapstatus_recv(argjson));
+    else if ( strcmp(method,"gettradestatus") == 0 )
+        return(LP_gettradestatus(j64bits(argjson,"aliceid"),juint(argjson,"requestid"),juint(argjson,"quoteid")));
     else if ( strcmp(method,"postprice") == 0 )
         return(LP_postprice_recv(argjson));
     else if ( strcmp(method,"uitem") == 0 )
         return(LP_uitem_recv(argjson));
+    else if ( strcmp(method,"dPoW") == 0 )
+        return(LP_dPoW_recv(argjson));
     else if ( strcmp(method,"notify") == 0 )
         return(LP_notify_recv(argjson));
     else if ( strcmp(method,"getpeers") == 0 )

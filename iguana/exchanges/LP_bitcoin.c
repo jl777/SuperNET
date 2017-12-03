@@ -2008,6 +2008,8 @@ int32_t bitcoin_p2shscript(uint8_t *script,int32_t n,const uint8_t *p2shscript,c
 
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params)
 {
+    if ( userpass[0] == 0 )
+        return(clonestr("{\"error\":\"no rpcusername rpcpassword in coin.conf\"}"));
     return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,4));
 }
 

@@ -85,7 +85,7 @@ uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen)
     return(txfee);
 }
 
-double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
+/*double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
 {
     uint64_t destsatoshis,satoshis;
     a_value -= (desttxfee + 1);
@@ -100,7 +100,7 @@ double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uin
     if ( satoshis > 0 )
         return((double)destsatoshis / satoshis);
     else return(0.);
-}
+}*/
 
 int32_t LP_quote_checkmempool(struct LP_quoteinfo *qp,struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo)
 {
@@ -421,34 +421,39 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                         printf("%.8f ",dstr(utxos[i]->U.value));
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s %s\n",dstr(targetval),relvolume,price,dstr(fee),coin->symbol,coinaddr);
             }
-            mini = -1;
-            if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval+fee)) >= 0 )
+            while ( 1 )
             {
-                up = utxos[mini];
-                utxos[mini] = 0;
-//printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
-                if ( (double)up->U.value/targetval < ratio-1 )
-
+                mini = -1;
+                if ( targetval != 0 && (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,targetval+fee)) >= 0 )
                 {
-                    if ( 0 )
+                    up = utxos[mini];
+                    utxos[mini] = 0;
+                    //printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
+                    if ( (double)up->U.value/targetval < ratio-1 )
+                        
                     {
-                        int32_t i;
-                        for (i=0; i<m; i++)
-                            if ( utxos[i] != 0 && utxos[i]->U.value >= targetval2 )
-                                printf("%.8f ",dstr(utxos[i]->U.value));
-                        printf("targetval2 %.8f vol %.8f price %.8f txfee %.8f %s %s\n",dstr(targetval2),relvolume,price,dstr(fee),coin->symbol,coinaddr);
-                    }
-                    if ( (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,(targetval2+2*fee) * 1.01)) >= 0 )
-                    {
-                        if ( up != 0 && (up2= utxos[mini]) != 0 )
+                        if ( 0 )
                         {
-                            LP_butxo_set(butxo,iambob,coin,up,up2,targetval);
-                            return(butxo);
-                        } else printf("cant find utxos[mini %d]\n",mini);
-                    } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
-                } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
-            } else if ( targetval != 0 && mini >= 0 )
-                printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
+                            int32_t i;
+                            for (i=0; i<m; i++)
+                                if ( utxos[i] != 0 && utxos[i]->U.value >= targetval2 )
+                                    printf("%.8f ",dstr(utxos[i]->U.value));
+                            printf("targetval2 %.8f vol %.8f price %.8f txfee %.8f %s %s\n",dstr(targetval2),relvolume,price,dstr(fee),coin->symbol,coinaddr);
+                        }
+                        if ( (mini= LP_nearest_utxovalue(coin,coinaddr,utxos,m,(targetval2+2*fee) * 1.01)) >= 0 )
+                        {
+                            if ( up != 0 && (up2= utxos[mini]) != 0 )
+                            {
+                                LP_butxo_set(butxo,iambob,coin,up,up2,targetval);
+                                return(butxo);
+                            } else printf("cant find utxos[mini %d]\n",mini);
+                        } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
+                    } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
+                } else if ( targetval != 0 && mini >= 0 )
+                    printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
+                if ( targetval == 0 || mini < 0 )
+                    break;
+            }
         } else printf("no %s utxos pass LP_address_utxo_ptrs filter\n",coinaddr);
     } else printf("address_myutxopair couldnt find %s %s\n",coin->symbol,coinaddr);
     return(0);
@@ -696,13 +701,13 @@ int32_t LP_aliceonly(char *symbol)
 
 int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
 {
-    struct electrum_info *ep,*backupep; cJSON *txobj; struct LP_address_utxo *up; struct iguana_info *coin; struct LP_transaction *tx;
+    struct electrum_info *ep,*backupep; cJSON *txobj; struct LP_address_utxo *up; struct iguana_info *coin; int32_t height; struct LP_transaction *tx;
     coin = LP_coinfind(symbol);
     if ( coin != 0 && (ep= coin->electrum) != 0 )
     {
         if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) == 0 )
         {
-            if ( (txobj= electrum_transaction(symbol,ep,&txobj,txid,coinaddr)) != 0 )
+            if ( (txobj= electrum_transaction(&height,symbol,ep,&txobj,txid,coinaddr)) != 0 )
                 free_json(txobj);
             if ( (tx= LP_transactionfind(coin,txid)) != 0 )
             {
@@ -1308,7 +1313,6 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     memset(&A,0,sizeof(A));
     LP_address_utxo_reset(relcoin);
     if ( (autxo= LP_address_myutxopair(&A,0,utxos,max,relcoin,relcoin->smartaddr,txfee,dstr(destsatoshis),maxprice,desttxfee)) == 0 )
-    //if ( (autxo= LP_utxo_bestfit(rel,destsatoshis + 2*desttxfee)) == 0 )
         return(clonestr("{\"error\":\"cant find alice utxo that is close enough in size\"}"));
     //printf("bestfit selected alice (%.8f %.8f) for %.8f sats %.8f\n",dstr(autxo->payment.value),dstr(autxo->fee.value),dstr(destsatoshis),dstr(autxo->swap_satoshis));
     if ( destsatoshis - desttxfee < autxo->swap_satoshis )
