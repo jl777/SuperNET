@@ -242,7 +242,7 @@ int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
 
 int32_t LP_finished_lastheight(struct LP_swapstats *sp)
 {
-    int32_t ht,height = 1; struct iguana_info *bob,*alice; char str[65];
+    int32_t ht,height = 1; struct iguana_info *bob,*alice; //char str[65];
     if ( (bob= LP_coinfind(sp->Q.srccoin)) != 0 && (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
     {
         if ( sp->bobneeds_dPoW != 0 )
@@ -251,25 +251,25 @@ int32_t LP_finished_lastheight(struct LP_swapstats *sp)
             {
                 if ( (ht= LP_txheight(bob,sp->bobdeposit)) > sp->bobneeds_dPoW )
                     sp->bobneeds_dPoW = ht;
-                printf("%s bobdeposit.%d height.%d\n",bits256_str(str,sp->bobdeposit),ht,sp->bobneeds_dPoW);
+                //printf("%s bobdeposit.%d height.%d\n",bits256_str(str,sp->bobdeposit),ht,sp->bobneeds_dPoW);
             }
             if ( bits256_nonz(sp->bobpayment) != 0 )
             {
                 if ( (ht= LP_txheight(bob,sp->bobpayment)) > sp->bobneeds_dPoW )
                     sp->bobneeds_dPoW = ht;
-                printf("%s bobpayment.%d height.%d\n",bits256_str(str,sp->bobpayment),ht,sp->bobneeds_dPoW);
+                //printf("%s bobpayment.%d height.%d\n",bits256_str(str,sp->bobpayment),ht,sp->bobneeds_dPoW);
             }
             if ( bits256_nonz(sp->paymentspent) != 0 )
             {
                 if ( (ht= LP_txheight(bob,sp->paymentspent)) > sp->bobneeds_dPoW )
                     sp->bobneeds_dPoW = ht;
-                printf("%s paymentspent.%d height.%d\n",bits256_str(str,sp->paymentspent),ht,sp->bobneeds_dPoW);
+                //printf("%s paymentspent.%d height.%d\n",bits256_str(str,sp->paymentspent),ht,sp->bobneeds_dPoW);
             }
             if ( bits256_nonz(sp->depositspent) != 0 )
             {
                 if ( (ht= LP_txheight(bob,sp->depositspent)) > sp->bobneeds_dPoW )
                     sp->bobneeds_dPoW = ht;
-                printf("%s depositspent.%d height.%d\n",bits256_str(str,sp->depositspent),ht,sp->bobneeds_dPoW);
+                //printf("%s depositspent.%d height.%d\n",bits256_str(str,sp->depositspent),ht,sp->bobneeds_dPoW);
             }
         }
         if ( sp->aliceneeds_dPoW != 0 )
@@ -278,13 +278,13 @@ int32_t LP_finished_lastheight(struct LP_swapstats *sp)
             {
                 if ( (ht= LP_txheight(alice,sp->alicepayment)) > sp->aliceneeds_dPoW )
                     sp->aliceneeds_dPoW = ht;
-                printf("%s alicepayment.%d height.%d\n",bits256_str(str,sp->alicepayment),ht,sp->aliceneeds_dPoW);
+                //printf("%s alicepayment.%d height.%d\n",bits256_str(str,sp->alicepayment),ht,sp->aliceneeds_dPoW);
             }
             if ( bits256_nonz(sp->Apaymentspent) != 0 )
             {
                 if ( (ht= LP_txheight(alice,sp->Apaymentspent)) > sp->aliceneeds_dPoW )
                     sp->aliceneeds_dPoW = ht;
-                printf("%s Apaymentspent.%d height.%d\n",bits256_str(str,sp->Apaymentspent),ht,sp->aliceneeds_dPoW);
+                //printf("%s Apaymentspent.%d height.%d\n",bits256_str(str,sp->Apaymentspent),ht,sp->aliceneeds_dPoW);
             }
         }
     }
