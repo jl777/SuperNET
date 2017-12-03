@@ -96,7 +96,7 @@ int32_t LP_statslog_parse()
                 return(0);
             }
         }
-        else
+        else if ( 0 )
         {
             if ( IAMLP == 0 )
             {
