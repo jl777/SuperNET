@@ -36,11 +36,13 @@ char *LP_dPoW_recv(cJSON *argjson)
         notarized = jint(argjson,"notarized");
         notarizedhash = jbits256(argjson,"notarizedhash");
         notarizationtxid = jbits256(argjson,"notarizationtxid");
+        printf("dPoW %s\n",jprint(argjson,0));
         if ( notarized > coin->notarized && LP_notarization_validate(symbol,notarized,notarizedhash,notarizationtxid) == 0 )
         {
             coin->notarized = notarized;
             coin->notarizedhash = notarizedhash;
             coin->notarizationtxid = notarizationtxid;
+            printf("VALIDATED\n");
         }
     }
     return(clonestr("{\"result\":\"success\"}"));
