@@ -242,49 +242,49 @@ int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
 
 int32_t LP_finished_lastheight(struct LP_swapstats *sp)
 {
-    int32_t ht,height = 1; struct iguana_info *bob,*alice;
+    int32_t ht,height = 1; struct iguana_info *bob,*alice; char str[65];
     if ( (bob= LP_coinfind(sp->Q.srccoin)) != 0 && (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
     {
         if ( sp->bobneeds_dPoW != 0 )
         {
-            if ( bits256_nonz(sp->bobdeposit) != 0 && (ht= LP_txheight(bob,sp->bobdeposit)) > 1 )
+            if ( bits256_nonz(sp->bobdeposit) != 0 )
             {
-                if ( ht > sp->bobneeds_dPoW )
+                if ( (ht= LP_txheight(bob,sp->bobdeposit)) > sp->bobneeds_dPoW )
                     sp->bobneeds_dPoW = ht;
-                printf("bobdeposit.%d height.%d\n",ht,sp->bobneeds_dPoW);
+                printf("%s bobdeposit.%d height.%d\n",bits256_str(str,sp->bobdeposit),ht,sp->bobneeds_dPoW);
             }
-            if ( bits256_nonz(sp->bobpayment) != 0 && (ht= LP_txheight(bob,sp->bobpayment)) > 1 )
+            if ( bits256_nonz(sp->bobpayment) != 0 )
             {
-                if ( ht > sp->bobneeds_dPoW )
+                if ( (ht= LP_txheight(bob,sp->bobpayment)) > sp->bobneeds_dPoW )
                     sp->bobneeds_dPoW = ht;
-                printf("bobpayment.%d height.%d\n",ht,sp->bobneeds_dPoW);
+                printf("%s bobpayment.%d height.%d\n",bits256_str(str,sp->bobpayment),ht,sp->bobneeds_dPoW);
             }
-            if ( bits256_nonz(sp->paymentspent) != 0 && (ht= LP_txheight(bob,sp->paymentspent)) > 1 )
+            if ( bits256_nonz(sp->paymentspent) != 0 )
             {
-                if ( ht > sp->bobneeds_dPoW )
+                if ( (ht= LP_txheight(bob,sp->paymentspent)) > sp->bobneeds_dPoW )
                     sp->bobneeds_dPoW = ht;
-                printf("paymentspent.%d height.%d\n",ht,sp->bobneeds_dPoW);
+                printf("%s paymentspent.%d height.%d\n",bits256_str(str,sp->paymentspent),ht,sp->bobneeds_dPoW);
             }
-            if ( bits256_nonz(sp->depositspent) != 0 && (ht= LP_txheight(bob,sp->depositspent)) > 1 )
+            if ( bits256_nonz(sp->depositspent) != 0 )
             {
-                if ( ht > sp->bobneeds_dPoW )
+                if ( (ht= LP_txheight(bob,sp->depositspent)) > sp->bobneeds_dPoW )
                     sp->bobneeds_dPoW = ht;
-                printf("depositspent.%d height.%d\n",ht,sp->bobneeds_dPoW);
+                printf("%s depositspent.%d height.%d\n",bits256_str(str,sp->depositspent),ht,sp->bobneeds_dPoW);
             }
         }
         if ( sp->aliceneeds_dPoW != 0 )
         {
-            if ( bits256_nonz(sp->alicepayment) != 0 && (ht= LP_txheight(alice,sp->alicepayment)) > 1 )
+            if ( bits256_nonz(sp->alicepayment) != 0 )
             {
-                if ( ht > sp->aliceneeds_dPoW )
+                if ( (ht= LP_txheight(alice,sp->alicepayment)) > sp->aliceneeds_dPoW )
                     sp->aliceneeds_dPoW = ht;
-                printf("alicepayment.%d height.%d\n",ht,sp->aliceneeds_dPoW);
+                printf("%s alicepayment.%d height.%d\n",bits256_str(str,sp->alicepayment),ht,sp->aliceneeds_dPoW);
             }
-            if ( bits256_nonz(sp->Apaymentspent) != 0 && (ht= LP_txheight(alice,sp->Apaymentspent)) > 1 )
+            if ( bits256_nonz(sp->Apaymentspent) != 0 )
             {
-                if ( ht > sp->aliceneeds_dPoW )
+                if ( (ht= LP_txheight(alice,sp->Apaymentspent)) > sp->aliceneeds_dPoW )
                     sp->aliceneeds_dPoW = ht;
-                printf("Apaymentspent.%d height.%d\n",ht,sp->aliceneeds_dPoW);
+                printf("%s Apaymentspent.%d height.%d\n",bits256_str(str,sp->Apaymentspent),ht,sp->aliceneeds_dPoW);
             }
         }
     }
@@ -512,7 +512,7 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 
 char *LP_swapstatus_recv(cJSON *argjson)
 {
-    struct LP_swapstats *sp; int32_t methodind; bits256 txid;
+    struct LP_swapstats *sp; int32_t methodind; bits256 txid; char str[65];
     if ( (sp= LP_swapstats_find(j64bits(argjson,"aliceid"))) != 0 )
     {
         if ( IAMLP == 0 )
@@ -526,23 +526,41 @@ char *LP_swapstatus_recv(cJSON *argjson)
             sp->finished = juint(argjson,"finished");
             sp->expired = juint(argjson,"expired");
             txid = jbits256(argjson,"bobdeposit");
-            if ( bits256_nonz(txid) != 0 )
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->bobdeposit) == 0 )
+            {
                 sp->bobdeposit = txid;
+                printf("set aliceid.%llu bobdeposit %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
             txid = jbits256(argjson,"alicepayment");
-            if ( bits256_nonz(txid) != 0 )
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->alicepayment) == 0 )
+            {
                 sp->alicepayment = txid;
+                printf("set aliceid.%llu alicepayment %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
             txid = jbits256(argjson,"bobpayment");
-            if ( bits256_nonz(txid) != 0 )
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->bobpayment) == 0 )
+            {
                 sp->bobpayment = txid;
+                printf("set aliceid.%llu bobpayment %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
             txid = jbits256(argjson,"paymentspent");
-            if ( bits256_nonz(txid) != 0 )
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->paymentspent) == 0 )
+            {
                 sp->paymentspent = txid;
+                printf("set aliceid.%llu paymentspent %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
             txid = jbits256(argjson,"Apaymentspent");
-            if ( bits256_nonz(txid) != 0 )
-                sp->Apaymentspent = txid;
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->Apaymentspent) == 0 )
+            {
+                 sp->Apaymentspent = txid;
+                printf("set aliceid.%llu Apaymentspent %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
             txid = jbits256(argjson,"depositspent");
-            if ( bits256_nonz(txid) != 0 )
+            if ( bits256_nonz(txid) != 0 && bits256_nonz(sp->depositspent) == 0 )
+            {
                 sp->depositspent = txid;
+                printf("set aliceid.%llu depositspent %s\n",(long long)sp->aliceid,bits256_str(str,txid));
+            }
         }
     }
     return(clonestr("{\"result\":\"success\"}"));
