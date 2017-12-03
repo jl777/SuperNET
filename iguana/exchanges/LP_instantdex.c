@@ -219,12 +219,15 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                 vout1 = jitem(vouts,1);
                 weeksatoshis = LP_value_extract(vout1,0);
                 weeki = (int32_t)(weeksatoshis % 10000);
-                for (j=28; j<=28; j++)
+                for (j=0; j<2*168; j++)
                 {
-                    expiration = ((weeki * LP_WEEKMULT + j*3600) + LP_FIRSTWEEKTIME);
+                    if ( j >= 168 )
+                        expiration = ((weeki * LP_WEEKMULT + (j-168)*2600) + LP_FIRSTWEEKTIME);
+                    else expiration = ((weeki * LP_WEEKMULT + j*3600) + LP_FIRSTWEEKTIME);
                     redeemlen = LP_deposit_addr(checkaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
                     if ( strcmp(checkaddr,vinaddr) == 0 )
                     {
+                        flagi = 1;
                         claimtime = (uint32_t)time(NULL)-777;
                         item = cJSON_CreateObject();
                         jaddbits256(item,"txid",utxotxid);
@@ -245,12 +248,11 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                             *sump += LP_claimtx(ctx,coin,&claimtxid,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
                             if ( bits256_nonz(claimtxid) != 0 )
                             {
-                                flagi = 1;
                                 jaddbits256(item,"claimtxid",claimtxid);
                                 jaddi(txids,item);
                             }
                         }
-                    } else printf("expiration.%u j.%d checkaddr.(%s) != vinaddr.%s\n",expiration,j,checkaddr,vinaddr);
+                    } //else printf("expiration.%u j.%d checkaddr.(%s) != vinaddr.%s\n",expiration,j,checkaddr,vinaddr);
                     if ( flagi != 0 )
                         break;
                 }

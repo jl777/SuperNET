@@ -106,6 +106,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define INSTANTDEX_KMD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
 #define BOTS_BONDADDRESS "RNdqHx26GWy9bk8MtmH1UiXjQcXE4RKK2P"
 #define BOTS_BONDPUBKEY33 "03e641d22e1ff5a7d45c8880537e0b0a114d7b9fee2c18a6b4a8a80b6285292990"
+#define LP_WEEKMULTBAD (7 * 24 * 2600)
 #define LP_WEEKMULT (7 * 24 * 3600)
 #define LP_FIRSTWEEKTIME 1510790400 // must be 0 mod LP_WEEKMULT
 
