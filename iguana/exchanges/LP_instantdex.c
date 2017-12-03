@@ -447,7 +447,7 @@ int64_t LP_myzcredits()
 
 cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
 {
-    cJSON *item = cJSON_CreateObject();
+    struct iguana_info *bob,*alice; cJSON *item = cJSON_CreateObject();
     jaddnum(item,"iambob",iambob);
     jaddnum(item,"aliceid",sp->aliceid);
     jaddnum(item,"requestid",sp->Q.R.requestid);
@@ -460,15 +460,15 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
     if ( LP_swap_finished(sp,1) == 0 )
     {
         jaddnum(item,"finished",sp->finished);
-        if ( sp->bobneeds_dPoW != 0 )
+        if ( sp->bobneeds_dPoW != 0 && (bob= LP_coinfind(sp->Q.srccoin)) != 0 )
         {
             jaddnum(item,"bobneeds_dPoW",sp->bobneeds_dPoW);
-            jaddnum(item,"bob_dPoWheight",sp->bob_dPoWheight);
+            jaddnum(item,"bob_dPoWheight",bob->notarized);
         }
-        if ( sp->aliceneeds_dPoW != 0 )
+        if ( sp->aliceneeds_dPoW != 0 && (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
         {
             jaddnum(item,"aliceneeds_dPoW",sp->aliceneeds_dPoW);
-            jaddnum(item,"alice_dPoWheight",sp->alice_dPoWheight);
+            jaddnum(item,"alice_dPoWheight",alice->notarized);
         }
     }
     return(item);
