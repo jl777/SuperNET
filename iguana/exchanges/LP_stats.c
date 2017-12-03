@@ -81,18 +81,33 @@ void LP_statslog_parseline(cJSON *lineobj)
 
 int32_t LP_statslog_parse()
 {
-    static long lastpos; FILE *fp; char line[8192]; cJSON *lineobj; int32_t n = 0;
+    static long lastpos;
+    FILE *fp; long fpos; char line[8192]; cJSON *lineobj; int32_t c,n = 0;
     if ( (fp= fopen(LP_STATSLOG_FNAME,"rb")) != 0 )
     {
         if ( lastpos > 0 )
         {
             fseek(fp,0,SEEK_END);
-            if ( ftell(fp) > lastpos )
+            if ( ftell(fp) >= lastpos )
                 fseek(fp,lastpos,SEEK_SET);
             else
             {
                 fclose(fp);
                 return(0);
+            }
+        }
+        else
+        {
+            if ( IAMLP == 0 )
+            {
+                fseek(fp,0,SEEK_END);
+                if ( (fpos= ftell(fp)) > LP_CLIENT_STATSPARSE )
+                {
+                    fseek(fp,fpos-LP_CLIENT_STATSPARSE,SEEK_SET);
+                    while ( (c= fgetc(fp)) >= 0 && c != '\n' )
+                        ;
+                    printf("start scanning %s from %ld, found boundary %ld\n",LP_STATSLOG_FNAME,fpos-LP_CLIENT_STATSPARSE,ftell(fp));
+                }
             }
         }
         while ( fgets(line,sizeof(line),fp) > 0 )
@@ -472,6 +487,18 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
     jaddnum(item,"quoteid",sp->Q.R.quoteid);
     jaddnum(item,"finished",sp->finished);
     jaddnum(item,"expired",sp->expired);
+    if ( bits256_nonz(sp->bobdeposit) != 0 )
+        jaddbits256(item,"bobdeposit",sp->bobdeposit);
+    if ( bits256_nonz(sp->alicepayment) != 0 )
+        jaddbits256(item,"alicepayment",sp->alicepayment);
+    if ( bits256_nonz(sp->bobpayment) != 0 )
+        jaddbits256(item,"bobpayment",sp->bobpayment);
+    if ( bits256_nonz(sp->paymentspent) != 0 )
+        jaddbits256(item,"paymentspent",sp->paymentspent);
+    if ( bits256_nonz(sp->Apaymentspent) != 0 )
+        jaddbits256(item,"Apaymentspent",sp->Apaymentspent);
+    if ( bits256_nonz(sp->depositspent) != 0 )
+        jaddbits256(item,"depositspent",sp->depositspent);
     if ( sp->finished == 0 && sp->expired == 0 )
         jaddnum(item,"expires",sp->Q.timestamp + LP_atomic_locktime(sp->Q.srccoin,sp->Q.destcoin)*2 - time(NULL));
     jaddnum(item,"ind",sp->methodind);
@@ -481,7 +508,7 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
 
 char *LP_swapstatus_recv(cJSON *argjson)
 {
-    struct LP_swapstats *sp; int32_t methodind;
+    struct LP_swapstats *sp; int32_t methodind; bits256 txid;
     //printf("swapstatus.(%s)\n",jprint(argjson,0));
     if ( (sp= LP_swapstats_find(j64bits(argjson,"aliceid"))) != 0 )
     {
@@ -493,6 +520,24 @@ char *LP_swapstatus_recv(cJSON *argjson)
             sp->methodind = methodind;
             sp->finished = juint(argjson,"finished");
             sp->expired = juint(argjson,"expired");
+            txid = jbits256(argjson,"bobdeposit");
+            if ( bits256_nonz(txid) != 0 )
+                sp->bobdeposit = txid;
+            txid = jbits256(argjson,"alicepayment");
+            if ( bits256_nonz(txid) != 0 )
+                sp->alicepayment = txid;
+            txid = jbits256(argjson,"bobpayment");
+            if ( bits256_nonz(txid) != 0 )
+                sp->bobpayment = txid;
+            txid = jbits256(argjson,"paymentspent");
+            if ( bits256_nonz(txid) != 0 )
+                sp->paymentspent = txid;
+            txid = jbits256(argjson,"Apaymentspent");
+            if ( bits256_nonz(txid) != 0 )
+                sp->Apaymentspent = txid;
+            txid = jbits256(argjson,"depositspent");
+            if ( bits256_nonz(txid) != 0 )
+                sp->depositspent = txid;
         }
     }
     return(clonestr("{\"result\":\"success\"}"));
@@ -519,7 +564,7 @@ int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttim
     int32_t dispflag,retval = 0;
     if ( sp->finished == 0 && sp->expired == 0 && time(NULL) > sp->Q.timestamp+LP_atomic_locktime(sp->Q.srccoin,sp->Q.destcoin)*2 )
         sp->expired = (uint32_t)time(NULL);
-    if ( sp->finished != 0 || sp->expired != 0 )
+    if ( LP_swap_finished(sp,1) > 0 )
         retval = 1;
     dispflag = 0;
     if ( starttime == 0 && endtime == 0 )
