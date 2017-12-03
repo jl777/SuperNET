@@ -86,9 +86,10 @@ void LP_unspents_mark(char *symbol,cJSON *vins)
     //printf("LOCK (%s)\n",jprint(vins,0));
 }
 
-int32_t LP_getheight(struct iguana_info *coin)
+int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
 {
     cJSON *retjson; char *retstr,*method = "getinfo"; int32_t height;
+    *notarizedp = 0;
     if ( coin == 0 )
         return(-1);
     height = coin->height;
@@ -101,6 +102,7 @@ int32_t LP_getheight(struct iguana_info *coin)
         {
             retjson = cJSON_Parse(retstr);
             coin->height = height = jint(retjson,"blocks");
+            *notarizedp = jint(retjson,"notarized");
             free_json(retjson);
             if ( coin->height > 0 )
                 coin->heighttime = (uint32_t)time(NULL);

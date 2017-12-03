@@ -495,13 +495,13 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
 
 cJSON *LP_address_item(struct iguana_info *coin,struct LP_address_utxo *up,int32_t electrumret)
 {
-    cJSON *item = cJSON_CreateObject();
+    int32_t notarized; cJSON *item = cJSON_CreateObject();
     if ( electrumret == 0 )
     {
         jaddbits256(item,"txid",up->U.txid);
         jaddnum(item,"vout",up->U.vout);
         if ( up->U.height > 0 )
-            jaddnum(item,"confirmations",LP_getheight(coin) - up->U.height + 1);
+            jaddnum(item,"confirmations",LP_getheight(&notarized,coin) - up->U.height + 1);
         jaddnum(item,"amount",dstr(up->U.value));
         jaddstr(item,"scriptPubKey","");
     }
@@ -802,7 +802,7 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
 
 int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool)
 {
-    struct iguana_info *coin; bits256 zero; int32_t ht,numconfirms = 100;
+    struct iguana_info *coin; bits256 zero; int32_t ht,notarized,numconfirms = 100;
     cJSON *txobj;
     if ( (coin= LP_coinfind(symbol)) == 0 || coin->inactive != 0 )
         return(-1);
@@ -827,7 +827,7 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
         memset(zero.bytes,0,sizeof(zero));
         LP_listunspent_issue(symbol,coinaddr,1,txid,zero);
         if ( (ht= LP_txheight(coin,txid)) > 0 && ht <= coin->height )
-            numconfirms = (LP_getheight(coin) - ht + 1);
+            numconfirms = (LP_getheight(&notarized,coin) - ht + 1);
         else if ( mempool != 0 )
         {
             if ( LP_waitmempool(symbol,coinaddr,txid,vout,30) >= 0 )

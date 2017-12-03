@@ -214,7 +214,7 @@ uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,
 
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 {
-    struct electrum_info *ep; uint64_t balance; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
+    struct electrum_info *ep; int32_t notarized; uint64_t balance; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
     if ( showwif != 0 )
     {
@@ -227,7 +227,9 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     jadd(item,"installed",coin->userpass[0] == 0 ? jfalse() : jtrue());
     if ( coin->userpass[0] != 0 )
     {
-        jaddnum(item,"height",LP_getheight(coin));
+        jaddnum(item,"height",LP_getheight(&notarized,coin));
+        if ( notarized > 0 )
+            jaddnum(item,"notarized",notarized);
         if ( coin->electrum != 0 )
             balance = LP_unspents_load(coin->symbol,coin->smartaddr);
         else balance = LP_RTsmartbalance(coin);

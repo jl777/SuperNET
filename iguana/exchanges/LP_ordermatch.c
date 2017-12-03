@@ -696,13 +696,13 @@ int32_t LP_aliceonly(char *symbol)
 
 int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
 {
-    struct electrum_info *ep,*backupep; cJSON *txobj; struct LP_address_utxo *up; struct iguana_info *coin; struct LP_transaction *tx;
+    struct electrum_info *ep,*backupep; cJSON *txobj; struct LP_address_utxo *up; struct iguana_info *coin; int32_t height; struct LP_transaction *tx;
     coin = LP_coinfind(symbol);
     if ( coin != 0 && (ep= coin->electrum) != 0 )
     {
         if ( (up= LP_address_utxofind(coin,coinaddr,txid,vout)) == 0 )
         {
-            if ( (txobj= electrum_transaction(symbol,ep,&txobj,txid,coinaddr)) != 0 )
+            if ( (txobj= electrum_transaction(&height,symbol,ep,&txobj,txid,coinaddr)) != 0 )
                 free_json(txobj);
             if ( (tx= LP_transactionfind(coin,txid)) != 0 )
             {

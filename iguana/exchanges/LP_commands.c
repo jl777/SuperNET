@@ -124,6 +124,7 @@ swapstatus(coin, limit=10)\n\
 swapstatus(base, rel, limit=10)\n\
 swapstatus(requestid, quoteid)\n\
 recentswaps(limit=3)\n\
+notarizations(coin)\n\
 public API:\n \
 getcoins()\n\
 getcoin(coin)\n\
@@ -419,8 +420,8 @@ instantdex_claim()\n\
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
                         ptr->inactive = 0;
-                        cJSON *array;
-                        if ( LP_getheight(ptr) <= 0 )
+                        cJSON *array; int32_t notarized;
+                        if ( LP_getheight(&notarized,ptr) <= 0 )
                         {
                             ptr->inactive = (uint32_t)time(NULL);
                             return(clonestr("{\"error\":\"coin cant be activated till synced\"}"));

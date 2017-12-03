@@ -507,7 +507,7 @@ cJSON *LP_myzdebits()
         }
     }
     retjson = cJSON_CreateObject();
-    jaddstr(retjson,"result","success");
     jadd(retjson,"swaps",array);
     jaddnum(retjson,"pendingswaps",dstr(swaps_kmdvalue));
+    return(retjson);
 }

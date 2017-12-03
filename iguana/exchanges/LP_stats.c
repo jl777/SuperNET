@@ -210,7 +210,9 @@ int32_t LP_swapstats_update(struct LP_swapstats *sp,struct LP_quoteinfo *qp,cJSO
 
 int32_t LP_dPoWheight(struct iguana_info *coin) // get dPoW protected height
 {
-    
+    int32_t notarized;
+    coin->height = LP_getheight(&notarized,coin);
+    return(notarized);
 }
 
 int32_t LP_finished_lastheight(struct LP_swapstats *sp,int32_t iambob)
@@ -380,9 +382,9 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                     sp->expired = sp->lasttime;
                 else
                 {
-                    if ( (alice= LP_coinfind(rel)) && alice->isassetchain != 0 )
+                    if ( (alice= LP_coinfind(rel)) != 0 && (alice->isassetchain != 0 || strcmp("KMD",alice->symbol) == 0) )
                         sp->aliceneeds_dPoW = 1;
-                    if ( (bob= LP_coinfind(rel)) && bob->isassetchain != 0 )
+                    if ( (bob= LP_coinfind(rel)) != 0 && (bob->isassetchain != 0 || strcmp(bob->symbol,"KMD") == 0) )
                         sp->bobneeds_dPoW = 1;
                 }
                 strcpy(sp->bobgui,"nogui");

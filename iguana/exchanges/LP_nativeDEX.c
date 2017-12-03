@@ -483,7 +483,7 @@ void command_rpcloop(void *ctx)
 
 void LP_coinsloop(void *_coins)
 {
-    struct LP_address *ap=0,*atmp; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t oldht,j,nonz; char *coins = _coins;
+    struct LP_address *ap=0,*atmp; struct LP_transaction *tx; cJSON *retjson; struct LP_address_utxo *up,*tmp; struct iguana_info *coin,*ctmp; char str[65]; struct electrum_info *ep,*backupep=0; bits256 zero; int32_t notarized,oldht,j,nonz; char *coins = _coins;
     if ( strcmp("BTC",coins) == 0 )
     {
         strcpy(LP_coinsloopBTC_stats.name,"BTC coin loop");
@@ -528,7 +528,7 @@ void LP_coinsloop(void *_coins)
             if ( coin->inactive != 0 )
                 continue;
             if ( coin->longestchain == 1 ) // special init value
-                coin->longestchain = LP_getheight(coin);
+                coin->longestchain = LP_getheight(&notarized,coin);
             if ( (ep= coin->electrum) != 0 )
             {
                 /*if ( strcmp("KMD",coin->symbol) == 0 && coin->electrumzeroconf == 0 )
@@ -645,7 +645,7 @@ void LP_coinsloop(void *_coins)
 int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport)
 {
     static uint32_t counter;//,didinstantdex;
-    struct iguana_info *coin,*ctmp; char *origipaddr; uint32_t now; int32_t height,nonz = 0;
+    struct iguana_info *coin,*ctmp; char *origipaddr; uint32_t now; int32_t notarized,height,nonz = 0; bits256 zero; cJSON *reqjson;
     if ( (origipaddr= myipaddr) == 0 )
         origipaddr = "127.0.0.1";
     if ( mypeer == 0 )
@@ -660,19 +660,32 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
             didinstantdex = now;
         }
 #endif
-        if ( (coin->addr_listunspent_requested != 0 && now > coin->lastpushtime+LP_ORDERBOOK_DURATION*.5) || now > coin->lastpushtime+LP_ORDERBOOK_DURATION*5 )
+        /*if ( (coin->addr_listunspent_requested != 0 && now > coin->lastpushtime+LP_ORDERBOOK_DURATION*.5) || now > coin->lastpushtime+LP_ORDERBOOK_DURATION*5 )
         {
             //printf("PUSH addr_listunspent_requested %u\n",coin->addr_listunspent_requested);
             coin->lastpushtime = (uint32_t)now;
             LP_smartutxos_push(coin);
             coin->addr_listunspent_requested = 0;
-        }
+        }*/
         if ( coin->electrum == 0 && coin->inactive == 0 && now > coin->lastgetinfo+LP_GETINFO_INCR )
         {
             nonz++;
-            if ( (height= LP_getheight(coin)) > coin->longestchain )
+            if ( (height= LP_getheight(&notarized,coin)) > coin->longestchain )
             {
                 coin->longestchain = height;
+                if ( notarized != 0 && notarized > coin->notarized )
+                {
+                    coin->notarized = notarized;
+                    if ( IAMLP != 0 )
+                    {
+                        reqjson = cJSON_CreateObject();
+                        jaddstr(reqjson,"method","dPoW");
+                        jaddstr(reqjson,"coin",coin->symbol);
+                        jaddnum(reqjson,"notarized",coin->notarized);
+                        memset(zero.bytes,0,sizeof(zero));
+                        LP_reserved_msg(0,coin->symbol,coin->symbol,zero,jprint(reqjson,1));
+                    }
+                }
                 if ( 0 && coin->firstrefht != 0 )
                     printf(">>>>>>>>>> set %s longestchain %d (ref.%d [%d, %d])\n",coin->symbol,height,coin->firstrefht,coin->firstscanht,coin->lastscanht);
             } //else LP_mempoolscan(coin->symbol,zero);
@@ -685,7 +698,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
-    int32_t i,n; cJSON *item; char *symbol; struct iguana_info *coin;
+    int32_t i,n,notarized; cJSON *item; char *symbol; struct iguana_info *coin;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
         printf("%s ",activecoins[i]);
@@ -696,7 +709,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
         //getchar();
         if ( (coin= LP_coinfind(activecoins[i])) != 0 )
         {
-            if ( LP_getheight(coin) <= 0 )
+            if ( LP_getheight(&notarized,coin) <= 0 )
                 coin->inactive = (uint32_t)time(NULL);
             else
             {
@@ -720,7 +733,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                 LP_priceinfoadd(jstr(item,"coin"));
                 if ( (coin= LP_coinfind(symbol)) != 0 )
                 {
-                    if ( LP_getheight(coin) <= 0 )
+                    if ( LP_getheight(&notarized,coin) <= 0 )
                         coin->inactive = (uint32_t)time(NULL);
                     else LP_unspents_load(coin->symbol,coin->smartaddr);
                     if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
