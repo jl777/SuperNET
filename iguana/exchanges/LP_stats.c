@@ -379,7 +379,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                 sp->methodind = methodind;
                 sp->ind = LP_aliceids++;
                 sp->lasttime = (uint32_t)time(NULL);
-                if ( sp->lasttime > sp->Q.timestamp+LP_atomic_locktime(base,rel)*2)
+                if ( sp->lasttime > sp->Q.timestamp+LP_atomic_locktime(base,rel)*2 )
                     sp->expired = sp->lasttime;
                 else
                 {
@@ -436,6 +436,8 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
     jaddnum(item,"quoteid",sp->Q.R.quoteid);
     jaddnum(item,"finished",sp->finished);
     jaddnum(item,"expired",sp->expired);
+    if ( sp->finished == 0 && sp->expired == 0 )
+        jaddnum(item,"expires",sp->Q.timestamp + LP_atomic_locktime(sp->Q.srccoin,sp->Q.destcoin)*2 - time(NULL));
     jaddnum(item,"ind",sp->methodind);
     //jaddstr(item,"line",line);
     return(item);
