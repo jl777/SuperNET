@@ -126,8 +126,8 @@ void basilisk_rawtx_purge(struct basilisk_rawtx *rawtx)
 
 void basilisk_swap_finished(struct basilisk_swap *swap)
 {
-    int32_t i;
-    /*if ( swap->utxo != 0 && swap->sentflag == 0 )
+    /*int32_t i;
+    if ( swap->utxo != 0 && swap->sentflag == 0 )
     {
         LP_availableset(swap->utxo);
         swap->utxo = 0;
@@ -159,11 +159,11 @@ void basilisk_swap_finished(struct basilisk_swap *swap)
     basilisk_rawtx_purge(&swap->bobspend);
     basilisk_rawtx_purge(&swap->bobrefund);
     basilisk_rawtx_purge(&swap->alicereclaim);
-    for (i=0; i<swap->nummessages; i++)
+    /*for (i=0; i<swap->nummessages; i++)
         if ( swap->messages[i].data != 0 )
             free(swap->messages[i].data), swap->messages[i].data = 0;
     free(swap->messages), swap->messages = 0;
-    swap->nummessages = 0;
+    swap->nummessages = 0;*/
     if ( swap->N.pair >= 0 )
         nn_close(swap->N.pair), swap->N.pair = -1;
 }
@@ -837,7 +837,7 @@ void LP_bobloop(void *_swap)
                         printf("error sending bobpayment\n");
                     //if ( LP_waitfor(swap->N.pair,swap,10,LP_verify_alicespend) < 0 )
                     //    printf("error waiting for alicespend\n");
-                    swap->sentflag = 1;
+                    //swap->sentflag = 1;
                     swap->bobreclaim.utxovout = 0;
                     swap->bobreclaim.utxotxid = swap->bobpayment.I.signedtxid;
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
@@ -848,10 +848,11 @@ void LP_bobloop(void *_swap)
                 }
             }
         }
-        basilisk_swap_finished(swap);
-        free(swap);
     } else printf("swap timed out\n");
     G.LP_pendingswaps--;
+    basilisk_swap_finished(swap);
+    free(swap);
+    free(data);
 }
 
 void LP_aliceloop(void *_swap)
@@ -904,7 +905,7 @@ void LP_aliceloop(void *_swap)
                         char str[65];printf("%d wait for alicepayment %s numconfs.%d %s %s\n",n,swap->alicepayment.I.destaddr,m,swap->I.alicestr,bits256_str(str,swap->alicepayment.I.signedtxid));
                         sleep(10);
                     }
-                    swap->sentflag = 1;
+                    //swap->sentflag = 1;
                     LP_swap_critical = (uint32_t)time(NULL);
                     if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_bobpayment) < 0 )
                         printf("error waiting for bobpayment\n");
@@ -925,6 +926,7 @@ void LP_aliceloop(void *_swap)
                          }*/
                         if ( swap->N.pair >= 0 )
                             nn_close(swap->N.pair), swap->N.pair = -1;
+                        LP_swap_endcritical = (uint32_t)time(NULL);
                         LP_swapwait(swap,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*2,swap->I.aliceconfirms == 0 ? 3 : 30);
                     }
                 }
@@ -932,11 +934,6 @@ void LP_aliceloop(void *_swap)
         }
     }
     free(data);
-    if ( swap->N.pair >= 0 )
-    {
-        nn_close(swap->N.pair);
-        swap->N.pair = -1;
-    }
     basilisk_swap_finished(swap);
     printf("finish swap.%p\n",swap);
     free(swap);

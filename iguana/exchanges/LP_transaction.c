@@ -477,7 +477,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
         }
     }
     iguana_msgtx_Vset(serialized,maxlen,msgtx,V);
-    cJSON *txobj = cJSON_CreateObject();
+    cJSON *txobj = 0;//cJSON_CreateObject();
     *signedtx = iguana_rawtxbytes(symbol,taddr,pubtype,p2shtype,isPoS,height,txobj,msgtx,suppress_pubkeys,zcash);
     //printf("SIGNEDTX.(%s)\n",jprint(txobj,1));
     *signedtxidp = msgtx->txid;
@@ -733,11 +733,11 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                 else complete = 1;
                 jadd(retjson,"interpreter",log);
                 jadd(retjson,"complete",complete!=0?jtrue():jfalse());
-                free(serialized), free(serialized2);
                 if ( signedtx != 0 )
                     free(signedtx);
                 free(V);
             }
+            free(serialized), free(serialized2);
         }
         //char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
     }
@@ -1194,7 +1194,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         {
             if ( LP_address_isvalid(coin->symbol,coinaddr) <= 0 )
             {
-                printf("LP_createrawtransaction %s i.%d of %d is invalid\n",coinaddr,i,numvouts);
+                printf("%s LP_createrawtransaction %s i.%d of %d is invalid\n",coin->symbol,coinaddr,i,numvouts);
                 return(0);
             }
             if ( (value= SATOSHIDEN * jdouble(item,coinaddr)) <= 0 )
@@ -1255,6 +1255,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             if ( (value= SATOSHIDEN * jdouble(item,coinaddr)) <= 0 )
             {
                 printf("cant get value i.%d of %d %s\n",i,numvouts,jprint(outputs,0));
+                free_json(txobj);
                 return(0);
             }
             bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,coinaddr);
@@ -1272,6 +1273,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         else
         {
             printf("cant get fieldname.%d of %d %s\n",i,numvouts,jprint(outputs,0));
+            free_json(txobj);
             return(0);
         }
     }
@@ -1325,6 +1327,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         if ( (ap= LP_address_utxo_reset(coin)) == 0 )
         {
             printf("LP_withdraw error utxo reset %s\n",coin->symbol);
+            free(V);
             return(0);
         }
         privkeys = cJSON_CreateArray();
@@ -1363,6 +1366,8 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         free_json(privkeys), privkeys = 0;
         if ( rawtx != 0 )
             free(rawtx), rawtx = 0;
+        if ( signedtx != 0 )
+            free(signedtx), signedtx = 0;
     }
     free(V);
     if ( vins != 0 )
