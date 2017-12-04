@@ -180,12 +180,12 @@ struct vin_info
     uint8_t rmd160[20],spendscript[10000],p2shscript[10000],userdata[10000];
 };
 
-struct basilisk_swapmessage
+/*struct basilisk_swapmessage
 {
     bits256 srchash,desthash;
     uint32_t crc32,msgbits,quoteid,datalen;
     uint8_t *data;
-};
+};*/
 
 struct basilisk_swap;
 
@@ -383,7 +383,7 @@ struct basilisk_swap
     struct basilisk_swapinfo I;
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
     bits256 privkeys[INSTANTDEX_DECKSIZE];
-    struct basilisk_swapmessage *messages; int32_t nummessages,sentflag;
+    //struct basilisk_swapmessage *messages; int32_t nummessages,sentflag;
     char Bdeposit[64],Bpayment[64];
     uint64_t aliceid,otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint8_t persistent_pubkey33[33],persistent_other33[33],changermd160[20],pad[15],verifybuf[100000];
