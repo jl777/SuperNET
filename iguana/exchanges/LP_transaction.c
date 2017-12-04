@@ -1194,7 +1194,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         {
             if ( LP_address_isvalid(coin->symbol,coinaddr) <= 0 )
             {
-                printf("LP_createrawtransaction %s i.%d of %d is invalid\n",coinaddr,i,numvouts);
+                printf("%s LP_createrawtransaction %s i.%d of %d is invalid\n",coin->symbol,coinaddr,i,numvouts);
                 return(0);
             }
             if ( (value= SATOSHIDEN * jdouble(item,coinaddr)) <= 0 )

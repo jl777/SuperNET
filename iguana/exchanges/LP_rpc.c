@@ -372,7 +372,7 @@ int32_t LP_address_isvalid(char *symbol,char *address)
             isvalid = 1;
             //printf("%s ismine (%s)\n",address,jprint(retjson,0));
         }
-        //printf("%s\n",jprint(retjson,0));
+        printf("%s\n",jprint(retjson,0));
         free_json(retjson);
     }
     return(isvalid);
