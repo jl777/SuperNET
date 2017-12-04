@@ -730,6 +730,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                 if ( bits256_nonz(txid) == 0 )
                 {
                     free(fstr);
+                    free_json(txobj);
                     continue;
                 }
                 rswap->txids[i] = txid;
