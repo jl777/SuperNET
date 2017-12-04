@@ -893,6 +893,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         //printf("legacy DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
         return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
     }
+    return(0);
     alice = LP_coinfind(rswap.alicecoin);
     bob = LP_coinfind(rswap.bobcoin);
     rswap.Atxfee = LP_txfeecalc(alice,rswap.Atxfee,0);
@@ -1240,7 +1241,7 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forc
                     {
                         if ( count < sizeof(ridqids)/sizeof(*ridqids) )
                             ridqids[count++] = ridqid;
-                        if ( 0 && (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid,0)) != 0 )
+                        if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid,0)) != 0 )
                             jaddi(array,item);
                     }
                 }
