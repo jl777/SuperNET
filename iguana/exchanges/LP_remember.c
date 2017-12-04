@@ -712,6 +712,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
         }
         free(fstr);
     }
+    return(0);
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
         needflag = addflag = 0;
@@ -884,7 +885,6 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     if ( (rswap.iambob= LP_rswap_init(&rswap,requestid,quoteid,forceflag)) < 0 )
         return(cJSON_Parse("{\"error\":\"couldnt initialize rswap, are all coins active?\"}"));
     decode_hex(deadtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
-return(0);
     LP_swap_load(&rswap,forceflag);
     memset(zero.bytes,0,sizeof(zero));
     otheraddr[0] = 0;
