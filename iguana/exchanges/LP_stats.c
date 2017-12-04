@@ -805,7 +805,7 @@ cJSON *LP_ohlc_json(struct LP_ohlc *bar,struct LP_ohlc *prevbar)
     {
         memset(&tmp,0,sizeof(tmp));
         tmp.timestamp = bar->timestamp;
-        tmp.close = bar->close;
+        tmp.open = tmp.close = bar->close;
         tmp.numtrades = 0;
         tmp.relsum = tmp.basesum = 0.;
     } else tmp = *bar;
