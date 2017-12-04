@@ -873,7 +873,7 @@ void LP_aliceloop(void *_swap)
             printf("error LP_sendwait mostprivs\n");
         else if ( basilisk_alicetxs(swap->N.pair,swap,data,maxlen) != 0 )
             printf("basilisk_alicetxs error\n");
-        else if ( 0 )
+        else
         {
             LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
