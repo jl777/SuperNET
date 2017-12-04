@@ -655,7 +655,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
             //autxo->S.swap = swap;
             //swap->utxo = autxo;
             LP_aliceid(qp->tradeid,qp->aliceid,"started",qp->R.requestid,qp->R.quoteid);
-            printf("alice pairstr.(%s) pairsock.%d\n",pairstr,pairsock);
+            printf("alice pairstr.(%s) pairsock.%d pthread_t %ld\n",pairstr,pairsock,sizeof(pthread_t));
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)swap) == 0 )
             {
                 retjson = LP_quotejson(qp);
