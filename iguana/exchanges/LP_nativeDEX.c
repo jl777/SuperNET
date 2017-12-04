@@ -26,6 +26,7 @@
 // portfolio value based on ask?
 //
 // else claim path
+// swap memleak?
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 // improve critical section detection when parallel trades
