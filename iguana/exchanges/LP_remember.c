@@ -1240,7 +1240,7 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forc
                     {
                         if ( count < sizeof(ridqids)/sizeof(*ridqids) )
                             ridqids[count++] = ridqid;
-                        if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid,0)) != 0 )
+                        if ( 0 && (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid,0)) != 0 )
                             jaddi(array,item);
                     }
                 }
@@ -1368,7 +1368,6 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
         limit = 10;
     memset(ridqids,0,sizeof(ridqids));
     retarray = cJSON_CreateArray();
-    if ( 0 )
     if ( (liststr= basilisk_swaplist(0,0,0)) != 0 )
     {
         //printf("swapentry.(%s)\n",liststr);
@@ -1394,7 +1393,6 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
         }
         free(liststr);
     }
-    if ( 0 )
     if ( (liststr= LP_recent_swaps(limit)) != 0 )
     {
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
