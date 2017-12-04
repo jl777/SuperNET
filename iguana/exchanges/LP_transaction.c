@@ -511,7 +511,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
             //printf("back from bitcoin_hex2json (%s)\n",jprint(vins,0));
         } else printf("no txobj from bitcoin_hex2json\n");
         //printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
-        if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
+        if ( 0 && (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
             //printf("numinputs.%d (%s) msgtx.%d\n",numinputs,jprint(vins,0),msgtx->tx_in);
             memset(msgtx,0,sizeof(*msgtx));
@@ -1338,7 +1338,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
             memset(signedtxid.bytes,0,sizeof(signedtxid));
-            if ( 0 && (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,V,numvins,rawtx,vins,privkeys,coin->zcash)) < 0 )
+            if ( (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,V,numvins,rawtx,vins,privkeys,coin->zcash)) < 0 )
                 printf("couldnt sign withdraw %s\n",bits256_str(str,signedtxid));
             else if ( completed == 0 )
             {
