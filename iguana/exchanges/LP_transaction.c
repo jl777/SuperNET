@@ -733,11 +733,11 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                 else complete = 1;
                 jadd(retjson,"interpreter",log);
                 jadd(retjson,"complete",complete!=0?jtrue():jfalse());
-                free(serialized), free(serialized2);
                 if ( signedtx != 0 )
                     free(signedtx);
                 free(V);
             }
+            free(serialized), free(serialized2);
         }
         //char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
     }
@@ -1325,6 +1325,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         if ( (ap= LP_address_utxo_reset(coin)) == 0 )
         {
             printf("LP_withdraw error utxo reset %s\n",coin->symbol);
+            free(V);
             return(0);
         }
         privkeys = cJSON_CreateArray();
@@ -1363,6 +1364,8 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         free_json(privkeys), privkeys = 0;
         if ( rawtx != 0 )
             free(rawtx), rawtx = 0;
+        if ( signedtx != 0 )
+            free(signedtx), signedtx = 0;
     }
     free(V);
     if ( vins != 0 )
