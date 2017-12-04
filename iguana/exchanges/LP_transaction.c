@@ -1255,6 +1255,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
             if ( (value= SATOSHIDEN * jdouble(item,coinaddr)) <= 0 )
             {
                 printf("cant get value i.%d of %d %s\n",i,numvouts,jprint(outputs,0));
+                free_json(txobj);
                 return(0);
             }
             bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,coinaddr);
@@ -1272,6 +1273,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         else
         {
             printf("cant get fieldname.%d of %d %s\n",i,numvouts,jprint(outputs,0));
+            free_json(txobj);
             return(0);
         }
     }
@@ -1336,7 +1338,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
             memset(signedtxid.bytes,0,sizeof(signedtxid));
-            if ( (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,V,numvins,rawtx,vins,privkeys,coin->zcash)) < 0 )
+            if ( 0 && (completed= iguana_signrawtransaction(ctx,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->longestchain,&msgtx,&signedtx,&signedtxid,V,numvins,rawtx,vins,privkeys,coin->zcash)) < 0 )
                 printf("couldnt sign withdraw %s\n",bits256_str(str,signedtxid));
             else if ( completed == 0 )
             {
