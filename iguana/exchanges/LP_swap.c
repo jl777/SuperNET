@@ -862,7 +862,7 @@ void LP_aliceloop(void *_swap)
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
-    if ( swap != 0 )
+    if ( 0 && swap != 0 )
     {
         printf("start swap iamalice pair.%d\n",swap->N.pair);
         if ( LP_sendwait("pubkeys",120,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
