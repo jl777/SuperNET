@@ -1368,6 +1368,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
         limit = 10;
     memset(ridqids,0,sizeof(ridqids));
     retarray = cJSON_CreateArray();
+    if ( 0 )
     if ( (liststr= basilisk_swaplist(0,0,0)) != 0 )
     {
         //printf("swapentry.(%s)\n",liststr);
@@ -1393,7 +1394,6 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
         }
         free(liststr);
     }
-    if ( 0 )
     if ( (liststr= LP_recent_swaps(limit)) != 0 )
     {
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
