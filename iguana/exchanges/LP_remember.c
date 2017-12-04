@@ -712,7 +712,6 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
         }
         free(fstr);
     }
-    return(0);
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
         needflag = addflag = 0;
@@ -729,7 +728,10 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                     rswap->iambob = jint(txobj,"iambob");
                 txid = jbits256(txobj,"txid");
                 if ( bits256_nonz(txid) == 0 )
+                {
+                    free(fstr);
                     continue;
+                }
                 rswap->txids[i] = txid;
                 if ( jstr(txobj,"Apayment") != 0 )
                     safecopy(rswap->alicepaymentaddr,jstr(txobj,"Apayment"),sizeof(rswap->alicepaymentaddr));
