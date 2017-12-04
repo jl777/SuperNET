@@ -884,6 +884,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     if ( (rswap.iambob= LP_rswap_init(&rswap,requestid,quoteid,forceflag)) < 0 )
         return(cJSON_Parse("{\"error\":\"couldnt initialize rswap, are all coins active?\"}"));
     decode_hex(deadtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+return(0);
     LP_swap_load(&rswap,forceflag);
     memset(zero.bytes,0,sizeof(zero));
     otheraddr[0] = 0;
@@ -893,7 +894,6 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         //printf("legacy DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
         return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
     }
-    return(0);
     alice = LP_coinfind(rswap.alicecoin);
     bob = LP_coinfind(rswap.bobcoin);
     rswap.Atxfee = LP_txfeecalc(alice,rswap.Atxfee,0);
