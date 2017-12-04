@@ -32,7 +32,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char 
 
 char *stats_validmethods[] =
 {
-    "psock", "getprices", "notify", "getpeers",  // from issue_  "uitem", "listunspent",
+    "psock", "getprice", "notify", "getpeers",  // from issue_  "uitem", "listunspent",
     "orderbook", "statsdisp", "help", "getcoins", "pricearray", "balance", "tradesarray"
 };
 

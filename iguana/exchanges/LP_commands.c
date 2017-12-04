@@ -324,18 +324,6 @@ instantdex_claim()\n\
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
-            else if ( strcmp(method,"getprice") == 0 )
-            {
-                double price;
-                price = LP_price(base,rel);
-                retjson = cJSON_CreateObject();
-                jaddstr(retjson,"result","success");
-                jaddstr(retjson,"base",base);
-                jaddstr(retjson,"rel",rel);
-                jaddnum(retjson,"timestamp",time(NULL));
-                jaddnum(retjson,"price",price);
-                return(jprint(retjson,1));
-            }
             else if ( strcmp(method,"pricearray") == 0 )
             {
                 uint32_t firsttime;
@@ -634,6 +622,18 @@ instantdex_claim()\n\
         return(LP_notify_recv(argjson));
     else if ( strcmp(method,"getpeers") == 0 )
         retstr = clonestr("{\"error\":\"deprecated\"}");
+    else if ( strcmp(method,"getprice") == 0 )
+    {
+        double price;
+        price = LP_price(base,rel);
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","success");
+        jaddstr(retjson,"base",base);
+        jaddstr(retjson,"rel",rel);
+        jaddnum(retjson,"timestamp",time(NULL));
+        jaddnum(retjson,"price",price);
+        return(jprint(retjson,1));
+    }
     /*else if ( strcmp(method,"getpeers") == 0 )
     {
         char *tmpstr;
