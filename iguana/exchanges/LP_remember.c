@@ -1393,6 +1393,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
         }
         free(liststr);
     }
+    if ( 0 )
     if ( (liststr= LP_recent_swaps(limit)) != 0 )
     {
         if ( (retjson= cJSON_Parse(liststr)) != 0 )
