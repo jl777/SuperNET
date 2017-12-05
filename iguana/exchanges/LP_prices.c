@@ -1119,6 +1119,7 @@ double LP_CMCbtcprice(char *symbol)
     char *retstr; cJSON *ticker; double price_btc = 0.;
     if ( (retstr= cmc_ticker(symbol)) != 0 )
     {
+        printf("CMC %s -> (%s)\n",symbol,retstr);
         if ( (ticker= cJSON_Parse(retstr)) != 0 )
         {
             price_btc = jdouble(ticker,"price_btc");
