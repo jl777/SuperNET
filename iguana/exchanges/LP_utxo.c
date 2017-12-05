@@ -616,23 +616,40 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     return(retjson);
 }
 
-cJSON *LP_balances()
+cJSON *LP_balances(char *coinaddr)
 {
-    struct iguana_info *coin,*tmp; uint64_t balance; cJSON *array,*item;
+    struct iguana_info *coin,*tmp; uint64_t balance; cJSON *array,*item,*retjson;
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
-        if ( (balance= LP_RTsmartbalance(coin)) != 0 )
+        if ( coinaddr != 0 && strcmp(coinaddr,coin->smartaddr) == 0 )
         {
-            item = cJSON_CreateObject();
-            jaddstr(item,"coin",coin->symbol);
-            jaddnum(item,"balance",dstr(balance));
-            if ( strcmp(coin->symbol,"KMD") == 0 )
+            if ( (balance= LP_RTsmartbalance(coin)) != 0 )
             {
-                jaddnum(item,"zcredits",dstr(LP_myzcredits()));
-                jadd(item,"zdebits",LP_myzdebits());
+                item = cJSON_CreateObject();
+                jaddstr(item,"coin",coin->symbol);
+                jaddnum(item,"balance",dstr(balance));
+                if ( strcmp(coin->symbol,"KMD") == 0 )
+                {
+                    jaddnum(item,"zcredits",dstr(LP_myzcredits()));
+                    jadd(item,"zdebits",LP_myzdebits());
+                }
+                jaddi(array,item);
             }
-            jaddi(array,item);
+        }
+        else
+        {
+            if ( (retjson= LP_address_balance(coin,coinaddr,1)) != 0 )
+            {
+                if ( (balance= jdouble(retjson,"balance")*SATOSHIDEN) > 0 )
+                {
+                    item = cJSON_CreateObject();
+                    jaddstr(item,"coin",coin->symbol);
+                    jaddnum(item,"balance",dstr(balance));
+                    jaddi(array,item);
+                }
+                free_json(retjson);
+            }
         }
     }
     return(array);
