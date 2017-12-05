@@ -136,7 +136,7 @@ setconfirms(coin, numconfirms, maxconfirms=6)\n\
 trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
 balance(coin, address)\n\
 balances(address)\n\
-fundvalue(address="", holdings=[])\n\
+fundvalue(address="", holdings=[], divisor=0)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
 getprice(base, rel)\n\

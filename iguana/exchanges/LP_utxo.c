@@ -622,7 +622,7 @@ cJSON *LP_balances(char *coinaddr)
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
-        if ( coinaddr != 0 && coinaddr[0] != 0 && strcmp(coinaddr,coin->smartaddr) != 0 )
+        if ( coin->electrum != 0 || (coinaddr != 0 && coinaddr[0] != 0 && strcmp(coinaddr,coin->smartaddr) != 0) )
         {
             bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
             bitcoin_address(address,coin->taddr,coin->pubtype,rmd160,20);

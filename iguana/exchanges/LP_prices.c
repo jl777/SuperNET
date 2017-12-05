@@ -1131,7 +1131,7 @@ double LP_CMCbtcprice(char *symbol)
 
 cJSON *LP_fundvalue(cJSON *argjson)
 {
-    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n; double btcprice,balance,btcsum; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
+    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n; double divisor,btcprice,balance,btcsum; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
     fundvalue = 0;
     btcsum = 0.;
     array = cJSON_CreateArray();
@@ -1184,6 +1184,11 @@ cJSON *LP_fundvalue(cJSON *argjson)
         jaddnum(retjson,"btcvalue",btcsum * btcprice);
     }
     jaddnum(retjson,"fundvalue",dstr(fundvalue));
+    if ( (divisor= jdouble(argjson,"divisor")) != 0 )
+    {
+        jaddnum(retjson,"divisor",divisor);
+        jaddnum(retjson,"fundvalue",dstr(fundvalue));
+    }
     return(retjson);
 }
 
