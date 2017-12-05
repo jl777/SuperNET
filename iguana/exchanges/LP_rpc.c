@@ -388,7 +388,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
     {
-        if ( (ap= LP_addressfind(coin,symbol)) != 0 )
+        if ( (ap= LP_addressfind(coin,coinaddr)) != 0 )
         {
             if ( ap->unspenttime == 0 )
                 usecache = 0;
@@ -407,7 +407,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                 numconfs = 0;
             else numconfs = 1;
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
-printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
+//printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
             retjson = bitcoin_json(coin,"listunspent",buf);
             retstr = jprint(retjson,0);
             LP_unspents_cache(coin->symbol,coinaddr,retstr,1);
