@@ -257,8 +257,6 @@ instantdex_claim()\n\
             return(LP_peers());
         else if ( strcmp(method,"getcoins") == 0 )
             return(jprint(LP_coinsjson(0),1));
-        else if ( strcmp(method,"balances") == 0 )
-            return(jprint(LP_balances(jstr(argjson,"address")),1));
         else if ( strcmp(method,"notarizations") == 0 )
         {
             if ( (ptr= LP_coinsearch(coin)) != 0 )
@@ -625,6 +623,8 @@ instantdex_claim()\n\
         return(LP_notify_recv(argjson));
     else if ( strcmp(method,"getpeers") == 0 )
         retstr = clonestr("{\"error\":\"deprecated\"}");
+    else if ( strcmp(method,"balances") == 0 )
+        return(jprint(LP_balances(jstr(argjson,"address")),1));
     else if ( strcmp(method,"getprice") == 0 )
     {
         double price;
