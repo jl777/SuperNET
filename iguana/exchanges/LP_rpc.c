@@ -352,9 +352,9 @@ int32_t LP_address_iswatched(char *symbol,char *address)
         if ( (obj= jobj(retjson,"iswatched")) != 0 && is_cJSON_True(obj) != 0 )
         {
             doneflag = 1;
-            //printf("%s ismine (%s)\n",address,jprint(retjson,0));
+            printf("%s iswatched (%s)\n",address,jprint(retjson,0));
         }
-        //printf("%s\n",jprint(retjson,0));
+        printf("%s\n",jprint(retjson,0));
         free_json(retjson);
     }
     return(doneflag);
