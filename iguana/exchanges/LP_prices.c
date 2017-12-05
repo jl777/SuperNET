@@ -1159,7 +1159,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
                 {
                     newitem = cJSON_CreateObject();
                     jaddstr(newitem,"coin",symbol);
-                    jaddnum(item,"balance",dstr(balance));
+                    jaddnum(newitem,"balance",dstr(balance));
                     if ( (coin= LP_coinfind(symbol)) != 0 && (KMDvalue= LP_KMDvalue(coin,SATOSHIDEN * balance)) > 0 )
                     {
                         jaddnum(newitem,"KMD",dstr(KMDvalue));
@@ -1180,7 +1180,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
     jadd(retjson,"holdings",array);
     if ( btcsum != 0 )
     {
-        btcprice = LP_CMCbtcprice("KMD");
+        btcprice = LP_CMCbtcprice("komodo");
         fundvalue += (btcprice * btcsum) * SATOSHIDEN;
         jaddnum(retjson,"KMD_BTC",btcprice);
         jaddnum(retjson,"btcsum",btcsum);
