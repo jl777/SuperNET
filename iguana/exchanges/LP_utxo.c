@@ -618,25 +618,21 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 
 cJSON *LP_balances()
 {
-    struct iguana_info *coin,*tmp; double balance; char *symbol; cJSON *array,*item,*retjson;
+    struct iguana_info *coin,*tmp; uint64_t balance; char *symbol; cJSON *array,*item;
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
-        if ( (retjson= LP_address_balance(coin,coin->smartaddr,1)) != 0 )
+        if ( (balance= LP_RTsmartbalance(coin)) != 0 )
         {
-            if ( (symbol= jstr(retjson,"coin")) != 0 && (balance= jdouble(retjson,"balance")) > SMALLVAL )
+            item = cJSON_CreateObject();
+            jaddstr(item,"coin",coin->symbol);
+            jaddnum(item,"balance",dstr(balance));
+            if ( strcmp(symbol,"KMD") == 0 )
             {
-                item = cJSON_CreateObject();
-                jaddstr(item,"coin",symbol);
-                jaddnum(item,"balance",balance);
-                if ( strcmp(symbol,"KMD") == 0 )
-                {
-                    jaddnum(item,"zcredits",jdouble(retjson,"zcredits"));
-                    jadd(item,"zdebits",LP_myzdebits());
-                }
-                jaddi(array,item);
+                jaddnum(item,"zcredits",dstr(LP_myzcredits()));
+                jadd(item,"zdebits",LP_myzdebits());
             }
-            free_json(retjson);
+            jaddi(array,item);
         }
     }
     return(array);
