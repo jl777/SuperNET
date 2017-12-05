@@ -401,7 +401,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                 return(retjson);
             }
         }
-        printf("%s %s usecache.%d iswatched.%d\n",coin->symbol,coinaddr,usecache,LP_address_iswatchonly(symbol,coinaddr));
+        //printf("%s %s usecache.%d iswatched.%d\n",coin->symbol,coinaddr,usecache,LP_address_iswatchonly(symbol,coinaddr));
         if ( LP_address_ismine(symbol,coinaddr) > 0 || LP_address_iswatchonly(symbol,coinaddr) > 0 )
         {
             if ( strcmp(symbol,"BTC") == 0 )
