@@ -1183,6 +1183,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
     jadd(retjson,"holdings",array);
     btcprice = LP_CMCbtcprice(&usdprice,"komodo");
     divisor = jdouble(argjson,"divisor");
+    jaddnum(retjson,"KMDholdings",KMDholdings);
     if ( btcsum != 0 )
     {
         if ( btcprice > SMALLVAL )
@@ -1192,7 +1193,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
             jaddnum(retjson,"KMD_BTC",btcprice);
             jaddnum(retjson,"btcsum",btcsum);
             numKMD += KMDholdings;
-            jaddnum(retjson,"btcvalue",numKMD);
+            jaddnum(retjson,"btc2kmd",numKMD);
             if ( divisor != 0 )
             {
                 jaddnum(retjson,"NAV_KMD",numKMD/divisor);
@@ -1205,7 +1206,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
     if ( divisor != 0 )
     {
         jaddnum(retjson,"divisor",divisor);
-        numKMD = (dstr(fundvalue) - KMDholdings);
+        numKMD = dstr(fundvalue);
         jaddnum(retjson,"assetNAV_KMD",numKMD/divisor);
         jaddnum(retjson,"assetNAV_BTC",(btcprice * numKMD)/divisor);
         jaddnum(retjson,"assetNAV_USD",(usdprice * numKMD)/divisor);
