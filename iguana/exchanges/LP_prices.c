@@ -1135,9 +1135,9 @@ double LP_CMCbtcprice(double *price_usdp,char *symbol)
 
 cJSON *LP_fundvalue(cJSON *argjson)
 {
-    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n; double usdprice,divisor,btcprice,balance,btcsum; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
+    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
     fundvalue = 0;
-    btcsum = 0.;
+    KMDholdings = btcsum = 0.;
     array = cJSON_CreateArray();
     for (iter=0; iter<2; iter++)
     {
@@ -1166,6 +1166,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
                     {
                         jaddnum(newitem,"KMD",dstr(KMDvalue));
                         fundvalue += KMDvalue;
+                        KMDholdings += dstr(KMDvalue);
                     }
                     else if ( iter == 0 && (btcprice= LP_CMCbtcprice(&usdprice,symbol)) > SMALLVAL )
                     {
@@ -1186,15 +1187,17 @@ cJSON *LP_fundvalue(cJSON *argjson)
     {
         if ( btcprice > SMALLVAL )
         {
-            fundvalue += (btcsum / btcprice) * SATOSHIDEN;
+            numKMD = (btcsum / btcprice);
+            fundvalue += numKMD * SATOSHIDEN;
             jaddnum(retjson,"KMD_BTC",btcprice);
             jaddnum(retjson,"btcsum",btcsum);
-            jaddnum(retjson,"btcvalue",btcsum / btcprice);
+            numKMD += KMDholdings;
+            jaddnum(retjson,"btcvalue",numKMD);
             if ( divisor != 0 )
             {
-                jaddnum(retjson,"NAV_KMD",(btcsum / btcprice)/divisor);
-                jaddnum(retjson,"NAV_BTC",btcsum/divisor);
-                jaddnum(retjson,"NAV_USD",(usdprice * (btcsum / btcprice))/divisor);
+                jaddnum(retjson,"NAV_KMD",numKMD/divisor);
+                jaddnum(retjson,"NAV_BTC",(btcsum + (KMDholdings * btcprice))/divisor);
+                jaddnum(retjson,"NAV_USD",(usdprice * numKMD)/divisor);
             }
         }
     }
@@ -1202,9 +1205,10 @@ cJSON *LP_fundvalue(cJSON *argjson)
     if ( divisor != 0 )
     {
         jaddnum(retjson,"divisor",divisor);
-        jaddnum(retjson,"assetNAV_KMD",dstr(fundvalue)/divisor);
-        jaddnum(retjson,"assetNAV_BTC",(btcprice * dstr(fundvalue))/divisor);
-        jaddnum(retjson,"assetNAV_USD",(usdprice * dstr(fundvalue))/divisor);
+        numKMD = (dstr(fundvalue) - KMDholdings);
+        jaddnum(retjson,"assetNAV_KMD",numKMD/divisor);
+        jaddnum(retjson,"assetNAV_BTC",(btcprice * numKMD)/divisor);
+        jaddnum(retjson,"assetNAV_USD",(usdprice * numKMD)/divisor);
     }
     return(retjson);
 }
