@@ -852,9 +852,9 @@ void LP_ohlc_update(struct LP_ohlc *bar,uint32_t timestamp,double basevol,double
     }
 }
 
-cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,int32_t timescale)
+cJSON *LP_tradesarray(char *refbase,char *refrel,uint32_t starttime,uint32_t endtime,int32_t timescale)
 {
-    struct LP_ohlc *bars,nonz; cJSON *array,*item,*statsjson,*swaps; uint32_t timestamp; bits256 zero; int32_t i,n,numbars,bari;
+    struct LP_ohlc *bars,nonz; cJSON *array,*item,*statsjson,*swaps; uint32_t timestamp; bits256 zero; char *base,*rel; int32_t i,n,numbars,bari;
     if ( timescale < 60 )
         return(cJSON_Parse("{\"error\":\"one minute is shortest timescale\"}"));
     memset(zero.bytes,0,sizeof(zero));
@@ -866,7 +866,7 @@ cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,i
     bars = calloc(numbars,sizeof(*bars));
     for (bari=0; bari<numbars; bari++)
         bars[bari].timestamp = starttime + bari*timescale;
-    if ( (statsjson= LP_statslog_disp(starttime,endtime,"",zero,base,rel)) != 0 )
+    if ( (statsjson= LP_statslog_disp(starttime,endtime,"",zero,refbase,refrel)) != 0 )
     {
         if ( (swaps= jarray(&n,statsjson,"swaps")) != 0 )
         {
@@ -876,7 +876,12 @@ cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,i
                 if ( (timestamp= juint(item,"timestamp")) != 0 && timestamp >= starttime && timestamp <= endtime )
                 {
                     bari = (timestamp - starttime) / timescale;
+                    base = jstr(item,"base");
+                    rel = jstr(item,"rel");
+                    if ( strcmp(base,refbase) == 0 && strcmp(rel,refrel) == 0 )
                     LP_ohlc_update(&bars[bari],timestamp,jdouble(item,"basevol"),jdouble(item,"relvol"));
+                    else if ( strcmp(rel,refbase) == 0 && strcmp(base,refrel) == 0 )
+                        LP_ohlc_update(&bars[bari],timestamp,jdouble(item,"relvol"),jdouble(item,"basevol"));
                 } else printf("skip.(%s)\n",jprint(item,0));
             }
         }
