@@ -1116,12 +1116,14 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
 
 double LP_CMCbtcprice(char *symbol)
 {
-    char *retstr; cJSON *ticker; double price_btc = 0.;
+    char *retstr; cJSON *ticker,*item; double price_btc = 0.;
     if ( (retstr= cmc_ticker(symbol)) != 0 )
     {
         if ( (ticker= cJSON_Parse(retstr)) != 0 )
         {
-            price_btc = jdouble(jitem(ticker,0),"price_btc");
+            item = jitem(ticker,0);
+            price_btc = jdouble(item,"price_btc");
+            printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
             free_json(ticker);
         }
         free(retstr);
