@@ -39,6 +39,8 @@ char *stats_validmethods[] =
 int32_t LP_valid_remotemethod(cJSON *argjson)
 {
     char *method; int32_t i;
+    if ( DOCKERFLAG != 0 )
+        return(1);
     if ( (method= jstr(argjson,"method")) != 0 )
     {
         for (i=0; i<sizeof(stats_validmethods)/sizeof(*stats_validmethods); i++)
