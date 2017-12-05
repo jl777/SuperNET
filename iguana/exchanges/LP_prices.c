@@ -1123,12 +1123,12 @@ double LP_CMCbtcprice(char *symbol)
         {
             item = jitem(ticker,0);
             price_btc = jdouble(item,"price_btc");
-            printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
+            //printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
             free_json(ticker);
         }
         free(retstr);
     }
-    return(0);
+    return(price_btc);
 }
 
 cJSON *LP_fundvalue(cJSON *argjson)
@@ -1165,7 +1165,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
                         jaddnum(newitem,"KMD",dstr(KMDvalue));
                         fundvalue += KMDvalue;
                     }
-                    else if ( (btcprice= LP_CMCbtcprice(symbol)) > SMALLVAL )
+                    else if ( iter == 0 && (btcprice= LP_CMCbtcprice(symbol)) > SMALLVAL )
                     {
                         btcsum += btcprice * balance;
                         jaddnum(newitem,"BTC",btcprice * balance);
