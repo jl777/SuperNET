@@ -11,6 +11,7 @@ echo jumblr
 ./jumblr
 echo bots
 ./bots
+echo supernet
 
 curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"balances\",\"address\":\"RRyyejME7LRTuvdziWsXkAbSW1fdiohGwK\"}"
 
