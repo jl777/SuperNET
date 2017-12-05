@@ -1114,15 +1114,17 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
     //    printf("error finding %s/%s %.8f\n",base,rel,price);
 }
 
-double LP_CMCbtcprice(char *symbol)
+double LP_CMCbtcprice(double *price_usdp,char *symbol)
 {
     char *retstr; cJSON *ticker,*item; double price_btc = 0.;
+    *price_usdp = 0.;
     if ( (retstr= cmc_ticker(symbol)) != 0 )
     {
         if ( (ticker= cJSON_Parse(retstr)) != 0 )
         {
             item = jitem(ticker,0);
             price_btc = jdouble(item,"price_btc");
+            *price_usdp = jdouble(item,"price_usd");
             //printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
             free_json(ticker);
         }
@@ -1133,7 +1135,7 @@ double LP_CMCbtcprice(char *symbol)
 
 cJSON *LP_fundvalue(cJSON *argjson)
 {
-    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n; double divisor,btcprice,balance,btcsum; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
+    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n; double usdprice,divisor,btcprice,balance,btcsum; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
     fundvalue = 0;
     btcsum = 0.;
     array = cJSON_CreateArray();
@@ -1165,7 +1167,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
                         jaddnum(newitem,"KMD",dstr(KMDvalue));
                         fundvalue += KMDvalue;
                     }
-                    else if ( iter == 0 && (btcprice= LP_CMCbtcprice(symbol)) > SMALLVAL )
+                    else if ( iter == 0 && (btcprice= LP_CMCbtcprice(&usdprice,symbol)) > SMALLVAL )
                     {
                         btcsum += btcprice * balance;
                         jaddnum(newitem,"BTC",btcprice * balance);
@@ -1178,9 +1180,10 @@ cJSON *LP_fundvalue(cJSON *argjson)
     }
     retjson = cJSON_CreateObject();
     jadd(retjson,"holdings",array);
+    btcprice = LP_CMCbtcprice(&usdprice,"komodo");
     if ( btcsum != 0 )
     {
-        if ( (btcprice= LP_CMCbtcprice("komodo")) > SMALLVAL )
+        if ( btcprice > SMALLVAL )
         {
             fundvalue += (btcsum / btcprice) * SATOSHIDEN;
             jaddnum(retjson,"KMD_BTC",btcprice);
@@ -1192,7 +1195,9 @@ cJSON *LP_fundvalue(cJSON *argjson)
     if ( (divisor= jdouble(argjson,"divisor")) != 0 )
     {
         jaddnum(retjson,"divisor",divisor);
-        jaddnum(retjson,"fundvalue",dstr(fundvalue));
+        jaddnum(retjson,"NAV_KMD",dstr(fundvalue)/divisor);
+        jaddnum(retjson,"NAV_BTC",(btcprice * dstr(fundvalue))/divisor);
+        jaddnum(retjson,"NAV_USD",(usdprice * dstr(fundvalue))/divisor);
     }
     return(retjson);
 }
