@@ -622,7 +622,21 @@ cJSON *LP_balances(char *coinaddr)
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
-        if ( (coinaddr == 0 || coinaddr[0] == 0) && strcmp(coinaddr,coin->smartaddr) == 0 )
+        if ( coinaddr != 0 && coinaddr[0] != 0 && strcmp(coinaddr,coin->smartaddr) != 0 )
+        {
+            if ( (retjson= LP_address_balance(coin,coinaddr,1)) != 0 )
+            {
+                if ( (balance= jdouble(retjson,"balance")*SATOSHIDEN) > 0 )
+                {
+                    item = cJSON_CreateObject();
+                    jaddstr(item,"coin",coin->symbol);
+                    jaddnum(item,"balance",dstr(balance));
+                    jaddi(array,item);
+                }
+                free_json(retjson);
+            }
+        }
+        else
         {
             if ( (balance= LP_RTsmartbalance(coin)) != 0 )
             {
@@ -635,20 +649,6 @@ cJSON *LP_balances(char *coinaddr)
                     jadd(item,"zdebits",LP_myzdebits());
                 }
                 jaddi(array,item);
-            }
-        }
-        else if ( coinaddr != 0 && coinaddr[0] != 0 )
-        {
-            if ( (retjson= LP_address_balance(coin,coinaddr,1)) != 0 )
-            {
-                if ( (balance= jdouble(retjson,"balance")*SATOSHIDEN) > 0 )
-                {
-                    item = cJSON_CreateObject();
-                    jaddstr(item,"coin",coin->symbol);
-                    jaddnum(item,"balance",dstr(balance));
-                    jaddi(array,item);
-                }
-                free_json(retjson);
             }
         }
     }
