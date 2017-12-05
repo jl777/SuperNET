@@ -1119,10 +1119,9 @@ double LP_CMCbtcprice(char *symbol)
     char *retstr; cJSON *ticker; double price_btc = 0.;
     if ( (retstr= cmc_ticker(symbol)) != 0 )
     {
-        printf("CMC %s -> (%s)\n",symbol,retstr);
         if ( (ticker= cJSON_Parse(retstr)) != 0 )
         {
-            price_btc = jdouble(ticker,"price_btc");
+            price_btc = jdouble(jitem(ticker,0),"price_btc");
             free_json(ticker);
         }
         free(retstr);
@@ -1158,6 +1157,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
                 {
                     newitem = cJSON_CreateObject();
                     jaddstr(newitem,"coin",symbol);
+                    jaddnum(item,"balance",dstr(balance));
                     if ( (coin= LP_coinfind(symbol)) != 0 && (KMDvalue= LP_KMDvalue(coin,SATOSHIDEN * balance)) > 0 )
                     {
                         jaddnum(newitem,"KMD",dstr(KMDvalue));
