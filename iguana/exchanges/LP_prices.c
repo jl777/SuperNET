@@ -908,30 +908,6 @@ int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
     {
         if ( strcmp(coin->symbol,"KMD") == 0 )
             KMDvalue = balance;
-        /*else if ( (retstr= LP_orderbook(coin->symbol,"KMD",-1)) != 0 )
-        {
-            if ( (orderbook= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( (asks= jarray(&numasks,orderbook,"asks")) != 0 && numasks > 0 )
-                {
-                    item = jitem(asks,0);
-                    price = ask = jdouble(item,"price");
-                    //printf("%s/%s ask %.8f\n",coin->symbol,"KMD",ask);
-                }
-                if ( (bids= jarray(&numbids,orderbook,"bids")) != 0 && numbids > 0 )
-                {
-                    item = jitem(asks,0);
-                    bid = jdouble(item,"price");
-                    if ( price == 0. )
-                        price = bid;
-                    else price = (bid + ask) * 0.5;
-                    //printf("%s/%s bid %.8f ask %.8f price %.8f\n",coin->symbol,"KMD",bid,ask,price);
-                }
-                KMDvalue = price * balance;
-                free_json(orderbook);
-            }
-            free(retstr);
-        }*/
         else
         {
             price = LP_price(coin->symbol,"KMD");
@@ -1136,5 +1112,34 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
     }
     //else if ( (rand() % 100) == 0 )
     //    printf("error finding %s/%s %.8f\n",base,rel,price);
+}
+
+cJSON *LP_fundvalue(cJSON *argjson)
+{
+    cJSON *holdings,*item,*newitem; int32_t i,n; double btcprice,balance,btcsum; struct iguana_info *coin; char *symbol; int64_t fundvalue,KMDvalue = 0;
+    fundvalue = 0;
+    btcsum = 0.;
+    if ( (holdings= jarray(&n,argjson,"holdings")) != 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(holdings,i);
+            if ( (symbol= jstr(item,"coin")) != 0 && (balance= jdouble(item,"balance")) > SMALLVAL )
+            {
+                item = cJSON_CreateObject();
+                jaddstr(item,"coin",symbol);
+                if ( (coin= LP_coinfind(symbol)) != 0 && (KMDvalue= LP_KMDvalue(coin,SATOSHIDEN * balance)) > 0 )
+                {
+                    jaddnum(item,"KMD",dstr(KMDvalue));
+                    fundvalue += KMDvalue;
+                }
+                else if ( (btcprice= LP_CMCbtcprice(symbol)) > SMALLVAL )
+                {
+                    btcsum += btcprice * balance;
+                    jaddnum(item,"BTC",btcprice * balance);
+                }
+            }
+        }
+    }
 }
 

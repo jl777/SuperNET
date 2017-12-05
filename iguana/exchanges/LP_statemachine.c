@@ -2094,6 +2094,30 @@ char *LP_postutxos_recv(cJSON *argjson)
     }
     return(clonestr("{\"error\":\"sig failure\"}"));
 }
+/*else if ( (retstr= LP_orderbook(coin->symbol,"KMD",-1)) != 0 )
+ {
+ if ( (orderbook= cJSON_Parse(retstr)) != 0 )
+ {
+ if ( (asks= jarray(&numasks,orderbook,"asks")) != 0 && numasks > 0 )
+ {
+ item = jitem(asks,0);
+ price = ask = jdouble(item,"price");
+ //printf("%s/%s ask %.8f\n",coin->symbol,"KMD",ask);
+ }
+ if ( (bids= jarray(&numbids,orderbook,"bids")) != 0 && numbids > 0 )
+ {
+ item = jitem(asks,0);
+ bid = jdouble(item,"price");
+ if ( price == 0. )
+ price = bid;
+ else price = (bid + ask) * 0.5;
+ //printf("%s/%s bid %.8f ask %.8f price %.8f\n",coin->symbol,"KMD",bid,ask,price);
+ }
+ KMDvalue = price * balance;
+ free_json(orderbook);
+ }
+ free(retstr);
+ }*/
 
 int32_t LP_utxosQ_process()
 {

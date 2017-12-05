@@ -817,7 +817,9 @@ void stats_rpcloop(void *args)
         }
 #endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
-        if ( DOCKERFLAG == 0 && port == RPC_port && ipbits != localhostbits )
+        if ( DOCKERFLAG != 0 )
+            ipbits = localhostbits;
+        if ( port == RPC_port && ipbits != localhostbits )
         {
             //printf("port.%u RPC_port.%u ipbits %x != %x\n",port,RPC_port,ipbits,localhostbits);
             closesocket(sock);
