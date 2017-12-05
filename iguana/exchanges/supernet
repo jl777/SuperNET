@@ -1,3 +1,4 @@
 #!/bin/bash
 source userpass
+# this will only work for watchonly addresses that have been rescanned and with active coins
 curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"balances\",\"address\":\"RRyyejME7LRTuvdziWsXkAbSW1fdiohGwK\"}"

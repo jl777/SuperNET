@@ -394,7 +394,6 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                 usecache = 0;
             else if ( G.LP_pendingswaps != 0 && time(NULL) > ap->unspenttime+1 )
                 usecache = 0;
-            printf("%s ap.%p unspent.%u usecache.%d iswatched.%d\n",coinaddr,ap,ap->unspenttime,usecache,LP_address_iswatched(symbol,coinaddr));
             if ( usecache != 0 && (retstr= LP_unspents_filestr(symbol,coinaddr)) != 0 )
             {
                 retjson = cJSON_Parse(retstr);
@@ -402,6 +401,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                 return(retjson);
             }
         }
+        printf("%s usecache.%d iswatched.%d\n",coinaddr,usecache,LP_address_iswatched(symbol,coinaddr));
         if ( LP_address_ismine(symbol,coinaddr) > 0 || LP_address_iswatched(symbol,coinaddr) > 0 )
         {
             if ( strcmp(symbol,"BTC") == 0 )

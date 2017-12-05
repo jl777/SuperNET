@@ -618,13 +618,15 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 
 cJSON *LP_balances(char *coinaddr)
 {
-    struct iguana_info *coin,*tmp; uint64_t balance; cJSON *array,*item,*retjson;
+    struct iguana_info *coin,*tmp; char address[64]; uint8_t addrtype,rmd160[20]; uint64_t balance; cJSON *array,*item,*retjson;
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
         if ( coinaddr != 0 && coinaddr[0] != 0 && strcmp(coinaddr,coin->smartaddr) != 0 )
         {
-            if ( (retjson= LP_address_balance(coin,coinaddr,1)) != 0 )
+            bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
+            bitcoin_address(address,coin->taddr,coin->pubtype,rmd160,20);
+            if ( (retjson= LP_address_balance(coin,address,1)) != 0 )
             {
                 if ( (balance= jdouble(retjson,"balance")*SATOSHIDEN) > 0 )
                 {
