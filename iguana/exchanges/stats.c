@@ -817,7 +817,7 @@ void stats_rpcloop(void *args)
         }
 #endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
-        if ( DOCKERFLAG != 0 && ipbits == DOCKERFLAG )
+        if ( DOCKERFLAG != 0 && (DOCKERFLAG == 1 || ipbits == DOCKERFLAG) )
             ipbits = localhostbits;
         if ( port == RPC_port && ipbits != localhostbits )
         {

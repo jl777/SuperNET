@@ -136,6 +136,7 @@ setconfirms(coin, numconfirms, maxconfirms=6)\n\
 trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
 balance(coin, address)\n\
 balances(address)\n\
+fundvalue(address="", holdings=[])\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
 getprice(base, rel)\n\
@@ -625,6 +626,8 @@ instantdex_claim()\n\
         retstr = clonestr("{\"error\":\"deprecated\"}");
     else if ( strcmp(method,"balances") == 0 )
         return(jprint(LP_balances(jstr(argjson,"address")),1));
+    else if ( strcmp(method,"fundvalue") == 0 )
+        return(jprint(LP_fundvalue(argjson),1));
     else if ( strcmp(method,"getprice") == 0 )
     {
         double price;

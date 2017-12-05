@@ -921,7 +921,10 @@ int main(int argc, const char * argv[])
     }
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
-        DOCKERFLAG = (uint32_t)calc_ipbits(jstr(retjson,"docker"));
+        if ( jint(retjson,"docker") == 1 )
+            DOCKERFLAG = 1;
+        else if ( jstr(retjson,"docker") != 0 )
+            DOCKERFLAG = (uint32_t)calc_ipbits(jstr(retjson,"docker"));
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
             jaddstr(retjson,"passphrase","test");
         if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)retjson) != 0 )
