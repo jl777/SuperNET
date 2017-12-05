@@ -622,7 +622,7 @@ cJSON *LP_balances(char *coinaddr)
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
-        if ( coinaddr != 0 && strcmp(coinaddr,coin->smartaddr) == 0 )
+        if ( (coinaddr == 0 || coinaddr[0] == 0) && strcmp(coinaddr,coin->smartaddr) == 0 )
         {
             if ( (balance= LP_RTsmartbalance(coin)) != 0 )
             {
@@ -637,7 +637,7 @@ cJSON *LP_balances(char *coinaddr)
                 jaddi(array,item);
             }
         }
-        else
+        else if ( coinaddr != 0 && coinaddr[0] != 0 )
         {
             if ( (retjson= LP_address_balance(coin,coinaddr,1)) != 0 )
             {
