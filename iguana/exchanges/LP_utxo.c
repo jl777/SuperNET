@@ -618,7 +618,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 
 cJSON *LP_balances()
 {
-    struct iguana_info *coin,*tmp; uint64_t balance; char *symbol; cJSON *array,*item;
+    struct iguana_info *coin,*tmp; uint64_t balance; cJSON *array,*item;
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
@@ -627,7 +627,7 @@ cJSON *LP_balances()
             item = cJSON_CreateObject();
             jaddstr(item,"coin",coin->symbol);
             jaddnum(item,"balance",dstr(balance));
-            if ( strcmp(symbol,"KMD") == 0 )
+            if ( strcmp(coin->symbol,"KMD") == 0 )
             {
                 jaddnum(item,"zcredits",dstr(LP_myzcredits()));
                 jadd(item,"zdebits",LP_myzdebits());
