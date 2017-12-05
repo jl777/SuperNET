@@ -1181,6 +1181,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
     retjson = cJSON_CreateObject();
     jadd(retjson,"holdings",array);
     btcprice = LP_CMCbtcprice(&usdprice,"komodo");
+    divisor = jdouble(argjson,"divisor");
     if ( btcsum != 0 )
     {
         if ( btcprice > SMALLVAL )
@@ -1189,15 +1190,21 @@ cJSON *LP_fundvalue(cJSON *argjson)
             jaddnum(retjson,"KMD_BTC",btcprice);
             jaddnum(retjson,"btcsum",btcsum);
             jaddnum(retjson,"btcvalue",btcsum / btcprice);
+            if ( divisor != 0 )
+            {
+                jaddnum(retjson,"NAV_KMD",(btcsum / btcprice)/divisor);
+                jaddnum(retjson,"NAV_BTC",btcsum/divisor);
+                jaddnum(retjson,"NAV_USD",(usdprice * (btcsum / btcprice))/divisor);
+            }
         }
     }
     jaddnum(retjson,"fundvalue",dstr(fundvalue));
-    if ( (divisor= jdouble(argjson,"divisor")) != 0 )
+    if ( divisor != 0 )
     {
         jaddnum(retjson,"divisor",divisor);
-        jaddnum(retjson,"NAV_KMD",dstr(fundvalue)/divisor);
-        jaddnum(retjson,"NAV_BTC",(btcprice * dstr(fundvalue))/divisor);
-        jaddnum(retjson,"NAV_USD",(usdprice * dstr(fundvalue))/divisor);
+        jaddnum(retjson,"assetNAV_KMD",dstr(fundvalue)/divisor);
+        jaddnum(retjson,"assetNAV_BTC",(btcprice * dstr(fundvalue))/divisor);
+        jaddnum(retjson,"assetNAV_USD",(usdprice * dstr(fundvalue))/divisor);
     }
     return(retjson);
 }
