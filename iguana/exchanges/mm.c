@@ -884,9 +884,18 @@ int main(int argc, const char * argv[])
     {
         uint8_t addrtype,rmd160[20],rmd160b[20]; char coinaddr[64],coinaddr2[64];
         bitcoin_addr2rmd160(0,&addrtype,rmd160,(char *)argv[1]);
-        bitcoin_address(coinaddr,0,60,rmd160,20);
-        bitcoin_addr2rmd160(0,&addrtype,rmd160b,coinaddr);
-        bitcoin_address(coinaddr2,0,0,rmd160b,20);
+        if ( addrtype == 0 )
+        {
+            bitcoin_address(coinaddr,0,60,rmd160,20);
+            bitcoin_addr2rmd160(0,&addrtype,rmd160b,coinaddr);
+            bitcoin_address(coinaddr2,0,0,rmd160b,20);
+        }
+        else if ( addrtype == 60 )
+        {
+            bitcoin_address(coinaddr,0,0,rmd160,20);
+            bitcoin_addr2rmd160(0,&addrtype,rmd160b,coinaddr);
+            bitcoin_address(coinaddr2,0,60,rmd160b,20);
+        }
         printf("(%s) -> %s -> %s\n",(char *)argv[1],coinaddr,coinaddr2);
         if ( strcmp((char *)argv[1],coinaddr2) != 0 )
             printf("ERROR\n");

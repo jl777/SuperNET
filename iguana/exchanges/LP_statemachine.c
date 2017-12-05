@@ -3597,6 +3597,21 @@ void LP_price_broadcastloop(void *ctx)
  break;
  }
  return(clonestr("{\"error\":\"no instantdex deposits to claim\"}"));*/
+/*else
+ {
+ if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
+ {
+ if ( (n= cJSON_GetArraySize(array)) > 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ item = jitem(array,i);
+ balance += j64bits(item,"value");
+ }
+ }
+ free_json(array);
+ }
+ }*/
 
 
 //else if ( strcmp(method,"checktxid") == 0 )

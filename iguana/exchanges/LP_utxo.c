@@ -578,9 +578,9 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
 cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
     cJSON *array,*retjson,*item; bits256 zero; int32_t i,n; uint64_t balance = 0;
+    memset(zero.bytes,0,sizeof(zero));
     if ( coin->electrum == 0 )
     {
-        memset(zero.bytes,0,sizeof(zero));
         if ( (array= LP_listunspent(coin->symbol,coinaddr,zero,zero)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -596,23 +596,12 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     }
     else
     {
-        //if ( strcmp(coin->smartaddr,coinaddr) == 0 )
-            balance = LP_unspents_load(coin->symbol,coinaddr);
-        /*else
+        if ( strcmp(coin->smartaddr,coinaddr) != 0 )
         {
-            if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
-            {
-                if ( (n= cJSON_GetArraySize(array)) > 0 )
-                {
-                    for (i=0; i<n; i++)
-                    {
-                        item = jitem(array,i);
-                        balance += j64bits(item,"value");
-                    }
-                }
-                free_json(array);
-            }
-        }*/
+            if ( (retjson= electrum_address_listunspent(coin->symbol,coin->electrum,&retjson,coinaddr,2,zero,zero)) != 0 )
+                free_json(retjson);
+        }
+        balance = LP_unspents_load(coin->symbol,coinaddr);
     }
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
@@ -625,6 +614,32 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
         jadd(retjson,"zdebits",LP_myzdebits());
     }
     return(retjson);
+}
+
+cJSON *LP_balances()
+{
+    struct iguana_info *coin,*tmp; char *symbol; cJSON *array,*item,*retjson;
+    array = cJSON_CreateArray();
+    HASH_ITER(hh,LP_coins,coin,tmp)
+    {
+        if ( (retjson= LP_address_balance(coin,coin->smartaddr,1)) != 0 )
+        {
+            if ( (symbol= jstr(retjson,"coin")) != 0 )
+            {
+                item = cJSON_CreateObject();
+                jaddstr(item,"coin",symbol);
+                jaddnum(item,"balance",jdouble(retjson,"balance"));
+                if ( strcmp(symbol,"KMD") == 0 )
+                {
+                    jaddnum(item,"zcredits",jdouble(retjson,"zcredits"));
+                    jadd(item,"zdebits",jobj(retjson,"zdebits"));
+                }
+                jaddi(array,item);
+            }
+            free_json(retjson);
+        }
+    }
+    return(array);
 }
 
 int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)

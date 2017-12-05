@@ -135,6 +135,7 @@ listunspent(coin, address)\n\
 setconfirms(coin, numconfirms, maxconfirms=6)\n\
 trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
 balance(coin, address)\n\
+balances(address)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
 getprice(base, rel)\n\
@@ -256,6 +257,8 @@ instantdex_claim()\n\
             return(LP_peers());
         else if ( strcmp(method,"getcoins") == 0 )
             return(jprint(LP_coinsjson(0),1));
+        else if ( strcmp(method,"balances") == 0 )
+            return(jprint(LP_balances(),1));
         else if ( strcmp(method,"notarizations") == 0 )
         {
             if ( (ptr= LP_coinsearch(coin)) != 0 )
