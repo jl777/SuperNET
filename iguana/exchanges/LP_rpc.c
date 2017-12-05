@@ -342,19 +342,19 @@ int32_t LP_address_ismine(char *symbol,char *address)
     return(doneflag);
 }
 
-int32_t LP_address_iswatched(char *symbol,char *address)
+int32_t LP_address_iswatchonly(char *symbol,char *address)
 {
     int32_t doneflag = 0; cJSON *retjson,*obj;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
-        if ( (obj= jobj(retjson,"iswatched")) != 0 && is_cJSON_True(obj) != 0 )
+        if ( (obj= jobj(retjson,"iswatchonly")) != 0 && is_cJSON_True(obj) != 0 )
         {
             doneflag = 1;
-            printf("%s iswatched (%s)\n",address,jprint(retjson,0));
+            printf("%s iswatchonly (%s)\n",address,jprint(retjson,0));
         }
-        printf("%s\n",jprint(retjson,0));
+        //printf("%s\n",jprint(retjson,0));
         free_json(retjson);
     }
     return(doneflag);
@@ -401,8 +401,8 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                 return(retjson);
             }
         }
-        printf("%s usecache.%d iswatched.%d\n",coinaddr,usecache,LP_address_iswatched(symbol,coinaddr));
-        if ( LP_address_ismine(symbol,coinaddr) > 0 || LP_address_iswatched(symbol,coinaddr) > 0 )
+        printf("%s %s usecache.%d iswatched.%d\n",coin->symbol,coinaddr,usecache,LP_address_iswatchonly(symbol,coinaddr));
+        if ( LP_address_ismine(symbol,coinaddr) > 0 || LP_address_iswatchonly(symbol,coinaddr) > 0 )
         {
             if ( strcmp(symbol,"BTC") == 0 )
                 numconfs = 0;
