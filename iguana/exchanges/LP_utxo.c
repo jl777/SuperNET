@@ -633,6 +633,11 @@ cJSON *LP_balances(char *coinaddr)
                     item = cJSON_CreateObject();
                     jaddstr(item,"coin",coin->symbol);
                     jaddnum(item,"balance",dstr(balance));
+                    if ( coin->electrum != 0 && strcmp(coinaddr,coin->smartaddr) == 0 && strcmp(coin->symbol,"KMD") == 0 )
+                    {
+                        jaddnum(item,"zcredits",dstr(LP_myzcredits()));
+                        jadd(item,"zdebits",LP_myzdebits());
+                    }
                     jaddi(array,item);
                 }
                 free_json(retjson);
