@@ -1116,42 +1116,74 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
 
 double LP_CMCbtcprice(char *symbol)
 {
+    char *retstr; cJSON *ticker; double price_btc = 0.;
+    if ( (retstr= cmc_ticker(symbol)) != 0 )
+    {
+        if ( (ticker= cJSON_Parse(retstr)) != 0 )
+        {
+            price_btc = jdouble(ticker,"price_btc");
+            free_json(ticker);
+        }
+        free(retstr);
+    }
     return(0);
 }
 
 cJSON *LP_fundvalue(cJSON *argjson)
 {
-    cJSON *holdings,*item,*newitem; int32_t i,n; double btcprice,balance,btcsum; struct iguana_info *coin; char *symbol; int64_t fundvalue,KMDvalue = 0;
+    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n; double btcprice,balance,btcsum; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
     fundvalue = 0;
     btcsum = 0.;
-    if ( (holdings= jarray(&n,argjson,"holdings")) != 0 )
+    array = cJSON_CreateArray();
+    for (iter=0; iter<2; iter++)
     {
-        for (i=0; i<n; i++)
+        if ( iter == 0 )
+            holdings = jarray(&n,argjson,"holdings");
+        else
         {
-            item = jitem(holdings,i);
-            if ( (symbol= jstr(item,"coin")) != 0 && (balance= jdouble(item,"balance")) > SMALLVAL )
+            if ( (coinaddr= jstr(argjson,"address")) != 0 )
             {
-                newitem = cJSON_CreateObject();
-                jaddstr(item,"coin",symbol);
-                if ( (coin= LP_coinfind(symbol)) != 0 && (KMDvalue= LP_KMDvalue(coin,SATOSHIDEN * balance)) > 0 )
+                holdings = LP_balances(coinaddr);
+                n = cJSON_GetArraySize(holdings);
+            }
+            else break;
+        }
+        if ( holdings != 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(holdings,i);
+                if ( (symbol= jstr(item,"coin")) != 0 && (balance= jdouble(item,"balance")) > SMALLVAL )
                 {
-                    jaddnum(newitem,"KMD",dstr(KMDvalue));
-                    fundvalue += KMDvalue;
+                    newitem = cJSON_CreateObject();
+                    jaddstr(newitem,"coin",symbol);
+                    if ( (coin= LP_coinfind(symbol)) != 0 && (KMDvalue= LP_KMDvalue(coin,SATOSHIDEN * balance)) > 0 )
+                    {
+                        jaddnum(newitem,"KMD",dstr(KMDvalue));
+                        fundvalue += KMDvalue;
+                    }
+                    else if ( (btcprice= LP_CMCbtcprice(symbol)) > SMALLVAL )
+                    {
+                        btcsum += btcprice * balance;
+                        jaddnum(newitem,"BTC",btcprice * balance);
+                    }
+                    else jaddstr(newitem,"error","no price source");
+                    jaddi(array,newitem);
                 }
-                else if ( (btcprice= LP_CMCbtcprice(symbol)) > SMALLVAL )
-                {
-                    btcsum += btcprice * balance;
-                    jaddnum(newitem,"BTC",btcprice * balance);
-                }
-                
             }
         }
     }
+    retjson = cJSON_CreateObject();
+    jadd(retjson,"holdings",array);
     if ( btcsum != 0 )
     {
         btcprice = LP_CMCbtcprice("KMD");
         fundvalue += (btcprice * btcsum) * SATOSHIDEN;
+        jaddnum(retjson,"KMD_BTC",btcprice);
+        jaddnum(retjson,"btcsum",btcsum);
+        jaddnum(retjson,"btcvalue",btcsum * btcprice);
     }
-    return(0);
+    jaddnum(retjson,"fundvalue",dstr(fundvalue));
+    return(retjson);
 }
 
