@@ -198,6 +198,7 @@ instantdex_claim()\n\
                 bitcoin_address(coinaddr,0,0,G.LP_myrmd160,20);
                 jaddstr(retjson,"BTC",coinaddr);
                 jaddstr(retjson,"NXT",G.LP_NXTaddr);
+                jadd(retjson,"coins",LP_coinsjson(LP_showwif));
                 return(jprint(retjson,1));
             }
         }

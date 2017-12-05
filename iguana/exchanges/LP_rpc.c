@@ -352,7 +352,7 @@ int32_t LP_address_iswatchonly(char *symbol,char *address)
         if ( (obj= jobj(retjson,"iswatchonly")) != 0 && is_cJSON_True(obj) != 0 )
         {
             doneflag = 1;
-            printf("%s iswatchonly (%s)\n",address,jprint(retjson,0));
+            //printf("%s iswatchonly (%s)\n",address,jprint(retjson,0));
         }
         //printf("%s\n",jprint(retjson,0));
         free_json(retjson);
