@@ -33,7 +33,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char 
 char *stats_validmethods[] =
 {
     "psock", "balances", "getprice", "notify", "getpeers",  // from issue_  "uitem", "listunspent",
-    "orderbook", "statsdisp", "fundbalance", "help", "getcoins", "pricearray", "balance", "tradesarray"
+    "orderbook", "statsdisp", "fundvalue", "help", "getcoins", "pricearray", "balance", "tradesarray"
 };
 
 int32_t LP_valid_remotemethod(cJSON *argjson)
