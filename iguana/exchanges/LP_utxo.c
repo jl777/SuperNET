@@ -625,7 +625,10 @@ cJSON *LP_balances(char *coinaddr)
         if ( coin->electrum != 0 || (coinaddr != 0 && coinaddr[0] != 0 && strcmp(coinaddr,coin->smartaddr) != 0) )
         {
             if ( coinaddr == 0 || coinaddr[0] == 0 )
-                strcpy(address,coin->smartaddr);
+            {
+                coinaddr = coin->smartaddr;
+                strcpy(address,coinaddr);
+            }
             else
             {
                 bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
