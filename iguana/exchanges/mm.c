@@ -34,6 +34,7 @@ void PNACL_message(char *arg,...)
 #include "../../crypto777/OS_portable.h"
 #endif // !_WIN_32
 
+int32_t DOCKERFLAG;
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
@@ -920,6 +921,7 @@ int main(int argc, const char * argv[])
     }
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
+        DOCKERFLAG = jint(retjson,"docker");
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
             jaddstr(retjson,"passphrase","test");
         if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)retjson) != 0 )
