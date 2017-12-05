@@ -1149,8 +1149,7 @@ cJSON *LP_fundvalue(cJSON *argjson)
             {
                 holdings = LP_balances(coinaddr);
                 n = cJSON_GetArraySize(holdings);
-            }
-            else break;
+            } else break;
         }
         if ( holdings != 0 )
         {
@@ -1166,7 +1165,8 @@ cJSON *LP_fundvalue(cJSON *argjson)
                     {
                         jaddnum(newitem,"KMD",dstr(KMDvalue));
                         fundvalue += KMDvalue;
-                        KMDholdings += dstr(KMDvalue);
+                        if ( strcmp(symbol,"KMD") == 0 )
+                            KMDholdings += dstr(KMDvalue);
                     }
                     else if ( iter == 0 && (btcprice= LP_CMCbtcprice(&usdprice,symbol)) > SMALLVAL )
                     {
