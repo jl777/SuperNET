@@ -631,13 +631,17 @@ instantdex_claim()\n\
         return(jprint(LP_fundvalue(argjson),1));
     else if ( strcmp(method,"getprice") == 0 )
     {
-        double price;
-        price = LP_price(base,rel);
+        double price,bid,ask;
+        ask = LP_price(base,rel);
+        bid = LP_price(rel,base);
+        price = _pairaved(bid,ask);
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         jaddstr(retjson,"base",base);
         jaddstr(retjson,"rel",rel);
         jaddnum(retjson,"timestamp",time(NULL));
+        jaddnum(retjson,"bid",bid);
+        jaddnum(retjson,"ask",ask);
         jaddnum(retjson,"price",price);
         return(jprint(retjson,1));
     }
