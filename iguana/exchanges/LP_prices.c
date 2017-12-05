@@ -1114,6 +1114,11 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
     //    printf("error finding %s/%s %.8f\n",base,rel,price);
 }
 
+double LP_CMCbtcprice(char *symbol)
+{
+    return(0);
+}
+
 cJSON *LP_fundvalue(cJSON *argjson)
 {
     cJSON *holdings,*item,*newitem; int32_t i,n; double btcprice,balance,btcsum; struct iguana_info *coin; char *symbol; int64_t fundvalue,KMDvalue = 0;
@@ -1126,20 +1131,27 @@ cJSON *LP_fundvalue(cJSON *argjson)
             item = jitem(holdings,i);
             if ( (symbol= jstr(item,"coin")) != 0 && (balance= jdouble(item,"balance")) > SMALLVAL )
             {
-                item = cJSON_CreateObject();
+                newitem = cJSON_CreateObject();
                 jaddstr(item,"coin",symbol);
                 if ( (coin= LP_coinfind(symbol)) != 0 && (KMDvalue= LP_KMDvalue(coin,SATOSHIDEN * balance)) > 0 )
                 {
-                    jaddnum(item,"KMD",dstr(KMDvalue));
+                    jaddnum(newitem,"KMD",dstr(KMDvalue));
                     fundvalue += KMDvalue;
                 }
                 else if ( (btcprice= LP_CMCbtcprice(symbol)) > SMALLVAL )
                 {
                     btcsum += btcprice * balance;
-                    jaddnum(item,"BTC",btcprice * balance);
+                    jaddnum(newitem,"BTC",btcprice * balance);
                 }
+                
             }
         }
     }
+    if ( btcsum != 0 )
+    {
+        btcprice = LP_CMCbtcprice("KMD");
+        fundvalue += (btcprice * btcsum) * SATOSHIDEN;
+    }
+    return(0);
 }
 
