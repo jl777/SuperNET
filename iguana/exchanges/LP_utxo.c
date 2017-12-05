@@ -624,8 +624,13 @@ cJSON *LP_balances(char *coinaddr)
     {
         if ( coin->electrum != 0 || (coinaddr != 0 && coinaddr[0] != 0 && strcmp(coinaddr,coin->smartaddr) != 0) )
         {
-            bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
-            bitcoin_address(address,coin->taddr,coin->pubtype,rmd160,20);
+            if ( coinaddr == 0 || coinaddr[0] == 0 )
+                strcpy(address,coin->smartaddr);
+            else
+            {
+                bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
+                bitcoin_address(address,coin->taddr,coin->pubtype,rmd160,20);
+            }
             if ( (retjson= LP_address_balance(coin,address,1)) != 0 )
             {
                 if ( (balance= jdouble(retjson,"balance")*SATOSHIDEN) > 0 )
