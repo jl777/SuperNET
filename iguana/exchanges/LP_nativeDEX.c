@@ -617,7 +617,7 @@ void LP_coinsloop(void *_coins)
                     coin->lastscanht = coin->firstscanht;
                 continue;
             }
-            if ( 0 )
+            if ( 1 )
             {
                 nonz++;
                 if ( strcmp("BTC",coins) == 0 )//&& coin->lastscanht < coin->longestchain-3 )
