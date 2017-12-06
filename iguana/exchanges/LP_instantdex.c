@@ -410,7 +410,7 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
                     swaps_kmdvalue += LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis);
             }
             if ( ap->instantdex_credits != 0 && (swaps_kmdvalue+kmdvalue) > ap->instantdex_credits )
-            printf("%s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->instantdex_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+            //printf("%s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->instantdex_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
             //if ( ap->instantdex_credits > swaps_kmdvalue+kmdvalue )
                 return(ap->instantdex_credits - (swaps_kmdvalue+kmdvalue));
         }
@@ -420,7 +420,7 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
 
 int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
 {
-    uint8_t rmd160[20],addrtype; int32_t i; int64_t net = 0; char othersmartaddr[64]; struct iguana_info *coin; struct LP_address *ap = 0;
+    uint8_t rmd160[20],addrtype; int32_t i; char othersmartaddr[64]; struct iguana_info *coin; struct LP_address *ap = 0;
     if ( (coin= LP_coinfind("KMD")) != 0 )
     {
         bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
@@ -431,8 +431,8 @@ int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
             for (i=0; i<num; i++)
                 LP_instantdex_creditcalc(coin,1,jbits256i(proof,i),othersmartaddr);
             ap->didinstantdex = 1;
-            //if ( ap->instantdex_credits > 0 )
-            printf("validated instantdex %s.[%d] proof.(%s) credits %.8f net %.8f\n",othersmartaddr,num,jprint(proof,0),dstr(ap->instantdex_credits),dstr(net));
+            if ( ap->instantdex_credits > 0 )
+                printf("validated instantdex %s.[%d] proof.(%s) credits %.8f\n",othersmartaddr,num,jprint(proof,0),dstr(ap->instantdex_credits));
         } //else printf("cant find ap.%p or already did %d %.8f\n",ap,ap!=0?ap->didinstantdex:-1,ap!=0?dstr(ap->instantdex_credits):-1);
     }
     return(ap->instantdex_credits);
