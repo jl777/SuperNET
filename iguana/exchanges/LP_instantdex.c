@@ -186,7 +186,7 @@ int64_t LP_claimtx(void *ctx,struct iguana_info *coin,bits256 *claimtxidp,bits25
     userdatalen = 1;
     utxovout = 0;
     memset(claimtxidp,0,sizeof(*claimtxidp));
-    char str[65]; printf("satoshis %.8f %s/v%d\n",dstr(satoshis),bits256_str(str,utxotxid),utxovout);
+    char str[65]; printf("LP_claimtx satoshis %.8f %s/v%d\n",dstr(satoshis),bits256_str(str,utxotxid),utxovout);
     if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,10000,"instantdexclaim",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript,redeemlen,userdata,userdatalen,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0,claimtime,&destamount,0,0,vinaddr,1,coin->zcash)) != 0 )
     {
         printf("signedtx.(%s)\n",signedtx);
@@ -259,7 +259,8 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
             } else printf("vout2 dest.(%s) != %s\n",destaddr,coin->smartaddr);
         } else printf("numvouts %d != 3\n",numvouts);
         free_json(txjson);
-    } else printf("cant get transaction\n");
+    }
+    printf("cant get transaction flagi.%d\n",flagi);
     return(flagi);
 }
 
@@ -282,6 +283,7 @@ char *LP_instantdex_claim(struct iguana_info *coin)
             for (i=0; i<n; i++)
             {
                 utxotxid = jbits256i(array,i);
+                char str[65]; printf("%s\n",bits256_str(str,utxotxid));
                 if ( LP_claim_submit(ctx,txids,&sum,coin,utxotxid) == 0 )
                     jaddibits256(newarray,utxotxid);
             }
