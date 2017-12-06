@@ -313,7 +313,7 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
             if ( dispflag != 0 )
                 printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->instantdex_credits));
             return(satoshis);
-        } //else printf("null ap.%p or expired %ld\n",ap,time(NULL) - (timestamp-60*3600));
+        } else printf("null ap.%p or expired %ld\n",ap,time(NULL) - (timestamp-60*3600));
     }
     return(0);
 }
@@ -336,7 +336,7 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
                 weeki = (amount64 % 10000);
                 item = jitem(vouts,0);
                 satoshis = LP_value_extract(item,0);
-                //printf("%s %s funded %.8f weeki.%d (%s)\n",bits256_str(str,txid),destaddr,dstr(satoshis),weeki,jprint(item,0));
+                char str[65]; printf("%s %s funded %.8f weeki.%d (%s)\n",bits256_str(str,txid),destaddr,dstr(satoshis),weeki,jprint(item,0));
                 if ( LP_destaddr(p2shaddr,item) == 0 )
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )
