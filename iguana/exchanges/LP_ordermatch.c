@@ -428,11 +428,11 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                 {
                     up = utxos[mini];
                     utxos[mini] = 0;
-                    //printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
+                    printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
                     if ( (double)up->U.value/targetval < ratio-1 )
                         
                     {
-                        if ( 0 )
+                        if ( 1 )
                         {
                             int32_t i;
                             for (i=0; i<m; i++)
