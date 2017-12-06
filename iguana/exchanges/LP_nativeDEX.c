@@ -501,6 +501,8 @@ void LP_coinsloop(void *_coins)
     while ( 1 )
     {
         if ( strcmp("BTC",coins) == 0 )
+            printf("BTC loop\n");
+        if ( strcmp("BTC",coins) == 0 )
             LP_millistats_update(&LP_coinsloopBTC_stats);
         else if ( strcmp("KMD",coins) == 0 )
             LP_millistats_update(&LP_coinsloopKMD_stats);
@@ -633,6 +635,8 @@ void LP_coinsloop(void *_coins)
                 if ( coin->lastscanht == coin->longestchain+1 || strcmp("BTC",coins) == 0 )
                     break;
             }
+            if ( strcmp("BTC",coins) == 0 )
+                printf("done [%s]: %s ref.%d scan.%d to %d, longest.%d\n",coins,coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
         }
         if ( coins == 0 )
             return;
