@@ -33,7 +33,12 @@ cJSON *LP_instantdex_txids()
     {
         retjson = cJSON_Parse(filestr);
         free(filestr);
-    } else printf("couldnt open (%s)\n",afname);
+    }
+    else if ( (filestr= OS_filestr(&fsize,fname)) != 0 )
+    {
+        retjson = cJSON_Parse(filestr);
+        free(filestr);
+    } else printf("couldnt open (%s) or (%s)\n",fname,afname);
     return(retjson);
 }
 
