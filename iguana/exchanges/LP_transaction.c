@@ -1333,6 +1333,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
+        numvins = 0;
         if ( (rawtx= LP_createrawtransaction(&txobj,&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee,utxotxid,utxovout,locktime)) != 0 )
         {
             completed = 0;
@@ -1371,7 +1372,18 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     }
     free(V);
     if ( vins != 0 )
+    {
+        if ( (numvins= cJSON_GetArraySize(vins)) > 0 )
+        {
+            
+            for (i=0; i<numvins; i++)
+            {
+                item = jitem(vins,i);
+                LP_availableset(jbits256(item,"txid"),jint(item,"vout"));
+            }
+        }
         free_json(vins);
+    }
     if ( privkeys != 0 )
         free_json(privkeys);
     retjson = cJSON_CreateObject();
