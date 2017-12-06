@@ -93,7 +93,7 @@ char *LP_instantdex_deposit(struct iguana_info *coin,int32_t weeks,double amount
     {
         timestamp = (uint32_t)time(NULL);
         timestamp /= LP_WEEKMULT;
-        timestamp += weeks+1;
+        timestamp += weeks+2;
         timestamp *= LP_WEEKMULT;
         weeki = (timestamp - LP_FIRSTWEEKTIME) / LP_WEEKMULT;
         if ( weeks >= 10000 )
