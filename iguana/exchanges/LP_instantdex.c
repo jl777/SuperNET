@@ -283,7 +283,7 @@ char *LP_instantdex_claim(struct iguana_info *coin)
             for (i=0; i<n; i++)
             {
                 utxotxid = jbits256i(array,i);
-                char str[65]; printf("%s\n",bits256_str(str,utxotxid));
+                //char str[65]; printf("%s\n",bits256_str(str,utxotxid));
                 if ( LP_claim_submit(ctx,txids,&sum,coin,utxotxid) == 0 )
                     jaddibits256(newarray,utxotxid);
             }
