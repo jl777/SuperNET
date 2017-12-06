@@ -487,10 +487,10 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 else
                 {
                     m++;
-                    printf("%.8f ",dstr(value));
+                    //printf("%.8f ",dstr(value));
                 }
             }
-            printf("added %d from listunspents\n",m);
+            //printf("added %d from listunspents\n",m);
         }
         free_json(array);
     }
