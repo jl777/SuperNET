@@ -417,7 +417,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
             {
                 int32_t i;
                 for (i=0; i<m; i++)
-                    if ( utxos[i]->U.value >= targetval )
+                    //if ( utxos[i]->U.value >= targetval )
                         printf("%.8f ",dstr(utxos[i]->U.value));
                 printf("targetval %.8f vol %.8f price %.8f txfee %.8f %s %s\n",dstr(targetval),relvolume,price,dstr(fee),coin->symbol,coinaddr);
             }
