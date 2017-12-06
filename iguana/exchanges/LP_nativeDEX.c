@@ -501,8 +501,6 @@ void LP_coinsloop(void *_coins)
     while ( 1 )
     {
         if ( strcmp("BTC",coins) == 0 )
-            printf("BTC loop\n");
-        if ( strcmp("BTC",coins) == 0 )
             LP_millistats_update(&LP_coinsloopBTC_stats);
         else if ( strcmp("KMD",coins) == 0 )
             LP_millistats_update(&LP_coinsloopKMD_stats);
