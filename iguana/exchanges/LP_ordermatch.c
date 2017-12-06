@@ -413,7 +413,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
     {
         if ( (m= LP_address_utxo_ptrs(coin,iambob,utxos,max,ap,coinaddr)) > 1 )
         {
-            if ( 0 )
+            if ( 1 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)

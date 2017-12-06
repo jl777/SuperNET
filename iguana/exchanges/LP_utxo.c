@@ -486,7 +486,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
                 else m++;
             }
-            //printf("added %d from listunspents\n",m);
+            printf("added %d from listunspents\n",m);
         }
         free_json(array);
     }
