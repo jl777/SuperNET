@@ -256,9 +256,12 @@ bits256 basilisk_swap_privBn_extract(bits256 *bobrefundp,char *bobcoin,bits256 b
 bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,int32_t *sentflags,bits256 *txids,int32_t utxoind,int32_t alicespent,int32_t bobspent,int32_t vout,char *aliceaddr,char *bobaddr,char *Adest,char *dest)
 {
     bits256 spendtxid,txid; char destaddr[64],str[65]; int32_t i,n,m; struct iguana_info *coin; cJSON *array,*txobj,*vins,*vin;
-    if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
+    memset(&spendtxid,0,sizeof(spendtxid));
+    if ( (coin= LP_coinfind(symbol)) == 0 )
+        return(spendtxid);
+    printf("spentaddr.%s aliceaddr.%s bobaddr.%s Adest.%s Bdest.%s\n",spentaddr,aliceaddr,bobaddr,Adest,dest);
+    if ( coin->electrum != 0 )
     {
-        //printf("spentaddr.%s aliceaddr.%s bobaddr.%s Adest.%s Bdest.%s\n",spentaddr,aliceaddr,bobaddr,Adest,dest);
         if ( (array= electrum_address_gethistory(symbol,coin->electrum,&array,spentaddr,txids[utxoind])) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -287,7 +290,6 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
         }
     }
     txid = txids[utxoind];
-    memset(&spendtxid,0,sizeof(spendtxid));
     if ( bits256_nonz(txid) != 0 )//&& sentflags[utxoind] != 0 )
     {
         destaddr[0] = 0;
