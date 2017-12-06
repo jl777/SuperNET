@@ -204,7 +204,7 @@ int64_t LP_claimtx(void *ctx,struct iguana_info *coin,bits256 *claimtxidp,bits25
 
 int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info *coin,bits256 utxotxid)
 {
-    uint8_t redeemscript[512]; bits256 claimtxid; cJSON *txjson,*vout0,*vout1,*vout2,*vouts,*item; int32_t numvouts; char str[65],vinaddr[64],destaddr[64],checkaddr[64]; int32_t j,utxovout,flagi = 0,redeemlen,weeki; int64_t weeksatoshis,satoshis; uint32_t expiration,claimtime;
+    uint8_t redeemscript[512]; bits256 claimtxid; cJSON *txjson,*vout0,*vout1,*vout2,*vouts,*item; int32_t numvouts; char str[65],vinaddr[64],destaddr[64],checkaddr[64]; int32_t j,utxovout,flagi = 0,redeemlen,weeki,iter; int64_t weeksatoshis,satoshis; uint32_t expiration,claimtime;
     if ( (txjson= LP_gettx(coin->symbol,utxotxid,1)) != 0 )
     {
         if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts >= 3 )
@@ -219,9 +219,10 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                 vout1 = jitem(vouts,1);
                 weeksatoshis = LP_value_extract(vout1,0);
                 weeki = (int32_t)(weeksatoshis % 10000);
-                for (j=0; j<2*168; j++)
+                for (iter=0; iter<2; iter++)
+                for (j=-168; j<=168; j++)
                 {
-                    if ( j >= 168 )
+                    if ( iter == 1 )
                         expiration = ((weeki * LP_WEEKMULTBAD + (j-168)*3600) + LP_FIRSTWEEKTIME);
                     else expiration = ((weeki * LP_WEEKMULT + j*3600) + LP_FIRSTWEEKTIME);
                     redeemlen = LP_deposit_addr(checkaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
