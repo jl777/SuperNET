@@ -223,7 +223,7 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                 for (j=-168; j<=168; j++)
                 {
                     if ( iter == 1 )
-                        expiration = ((weeki * LP_WEEKMULTBAD + (j-168)*3600) + LP_FIRSTWEEKTIME);
+                        expiration = ((weeki * LP_WEEKMULTBAD + j*3600) + LP_FIRSTWEEKTIME);
                     else expiration = ((weeki * LP_WEEKMULT + j*3600) + LP_FIRSTWEEKTIME);
                     redeemlen = LP_deposit_addr(checkaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
                     if ( strcmp(checkaddr,vinaddr) == 0 )
@@ -238,7 +238,7 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                         else jaddnum(item,"interest",dstr(LP_komodo_interest(utxotxid,satoshis)));
                         if ( claimtime <= expiration )
                         {
-                            printf("claimtime.%u vs %u, wait %d seconds to %s claim %.8f\n",claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
+                            printf("iter.%d j.%d claimtime.%u vs %u, wait %d seconds to %s claim %.8f\n",iter,j,claimtime,expiration,(int32_t)expiration-claimtime,bits256_str(str,utxotxid),dstr(satoshis));
                             jaddnum(item,"waittime",(int32_t)expiration-claimtime);
                             jaddi(txids,item);
                             break;
@@ -260,8 +260,7 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
             } else printf("vout2 dest.(%s) != %s\n",destaddr,coin->smartaddr);
         } else printf("numvouts %d != 3\n",numvouts);
         free_json(txjson);
-    }
-    printf("cant get transaction flagi.%d\n",flagi);
+    } else printf("cant get transaction flagi.%d\n",flagi);
     return(flagi);
 }
 
