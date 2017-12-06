@@ -633,7 +633,8 @@ instantdex_claim()\n\
     {
         double price,bid,ask;
         ask = LP_price(base,rel);
-        bid = LP_price(rel,base);
+        if ( (bid= LP_price(rel,base)) > SMALLVAL )
+            bid = 1./bid;
         price = _pairaved(bid,ask);
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
