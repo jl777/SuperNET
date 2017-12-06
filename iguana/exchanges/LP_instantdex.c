@@ -29,11 +29,11 @@ cJSON *LP_instantdex_txids()
 {
     char *filestr,fname[1024],afname[1024]; long fsize; cJSON *retjson=0;
     LP_instantdex_txidaddfname(fname,afname);
-    if ( (filestr= OS_filestr(&fsize,fname)) != 0 )
+    if ( (filestr= OS_filestr(&fsize,afname)) != 0 )
     {
         retjson = cJSON_Parse(filestr);
         free(filestr);
-    } else printf("couldnt open (%s)\n",fname);
+    } else printf("couldnt open (%s)\n",afname);
     return(retjson);
 }
 
@@ -336,7 +336,7 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
                 weeki = (amount64 % 10000);
                 item = jitem(vouts,0);
                 satoshis = LP_value_extract(item,0);
-                char str[65]; printf("%s %s funded %.8f weeki.%d (%s)\n",bits256_str(str,txid),destaddr,dstr(satoshis),weeki,jprint(item,0));
+                //char str[65]; printf("%s %s funded %.8f weeki.%d (%s)\n",bits256_str(str,txid),destaddr,dstr(satoshis),weeki,jprint(item,0));
                 if ( LP_destaddr(p2shaddr,item) == 0 )
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )
