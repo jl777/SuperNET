@@ -1350,7 +1350,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
             if ( signedtx == 0 )
                 break;
             datalen = (int32_t)strlen(signedtx) / 2;
-            if ( strcmp(coin->symbol,"BTC") == 0 )
+            if ( iter == 0 && strcmp(coin->symbol,"BTC") == 0 )
             {
                 newtxfee = LP_txfeecalc(coin,0,datalen);
                 printf("txfee %.8f -> newtxfee %.8f, numvins.%d\n",dstr(txfee),dstr(newtxfee),numvins);
@@ -1360,15 +1360,15 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
                     //printf("set available %s\n",jprint(item,0));
                     LP_availableset(jbits256(item,"txid"),jint(item,"vout"));
                 }
+                free_json(vins), vins = 0;
+                free_json(txobj), txobj = 0;
+                free_json(privkeys), privkeys = 0;
+                if ( rawtx != 0 )
+                    free(rawtx), rawtx = 0;
+                if ( signedtx != 0 )
+                    free(signedtx), signedtx = 0;
             } else break;
         } else break;
-        free_json(vins), vins = 0;
-        free_json(txobj), txobj = 0;
-        free_json(privkeys), privkeys = 0;
-        if ( rawtx != 0 )
-            free(rawtx), rawtx = 0;
-        if ( signedtx != 0 )
-            free(signedtx), signedtx = 0;
     }
     free(V);
     if ( vins != 0 )
