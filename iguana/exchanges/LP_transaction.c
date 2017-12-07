@@ -968,7 +968,16 @@ int32_t LP_vin_select(int32_t *aboveip,int64_t *abovep,int32_t *belowip,int64_t 
     *belowip = belowi;
     *belowp = below;
     //printf("above.%d below.%d\n",abovei,belowi);
-    return(abovei >= 0 && above < (below>>1) ? abovei : belowi);
+    if ( abovei >= 0 && belowi >= 0 )
+    {
+        if ( above < (below >> 1) )
+            return(abovei);
+        else return(belowi);
+    }
+    else if ( abovei >= 0 )
+        return(abovei);
+    else return(belowi);
+    //return(abovei >= 0 && above < (below>>1) ? abovei : belowi);
 }
 
 cJSON *LP_inputjson(bits256 txid,int32_t vout,char *spendscriptstr)
