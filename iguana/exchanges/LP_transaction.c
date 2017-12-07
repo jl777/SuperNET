@@ -961,7 +961,7 @@ int32_t LP_vin_select(int32_t *aboveip,int64_t *abovep,int32_t *belowip,int64_t 
                 belowi = i;
             }
         }
-        printf("value %.8f gap %.8f abovei.%d %.8f belowi.%d %.8f\n",dstr(value),dstr(gap),abovei,dstr(above),belowi,dstr(below));
+        //printf("value %.8f gap %.8f abovei.%d %.8f belowi.%d %.8f\n",dstr(value),dstr(gap),abovei,dstr(above),belowi,dstr(below));
     }
     *aboveip = abovei;
     *abovep = above;
