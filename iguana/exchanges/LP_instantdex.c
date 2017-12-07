@@ -88,7 +88,11 @@ void LP_instantdex_filescreate(char *coinaddr)
             jaddibits256(array,txid);
             if ( (txobj= LP_gettxout("KMD",coinaddr,txid,0)) != 0 )
                 free_json(txobj);
-            else continue;
+            else
+            {
+                char str[65]; printf("%s/v%d is already spent\n",bits256_str(str,txid),0);
+                continue;
+            }
             jaddibits256(newarray,txid);
         }
         fclose(fp);
@@ -102,7 +106,7 @@ void LP_instantdex_filescreate(char *coinaddr)
 void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
 {
     static FILE *depositsfp;
-    char fname[512]; bits256 prevtxid; cJSON *array,*txobj; int32_t i,n,iter;
+    char fname[512],str[65]; bits256 prevtxid; cJSON *array,*txobj; int32_t i,n,iter;
     if ( depositsfp == 0 )
     {
         sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
@@ -118,14 +122,16 @@ void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
                         for (i=0; i<n; i++)
                         {
                             prevtxid = jbits256i(array,i);
+                            printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
                             if ( (txobj= LP_gettxout("KMD",coinaddr,prevtxid,0)) != 0 )
                                 free_json(txobj);
                             else
                             {
-                                char str[65]; printf("null gettxout %s %s\n",coinaddr,bits256_str(str,prevtxid));
+                                printf("null gettxout %s %s\n",coinaddr,bits256_str(str,prevtxid));
                                 continue;
                             }
                             LP_instantdex_deposituniq(depositsfp,prevtxid);
+                            fflush(depositsfp);
                         }
                     }
                     free_json(array);
