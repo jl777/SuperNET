@@ -643,7 +643,7 @@ char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
     //printf("gettradestatus.(%llu)\n",(long long)aliceid);
     if ( IAMLP != 0 )
     {
-        if ( (sp= LP_swapstats_find(aliceid)) != 0 )
+        if ( (sp= LP_swapstats_find(aliceid)) != 0 && sp->Q.satoshis != 0 && sp->Q.destsatoshis != 0 && bits256_nonz(sp->bobdeposit) != 0 )
         {
             if ( time(NULL) > sp->lasttime+60 )
             {

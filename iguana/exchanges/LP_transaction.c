@@ -1669,9 +1669,10 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
                                 if ( bits256_cmp(vintxid,utxotxid) == 0 )
                                 {
                                     LP_txdestaddr(destaddr,txid,0,txobj);
+                                    char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: in %s/v%d spends %s vs %s found.%d destaddr.(%s)\n",bits256_str(str,txid),utxovout,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),bits256_cmp(vintxid,utxotxid) == 0,destaddr);
                                     spendtxid = txid;
+                                    break;
                                 }
-                                char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: in %s/v%d spends %s vs %s found.%d destaddr.(%s)\n",bits256_str(str,txid),utxovout,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),bits256_cmp(vintxid,utxotxid) == 0,destaddr);
                             }
                         }
                         free_json(txobj);
