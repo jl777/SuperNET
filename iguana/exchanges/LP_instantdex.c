@@ -71,17 +71,16 @@ void LP_instantdex_deposituniq(FILE *fp,bits256 txid)
     } else fseek(fp,n * sizeof(txid),SEEK_SET);
 }
 
-void LP_instantdex_filescreate()
+void LP_instantdex_filescreate(char *coinaddr)
 {
-    char fname[512]; FILE *fp; char coinaddr[64]; bits256 txid; int32_t i,n; cJSON *array,*newarray,*txobj;
-    sprintf(fname,"%s/deposits",GLOBAL_DBDIR), OS_compatible_path(fname);
+    char fname[512]; FILE *fp; bits256 txid; int32_t i,n; cJSON *array,*newarray,*txobj;
+    sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
         array = cJSON_CreateArray();
         newarray = cJSON_CreateArray();
         fseek(fp,0,SEEK_END);
         n = (int32_t)(ftell(fp) / sizeof(txid));
-        bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
         for (i=0; i<n; i++)
         {
             fseek(fp,sizeof(txid) * i,SEEK_SET);
@@ -100,17 +99,16 @@ void LP_instantdex_filescreate()
     }
 }
 
-void LP_instantdex_depositadd(bits256 txid)
+void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
 {
     static FILE *depositsfp;
-    char fname[512],coinaddr[64]; bits256 prevtxid; cJSON *array,*txobj; int32_t i,n,iter;
+    char fname[512]; bits256 prevtxid; cJSON *array,*txobj; int32_t i,n,iter;
     if ( depositsfp == 0 )
     {
-        sprintf(fname,"%s/deposits",GLOBAL_DBDIR), OS_compatible_path(fname);
+        sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
         if ( (depositsfp= fopen(fname,"rb+")) == 0 )
         {
             depositsfp = fopen(fname,"wb+");
-            bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
             for (iter=0; iter<2; iter++)
             {
                 if ( (array= LP_instantdex_txids(iter)) != 0 )
@@ -140,7 +138,7 @@ void LP_instantdex_depositadd(bits256 txid)
         LP_instantdex_deposituniq(depositsfp,txid);
         fflush(depositsfp);
     }
-    LP_instantdex_filescreate();
+    LP_instantdex_filescreate(coinaddr);
 }
 
 int32_t LP_deposit_addr(char *p2shaddr,uint8_t *script,uint8_t taddr,uint8_t p2shtype,uint32_t timestamp,uint8_t *pubsecp33)

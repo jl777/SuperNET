@@ -695,7 +695,7 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
-    int32_t i,n,notarized; bits256 zero; cJSON *item; char *symbol; struct iguana_info *coin;
+    int32_t i,n,notarized; cJSON *item; char *symbol; struct iguana_info *coin;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
         printf("%s ",activecoins[i]);
@@ -712,11 +712,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
             {
                 LP_unspents_load(coin->symbol,coin->smartaddr);
                 if ( strcmp(coin->symbol,"KMD") == 0 )
-                {
                     LP_importaddress("KMD",BOTS_BONDADDRESS);
-                    memset(zero.bytes,0,sizeof(zero));
-                    LP_instantdex_depositadd(zero);
-                }
             }
             if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
                 coin->txfee = LP_MIN_TXFEE;
