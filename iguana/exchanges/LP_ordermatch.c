@@ -1347,6 +1347,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
     int32_t changed;
     LP_mypriceset(&changed,autxo->coin,base,1. / maxprice);
+    LP_mypriceset(&changed,base,autxo->coin,0.);
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid,destpubkey));
 }
 
