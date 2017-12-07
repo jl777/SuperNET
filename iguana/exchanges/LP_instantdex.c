@@ -213,7 +213,7 @@ char *LP_instantdex_deposit(struct iguana_info *coin,int32_t weeks,double amount
                         {
                             jaddstr(retjson,"result","success");
                             jaddbits256(retjson,"broadcast",sendtxid);
-                            LP_instantdex_depositadd(txid);
+                            LP_instantdex_depositadd(coin->smartaddr,txid);
                             free(retstr);
                             return(jprint(retjson,1));
                         }
