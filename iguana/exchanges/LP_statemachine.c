@@ -474,6 +474,22 @@ void LP_instantdex_txidadd(bits256 txid)
  exit(-1);
  }*/
 
+/*double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
+ {
+ uint64_t destsatoshis,satoshis;
+ a_value -= (desttxfee + 1);
+ destsatoshis = ((b_satoshis - txfee) * price);
+ if ( destsatoshis > a_value )
+ destsatoshis = a_value;
+ if ( maxdestsatoshis != 0 && destsatoshis > maxdestsatoshis-desttxfee-1 )
+ destsatoshis = maxdestsatoshis-desttxfee-1;
+ satoshis = (destsatoshis / price + 0.49) - txfee;
+ *destsatoshisp = destsatoshis;
+ *satoshisp = satoshis;
+ if ( satoshis > 0 )
+ return((double)destsatoshis / satoshis);
+ else return(0.);
+ }*/
 char *issue_LP_getprices(char *destip,uint16_t destport)
 {
     char url[512];
