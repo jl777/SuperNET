@@ -95,11 +95,10 @@ void LP_instantdex_filescreate()
     }
 }
 
-
 void LP_instantdex_depositadd(bits256 txid)
 {
     static FILE *depositsfp;
-    char fname[512],coinaddr[64]; cJSON *array,*txobj; int32_t i,n,iter;
+    char fname[512],coinaddr[64]; bits256 prevtxid; cJSON *array,*txobj; int32_t i,n,iter;
     if ( depositsfp == 0 )
     {
         sprintf(fname,"%s/deposits",GLOBAL_DBDIR), OS_compatible_path(fname);
@@ -115,11 +114,11 @@ void LP_instantdex_depositadd(bits256 txid)
                     {
                         for (i=0; i<n; i++)
                         {
-                            txid = jbits256i(array,i);
-                            if ( (txobj= LP_gettxout("KMD",coinaddr,txid,2)) != 0 )
+                            prevtxid = jbits256i(array,i);
+                            if ( (txobj= LP_gettxout("KMD",coinaddr,prevtxid,2)) != 0 )
                                 free_json(txobj);
                             else continue;
-                            LP_instantdex_deposituniq(depositsfp,txid);
+                            LP_instantdex_deposituniq(depositsfp,prevtxid);
                         }
                     }
                     free_json(array);
@@ -127,7 +126,7 @@ void LP_instantdex_depositadd(bits256 txid)
             }
         } else fseek(depositsfp,0,SEEK_END);
     }
-    if ( depositsfp != 0 )
+    if ( depositsfp != 0 && bits256_nonz(txid) != 0 )
     {
         LP_instantdex_deposituniq(depositsfp,txid);
         fflush(depositsfp);
