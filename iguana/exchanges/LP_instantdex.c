@@ -52,18 +52,23 @@ void LP_instantdex_filewrite(int32_t appendfile,cJSON *array)
 
 void LP_instantdex_deposituniq(FILE *fp,bits256 txid)
 {
-    int32_t i,n; bits256 prevtxid;
+    int32_t i,n; bits256 prevtxid; char str[65];
     n = (int32_t)(ftell(fp) / sizeof(txid));
     for (i=0; i<n; i++)
     {
         fseek(fp,sizeof(prevtxid) * i,SEEK_SET);
         fread(&prevtxid,1,sizeof(prevtxid),fp);
         if ( bits256_cmp(prevtxid,txid) == 0 )
+        {
+            printf("%s duplicate of deposits[%d]\n",bits256_str(str,prevtxid),i);
             break;
+        }
     }
     if ( i == n )
+    {
         fwrite(&txid,1,sizeof(txid),fp);
-    else fseek(fp,n * sizeof(txid),SEEK_SET);
+        printf("uniq %s, ftell.%ld\n",bits256_str(str,txid),ftell(fp));
+    } else fseek(fp,n * sizeof(txid),SEEK_SET);
 }
 
 void LP_instantdex_filescreate()
@@ -108,8 +113,9 @@ void LP_instantdex_depositadd(bits256 txid)
             bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
             for (iter=0; iter<2; iter++)
             {
-                if ((array= LP_instantdex_txids(iter)) != 0 )
+                if ( (array= LP_instantdex_txids(iter)) != 0 )
                 {
+                    printf("iter.%d: %s\n",iter,jprint(array,0));
                     if ( (n= cJSON_GetArraySize(array)) > 0 )
                     {
                         for (i=0; i<n; i++)
@@ -117,7 +123,11 @@ void LP_instantdex_depositadd(bits256 txid)
                             prevtxid = jbits256i(array,i);
                             if ( (txobj= LP_gettxout("KMD",coinaddr,prevtxid,2)) != 0 )
                                 free_json(txobj);
-                            else continue;
+                            else
+                            {
+                                char str[65]; printf("null gettxout %s %s\n",coinaddr,bits256_str(str,prevtxid));
+                                continue;
+                            }
                             LP_instantdex_deposituniq(depositsfp,prevtxid);
                         }
                     }
