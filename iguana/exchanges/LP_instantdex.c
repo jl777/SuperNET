@@ -122,7 +122,7 @@ void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
                         for (i=0; i<n; i++)
                         {
                             prevtxid = jbits256i(array,i);
-                            printf("iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
+                            printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
                             if ( (txobj= LP_gettxout("KMD",coinaddr,prevtxid,0)) != 0 )
                                 free_json(txobj);
                             else
