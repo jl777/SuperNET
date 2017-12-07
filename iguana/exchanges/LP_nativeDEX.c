@@ -711,7 +711,10 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
             {
                 LP_unspents_load(coin->symbol,coin->smartaddr);
                 if ( strcmp(coin->symbol,"KMD") == 0 )
+                {
                     LP_importaddress("KMD",BOTS_BONDADDRESS);
+                    LP_dPoW_request(coin);
+                }
             }
             if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
                 coin->txfee = LP_MIN_TXFEE;
