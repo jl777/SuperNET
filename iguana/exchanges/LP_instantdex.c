@@ -131,6 +131,7 @@ void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
                                 continue;
                             }
                             LP_instantdex_deposituniq(depositsfp,prevtxid);
+                            fflush(depositsfp);
                         }
                     }
                     free_json(array);
