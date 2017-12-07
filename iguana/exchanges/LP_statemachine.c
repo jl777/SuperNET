@@ -447,6 +447,28 @@ void issue_LP_uitem(char *destip,uint16_t destport,char *symbol,char *coinaddr,b
  portable_mutex_unlock(&LP_cJSONmutex);
  } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
  }*/
+
+void LP_instantdex_txidadd(bits256 txid)
+{
+    cJSON *array; int32_t i,n;
+    if ( (array= LP_instantdex_txids()) == 0 )
+        array = cJSON_CreateArray();
+    if ( (n= cJSON_GetArraySize(array)) >= 0 )
+    {
+        for (i=0; i<n; i++)
+            if ( bits256_cmp(jbits256i(array,i),txid) == 0 )
+                break;
+        if ( i == n )
+        {
+            jaddibits256(array,txid);
+            LP_instantdex_filewrite(0,array);
+            LP_instantdex_filewrite(1,array);
+        }
+    }
+    if ( array != 0 )
+        free_json(array);
+}
+
 char *issue_LP_getprices(char *destip,uint16_t destport)
 {
     char url[512];
