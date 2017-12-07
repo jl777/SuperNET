@@ -453,7 +453,7 @@ instantdex_claim()\n\
                             LP_address(ptr,coinaddr);
                             if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                             {
-                                //LP_listunspent_issue(coin,coinaddr,2);
+                                LP_listunspent_issue(coin,coinaddr,2,zero,zero);
                                 //LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                             }
                             return(jprint(LP_listunspent(coin,coinaddr,zero,zero),1));

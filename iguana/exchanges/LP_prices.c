@@ -41,9 +41,6 @@ struct LP_priceinfo
     double margins[LP_MAXPRICEINFOS];
     double offsets[LP_MAXPRICEINFOS];
     double factors[LP_MAXPRICEINFOS];
-    //double maxprices[LP_MAXPRICEINFOS]; // autofill of base/rel
-    //double relvols[LP_MAXPRICEINFOS];
-    //FILE *fps[LP_MAXPRICEINFOS];
 } LP_priceinfos[LP_MAXPRICEINFOS];
 int32_t LP_numpriceinfos;
 
@@ -503,9 +500,17 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
     if ( base != 0 && rel != 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         
-        if ( fabs(basepp->myprices[relpp->ind] - price)/price > 0.001 )
+        if ( price == 0. || fabs(basepp->myprices[relpp->ind] - price)/price > 0.001 )
             *changedp = 1;
         basepp->myprices[relpp->ind] = price;          // ask
+        if ( price == 0. )
+        {
+            relpp->minprices[basepp->ind] = 0.;
+            relpp->fixedprices[basepp->ind] = 0.;
+            relpp->margins[basepp->ind] = 0.;
+            relpp->offsets[basepp->ind] = 0.;
+            relpp->factors[basepp->ind] = 0.;
+        }
         //printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
         //relpp->myprices[basepp->ind] = (1. / price);   // bid
         if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )

@@ -474,7 +474,7 @@ int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t
 
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag,bits256 reftxid,bits256 reftxid2)
 {
-    struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0;
+    struct iguana_info *coin; struct LP_address *ap; int32_t n = 0; cJSON *retjson=0; char *retstr=0;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     if ( (coin= LP_coinfind(symbol)) != 0 )
@@ -489,6 +489,8 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag,bits25
         }
         else
         {
+            if ( fullflag == 2 && (ap= LP_addressfind(coin,coinaddr)) != 0 )
+                ap->unspenttime = 0;
             retjson = LP_listunspent(symbol,coinaddr,reftxid,reftxid2);
             coin->numutxos = cJSON_GetArraySize(retjson);
             if ( retjson != 0 )
