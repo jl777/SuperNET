@@ -259,6 +259,11 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     jaddnum(item,"p2shtype",coin->p2shtype);
     jaddnum(item,"wiftype",coin->wiftype);
     jaddnum(item,"txfee",strcmp(coin->symbol,"BTC") != 0 ? coin->txfee : LP_txfeecalc(coin,0,0));
+    if ( strcmp(coin->symbol,"KMD") == 0 )
+    {
+        jaddnum(item,"zcredits",dstr(LP_myzcredits()));
+        jadd(item,"zdebits",LP_myzdebits());
+    }
     return(item);
 }
 
