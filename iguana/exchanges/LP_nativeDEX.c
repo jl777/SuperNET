@@ -18,10 +18,8 @@
 //  marketmaker
 //
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
-// big BTC swaps, assetchain markets
 //
 // compress packets
-// cancel bid/ask
 // portfolio to set prices from historical
 // portfolio value based on ask?
 //
