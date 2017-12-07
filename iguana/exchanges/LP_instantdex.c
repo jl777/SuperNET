@@ -460,8 +460,6 @@ int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue)
     if ( (coin= LP_coinfind("KMD")) != 0 && (pubp= LP_pubkeyfind(pubkey)) != 0 )
     {
         bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->pubsecp,33);
-        if ( credits != 0 )
-            printf("%s %s othercredits %.8f\n",coin->symbol,coinaddr,dstr(credits));
         DL_FOREACH_SAFE(pubp->bobswaps,ptr,tmp)
         {
             if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
@@ -476,6 +474,8 @@ int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue)
             credits = ap->instantdex_credits;
         if ( credits != 0 && (swaps_kmdvalue+kmdvalue) > credits )
             printf("REJECT: %s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+        if ( credits != 0 )
+            printf("%s %s othercredits %.8f debits %.8f + %.8f -> %.8f\n",coin->symbol,coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue),dstr(credits - (swaps_kmdvalue+kmdvalue)));
         return(credits - (swaps_kmdvalue+kmdvalue));
     }
     return(0);
