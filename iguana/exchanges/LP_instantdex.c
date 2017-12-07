@@ -87,7 +87,7 @@ void LP_instantdex_filescreate()
             fseek(fp,sizeof(txid) * i,SEEK_SET);
             fread(&txid,1,sizeof(txid),fp);
             jaddibits256(array,txid);
-            if ( (txobj= LP_gettxout("KMD",coinaddr,txid,2)) != 0 )
+            if ( (txobj= LP_gettxout("KMD",coinaddr,txid,0)) != 0 )
                 free_json(txobj);
             else continue;
             jaddibits256(newarray,txid);
@@ -115,13 +115,12 @@ void LP_instantdex_depositadd(bits256 txid)
             {
                 if ( (array= LP_instantdex_txids(iter)) != 0 )
                 {
-                    printf("iter.%d: %s\n",iter,jprint(array,0));
                     if ( (n= cJSON_GetArraySize(array)) > 0 )
                     {
                         for (i=0; i<n; i++)
                         {
                             prevtxid = jbits256i(array,i);
-                            if ( (txobj= LP_gettxout("KMD",coinaddr,prevtxid,2)) != 0 )
+                            if ( (txobj= LP_gettxout("KMD",coinaddr,prevtxid,0)) != 0 )
                                 free_json(txobj);
                             else
                             {
