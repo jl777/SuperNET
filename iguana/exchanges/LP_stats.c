@@ -297,6 +297,10 @@ int32_t LP_finished_lastheight(struct LP_swapstats *sp)
     int32_t height = 1; struct iguana_info *bob,*alice; //char str[65];
     if ( (bob= LP_coinfind(sp->Q.srccoin)) != 0 && (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
     {
+        if ( strcmp(bob->symbol,"BTC") == 0 )
+            sp->bobneeds_dPoW = 0;
+        if ( strcmp(alice->symbol,"BTC") == 0 )
+            sp->aliceneeds_dPoW = 0;
         if ( sp->bobneeds_dPoW != 0 )
         {
             if ( bits256_nonz(sp->bobdeposit) != 0 && sp->bobdeposit_ht == 0 )
