@@ -479,7 +479,14 @@ int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue)
         if ( credits == 0 && (ap= LP_address(coin,coinaddr)) != 0 )
             credits = ap->instantdex_credits;
         if ( credits != 0 && (swaps_kmdvalue+kmdvalue) > credits )
+        {
+            DL_FOREACH_SAFE(pubp->aliceswaps,ptr,tmp)
+            {
+                if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
+                    printf("unfinished %llu r%u-r%u dest.%s %.8f -> value %.8f\n",(long long)sp->aliceid,sp->Q.R.requestid,sp->Q.R.quoteid,sp->Q.destcoin,dstr(sp->Q.destsatoshis),dstr(LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis)));
+            }
             printf("REJECT: %s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+        }
         if ( 0 && credits != 0 )
             printf("%s %s othercredits %.8f debits %.8f + %.8f -> %.8f\n",coin->symbol,coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue),dstr(credits - (swaps_kmdvalue+kmdvalue)));
         return(credits - (swaps_kmdvalue+kmdvalue));
