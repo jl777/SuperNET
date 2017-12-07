@@ -473,7 +473,7 @@ int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue)
                     swaps_kmdvalue += LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis);
             }
             if ( ap->instantdex_credits != 0 && (swaps_kmdvalue+kmdvalue) > ap->instantdex_credits )
-            //printf("%s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->instantdex_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+                printf("%s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(ap->instantdex_credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
             //if ( ap->instantdex_credits > swaps_kmdvalue+kmdvalue )
                 return(ap->instantdex_credits - (swaps_kmdvalue+kmdvalue));
         }

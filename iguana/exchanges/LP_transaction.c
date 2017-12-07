@@ -951,11 +951,15 @@ int32_t LP_vin_select(int32_t *aboveip,int64_t *abovep,int32_t *belowip,int64_t 
                 above = gap;
                 abovei = i;
             }
-        } else gap = (value - atx_value);
-        if ( below == 0 || gap < below )
+        }
+        else
         {
-            below = gap;
-            belowi = i;
+            gap = (value - atx_value);
+            if ( below == 0 || gap < below )
+            {
+                below = gap;
+                belowi = i;
+            }
         }
         //printf("value %.8f gap %.8f abovei.%d %.8f belowi.%d %.8f\n",dstr(value),dstr(gap),abovei,dstr(above),belowi,dstr(below));
     }
@@ -1218,7 +1222,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         return(0);
     }
     memset(utxos,0,sizeof(utxos));
-    if ( (numutxos= LP_address_utxo_ptrs(coin,0,utxos,max,ap,coin->smartaddr)) <= 0 )
+    if ( (numutxos= LP_address_utxo_ptrs(coin,0,utxos,(int32_t)(sizeof(utxos)/sizeof(*utxos)),ap,coin->smartaddr)) <= 0 )
     {
         if ( bits256_nonz(utxotxid) == 0 )
         {
