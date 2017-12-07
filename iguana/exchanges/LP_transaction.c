@@ -951,11 +951,15 @@ int32_t LP_vin_select(int32_t *aboveip,int64_t *abovep,int32_t *belowip,int64_t 
                 above = gap;
                 abovei = i;
             }
-        } else gap = (value - atx_value);
-        if ( below == 0 || gap < below )
+        }
+        else
         {
-            below = gap;
-            belowi = i;
+            gap = (value - atx_value);
+            if ( below == 0 || gap < below )
+            {
+                below = gap;
+                belowi = i;
+            }
         }
         printf("value %.8f gap %.8f abovei.%d %.8f belowi.%d %.8f\n",dstr(value),dstr(gap),abovei,dstr(above),belowi,dstr(below));
     }
