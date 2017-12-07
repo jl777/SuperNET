@@ -461,7 +461,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
 
 int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double price,struct LP_quoteinfo *qp)
 {
-    char pairstr[512]; cJSON *reqjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
+    char pairstr[512],otheraddr[64]; cJSON *reqjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
     qp->quotetime = (uint32_t)time(NULL);
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
     {
@@ -505,6 +505,8 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
                 free_json(reqjson);
                 LP_importaddress(qp->destcoin,qp->destaddr);
+                LP_otheraddress(qp->srccoin,otheraddr,qp->destcoin,qp->destaddr);
+                LP_importaddress(qp->srccoin,otheraddr);
                 retval = 0;
             } else printf("error launching swaploop\n");
         } else printf("couldnt bind to any port %s\n",pairstr);
@@ -573,7 +575,7 @@ int32_t LP_alice_eligible(uint32_t quotetime)
 
 char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
 {
-    cJSON *retjson; double bid,ask,price,qprice; int32_t pairsock = -1; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,A,B,*butxo; struct basilisk_swap *swap; struct iguana_info *coin;
+    cJSON *retjson; char otheraddr[64]; double bid,ask,price,qprice; int32_t pairsock = -1; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,A,B,*butxo; struct basilisk_swap *swap; struct iguana_info *coin;
     /*if ( LP_quoteparse(&Q,argjson) < 0 )
     {
         LP_aliceid(Q.tradeid,Q.aliceid,"error0",0,0);
@@ -656,6 +658,8 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
             //autxo->S.swap = swap;
             //swap->utxo = autxo;
             LP_importaddress(qp->srccoin,qp->coinaddr);
+            LP_otheraddress(qp->destcoin,otheraddr,qp->srccoin,qp->coinaddr);
+            LP_importaddress(qp->srccoin,otheraddr);
             LP_aliceid(qp->tradeid,qp->aliceid,"started",qp->R.requestid,qp->R.quoteid);
             printf("alice pairstr.(%s) pairsock.%d pthread_t %ld\n",pairstr,pairsock,sizeof(pthread_t));
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)swap) == 0 )

@@ -1661,7 +1661,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
                     {
                         if ( (vins= jarray(&m,txobj,"vin")) != 0 )
                         {
-                            printf("vins.(%s)\n",jprint(vins,0));
+                            //printf("vins.(%s)\n",jprint(vins,0));
                             if ( utxovout < m )
                             {
                                 vin = jitem(vins,utxovout);
