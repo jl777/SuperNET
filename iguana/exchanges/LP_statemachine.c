@@ -468,6 +468,11 @@ void LP_instantdex_txidadd(bits256 txid)
     if ( array != 0 )
         free_json(array);
 }
+/*if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,ctx) != 0 )
+ {
+ printf("error launching LP_privkeysloop for ctx.%p\n",ctx);
+ exit(-1);
+ }*/
 
 char *issue_LP_getprices(char *destip,uint16_t destport)
 {

@@ -504,6 +504,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 }
                 LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
                 free_json(reqjson);
+                LP_importaddress(qp->destcoin,qp->destaddr);
                 retval = 0;
             } else printf("error launching swaploop\n");
         } else printf("couldnt bind to any port %s\n",pairstr);
@@ -654,6 +655,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
             swap->N.pair = pairsock;
             //autxo->S.swap = swap;
             //swap->utxo = autxo;
+            LP_importaddress(qp->srccoin,qp->coinaddr);
             LP_aliceid(qp->tradeid,qp->aliceid,"started",qp->R.requestid,qp->R.quoteid);
             printf("alice pairstr.(%s) pairsock.%d pthread_t %ld\n",pairstr,pairsock,sizeof(pthread_t));
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)swap) == 0 )

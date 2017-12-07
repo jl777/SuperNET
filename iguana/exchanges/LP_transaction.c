@@ -1638,25 +1638,55 @@ bits256 _LP_swap_spendtxid(char *symbol,char *destaddr,char *coinaddr,bits256 ut
 }
 #endif
 
-bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t vout)
+bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t utxovout)
 {
-    bits256 spendtxid; int32_t spendvin; char coinaddr[64],str[65]; cJSON *retjson; struct iguana_info *coin;
+    bits256 spendtxid,txid,vintxid; int32_t spendvin,i,m,n; char coinaddr[64]; cJSON *array,*vins,*vin,*txobj; struct iguana_info *coin;
     // listtransactions or listspents
-    destaddr[0] = 0;
     coinaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
-    if ( LP_spendsearch(destaddr,&spendtxid,&spendvin,symbol,utxotxid,vout) > 0 )
+    if ( LP_spendsearch(destaddr,&spendtxid,&spendvin,symbol,utxotxid,utxovout) > 0 )
     {
         //printf("spend of %s/v%d detected\n",bits256_str(str,utxotxid),vout);
     }
-    else if ( 0 && (coin= LP_coinfind(symbol)) != 0 && coin->electrum == 0 )
+    else if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum == 0 )
     {
-        if ( (retjson= LP_gettxout(symbol,coinaddr,utxotxid,vout)) == 0 )
+        if ( (array= LP_listreceivedbyaddress(symbol,destaddr)) != 0 )
         {
-            decode_hex(spendtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
-            printf("couldnt find spend of %s/v%d, but no gettxout\n",bits256_str(str,utxotxid),vout);
-        } else free_json(retjson);
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    txid = jbits256i(array,i);
+                    if ( (txobj= LP_gettx(symbol,txid,1)) != 0 )
+                    {
+                        //printf("txobj.(%s)\n",jprint(txobj,0));
+                        if ( (vins= jarray(&m,txobj,"vin")) != 0 )
+                        {
+                            if ( utxovout < m )
+                            {
+                                vin = jitem(vins,utxovout);
+                                vintxid = jbits256(vin,"txid");
+                                if ( bits256_cmp(vintxid,utxotxid) == 0 )
+                                {
+                                    LP_txdestaddr(destaddr,txid,0,txobj);
+                                    spendtxid = txid;
+                                }
+                                char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: in %s/v%d spends %s vs %s found.%d destaddr.(%s)\n",bits256_str(str,txid),utxovout,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),bits256_cmp(vintxid,utxotxid) == 0,destaddr);
+                            }
+                        }
+                        free_json(txobj);
+                    }
+                }
+            }
+            free_json(array);
+        }
     }
+    /*   if ( (retjson= LP_gettxout(symbol,coinaddr,utxotxid,vout)) == 0 )
+     {
+     decode_hex(spendtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+     printf("couldnt find spend of %s/v%d, but no gettxout\n",bits256_str(str,utxotxid),vout);
+     } else free_json(retjson);
+     */
     return(spendtxid);
     //char str[65]; printf("swap %s spendtxid.(%s)\n",symbol,bits256_str(str,utxotxid));
 }
@@ -2034,7 +2064,7 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
                 diff = swap->otherfee.I.locktime - (swap->I.started+1);
                 if ( diff < 0 )
                     diff = -diff;
-                if ( diff < 10 )
+                if ( diff < LP_AUTOTRADE_TIMEOUT )
                     printf("dexfee verified\n");
                 else printf("locktime mismatch in otherfee, reject %u vs %u\n",swap->otherfee.I.locktime,swap->I.started+1);
                 return(0);
