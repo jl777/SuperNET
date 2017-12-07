@@ -85,23 +85,6 @@ uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen)
     return(txfee);
 }
 
-/*double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
-{
-    uint64_t destsatoshis,satoshis;
-    a_value -= (desttxfee + 1);
-    destsatoshis = ((b_satoshis - txfee) * price);
-    if ( destsatoshis > a_value )
-        destsatoshis = a_value;
-    if ( maxdestsatoshis != 0 && destsatoshis > maxdestsatoshis-desttxfee-1 )
-        destsatoshis = maxdestsatoshis-desttxfee-1;
-    satoshis = (destsatoshis / price + 0.49) - txfee;
-    *destsatoshisp = destsatoshis;
-    *satoshisp = satoshis;
-    if ( satoshis > 0 )
-        return((double)destsatoshis / satoshis);
-    else return(0.);
-}*/
-
 int32_t LP_quote_checkmempool(struct LP_quoteinfo *qp,struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo)
 {
     int32_t selector,spendvini; bits256 spendtxid;
@@ -477,7 +460,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
             printf("requestid.%u quoteid.%u is already in progres\n",qp->R.requestid,qp->R.quoteid);
             return(-1);
         }
-        if ( (swap= LP_swapinit(1,0,privkey,&qp->R,qp,LP_dynamictrust(qp->desthash,LP_kmdvalue(qp->destcoin,qp->destsatoshis)) > 0)) == 0 )
+        if ( (swap= LP_swapinit(1,0,privkey,&qp->R,qp,LP_dynamictrust(qp->othercredits,qp->desthash,LP_kmdvalue(qp->destcoin,qp->destsatoshis)) > 0)) == 0 )
         {
             printf("cant initialize swap\n");
             return(-1);
@@ -635,7 +618,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
     if ( bits256_nonz(qp->privkey) != 0 )//&& qp->quotetime >= qp->timestamp-3 )
     {
         retjson = cJSON_CreateObject();
-        if ( (swap= LP_swapinit(0,0,qp->privkey,&qp->R,qp,LP_dynamictrust(qp->srchash,LP_kmdvalue(qp->srccoin,qp->satoshis)) > 0)) == 0 )
+        if ( (swap= LP_swapinit(0,0,qp->privkey,&qp->R,qp,LP_dynamictrust(qp->othercredits,qp->srchash,LP_kmdvalue(qp->srccoin,qp->satoshis)) > 0)) == 0 )
         {
             jaddstr(retjson,"error","couldnt swapinit");
             LP_availableset(qp->desttxid,qp->vout);
@@ -999,7 +982,7 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
         if ( (retstr= LP_quotereceived(&Q)) != 0 )
             free(retstr);
         //LP_trades_gotreserved(ctx,&Q,&tp->Qs[LP_RESERVED]);
-        dynamictrust = LP_dynamictrust(Q.srchash,LP_kmdvalue(Q.srccoin,Q.satoshis));
+        dynamictrust = LP_dynamictrust(Q.othercredits,Q.srchash,LP_kmdvalue(Q.srccoin,Q.satoshis));
         if ( tp->bestprice == 0. )
             flag = 1;
         else if ( qprice < tp->bestprice && pubp->slowresponse <= tp->bestresponse*1.05 )
@@ -1222,7 +1205,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             {
                 //printf("CONNECTED.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
-                    LP_instantdex_proofcheck(Q.coinaddr,proof,num);
+                    Q.othercredits = LP_instantdex_proofcheck(Q.coinaddr,proof,num);
                 if ( Qtrades == 0 )
                     LP_trades_gotconnected(ctx,&Q,&Q2,jstr(argjson,"pair"));
                 else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECTED);
@@ -1258,7 +1241,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             {
                 printf("CONNECT.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
-                    LP_instantdex_proofcheck(Q.destaddr,proof,num);
+                    Q.othercredits = LP_instantdex_proofcheck(Q.destaddr,proof,num);
                 if ( Qtrades == 0 )
                     LP_trades_gotconnect(ctx,&Q,&Q2,jstr(argjson,"pair"));
                 else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECT);

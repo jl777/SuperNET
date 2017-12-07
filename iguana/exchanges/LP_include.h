@@ -363,6 +363,7 @@ struct LP_quoteinfo
 {
     struct basilisk_request R;
     bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
+    int64_t othercredits;
     uint64_t satoshis,txfee,destsatoshis,desttxfee,aliceid;
     uint32_t timestamp,quotetime,tradeid;
     int32_t vout,vout2,destvout,feevout,pair;
@@ -537,7 +538,7 @@ int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid);
 double LP_getestimatedrate(struct iguana_info *coin);
 struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout);
 struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid,int32_t vout);
-int64_t LP_dynamictrust(bits256 pubkey,int64_t kmdvalue);
+int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue);
 struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr);
 int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout);
 

@@ -760,7 +760,7 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
     }
     HASH_ITER(hh,LP_pubkeyinfos,pubp,ptmp)
     {
-        pubp->dynamictrust = LP_dynamictrust(pubp->pubkey,0);
+        pubp->dynamictrust = LP_dynamictrust(0,pubp->pubkey,0);
     }
     //printf("RT.%d completed.%d\n",LP_RTcount,LP_swapscount);
     jadd(retjson,"swaps",array);
