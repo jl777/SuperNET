@@ -42,6 +42,7 @@ struct LP_millistats
     char name[64];
 } LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloopBTC_stats,LP_coinsloopKMD_stats,LP_pubkeysloop_stats,LP_swapsloop_stats,LP_gcloop_stats,LP_tradesloop_stats;
 extern int32_t IAMLP;
+char LP_methodstr[64];
 
 void LP_millistats_update(struct LP_millistats *mp)
 {
@@ -78,7 +79,7 @@ void LP_millistats_update(struct LP_millistats *mp)
             if ( mp->threshold != 0. && elapsed > mp->threshold )
             {
                 //if ( IAMLP == 0 )
-                    printf("%32s elapsed %10.2f millis > threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
+                    printf("%32s elapsed %10.2f millis > threshold %10.2f, ave %10.2f millis, count.%u %s\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count,LP_methodstr);
             }
             mp->lastmilli = millis;
         }
@@ -366,7 +367,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 //ptr = buf;
                 methodstr[0] = 0;
                 //printf("%s.(%s)\n",typestr,(char *)ptr);
-                if ( 0 )
+                if ( 1 )
                 {
                     cJSON *recvjson; char *mstr;//,*cstr;
                     if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
@@ -375,7 +376,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         {
                             //printf("%s RECV.(%s)\n",typestr,(char *)ptr);
                         }
-                        safecopy(methodstr,jstr(recvjson,"method"),sizeof(methodstr));
+                        safecopy(LP_methodstr,jstr(recvjson,"method"),sizeof(LP_methodstr));
                         free_json(recvjson);
                     }
                 }

@@ -1659,9 +1659,9 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
                     txid = jbits256i(array,i);
                     if ( (txobj= LP_gettx(symbol,txid,1)) != 0 )
                     {
-                        //printf("txobj.(%s)\n",jprint(txobj,0));
                         if ( (vins= jarray(&m,txobj,"vin")) != 0 )
                         {
+                            printf("vins.(%s)\n",jprint(vins,0));
                             if ( utxovout < m )
                             {
                                 vin = jitem(vins,utxovout);
@@ -1669,7 +1669,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
                                 if ( bits256_cmp(vintxid,utxotxid) == 0 )
                                 {
                                     LP_txdestaddr(destaddr,txid,0,txobj);
-                                    char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: in %s/v%d spends %s vs %s found.%d destaddr.(%s)\n",bits256_str(str,txid),utxovout,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),bits256_cmp(vintxid,utxotxid) == 0,destaddr);
+                                    char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: found %s/v%d spends %s vs %s found.%d destaddr.(%s)\n",bits256_str(str,txid),utxovout,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),bits256_cmp(vintxid,utxotxid) == 0,destaddr);
                                     spendtxid = txid;
                                     break;
                                 }
