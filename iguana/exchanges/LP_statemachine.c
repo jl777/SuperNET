@@ -447,6 +447,33 @@ void issue_LP_uitem(char *destip,uint16_t destport,char *symbol,char *coinaddr,b
  portable_mutex_unlock(&LP_cJSONmutex);
  } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
  }*/
+
+void LP_instantdex_txidadd(bits256 txid)
+{
+    cJSON *array; int32_t i,n;
+    if ( (array= LP_instantdex_txids()) == 0 )
+        array = cJSON_CreateArray();
+    if ( (n= cJSON_GetArraySize(array)) >= 0 )
+    {
+        for (i=0; i<n; i++)
+            if ( bits256_cmp(jbits256i(array,i),txid) == 0 )
+                break;
+        if ( i == n )
+        {
+            jaddibits256(array,txid);
+            LP_instantdex_filewrite(0,array);
+            LP_instantdex_filewrite(1,array);
+        }
+    }
+    if ( array != 0 )
+        free_json(array);
+}
+/*if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,ctx) != 0 )
+ {
+ printf("error launching LP_privkeysloop for ctx.%p\n",ctx);
+ exit(-1);
+ }*/
+
 char *issue_LP_getprices(char *destip,uint16_t destport)
 {
     char url[512];
@@ -2095,6 +2122,87 @@ char *LP_postutxos_recv(cJSON *argjson)
     return(clonestr("{\"error\":\"sig failure\"}"));
 }
 
+/*MERK d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a ht.518777 -> {"pos":1,"merkle":["526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8", "f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd"],"block_height":518777} root.(0000000000000000000000000000000000000000000000000000000000000000)
+ MERK c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543 ht.518777 -> {"pos":2,"merkle":["fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501", "8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7"],"block_height":518777} root.(0000000000000000000000000000000000000000000000000000000000000000)*/
+/*526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8
+ d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
+ c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
+ fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501*/
+
+/*0: 526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8
+ 1: d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
+ 2: c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
+ 3: fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501
+ 4: 8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7
+ 5: f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd
+ 6: a87ee259560f20b20182760c0e7cc7896d44381f0ad58a2e755a2b6b895b01ec*/
+
+/*
+ 0 1 2 3
+ 4   5
+ 6
+ 
+ 1 -> [0, 5]
+ 2 -> [3, 4]
+ 
+ if odd -> right, else left
+ then /= 2
+ */
+
+/*void testmerk()
+ {
+ bits256 tree[256],roothash,txid; int32_t i; char str[65];
+ memset(tree,0,sizeof(tree));
+ decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
+ decode_hex(tree[1].bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
+ decode_hex(tree[2].bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
+ decode_hex(tree[3].bytes,32,"fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501");
+ roothash = iguana_merkle(tree,4);
+ for (i=0; i<256; i++)
+ {
+ if ( bits256_nonz(tree[i]) == 0 )
+ break;
+ printf("%d: %s\n",i,bits256_str(str,tree[i]));
+ }
+ memset(tree,0,sizeof(tree));
+ decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
+ decode_hex(tree[1].bytes,32,"f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd");
+ decode_hex(txid.bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
+ roothash = validate_merkle(1,txid,tree,2);
+ printf("validate 1: %s\n",bits256_str(str,roothash));
+ memset(tree,0,sizeof(tree));
+ decode_hex(tree[0].bytes,32,"fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501");
+ decode_hex(tree[1].bytes,32,"8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7");
+ decode_hex(txid.bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
+ roothash = validate_merkle(2,txid,tree,2);
+ printf("validate 2: %s\n",bits256_str(str,roothash));
+ }*/
+
+/*else if ( (retstr= LP_orderbook(coin->symbol,"KMD",-1)) != 0 )
+ {
+ if ( (orderbook= cJSON_Parse(retstr)) != 0 )
+ {
+ if ( (asks= jarray(&numasks,orderbook,"asks")) != 0 && numasks > 0 )
+ {
+ item = jitem(asks,0);
+ price = ask = jdouble(item,"price");
+ //printf("%s/%s ask %.8f\n",coin->symbol,"KMD",ask);
+ }
+ if ( (bids= jarray(&numbids,orderbook,"bids")) != 0 && numbids > 0 )
+ {
+ item = jitem(asks,0);
+ bid = jdouble(item,"price");
+ if ( price == 0. )
+ price = bid;
+ else price = (bid + ask) * 0.5;
+ //printf("%s/%s bid %.8f ask %.8f price %.8f\n",coin->symbol,"KMD",bid,ask,price);
+ }
+ KMDvalue = price * balance;
+ free_json(orderbook);
+ }
+ free(retstr);
+ }*/
+
 int32_t LP_utxosQ_process()
 {
     struct LP_utxos_qitem *uitem; int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
@@ -3597,6 +3705,21 @@ void LP_price_broadcastloop(void *ctx)
  break;
  }
  return(clonestr("{\"error\":\"no instantdex deposits to claim\"}"));*/
+/*else
+ {
+ if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
+ {
+ if ( (n= cJSON_GetArraySize(array)) > 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ item = jitem(array,i);
+ balance += j64bits(item,"value");
+ }
+ }
+ free_json(array);
+ }
+ }*/
 
 
 //else if ( strcmp(method,"checktxid") == 0 )

@@ -32,13 +32,15 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char 
 
 char *stats_validmethods[] =
 {
-    "psock", "getprices", "notify", "getpeers",  // from issue_  "uitem", "listunspent",
-    "orderbook", "statsdisp", "help", "getcoins", "pricearray", "balance", "tradesarray"
+    "psock", "balances", "getprice", "notify", "getpeers",  // from issue_  "uitem", "listunspent",
+    "orderbook", "statsdisp", "fundvalue", "help", "getcoins", "pricearray", "balance", "tradesarray"
 };
 
 int32_t LP_valid_remotemethod(cJSON *argjson)
 {
     char *method; int32_t i;
+    if ( DOCKERFLAG != 0 )
+        return(1);
     if ( (method= jstr(argjson,"method")) != 0 )
     {
         for (i=0; i<sizeof(stats_validmethods)/sizeof(*stats_validmethods); i++)
@@ -815,6 +817,8 @@ void stats_rpcloop(void *args)
         }
 #endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
+        if ( DOCKERFLAG != 0 && (DOCKERFLAG == 1 || ipbits == DOCKERFLAG) )
+            ipbits = localhostbits;
         if ( port == RPC_port && ipbits != localhostbits )
         {
             //printf("port.%u RPC_port.%u ipbits %x != %x\n",port,RPC_port,ipbits,localhostbits);

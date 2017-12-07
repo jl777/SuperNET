@@ -34,6 +34,7 @@ void PNACL_message(char *arg,...)
 #include "../../crypto777/OS_portable.h"
 #endif // !_WIN_32
 
+uint32_t DOCKERFLAG;
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
@@ -805,62 +806,6 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
 
 #include "LP_nativeDEX.c"
 
-/*MERK d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a ht.518777 -> {"pos":1,"merkle":["526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8", "f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd"],"block_height":518777} root.(0000000000000000000000000000000000000000000000000000000000000000)
- MERK c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543 ht.518777 -> {"pos":2,"merkle":["fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501", "8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7"],"block_height":518777} root.(0000000000000000000000000000000000000000000000000000000000000000)*/
-/*526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8
-d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
-c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
-fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501*/
-
-/*0: 526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8
-1: d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
-2: c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
-3: fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501
-4: 8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7
-5: f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd
-6: a87ee259560f20b20182760c0e7cc7896d44381f0ad58a2e755a2b6b895b01ec*/
-
-/*
-0 1 2 3
- 4   5
-   6
-
-1 -> [0, 5]
-2 -> [3, 4]
-
-if odd -> right, else left
-then /= 2
-*/
-
-/*void testmerk()
-{
-    bits256 tree[256],roothash,txid; int32_t i; char str[65];
-    memset(tree,0,sizeof(tree));
-    decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
-    decode_hex(tree[1].bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
-    decode_hex(tree[2].bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
-    decode_hex(tree[3].bytes,32,"fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501");
-    roothash = iguana_merkle(tree,4);
-    for (i=0; i<256; i++)
-    {
-        if ( bits256_nonz(tree[i]) == 0 )
-            break;
-        printf("%d: %s\n",i,bits256_str(str,tree[i]));
-    }
-    memset(tree,0,sizeof(tree));
-    decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
-    decode_hex(tree[1].bytes,32,"f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd");
-    decode_hex(txid.bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
-    roothash = validate_merkle(1,txid,tree,2);
-    printf("validate 1: %s\n",bits256_str(str,roothash));
-    memset(tree,0,sizeof(tree));
-    decode_hex(tree[0].bytes,32,"fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501");
-    decode_hex(tree[1].bytes,32,"8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7");
-    decode_hex(txid.bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
-    roothash = validate_merkle(2,txid,tree,2);
-    printf("validate 2: %s\n",bits256_str(str,roothash));
-}*/
-
 void LP_main(void *ptr)
 {
     char *passphrase; double profitmargin; uint16_t port; cJSON *argjson = ptr;
@@ -884,9 +829,18 @@ int main(int argc, const char * argv[])
     {
         uint8_t addrtype,rmd160[20],rmd160b[20]; char coinaddr[64],coinaddr2[64];
         bitcoin_addr2rmd160(0,&addrtype,rmd160,(char *)argv[1]);
-        bitcoin_address(coinaddr,0,60,rmd160,20);
-        bitcoin_addr2rmd160(0,&addrtype,rmd160b,coinaddr);
-        bitcoin_address(coinaddr2,0,0,rmd160b,20);
+        if ( addrtype == 0 )
+        {
+            bitcoin_address(coinaddr,0,60,rmd160,20);
+            bitcoin_addr2rmd160(0,&addrtype,rmd160b,coinaddr);
+            bitcoin_address(coinaddr2,0,0,rmd160b,20);
+        }
+        else if ( addrtype == 60 )
+        {
+            bitcoin_address(coinaddr,0,0,rmd160,20);
+            bitcoin_addr2rmd160(0,&addrtype,rmd160b,coinaddr);
+            bitcoin_address(coinaddr2,0,60,rmd160b,20);
+        }
         printf("(%s) -> %s -> %s\n",(char *)argv[1],coinaddr,coinaddr2);
         if ( strcmp((char *)argv[1],coinaddr2) != 0 )
             printf("ERROR\n");
@@ -911,6 +865,10 @@ int main(int argc, const char * argv[])
     }
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
+        if ( jint(retjson,"docker") == 1 )
+            DOCKERFLAG = 1;
+        else if ( jstr(retjson,"docker") != 0 )
+            DOCKERFLAG = (uint32_t)calc_ipbits(jstr(retjson,"docker"));
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
             jaddstr(retjson,"passphrase","test");
         if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)retjson) != 0 )

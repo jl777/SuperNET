@@ -18,14 +18,13 @@
 //  marketmaker
 //
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
-// big BTC swaps, assetchain markets
 //
 // compress packets
-// cancel bid/ask
 // portfolio to set prices from historical
 // portfolio value based on ask?
 //
 // else claim path
+// swap memleak?
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 // improve critical section detection when parallel trades
@@ -41,6 +40,7 @@ struct LP_millistats
     char name[64];
 } LP_psockloop_stats,LP_reserved_msgs_stats,utxosQ_loop_stats,command_rpcloop_stats,queue_loop_stats,prices_loop_stats,LP_coinsloop_stats,LP_coinsloopBTC_stats,LP_coinsloopKMD_stats,LP_pubkeysloop_stats,LP_swapsloop_stats,LP_gcloop_stats,LP_tradesloop_stats;
 extern int32_t IAMLP;
+char LP_methodstr[64];
 
 void LP_millistats_update(struct LP_millistats *mp)
 {
@@ -77,7 +77,7 @@ void LP_millistats_update(struct LP_millistats *mp)
             if ( mp->threshold != 0. && elapsed > mp->threshold )
             {
                 //if ( IAMLP == 0 )
-                    printf("%32s elapsed %10.2f millis > threshold %10.2f, ave %10.2f millis, count.%u\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count);
+                    printf("%32s elapsed %10.2f millis > threshold %10.2f, ave %10.2f millis, count.%u %s\n",mp->name,elapsed,mp->threshold,mp->millisum/mp->count,mp->count,LP_methodstr);
             }
             mp->lastmilli = millis;
         }
@@ -365,7 +365,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 //ptr = buf;
                 methodstr[0] = 0;
                 //printf("%s.(%s)\n",typestr,(char *)ptr);
-                if ( 0 )
+                if ( 1 )
                 {
                     cJSON *recvjson; char *mstr;//,*cstr;
                     if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
@@ -374,7 +374,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         {
                             //printf("%s RECV.(%s)\n",typestr,(char *)ptr);
                         }
-                        safecopy(methodstr,jstr(recvjson,"method"),sizeof(methodstr));
+                        safecopy(LP_methodstr,jstr(recvjson,"method"),sizeof(LP_methodstr));
                         free_json(recvjson);
                     }
                 }
@@ -616,21 +616,26 @@ void LP_coinsloop(void *_coins)
                     coin->lastscanht = coin->firstscanht;
                 continue;
             }
-            nonz++;
-            if ( 0 && coin->lastscanht < coin->longestchain-3 )
-                printf("[%s]: %s ref.%d scan.%d to %d, longest.%d\n",coins,coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
-            for (j=0; j<100; j++)
+            if ( 0 )
             {
-                if ( LP_blockinit(coin,coin->lastscanht) < 0 )
+                nonz++;
+                if ( strcmp("BTC",coins) == 0 )//&& coin->lastscanht < coin->longestchain-3 )
+                    printf("[%s]: %s ref.%d scan.%d to %d, longest.%d\n",coins,coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
+                for (j=0; j<100; j++)
                 {
-                    static uint32_t counter;
-                    if ( counter++ < 3 )
-                        printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
-                    break;
+                    if ( LP_blockinit(coin,coin->lastscanht) < 0 )
+                    {
+                        static uint32_t counter;
+                        if ( counter++ < 3 )
+                            printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
+                        break;
+                    }
+                    coin->lastscanht++;
+                    if ( coin->lastscanht == coin->longestchain+1 || strcmp("BTC",coins) == 0 )
+                        break;
                 }
-                coin->lastscanht++;
-                if ( coin->lastscanht == coin->longestchain+1 )
-                    break;
+                if ( strcmp("BTC",coins) == 0 )
+                    printf("done [%s]: %s ref.%d scan.%d to %d, longest.%d\n",coins,coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
             }
         }
         if ( coins == 0 )
@@ -706,7 +711,10 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
             {
                 LP_unspents_load(coin->symbol,coin->smartaddr);
                 if ( strcmp(coin->symbol,"KMD") == 0 )
+                {
                     LP_importaddress("KMD",BOTS_BONDADDRESS);
+                    LP_dPoW_request(coin);
+                }
             }
             if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
                 coin->txfee = LP_MIN_TXFEE;
@@ -1217,11 +1225,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_tradessloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    /*if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,ctx) != 0 )
-    {
-        printf("error launching LP_privkeysloop for ctx.%p\n",ctx);
-        exit(-1);
-    }*/
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,ctx) != 0 )
     {
         printf("error launching LP_swapsloop for ctx.%p\n",ctx);

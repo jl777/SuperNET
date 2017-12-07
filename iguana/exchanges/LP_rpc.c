@@ -342,17 +342,17 @@ int32_t LP_address_ismine(char *symbol,char *address)
     return(doneflag);
 }
 
-int32_t LP_address_iswatched(char *symbol,char *address)
+int32_t LP_address_iswatchonly(char *symbol,char *address)
 {
     int32_t doneflag = 0; cJSON *retjson,*obj;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
-        if ( (obj= jobj(retjson,"iswatched")) != 0 && is_cJSON_True(obj) != 0 )
+        if ( (obj= jobj(retjson,"iswatchonly")) != 0 && is_cJSON_True(obj) != 0 )
         {
             doneflag = 1;
-            //printf("%s ismine (%s)\n",address,jprint(retjson,0));
+            //printf("%s iswatchonly (%s)\n",address,jprint(retjson,0));
         }
         //printf("%s\n",jprint(retjson,0));
         free_json(retjson);
@@ -388,7 +388,7 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
         return(cJSON_Parse("{\"error\":\"no coin\"}"));
     if ( coin->electrum == 0 )
     {
-        if ( (ap= LP_addressfind(coin,symbol)) != 0 )
+        if ( (ap= LP_addressfind(coin,coinaddr)) != 0 )
         {
             if ( ap->unspenttime == 0 )
                 usecache = 0;
@@ -401,13 +401,14 @@ cJSON *LP_listunspent(char *symbol,char *coinaddr,bits256 reftxid,bits256 reftxi
                 return(retjson);
             }
         }
-        if ( LP_address_ismine(symbol,coinaddr) > 0 || LP_address_iswatched(symbol,coinaddr) > 0 )
+        //printf("%s %s usecache.%d iswatched.%d\n",coin->symbol,coinaddr,usecache,LP_address_iswatchonly(symbol,coinaddr));
+        if ( LP_address_ismine(symbol,coinaddr) > 0 || LP_address_iswatchonly(symbol,coinaddr) > 0 )
         {
             if ( strcmp(symbol,"BTC") == 0 )
                 numconfs = 0;
             else numconfs = 1;
             sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
-            //printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
+//printf("LP_listunspent.(%s %s)\n",symbol,coinaddr);
             retjson = bitcoin_json(coin,"listunspent",buf);
             retstr = jprint(retjson,0);
             LP_unspents_cache(coin->symbol,coinaddr,retstr,1);
@@ -473,7 +474,7 @@ int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t
 
 int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag,bits256 reftxid,bits256 reftxid2)
 {
-    struct iguana_info *coin; int32_t n = 0; cJSON *retjson=0; char *retstr=0;
+    struct iguana_info *coin; struct LP_address *ap; int32_t n = 0; cJSON *retjson=0; char *retstr=0;
     if ( symbol == 0 || symbol[0] == 0 )
         return(0);
     if ( (coin= LP_coinfind(symbol)) != 0 )
@@ -488,6 +489,8 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag,bits25
         }
         else
         {
+            if ( fullflag == 2 && (ap= LP_addressfind(coin,coinaddr)) != 0 )
+                ap->unspenttime = 0;
             retjson = LP_listunspent(symbol,coinaddr,reftxid,reftxid2);
             coin->numutxos = cJSON_GetArraySize(retjson);
             if ( retjson != 0 )

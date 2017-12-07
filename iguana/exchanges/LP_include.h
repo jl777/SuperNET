@@ -27,7 +27,7 @@
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "17667"
+#define LP_BUILD_NUMBER "17701"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -387,7 +387,6 @@ struct basilisk_swap
     char Bdeposit[64],Bpayment[64];
     uint64_t aliceid,otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint8_t persistent_pubkey33[33],persistent_other33[33],changermd160[20],pad[15],verifybuf[100000];
-    
 };
 
 struct LP_pubkey_quote

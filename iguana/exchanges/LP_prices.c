@@ -41,9 +41,6 @@ struct LP_priceinfo
     double margins[LP_MAXPRICEINFOS];
     double offsets[LP_MAXPRICEINFOS];
     double factors[LP_MAXPRICEINFOS];
-    //double maxprices[LP_MAXPRICEINFOS]; // autofill of base/rel
-    //double relvols[LP_MAXPRICEINFOS];
-    //FILE *fps[LP_MAXPRICEINFOS];
 } LP_priceinfos[LP_MAXPRICEINFOS];
 int32_t LP_numpriceinfos;
 
@@ -503,9 +500,17 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
     if ( base != 0 && rel != 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         
-        if ( fabs(basepp->myprices[relpp->ind] - price)/price > 0.001 )
+        if ( price == 0. || fabs(basepp->myprices[relpp->ind] - price)/price > 0.001 )
             *changedp = 1;
         basepp->myprices[relpp->ind] = price;          // ask
+        if ( price == 0. )
+        {
+            relpp->minprices[basepp->ind] = 0.;
+            relpp->fixedprices[basepp->ind] = 0.;
+            relpp->margins[basepp->ind] = 0.;
+            relpp->offsets[basepp->ind] = 0.;
+            relpp->factors[basepp->ind] = 0.;
+        }
         //printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
         //relpp->myprices[basepp->ind] = (1. / price);   // bid
         if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
@@ -908,30 +913,6 @@ int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
     {
         if ( strcmp(coin->symbol,"KMD") == 0 )
             KMDvalue = balance;
-        /*else if ( (retstr= LP_orderbook(coin->symbol,"KMD",-1)) != 0 )
-        {
-            if ( (orderbook= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( (asks= jarray(&numasks,orderbook,"asks")) != 0 && numasks > 0 )
-                {
-                    item = jitem(asks,0);
-                    price = ask = jdouble(item,"price");
-                    //printf("%s/%s ask %.8f\n",coin->symbol,"KMD",ask);
-                }
-                if ( (bids= jarray(&numbids,orderbook,"bids")) != 0 && numbids > 0 )
-                {
-                    item = jitem(asks,0);
-                    bid = jdouble(item,"price");
-                    if ( price == 0. )
-                        price = bid;
-                    else price = (bid + ask) * 0.5;
-                    //printf("%s/%s bid %.8f ask %.8f price %.8f\n",coin->symbol,"KMD",bid,ask,price);
-                }
-                KMDvalue = price * balance;
-                free_json(orderbook);
-            }
-            free(retstr);
-        }*/
         else
         {
             price = LP_price(coin->symbol,"KMD");
@@ -1136,5 +1117,105 @@ void LP_pricefeedupdate(bits256 pubkey,char *base,char *rel,double price,char *u
     }
     //else if ( (rand() % 100) == 0 )
     //    printf("error finding %s/%s %.8f\n",base,rel,price);
+}
+
+double LP_CMCbtcprice(double *price_usdp,char *symbol)
+{
+    char *retstr; cJSON *ticker,*item; double price_btc = 0.;
+    *price_usdp = 0.;
+    if ( (retstr= cmc_ticker(symbol)) != 0 )
+    {
+        if ( (ticker= cJSON_Parse(retstr)) != 0 )
+        {
+            item = jitem(ticker,0);
+            price_btc = jdouble(item,"price_btc");
+            *price_usdp = jdouble(item,"price_usd");
+            //printf("%.8f item.(%s)\n",price_btc,jprint(item,0));
+            free_json(ticker);
+        }
+        free(retstr);
+    }
+    return(price_btc);
+}
+
+cJSON *LP_fundvalue(cJSON *argjson)
+{
+    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
+    fundvalue = 0;
+    KMDholdings = btcsum = 0.;
+    array = cJSON_CreateArray();
+    for (iter=0; iter<2; iter++)
+    {
+        if ( iter == 0 )
+            holdings = jarray(&n,argjson,"holdings");
+        else
+        {
+            if ( (coinaddr= jstr(argjson,"address")) != 0 )
+            {
+                holdings = LP_balances(coinaddr);
+                n = cJSON_GetArraySize(holdings);
+            } else break;
+        }
+        if ( holdings != 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(holdings,i);
+                if ( (symbol= jstr(item,"coin")) != 0 && (balance= jdouble(item,"balance")) > SMALLVAL )
+                {
+                    newitem = cJSON_CreateObject();
+                    jaddstr(newitem,"coin",symbol);
+                    jaddnum(newitem,"balance",balance);
+                    if ( (coin= LP_coinfind(symbol)) != 0 && (KMDvalue= LP_KMDvalue(coin,SATOSHIDEN * balance)) > 0 )
+                    {
+                        jaddnum(newitem,"KMD",dstr(KMDvalue));
+                        fundvalue += KMDvalue;
+                        if ( strcmp(symbol,"KMD") == 0 )
+                            KMDholdings += dstr(KMDvalue);
+                    }
+                    else if ( iter == 0 && (btcprice= LP_CMCbtcprice(&usdprice,symbol)) > SMALLVAL )
+                    {
+                        btcsum += btcprice * balance;
+                        jaddnum(newitem,"BTC",btcprice * balance);
+                    }
+                    else jaddstr(newitem,"error","no price source");
+                    jaddi(array,newitem);
+                }
+            }
+        }
+    }
+    retjson = cJSON_CreateObject();
+    jadd(retjson,"holdings",array);
+    btcprice = LP_CMCbtcprice(&usdprice,"komodo");
+    divisor = jdouble(argjson,"divisor");
+    jaddnum(retjson,"KMDholdings",KMDholdings);
+    if ( btcsum != 0 )
+    {
+        if ( btcprice > SMALLVAL )
+        {
+            numKMD = (btcsum / btcprice);
+            fundvalue += numKMD * SATOSHIDEN;
+            jaddnum(retjson,"KMD_BTC",btcprice);
+            jaddnum(retjson,"btcsum",btcsum);
+            numKMD += KMDholdings;
+            jaddnum(retjson,"btc2kmd",numKMD);
+            if ( divisor != 0 )
+            {
+                jaddnum(retjson,"NAV_KMD",numKMD/divisor);
+                jaddnum(retjson,"NAV_BTC",(btcsum + (KMDholdings * btcprice))/divisor);
+                jaddnum(retjson,"NAV_USD",(usdprice * numKMD)/divisor);
+            }
+        }
+    }
+    jaddnum(retjson,"fundvalue",dstr(fundvalue));
+    if ( divisor != 0 )
+    {
+        jaddnum(retjson,"divisor",divisor);
+        numKMD = dstr(fundvalue);
+        jaddnum(retjson,"assetNAV_KMD",numKMD/divisor);
+        jaddnum(retjson,"assetNAV_BTC",(btcprice * numKMD)/divisor);
+        jaddnum(retjson,"assetNAV_USD",(usdprice * numKMD)/divisor);
+    }
+    return(retjson);
 }
 

@@ -259,6 +259,11 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     jaddnum(item,"p2shtype",coin->p2shtype);
     jaddnum(item,"wiftype",coin->wiftype);
     jaddnum(item,"txfee",strcmp(coin->symbol,"BTC") != 0 ? coin->txfee : LP_txfeecalc(coin,0,0));
+    if ( strcmp(coin->symbol,"KMD") == 0 )
+    {
+        jaddnum(item,"zcredits",dstr(LP_myzcredits()));
+        jadd(item,"zdebits",LP_myzdebits());
+    }
     return(item);
 }
 
@@ -498,3 +503,12 @@ struct iguana_info *LP_coincreate(cJSON *item)
     return(0);
 }
 
+void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr)
+{
+    uint8_t addrtype,rmd160[20]; struct iguana_info *src,*dest;
+    if ( (src= LP_coinfind(srccoin)) != 0 && (dest= LP_coinfind(destcoin)) != 0 )
+    {
+        bitcoin_addr2rmd160(src->taddr,&addrtype,rmd160,coinaddr);
+        bitcoin_address(otheraddr,dest->taddr,dest->pubtype,rmd160,20);
+    } else printf("couldnt find %s or %s\n",srccoin,destcoin);
+}
