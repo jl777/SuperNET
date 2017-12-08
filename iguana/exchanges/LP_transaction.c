@@ -1387,7 +1387,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     free(V);
     if ( vins != 0 )
     {
-        if ( (numvins= cJSON_GetArraySize(vins)) > 0 )
+        if ( completed == 0 && (numvins= cJSON_GetArraySize(vins)) > 0 )
         {
             
             for (i=0; i<numvins; i++)
