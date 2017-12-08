@@ -17,6 +17,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// fundvalue -> autoprice, cmc +margin -> autoprice, signals -> autoprice
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // there is an issue about waiting for notarization for a swap that never starts
 // use electrum in case of addr change in swap
