@@ -647,7 +647,7 @@ cJSON *LP_balances(char *coinaddr)
                     jaddnum(item,"balance",dstr(balance));
                     if ( (KMDvalue= LP_KMDvalue(coin,balance)) != 0 )
                     {
-                        jaddnum(item,"KMDvalue",dstr(balance));
+                        jaddnum(item,"KMDvalue",dstr(KMDvalue));
                         sum += KMDvalue;
                     }
                     if ( coin->electrum != 0 && strcmp(coinaddr,coin->smartaddr) == 0 && strcmp(coin->symbol,"KMD") == 0 )
@@ -669,7 +669,7 @@ cJSON *LP_balances(char *coinaddr)
                 jaddnum(item,"balance",dstr(balance));
                 if ( (KMDvalue= LP_KMDvalue(coin,balance)) != 0 )
                 {
-                    jaddnum(item,"KMDvalue",dstr(balance));
+                    jaddnum(item,"KMDvalue",dstr(KMDvalue));
                     sum += KMDvalue;
                 }
                 if ( strcmp(coin->symbol,"KMD") == 0 )
