@@ -1035,7 +1035,7 @@ void LP_dedicatedloop(void *arg)
                     else
                     {
                         printf("no more electrum data when expected2\n");
-                        electrum_kickstart(ep);
+                        //electrum_kickstart(ep);
                         break;
                     }
                 }
