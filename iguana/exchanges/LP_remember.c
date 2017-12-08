@@ -1343,12 +1343,16 @@ char *LP_recent_swaps(int32_t limit)
                                 if ( jint(swapjson,"iambob") != 0 )
                                     srcamount = -srcamount;
                                 else destamount = -destamount;
-                                netamounts[baseind] += srcamount;
-                                netamounts[relind] += destamount;
-                                subitem = cJSON_CreateObject();
-                                jaddnum(subitem,base,srcamount);
-                                jaddnum(subitem,rel,destamount);
-                                jaddi(item,subitem);
+                                if ( srcamount != 0. && destamount != 0. )
+                                {
+                                    netamounts[baseind] += srcamount;
+                                    netamounts[relind] += destamount;
+                                    subitem = cJSON_CreateObject();
+                                    jaddnum(subitem,base,srcamount);
+                                    jaddnum(subitem,rel,destamount);
+                                    jaddnum(subitem,"price",destamount/srcamount);
+                                    jaddi(item,subitem);
+                                }
                             } else printf("base.%p rel.%p statusstr.%p baseind.%d relind.%d\n",base,rel,statusstr,baseind,relind);
                             free_json(swapjson);
                         } else printf("error parsing.(%s)\n",retstr);
