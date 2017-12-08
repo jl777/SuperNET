@@ -886,6 +886,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     struct LP_swap_remember rswap; int32_t i,j,flag,numspent,len,secretstart,redeemlen; char str[65],*srcAdest,*srcBdest,*destAdest,*destBdest,otheraddr[64]; cJSON *item,*txoutobj; bits256 rev,signedtxid,zero,deadtxid; struct iguana_info *bob=0,*alice=0; uint8_t redeemscript[1024],userdata[1024];
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
+    if ( requestid == 0 || quoteid == 0 )
+        return(cJSON_Parse("{\"error\":\"null requestid or quoteid\"}"));
     if ( (rswap.iambob= LP_rswap_init(&rswap,requestid,quoteid,forceflag)) < 0 )
         return(cJSON_Parse("{\"error\":\"couldnt initialize rswap, are all coins active?\"}"));
     decode_hex(deadtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
