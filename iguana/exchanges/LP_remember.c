@@ -1329,7 +1329,6 @@ char *LP_recent_swaps(int32_t limit)
                     item = cJSON_CreateArray();
                     jaddinum(item,requestid);
                     jaddinum(item,quoteid);
-                    subitem = cJSON_CreateObject();
                     if ( (retstr= basilisk_swapentry(requestid,quoteid,0)) != 0 )
                     {
                         if ( (swapjson= cJSON_Parse(retstr)) != 0 )
@@ -1343,6 +1342,7 @@ char *LP_recent_swaps(int32_t limit)
                                 else destamount = -destamount;
                                 netamounts[baseind] += srcamount;
                                 netamounts[relind] += destamount;
+                                subitem = cJSON_CreateObject();
                                 jaddnum(subitem,base,srcamount);
                                 jaddnum(subitem,rel,destamount);
                                 jaddi(item,subitem);
@@ -1351,7 +1351,6 @@ char *LP_recent_swaps(int32_t limit)
                         }
                         free(retstr);
                     }
-                    jaddi(array,subitem);
                     jaddi(array,item);
                 } else break;
             } else break;
