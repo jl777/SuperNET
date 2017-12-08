@@ -1325,15 +1325,18 @@ char *LP_recent_swaps(int32_t limit)
             {
                 if ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
                 {
-                    //{"expiration":1512319112,"tradeid":428338847,"requestid":2950509278,"quoteid":14828468,"iambob":0,"Bgui":"","Agui":"nogui","gui":"nogui","bob":"REVS","srcamount":0.00691857,"bobtxfee":0.00010000,"alice":"KMD","destamount":0.01250000,"alicetxfee":0.00010000,"aliceid":"8160174903500865537","sentflags":["alicespend", "bobspend", "bobpayment", "alicepayment", "bobdeposit", "myfee", "bobrefund"],"values":[0.00701857, 0.01260000, 0.00711857, 0.01270000, 0.00798339, 0, 0.00010000, 0, 0, 0, 0],"result":"success","status":"finished","finishtime":1512305767,"bobdeposit":"cf626c35cf507687eeae203429b16c5ad93abffdd3e493a731ea804f0c927dd7","alicepayment":"35563822d590f457f2c03c3169d7dfe01a642dcc24c0f4a11e7f880c1a5fcc89","bobpayment":"20bfc58829f18e551d614c799e8a6401db9e4210d9c8521d74b77cafe3e9a35f","paymentspent":"0000000000000000000000000000000000000000000000000000000000000000","Apaymentspent":"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef","depositspent":"f1c2327b55efa79694585e41286b5a6d0160bad6d603fed1f3093596a701e487","method":"tradestatus","finishtime":1512305767,"gui":"nogui"}
                     item = cJSON_CreateArray();
                     jaddinum(item,requestid);
                     jaddinum(item,quoteid);
                     if ( (retstr= basilisk_swapentry(requestid,quoteid,0)) != 0 )
                     {
+                        printf("%s\n",retstr);
                         if ( (swapjson= cJSON_Parse(retstr)) != 0 )
                         {
-                            if ( (base= jstr(swapjson,"bob")) != 0 && (rel= jstr(swapjson,"alice")) != 0 && (statusstr= jstr(swapjson,"status")) != 0 && strcmp(statusstr,"finished") == 0 && (baseind= LP_priceinfoind(base)) >= 0 && (relind= LP_priceinfoind(rel)) >= 0 )
+                            base = jstr(swapjson,"bob");
+                            rel = jstr(swapjson,"alice");
+                            statusstr = jstr(swapjson,"status");
+                            if ( base != 0 && rel != 0 && statusstr != 0 && strcmp(statusstr,"finished") == 0 && (baseind= LP_priceinfoind(base)) >= 0 && (relind= LP_priceinfoind(rel)) >= 0 )
                             {
                                 srcamount = jdouble(swapjson,"srcamount");
                                 destamount = jdouble(swapjson,"destamount");
@@ -1346,7 +1349,7 @@ char *LP_recent_swaps(int32_t limit)
                                 jaddnum(subitem,base,srcamount);
                                 jaddnum(subitem,rel,destamount);
                                 jaddi(item,subitem);
-                            }
+                            } else printf("base.%p rel.%p statusstr.%p\n",base,rel,statusstr);
                             free_json(swapjson);
                         }
                         free(retstr);
