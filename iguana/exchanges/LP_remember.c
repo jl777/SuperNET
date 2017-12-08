@@ -897,7 +897,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     srcAdest = srcBdest = destAdest = destBdest = 0;
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,rswap.src) != 0 || strcmp(rswap.alicecoin,rswap.dest) != 0 )
     {
-        printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
+        //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
         return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
     }
     alice = LP_coinfind(rswap.alicecoin);
@@ -1303,7 +1303,10 @@ extern uint32_t Alice_expiration;
 
 char *LP_recent_swaps(int32_t limit)
 {
-    char fname[512]; long fsize,offset; FILE *fp; int32_t i=0; uint32_t requestid,quoteid; cJSON *array,*item,*retjson;
+    char fname[512],*retstr,*base,*rel,*statusstr; long fsize,offset; FILE *fp; int32_t baseind,relind,i=0; uint32_t requestid,quoteid; cJSON *array,*item,*retjson,*subitem,*swapjson; int64_t srcamount,destamount,KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS]; double netamounts[LP_MAXPRICEINFOS];
+    memset(KMDtotals,0,sizeof(KMDtotals));
+    memset(BTCtotals,0,sizeof(BTCtotals));
+    memset(netamounts,0,sizeof(netamounts));
     if ( limit <= 0 )
         limit = 3;
     sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
@@ -1322,9 +1325,33 @@ char *LP_recent_swaps(int32_t limit)
             {
                 if ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
                 {
+                    //{"expiration":1512319112,"tradeid":428338847,"requestid":2950509278,"quoteid":14828468,"iambob":0,"Bgui":"","Agui":"nogui","gui":"nogui","bob":"REVS","srcamount":0.00691857,"bobtxfee":0.00010000,"alice":"KMD","destamount":0.01250000,"alicetxfee":0.00010000,"aliceid":"8160174903500865537","sentflags":["alicespend", "bobspend", "bobpayment", "alicepayment", "bobdeposit", "myfee", "bobrefund"],"values":[0.00701857, 0.01260000, 0.00711857, 0.01270000, 0.00798339, 0, 0.00010000, 0, 0, 0, 0],"result":"success","status":"finished","finishtime":1512305767,"bobdeposit":"cf626c35cf507687eeae203429b16c5ad93abffdd3e493a731ea804f0c927dd7","alicepayment":"35563822d590f457f2c03c3169d7dfe01a642dcc24c0f4a11e7f880c1a5fcc89","bobpayment":"20bfc58829f18e551d614c799e8a6401db9e4210d9c8521d74b77cafe3e9a35f","paymentspent":"0000000000000000000000000000000000000000000000000000000000000000","Apaymentspent":"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef","depositspent":"f1c2327b55efa79694585e41286b5a6d0160bad6d603fed1f3093596a701e487","method":"tradestatus","finishtime":1512305767,"gui":"nogui"}
                     item = cJSON_CreateArray();
                     jaddinum(item,requestid);
                     jaddinum(item,quoteid);
+                    subitem = cJSON_CreateObject();
+                    if ( (retstr= basilisk_swapentry(requestid,quoteid,0)) != 0 )
+                    {
+                        if ( (swapjson= cJSON_Parse(retstr)) != 0 )
+                        {
+                            if ( (base= jstr(swapjson,"bob")) != 0 && (rel= jstr(swapjson,"alice")) != 0 && (statusstr= jstr(swapjson,"status")) != 0 && strcmp(statusstr,"finished") == 0 && (baseind= LP_priceinfoind(base)) >= 0 && (relind= LP_priceinfoind(rel)) >= 0 )
+                            {
+                                srcamount = jdouble(swapjson,"srcamount");
+                                destamount = jdouble(swapjson,"destamount");
+                                if ( jint(swapjson,"iambob") != 0 )
+                                    srcamount = -srcamount;
+                                else destamount = -destamount;
+                                netamounts[baseind] += srcamount;
+                                netamounts[relind] += destamount;
+                                jaddnum(subitem,base,srcamount);
+                                jaddnum(subitem,rel,destamount);
+                                jaddi(item,subitem);
+                            }
+                            free_json(swapjson);
+                        }
+                        free(retstr);
+                    }
+                    jaddi(array,subitem);
                     jaddi(array,item);
                 } else break;
             } else break;
@@ -1334,6 +1361,17 @@ char *LP_recent_swaps(int32_t limit)
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jadd(retjson,"swaps",array);
+    array = cJSON_CreateArray();
+    for (i=0; i<LP_MAXPRICEINFOS; i++)
+    {
+        if ( netamounts[i] != 0. )
+        {
+            item = cJSON_CreateObject();
+            jaddnum(item,LP_priceinfostr(i),netamounts[i]);
+            jaddi(array,item);
+        }
+    }
+    jadd(retjson,"netamounts",array);
     if ( time(NULL) < Alice_expiration )
     {
         item = cJSON_CreateObject();

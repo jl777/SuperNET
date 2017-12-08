@@ -386,7 +386,7 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
         {
             ap->instantdex_credits += satoshis;
             ap->didinstantdex = 1;
-            if ( dispflag != 0 )
+            if ( 0 && dispflag != 0 )
                 printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->instantdex_credits));
             return(satoshis);
         } else printf("null ap.%p or expired %ld\n",ap,time(NULL) - (timestamp-60*3600));
