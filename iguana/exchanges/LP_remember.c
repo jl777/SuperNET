@@ -880,12 +880,14 @@ int32_t LP_spends_set(struct LP_swap_remember *rswap)
     return(numspent);
 }
 
-cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requestid,uint32_t quoteid,int32_t forceflag)
+cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requestid,uint32_t quoteid,int32_t forceflag,int32_t pendingonly)
 {
     static void *ctx;
     struct LP_swap_remember rswap; int32_t i,j,flag,numspent,len,secretstart,redeemlen; char str[65],*srcAdest,*srcBdest,*destAdest,*destBdest,otheraddr[64]; cJSON *item,*txoutobj; bits256 rev,signedtxid,zero,deadtxid; struct iguana_info *bob=0,*alice=0; uint8_t redeemscript[1024],userdata[1024];
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
+    if ( requestid == 0 || quoteid == 0 )
+        return(cJSON_Parse("{\"error\":\"null requestid or quoteid\"}"));
     if ( (rswap.iambob= LP_rswap_init(&rswap,requestid,quoteid,forceflag)) < 0 )
         return(cJSON_Parse("{\"error\":\"couldnt initialize rswap, are all coins active?\"}"));
     decode_hex(deadtxid.bytes,32,"deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
@@ -895,7 +897,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     srcAdest = srcBdest = destAdest = destBdest = 0;
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,rswap.src) != 0 || strcmp(rswap.alicecoin,rswap.dest) != 0 )
     {
-        //printf("legacy DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
+        //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
         return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
     }
     alice = LP_coinfind(rswap.alicecoin);
@@ -1190,10 +1192,15 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
         if ( rswap.txbytes[i] != 0 )
             free(rswap.txbytes[i]), rswap.txbytes[i] = 0;
-   return(item);
+    if ( pendingonly != 0 && rswap.origfinishedflag != 0 )
+    {
+        free_json(item);
+        item = 0;
+    }
+    return(item);
 }
 
-char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forceflag)
+char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forceflag,int32_t pendingonly)
 {
     uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS],Btotal,Ktotal; int32_t i,j,count=0;
     portable_mutex_lock(&LP_swaplistmutex);
@@ -1206,7 +1213,7 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forc
     if ( origrequestid != 0 && origquoteid != 0 )
     {
         //printf("orig req.%u q.%u\n",origrequestid,origquoteid);
-        if ( (item= basilisk_remember(KMDtotals,BTCtotals,origrequestid,origquoteid,forceflag)) != 0 )
+        if ( (item= basilisk_remember(KMDtotals,BTCtotals,origrequestid,origquoteid,forceflag,0)) != 0 )
             jaddi(array,item);
         //printf("got.(%s)\n",jprint(item,0));
     }
@@ -1220,19 +1227,22 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forc
             while ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
             {
                 flag = 0;
-                for (i=0; i<G.LP_numskips; i++)
+                if ( pendingonly == 0 )
                 {
-                    r = (uint32_t)(G.LP_skipstatus[i] >> 32);
-                    q = (uint32_t)G.LP_skipstatus[i];
-                    if ( r == requestid && q == quoteid )
+                    for (i=0; i<G.LP_numskips; i++)
                     {
-                        item = cJSON_CreateObject();
-                        jaddstr(item,"status","realtime");
-                        jaddnum(item,"requestid",r);
-                        jaddnum(item,"quoteid",q);
-                        jaddi(array,item);
-                        flag = 1;
-                        break;
+                        r = (uint32_t)(G.LP_skipstatus[i] >> 32);
+                        q = (uint32_t)G.LP_skipstatus[i];
+                        if ( r == requestid && q == quoteid )
+                        {
+                            item = cJSON_CreateObject();
+                            jaddstr(item,"status","realtime");
+                            jaddnum(item,"requestid",r);
+                            jaddnum(item,"quoteid",q);
+                            jaddi(array,item);
+                            flag = 1;
+                            break;
+                        }
                     }
                 }
                 if ( flag == 0 )
@@ -1245,7 +1255,7 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forc
                     {
                         if ( count < sizeof(ridqids)/sizeof(*ridqids) )
                             ridqids[count++] = ridqid;
-                        if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid,0)) != 0 )
+                        if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid,0,pendingonly)) != 0 )
                             jaddi(array,item);
                     }
                 }
@@ -1283,7 +1293,7 @@ char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid,int32_t forceflag)
     cJSON *item; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS];
     memset(KMDtotals,0,sizeof(KMDtotals));
     memset(BTCtotals,0,sizeof(BTCtotals));
-    if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid,forceflag)) != 0 )
+    if ( (item= basilisk_remember(KMDtotals,BTCtotals,requestid,quoteid,forceflag,0)) != 0 )
         return(jprint(item,1));
     else return(clonestr("{\"error\":\"cant find requestid-quoteid\"}"));
 }
@@ -1293,7 +1303,10 @@ extern uint32_t Alice_expiration;
 
 char *LP_recent_swaps(int32_t limit)
 {
-    char fname[512]; long fsize,offset; FILE *fp; int32_t i=0; uint32_t requestid,quoteid; cJSON *array,*item,*retjson;
+    char fname[512],*retstr,*base,*rel,*statusstr; long fsize,offset; FILE *fp; int32_t baseind,relind,i=0; uint32_t requestid,quoteid; cJSON *array,*item,*retjson,*subitem,*swapjson; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS]; double srcamount,destamount,netamounts[LP_MAXPRICEINFOS];
+    memset(KMDtotals,0,sizeof(KMDtotals));
+    memset(BTCtotals,0,sizeof(BTCtotals));
+    memset(netamounts,0,sizeof(netamounts));
     if ( limit <= 0 )
         limit = 3;
     sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
@@ -1315,6 +1328,36 @@ char *LP_recent_swaps(int32_t limit)
                     item = cJSON_CreateArray();
                     jaddinum(item,requestid);
                     jaddinum(item,quoteid);
+                    if ( (retstr= basilisk_swapentry(requestid,quoteid,0)) != 0 )
+                    {
+                        if ( (swapjson= cJSON_Parse(retstr)) != 0 )
+                        {
+                            base = jstr(swapjson,"bob");
+                            rel = jstr(swapjson,"alice");
+                            statusstr = jstr(swapjson,"status");
+                            baseind = relind = -1;
+                            if ( base != 0 && rel != 0 && statusstr != 0 && strcmp(statusstr,"finished") == 0 && (baseind= LP_priceinfoind(base)) >= 0 && (relind= LP_priceinfoind(rel)) >= 0 )
+                            {
+                                srcamount = jdouble(swapjson,"srcamount");
+                                destamount = jdouble(swapjson,"destamount");
+                                if ( jint(swapjson,"iambob") != 0 )
+                                    srcamount = -srcamount;
+                                else destamount = -destamount;
+                                if ( srcamount != 0. && destamount != 0. )
+                                {
+                                    netamounts[baseind] += srcamount;
+                                    netamounts[relind] += destamount;
+                                    subitem = cJSON_CreateObject();
+                                    jaddnum(subitem,base,srcamount);
+                                    jaddnum(subitem,rel,destamount);
+                                    jaddnum(subitem,"price",destamount/srcamount);
+                                    jaddi(item,subitem);
+                                }
+                            } else printf("base.%p rel.%p statusstr.%p baseind.%d relind.%d\n",base,rel,statusstr,baseind,relind);
+                            free_json(swapjson);
+                        } else printf("error parsing.(%s)\n",retstr);
+                        free(retstr);
+                    }
                     jaddi(array,item);
                 } else break;
             } else break;
@@ -1324,6 +1367,17 @@ char *LP_recent_swaps(int32_t limit)
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jadd(retjson,"swaps",array);
+    array = cJSON_CreateArray();
+    for (i=0; i<LP_MAXPRICEINFOS; i++)
+    {
+        if ( netamounts[i] != 0. )
+        {
+            item = cJSON_CreateObject();
+            jaddnum(item,LP_priceinfostr(i),netamounts[i]);
+            jaddi(array,item);
+        }
+    }
+    jadd(retjson,"netamounts",array);
     if ( time(NULL) < Alice_expiration )
     {
         item = cJSON_CreateObject();
@@ -1373,7 +1427,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
         limit = 10;
     memset(ridqids,0,sizeof(ridqids));
     retarray = cJSON_CreateArray();
-    if ( (liststr= basilisk_swaplist(0,0,0)) != 0 )
+    if ( (liststr= basilisk_swaplist(0,0,0,0)) != 0 )
     {
         //printf("swapentry.(%s)\n",liststr);
         if ( (retjson= cJSON_Parse(liststr)) != 0 )

@@ -622,7 +622,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 
 cJSON *LP_balances(char *coinaddr)
 {
-    struct iguana_info *coin,*tmp; char address[64]; uint8_t addrtype,rmd160[20]; uint64_t balance; cJSON *array,*item,*retjson;
+    struct iguana_info *coin,*tmp; char address[64]; uint8_t addrtype,rmd160[20]; uint64_t balance,KMDvalue,sum = 0; cJSON *array,*item,*retjson;
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
@@ -645,6 +645,11 @@ cJSON *LP_balances(char *coinaddr)
                     item = cJSON_CreateObject();
                     jaddstr(item,"coin",coin->symbol);
                     jaddnum(item,"balance",dstr(balance));
+                    if ( (KMDvalue= LP_KMDvalue(coin,balance)) != 0 )
+                    {
+                        jaddnum(item,"KMDvalue",dstr(KMDvalue));
+                        sum += KMDvalue;
+                    }
                     if ( coin->electrum != 0 && strcmp(coinaddr,coin->smartaddr) == 0 && strcmp(coin->symbol,"KMD") == 0 )
                     {
                         jaddnum(item,"zcredits",dstr(LP_myzcredits()));
@@ -662,6 +667,11 @@ cJSON *LP_balances(char *coinaddr)
                 item = cJSON_CreateObject();
                 jaddstr(item,"coin",coin->symbol);
                 jaddnum(item,"balance",dstr(balance));
+                if ( (KMDvalue= LP_KMDvalue(coin,balance)) != 0 )
+                {
+                    jaddnum(item,"KMDvalue",dstr(KMDvalue));
+                    sum += KMDvalue;
+                }
                 if ( strcmp(coin->symbol,"KMD") == 0 )
                 {
                     jaddnum(item,"zcredits",dstr(LP_myzcredits()));
@@ -670,6 +680,13 @@ cJSON *LP_balances(char *coinaddr)
                 jaddi(array,item);
             }
         }
+    }
+    if ( sum != 0 )
+    {
+        item = cJSON_CreateObject();
+        jaddstr(item,"coin","total");
+        jaddnum(item,"balance",dstr(sum));
+        jaddi(array,item);
     }
     return(array);
 }

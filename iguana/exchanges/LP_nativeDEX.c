@@ -17,7 +17,10 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// fundvalue -> autoprice, cmc +margin -> autoprice, signals -> autoprice
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
+// there is an issue about waiting for notarization for a swap that never starts
+// use electrum in case of addr change in swap
 //
 // compress packets
 // portfolio to set prices from historical
@@ -616,7 +619,7 @@ void LP_coinsloop(void *_coins)
                     coin->lastscanht = coin->firstscanht;
                 continue;
             }
-            if ( 0 )
+            if ( strcmp(coin->symbol,"BTC") != 0 && strcmp(coin->symbol,"KMD") != 0 ) // SPV as backup
             {
                 nonz++;
                 if ( strcmp("BTC",coins) == 0 )//&& coin->lastscanht < coin->longestchain-3 )

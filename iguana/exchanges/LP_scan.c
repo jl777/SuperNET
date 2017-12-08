@@ -26,7 +26,7 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
     {
         if ( (txs= jarray(&numtx,blockobj,"tx")) != 0 )
         {
-            printf("LP_blockinit %s ht.%d numtx.%d\n",coin->symbol,height,numtx);
+            //printf("LP_blockinit %s ht.%d numtx.%d\n",coin->symbol,height,numtx);
             for (iter=0; iter<2; iter++)
             {
                 txobj = 0;

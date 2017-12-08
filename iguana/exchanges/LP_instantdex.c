@@ -386,7 +386,7 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
         {
             ap->instantdex_credits += satoshis;
             ap->didinstantdex = 1;
-            if ( dispflag != 0 )
+            if ( 0 && dispflag != 0 )
                 printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->instantdex_credits));
             return(satoshis);
         } else printf("null ap.%p or expired %ld\n",ap,time(NULL) - (timestamp-60*3600));
@@ -479,7 +479,19 @@ int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue)
         if ( credits == 0 && (ap= LP_address(coin,coinaddr)) != 0 )
             credits = ap->instantdex_credits;
         if ( credits != 0 && (swaps_kmdvalue+kmdvalue) > credits )
+        {
+            DL_FOREACH_SAFE(pubp->bobswaps,ptr,tmp)
+            {
+                if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
+                    printf("unfinished bob %llu r%u-r%u src.%s %.8f dest.%s %.8f -> price %.8f value %.8f\n",(long long)sp->aliceid,sp->Q.R.requestid,sp->Q.R.quoteid,sp->Q.srccoin,dstr(sp->Q.satoshis),sp->Q.destcoin,dstr(sp->Q.destsatoshis),(double)sp->Q.destsatoshis/(sp->Q.satoshis+1),dstr(LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis)));
+            }
+            DL_FOREACH_SAFE(pubp->aliceswaps,ptr,tmp)
+            {
+                if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
+                    printf("unfinished alice %llu r%u-r%u src.%s %.8f dest.%s %.8f -> price %.8f value %.8f\n",(long long)sp->aliceid,sp->Q.R.requestid,sp->Q.R.quoteid,sp->Q.srccoin,dstr(sp->Q.satoshis),sp->Q.destcoin,dstr(sp->Q.destsatoshis),(double)sp->Q.destsatoshis/(sp->Q.satoshis+1),dstr(LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis)));
+            }
             printf("REJECT: %s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+        }
         if ( 0 && credits != 0 )
             printf("%s %s othercredits %.8f debits %.8f + %.8f -> %.8f\n",coin->symbol,coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue),dstr(credits - (swaps_kmdvalue+kmdvalue)));
         return(credits - (swaps_kmdvalue+kmdvalue));
