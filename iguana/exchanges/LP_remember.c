@@ -1330,12 +1330,12 @@ char *LP_recent_swaps(int32_t limit)
                     jaddinum(item,quoteid);
                     if ( (retstr= basilisk_swapentry(requestid,quoteid,0)) != 0 )
                     {
-                        printf("%s\n",retstr);
                         if ( (swapjson= cJSON_Parse(retstr)) != 0 )
                         {
                             base = jstr(swapjson,"bob");
                             rel = jstr(swapjson,"alice");
                             statusstr = jstr(swapjson,"status");
+                            baseind = relind = -1;
                             if ( base != 0 && rel != 0 && statusstr != 0 && strcmp(statusstr,"finished") == 0 && (baseind= LP_priceinfoind(base)) >= 0 && (relind= LP_priceinfoind(rel)) >= 0 )
                             {
                                 srcamount = jdouble(swapjson,"srcamount");
@@ -1349,9 +1349,9 @@ char *LP_recent_swaps(int32_t limit)
                                 jaddnum(subitem,base,srcamount);
                                 jaddnum(subitem,rel,destamount);
                                 jaddi(item,subitem);
-                            } else printf("base.%p rel.%p statusstr.%p\n",base,rel,statusstr);
+                            } else printf("base.%p rel.%p statusstr.%p baseind.%d relind.%d\n",base,rel,statusstr,baseind,relind);
                             free_json(swapjson);
-                        }
+                        } else printf("error parsing.(%s)\n",retstr);
                         free(retstr);
                     }
                     jaddi(array,item);
