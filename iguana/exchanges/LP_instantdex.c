@@ -113,15 +113,13 @@ void LP_instantdex_filescreate(char *coinaddr)
 
 void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
 {
-    static FILE *depositsfp;
-    struct iguana_info *coin; char fname[512],*addr; bits256 prevtxid; cJSON *array; int32_t i,n,iter;
+    FILE *fp; struct iguana_info *coin; char fname[512],*addr; bits256 prevtxid; cJSON *array; int32_t i,n,iter;
     coin = LP_coinfind("KMD");
-    if ( depositsfp == 0 )
+    sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"rb+")) == 0 )
     {
-        sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
-        if ( (depositsfp= fopen(fname,"rb+")) == 0 )
+        if ( (fp= fopen(fname,"wb+")) != 0 )
         {
-            depositsfp = fopen(fname,"wb+");
             for (iter=0; iter<4; iter++)
             {
                 if ( iter < 2 )
@@ -134,23 +132,23 @@ void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
                         for (i=0; i<n; i++)
                         {
                             prevtxid = jbits256i(array,i);
-                            //printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
+                            //char str[65]; printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
                             if ( LP_instantdex_creditcalc(coin,0,prevtxid,coinaddr) > 0 )
                             {
-                                LP_instantdex_deposituniq(depositsfp,prevtxid);
-                                fflush(depositsfp);
+                                LP_instantdex_deposituniq(fp,prevtxid);
+                                fflush(fp);
                             }
                         }
                     }
                     free_json(array);
                 }
             }
-        } else fseek(depositsfp,0,SEEK_END);
-    }
-    if ( depositsfp != 0 && bits256_nonz(txid) != 0 )
+        }
+    } else fseek(fp,0,SEEK_END);
+    if ( fp != 0 && bits256_nonz(txid) != 0 )
     {
-        LP_instantdex_deposituniq(depositsfp,txid);
-        fflush(depositsfp);
+        LP_instantdex_deposituniq(fp,txid);
+        fclose(fp);
     }
     LP_instantdex_filescreate(coinaddr);
 }
