@@ -1140,7 +1140,7 @@ double LP_CMCbtcprice(double *price_usdp,char *symbol)
 
 cJSON *LP_fundvalue(cJSON *argjson)
 {
-    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
+    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n,missing=0; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
     fundvalue = 0;
     KMDholdings = btcsum = 0.;
     array = cJSON_CreateArray();
@@ -1180,11 +1180,13 @@ cJSON *LP_fundvalue(cJSON *argjson)
                     }
                     else jaddstr(newitem,"error","no price source");
                     jaddi(array,newitem);
-                }
+                } else missing++;
             }
         }
     }
     retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"missing",missing);
     jadd(retjson,"holdings",array);
     btcprice = LP_CMCbtcprice(&usdprice,"komodo");
     divisor = jdouble(argjson,"divisor");

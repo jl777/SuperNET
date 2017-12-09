@@ -24,6 +24,7 @@ struct LP_autoprice_ref
 {
     char refbase[65],refrel[65],base[65],rel[65];
     double margin,factor,offset;
+    cJSON *fundvalue;
 } LP_autorefs[100];
 
 int32_t LP_autoprices,num_LP_autorefs;
@@ -472,7 +473,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
 {
     //curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"MNZ\",\"rel\":\"KMD\",\"offset\":0.1,\"refbase\":\"KMD\",\refrel\":\"BTC\",\"factor\":15000,\"margin\":0.01}"
-    struct LP_priceinfo *basepp,*relpp; int32_t i,retval = -1; char *refbase="",*refrel=""; double minprice,margin,offset,factor,fixedprice;
+    struct LP_priceinfo *basepp,*relpp; int32_t i,isfundvalue,retval = -1; char *refbase="",*refrel=""; double minprice,margin,offset,factor,fixedprice;
     //printf("autoprice.(%s %s) %s\n",base,rel,jprint(argjson,0));
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
@@ -488,7 +489,10 @@ int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
         basepp->margins[relpp->ind] = margin;
         basepp->offsets[relpp->ind] = offset;
         basepp->factors[relpp->ind] = factor;
-        if ( fixedprice > SMALLVAL || ((refbase= jstr(argjson,"refbase")) != 0 && (refrel= jstr(argjson,"refrel")) != 0) )
+        refbase = jstr(argjson,"refbase");
+        refrel = jstr(argjson,"refrel");
+        isfundvalue = jint(argjson,"fundvalue");
+        if ( isfundvalue != 0 || fixedprice > SMALLVAL || (refbase != 0 && refrel != 0) )
         {
             if ( fixedprice > SMALLVAL )
             {

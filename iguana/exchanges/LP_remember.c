@@ -380,8 +380,13 @@ int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflag
     }
     else
     {
-        if ( bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 && sentflags[BASILISK_ALICEPAYMENT] == 0 )
-            return(1);
+        if ( sentflags[BASILISK_ALICEPAYMENT] == 0 )
+        {
+            if ( bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 )
+                return(1);
+            else if ( sentflags[BASILISK_BOBPAYMENT] != 0 && sentflags[BASILISK_BOBREFUND] != 0 )
+                return(1);
+        }
         else
         {
             if ( sentflags[BASILISK_ALICERECLAIM] != 0 || sentflags[BASILISK_ALICESPEND] != 0 )
