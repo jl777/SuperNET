@@ -375,6 +375,8 @@ int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflag
         }
         else if ( bits256_nonz(Apaymentspent) != 0 )
             return(1);
+        else if ( bits256_nonz(paymentspent) != 0 && bits256_nonz(depositspent) != 0 )
+            return(1);
     }
     else
     {
