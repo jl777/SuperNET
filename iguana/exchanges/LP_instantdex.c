@@ -114,7 +114,8 @@ void LP_instantdex_filescreate(char *coinaddr)
 void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
 {
     static FILE *depositsfp;
-    char fname[512],str[65],*addr; bits256 prevtxid; cJSON *array,*txobj; int32_t i,n,iter;
+    struct iguana_info *coin; char fname[512],*addr; bits256 prevtxid; cJSON *array; int32_t i,n,iter;
+    coin = LP_coinfind("KMD");
     if ( depositsfp == 0 )
     {
         sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
@@ -126,7 +127,7 @@ void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
                 if ( iter < 2 )
                     addr = coinaddr;
                 else addr = "";
-                if ( (array= LP_instantdex_txids(iter&1,addr)) != 0 )
+                if ( coin != 0 && (array= LP_instantdex_txids(iter&1,addr)) != 0 )
                 {
                     if ( (n= cJSON_GetArraySize(array)) > 0 )
                     {
@@ -134,15 +135,11 @@ void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
                         {
                             prevtxid = jbits256i(array,i);
                             //printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
-                            if ( (txobj= LP_gettxout("KMD",coinaddr,prevtxid,0)) != 0 )
-                                free_json(txobj);
-                            else
+                            if ( LP_instantdex_creditcalc(coin,0,prevtxid,coinaddr) > 0 )
                             {
-                                printf("null gettxout %s %s\n",coinaddr,bits256_str(str,prevtxid));
-                                continue;
+                                LP_instantdex_deposituniq(depositsfp,prevtxid);
+                                fflush(depositsfp);
                             }
-                            LP_instantdex_deposituniq(depositsfp,prevtxid);
-                            fflush(depositsfp);
                         }
                     }
                     free_json(array);
