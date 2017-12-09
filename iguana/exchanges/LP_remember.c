@@ -900,7 +900,12 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,rswap.src) != 0 || strcmp(rswap.alicecoin,rswap.dest) != 0 )
     {
         //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
-        return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
+        cJSON *retjson = cJSON_CreateObject();
+        jaddstr(retjson,"error","swap never started");
+        jaddnum(retjson,"requestid",requestid);
+        jaddnum(retjson,"quoteid",quoteid);
+        return(retjson);
+        //return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
     }
     alice = LP_coinfind(rswap.alicecoin);
     bob = LP_coinfind(rswap.bobcoin);
