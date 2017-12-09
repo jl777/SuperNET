@@ -441,7 +441,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
                 if ( strcmp(rel,"KMD") == 0 )
-                    price = price_btc / kmd_btc;
+                    price = kmd_btc / price_btc;
                 else if ( strcmp(rel,"BTC") == 0 )
                     price = price_btc;
                 else continue;
@@ -450,7 +450,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 newprice = (price * (1. + margin));
                 LP_mypriceset(&changed,rel,base,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
-                //printf("price %.8f margin %.8f newprice %.8f %.8f\n",price,margin,newprice,(1. / price) * (1. + margin));
+                printf("price %.8f margin %.8f newprice %.8f %.8f\n",price,margin,newprice,(1. / price) * (1. + margin));
                 newprice = (1. / price) * (1. + margin);
                 LP_mypriceset(&changed,base,rel,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
