@@ -443,7 +443,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 if ( strcmp(rel,"KMD") == 0 )
                     price = kmd_btc / price_btc;
                 else if ( strcmp(rel,"BTC") == 0 )
-                    price = price_btc;
+                    price = 1. / price_btc;
                 else continue;
                 if ( factor > 0. )
                     price = (price * factor) + offset;
