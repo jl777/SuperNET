@@ -441,7 +441,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
                 if ( strcmp(rel,"KMD") == 0 )
-                    price = kmd_btc / price_btc;
+                    price = price_btc / kmd_btc;
                 else if ( strcmp(rel,"BTC") == 0 )
                     price = price_btc;
                 else continue;
