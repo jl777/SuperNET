@@ -509,6 +509,7 @@ int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
     {
         bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
         bitcoin_address(othersmartaddr,0,60,rmd160,20);
+        printf("proofcheck addrtype.%d (%s) -> %s\n",addrtype,coinaddr,othersmartaddr);
         if ((ap= LP_address(coin,othersmartaddr)) != 0 )
         {
             ap->instantdex_credits = 0;
