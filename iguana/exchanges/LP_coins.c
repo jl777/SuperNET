@@ -262,7 +262,11 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     if ( strcmp(coin->symbol,"KMD") == 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
-        LP_instantdex_depositadd(coin->smartaddr,zero);
+        if ( strcmp(coin->smartaddr,coin->instantdex_address) != 0 )
+        {
+            LP_instantdex_depositadd(coin->smartaddr,zero);
+            strcpy(coin->instantdex_address,coin->smartaddr);
+        }
         jaddnum(item,"zcredits",dstr(LP_myzcredits()));
         jadd(item,"zdebits",LP_myzdebits());
     }
