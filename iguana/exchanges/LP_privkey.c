@@ -321,26 +321,6 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
         printf("waiting for G.waiting\n");
         sleep(5);
     }
-    /*for (iambob=0; iambob<2; iambob++)
-    {
-        if ( G.LP_utxoinfos[iambob] != 0 )
-        {
-            HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
-            {
-                HASH_DELETE(hh,G.LP_utxoinfos[iambob],utxo);
-                //free(utxo);
-            }
-        }
-        if ( G.LP_utxoinfos2[iambob] != 0 )
-        {
-            G.LP_utxoinfos2[iambob] = 0;
-            //HASH_ITER(hh,G.LP_utxoinfos2[iambob],utxo,tmp)
-            //{
-            //    HASH_DELETE(hh,G.LP_utxoinfos2[iambob],utxo);
-            //    free(utxo);
-            //}
-        }
-    }*/
     memset(&G,0,sizeof(G));
     LP_privkey_updates(ctx,LP_mypubsock,passphrase);
     init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
@@ -350,6 +330,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
     G.initializing = 0;
     bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
     memset(zero.bytes,0,sizeof(zero));
+    printf("passphrase init: call depositadd.(%s)\n",coinaddr);
     LP_instantdex_depositadd(coinaddr,zero);
     return(0);
 }
