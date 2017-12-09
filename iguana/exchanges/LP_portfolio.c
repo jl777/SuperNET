@@ -452,7 +452,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                     if ( LP_autorefs[i].fundask[0] != 0 && (price= jdouble(fundjson,LP_autorefs[i].fundask)) > SMALLVAL )
                     {
                         newprice = (price * (1. + margin));
-                        LP_mypriceset(&changed,base,rel,price);
+                        LP_mypriceset(&changed,base,rel,newprice);
                         LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
                         printf("fundask %.8f margin %.8f newprice %.8f\n",price,margin,newprice);
                     }
