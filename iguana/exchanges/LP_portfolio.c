@@ -22,7 +22,7 @@
 struct LP_autoprice_ref
 {
     char refbase[65],refrel[65],base[65],rel[65];
-    double margin;
+    double margin,factor,offset;
 } LP_autorefs[100];
 
 int32_t LP_autoprices,num_LP_autorefs;
@@ -367,7 +367,7 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
 
 void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 {
-    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double nxtkmd,price,newprice,margin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
+    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double nxtkmd,price,factor,offset,newprice,margin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
     if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
     {
         printf("trex error getting marketsummaries\n");
@@ -434,6 +434,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             rel = LP_autorefs[i].rel;
             base = LP_autorefs[i].base;
             margin = LP_autorefs[i].margin;
+            offset = LP_autorefs[i].offset;
+            factor = LP_autorefs[i].factor;
             printf("%s/%s for %s/%s margin %.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,margin);
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
@@ -442,6 +444,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 else if ( strcmp(rel,"BTC") == 0 )
                     price = price_btc;
                 else continue;
+                if ( factor > 0. )
+                    price = (price * factor) + offset;
                 newprice = (price * (1. + margin));
                 LP_mypriceset(&changed,rel,base,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
@@ -495,6 +499,8 @@ int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
                 if ( strcmp(base,LP_autorefs[i].base) == 0 && strcmp(rel,LP_autorefs[i].rel) == 0 )
                 {
                     LP_autorefs[i].margin = margin;
+                    LP_autorefs[i].factor = factor;
+                    LP_autorefs[i].offset = offset;
                     safecopy(LP_autorefs[i].refbase,refbase,sizeof(LP_autorefs[i].refbase));
                     safecopy(LP_autorefs[i].refrel,refrel,sizeof(LP_autorefs[i].refrel));
                     printf("%d Update ref %s/%s for %s/%s factor %.8f offset %.8f\n",i,refbase,refrel,base,rel,factor,offset);
@@ -504,6 +510,8 @@ int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
             if ( i == num_LP_autorefs && num_LP_autorefs < sizeof(LP_autorefs)/sizeof(*LP_autorefs) )
             {
                 LP_autorefs[num_LP_autorefs].margin = margin;
+                LP_autorefs[num_LP_autorefs].factor = factor;
+                LP_autorefs[num_LP_autorefs].offset = offset;
                 safecopy(LP_autorefs[num_LP_autorefs].refbase,refbase,sizeof(LP_autorefs[num_LP_autorefs].refbase));
                 safecopy(LP_autorefs[num_LP_autorefs].refrel,refrel,sizeof(LP_autorefs[num_LP_autorefs].refrel));
                 safecopy(LP_autorefs[num_LP_autorefs].base,base,sizeof(LP_autorefs[num_LP_autorefs].base));
@@ -515,7 +523,7 @@ int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
         LP_autoprices++;
         retval = 0;
     }
-    LP_autoprice_iter(ctx,LP_priceinfofind("BTC"));
+    //LP_autoprice_iter(ctx,LP_priceinfofind("BTC"));
     return(retval);
 }
 

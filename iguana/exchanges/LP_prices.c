@@ -915,8 +915,8 @@ int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
             KMDvalue = balance;
         else
         {
-            price = LP_price(coin->symbol,"KMD");
-            KMDvalue = price * balance;
+            if ( (price= LP_price(coin->symbol,"KMD")) > SMALLVAL )
+                KMDvalue = price * balance;
         }
     }
     return(KMDvalue);
