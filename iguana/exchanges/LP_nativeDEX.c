@@ -17,21 +17,22 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// ordermatch pricing error
 // signals -> autoprice
 // passphrase for deposits
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
-//
 // compress packets
 // portfolio to set prices from historical
 // portfolio value based on ask?
-//
 // else claim path
+//
+// WONTFIX:
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 // improve critical section detection when parallel trades
 // use electrum in case of addr change in swap
 // locktime claiming on sporadic assetchains
-// there is an issue about waiting for notarization for a swap that never starts
+// there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
 #include <stdio.h>
 

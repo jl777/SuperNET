@@ -307,7 +307,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
 
 int32_t LP_passphrase_init(char *passphrase,char *gui)
 {
-    static void *ctx; char coinaddr[64]; bits256 zero; int32_t counter; //iambob,; struct LP_utxoinfo *utxo,*tmp;
+    static void *ctx; int32_t counter; //iambob,; struct LP_utxoinfo *utxo,*tmp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( G.LP_pendingswaps != 0 )
@@ -328,10 +328,6 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
     safecopy(G.gui,gui,sizeof(G.gui));
     G.USERPASS_COUNTER = counter;
     G.initializing = 0;
-    bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
-    memset(zero.bytes,0,sizeof(zero));
-    printf("passphrase init: call depositadd.(%s)\n",coinaddr);
-    LP_instantdex_depositadd(coinaddr,zero);
     return(0);
 }
 
