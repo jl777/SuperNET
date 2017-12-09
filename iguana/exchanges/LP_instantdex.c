@@ -19,16 +19,24 @@
 //  marketmaker
 //
 
-void LP_instantdex_txidaddfname(char *fname,char *afname)
+void LP_instantdex_txidaddfname(char *fname,char *afname,char *coinaddr)
 {
-    sprintf(fname,"%s/instantdex.json",GLOBAL_DBDIR);
-    sprintf(afname,"%s/instantdex_append.json",GLOBAL_DBDIR);
+    if ( coinaddr == 0 || coinaddr[0] == 0 )
+    {
+        sprintf(fname,"%s/instantdex.json",GLOBAL_DBDIR);
+        sprintf(afname,"%s/instantdex_append.json",GLOBAL_DBDIR);
+    }
+    else
+    {
+        sprintf(fname,"%s/instantdex_%s.json",GLOBAL_DBDIR,coinaddr);
+        sprintf(afname,"%s/instantdex_%s_append.json",GLOBAL_DBDIR,coinaddr);
+    }
 }
 
-cJSON *LP_instantdex_txids(int32_t appendonly)
+cJSON *LP_instantdex_txids(int32_t appendonly,char *coinaddr)
 {
     char *filestr,fname[1024],afname[1024]; long fsize; cJSON *retjson=0;
-    LP_instantdex_txidaddfname(fname,afname);
+    LP_instantdex_txidaddfname(fname,afname,coinaddr);
     if ( (filestr= OS_filestr(&fsize,appendonly != 0 ? afname : fname)) != 0 )
     {
         retjson = cJSON_Parse(filestr);
@@ -37,10 +45,10 @@ cJSON *LP_instantdex_txids(int32_t appendonly)
     return(retjson);
 }
 
-void LP_instantdex_filewrite(int32_t appendfile,cJSON *array)
+void LP_instantdex_filewrite(int32_t appendfile,cJSON *array,char *coinaddr)
 {
     FILE *fp; char *filestr,fname[1024],afname[1024];
-    LP_instantdex_txidaddfname(fname,afname);
+    LP_instantdex_txidaddfname(fname,afname,coinaddr);
     if ( (fp= fopen(appendfile == 0 ? fname : afname,"wb")) != 0 )
     {
         filestr = jprint(array,0);
@@ -96,9 +104,9 @@ void LP_instantdex_filescreate(char *coinaddr)
             jaddibits256(newarray,txid);
         }
         fclose(fp);
-        LP_instantdex_filewrite(0,newarray);
+        LP_instantdex_filewrite(0,newarray,coinaddr);
         free_json(newarray);
-        LP_instantdex_filewrite(1,array);
+        LP_instantdex_filewrite(1,array,coinaddr);
         free_json(array);
     }
 }
@@ -106,16 +114,19 @@ void LP_instantdex_filescreate(char *coinaddr)
 void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
 {
     static FILE *depositsfp;
-    char fname[512],str[65]; bits256 prevtxid; cJSON *array,*txobj; int32_t i,n,iter;
+    char fname[512],str[65],*addr; bits256 prevtxid; cJSON *array,*txobj; int32_t i,n,iter;
     if ( depositsfp == 0 )
     {
         sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
         if ( (depositsfp= fopen(fname,"rb+")) == 0 )
         {
             depositsfp = fopen(fname,"wb+");
-            for (iter=0; iter<2; iter++)
+            for (iter=0; iter<4; iter++)
             {
-                if ( (array= LP_instantdex_txids(iter)) != 0 )
+                if ( iter < 2 )
+                    addr = coinaddr;
+                else addr = "";
+                if ( (array= LP_instantdex_txids(iter&1,addr)) != 0 )
                 {
                     if ( (n= cJSON_GetArraySize(array)) > 0 )
                     {
@@ -350,7 +361,7 @@ char *LP_instantdex_claim(struct iguana_info *coin)
     sum = 0;
     txids = cJSON_CreateArray();
     newarray = cJSON_CreateArray();
-    if ( (array= LP_instantdex_txids(firsttime)) != 0 )
+    if ( (array= LP_instantdex_txids(firsttime,coin->smartaddr)) != 0 )
     {
         printf("claiming from.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -367,7 +378,7 @@ char *LP_instantdex_claim(struct iguana_info *coin)
     }
     firsttime = 0;
     if ( cJSON_GetArraySize(newarray) > 0 )
-        LP_instantdex_filewrite(0,newarray);
+        LP_instantdex_filewrite(0,newarray,coin->smartaddr);
     free_json(newarray);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
@@ -539,7 +550,7 @@ int64_t LP_myzcredits()
     cJSON *proof; struct iguana_info *coin; int64_t zcredits;
     if ( (coin= LP_coinfind("KMD")) != 0 )
     {
-        if ( (proof= LP_instantdex_txids(0)) != 0 )
+        if ( (proof= LP_instantdex_txids(0,coin->smartaddr)) != 0 )
         {
             zcredits = LP_instantdex_proofcheck(coin->smartaddr,proof,cJSON_GetArraySize(proof));
             free_json(proof);

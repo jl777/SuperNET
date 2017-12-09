@@ -643,7 +643,7 @@ void LP_listunspent_query(char *symbol,char *coinaddr)
 
 void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_quoteinfo *qp)
 {
-    cJSON *reqjson; bits256 zero; char *msg; int32_t flag = 0;
+    cJSON *reqjson; bits256 zero; char *msg; struct iguana_info *coin; int32_t flag = 0;
     if ( strcmp(method,"request") == 0 )
     {
         if ( LP_allocated(qp->desttxid,qp->destvout) == 0 && LP_allocated(qp->feetxid,qp->feevout) == 0 )
@@ -665,7 +665,10 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     if ( jobj(reqjson,"timestamp") == 0 )
         jaddnum(reqjson,"timestamp",time(NULL));
     if ( strcmp(method,"connect") == 0 )
-        jadd(reqjson,"proof",LP_instantdex_txids(0));
+    {
+        if ( (coin= LP_coinfind("KMD")) != 0 )
+            jadd(reqjson,"proof",LP_instantdex_txids(0,coin->smartaddr));
+    }
     msg = jprint(reqjson,1);
     printf("QUERY.(%s)\n",msg);
     //if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )

@@ -22,7 +22,7 @@ struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
 
 struct LP_autoprice_ref
 {
-    char refbase[65],refrel[65],base[65],rel[65];
+    char refbase[65],refrel[65],base[65],rel[65],fundbid[16],fundask[16];
     double margin,factor,offset;
     cJSON *fundvalue;
 } LP_autorefs[100];
@@ -473,7 +473,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
 {
     //curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"MNZ\",\"rel\":\"KMD\",\"offset\":0.1,\"refbase\":\"KMD\",\refrel\":\"BTC\",\"factor\":15000,\"margin\":0.01}"
-    struct LP_priceinfo *basepp,*relpp; int32_t i,retval = -1; char *fundvalue_bid,*fundvalue_ask,*refbase="",*refrel=""; double minprice,margin,offset,factor,fixedprice;
+    struct LP_priceinfo *basepp,*relpp; int32_t i,retval = -1; char *fundvalue_bid,*fundvalue_ask,*refbase="",*refrel=""; double minprice,margin,offset,factor,fixedprice; cJSON *fundvalue;
     //printf("autoprice.(%s %s) %s\n",base,rel,jprint(argjson,0));
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
@@ -504,6 +504,15 @@ int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
             {
                 if ( strcmp(base,LP_autorefs[i].base) == 0 && strcmp(rel,LP_autorefs[i].rel) == 0 )
                 {
+                    if ( fundvalue_bid != 0 || fundvalue_ask != 0 )
+                    {
+                        fundvalue = jduplicate(argjson);
+                        jdelete(fundvalue,"method");
+                        jaddstr(fundvalue,"method","fundvalue");
+                        LP_autorefs[i].fundvalue = fundvalue;
+                        safecopy(LP_autorefs[i].fundbid,fundvalue_bid,sizeof(LP_autorefs[i].fundbid));
+                        safecopy(LP_autorefs[i].fundask,fundvalue_ask,sizeof(LP_autorefs[i].fundask));
+                    }
                     LP_autorefs[i].margin = margin;
                     LP_autorefs[i].factor = factor;
                     LP_autorefs[i].offset = offset;
