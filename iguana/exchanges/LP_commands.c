@@ -321,7 +321,7 @@ instantdex_claim()\n\
             double price,bid,ask;
             if ( strcmp(method,"autoprice") == 0 )
             {
-                if ( LP_autoprice(base,rel,argjson) < 0 )
+                if ( LP_autoprice(ctx,base,rel,argjson) < 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
