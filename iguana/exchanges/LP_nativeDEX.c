@@ -1162,10 +1162,10 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     LP_initcoins(ctx,pubsock,coinsjson);
     G.waiting = 1;
     LP_passphrase_init(passphrase,jstr(argjson,"gui"));
-    char coinaddr[64]; bits256 zero;
-    bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
-    memset(zero.bytes,0,sizeof(zero));
-    LP_instantdex_depositadd(coinaddr,zero);
+    //char coinaddr[64]; bits256 zero;
+    //bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
+    //memset(zero.bytes,0,sizeof(zero));
+    //LP_instantdex_depositadd(coinaddr,zero);
 #ifndef FROM_JS
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {

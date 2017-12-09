@@ -68,7 +68,7 @@ void LP_instantdex_deposituniq(FILE *fp,bits256 txid)
         fread(&prevtxid,1,sizeof(prevtxid),fp);
         if ( bits256_cmp(prevtxid,txid) == 0 )
         {
-            printf("%s duplicate of deposits[%d]\n",bits256_str(str,prevtxid),i);
+            //printf("%s duplicate of deposits[%d]\n",bits256_str(str,prevtxid),i);
             break;
         }
     }
@@ -133,7 +133,7 @@ void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
                         for (i=0; i<n; i++)
                         {
                             prevtxid = jbits256i(array,i);
-                            printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
+                            //printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
                             if ( (txobj= LP_gettxout("KMD",coinaddr,prevtxid,0)) != 0 )
                                 free_json(txobj);
                             else
