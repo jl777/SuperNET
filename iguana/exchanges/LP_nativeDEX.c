@@ -17,7 +17,8 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// fundvalue -> autoprice, signals -> autoprice
+// signals -> autoprice
+// passphrase for deposits
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 //
 // compress packets
