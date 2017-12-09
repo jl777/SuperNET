@@ -18,6 +18,7 @@
 //  marketmaker
 //
 
+struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
 
 struct LP_autoprice_ref
 {
@@ -436,11 +437,11 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             margin = LP_autorefs[i].margin;
             offset = LP_autorefs[i].offset;
             factor = LP_autorefs[i].factor;
-            printf("%s/%s for %s/%s margin %.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,margin);
+            //printf("%s/%s for %s/%s margin %.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,margin);
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
                 if ( strcmp(rel,"KMD") == 0 )
-                    price = price_btc / kmd_btc;
+                    price = kmd_btc / price_btc;
                 else if ( strcmp(rel,"BTC") == 0 )
                     price = price_btc;
                 else continue;
@@ -449,7 +450,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 newprice = (price * (1. + margin));
                 LP_mypriceset(&changed,rel,base,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
-                printf("price %.8f margin %.8f newprice %.8f %.8f\n",price,margin,newprice,(1. / price) * (1. + margin));
+                //printf("price %.8f margin %.8f newprice %.8f %.8f\n",price,margin,newprice,(1. / price) * (1. + margin));
                 newprice = (1. / price) * (1. + margin);
                 LP_mypriceset(&changed,base,rel,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
@@ -595,8 +596,6 @@ int32_t LP_portfolio_trade(void *ctx,uint32_t *requestidp,uint32_t *quoteidp,str
         return(0);
     else return(-1);
 }
-
-struct LP_portfoliotrade { double metric; char buycoin[65],sellcoin[65]; };
 
 int32_t LP_portfolio_order(struct LP_portfoliotrade *trades,int32_t max,cJSON *array)
 {
