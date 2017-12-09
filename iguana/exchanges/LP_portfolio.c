@@ -449,11 +449,11 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                     price = (price * factor) + offset;
                 newprice = (price * (1. + margin));
                 LP_mypriceset(&changed,rel,base,newprice);
-                LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
+                LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
                 printf("price %.8f margin %.8f newprice %.8f %.8f\n",price,margin,newprice,(1. / price) * (1. + margin));
                 newprice = (1. / price) * (1. + margin);
                 LP_mypriceset(&changed,base,rel,newprice);
-                LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
+                LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
             }
         }
         else
