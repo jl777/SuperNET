@@ -19,18 +19,18 @@
 //
 // fundvalue -> autoprice, cmc +margin -> autoprice, signals -> autoprice
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
-// there is an issue about waiting for notarization for a swap that never starts
-// use electrum in case of addr change in swap
 //
 // compress packets
 // portfolio to set prices from historical
 // portfolio value based on ask?
 //
 // else claim path
-// swap memleak?
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 // improve critical section detection when parallel trades
+// use electrum in case of addr change in swap
+// locktime claiming on sporadic assetchains
+// there is an issue about waiting for notarization for a swap that never starts
 
 #include <stdio.h>
 
