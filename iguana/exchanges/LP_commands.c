@@ -172,10 +172,13 @@ instantdex_claim()\n\
     {
         if ( G.USERPASS_COUNTER == 0 )
         {
+            char pub33str[67];
             G.USERPASS_COUNTER = 1;
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"userpass",G.USERPASS);
             jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+            init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
+            jaddstr(retjson,"pubsecp",pub33str);
             jadd(retjson,"coins",LP_coinsjson(LP_showwif));
             return(jprint(retjson,1));
         }
