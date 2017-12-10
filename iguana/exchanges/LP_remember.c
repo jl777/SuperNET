@@ -924,7 +924,14 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             destBdest = otheraddr;
             destAdest = rswap.Adestaddr;
             if ( strcmp(alice->smartaddr,rswap.Adestaddr) != 0 )
+            {
                 printf("this isnt my swap! alice.(%s vs %s)\n",alice->smartaddr,rswap.Adestaddr);
+                cJSON *retjson = cJSON_CreateObject();
+                jaddstr(retjson,"error","swap for different account");
+                jaddnum(retjson,"requestid",requestid);
+                jaddnum(retjson,"quoteid",quoteid);
+                return(retjson);
+            }
         }
         if ( (bob= LP_coinfind(rswap.bobcoin)) != 0 )
         {
@@ -941,7 +948,14 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             srcAdest = otheraddr;
             srcBdest = rswap.destaddr;
             if ( strcmp(bob->smartaddr,rswap.destaddr) != 0 )
+            {
                 printf("this isnt my swap! bob.(%s vs %s)\n",bob->smartaddr,rswap.destaddr);
+                cJSON *retjson = cJSON_CreateObject();
+                jaddstr(retjson,"error","swap for different account");
+                jaddnum(retjson,"requestid",requestid);
+                jaddnum(retjson,"quoteid",quoteid);
+                return(retjson);
+            }
         }
         if ( (alice= LP_coinfind(rswap.alicecoin)) != 0 )
         {
