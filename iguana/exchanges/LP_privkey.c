@@ -307,7 +307,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
 
 int32_t LP_passphrase_init(char *passphrase,char *gui)
 {
-    static void *ctx; char coinaddr[64]; bits256 zero; int32_t counter; //iambob,; struct LP_utxoinfo *utxo,*tmp;
+    static void *ctx; int32_t counter; //iambob,; struct LP_utxoinfo *utxo,*tmp;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( G.LP_pendingswaps != 0 )
@@ -321,36 +321,16 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
         printf("waiting for G.waiting\n");
         sleep(5);
     }
-    /*for (iambob=0; iambob<2; iambob++)
-    {
-        if ( G.LP_utxoinfos[iambob] != 0 )
-        {
-            HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
-            {
-                HASH_DELETE(hh,G.LP_utxoinfos[iambob],utxo);
-                //free(utxo);
-            }
-        }
-        if ( G.LP_utxoinfos2[iambob] != 0 )
-        {
-            G.LP_utxoinfos2[iambob] = 0;
-            //HASH_ITER(hh,G.LP_utxoinfos2[iambob],utxo,tmp)
-            //{
-            //    HASH_DELETE(hh,G.LP_utxoinfos2[iambob],utxo);
-            //    free(utxo);
-            //}
-        }
-    }*/
     memset(&G,0,sizeof(G));
     LP_privkey_updates(ctx,LP_mypubsock,passphrase);
     init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
     G.LP_sessionid = (uint32_t)time(NULL);
     safecopy(G.gui,gui,sizeof(G.gui));
+    LP_tradebot_pauseall();
+    LP_portfolio_reset();
+    LP_priceinfos_clear();
     G.USERPASS_COUNTER = counter;
     G.initializing = 0;
-    bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
-    memset(zero.bytes,0,sizeof(zero));
-    LP_instantdex_depositadd(coinaddr,zero);
     return(0);
 }
 

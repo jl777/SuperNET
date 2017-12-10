@@ -19,16 +19,24 @@
 //  marketmaker
 //
 
-void LP_instantdex_txidaddfname(char *fname,char *afname)
+void LP_instantdex_txidaddfname(char *fname,char *afname,char *coinaddr)
 {
-    sprintf(fname,"%s/instantdex.json",GLOBAL_DBDIR);
-    sprintf(afname,"%s/instantdex_append.json",GLOBAL_DBDIR);
+    if ( coinaddr == 0 || coinaddr[0] == 0 )
+    {
+        sprintf(fname,"%s/instantdex.json",GLOBAL_DBDIR);
+        sprintf(afname,"%s/instantdex_append.json",GLOBAL_DBDIR);
+    }
+    else
+    {
+        sprintf(fname,"%s/instantdex_%s.json",GLOBAL_DBDIR,coinaddr);
+        sprintf(afname,"%s/instantdex_%s_append.json",GLOBAL_DBDIR,coinaddr);
+    }
 }
 
-cJSON *LP_instantdex_txids(int32_t appendonly)
+cJSON *LP_instantdex_txids(int32_t appendonly,char *coinaddr)
 {
     char *filestr,fname[1024],afname[1024]; long fsize; cJSON *retjson=0;
-    LP_instantdex_txidaddfname(fname,afname);
+    LP_instantdex_txidaddfname(fname,afname,coinaddr);
     if ( (filestr= OS_filestr(&fsize,appendonly != 0 ? afname : fname)) != 0 )
     {
         retjson = cJSON_Parse(filestr);
@@ -37,10 +45,10 @@ cJSON *LP_instantdex_txids(int32_t appendonly)
     return(retjson);
 }
 
-void LP_instantdex_filewrite(int32_t appendfile,cJSON *array)
+void LP_instantdex_filewrite(int32_t appendfile,cJSON *array,char *coinaddr)
 {
     FILE *fp; char *filestr,fname[1024],afname[1024];
-    LP_instantdex_txidaddfname(fname,afname);
+    LP_instantdex_txidaddfname(fname,afname,coinaddr);
     if ( (fp= fopen(appendfile == 0 ? fname : afname,"wb")) != 0 )
     {
         filestr = jprint(array,0);
@@ -60,7 +68,7 @@ void LP_instantdex_deposituniq(FILE *fp,bits256 txid)
         fread(&prevtxid,1,sizeof(prevtxid),fp);
         if ( bits256_cmp(prevtxid,txid) == 0 )
         {
-            printf("%s duplicate of deposits[%d]\n",bits256_str(str,prevtxid),i);
+            //printf("%s duplicate of deposits[%d]\n",bits256_str(str,prevtxid),i);
             break;
         }
     }
@@ -96,53 +104,51 @@ void LP_instantdex_filescreate(char *coinaddr)
             jaddibits256(newarray,txid);
         }
         fclose(fp);
-        LP_instantdex_filewrite(0,newarray);
+        LP_instantdex_filewrite(0,newarray,coinaddr);
         free_json(newarray);
-        LP_instantdex_filewrite(1,array);
+        LP_instantdex_filewrite(1,array,coinaddr);
         free_json(array);
     }
 }
 
 void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
 {
-    static FILE *depositsfp;
-    char fname[512],str[65]; bits256 prevtxid; cJSON *array,*txobj; int32_t i,n,iter;
-    if ( depositsfp == 0 )
+    FILE *fp; struct iguana_info *coin; char fname[512],*addr; bits256 prevtxid; cJSON *array; int32_t i,n,iter;
+    coin = LP_coinfind("KMD");
+    sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"rb+")) == 0 )
     {
-        sprintf(fname,"%s/deposits.%s",GLOBAL_DBDIR,coinaddr), OS_compatible_path(fname);
-        if ( (depositsfp= fopen(fname,"rb+")) == 0 )
+        if ( (fp= fopen(fname,"wb+")) != 0 )
         {
-            depositsfp = fopen(fname,"wb+");
-            for (iter=0; iter<2; iter++)
+            for (iter=0; iter<4; iter++)
             {
-                if ( (array= LP_instantdex_txids(iter)) != 0 )
+                if ( iter < 2 )
+                    addr = coinaddr;
+                else addr = "";
+                if ( coin != 0 && (array= LP_instantdex_txids(iter&1,addr)) != 0 )
                 {
                     if ( (n= cJSON_GetArraySize(array)) > 0 )
                     {
                         for (i=0; i<n; i++)
                         {
                             prevtxid = jbits256i(array,i);
-                            printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
-                            if ( (txobj= LP_gettxout("KMD",coinaddr,prevtxid,0)) != 0 )
-                                free_json(txobj);
-                            else
+                            //char str[65]; printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
+                            if ( LP_instantdex_creditcalc(coin,0,prevtxid,coinaddr) > 0 )
                             {
-                                printf("null gettxout %s %s\n",coinaddr,bits256_str(str,prevtxid));
-                                continue;
+                                LP_instantdex_deposituniq(fp,prevtxid);
+                                fflush(fp);
                             }
-                            LP_instantdex_deposituniq(depositsfp,prevtxid);
-                            fflush(depositsfp);
                         }
                     }
                     free_json(array);
                 }
             }
-        } else fseek(depositsfp,0,SEEK_END);
-    }
-    if ( depositsfp != 0 && bits256_nonz(txid) != 0 )
+        }
+    } else fseek(fp,0,SEEK_END);
+    if ( fp != 0 && bits256_nonz(txid) != 0 )
     {
-        LP_instantdex_deposituniq(depositsfp,txid);
-        fflush(depositsfp);
+        LP_instantdex_deposituniq(fp,txid);
+        fclose(fp);
     }
     LP_instantdex_filescreate(coinaddr);
 }
@@ -350,7 +356,7 @@ char *LP_instantdex_claim(struct iguana_info *coin)
     sum = 0;
     txids = cJSON_CreateArray();
     newarray = cJSON_CreateArray();
-    if ( (array= LP_instantdex_txids(firsttime)) != 0 )
+    if ( (array= LP_instantdex_txids(firsttime,coin->smartaddr)) != 0 )
     {
         printf("claiming from.(%s)\n",jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -367,7 +373,7 @@ char *LP_instantdex_claim(struct iguana_info *coin)
     }
     firsttime = 0;
     if ( cJSON_GetArraySize(newarray) > 0 )
-        LP_instantdex_filewrite(0,newarray);
+        LP_instantdex_filewrite(0,newarray,coin->smartaddr);
     free_json(newarray);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
@@ -480,15 +486,18 @@ int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue)
             credits = ap->instantdex_credits;
         if ( credits != 0 && (swaps_kmdvalue+kmdvalue) > credits )
         {
-            DL_FOREACH_SAFE(pubp->bobswaps,ptr,tmp)
+            if ( 0 )
             {
-                if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
-                    printf("unfinished bob %llu r%u-r%u src.%s %.8f dest.%s %.8f -> price %.8f value %.8f\n",(long long)sp->aliceid,sp->Q.R.requestid,sp->Q.R.quoteid,sp->Q.srccoin,dstr(sp->Q.satoshis),sp->Q.destcoin,dstr(sp->Q.destsatoshis),(double)sp->Q.destsatoshis/(sp->Q.satoshis+1),dstr(LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis)));
-            }
-            DL_FOREACH_SAFE(pubp->aliceswaps,ptr,tmp)
-            {
-                if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
-                    printf("unfinished alice %llu r%u-r%u src.%s %.8f dest.%s %.8f -> price %.8f value %.8f\n",(long long)sp->aliceid,sp->Q.R.requestid,sp->Q.R.quoteid,sp->Q.srccoin,dstr(sp->Q.satoshis),sp->Q.destcoin,dstr(sp->Q.destsatoshis),(double)sp->Q.destsatoshis/(sp->Q.satoshis+1),dstr(LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis)));
+                DL_FOREACH_SAFE(pubp->bobswaps,ptr,tmp)
+                {
+                    if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
+                        printf("unfinished bob %llu r%u-r%u src.%s %.8f dest.%s %.8f -> price %.8f value %.8f\n",(long long)sp->aliceid,sp->Q.R.requestid,sp->Q.R.quoteid,sp->Q.srccoin,dstr(sp->Q.satoshis),sp->Q.destcoin,dstr(sp->Q.destsatoshis),(double)sp->Q.destsatoshis/(sp->Q.satoshis+1),dstr(LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis)));
+                }
+                DL_FOREACH_SAFE(pubp->aliceswaps,ptr,tmp)
+                {
+                    if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
+                        printf("unfinished alice %llu r%u-r%u src.%s %.8f dest.%s %.8f -> price %.8f value %.8f\n",(long long)sp->aliceid,sp->Q.R.requestid,sp->Q.R.quoteid,sp->Q.srccoin,dstr(sp->Q.satoshis),sp->Q.destcoin,dstr(sp->Q.destsatoshis),(double)sp->Q.destsatoshis/(sp->Q.satoshis+1),dstr(LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis)));
+                }
             }
             printf("REJECT: %s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
         }
@@ -506,6 +515,7 @@ int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
     {
         bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
         bitcoin_address(othersmartaddr,0,60,rmd160,20);
+        printf("proofcheck addrtype.%d (%s) -> %s\n",addrtype,coinaddr,othersmartaddr);
         if ((ap= LP_address(coin,othersmartaddr)) != 0 )
         {
             ap->instantdex_credits = 0;
@@ -535,7 +545,7 @@ int64_t LP_myzcredits()
     cJSON *proof; struct iguana_info *coin; int64_t zcredits;
     if ( (coin= LP_coinfind("KMD")) != 0 )
     {
-        if ( (proof= LP_instantdex_txids(0)) != 0 )
+        if ( (proof= LP_instantdex_txids(0,coin->smartaddr)) != 0 )
         {
             zcredits = LP_instantdex_proofcheck(coin->smartaddr,proof,cJSON_GetArraySize(proof));
             free_json(proof);

@@ -17,20 +17,20 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// fundvalue -> autoprice, cmc +margin -> autoprice, signals -> autoprice
+// ordermatch pricing error
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
-// there is an issue about waiting for notarization for a swap that never starts
-// use electrum in case of addr change in swap
-//
 // compress packets
 // portfolio to set prices from historical
 // portfolio value based on ask?
-//
 // else claim path
-// swap memleak?
+//
+// WONTFIX:
 // dPoW security -> 4: KMD notarized, 5: BTC notarized, after next notary elections
 // bigendian architectures need to use little endian for sighash calcs
 // improve critical section detection when parallel trades
+// use electrum in case of addr change in swap
+// locktime claiming on sporadic assetchains
+// there is an issue about waiting for notarization for a swap that never starts (expiration ok)
 
 #include <stdio.h>
 
@@ -1158,9 +1158,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         exit(-1);
     }
     LP_initcoins(ctx,pubsock,coinsjson);
-
     G.waiting = 1;
     LP_passphrase_init(passphrase,jstr(argjson,"gui"));
+    //char coinaddr[64]; bits256 zero;
+    //bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
+    //memset(zero.bytes,0,sizeof(zero));
+    //LP_instantdex_depositadd(coinaddr,zero);
 #ifndef FROM_JS
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {

@@ -214,7 +214,7 @@ uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,
 
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 {
-    struct electrum_info *ep; int32_t notarized; uint64_t balance; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
+    struct electrum_info *ep; bits256 zero; int32_t notarized; uint64_t balance; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
     if ( showwif != 0 )
     {
@@ -261,6 +261,12 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     jaddnum(item,"txfee",strcmp(coin->symbol,"BTC") != 0 ? coin->txfee : LP_txfeecalc(coin,0,0));
     if ( strcmp(coin->symbol,"KMD") == 0 )
     {
+        memset(zero.bytes,0,sizeof(zero));
+        if ( strcmp(coin->smartaddr,coin->instantdex_address) != 0 )
+        {
+            LP_instantdex_depositadd(coin->smartaddr,zero);
+            strcpy(coin->instantdex_address,coin->smartaddr);
+        }
         jaddnum(item,"zcredits",dstr(LP_myzcredits()));
         jadd(item,"zdebits",LP_myzdebits());
     }

@@ -490,6 +490,28 @@ void LP_instantdex_txidadd(bits256 txid)
  return((double)destsatoshis / satoshis);
  else return(0.);
  }*/
+
+/*for (iambob=0; iambob<2; iambob++)
+ {
+ if ( G.LP_utxoinfos[iambob] != 0 )
+ {
+ HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
+ {
+ HASH_DELETE(hh,G.LP_utxoinfos[iambob],utxo);
+ //free(utxo);
+ }
+ }
+ if ( G.LP_utxoinfos2[iambob] != 0 )
+ {
+ G.LP_utxoinfos2[iambob] = 0;
+ //HASH_ITER(hh,G.LP_utxoinfos2[iambob],utxo,tmp)
+ //{
+ //    HASH_DELETE(hh,G.LP_utxoinfos2[iambob],utxo);
+ //    free(utxo);
+ //}
+ }
+ }*/
+
 char *issue_LP_getprices(char *destip,uint16_t destport)
 {
     char url[512];

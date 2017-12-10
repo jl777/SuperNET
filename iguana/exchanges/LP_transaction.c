@@ -1660,7 +1660,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
     memset(&spendtxid,0,sizeof(spendtxid));
     if ( LP_spendsearch(destaddr,&spendtxid,&spendvin,symbol,utxotxid,utxovout) > 0 )
     {
-        //printf("spend of %s/v%d detected\n",bits256_str(str,utxotxid),vout);
+        //char str[65]; printf("spend of %s/v%d detected\n",bits256_str(str,utxotxid),utxovout);
     }
     else if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum == 0 )
     {
@@ -1675,7 +1675,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
                     {
                         if ( (vins= jarray(&m,txobj,"vin")) != 0 )
                         {
-                            //printf("vins.(%s)\n",jprint(vins,0));
+//printf("vins.(%s)\n",jprint(vins,0));
                             if ( utxovout < m )
                             {
                                 vin = jitem(vins,utxovout);

@@ -444,7 +444,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
 
 int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double price,struct LP_quoteinfo *qp)
 {
-    char pairstr[512],otheraddr[64]; cJSON *reqjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin;
+    char pairstr[512],otheraddr[64]; cJSON *reqjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; struct basilisk_swap *swap; struct iguana_info *coin,*kmdcoin;
     qp->quotetime = (uint32_t)time(NULL);
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
     {
@@ -475,7 +475,8 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 reqjson = LP_quotejson(qp);
                 jaddstr(reqjson,"method","connected");
                 jaddstr(reqjson,"pair",pairstr);
-                jadd(reqjson,"proof",LP_instantdex_txids(0));
+                if ( (kmdcoin= LP_coinfind("KMD")) != 0 )
+                    jadd(reqjson,"proof",LP_instantdex_txids(0,kmdcoin->smartaddr));
                 char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));

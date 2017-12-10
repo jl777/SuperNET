@@ -33,7 +33,7 @@ struct LP_priceinfo
     char symbol[68];
     uint64_t coinbits;
     int32_t ind,pad;
-    double diagval,high[2],low[2],last[2],bid[2],ask[2]; //volume,btcvolume,prevday; // mostly bittrex info
+    double diagval,high[2],low[2],last[2],bid[2],ask[2];
     double relvals[LP_MAXPRICEINFOS];
     double myprices[LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS]; // autoprice
@@ -53,6 +53,20 @@ struct LP_cacheinfo
     uint32_t timestamp;
 } *LP_cacheinfos;
 
+void LP_priceinfos_clear()
+{
+    int32_t i; struct LP_priceinfo *pp;
+    for (i=0; i<LP_numpriceinfos; i++)
+    {
+        pp = &LP_priceinfos[i];
+        memset(pp->myprices,0,sizeof(pp->myprices));
+        memset(pp->minprices,0,sizeof(pp->minprices));
+        memset(pp->fixedprices,0,sizeof(pp->fixedprices));
+        memset(pp->margins,0,sizeof(pp->margins));
+        memset(pp->offsets,0,sizeof(pp->offsets));
+        memset(pp->factors,0,sizeof(pp->factors));
+    }
+}
 
 float LP_pubkey_price(int32_t *numutxosp,int64_t *avesatoshisp,int64_t *maxsatoshisp,struct LP_pubkey_info *pubp,uint32_t baseind,uint32_t relind)
 {
@@ -915,8 +929,8 @@ int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance)
             KMDvalue = balance;
         else
         {
-            price = LP_price(coin->symbol,"KMD");
-            KMDvalue = price * balance;
+            if ( (price= LP_price(coin->symbol,"KMD")) > SMALLVAL )
+                KMDvalue = price * balance;
         }
     }
     return(KMDvalue);
@@ -1140,7 +1154,7 @@ double LP_CMCbtcprice(double *price_usdp,char *symbol)
 
 cJSON *LP_fundvalue(cJSON *argjson)
 {
-    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
+    cJSON *holdings,*item,*newitem,*array,*retjson; int32_t i,iter,n,missing=0; double usdprice,divisor,btcprice,balance,btcsum,KMDholdings,numKMD; struct iguana_info *coin; char *symbol,*coinaddr; int64_t fundvalue,KMDvalue = 0;
     fundvalue = 0;
     KMDholdings = btcsum = 0.;
     array = cJSON_CreateArray();
@@ -1180,11 +1194,13 @@ cJSON *LP_fundvalue(cJSON *argjson)
                     }
                     else jaddstr(newitem,"error","no price source");
                     jaddi(array,newitem);
-                }
+                } else missing++;
             }
         }
     }
     retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"missing",missing);
     jadd(retjson,"holdings",array);
     btcprice = LP_CMCbtcprice(&usdprice,"komodo");
     divisor = jdouble(argjson,"divisor");
