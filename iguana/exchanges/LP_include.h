@@ -530,6 +530,8 @@ cJSON *LP_gettxout(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
 void LP_postutxos(char *symbol,char *coinaddr);
 int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag);
 uint16_t LP_randpeer(char *destip);
+void LP_tradebot_pauseall();
+void LP_portfolio_reset();
 uint32_t LP_atomic_locktime(char *base,char *rel);
 struct LP_pubkey_info *LP_pubkeyfind(bits256 pubkey);
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired);

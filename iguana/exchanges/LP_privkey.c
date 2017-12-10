@@ -326,6 +326,9 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
     init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
     G.LP_sessionid = (uint32_t)time(NULL);
     safecopy(G.gui,gui,sizeof(G.gui));
+    LP_tradebot_pauseall();
+    LP_portfolio_reset();
+    LP_priceinfos_clear();
     G.USERPASS_COUNTER = counter;
     G.initializing = 0;
     return(0);

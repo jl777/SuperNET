@@ -31,6 +31,39 @@ int32_t LP_autoprices,num_LP_autorefs;
 char LP_portfolio_base[128],LP_portfolio_rel[128];
 double LP_portfolio_relvolume;
 
+void LP_portfolio_reset()
+{
+    struct iguana_info *coin,*tmp; cJSON *fundjson; int32_t i; struct LP_autoprice_ref *ptr;
+    for (i=0; i<num_LP_autorefs; i++)
+    {
+        ptr = &LP_autorefs[i];
+        if ( (fundjson= ptr->fundvalue) != 0 )
+        {
+            ptr->fundvalue = 0;
+            free_json(fundjson);
+        }
+    }
+    memset(LP_autorefs,0,sizeof(LP_autorefs));
+    LP_autoprices = 0;
+    num_LP_autorefs = 0;
+    strcpy(LP_portfolio_base,"");
+    strcpy(LP_portfolio_rel,"");
+    LP_portfolio_relvolume = 0.;
+    HASH_ITER(hh,LP_coins,coin,tmp)
+    {
+        coin->maxamount = 0;
+        coin->perc = 0;
+        coin->goal = 0;
+        coin->goalperc = 0;
+        coin->relvolume = 0;
+        coin->force = 0;
+        coin->balanceA = 0;
+        coin->valuesumA = 0;
+        coin->balanceB = 0;
+        coin->valuesumB = 0;
+    }
+}
+
 cJSON *LP_portfolio_entry(struct iguana_info *coin)
 {
     cJSON *item = cJSON_CreateObject();
