@@ -18,7 +18,6 @@
 //  marketmaker
 //
 // ordermatch pricing error
-// signals -> autoprice
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // compress packets
 // portfolio to set prices from historical

@@ -132,7 +132,7 @@ void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
                         for (i=0; i<n; i++)
                         {
                             prevtxid = jbits256i(array,i);
-                            //char str[65]; printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
+                            char str[65]; printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
                             if ( LP_instantdex_creditcalc(coin,0,prevtxid,coinaddr) > 0 )
                             {
                                 LP_instantdex_deposituniq(fp,prevtxid);
