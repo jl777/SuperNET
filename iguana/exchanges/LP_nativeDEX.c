@@ -1238,6 +1238,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
     int32_t nonz;
     LP_statslog_parse();
+    for_satinder(ctx);
     while ( 1 )
     {
         nonz = 0;

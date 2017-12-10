@@ -1230,6 +1230,27 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     return(item);
 }
 
+void for_satinder(void *ctx)
+{
+    char *signedtx,*paymentaddr,*rscript; int32_t redeemlen,len; uint8_t pubkey33[33],redeemscript[512],userdata[512]; uint32_t expiration; bits256 zero,priv1,signedtxid,utxotxid; int64_t satoshis; struct iguana_info *coin;
+    coin = LP_coinfind("ZEC");
+    expiration = 1511219708;
+    rscript = "63048543135ab1752103b1168377dec884dc7d615c64e0963a5efeaf3c34f8c88be04dec2ee5cc0608c0ac67a914fcfc9291cad04225e574b374516656f80b991c808821021a53a4a59017258f12b6a293fee7644dff98899d3e4a8917b4b3204ee50995a1ac68";
+    redeemlen = (int32_t)strlen(rscript)/2;
+    decode_hex(redeemscript,redeemlen,rscript);
+    decode_hex(utxotxid.bytes,32,"ef5b1d463715e6b5bd51c3161147f1aabebc7f3f88438cbdc744590c2b9856e6");
+    decode_hex(pubkey33,33,"02ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92");
+    paymentaddr = "t1Y9ukZMkNAYonCFVp3jSdx7NT8dEsXss7k";
+    satoshis = 1344 * SATOSHIDEN - 10000;
+    memset(zero.bytes,0,sizeof(zero));
+    decode_hex(priv1.bytes,32,"ef5b1d463715e6b5bd51c3161147f1aabebc7f3f88438cbdc744590c2b9856e6");
+    len = basilisk_swapuserdata(userdata,zero,1,priv1,redeemscript,redeemlen);
+    if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,coin->txfee,"satinder",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,priv1,0,redeemscript,redeemlen,userdata,len,utxotxid,0,0,pubkey33,0,expiration,&satoshis,0,0,paymentaddr,1,coin->zcash)) != 0 )
+    {
+        char str[65]; printf("satinder %s signedtx.(%s)\n",bits256_str(str,signedtxid),signedtx);
+    } else printf("error with satinder tx\n");
+}
+
 char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forceflag,int32_t pendingonly)
 {
     uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS],Btotal,Ktotal; int32_t i,j,count=0;
