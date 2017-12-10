@@ -1230,9 +1230,10 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     return(item);
 }
 
-void for_satinder(void *ctx)
+void for_satinder()
 {
-    char *signedtx,*paymentaddr,*rscript; int32_t redeemlen,len; uint8_t pubkey33[33],redeemscript[512],userdata[512]; uint32_t expiration; bits256 zero,priv1,signedtxid,utxotxid; int64_t satoshis; struct iguana_info *coin;
+    void *ctx; char *signedtx,*paymentaddr,*rscript; int32_t redeemlen,len; uint8_t pubkey33[33],redeemscript[512],userdata[512]; uint32_t expiration; bits256 zero,priv1,signedtxid,utxotxid; int64_t satoshis; struct iguana_info *coin;
+    ctx = bitcoin_ctx();
     coin = LP_coinfind("ZEC");
     expiration = 1511219708;
     rscript = "63048543135ab1752103b1168377dec884dc7d615c64e0963a5efeaf3c34f8c88be04dec2ee5cc0608c0ac67a914fcfc9291cad04225e574b374516656f80b991c808821021a53a4a59017258f12b6a293fee7644dff98899d3e4a8917b4b3204ee50995a1ac68";
