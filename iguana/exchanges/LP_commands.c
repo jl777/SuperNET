@@ -184,7 +184,7 @@ instantdex_claim()\n\
         jdelete(argjson,"userpass");
         if ( strcmp(method,"passphrase") == 0 )
         {
-            char coinaddr[64];
+            char coinaddr[64],pub33str[67];
             G.USERPASS_COUNTER = 1;
             if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
                 return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
@@ -193,6 +193,8 @@ instantdex_claim()\n\
                 jaddstr(retjson,"result","success");
                 jaddstr(retjson,"userpass",G.USERPASS);
                 jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+                init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
+                jaddstr(retjson,"pubsecp",pub33str);
                 bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
                 jaddstr(retjson,"KMD",coinaddr);
                 bitcoin_address(coinaddr,0,0,G.LP_myrmd160,20);
