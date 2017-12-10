@@ -19,17 +19,29 @@
 //  Copyright © 2017 SuperNET. All rights reserved.
 //
 
+
+
+void PNACL_message(char *arg,...)
+{
+    
+}
 #define FROM_MARKETMAKER
+
 #include <stdio.h>
 #include <stdint.h>
+#ifndef NATIVE_WINDOWS
 #include "OS_portable.h"
+#else
+#include "../../crypto777/OS_portable.h"
+#endif // !_WIN_32
+
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 
 //defined(__APPLE__) ||
-#if defined(WIN32) || defined(USE_STATIC_NANOMSG)
+#ifdef FROM_JS // defined(WIN32) || defined(USE_STATIC_NANOMSG)
 #include "../../crypto777/nanosrc/nn.h"
 #include "../../crypto777/nanosrc/bus.h"
 #include "../../crypto777/nanosrc/pubsub.h"
@@ -38,13 +50,23 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 #include "../../crypto777/nanosrc/tcp.h"
 #include "../../crypto777/nanosrc/pair.h"
 #else
-#include "/usr/local/include/nanomsg/nn.h"
-#include "/usr/local/include/nanomsg/bus.h"
-#include "/usr/local/include/nanomsg/pubsub.h"
-#include "/usr/local/include/nanomsg/pipeline.h"
-#include "/usr/local/include/nanomsg/reqrep.h"
-#include "/usr/local/include/nanomsg/tcp.h"
-#include "/usr/local/include/nanomsg/pair.h"
+#if defined(WIN32) || defined(USE_STATIC_NANOMSG)
+	#include "../../crypto777/nanosrc/nn.h"
+	#include "../../crypto777/nanosrc/bus.h"
+	#include "../../crypto777/nanosrc/pubsub.h"
+	#include "../../crypto777/nanosrc/pipeline.h"
+	#include "../../crypto777/nanosrc/reqrep.h"
+	#include "../../crypto777/nanosrc/tcp.h"
+	#include "../../crypto777/nanosrc/pair.h"
+#else
+	#include "/usr/local/include/nanomsg/nn.h"
+	#include "/usr/local/include/nanomsg/bus.h"
+	#include "/usr/local/include/nanomsg/pubsub.h"
+	#include "/usr/local/include/nanomsg/pipeline.h"
+	#include "/usr/local/include/nanomsg/reqrep.h"
+	#include "/usr/local/include/nanomsg/tcp.h"
+	#include "/usr/local/include/nanomsg/pair.h"
+#endif
 #endif
 
 char DEX_baseaddr[64],DEX_reladdr[64];
@@ -54,7 +76,7 @@ struct mmpending_order
     int32_t dir;
     uint32_t pending,completed,canceled,cancelstarted,reported;
     cJSON *errorjson;
-    char exchange[16],base[16],rel[16],orderid[64];
+    char exchange[16],base[65],rel[65],orderid[64];
 } *Pending_orders;
 int32_t Num_Pending;
 
@@ -395,7 +417,7 @@ void marketmaker_pendingupdate(char *exchange,char *base,char *rel)
 
 void marketmaker_pendinginit(char *exchange,char *base,char *rel)
 {
-    char *retstr,*orderid,*pairstr,relbase[64]; cJSON *retjson,*array,*item; int32_t i,j,n,dir; struct mmpending_order *ptr;
+    char *retstr,*orderid,*pairstr,relbase[65]; cJSON *retjson,*array,*item; int32_t i,j,n,dir; struct mmpending_order *ptr;
     sprintf(relbase,"%s-%s",rel,base);
     if ( (retstr= DEX_openorders(exchange)) != 0 )
     {
@@ -784,26 +806,98 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
 
 #include "LP_nativeDEX.c"
 
+/*MERK d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a ht.518777 -> {"pos":1,"merkle":["526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8", "f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd"],"block_height":518777} root.(0000000000000000000000000000000000000000000000000000000000000000)
+ MERK c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543 ht.518777 -> {"pos":2,"merkle":["fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501", "8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7"],"block_height":518777} root.(0000000000000000000000000000000000000000000000000000000000000000)*/
+/*526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8
+d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
+c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
+fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501*/
+
+/*0: 526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8
+1: d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
+2: c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
+3: fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501
+4: 8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7
+5: f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd
+6: a87ee259560f20b20182760c0e7cc7896d44381f0ad58a2e755a2b6b895b01ec*/
+
+/*
+0 1 2 3
+ 4   5
+   6
+
+1 -> [0, 5]
+2 -> [3, 4]
+
+if odd -> right, else left
+then /= 2
+*/
+
+/*void testmerk()
+{
+    bits256 tree[256],roothash,txid; int32_t i; char str[65];
+    memset(tree,0,sizeof(tree));
+    decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
+    decode_hex(tree[1].bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
+    decode_hex(tree[2].bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
+    decode_hex(tree[3].bytes,32,"fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501");
+    roothash = iguana_merkle(tree,4);
+    for (i=0; i<256; i++)
+    {
+        if ( bits256_nonz(tree[i]) == 0 )
+            break;
+        printf("%d: %s\n",i,bits256_str(str,tree[i]));
+    }
+    memset(tree,0,sizeof(tree));
+    decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
+    decode_hex(tree[1].bytes,32,"f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd");
+    decode_hex(txid.bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
+    roothash = validate_merkle(1,txid,tree,2);
+    printf("validate 1: %s\n",bits256_str(str,roothash));
+    memset(tree,0,sizeof(tree));
+    decode_hex(tree[0].bytes,32,"fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501");
+    decode_hex(tree[1].bytes,32,"8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7");
+    decode_hex(txid.bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
+    roothash = validate_merkle(2,txid,tree,2);
+    printf("validate 2: %s\n",bits256_str(str,roothash));
+}*/
+
 void LP_main(void *ptr)
 {
-    char *passphrase; double profitmargin; cJSON *argjson = ptr;
+    char *passphrase; double profitmargin; uint16_t port; cJSON *argjson = ptr;
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
         LP_profitratio += profitmargin;
-        LPinit(7779,7780,7781,7782,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+        if ( (port= juint(argjson,"rpcport")) < 1000 )
+            port = LP_RPCPORT;
+        LPinit(port,LP_RPCPORT+10,LP_RPCPORT+20,LP_RPCPORT+30,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 
 int main(int argc, const char * argv[])
 {
-    char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
+    char dirname[512],*base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase; 
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr;
     cJSON *retjson,*loginjson; int32_t i;
     OS_init();
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/UNSPENTS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+#ifdef FROM_JS
+    argc = 2;
+    retjson = cJSON_Parse("{\"client\":1,\"passphrase\":\"test\"}");
+    printf("calling LP_main(%s)\n",jprint(retjson,0));
+    LP_main(retjson);
+    emscripten_set_main_loop(LP_fromjs_iter,1,0);
+#else
+    if ( argc == 1 )
+    {
+        LP_NXT_redeems();
+        sleep(3);
+        return(0);
+    }
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
@@ -812,10 +906,10 @@ int main(int argc, const char * argv[])
         {
             printf("error launching LP_main (%s)\n",jprint(retjson,0));
             exit(-1);
-        } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
+        } //else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
-        while ( 1 )
-            sleep(1);
+        while ( (1) )
+            sleep(100000);
         profitmargin = jdouble(retjson,"profitmargin");
         minask = jdouble(retjson,"minask");
         maxbid = jdouble(retjson,"maxbid");
@@ -875,5 +969,6 @@ int main(int argc, const char * argv[])
         }
         free_json(retjson);
     }
+#endif
     return 0;
 }

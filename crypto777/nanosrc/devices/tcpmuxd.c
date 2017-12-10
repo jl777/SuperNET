@@ -53,12 +53,7 @@ int nn_tcpmuxd (int port)
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/time.h>
-#ifndef __PNACL
 #include <sys/un.h>
-#else
-#include <glibc-compat/sys/un.h>
-#include <glibc-compat/sys/uio.h>
-#endif
 #include <stddef.h>
 #include <ctype.h>
 #include <poll.h>
@@ -101,7 +96,8 @@ int nn_tcpmuxd (int port)
     opt = 1;
     rc = setsockopt (tcp_listener, SOL_SOCKET, SO_REUSEADDR, &opt,
         sizeof (opt));
-    if (rc != 0) { return -1; }
+    // ignore SO_REUSEADDR failures
+    //if (rc != 0) { return -1; }
     memset (&tcp_addr, 0, sizeof (tcp_addr));
     tcp_addr.sin_family = AF_INET;
     tcp_addr.sin_port = htons (port);

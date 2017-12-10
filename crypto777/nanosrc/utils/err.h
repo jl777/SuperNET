@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#define PNACL_msg(...)
 
 /*  Include nn.h header to define nanomsg-specific error codes. */
 #include "../nn.h"
@@ -44,7 +45,7 @@
 #define nn_assert(x) \
     do {\
         if (nn_slow (!(x))) {\
-            PNACL_message("Assertion failed: %s (%s:%d)\n", #x, \
+            PNACL_msg("Assertion failed: %s (%s:%d)\n", #x, \
                 __FILE__, __LINE__);\
             fflush (stderr);\
             nn_err_abort ();\
@@ -54,7 +55,7 @@
 #define nn_assert_state(obj, state_name) \
     do {\
         if (nn_slow ((obj)->state != state_name)) {\
-            PNACL_message( \
+            PNACL_msg( \
                 "Assertion failed: %d == %s (%s:%d)\n", \
                 (obj)->state, #state_name, \
                 __FILE__, __LINE__);\
@@ -66,7 +67,7 @@
 #define alloc_assert(x) \
     do {\
         if (nn_slow (!x)) {\
-            PNACL_message("Out of memory (%s:%d)\n",\
+            PNACL_msg("Out of memory (%s:%d)\n",\
                 __FILE__, __LINE__);\
             nn_err_abort ();\
         }\
@@ -76,7 +77,7 @@
 #define errno_assert(x) \
     do {\
         if (nn_slow (!(x))) {\
-            PNACL_message("%s [%d] (%s:%d)\n", nn_err_strerror (errno),\
+            PNACL_msg("%s [%d] (%s:%d)\n", nn_err_strerror (errno),\
                 (int) errno, __FILE__, __LINE__);\
             nn_err_abort ();\
         }\
@@ -86,7 +87,7 @@
 #define errnum_assert(cond, err) \
     do {\
         if (nn_slow (!(cond))) {\
-            PNACL_message("%s [%d] (%s:%d)\n", nn_err_strerror (err),(int) (err), __FILE__, __LINE__);\
+            PNACL_msg("%s [%d] (%s:%d)\n", nn_err_strerror (err),(int) (err), __FILE__, __LINE__);\
             nn_err_abort ();\
         }\
     } while (0)
@@ -118,7 +119,7 @@
 /*  Assertion-like macros for easier fsm debugging. */
 #define nn_fsm_error(message, state, src, type) \
     do {\
-        PNACL_message("%s: state=%d source=%d action=%d (%s:%d)\n", \
+        PNACL_msg("%s: state=%d source=%d action=%d (%s:%d)\n", \
             message, state, src, type, __FILE__, __LINE__);\
         nn_err_abort ();\
     } while (0)

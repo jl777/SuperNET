@@ -35,7 +35,7 @@ int nn_efd_init (struct nn_efd *self)
     int rc;
     int flags;
     int sp [2];
-
+    PNACL_msg("socketpair efdinit\n");
 #if defined SOCK_CLOEXEC
     rc = socketpair (AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, sp);
 #else

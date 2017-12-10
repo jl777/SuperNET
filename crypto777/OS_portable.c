@@ -249,13 +249,13 @@ void *OS_portable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long
         if ( mem->totalsize > origsize )
             size = mem->totalsize;
         else size = origsize;
-        fprintf(stderr,"filealloc.(%s) -> ",fname);
+        printf("filealloc.(%s) -> ",fname);
         if ( OS_filealloc(&mem->M,fname,mem,size) == 0 )
         {
             printf("couldnt map tmpfile %s\n",fname);
             return(0);
         }
-        fprintf(stderr,"created\n");
+        printf("created\n");
     }
     ptr = iguana_memalloc(mem,origsize,1);
     if ( mem->threadsafe != 0 )

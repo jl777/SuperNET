@@ -28,11 +28,7 @@
 #else
 #include <unistd.h>
 #include <sys/socket.h>
-#ifndef __PNACL
 #include <sys/un.h>
-#else
-#include <glibc-compat/sys/un.h>
-#endif
 #endif
 
 #include "tcpmux.h"
@@ -87,7 +83,7 @@ int tcpmux_accept (int s)
     memset (&hdr, 0, sizeof (hdr));
     hdr.msg_iov = &iov;
     hdr.msg_iovlen = 1;
-#ifndef NN_USE_MYMSG
+#if !NN_USE_MYMSG
     unsigned char buf [256];
     hdr.msg_control = buf;
     hdr.msg_controllen = sizeof (buf);

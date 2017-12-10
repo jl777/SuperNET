@@ -1438,7 +1438,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
     *kmdbtcp = 0;
     bitcoinave = 0;//url_json("https://api.bitcoinaverage.com/ticker/USD/");
     //bitcoincharts = url_json("http://api.bitcoincharts.com/v1/weighted_prices.json");
-    blockchaininfo = 0;//url_json("https://blockchain.info/ticker");
+    blockchaininfo = url_json("https://blockchain.info/ticker");
     coindesk = 0;//url_json("http://api.coindesk.com/v1/bpi/historical/close.json");
     sprintf(url,"https://poloniex.com/public?command=returnChartData&currencyPair=BTC_KMD&start=%ld&end=9999999999&period=86400",(long)(time(NULL)-3600*24));
     sprintf(url2,"https://poloniex.com/public?command=returnChartData&currencyPair=BTC_BTCD&start=%ld&end=9999999999&period=86400",(long)(time(NULL)-3600*24));
@@ -1541,7 +1541,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
         if ( (item= jobj(blockchaininfo,"USD")) != 0 && item != 0 && (price= jdouble(item,"15m")) > SMALLVAL )
         {
             dpow_price("blockchain.info","BTCUSD",price,price);
-            //printf("blockchaininfo %f %f\n",btcusd,price);
+            printf("blockchaininfo %f %f\n",btcusd,price);
             dxblend(&btcusd,price,0.5);
         }
         free_json(blockchaininfo);
@@ -1832,13 +1832,16 @@ void PAX_genecbsplines(struct PAX_data *dp)
     portable_mutex_unlock(&mutex);
 }
 
+#define BTCFACTOR_TIMESTAMP 1503746319
+#define BTCFACTOR_HEIGHT 466266
+
 int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t idlegap)
 {
-    static double lastupdate,lastdayupdate; static int32_t didinit; static char *userhome; int32_t idlegap = 10;
+    static double lastupdate,lastdayupdate; static uint32_t didinit; static char *userhome; int32_t idlegap = 10;
     FILE *fp; long filesize; char fname[512]; double splineval; uint32_t pvals[128],timestamp; int32_t i,datenum,seconds,c; struct tai t; struct PAX_data *dp; uint8_t data[512];
     if ( Currencymasks[0] == 0 )
         return(0);
-    if ( didinit == 0 )
+    if ( time(NULL) > didinit+12*3600 )
     {
         if ( (userhome= OS_filestr(&filesize,"userhome.txt")) == 0 )
             userhome = "root";
@@ -1849,15 +1852,15 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
                 userhome[strlen(userhome)-1] = 0;
             }
         }
-        myinfo->PAXDATA = calloc(1,sizeof(*dp));
-        didinit = 1;
+        if ( myinfo->PAXDATA == 0 )
+            myinfo->PAXDATA = calloc(1,sizeof(*dp));
         dp = myinfo->PAXDATA;
         PAX_genecbsplines(dp);
         printf("generated splines\n");
-        datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL));
+        didinit = (uint32_t)time(NULL);
+        datenum = OS_conv_unixtime(&t,&seconds,didinit);
         expand_datenum(dp->edate,datenum);
     }
-
     dp = myinfo->PAXDATA;
     /*if ( 0 && time(NULL) > dp->lastupdate+10 )
     {
@@ -1904,8 +1907,9 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             PAX_emitprices(pvals,dp);
         }
         timestamp = (uint32_t)time(NULL);
-        int32_t dispflag = ((rand() % 64) == 0);
-        if ( dp->kmdbtc == 0 || dispflag != 0 )
+        int32_t dispflag = ((rand() % 6) == 0);
+        //printf("PAX_IDLE.%d %.8f %.8f\n",dispflag,dp->kmdbtc,dp->btcusd);
+        if ( dp->kmdbtc == 0 || dp->btcusd == 0 || dispflag != 0 )
         {
             PAX_update(dp,&dp->btcusd,&dp->kmdbtc);
             for (i=0; i<MAX_CURRENCIES; i++)
@@ -1920,10 +1924,12 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             pvals[1] = timestamp;
             pvals[2] = MAX_CURRENCIES + 3;
             pvals[3] = PAX_val32(dp->kmdbtc * 1000);
-            pvals[4] = PAX_val32(dp->btcusd * .001);
+            double btcfactor;
+            //if ( time(NULL) > BTCFACTOR_TIMESTAMP )
+                btcfactor = .00001;
+            //else btcfactor = .001;
+            pvals[4] = PAX_val32(dp->btcusd * btcfactor);
             pvals[5] = PAX_val32(dp->CNYUSD);
-            if ( dispflag != 0 )
-                printf("KMD %.8f BTC %f CNY %f (%f)\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD);
             sprintf(fname,"/%s/.komodo/komodofeed",userhome);
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
@@ -1939,7 +1945,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             {
                 for (i=0; i<6; i++)
                     printf("%u ",pvals[i]);
-                printf("pvals -> %s\n",fname);
+                printf("KMD %.8f BTC %f CNY %f (%f) btcusd pval.%u\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD,pvals[4]);
             }
         }
     }

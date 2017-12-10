@@ -238,6 +238,15 @@ int32_t gfshare_test(struct supernet_info *myinfo,int32_t M,int32_t N,int32_t da
     return ok!=1;
 }
 
+void *bitcoin_ctx()
+{
+    void *ptr;
+    ptr = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+    secp256k1_pedersen_context_initialize(ptr);
+    secp256k1_rangeproof_context_initialize(ptr);
+    return(ptr);
+}
+
 void iguana_fixsecp(struct supernet_info *myinfo)
 {
     myinfo->ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);

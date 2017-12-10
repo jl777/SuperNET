@@ -54,7 +54,7 @@ void nn_priolist_add(struct nn_priolist *self,struct nn_priolist_data *data, str
 {
     data->pipe = pipe;
     data->priority = priority;
-    //printf("nn_priolist_add.%p data.%p priority.%d\n",self,data,priority);
+    printf("nn_priolist_add.%p data.%p priority.%d\n",self,data,priority);
     nn_list_item_init (&data->item);
 }
 
@@ -139,7 +139,7 @@ struct nn_pipe *nn_priolist_getpipe(struct nn_priolist *self)
         //printf("nn_priolist_getpipe.%p -1 current it is\n",self);
         return NULL;
     }
-    //printf("nn_priolist_getpipe.%p current.%d slot.%p\n",self,self->current,self->slots[self->current - 1].current->pipe);
+    printf("nn_priolist_getpipe.%p current.%d slot.%p\n",self,self->current,self->slots[self->current - 1].current->pipe);
     return self->slots[self->current - 1].current->pipe;
 }
 

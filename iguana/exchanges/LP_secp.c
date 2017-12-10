@@ -179,7 +179,7 @@ int32_t bitcoin_verify(void *ctx,uint8_t *sig,int32_t siglen,bits256 txhash2,uin
             secp256k1_ecdsa_signature_parse_der(ctx,&SIG,sig,siglen);
             if ( secp256k1_ecdsa_verify(ctx,&SIG,txhash2.bytes,&PUB) != 0 )
                 retval = 0;
-        }
+        } else printf("error parsing pubkey\n");
         ENDSECP_ENSURE_CTX
     }
     return(retval);

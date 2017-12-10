@@ -22,6 +22,7 @@ curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"WLC\",\"agent\":\"iguana\
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"KV\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"50000\",\"sendflag\":1,\"duplicates\":10}"
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"CEAL\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"50000\",\"sendflag\":1,\"duplicates\":10}"
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"MESH\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"50000\",\"sendflag\":1,\"duplicates\":10}"
+curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"MNZ\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"50000\",\"sendflag\":1,\"duplicates\":10}"
 
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"USD\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"50000\",\"sendflag\":1,\"duplicates\":10}"
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"EUR\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"50000\",\"sendflag\":1,\"duplicates\":10}"

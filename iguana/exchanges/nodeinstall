@@ -1,0 +1,16 @@
+cd /var/www/html/
+node install http-server -g
+
+#start http-server to start current directory serving via http://127.0.0.1:8080
+http-server .
+
+node install node-nanomsg
+
+# test.js
+#var nano = require('nanomsg');
+#var sub = nano.socket('sub');
+#var addr = 'ws://5.9.253.197:7785'
+#sub.connect(addr);
+#sub.on('data', function (buf) {
+#console.log(String(buf));
+#});

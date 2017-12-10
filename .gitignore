@@ -170,7 +170,6 @@ iguana/help.json
 
 iguana/index7778.html
 
-*.json
 
 iguana/DB/KMD/utxo.dat
 
@@ -235,3 +234,13 @@ iguana/marketmaker.dSYM/Contents/Resources/DWARF/marketmaker
 iguana/marketmaker.dSYM/Contents/Info.plist
 
 iguana/confs/97f18454bb61e9eb7a827cfbefe42fbf7ae2832dc74c4812bdaef8bcf5c10474
+
+iguana/DB/PRICES/.tmpmarker
+
+iguana/DB/KMD/0/.tmpmarker
+
+*.swp
+
+iguana/myipaddr
+
+iguana/DB/UNSPENTS/.tmpmarker
