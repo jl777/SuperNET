@@ -18,8 +18,8 @@
 //  marketmaker
 //
 // ordermatch pricing error
-// https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // compress packets
+// https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // portfolio to set prices from historical
 // portfolio value based on ask?
 // else claim path
