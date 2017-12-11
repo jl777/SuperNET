@@ -3385,20 +3385,22 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
             len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].prev_vout),&dest.vins[i].prev_vout);
         }
         tmp = bits256_doublesha256(0,serialized,len);
-        for (i=0; i<sizeof(prevouthash); i++)
-            prevouthash.bytes[31-i] = tmp.bytes[i];
+        //for (i=0; i<sizeof(prevouthash); i++)
+        //    prevouthash.bytes[31-i] = tmp.bytes[i];
+        prevouthash = tmp;
         
         for (i=len=0; i<dest.tx_in; i++)
             len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].sequence),&dest.vins[i].sequence);
         tmp = bits256_doublesha256(0,serialized,len);
-        for (i=0; i<sizeof(seqhash); i++)
-            seqhash.bytes[31-i] = tmp.bytes[i];
-        
+        //for (i=0; i<sizeof(seqhash); i++)
+        //    seqhash.bytes[31-i] = tmp.bytes[i];
+        seqhash = tmp;
         for (i=len=0; i<dest.tx_out; i++)
             len += iguana_voutparse(1,&serialized[len],&dest.vouts[i]);
         tmp = bits256_doublesha256(0,serialized,len);
-        for (i=0; i<sizeof(outputhash); i++)
-            outputhash.bytes[31-i] = tmp.bytes[i];
+        //for (i=0; i<sizeof(outputhash); i++)
+        //    outputhash.bytes[31-i] = tmp.bytes[i];
+        outputhash = tmp;
         char str[65]; printf("prevouthash.%s ",bits256_str(str,prevouthash));
         printf("seqhash.%s ",bits256_str(str,seqhash));
         printf("outputhash.%s ",bits256_str(str,outputhash));
