@@ -397,7 +397,7 @@ int32_t iguana_vininfo_create(uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uin
 
 int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,bits256 *signedtxidp,char **signedtx,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxlen,struct vin_info *V,uint32_t sighash,int32_t signtx,int32_t suppress_pubkeys,int32_t zcash)
 {
-    bits256 sigtxid; uint8_t *sig,*script; struct vin_info *vp; char vpnstr[64]; int32_t scriptlen,complete=0,j,vini=0,flag=0,siglen,numvouts,numsigs;
+    bits256 sigtxid; int64_t spendamount; uint8_t *sig,*script; struct vin_info *vp; char vpnstr[64]; int32_t scriptlen,complete=0,j,vini=0,flag=0,siglen,numvouts,numsigs;
     numvouts = msgtx->tx_out;
     vpnstr[0] = 0;
     *signedtx = 0;
@@ -419,8 +419,8 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
         //    printf("%02x",script[j]);
         //printf(" scriptlen.%d\n",scriptlen);
         //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
-        //spendamount = LP_outpoint_amount(symbol,msgtx->vins[vini].prev_hash,msgtx->vins[vini].prev_vout);
-        sigtxid = bitcoin_sigtxid(symbol,taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,V[vini].amount,sighash,vpnstr,suppress_pubkeys,zcash);
+        spendamount = LP_outpoint_amount(symbol,msgtx->vins[vini].prev_hash,msgtx->vins[vini].prev_vout);
+        sigtxid = bitcoin_sigtxid(symbol,taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,spendamount,sighash,vpnstr,suppress_pubkeys,zcash);
         //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         if ( bits256_nonz(sigtxid) != 0 )
         {
