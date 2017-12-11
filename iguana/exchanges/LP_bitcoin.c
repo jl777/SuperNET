@@ -3453,7 +3453,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     //    dSHA256(eeffffffffffffff)
     //    = 52b0a642eea2fb7ae638c36f6252b6750293dbe574a806984b8e4d8548339a3b
         len = 0;
-        dest.vins[0].sequence = 0xfffffffe;
+        dest.vins[0].sequence = 0xffffffee;
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[0].sequence),&dest.vins[0].sequence);
 
         seqhash = bits256_doublesha256(0,serialized,len);
