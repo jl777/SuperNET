@@ -402,7 +402,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
     vpnstr[0] = 0;
     *signedtx = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
-    //printf("bitcoin_verifyvins numvins.%d numvouts.%d\n",msgtx->tx_in,numvouts);
+printf("bitcoin_verifyvins numvins.%d numvouts.%d\n",msgtx->tx_in,numvouts);
     for (vini=0; vini<msgtx->tx_in; vini++)
     {
         if ( V->p2shscript[0] != 0 && V->p2shlen != 0 )
@@ -418,7 +418,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
         //for (j=0; j<scriptlen; j++)
         //    printf("%02x",script[j]);
         //printf(" scriptlen.%d\n",scriptlen);
-        //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
+printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         spendamount = LP_outpoint_amount(symbol,msgtx->vins[vini].prev_hash,msgtx->vins[vini].prev_vout);
         sigtxid = bitcoin_sigtxid(symbol,taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,spendamount,sighash,vpnstr,suppress_pubkeys,zcash);
         //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
