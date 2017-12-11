@@ -3489,7 +3489,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         len += iguana_rwbignum(1,&serialized[len],sizeof(outputhash),outputhash.bytes);
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.lock_time),&dest.lock_time);
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
-        printf("B path spendamount %.8f locktime %u hashtype %08x\n",dstr(spendamount),dest.lock_time,hashtype);
+        printf("B path version.%08x spendamount %.8f locktime %u hashtype %08x\n",dest.version,dstr(spendamount),dest.lock_time,hashtype);
     }
     revsigtxid = bits256_doublesha256(0,serialized,len);
     for (i=0; i<sizeof(revsigtxid); i++)
