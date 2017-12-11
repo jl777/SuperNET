@@ -3278,7 +3278,7 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
 
 bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,uint8_t *serialized,int32_t maxlen,struct iguana_msgtx *msgtx,int32_t vini,uint8_t *spendscript,int32_t spendlen,uint64_t spendamount,uint32_t hashtype,char *vpnstr,int32_t suppress_pubkeys,int32_t zcash)
 {
-    int32_t i,len; bits256 sigtxid,txid,revsigtxid,prevhash; struct iguana_msgtx dest;
+    int32_t i,len; bits256 sigtxid,txid,revsigtxid; struct iguana_msgtx dest;
     dest = *msgtx;
     dest.vins = calloc(dest.tx_in,sizeof(*dest.vins));
     dest.vouts = calloc(dest.tx_out,sizeof(*dest.vouts));
