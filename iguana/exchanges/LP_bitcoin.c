@@ -3447,6 +3447,8 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
             len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].prev_vout),&dest.vins[i].prev_vout);
         }
         prevouthash = bits256_doublesha256(0,serialized,len);
+        for (i=0; i<sizeof(prevouthash); i++)
+            prevouthash.bytes[31-i] = prevouthash.bytes[i];
         dest.vins[0].sequence = 0xffffffff;
         for (i=len=0; i<dest.tx_in; i++)
             len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].sequence),&dest.vins[i].sequence);
@@ -3454,6 +3456,9 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     //    dSHA256(ffffffffffffffff)
     //    = 3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e70665044
         seqhash = bits256_doublesha256(0,serialized,len);
+        for (i=0; i<sizeof(seqhash); i++)
+            seqhash.bytes[31-i] = seqhash.bytes[i];
+        len += iguana_rwbignum(1,&serialized[len],sizeof(seqhash),seqhash.bytes);
         for (i=0; i<len; i++)
             printf("%02x",serialized[i]);
         char str[65],str2[65]; printf(" sequenceid %08x -> %s utxotxid.%s/v%d\n",dest.vins[0].sequence,bits256_str(str,seqhash),bits256_str(str2,dest.vins[0].prev_hash),dest.vins[0].prev_vout);
@@ -3461,7 +3466,9 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         for (i=len=0; i<dest.tx_out; i++)
             len += iguana_voutparse(1,&serialized[len],&dest.vouts[i]);
         outputhash = bits256_doublesha256(0,serialized,len);
-    /*nVersion:     01000000
+        for (i=0; i<sizeof(outputhash); i++)
+            outputhash.bytes[31-i] = outputhash.bytes[i];
+   /*nVersion:     01000000
     hashPrevouts: 96b827c8483d4e9b96712b6713a7b68d6e8003a781feba36c31143470b4efd37
     hashSequence: 52b0a642eea2fb7ae638c36f6252b6750293dbe574a806984b8e4d8548339a3b
     outpoint:     ef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a01000000
