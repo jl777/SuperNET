@@ -506,8 +506,6 @@ struct iguana_info *LP_coincreate(cJSON *item)
     }
     if ( 0 && coin != 0 && coin->inactive != 0 )
         printf("LPnode.%d %s inactive.%u %p vs %p\n",IAMLP,coin->symbol,coin->inactive,assetname,name);
-    if ( strcmp(symbol,"BCH") == 0 )
-        test_validate(coin,"010000000110b365ea6b8a9f2d56dc12de868e382dc787b2e29355f9b357dcf764c5e29cb1010000006b483045022100c605b993f1db5f31046ebb9065bea0a047f478342bbad8fcfc6af81d05236bd502206e9993a737a8814b935b5e522e750c915e7d37e3bd8367f087d4510f66acac47412102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ffffffff014bc22900000000001976a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac00000000");
     return(0);
 }
 
