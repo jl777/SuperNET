@@ -415,13 +415,8 @@ printf("bitcoin_verifyvins numvins.%d numvouts.%d\n",msgtx->tx_in,numvouts);
             script = msgtx->vins[vini].spendscript;
             scriptlen = msgtx->vins[vini].spendlen;
         }
-        //for (j=0; j<scriptlen; j++)
-        //    printf("%02x",script[j]);
-        //printf(" scriptlen.%d\n",scriptlen);
-printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         spendamount = LP_outpoint_amount(symbol,msgtx->vins[vini].prev_hash,msgtx->vins[vini].prev_vout);
         sigtxid = bitcoin_sigtxid(symbol,taddr,pubtype,p2shtype,isPoS,height,serialized,maxlen,msgtx,vini,script,scriptlen,spendamount,sighash,vpnstr,suppress_pubkeys,zcash);
-        //printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0].siglen);
         if ( bits256_nonz(sigtxid) != 0 )
         {
             vp = &V[vini];
@@ -474,7 +469,8 @@ printf("bitcoin_verifyvins scriptlen.%d siglen.%d\n",scriptlen,V[vini].signers[0
             }
             if ( numsigs >= vp->M )
                 complete = 1;
-        }
+        } else if ( signtx != 0 )
+            printf("bitcoin_verifyvins cant without privkey\n");
     }
     iguana_msgtx_Vset(serialized,maxlen,msgtx,V);
     cJSON *txobj = 0;//cJSON_CreateObject();
