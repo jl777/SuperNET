@@ -3324,6 +3324,122 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     }
     else
     {
+        /*
+         https://github.com/Bitcoin-UAHF/spec/blob/master/replay-protected-sighash.md
+        CHashWriter ss(SER_GETHASH, 0);
+        // Version
+        ss << txTo.nVersion;
+        // Input prevouts/nSequence (none/all, depending on flags)
+        ss << hashPrevouts;
+        ss << hashSequence;
+        // The input being signed (replacing the scriptSig with scriptCode +
+        // amount). The prevout may already be contained in hashPrevout, and the
+        // nSequence may already be contain in hashSequence.
+        ss << txTo.vin[nIn].prevout;
+        ss << static_cast<const CScriptBase &>(scriptCode);
+        ss << amount;
+        ss << txTo.vin[nIn].nSequence;
+        // Outputs (none/one/all, depending on flags)
+        ss << hashOutputs;
+        // Locktime
+        ss << txTo.nLockTime;
+        // Sighash type
+        ss << ((GetForkId() << 8) | nHashType);
+        return ss.GetHash();
+    }
+    Computation of midstates:
+    
+    uint256 GetPrevoutHash(const CTransaction &txTo) {
+        CHashWriter ss(SER_GETHASH, 0);
+        for (unsigned int n = 0; n < txTo.vin.size(); n++) {
+            ss << txTo.vin[n].prevout;
+        }
+        
+        return ss.GetHash();
+    }
+    
+    uint256 GetSequenceHash(const CTransaction &txTo) {
+        CHashWriter ss(SER_GETHASH, 0);
+        for (unsigned int n = 0; n < txTo.vin.size(); n++) {
+            ss << txTo.vin[n].nSequence;
+        }
+        
+        return ss.GetHash();
+    }
+    
+    uint256 GetOutputsHash(const CTransaction &txTo) {
+        CHashWriter ss(SER_GETHASH, 0);
+        for (unsigned int n = 0; n < txTo.vout.size(); n++) {
+            ss << txTo.vout[n];
+        }
+        
+        return ss.GetHash();
+    }
+    */
+        /*
+         https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki
+        The following is an unsigned transaction:
+        0100000002fff7f7881a8099afa6940d42d1e7f6362bec38171ea3edf433541db4e4ad969f0000000000eeffffffef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a0100000000ffffffff02202cb206000000001976a9148280b37df378db99f66f85c95a783a76ac7a6d5988ac9093510d000000001976a9143bde42dbee7e4dbe6a21b2d50ce2f0167faa815988ac11000000
+        
+    nVersion:  01000000
+    txin:      02 fff7f7881a8099afa6940d42d1e7f6362bec38171ea3edf433541db4e4ad969f 00000000 00 eeffffff
+        ef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a 01000000 00 ffffffff
+    txout:     02 202cb20600000000 1976a9148280b37df378db99f66f85c95a783a76ac7a6d5988ac
+        9093510d00000000 1976a9143bde42dbee7e4dbe6a21b2d50ce2f0167faa815988ac
+    nLockTime: 11000000
+        
+        The first input comes from an ordinary P2PK:
+        scriptPubKey : 2103c9f4836b9a4f77fc0d81f7bcb01b7f1b35916864b9476c241ce9fc198bd25432ac value: 6.25
+        private key  : bbc27228ddcb9209d7fd6f36b02f7dfa6252af40bb2f1cbc7a557da8027ff866
+        
+        The second input comes from a P2WPKH witness program:
+        scriptPubKey : 00141d0f172a0ecb48aee1be1f2687d2963ae33f71a1, value: 6
+        private key  : 619c335025c7f4012e556c2a58b2506e30b8511b53ade95ea316fd8c3286feb9
+        public key   : 025476c2e83188368da1ff3e292e7acafcdb3566bb0ad253f62fc70f07aeee6357
+        
+        To sign it with a nHashType of 1 (SIGHASH_ALL):
+        
+    hashPrevouts:
+        dSHA256(fff7f7881a8099afa6940d42d1e7f6362bec38171ea3edf433541db4e4ad969f00000000ef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a01000000)
+        = 96b827c8483d4e9b96712b6713a7b68d6e8003a781feba36c31143470b4efd37
+        
+    hashSequence:
+        dSHA256(eeffffffffffffff)
+        = 52b0a642eea2fb7ae638c36f6252b6750293dbe574a806984b8e4d8548339a3b
+        
+    hashOutputs:
+        dSHA256(202cb206000000001976a9148280b37df378db99f66f85c95a783a76ac7a6d5988ac9093510d000000001976a9143bde42dbee7e4dbe6a21b2d50ce2f0167faa815988ac)
+        = 863ef3e1a92afbfdb97f31ad0fc7683ee943e9abcf2501590ff8f6551f47e5e5
+        
+        hash preimage: 0100000096b827c8483d4e9b96712b6713a7b68d6e8003a781feba36c31143470b4efd3752b0a642eea2fb7ae638c36f6252b6750293dbe574a806984b8e4d8548339a3bef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a010000001976a9141d0f172a0ecb48aee1be1f2687d2963ae33f71a188ac0046c32300000000ffffffff863ef3e1a92afbfdb97f31ad0fc7683ee943e9abcf2501590ff8f6551f47e5e51100000001000000
+        
+    nVersion:     01000000
+    hashPrevouts: 96b827c8483d4e9b96712b6713a7b68d6e8003a781feba36c31143470b4efd37
+    hashSequence: 52b0a642eea2fb7ae638c36f6252b6750293dbe574a806984b8e4d8548339a3b
+    outpoint:     ef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a01000000
+    scriptCode:   1976a9141d0f172a0ecb48aee1be1f2687d2963ae33f71a188ac
+    amount:       0046c32300000000
+    nSequence:    ffffffff
+    hashOutputs:  863ef3e1a92afbfdb97f31ad0fc7683ee943e9abcf2501590ff8f6551f47e5e5
+    nLockTime:    11000000
+    nHashType:    01000000
+        
+    sigHash:      c37af31116d1b27caf68aae9e3ac82f1477929014d5b917657d0eb49478cb670
+    signature:    304402203609e17b84f6a7d30c80bfa610b5b4542f32a8a0d5447a12fb1366d7f01cc44a0220573a954c4518331561406f90300e8f3358f51928d43c212a8caed02de67eebee
+        
+        The serialized signed transaction is: 01000000000102fff7f7881a8099afa6940d42d1e7f6362bec38171ea3edf433541db4e4ad969f00000000494830450221008b9d1dc26ba6a9cb62127b02742fa9d754cd3bebf337f7a55d114c8e5cdd30be022040529b194ba3f9281a99f2b1c0a19c0489bc22ede944ccf4ecbab4cc618ef3ed01eeffffffef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a0100000000ffffffff02202cb206000000001976a9148280b37df378db99f66f85c95a783a76ac7a6d5988ac9093510d000000001976a9143bde42dbee7e4dbe6a21b2d50ce2f0167faa815988ac000247304402203609e17b84f6a7d30c80bfa610b5b4542f32a8a0d5447a12fb1366d7f01cc44a0220573a954c4518331561406f90300e8f3358f51928d43c212a8caed02de67eebee0121025476c2e83188368da1ff3e292e7acafcdb3566bb0ad253f62fc70f07aeee635711000000
+        
+    nVersion:  01000000
+    marker:    00
+    flag:      01
+    txin:      02 fff7f7881a8099afa6940d42d1e7f6362bec38171ea3edf433541db4e4ad969f 00000000 494830450221008b9d1dc26ba6a9cb62127b02742fa9d754cd3bebf337f7a55d114c8e5cdd30be022040529b194ba3f9281a99f2b1c0a19c0489bc22ede944ccf4ecbab4cc618ef3ed01 eeffffff
+        ef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a 01000000 00 ffffffff
+    txout:     02 202cb20600000000 1976a9148280b37df378db99f66f85c95a783a76ac7a6d5988ac
+        9093510d00000000 1976a9143bde42dbee7e4dbe6a21b2d50ce2f0167faa815988ac
+        witness    00
+        02 47304402203609e17b84f6a7d30c80bfa610b5b4542f32a8a0d5447a12fb1366d7f01cc44a0220573a954c4518331561406f90300e8f3358f51928d43c212a8caed02de67eebee01 21025476c2e83188368da1ff3e292e7acafcdb3566bb0ad253f62fc70f07aeee6357
+    nLockTime: 11000000
+        */
         bits256 prevouthash,seqhash,outputhash;
         for (i=len=0; i<dest.tx_in; i++)
         {
@@ -3331,18 +3447,31 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
             len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].prev_vout),&dest.vins[i].prev_vout);
         }
         prevouthash = bits256_doublesha256(0,serialized,len);
-        for (i=0; i<sizeof(prevouthash); i++)
-            prevouthash.bytes[31-i] = prevouthash.bytes[i];
         for (i=len=0; i<dest.tx_in; i++)
             len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].sequence),&dest.vins[i].sequence);
+    //hashSequence:
+    //    dSHA256(eeffffffffffffff)
+    //    = 52b0a642eea2fb7ae638c36f6252b6750293dbe574a806984b8e4d8548339a3b
+        len = 0;
+        dest.vins[0].sequence = 0xfffffffe;
+        len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[0].sequence),&dest.vins[0].sequence);
+
         seqhash = bits256_doublesha256(0,serialized,len);
-        for (i=0; i<sizeof(seqhash); i++)
-            seqhash.bytes[31-i] = seqhash.bytes[i];
+        char str[65]; printf("sequenceid %08x -> %s\n",dest.vins[0].sequence,bits256_str(str,seqhash)); getchar();
         for (i=len=0; i<dest.tx_out; i++)
             len += iguana_voutparse(1,&serialized[len],&dest.vouts[i]);
         outputhash = bits256_doublesha256(0,serialized,len);
-        for (i=0; i<sizeof(outputhash); i++)
-            outputhash.bytes[31-i] = outputhash.bytes[i];
+    /*nVersion:     01000000
+    hashPrevouts: 96b827c8483d4e9b96712b6713a7b68d6e8003a781feba36c31143470b4efd37
+    hashSequence: 52b0a642eea2fb7ae638c36f6252b6750293dbe574a806984b8e4d8548339a3b
+    outpoint:     ef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a01000000
+    scriptCode:   1976a9141d0f172a0ecb48aee1be1f2687d2963ae33f71a188ac
+    amount:       0046c32300000000
+    nSequence:    ffffffff
+    hashOutputs:  863ef3e1a92afbfdb97f31ad0fc7683ee943e9abcf2501590ff8f6551f47e5e5
+    nLockTime:    11000000
+    nHashType:    01000000*/
+
         len = 0;
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.version),&dest.version);
         len += iguana_rwbignum(1,&serialized[len],sizeof(prevouthash),prevouthash.bytes);
@@ -3355,12 +3484,12 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         len += iguana_rwbignum(1,&serialized[len],sizeof(outputhash),outputhash.bytes);
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.lock_time),&dest.lock_time);
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
-        printf("B path spendamount %.8f\n",dstr(spendamount));
+        printf("B path spendamount %.8f locktime %u hashtype %d\n",dstr(spendamount),dest.lock_time,hashtype);
     }
     revsigtxid = bits256_doublesha256(0,serialized,len);
     for (i=0; i<sizeof(revsigtxid); i++)
         sigtxid.bytes[31-i] = revsigtxid.bytes[i];
-    //char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
+    char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
     free(dest.vins);
     free(dest.vouts);
     return(sigtxid);
