@@ -670,6 +670,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         V[i].spendlen = 25;
                         decode_hex(V[i].spendscript,V[i].spendlen,"76a9145baf32629848126250861381382d1117a3d6efaa88ac");
                         V[i].amount = SATOSHIDEN * 0.00587427;
+                        msgtx->vins[i].sequence = 0xffffffff;
                         strcpy(V[i].coinaddr,"19MnNLzxNTNXWUdfxpQvWK3CPwFXJbmLb8");
                         V[i].suppress_pubkeys = 0;
                         sobj = cJSON_CreateObject();
@@ -684,6 +685,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         V[i].amount = SATOSHIDEN * 0.001;
                         strcpy(V[i].coinaddr,"1AwDWu5rZKyGMUu16gf9Kow8ohnKmc7tGH");
                         V[i].suppress_pubkeys = 0;
+                        msgtx->vins[i].sequence = 0xffffffff;
                         sobj = cJSON_CreateObject();
                         jaddstr(sobj,"hex","76a9146cfa0a987f4c8f2ffee7e9944ef0c86fcda9671d88ac");
                         jadd(item,"scriptPubKey",sobj);
