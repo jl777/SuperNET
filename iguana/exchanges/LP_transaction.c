@@ -437,14 +437,14 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
                     bitcoin_pubkey33(ctx,vp->signers[j].pubkey,vp->signers[j].privkey);
                     sig[siglen++] = sighash;
                     vp->signers[j].siglen = siglen;
-                    char str[65]; printf("SIGTXID.(%s) ",bits256_str(str,sigtxid));
+                    /*char str[65]; printf("SIGTXID.(%s) ",bits256_str(str,sigtxid));
                      int32_t i; for (i=0; i<siglen; i++)
                      printf("%02x",sig[i]);
                      printf(" sig, ");
-                     for (i=0; i<33; i++)
+                     for (i=0; i<plen; i++)
                      printf("%02x",vp->signers[j].pubkey[i]);
                      // s2 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1;
-                     printf(" SIGNEDTX.[%02x] siglen.%d priv.%s\n",sig[siglen-1],siglen,bits256_str(str,vp->signers[j].privkey));
+                     printf(" SIGNEDTX.[%02x] siglen.%d priv.%s\n",sig[siglen-1],siglen,bits256_str(str,vp->signers[j].privkey));*/
                 }
                 if ( sig == 0 || siglen == 0 )
                 {
@@ -462,14 +462,14 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
                 {
                     flag++;
                     numsigs++;
-                    int32_t z; char tmpaddr[64];
+                    /*int32_t z; char tmpaddr[64];
                     for (z=0; z<siglen-1; z++)
                         printf("%02x",sig[z]);
                     printf(" <- sig[%d]\n",j);
                     for (z=0; z<33; z++)
                         printf("%02x",vp->signers[j].pubkey[z]);
                     bitcoin_address(tmpaddr,0,0,vp->signers[j].pubkey,33);
-                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);
+                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);*/
                 }
             }
             if ( numsigs >= vp->M )
@@ -696,6 +696,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         jaddstr(sobj,"hex","76a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac");
                         jadd(item,"scriptPubKey",sobj);
                         printf("match special txid B\n");
+                        V[i].signers[0].privkey = G.LP_privkey;
                     }
                     msgtx->vins[i].spendscript = V[i].spendscript;
                     msgtx->vins[i].spendlen = V[i].spendlen;
@@ -728,18 +729,15 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     inputsum += V[i].amount;
                     if ( msgtx->vins[i].sequence < IGUANA_SEQUENCEID_FINAL )
                         finalized = 0;
-                    //for (j=0; j<msgtx->vins[i].spendlen; j++)
-                    //    printf("%02x",msgtx->vins[i].spendscript[j]);
-                    //printf(" spendscript, vin.%d (%s) scriptlen.%d spendlen.%d:%d finalize.%d\n",i,jprint(item,0),msgtx->vins[i].scriptlen,V[i].spendlen,msgtx->vins[i].spendlen,finalized);
                 }
                 sighash = LP_sighash(symbol,zcash);
                 complete = bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,sighash,0,V[0].suppress_pubkeys,zcash);
                 msgtx->txid = signedtxid;
-                cJSON *log = cJSON_CreateArray();
+                /*cJSON *log = cJSON_CreateArray();
                 if ( iguana_interpreter(ctx,log,0,V,numinputs) < 0 )
                     jaddstr(retjson,"error","interpreter rejects tx");
                 else complete = 1;
-                jadd(retjson,"interpreter",log);
+                jadd(retjson,"interpreter",log);*/
                 jadd(retjson,"complete",complete!=0?jtrue():jfalse());
                 if ( signedtx != 0 )
                     free(signedtx);
