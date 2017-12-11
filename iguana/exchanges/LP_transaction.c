@@ -686,7 +686,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         V[i].spendlen = 25;
                         decode_hex(V[i].spendscript,V[i].spendlen,"76a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac");
                         msgtx->lock_time = 0;
-                        V[i].amount = SATOSHIDEN * 0.001;
+                        V[i].amount = 2746715;
                         strcpy(V[i].coinaddr,"19Cq6MBaD8LY7trqs99ypqKAms3GcLs6J9");
                         V[i].suppress_pubkeys = 0;
                         decode_hex(msgtx->vins[i].prev_hash.bytes,32,"b19ce2c564f7dc57b3f95593e2b287c72d388e86de12dc562d9f8a6bea65b310");
