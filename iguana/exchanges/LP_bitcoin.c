@@ -3401,11 +3401,23 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         printf("seqhash.%s ",bits256_str(str,seqhash));
         printf("outputhash.%s ",bits256_str(str,outputhash));
         printf("vini.%d prev.%s/v%d\n",vini,bits256_str(str,dest.vins[vini].prev_hash),dest.vins[vini].prev_vout);
+        /*01000000
+        997c1040c67ee2f9ab21abf7457f7aecec7a7f45f7ab21abf9e27ec640107c99
+        445066705e799022b7095f7ceca255141455a2ec7c5f09b72290795e70665044
+        10b365ea6b8a9f2d56dc12de868e382dc787b2e29355f9b357dcf764c5e29cb101000000
+        76a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac
+        5be9290000000000
+        ffffffff
+        a919fd9f636c08f4989be95c99923040403092995ce99b98f4086c639ffd19a9
+        00000000
+        41000000*/
         len = 0;
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.version),&dest.version);
         len += iguana_rwbignum(1,&serialized[len],sizeof(prevouthash),prevouthash.bytes);
         len += iguana_rwbignum(1,&serialized[len],sizeof(seqhash),seqhash.bytes);
-        len += iguana_rwbignum(1,&serialized[len],sizeof(dest.vins[vini].prev_hash),dest.vins[vini].prev_hash.bytes);
+        // len += iguana_rwbignum(1,&serialized[len],sizeof(dest.vins[vini].prev_hash),dest.vins[vini].prev_hash.bytes);
+        for (i=0; i<32; i++)
+            serialized[len++] = dest.vins[vini].prev_hash.bytes[31 - i];
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[vini].prev_vout),&dest.vins[vini].prev_vout);
         memcpy(&serialized[len],spendscript,spendlen), len += spendlen;
         len += iguana_rwnum(1,&serialized[len],sizeof(spendamount),&spendamount);
