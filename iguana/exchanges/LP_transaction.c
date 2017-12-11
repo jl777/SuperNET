@@ -665,23 +665,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                     if ( V[i].N < V[i].M )
                         V[i].N = V[i].M;
                     item = jitem(vins,i);
-                    if ( strcmp(jstr(item,"txid"),"775489f100361039f56793719d87621a73adbadda5e13c85e81d88f55ff9620e") == 0 && jint(item,"vout") == 1 )
-                    {
-                        V[i].spendlen = 25;
-                        decode_hex(V[i].spendscript,V[i].spendlen,"76a9145baf32629848126250861381382d1117a3d6efaa88ac");
-                        V[i].amount = SATOSHIDEN * 0.00587427;
-                        msgtx->lock_time = 0;
-                        decode_hex(msgtx->vins[i].prev_hash.bytes,32,"775489f100361039f56793719d87621a73adbadda5e13c85e81d88f55ff9620e");
-                        msgtx->vins[i].prev_vout = 1;
-                        msgtx->vins[i].sequence = 0xffffffff;
-                        strcpy(V[i].coinaddr,"19MnNLzxNTNXWUdfxpQvWK3CPwFXJbmLb8");
-                        V[i].suppress_pubkeys = 0;
-                        sobj = cJSON_CreateObject();
-                        jaddstr(sobj,"hex","76a9145baf32629848126250861381382d1117a3d6efaa88ac");
-                        jadd(item,"scriptPubKey",sobj);
-                        printf("match special txid A\n");
-                    }
-                    else if ( strcmp(jstr(item,"txid"),"b19ce2c564f7dc57b3f95593e2b287c72d388e86de12dc562d9f8a6bea65b310") == 0 && jint(item,"vout") == 1 )
+                    if ( strcmp(jstr(item,"txid"),"b19ce2c564f7dc57b3f95593e2b287c72d388e86de12dc562d9f8a6bea65b310") == 0 && jint(item,"vout") == 1 )
                     {
                         V[i].spendlen = 25;
                         decode_hex(V[i].spendscript,V[i].spendlen,"76a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac");
@@ -731,7 +715,7 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         finalized = 0;
                 }
                 sighash = LP_sighash(symbol,zcash);
-                complete = bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,sighash,0,V[0].suppress_pubkeys,zcash);
+                complete = bitcoin_verifyvins(ctx,symbol,taddr,pubtype,p2shtype,isPoS,height,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,sighash,1,V[0].suppress_pubkeys,zcash);
                 msgtx->txid = signedtxid;
                 /*cJSON *log = cJSON_CreateArray();
                 if ( iguana_interpreter(ctx,log,0,V,numinputs) < 0 )
