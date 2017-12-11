@@ -3433,6 +3433,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
     free(dest.vins);
     free(dest.vouts);
+decode_hex(sigtxid.bytes,32,"fc55acc3666c43b8f75908ca06ea2d343cd09eb846f14c5d7d0748a11e081a9d");
     return(sigtxid);
 }
 
