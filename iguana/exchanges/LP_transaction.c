@@ -671,6 +671,8 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         decode_hex(V[i].spendscript,V[i].spendlen,"76a9145baf32629848126250861381382d1117a3d6efaa88ac");
                         V[i].amount = SATOSHIDEN * 0.00587427;
                         msgtx->lock_time = 0;
+                        decode_hex(msgtx->vins[i].prev_hash.bytes,32,"775489f100361039f56793719d87621a73adbadda5e13c85e81d88f55ff9620e");
+                        msgtx->vins[i].prev_vout = 1;
                         msgtx->vins[i].sequence = 0xffffffff;
                         strcpy(V[i].coinaddr,"19MnNLzxNTNXWUdfxpQvWK3CPwFXJbmLb8");
                         V[i].suppress_pubkeys = 0;
@@ -687,6 +689,8 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         V[i].amount = SATOSHIDEN * 0.001;
                         strcpy(V[i].coinaddr,"19Cq6MBaD8LY7trqs99ypqKAms3GcLs6J9");
                         V[i].suppress_pubkeys = 0;
+                        decode_hex(msgtx->vins[i].prev_hash.bytes,32,"b19ce2c564f7dc57b3f95593e2b287c72d388e86de12dc562d9f8a6bea65b310");
+                        msgtx->vins[i].prev_vout = 1;
                         msgtx->vins[i].sequence = 0xffffffff;
                         sobj = cJSON_CreateObject();
                         jaddstr(sobj,"hex","76a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac");
