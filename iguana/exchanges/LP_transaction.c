@@ -693,12 +693,6 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
                         jadd(item,"scriptPubKey",sobj);
                         printf("match special txid B\n");
                     }
-                    /*hashprev 997c1040c67ee2f9ab21abf7457f7aec4503970e974e532b6578f326c270b7eb, hashseq.445066705e799022b7095f7ceca255149f43acfc47e7f59e551f7bce2930b13b hashout.a919fd9f636c08f4989be95c999230408dbc0f602c3f000bcedba9d5bbe98914
-                    sighash.fc55acc3666c43b8f75908ca06ea2d343cd09eb846f14c5d7d0748a11e081a9d
-                    {
-                        "hex": "010000000110b365ea6b8a9f2d56dc12de868e382dc787b2e29355f9b357dcf764c5e29cb1010000006b483045022100c605b993f1db5f31046ebb9065bea0a047f478342bbad8fcfc6af81d05236bd502206e9993a737a8814b935b5e522e750c915e7d37e3bd8367f087d4510f66acac47412102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ffffffff014bc22900000000001976a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac00000000",
-                        "complete": true
-                    }*/
                     msgtx->vins[i].spendscript = V[i].spendscript;
                     msgtx->vins[i].spendlen = V[i].spendlen;
                     if ( (sobj= jobj(item,"scriptSig")) != 0 )

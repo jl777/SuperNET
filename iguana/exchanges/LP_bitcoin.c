@@ -3456,27 +3456,14 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         for (i=0; i<sizeof(seqhash); i++)
             seqhash.bytes[31-i] = seqhash.bytes[i];
         
-        /*len += iguana_rwbignum(1,&serialized[len],sizeof(seqhash),seqhash.bytes);
-        for (i=0; i<len; i++)
-            printf("%02x",serialized[i]);
-        char str[65],str2[65]; printf(" sequenceid %08x -> %s utxotxid.%s/v%d\n",dest.vins[0].sequence,bits256_str(str,seqhash),bits256_str(str2,dest.vins[0].prev_hash),dest.vins[0].prev_vout);*/
-        
         for (i=len=0; i<dest.tx_out; i++)
             len += iguana_voutparse(1,&serialized[len],&dest.vouts[i]);
         outputhash = bits256_doublesha256(0,serialized,len);
         for (i=0; i<sizeof(outputhash); i++)
             outputhash.bytes[31-i] = outputhash.bytes[i];
-   /*nVersion:     01000000
-    hashPrevouts: 96b827c8483d4e9b96712b6713a7b68d6e8003a781feba36c31143470b4efd37
-    hashSequence: 52b0a642eea2fb7ae638c36f6252b6750293dbe574a806984b8e4d8548339a3b
-    outpoint:     ef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a01000000
-    scriptCode:   1976a9141d0f172a0ecb48aee1be1f2687d2963ae33f71a188ac
-    amount:       0046c32300000000
-    nSequence:    ffffffff
-    hashOutputs:  863ef3e1a92afbfdb97f31ad0fc7683ee943e9abcf2501590ff8f6551f47e5e5
-    nLockTime:    11000000
-    nHashType:    01000000*/
-
+        char str[65]; printf("prevouthash.%s ",bits256_str(str,prevouthash));
+        printf("seqhash.%s ",bits256_str(str,seqhash));
+        printf("outputhash.%s\n",bits256_str(str,outputhash));
         len = 0;
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.version),&dest.version);
         len += iguana_rwbignum(1,&serialized[len],sizeof(prevouthash),prevouthash.bytes);
