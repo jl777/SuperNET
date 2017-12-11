@@ -3417,14 +3417,20 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         41000000*/
         len = 0;
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.version),&dest.version);
-        len += iguana_rwbignum(1,&serialized[len],sizeof(prevouthash),prevouthash.bytes);
-        len += iguana_rwbignum(1,&serialized[len],sizeof(seqhash),seqhash.bytes);
+        for (i=0; i<32; i++)
+            serialized[len++] = prevouthash.bytes[31 - i];
+        //len += iguana_rwbignum(1,&serialized[len],sizeof(prevouthash),prevouthash.bytes);
+        //len += iguana_rwbignum(1,&serialized[len],sizeof(seqhash),seqhash.bytes);
+        for (i=0; i<32; i++)
+            serialized[len++] = seqhash.bytes[31 - i];
         len += iguana_rwbignum(1,&serialized[len],sizeof(dest.vins[vini].prev_hash),dest.vins[vini].prev_hash.bytes);
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[vini].prev_vout),&dest.vins[vini].prev_vout);
         memcpy(&serialized[len],spendscript,spendlen), len += spendlen;
         len += iguana_rwnum(1,&serialized[len],sizeof(spendamount),&spendamount);
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[vini].sequence),&dest.vins[vini].sequence);
-        len += iguana_rwbignum(1,&serialized[len],sizeof(outputhash),outputhash.bytes);
+        //len += iguana_rwbignum(1,&serialized[len],sizeof(outputhash),outputhash.bytes);
+        for (i=0; i<32; i++)
+            serialized[len++] = outputhash.bytes[31 - i];
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.lock_time),&dest.lock_time);
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
         for (i=0; i<len; i++)
