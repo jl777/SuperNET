@@ -1244,7 +1244,7 @@ void for_satinder()
     paymentaddr = "t1Y9ukZMkNAYonCFVp3jSdx7NT8dEsXss7k";
     satoshis = 1344 * SATOSHIDEN - 10000;
     memset(zero.bytes,0,sizeof(zero));
-    decode_hex(priv1.bytes,32,"ef5b1d463715e6b5bd51c3161147f1aabebc7f3f88438cbdc744590c2b9856e6"); // need to put the actual privkey here
+    decode_hex(priv1.bytes,32,"00000000000000000000000000000000bebc7f3f88438cbdc744590c2b9856e6"); // need to put the actual privkey here
     len = basilisk_swapuserdata(userdata,zero,1,priv1,redeemscript,redeemlen);
     if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,coin->txfee,"satinder",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,priv1,0,redeemscript,redeemlen,userdata,len,utxotxid,0,0,pubkey33,0,expiration,&satoshis,0,0,paymentaddr,1,coin->zcash)) != 0 )
     {
