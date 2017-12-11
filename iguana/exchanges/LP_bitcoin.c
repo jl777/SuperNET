@@ -3412,12 +3412,12 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
             serialized[len++] = prevouthash.bytes[i];
         for (i=0; i<32; i++)
             serialized[len++] = seqhash.bytes[i];
-        //prevhash = dest.vins[vini].prev_hash;
-        //for (i=0; i<32; i++)
-        //    serialized[len++] = prevhash.bytes[i];
-        len += iguana_rwbignum(1,&serialized[len],sizeof(dest.vins[vini].prev_hash),dest.vins[vini].prev_hash.bytes);
+        prevhash = dest.vins[vini].prev_hash;
+        for (i=0; i<32; i++)
+            serialized[len++] = prevhash.bytes[i];
+        //len += iguana_rwbignum(1,&serialized[len],sizeof(dest.vins[vini].prev_hash),dest.vins[vini].prev_hash.bytes);
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[vini].prev_vout),&dest.vins[vini].prev_vout);
-        serialized[len++] = spendlen;
+        //serialized[len++] = spendlen;
         memcpy(&serialized[len],spendscript,spendlen), len += spendlen;
         len += iguana_rwnum(1,&serialized[len],sizeof(spendamount),&spendamount);
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[vini].sequence),&dest.vins[vini].sequence);
