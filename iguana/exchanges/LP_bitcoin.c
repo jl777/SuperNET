@@ -3421,7 +3421,6 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         1489e9bbd5a9dbce0b003f2c600fbc8d403092995ce99b98f4086c639ffd19a9 ss.write size.32
         00000000 ss.write size.4
         41000000 ss.write size.4
-        
         -> sighash.fc55acc3666c43b8f75908ca06ea2d343cd09eb846f14c5d7d0748a11e081a9d*/
         len = 0;
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.version),&dest.version);
@@ -3438,12 +3437,13 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
         for (i=0; i<len; i++)
             printf("%02x",serialized[i]);
-        printf(" B path version.%08x spendamount %.8f locktime %u hashtype %08x\n",dest.version,dstr(spendamount),dest.lock_time,hashtype);
+        sigtxid = bits256_doublesha256(0,serialized,len);
+        printf(" B path version.%08x spendamount %.8f locktime %u hashtype %08x %s\n",dest.version,dstr(spendamount),dest.lock_time,hashtype,bits256_str(str,sigtxid));
     }
     revsigtxid = bits256_doublesha256(0,serialized,len);
     for (i=0; i<sizeof(revsigtxid); i++)
         sigtxid.bytes[31-i] = revsigtxid.bytes[i];
-    char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
+    //char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
     free(dest.vins);
     free(dest.vouts);
     return(sigtxid);
