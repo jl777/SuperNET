@@ -755,10 +755,10 @@ char *iguana_validaterawtx(void *ctx,struct iguana_info *coin,struct iguana_msgt
     return(jprint(retjson,1));
 }
 
-void test_validate(char *signedtx)
+void test_validate(struct iguana_info *coin,char *signedtx)
 {
-    char *retstr; uint8_t extraspace[8192]; int32_t mempool=0; struct iguana_msgtx msgtx; struct iguana_info *coin = LP_coinfind("BTC");
-    retstr = iguana_validaterawtx(bitcoin_ctx(),coin,&msgtx,extraspace,sizeof(extraspace),signedtx,mempool,0,LP_IS_BITCOINCASH);
+    char *retstr; uint8_t extraspace[8192]; int32_t mempool=0; struct iguana_msgtx msgtx;
+    retstr = iguana_validaterawtx(bitcoin_ctx(),coin,&msgtx,extraspace,sizeof(extraspace),signedtx,mempool,0,coin->zcash);
     printf("validate test.(%s)\n",retstr);
 }
 
