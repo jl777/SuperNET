@@ -17,8 +17,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// selfreport zcredits
-// ordermatch pricing error
 // compress packets
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // portfolio to set prices from historical
