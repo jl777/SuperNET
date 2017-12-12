@@ -230,11 +230,13 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
         jaddnum(item,"height",LP_getheight(&notarized,coin));
         if ( notarized > 0 )
             jaddnum(item,"notarized",notarized);
+#ifndef _WIN32
         if ( coin->electrum != 0 )
             balance = LP_unspents_load(coin->symbol,coin->smartaddr);
         else balance = LP_RTsmartbalance(coin);
         jaddnum(item,"balance",dstr(balance));
         jaddnum(item,"KMDvalue",dstr(LP_KMDvalue(coin,balance)));
+#endif
     }
     else
     {
