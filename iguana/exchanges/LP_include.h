@@ -27,7 +27,7 @@
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "17731"
+#define LP_BUILD_NUMBER "17735"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -51,7 +51,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
 #define LP_AUTOTRADE_TIMEOUT 60
 #define LP_RESERVETIME 600  //(LP_AUTOTRADE_TIMEOUT * 2)
-#define ELECTRUM_TIMEOUT 7
+#define ELECTRUM_TIMEOUT 13
 #define LP_ELECTRUM_KEEPALIVE 60
 #define LP_ELECTRUM_MAXERRORS 777
 #define LP_MEMPOOL_TIMEINCR 10

@@ -402,7 +402,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
     vpnstr[0] = 0;
     *signedtx = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
-printf("bitcoin_verifyvins numvins.%d numvouts.%d signtx.%d privkey.%d M.%d N.%d\n",msgtx->tx_in,numvouts,signtx,bits256_nonz(V[0].signers[0].privkey),V[0].M,V[0].N);
+//printf("bitcoin_verifyvins numvins.%d numvouts.%d signtx.%d privkey.%d M.%d N.%d\n",msgtx->tx_in,numvouts,signtx,bits256_nonz(V[0].signers[0].privkey),V[0].M,V[0].N);
     for (vini=0; vini<msgtx->tx_in; vini++)
     {
         if ( V->p2shscript[0] != 0 && V->p2shlen != 0 )
@@ -432,14 +432,14 @@ printf("bitcoin_verifyvins numvins.%d numvouts.%d signtx.%d privkey.%d M.%d N.%d
                     bitcoin_pubkey33(ctx,vp->signers[j].pubkey,vp->signers[j].privkey);
                     sig[siglen++] = sighash;
                     vp->signers[j].siglen = siglen;
-                    char str[65]; printf("SIGTXID.(%s) ",bits256_str(str,sigtxid));
+                    /*char str[65]; printf("SIGTXID.(%s) ",bits256_str(str,sigtxid));
                      int32_t i; for (i=0; i<siglen; i++)
                      printf("%02x",sig[i]);
                      printf(" sig, ");
                      for (i=0; i<33; i++)
                      printf("%02x",vp->signers[j].pubkey[i]);
                      // s2 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1;
-                     printf(" SIGNEDTX.[%02x] siglen.%d priv.%s\n",sig[siglen-1],siglen,bits256_str(str,vp->signers[j].privkey));
+                     printf(" SIGNEDTX.[%02x] siglen.%d priv.%s\n",sig[siglen-1],siglen,bits256_str(str,vp->signers[j].privkey));*/
                 }
                 if ( sig == 0 || siglen == 0 )
                 {
@@ -457,14 +457,14 @@ printf("bitcoin_verifyvins numvins.%d numvouts.%d signtx.%d privkey.%d M.%d N.%d
                 {
                     flag++;
                     numsigs++;
-                    int32_t z; char tmpaddr[64];
+                    /*int32_t z; char tmpaddr[64];
                     for (z=0; z<siglen-1; z++)
                         printf("%02x",sig[z]);
                     printf(" <- sig[%d]\n",j);
                     for (z=0; z<33; z++)
                         printf("%02x",vp->signers[j].pubkey[z]);
                     bitcoin_address(tmpaddr,0,0,vp->signers[j].pubkey,33);
-                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);
+                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);*/
                 }
             }
             if ( numsigs >= vp->M )
