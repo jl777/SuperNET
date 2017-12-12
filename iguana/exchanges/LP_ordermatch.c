@@ -856,7 +856,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         memset(&qp->txid2,0,sizeof(qp->txid2));
         qp->vout = qp->vout2 = -1;
     } else return(0);
-    printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
+    //printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
     if ( qprice > myprice )
     {
         r = (LP_rand() % 100);

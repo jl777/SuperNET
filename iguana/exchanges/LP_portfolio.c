@@ -508,7 +508,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 newprice = (price * (1. + margin));
                 LP_mypriceset(&changed,rel,base,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
-                printf("price %.8f margin %.8f newprice %.8f %.8f\n",price,margin,newprice,(1. / price) * (1. + margin));
+                //printf("price %.8f margin %.8f newprice %.8f %.8f\n",price,margin,newprice,(1. / price) * (1. + margin));
                 newprice = (1. / price) * (1. + margin);
                 LP_mypriceset(&changed,base,rel,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
@@ -727,7 +727,7 @@ void prices_loop(void *ctx)
 {
     char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256]; struct LP_priceinfo *btcpp;
     strcpy(prices_loop_stats.name,"prices_loop");
-    prices_loop_stats.threshold = 91000.;
+    prices_loop_stats.threshold = 191000.;
     while ( 1 )
     {
         //printf("prices loop autoprices.%d autorefs.%d\n",LP_autoprices,num_LP_autorefs);
