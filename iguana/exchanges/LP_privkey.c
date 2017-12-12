@@ -202,10 +202,28 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
     return(jprint(retjson,1));
 }
 
+int32_t LP_wifstr_valid(char *wifstr)
+{
+    bits256 privkey; uint8_t wiftype; char cmpstr[128]; int32_t iter;
+    for (iter=0; iter<2; iter++)
+    {
+        bitcoin_wif2priv(0,&wiftype,&privkey,wifstr);
+        bitcoin_priv2wif(0,cmpstr,privkey,wiftype);
+        if ( strcmp(cmpstr,wifstr) == 0 )
+        {
+            printf("%s is valid wif\n",wifstr);
+            return(1);
+        }
+    }
+    return(0);
+}
+
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     //static uint32_t counter;
     bits256 privkey,userpub,zero,userpass,checkkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype; int32_t notarized;
+    if ( (wifstr == 0 || wifstr[0] == 0) && LP_wifstr_valid(passphrase) > 0 )
+        wifstr = passphrase;
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
         calc_NXTaddr(G.LP_NXTaddr,userpub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
