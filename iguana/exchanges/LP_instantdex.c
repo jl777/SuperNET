@@ -392,7 +392,7 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
         {
             ap->instantdex_credits += satoshis;
             ap->didinstantdex = 1;
-            if ( 1 && dispflag != 0 )
+            if ( 0 && dispflag != 0 )
                 printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->instantdex_credits));
             return(satoshis);
         } else printf("null ap.%p or expired %ld\n",ap,time(NULL) - (timestamp-60*3600));
@@ -418,7 +418,7 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
                 weeki = (amount64 % 10000);
                 item = jitem(vouts,0);
                 satoshis = LP_value_extract(item,0);
-                char str[65]; printf("%s %s funded %.8f weeki.%d (%s)\n",bits256_str(str,txid),destaddr,dstr(satoshis),weeki,jprint(item,0));
+                //char str[65]; printf("%s %s funded %.8f weeki.%d (%s)\n",bits256_str(str,txid),destaddr,dstr(satoshis),weeki,jprint(item,0));
                 if ( LP_destaddr(p2shaddr,item) == 0 )
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,p2shaddr,txid,0)) != 0 )
@@ -515,7 +515,7 @@ int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
     {
         bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
         bitcoin_address(othersmartaddr,0,60,rmd160,20);
-        printf("proofcheck addrtype.%d (%s) -> %s\n",addrtype,coinaddr,othersmartaddr);
+        //printf("proofcheck addrtype.%d (%s) -> %s\n",addrtype,coinaddr,othersmartaddr);
         if ((ap= LP_address(coin,othersmartaddr)) != 0 )
         {
             ap->instantdex_credits = 0;
