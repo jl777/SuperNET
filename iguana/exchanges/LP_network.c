@@ -29,7 +29,7 @@ struct psock
 uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT;
 
 #ifdef FROM_JS
-/*
+
 int32_t nn_socket(int domain, int protocol)
 {
     return(0);
@@ -69,6 +69,7 @@ int32_t nn_shutdown(int s, int how)
 
 int32_t nn_send(int s, const void *buf, size_t len, int flags)
 {
+    printf("JS cant nn_send (%s)\n",(char *)buf);
     return(0);
 }
 
@@ -90,24 +91,24 @@ const char *nn_strerror(int errnum)
 int32_t nn_poll(struct nn_pollfd *fds, int nfds, int timeout)
 {
     return(0);
-}*/
+}
 
 
 #endif
 
 char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port);
+    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port);
     return(str);
 }
 
-char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
+/*char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
 {
-    sprintf(str,"tcp://%s:%u",bindflag == 0 ? ipaddr : "*",port+10);
+    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port+10);
     return(str);
 }
 
-/*int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
+int32_t _LP_send(int32_t sock,void *msg,int32_t sendlen,int32_t freeflag)
 {
     int32_t sentbytes;
     if ( sock < 0 )
@@ -139,7 +140,7 @@ struct LP_queue
 {
     struct LP_queue *next,*prev;
     int32_t sock,peerind,msglen;
-    uint32_t starttime,crc32;
+    uint32_t starttime,crc32,notready;
     uint8_t msg[];
 } *LP_Q;
 int32_t LP_Qenqueued,LP_Qerrors,LP_Qfound;
@@ -182,11 +183,11 @@ bits256 LP_calc_magic(uint8_t *msg,int32_t len)
     sum += (OS_milliseconds() - millis);
     nsum += n;
     counter++;
-    if ( n > maxn || (rand() % 100) == 0 )
+    if ( n > maxn || (LP_rand() % 10000) == 0 )
     {
         if ( n > maxn )
         {
-            printf("LP_calc_magic maxn.%d <- %d\n",maxn,n);
+            printf("LP_calc_magic maxn.%d <- %d   | ",maxn,n);
             maxn = n;
         }
         printf("millis %.3f ave %.3f, aveiters %.1f\n",OS_milliseconds() - millis,sum/counter,(double)nsum/counter);
@@ -236,7 +237,7 @@ int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
                 break;
         }
         if ( i >= sizeof(crcs)/sizeof(*crcs) )
-            i = (rand() % (sizeof(crcs)/sizeof(*crcs)));
+            i = (LP_rand() % (sizeof(crcs)/sizeof(*crcs)));
         return(i);
     }
     else
@@ -264,87 +265,17 @@ int32_t LP_peerindsock(int32_t *peerindp)
     return(-1);
 }
 
-void queue_loop(void *arg)
-{
-    struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
-    while ( 1 )
-    {
-        nonz = 0;
-        //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
-        n = 0;
-        DL_FOREACH_SAFE(LP_Q,ptr,tmp)
-        {
-            n++;
-            flag = 0;
-            if ( ptr->sock >= 0 )
-            {
-                if ( LP_sockcheck(ptr->sock) > 0 )
-                {
-                    bits256 magic;
-                    magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
-                    memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
-                    if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
-                        printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                    ptr->sock = -1;
-                    if ( ptr->peerind > 0 )
-                        ptr->starttime = (uint32_t)time(NULL);
-                    else flag = 1;
-                } //else printf("sock not ready to send.%d\n",ptr->msglen);
-            }
-            else if ( 0 && time(NULL) > ptr->starttime+13 )
-            {
-                LP_crc32find(&duplicate,-1,ptr->crc32);
-                if ( duplicate > 0 )
-                {
-                    LP_Qfound++;
-                    if ( (LP_Qfound % 100) == 0 )
-                        printf("found.%u Q.%d err.%d match.%d\n",ptr->crc32,LP_Qenqueued,LP_Qerrors,LP_Qfound);
-                    flag = 1;
-                }
-                else if ( 0 ) // too much beyond duplicate filter when network is busy
-                {
-                    printf("couldnt find.%u peerind.%d Q.%d err.%d match.%d\n",ptr->crc32,ptr->peerind,LP_Qenqueued,LP_Qerrors,LP_Qfound);
-                    ptr->peerind++;
-                    if ( (ptr->sock= LP_peerindsock(&ptr->peerind)) < 0 )
-                    {
-                        printf("%d no more peers to try at peerind.%d %p Q_LP.%p\n",n,ptr->peerind,ptr,LP_Q);
-                        flag = 1;
-                        LP_Qerrors++;
-                     }
-                }
-            }
-            if ( flag != 0 )
-            {
-                nonz++;
-                portable_mutex_lock(&LP_networkmutex);
-                DL_DELETE(LP_Q,ptr);
-                portable_mutex_unlock(&LP_networkmutex);
-                free(ptr);
-                ptr = 0;
-            }
-        }
-        if ( arg == 0 )
-            break;
-        //if ( n != 0 )
-        //    printf("LP_Q.[%d]\n",n);
-        if ( nonz == 0 )
-            usleep(5000);
-        else if ( IAMLP == 0 )
-            usleep(1000);
-    }
-}
-
 void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
     int32_t maxind,peerind = 0; //sentbytes,
     if ( sock0 < 0 && sock1 < 0 )
     {
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
+            peerind = (LP_rand() % maxind) + 1;
         else peerind = 1;
         sock0 = LP_peerindsock(&peerind);
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
+            peerind = (LP_rand() % maxind) + 1;
         else peerind = 1;
         sock1 = LP_peerindsock(&peerind);
     }
@@ -373,9 +304,14 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
     msglen = (int32_t)strlen((char *)msg) + 1;
     if ( crc32 == 0 )
         crc32 = calc_crc32(0,&msg[2],msglen - 2);
+#ifdef FROM_MARKETMAKER
+    if ( G.LP_IAMLP == 0 )
+#else
     if ( IAMLP == 0 )
+#endif
     {
         free(msg);
+//printf("broadcast %s\n",jstr(argjson,"method"));
         jdelete(argjson,"method");
         jaddstr(argjson,"method","broadcast");
         if ( jobj(argjson,"timestamp") == 0 )
@@ -473,8 +409,11 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
 {
     static struct nn_pollfd *pfds;
     int32_t i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];
+    strcpy(LP_psockloop_stats.name,"LP_psockloop");
+    LP_psockloop_stats.threshold = 200.;
     while ( 1 )
     {
+        LP_millistats_update(&LP_psockloop_stats);
         now = (uint32_t)time(NULL);
         if ( buf != 0 && ptr != 0 && sendsock >= 0 )
         {
@@ -518,12 +457,19 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
+                            //printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
+                            buf = 0;
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
                                 ptr->lasttime = now;
                                 sendsock = ptr->sendsock;
                                 break;
+                            }
+                            else if ( buf != 0 )
+                            {
+                                nn_freemsg(buf);
+                                buf = 0;
+                                size = 0;
                             }
                         }
                     }
@@ -551,12 +497,12 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                                     sendsock = ptr->publicsock;
                                     break;
                                 }
-                                else
-                                {
-                                    nn_freemsg(buf);
-                                    buf = 0;
-                                    size = 0;
-                                }
+                            }
+                            if ( buf != 0 )
+                            {
+                                nn_freemsg(buf);
+                                buf = 0;
+                                size = 0;
                             }
                         }
                     }
@@ -724,17 +670,18 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
  both are combined in LP_psock_get
 
 */
+
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
 {
     char url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport,ispaired);
+    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport-1,ispaired);
     //return(LP_issue_curl("psock",destip,destport,url));
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
     printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
     return(retstr);
 }
 
-uint16_t LP_psock_get(char *connectaddr,char *connectaddr2,char *publicaddr,int32_t ispaired)
+uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
 {
     uint16_t publicport = 0; char *retstr,*addr; cJSON *retjson; struct LP_peerinfo *peer,*tmp;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
@@ -749,8 +696,8 @@ uint16_t LP_psock_get(char *connectaddr,char *connectaddr2,char *publicaddr,int3
                     safecopy(publicaddr,addr,128);
                 if ( (addr= jstr(retjson,"connectaddr")) != 0 )
                     safecopy(connectaddr,addr,128);
-                if ( (addr= jstr(retjson,"connectaddr2")) != 0 )
-                    safecopy(connectaddr2,addr,128);
+                //if ( (addr= jstr(retjson,"connectaddr2")) != 0 )
+                //    safecopy(connectaddr2,addr,128);
                 if ( publicaddr[0] != 0 && connectaddr[0] != 0 )
                     publicport = juint(retjson,"publicport");
                 free_json(retjson);
@@ -766,9 +713,9 @@ uint16_t LP_psock_get(char *connectaddr,char *connectaddr2,char *publicaddr,int3
 
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
 {
-    int32_t nntype,pullsock,timeout; char bindaddr[128],bindaddr2[128],connectaddr[128],connectaddr2[128];
+    int32_t nntype,pullsock,timeout; char bindaddr[128],connectaddr[128];
     *mypullportp = mypullport;
-    connectaddr2[0] = 0;
+    //connectaddr2[0] = 0;
     if ( ispaired == 0 )
     {
         if ( LP_canbind != 0 )
@@ -779,7 +726,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
     {
         nanomsg_transportname(0,publicaddr,myipaddr,mypullport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypullport);
-        nanomsg_transportname2(1,bindaddr2,myipaddr,mypullport);
+        //nanomsg_transportname2(1,bindaddr2,myipaddr,mypullport);
     }
     else
     {
@@ -791,7 +738,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
         }
         while ( *mypullportp == 0 )
         {
-            if ( (*mypullportp= LP_psock_get(connectaddr,connectaddr2,publicaddr,ispaired)) != 0 )
+            if ( (*mypullportp= LP_psock_get(connectaddr,publicaddr,ispaired)) != 0 )
                 break;
             sleep(10);
             printf("try to get publicaddr again\n");
@@ -810,8 +757,8 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                 }
                 else
                 {
-                    if ( connectaddr2[0] != 0 && nn_connect(pullsock,connectaddr2) > 0 )
-                        printf("%s ",connectaddr2);
+                    //if ( connectaddr2[0] != 0 && nn_connect(pullsock,connectaddr2) > 0 )
+                    //    printf("%s ",connectaddr2);
                     printf("nntype.%d NN_PAIR.%d connect to %s connectsock.%d\n",nntype,NN_PAIR,connectaddr,pullsock);
                 }
             }
@@ -822,8 +769,8 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                     printf("bind to %s error for %s: %s\n",bindaddr,publicaddr,nn_strerror(nn_errno()));
                     exit(-1);
                 }
-                if ( nn_bind(pullsock,bindaddr2) >= 0 )
-                    printf("bound to %s\n",bindaddr2);
+                //if ( nn_bind(pullsock,bindaddr2) >= 0 )
+                //    printf("bound to %s\n",bindaddr2);
             }
             timeout = 1;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));

@@ -143,6 +143,15 @@ typedef struct queue
     char name[64],initflag;
 } queue_t;
 
+struct rpcrequest_info
+{
+    struct rpcrequest_info *next,*prev;
+    pthread_t T;
+    int32_t sock;
+    uint32_t ipbits;
+    uint16_t port,pad;
+};
+
 struct OS_mappedptr
 {
 	char fname[512];
@@ -267,6 +276,7 @@ void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_
 void *queue_free(queue_t *queue);
 void *queue_clone(queue_t *clone,queue_t *queue,int32_t size);
 int32_t queue_size(queue_t *queue);
+char *mbstr(char *str,double n);
 
 void iguana_memreset(struct OS_memspace *mem);
 void iguana_mempurge(struct OS_memspace *mem);
@@ -316,6 +326,7 @@ int32_t btc_convaddr(char *hexaddr,char *addr58);
 
 uint64_t RS_decode(char *rs);
 int32_t RS_encode(char *rsaddr,uint64_t id);
+char *cmc_ticker(char *base);
 
 void calc_sha1(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_md2(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);

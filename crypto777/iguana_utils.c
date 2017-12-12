@@ -303,7 +303,7 @@ struct iguana_thread *iguana_launch(struct iguana_info *coin,char *name,iguana_f
         coin->Launched[t->type]++;
     retval = OS_thread_create(&t->handle,NULL,(void *)iguana_launcher,(void *)t);
     if ( retval != 0 )
-        printf("error launching %s\n",t->name);
+        printf("error launching %s retval.%d errno.%d\n",t->name,retval,errno);
     while ( (t= queue_dequeue(&TerminateQ)) != 0 )
     {
         if ( (rand() % 100000) == 0 && coin != 0 )
@@ -446,7 +446,6 @@ char *clonestr(char *str)
     return(clone);
 }
 
-
 int32_t safecopy(char *dest,char *src,long len)
 {
     int32_t i = -1;
@@ -459,6 +458,7 @@ int32_t safecopy(char *dest,char *src,long len)
         if ( i == len )
         {
             printf("safecopy: %s too long %ld\n",src,len);
+            //printf("divide by zero! %d\n",1/zeroval());
 #ifdef __APPLE__
             //getchar();
 #endif
@@ -992,6 +992,7 @@ int32_t RS_encode(char *rsaddr,uint64_t id)
             rsaddr[j++] = '-';
     }
     rsaddr[j] = 0;
+    //printf("%llu -> NXT RS (%s)\n",(long long)id,rsaddr);
     return(0);
 }
 
@@ -1122,6 +1123,7 @@ void calc_NXTaddr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
     uint8_t mysecret[32]; uint64_t nxt64bits;
     nxt64bits = conv_NXTpassword(mysecret,buf,msg,len);
+    //printf("call RSencode with %llu\n",(long long)nxt64bits);
     RS_encode(hexstr,nxt64bits);
 }
 

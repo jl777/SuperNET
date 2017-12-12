@@ -489,3 +489,7 @@ iguana/DB/PRICES/.tmpmarker
 iguana/DB/KMD/0/.tmpmarker
 
 *.swp
+
+iguana/myipaddr
+
+iguana/DB/UNSPENTS/.tmpmarker

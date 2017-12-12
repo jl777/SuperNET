@@ -23,9 +23,12 @@ char *portstrs[][3] = { { "BTC", "8332" }, { "KMD", "7771" } };
 uint16_t LP_rpcport(char *symbol)
 {
     int32_t i;
-    for (i=0; i<sizeof(portstrs)/sizeof(*portstrs); i++)
-        if ( strcmp(portstrs[i][0],symbol) == 0 )
-            return(atoi(portstrs[i][1]));
+    if ( symbol != 0 && symbol[0] != 0 )
+    {
+        for (i=0; i<sizeof(portstrs)/sizeof(*portstrs); i++)
+            if ( strcmp(portstrs[i][0],symbol) == 0 )
+                return(atoi(portstrs[i][1]));
+    }
     return(0);
 }
 
@@ -96,7 +99,34 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
 {
     if ( confpath != 0 && confpath[0] != 0 )
     {
-        strcpy(fname,confpath);
+		#if defined(NATIVE_WINDOWS)
+		// need to do something with "confpath":"`${process.env.HOME}`/.muecore/mue.conf" under Windows
+		char *ht = "`${process.env.HOME}`", *ht_start, *p_ht;
+		char ht_symbol[2];
+		
+		ht_start = strstr(confpath, ht);
+
+		if (ht_start) {
+			ht_start = ht_start + strlen(ht);
+			sprintf(fname, "%s\\", LP_getdatadir());
+			p_ht = ht_start;
+			if (p_ht[0] == '/' && p_ht[1] == '.') {
+				p_ht += 2;
+				//printf("%s\n", p_ht);
+				while (p_ht[0] != '\0') {
+					if (p_ht[0] == '/') strcat(fname, "\\"); else
+					{
+						ht_symbol[0] = p_ht[0]; ht_symbol[1] = '\0';
+						strcat(fname, ht_symbol);
+					}
+					p_ht++;
+				}
+				//printf("%s\n", fname);
+			}
+		} else strcpy(fname, confpath);
+		#else
+		strcpy(fname,confpath);
+		#endif	
         return;
     }
     sprintf(fname,"%s",LP_getdatadir());
@@ -116,7 +146,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
     else if ( name != 0 )
     {
         char name2[64];
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(NATIVE_WINDOWS)
         int32_t len;
         strcpy(name2,name);
         name2[0] = toupper(name2[0]);
@@ -161,7 +191,7 @@ uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,
     sprintf(confname,"%s.conf",confroot);
     if ( 0 )
         printf("%s (%s) %s confname.(%s) confroot.(%s)\n",symbol,assetname,name,confname,confroot);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(NATIVE_WINDOWS)
     int32_t len;
     confname[0] = toupper(confname[0]);
     len = (int32_t)strlen(confname);
@@ -184,7 +214,7 @@ uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,
 
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 {
-    struct electrum_info *ep; uint64_t balance; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
+    struct electrum_info *ep; bits256 zero; int32_t notarized; uint64_t balance; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
     if ( showwif != 0 )
     {
@@ -197,8 +227,12 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     jadd(item,"installed",coin->userpass[0] == 0 ? jfalse() : jtrue());
     if ( coin->userpass[0] != 0 )
     {
-        jaddnum(item,"height",LP_getheight(coin));
-        balance = LP_smartbalance(coin);
+        jaddnum(item,"height",LP_getheight(&notarized,coin));
+        if ( notarized > 0 )
+            jaddnum(item,"notarized",notarized);
+        if ( coin->electrum != 0 )
+            balance = LP_unspents_load(coin->symbol,coin->smartaddr);
+        else balance = LP_RTsmartbalance(coin);
         jaddnum(item,"balance",dstr(balance));
         jaddnum(item,"KMDvalue",dstr(LP_KMDvalue(coin,balance)));
     }
@@ -224,19 +258,33 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     jaddnum(item,"pubtype",coin->pubtype);
     jaddnum(item,"p2shtype",coin->p2shtype);
     jaddnum(item,"wiftype",coin->wiftype);
-    jaddnum(item,"txfee",coin->txfee);
+    jaddnum(item,"txfee",strcmp(coin->symbol,"BTC") != 0 ? coin->txfee : LP_txfeecalc(coin,0,0));
+    if ( strcmp(coin->symbol,"KMD") == 0 )
+    {
+        memset(zero.bytes,0,sizeof(zero));
+        if ( strcmp(coin->smartaddr,coin->instantdex_address) != 0 )
+        {
+            LP_instantdex_depositadd(coin->smartaddr,zero);
+            strcpy(coin->instantdex_address,coin->smartaddr);
+        }
+        jaddnum(item,"zcredits",dstr(LP_myzcredits()));
+        jadd(item,"zdebits",LP_myzdebits());
+    }
     return(item);
 }
 
 struct iguana_info *LP_conflicts_find(struct iguana_info *refcoin)
 {
     struct iguana_info *coin=0,*tmp;
-    HASH_ITER(hh,LP_coins,coin,tmp)
+    if ( refcoin != 0 )
     {
-        if ( coin->inactive != 0 || coin->electrum != 0 || coin == refcoin )
-            continue;
-        if ( strcmp(coin->serverport,refcoin->serverport) == 0 )
-            break;
+        HASH_ITER(hh,LP_coins,coin,tmp)
+        {
+            if ( coin->inactive != 0 || coin->electrum != 0 || coin == refcoin )
+                continue;
+            if ( strcmp(coin->serverport,refcoin->serverport) == 0 )
+                break;
+        }
     }
     return(coin);
 }
@@ -254,31 +302,37 @@ cJSON *LP_coinsjson(int32_t showwif)
 char *LP_getcoin(char *symbol)
 {
     int32_t numenabled,numdisabled; struct iguana_info *coin,*tmp; cJSON *item=0,*retjson;
-    numenabled = numdisabled = 0;
     retjson = cJSON_CreateObject();
-    HASH_ITER(hh,LP_coins,coin,tmp)
+    if ( symbol != 0 && symbol[0] != 0 )
     {
-        if ( strcmp(symbol,coin->symbol) == 0 )
-            item = LP_coinjson(coin,0);
-        if ( coin->inactive == 0 )
-            numenabled++;
-        else numdisabled++;
+        numenabled = numdisabled = 0;
+        HASH_ITER(hh,LP_coins,coin,tmp)
+        {
+            if ( strcmp(symbol,coin->symbol) == 0 )
+                item = LP_coinjson(coin,0);
+            if ( coin->inactive == 0 )
+                numenabled++;
+            else numdisabled++;
+        }
+        jaddstr(retjson,"result","success");
+        jaddnum(retjson,"enabled",numenabled);
+        jaddnum(retjson,"disabled",numdisabled);
+        if ( item == 0 )
+            item = cJSON_CreateObject();
+        jadd(retjson,"coin",item);
     }
-    jaddstr(retjson,"result","success");
-    jaddnum(retjson,"enabled",numenabled);
-    jaddnum(retjson,"disabled",numdisabled);
-    if ( item == 0 )
-        item = cJSON_CreateObject();
-    jadd(retjson,"coin",item);
     return(jprint(retjson,1));
 }
 
 struct iguana_info *LP_coinsearch(char *symbol)
 {
-    struct iguana_info *coin;
-    portable_mutex_lock(&LP_coinmutex);
-    HASH_FIND(hh,LP_coins,symbol,strlen(symbol),coin);
-    portable_mutex_unlock(&LP_coinmutex);
+    struct iguana_info *coin = 0;
+    if ( symbol != 0 && symbol[0] != 0 )
+    {
+        portable_mutex_lock(&LP_coinmutex);
+        HASH_FIND(hh,LP_coins,symbol,strlen(symbol),coin);
+        portable_mutex_unlock(&LP_coinmutex);
+    }
     return(coin);
 }
 
@@ -339,6 +393,11 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
         coin->zcash = LP_IS_BITCOINCASH;
         //printf("set coin.%s <- LP_IS_BITCOINCASH %d\n",symbol,coin->zcash);
     }
+    else if ( strcmp(symbol,"BTG") == 0 )
+    {
+        coin->zcash = LP_IS_BITCOINGOLD;
+        printf("set coin.%s <- LP_IS_BITCOINGOLD %d\n",symbol,coin->zcash);
+    }
     return(port);
 }
 
@@ -389,9 +448,9 @@ struct iguana_info *LP_coinfind(char *symbol)
     if ( (coin= LP_coinadd(&cdata)) != 0 )
     {
         coin->inactive = isinactive * (uint32_t)time(NULL);
-        if ( strcmp(symbol,"KMD") == 0 )
+        /*if ( strcmp(symbol,"KMD") == 0 )
             coin->inactive = 0;
-        else if ( strcmp(symbol,"BTC") == 0 )
+        else*/ if ( strcmp(symbol,"BTC") == 0 )
         {
             coin->inactive = (uint32_t)time(NULL) * !IAMLP;
             printf("BTC inactive.%u\n",coin->inactive);
@@ -450,3 +509,12 @@ struct iguana_info *LP_coincreate(cJSON *item)
     return(0);
 }
 
+void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr)
+{
+    uint8_t addrtype,rmd160[20]; struct iguana_info *src,*dest;
+    if ( (src= LP_coinfind(srccoin)) != 0 && (dest= LP_coinfind(destcoin)) != 0 )
+    {
+        bitcoin_addr2rmd160(src->taddr,&addrtype,rmd160,coinaddr);
+        bitcoin_address(otheraddr,dest->taddr,dest->pubtype,rmd160,20);
+    } else printf("couldnt find %s or %s\n",srccoin,destcoin);
+}

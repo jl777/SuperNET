@@ -132,6 +132,548 @@ FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basil
                  }*/
     return(fp);
 }
+//printf("VOUT.(%s)\n",jprint(vout,0));
+/*if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
+ {
+ item = jitem(addresses,0);
+ //printf("item.(%s)\n",jprint(item,0));
+ if ( (addr= jstr(item,0)) != 0 )
+ {
+ safecopy(coinaddr,addr,64);
+ //printf("extracted.(%s)\n",coinaddr);
+ }
+ }*/
+
+/*if ( IAMLP != 0 && time(NULL) > lasthello+600 )
+ {
+ char *hellostr,*retstr; cJSON *retjson; int32_t allgood,sock = LP_bindsock;
+ allgood = 0;
+ if ( (retstr= issue_hello(myport)) != 0 )
+ {
+ if ( (retjson= cJSON_Parse(retstr)) != 0 )
+ {
+ if ( (hellostr= jstr(retjson,"status")) != 0 && strcmp(hellostr,"got hello") == 0 )
+ allgood = 1;
+ else printf("strange return.(%s)\n",jprint(retjson,0));
+ free_json(retjson);
+ } else printf("couldnt parse hello return.(%s)\n",retstr);
+ free(retstr);
+ } else printf("issue_hello NULL return\n");
+ lasthello = (uint32_t)time(NULL);
+ if ( allgood == 0 )
+ {
+ printf("RPC port got stuck, would have close bindsocket\n");
+ if ( 0 )
+ {
+ LP_bindsock = -1;
+ closesocket(sock);
+ LP_bindsock_reset++;
+ sleep(10);
+ printf("launch new rpcloop\n");
+ if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+ {
+ printf("error launching stats rpcloop for port.%u\n",myport);
+ exit(-1);
+ }
+ }
+ }
+ }*/
+/*
+ now = (uint32_t)time(NULL);
+ numpeers = LP_numpeers();
+ needpings = 0;
+ HASH_ITER(hh,LP_peerinfos,peer,tmp)
+ {
+ if ( peer->errors >= LP_MAXPEER_ERRORS )
+ {
+ if ( (LP_rand() % 10000) == 0 )
+ {
+ peer->errors--;
+ if ( peer->errors < LP_MAXPEER_ERRORS )
+ peer->diduquery = 0;
+ }
+ if ( IAMLP == 0 )
+ continue;
+ }
+ if ( now > peer->lastpeers+LP_ORDERBOOK_DURATION*.777 || (LP_rand() % 100000) == 0 )
+ {
+ if ( strcmp(peer->ipaddr,myipaddr) != 0 )
+ {
+ nonz++;
+ //issue_LP_getpeers(peer->ipaddr,peer->port);
+ //LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport);
+ //if ( peer->diduquery == 0 )
+ //    LP_peer_pricesquery(peer);
+ //LP_utxos_sync(peer);
+ needpings++;
+ }
+ peer->lastpeers = now;
+ }
+ if ( peer->needping != 0 )
+ {
+ peer->diduquery = now;
+ nonz++;
+ if ( (retstr= issue_LP_notify(peer->ipaddr,peer->port,"127.0.0.1",0,numpeers,G.LP_sessionid,G.LP_myrmd160str,G.LP_mypub25519)) != 0 )
+ free(retstr);
+ peer->needping = 0;
+ needpings++;
+ }
+ }*/
+
+#ifdef oldway
+int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
+{
+    struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t numpeers,i,n=0;
+    if ( (array= cJSON_Parse(retstr)) != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
+                {
+                    if ( (pushport= juint(item,"push")) == 0 )
+                        pushport = argport + 1;
+                    if ( (subport= juint(item,"sub")) == 0 )
+                        subport = argport + 2;
+                    argipbits = (uint32_t)calc_ipbits(argipaddr);
+                    if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
+                    {
+                        numpeers = LP_numpeers();
+                        if ( IAMLP != 0 || numpeers < LP_MIN_PEERS || (IAMLP == 0 && (LP_rand() % LP_MAX_PEERS) > numpeers) )
+                            peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jint(item,"numpeers"),jint(item,"numutxos"),juint(item,"session"));
+                    }
+                    if ( peer != 0 )
+                    {
+                        peer->lasttime = now;
+                        if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers != n )
+                            peer->numpeers = n;
+                    }
+                }
+            }
+        }
+        free_json(array);
+    }
+    return(n);
+}
+void issue_LP_getpeers(char *destip,uint16_t destport)
+{
+    cJSON *reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","getpeers");
+    LP_peer_request(destip,destport,reqjson);
+    /*char url[512],*retstr;
+     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&numpeers=%d",destip,destport,ipaddr,port,numpeers);
+     retstr = LP_issue_curl("getpeers",destip,port,url);
+     //printf("%s -> getpeers.(%s)\n",destip,retstr);
+     return(retstr);*/
+}
+
+void LP_peer_request(char *destip,uint16_t destport,cJSON *argjson)
+{
+    struct LP_peerinfo *peer; uint8_t *msg; int32_t msglen; uint32_t crc32;
+    peer = LP_peerfind((uint32_t)calc_ipbits(destip),destport);
+    msg = (void *)jprint(argjson,0);
+    msglen = (int32_t)strlen((char *)msg) + 1;
+    crc32 = calc_crc32(0,&msg[2],msglen - 2);
+    LP_queuesend(crc32,peer->pushsock,"","",msg,msglen);
+    free_json(argjson);
+}void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport)
+{
+    char *retstr; struct LP_peerinfo *peer,*tmp; bits256 zero; uint32_t now,flag = 0;
+    peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
+    if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,mypeer!=0?mypeer->numpeers:0)) != 0 )
+    {
+        //printf("got.(%s)\n",retstr);
+        now = (uint32_t)time(NULL);
+        LP_peersparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
+        free(retstr);
+        if ( IAMLP != 0 )
+        {
+            HASH_ITER(hh,LP_peerinfos,peer,tmp)
+            {
+                if ( peer->lasttime != now )
+                {
+                    printf("{%s:%u}.%d ",peer->ipaddr,peer->port,peer->lasttime - now);
+                    flag++;
+                    memset(&zero,0,sizeof(zero));
+                    if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->numpeers,peer->sessionid,0,zero)) != 0 )
+                        free(retstr);
+                }
+            }
+            if ( flag != 0 )
+                printf(" <- missing peers\n");
+        }
+    }
+}
+void issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,int32_t numpeers,uint32_t sessionid,char *rmd160str,bits256 pub)
+{
+    cJSON *reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","notify");
+    jaddstr(reqjson,"coin",symbol);
+    jaddstr(reqjson,"coinaddr",coinaddr);
+    jaddbits256(reqjson,"txid",txid);
+    jaddnum(reqjson,"vout",vout);
+    jaddnum(reqjson,"ht",height);
+    jadd64bits(reqjson,"value",value);
+    LP_peer_request(destip,destport,reqjson);
+    /*char url[512],*retstr,str[65];
+     if ( (retstr= LP_isitme(destip,destport)) != 0 )
+     return(retstr);
+     sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&numpeers=%d&session=%u",destip,destport,ipaddr,port,numpeers,sessionid);
+     if ( rmd160str != 0 && bits256_nonz(pub) != 0 )
+     {
+     sprintf(url+strlen(url),"&rmd160=%s&pub=%s",rmd160str,bits256_str(str,pub));
+     //printf("SEND (%s)\n",url);
+     }
+     return(LP_issue_curl("notify",destip,destport,url));
+     //return(issue_curlt(url,LP_HTTP_TIMEOUT));*/
+}
+
+char *issue_hello(uint16_t port)
+{
+    char url[512];
+    sprintf(url,"http://127.0.0.1:%u/api/stats/hello",port);
+    //printf("getutxo.(%s)\n",url);
+    return(issue_curlt(url,600)); // might be starting a trade
+}
+
+
+void issue_LP_uitem(char *destip,uint16_t destport,char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t height,uint64_t value)
+{
+    cJSON *reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","uitem");
+    jaddstr(reqjson,"coin",symbol);
+    jaddstr(reqjson,"coinaddr",coinaddr);
+    jaddbits256(reqjson,"txid",txid);
+    jaddnum(reqjson,"vout",vout);
+    jaddnum(reqjson,"ht",height);
+    jadd64bits(reqjson,"value",value);
+    LP_peer_request(destip,destport,reqjson);
+    /*char url[512],*retstr,str[65];
+     if ( (retstr= LP_isitme(destip,destport)) != 0 )
+     return(retstr);
+     sprintf(url,"http://%s:%u/api/stats/uitem?coin=%s&coinaddr=%s&txid=%s&vout=%d&ht=%d&value=%llu",destip,destport,symbol,coinaddr,bits256_str(str,txid),vout,height,(long long)value);
+     retstr = LP_issue_curl("uitem",destip,destport,url);
+     //printf("uitem.(%s)\n",retstr);
+     return(retstr);*/
+}
+
+/*if ( (liststr= basilisk_swaplist(requestid,quoteid)) != 0 )
+ {
+ //printf("swapentry.(%s)\n",liststr);
+ if ( (retjson= cJSON_Parse(liststr)) != 0 )
+ {
+ if ( (array= jarray(&n,retjson,"swaps")) != 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ item = jitem(array,i);
+ //printf("(%s) check r%u/q%u\n",jprint(item,0),juint(item,"requestid"),juint(item,"quoteid"));
+ if ( juint(item,"requestid") == requestid && juint(item,"quoteid") == quoteid )
+ {
+ retstr = jprint(item,0);
+ break;
+ }
+ }
+ }
+ free_json(retjson);
+ }
+ free(liststr);
+ }
+ return(retstr);*/
+/*struct cJSON_list
+ {
+ struct cJSON_list *next,*prev;
+ cJSON *item;
+ uint32_t timestamp,cjsonid;
+ } *LP_cJSONlist;
+ 
+ void cJSON_register(cJSON *item)
+ {
+ struct cJSON_list *ptr;
+ ptr = calloc(1,sizeof(*ptr));
+ ptr->timestamp = (uint32_t)time(NULL);
+ ptr->item = item;
+ item->cjsonid = LP_rand();
+ ptr->cjsonid = item->cjsonid;
+ portable_mutex_lock(&LP_cJSONmutex);
+ DL_APPEND(LP_cJSONlist,ptr);
+ portable_mutex_unlock(&LP_cJSONmutex);
+ }
+ 
+ void cJSON_unregister(cJSON *item)
+ {
+ static uint32_t lasttime;
+ int32_t n; char *tmpstr; uint64_t total = 0; struct cJSON_list *ptr,*tmp; uint32_t now;
+ if ( (now= (uint32_t)time(NULL)) > lasttime+6 )
+ {
+ n = 0;
+ DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
+ {
+ if ( ptr->item != 0 && ptr->item->child != 0 && ptr->cjsonid != 0 )
+ {
+ if ( (tmpstr= jprint(ptr->item,0)) != 0 )
+ {
+ total += strlen(tmpstr);
+ free(tmpstr);
+ }
+ }
+ n++;
+ }
+ printf("total %d cJSON pending\n",n);
+ lasttime = (uint32_t)time(NULL);
+ }
+ DL_FOREACH_SAFE(LP_cJSONlist,ptr,tmp)
+ {
+ if ( ptr->cjsonid == item->cjsonid )
+ break;
+ else if ( now > ptr->timestamp+60 && item->cjsonid != 0 )
+ {
+ portable_mutex_lock(&LP_cJSONmutex);
+ DL_DELETE(LP_cJSONlist,ptr);
+ portable_mutex_unlock(&LP_cJSONmutex);
+ printf("free expired\n");
+ cJSON_Delete(ptr->item);
+ free(ptr);
+ }
+ ptr = 0;
+ }
+ if ( ptr != 0 )
+ {
+ portable_mutex_lock(&LP_cJSONmutex);
+ DL_DELETE(LP_cJSONlist,ptr);
+ free(ptr);
+ portable_mutex_unlock(&LP_cJSONmutex);
+ } //else printf("cJSON_unregister of unknown %p %u\n",item,item->cjsonid);
+ }*/
+
+void LP_instantdex_txidadd(bits256 txid)
+{
+    cJSON *array; int32_t i,n;
+    if ( (array= LP_instantdex_txids()) == 0 )
+        array = cJSON_CreateArray();
+    if ( (n= cJSON_GetArraySize(array)) >= 0 )
+    {
+        for (i=0; i<n; i++)
+            if ( bits256_cmp(jbits256i(array,i),txid) == 0 )
+                break;
+        if ( i == n )
+        {
+            jaddibits256(array,txid);
+            LP_instantdex_filewrite(0,array);
+            LP_instantdex_filewrite(1,array);
+        }
+    }
+    if ( array != 0 )
+        free_json(array);
+}
+/*if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_privkeysloop,ctx) != 0 )
+ {
+ printf("error launching LP_privkeysloop for ctx.%p\n",ctx);
+ exit(-1);
+ }*/
+
+/*double LP_qprice_calc(int64_t *destsatoshisp,int64_t *satoshisp,double price,uint64_t b_satoshis,uint64_t txfee,uint64_t a_value,uint64_t maxdestsatoshis,uint64_t desttxfee)
+ {
+ uint64_t destsatoshis,satoshis;
+ a_value -= (desttxfee + 1);
+ destsatoshis = ((b_satoshis - txfee) * price);
+ if ( destsatoshis > a_value )
+ destsatoshis = a_value;
+ if ( maxdestsatoshis != 0 && destsatoshis > maxdestsatoshis-desttxfee-1 )
+ destsatoshis = maxdestsatoshis-desttxfee-1;
+ satoshis = (destsatoshis / price + 0.49) - txfee;
+ *destsatoshisp = destsatoshis;
+ *satoshisp = satoshis;
+ if ( satoshis > 0 )
+ return((double)destsatoshis / satoshis);
+ else return(0.);
+ }*/
+
+/*for (iambob=0; iambob<2; iambob++)
+ {
+ if ( G.LP_utxoinfos[iambob] != 0 )
+ {
+ HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
+ {
+ HASH_DELETE(hh,G.LP_utxoinfos[iambob],utxo);
+ //free(utxo);
+ }
+ }
+ if ( G.LP_utxoinfos2[iambob] != 0 )
+ {
+ G.LP_utxoinfos2[iambob] = 0;
+ //HASH_ITER(hh,G.LP_utxoinfos2[iambob],utxo,tmp)
+ //{
+ //    HASH_DELETE(hh,G.LP_utxoinfos2[iambob],utxo);
+ //    free(utxo);
+ //}
+ }
+ }*/
+
+char *issue_LP_getprices(char *destip,uint16_t destport)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/getprices",destip,destport);
+    //printf("getutxo.(%s)\n",url);
+    return(LP_issue_curl("getprices",destip,destport,url));
+    //return(issue_curlt(url,LP_HTTP_TIMEOUT));
+}
+/*if ( fullflag != 0 )
+ {
+ if ( (destport= LP_randpeer(destip)) > 0 )
+ {
+ retstr = issue_LP_listunspent(destip,destport,symbol,coinaddr);
+ //printf("issue %s %s %s -> (%s)\n",coin->symbol,coinaddr,destip,retstr);
+ retjson = cJSON_Parse(retstr);
+ } else printf("LP_listunspent_issue couldnt get a random peer?\n");
+ }*/
+
+void issue_LP_listunspent(char *destip,uint16_t destport,char *symbol,char *coinaddr)
+{
+    cJSON *reqjson = cJSON_CreateObject();
+    jaddstr(reqjson,"method","listunspent");
+    jaddstr(reqjson,"coin",symbol);
+    jaddstr(reqjson,"address",coinaddr);
+    LP_peer_request(destip,destport,reqjson);
+    /*char url[512],*retstr;
+     sprintf(url,"http://%s:%u/api/stats/listunspent?coin=%s&address=%s",destip,destport,symbol,coinaddr);
+     retstr = LP_issue_curl("listunspent",destip,destport,url);
+     //printf("listunspent.(%s) -> (%s)\n",url,retstr);
+     return(retstr);*/
+}
+
+int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag)
+{
+    int32_t i,v,numconfs,height,n=0; uint64_t value; bits256 txid; char buf[512]; cJSON *array,*item; uint32_t now; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( coin != 0 )//&& (IAMLP != 0 || coin->inactive == 0) )
+    {
+        if ( coin->electrum != 0 || LP_address_ismine(symbol,coinaddr) <= 0 )
+        {
+            //printf("issue path electrum.%p\n",coin->electrum);
+            //if ( coin->electrum != 0 && (array= electrum_address_gethistory(symbol,coin->electrum,&array,coinaddr)) != 0 )
+            //    free_json(array);
+            n = LP_listunspent_issue(symbol,coinaddr,fullflag);
+        }
+        else
+        {
+            if ( strcmp(symbol,"BTC") == 0 )
+                numconfs = 0;
+            else numconfs = 1;
+            //printf("my coin electrum.%p\n",coin->electrum);
+            sprintf(buf,"[%d, 99999999, [\"%s\"]]",numconfs,coinaddr);
+            if ( (array= bitcoin_json(coin,"listunspent",buf)) != 0 )
+            {
+                if ( (n= cJSON_GetArraySize(array)) > 0 )
+                {
+                    now = (uint32_t)time(NULL);
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(array,i);
+                        txid = jbits256(item,"txid");
+                        v = jint(item,"vout");
+                        value = LP_value_extract(item,0);
+                        height = LP_txheight(coin,txid);
+                        //char str[65]; printf("LP_listunspent_both: %s/v%d ht.%d %.8f\n",bits256_str(str,txid),v,height,dstr(value));
+                        LP_address_utxoadd(now,"LP_listunspent_both",coin,coinaddr,txid,v,value,height,-1);
+                    }
+                }
+                free_json(array);
+            }
+        }
+    } //else printf("%s coin.%p inactive.%d\n",symbol,coin,coin!=0?coin->inactive:-1);
+    return(n);
+}
+char *LP_bestfit(char *rel,double relvolume)
+{
+    struct LP_utxoinfo *autxo;
+    if ( relvolume <= 0. || LP_priceinfofind(rel) == 0 )
+        return(clonestr("{\"error\":\"invalid parameter\"}"));
+    if ( (autxo= LP_utxo_bestfit(rel,SATOSHIDEN * relvolume)) == 0 )
+        return(clonestr("{\"error\":\"cant find utxo that is close enough in size\"}"));
+    return(jprint(LP_utxojson(autxo),1));
+}
+int32_t LP_utxos_sync(struct LP_peerinfo *peer)
+{
+    int32_t i,j,n=0,m,v,posted=0; bits256 txid; cJSON *array,*item,*item2,*array2; uint64_t total,total2; struct iguana_info *coin,*ctmp; char *retstr,*retstr2;
+    if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+        return(0);
+    HASH_ITER(hh,LP_coins,coin,ctmp)
+    {
+        if ( IAMLP == 0 && coin->inactive != 0 )
+            continue;
+        if ( coin->smartaddr[0] == 0 )
+            continue;
+        total = 0;
+        if ( (j= LP_listunspent_both(coin->symbol,coin->smartaddr,0)) == 0 )
+            continue;
+        if ( (array= LP_address_utxos(coin,coin->smartaddr,1)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    total += j64bits(item,"value");
+                }
+            }
+            if ( n > 0 && total > 0 && (retstr= issue_LP_listunspent(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr)) != 0 )
+            {
+                //printf("UTXO sync.%d %s n.%d total %.8f -> %s (%s)\n",j,coin->symbol,n,dstr(total),peer->ipaddr,retstr);
+                total2 = 0;
+                if ( (array2= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (m= cJSON_GetArraySize(array2)) > 0 )
+                    {
+                        for (i=0; i<m; i++)
+                        {
+                            item2 = jitem(array2,i);
+                            total2 += j64bits(item2,"value");
+                        }
+                    }
+                    if ( total != total2 || n != m )
+                    {
+                        for (i=0; i<n; i++)
+                        {
+                            item = jitem(array,i);
+                            txid = jbits256(item,"tx_hash");
+                            v = jint(item,"tx_pos");
+                            for (j=0; j<m; j++)
+                            {
+                                if ( v == jint(jitem(array2,i),"tx_pos") && bits256_cmp(txid,jbits256(jitem(array2,i),"tx_hash")) == 0 )
+                                    break;
+                            }
+                            if ( j == m )
+                            {
+                                //printf("%s missing %s %s\n",peer->ipaddr,coin->symbol,jprint(item,0));
+                                issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"));
+                                posted++;
+                            }
+                        }
+                        if ( 0 && posted != 0 )
+                            printf(">>>>>>>> %s compare %s %s (%.8f n%d) (%.8f m%d)\n",peer->ipaddr,coin->symbol,coin->smartaddr,dstr(total),n,dstr(total2),m);
+                    } //else printf("%s matches %s\n",peer->ipaddr,coin->symbol);
+                    free_json(array2);
+                } else printf("parse error (%s)\n",retstr);
+                free(retstr);
+            }
+            else if ( n != 0 && total != 0 )
+            {
+                //printf("no response from %s for %s %s\n",peer->ipaddr,coin->symbol,coin->smartaddr);
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    txid = jbits256(item,"tx_hash");
+                    v = jint(item,"tx_pos");
+                    issue_LP_uitem(peer->ipaddr,peer->port,coin->symbol,coin->smartaddr,txid,v,jint(item,"height"),j64bits(item,"value"));
+                }
+            }
+            free_json(array);
+        }
+    }
+    return(posted);
+}
 /*char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
  {
  char url[4096],str[65],str2[65],str3[65],*retstr; struct _LP_utxoinfo u; uint64_t val,val2;
@@ -276,24 +818,6 @@ void basilisk_swap_saveupdate(struct basilisk_swap *swap)
         fclose(fp);
     }
 }
-
-/*int32_t basilisk_swap_loadtx(struct basilisk_rawtx *rawtx,FILE *fp,char *bobcoinstr,char *alicecoinstr)
- {
- if ( fread(rawtx,1,sizeof(*rawtx),fp) == sizeof(*rawtx) )
- {
- rawtx->coin = 0;
- rawtx->vins = 0;
- if ( strcmp(rawtx->I.coinstr,bobcoinstr) == 0 || strcmp(rawtx->I.coinstr,alicecoinstr) == 0 )
- {
- rawtx->coin = LP_coinfind(rawtx->I.coinstr);
- if ( rawtx->vinstr[0] != 0 )
- rawtx->vins = cJSON_Parse(rawtx->vinstr);
- printf("loaded.%s len.%d\n",rawtx->name,rawtx->I.datalen);
- return(0);
- }
- }
- return(-1);
- }*/
 
 void basilisk_swap_sendabort(struct basilisk_swap *swap)
 {
@@ -545,7 +1069,7 @@ int32_t _basilisk_rawtx_gen(char *str,uint32_t swapstarted,uint8_t *pubkey33,int
 {
     char scriptstr[1024],wifstr[256],coinaddr[64],*signedtx,*rawtxbytes; uint32_t basilisktag; int32_t retval = -1; cJSON *vins,*privkeys,*addresses,*valsobj; struct vin_info *V;
     init_hexbytes_noT(scriptstr,script,scriptlen);
-    basilisktag = (uint32_t)rand();
+    basilisktag = (uint32_t)LP_rand();
     valsobj = cJSON_CreateObject();
     jaddstr(valsobj,"coin",rawtx->coin->symbol);
     jaddstr(valsobj,"spendscript",scriptstr);
@@ -785,7 +1309,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
         basilisk_swap_saveupdate(swap);
         if ( swap->connected == 0 )
             basilisk_psockinit(swap,swap->I.iambob != 0);
-        //if ( (rand() % 30) == 0 )
+        //if ( (LP_rand() % 30) == 0 )
         printf("E r%u/q%u swapstate.%x otherstate.%x remaining %d\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,swap->I.otherstatebits,(int32_t)(swap->I.expiration-time(NULL)));
         if ( swap->I.iambob != 0 )
         {
@@ -959,7 +1483,7 @@ int32_t basilisk_swapiteration(struct basilisk_swap *swap,uint8_t *data,int32_t 
                 }
             }
         }
-        if ( (rand() % 30) == 0 )
+        if ( (LP_rand() % 30) == 0 )
             printf("finished swapstate.%x other.%x\n",swap->I.statebits,swap->I.otherstatebits);
         if ( swap->I.statebits == savestatebits && swap->I.otherstatebits == saveotherbits )
             sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
@@ -1355,7 +1879,7 @@ void basilisk_swaploop(void *_utxo)
         else tradebot_pendingadd(swapjson(swap),swap->I.req.dest,dstr(swap->I.req.destamount),swap->I.req.src,dstr(swap->I.req.srcamount));
     }
     printf("%s swap finished statebits %x\n",swap->I.iambob!=0?"BOB":"ALICE",swap->I.statebits);
-    //basilisk_swap_purge(swap);
+    basilisk_swap_purge(swap);
     free(data);
 }
 #endif
@@ -1387,6 +1911,91 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
     return(0);
 }
 
+struct LP_utxoinfo *LP_utxopairfind(int32_t iambob,bits256 txid,int32_t vout,bits256 txid2,int32_t vout2)
+{
+    struct LP_utxoinfo *utxo=0; struct _LP_utxoinfo u;
+    if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 )
+    {
+        u = (iambob != 0) ? utxo->deposit : utxo->fee;
+        if (vout2 == u.vout && bits256_cmp(u.txid,txid2) == 0 )
+            return(utxo);
+    }
+    return(0);
+}
+
+void LP_utxosetkey(uint8_t *key,bits256 txid,int32_t vout)
+{
+    memcpy(key,txid.bytes,sizeof(txid));
+    memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
+}
+
+struct LP_utxoinfo *_LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
+{
+    struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
+    LP_utxosetkey(key,txid,vout);
+    HASH_FIND(hh,G.LP_utxoinfos[iambob!=0],key,sizeof(key),utxo);
+    return(utxo);
+}
+
+void _LP_utxo_delete(int32_t iambob,struct LP_utxoinfo *utxo)
+{
+    HASH_DELETE(hh,G.LP_utxoinfos[iambob],utxo);
+}
+
+void _LP_utxo2_delete(int32_t iambob,struct LP_utxoinfo *utxo)
+{
+    HASH_DELETE(hh,G.LP_utxoinfos2[iambob],utxo);
+}
+
+struct LP_utxoinfo *_LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)
+{
+    struct LP_utxoinfo *utxo=0; uint8_t key2[sizeof(txid2) + sizeof(vout2)];
+    LP_utxosetkey(key2,txid2,vout2);
+    HASH_FIND(hh2,G.LP_utxoinfos2[iambob],key2,sizeof(key2),utxo);
+    return(utxo);
+}
+
+struct LP_utxoinfo *LP_utxofind(int32_t iambob,bits256 txid,int32_t vout)
+{
+    struct LP_utxoinfo *utxo=0;
+    /*if ( iambob != 0 )
+     {
+     printf("LP_utxofind deprecated iambob\n");
+     return(0);
+     }*/
+    portable_mutex_lock(&LP_utxomutex);
+    utxo = _LP_utxofind(iambob,txid,vout);
+    portable_mutex_unlock(&LP_utxomutex);
+    return(utxo);
+}
+
+struct LP_utxoinfo *LP_utxo2find(int32_t iambob,bits256 txid2,int32_t vout2)
+{
+    struct LP_utxoinfo *utxo=0;
+    /*if ( iambob != 0 )
+     {
+     printf("LP_utxo2find deprecated iambob\n");
+     return(0);
+     }*/
+    portable_mutex_lock(&LP_utxomutex);
+    utxo = _LP_utxo2find(iambob,txid2,vout2);
+    portable_mutex_unlock(&LP_utxomutex);
+    return(utxo);
+}
+
+/*void LP_privkeysloop(void *ctx)
+ {
+ strcpy(LP_privkeysloop_stats.name,"LP_privkeysloop");
+ LP_privkeysloop_stats.threshold = (LP_ORDERBOOK_DURATION * .8 * 1000) + 10000;
+ sleep(20);
+ while ( 1 )
+ {
+ LP_millistats_update(&LP_privkeysloop_stats);
+ //printf("LP_privkeysloop %u\n",LP_counter);
+ LP_privkey_updates(ctx,LP_mypubsock,0);
+ sleep(LP_ORDERBOOK_DURATION * .777);
+ }
+ }*/
 /*void basilisk_swap_purge(struct basilisk_swap *swap)
  {
  int32_t i,n;
@@ -1404,7 +2013,50 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
  }
  portable_mutex_unlock(&myinfo->DEX_swapmutex);
  }*/
+/*if ( bits256_nonz(Q.srchash) == 0 || bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 || strcmp(butxo->coinaddr,coin->smartaddr) != 0 || bits256_nonz(butxo->payment.txid) == 0 || bits256_nonz(butxo->deposit.txid) == 0 )
+ {
+ qprice = (double)Q.destsatoshis / Q.satoshis;
+ strcpy(Q.gui,G.gui);
+ strcpy(Q.coinaddr,coin->smartaddr);
+ strcpy(butxo->coinaddr,coin->smartaddr);
+ Q.srchash = G.LP_mypub25519;
+ memset(&Q.txid,0,sizeof(Q.txid));
+ memset(&Q.txid2,0,sizeof(Q.txid2));
+ Q.vout = Q.vout2 = -1;
+ recalc = 1;
+ }
+ else if ( (qprice= LP_quote_validate(autxo,butxo,&Q,1)) < SMALLVAL )
+ recalc = 1;
+ else if ( price < qprice )
+ {
+ char tmp[64];
+ if ( bits256_nonz(Q.txid) != 0 )
+ LP_utxos_remove(Q.txid,Q.vout);
+ else recalc = 1;
+ if ( bits256_nonz(Q.txid2) != 0 )
+ LP_utxos_remove(Q.txid2,Q.vout2);
+ else recalc = 1;
+ //printf("price %.8f qprice %.8f\n",price,qprice);
+ if ( recalc == 0 )
+ {
+ value = LP_txvalue(tmp,Q.srccoin,Q.txid,Q.vout);
+ value2 = LP_txvalue(tmp,Q.srccoin,Q.txid2,Q.vout2);
+ //printf("call LP_utxoadd.(%s) %.8f %.8f\n",Q.coinaddr,dstr(value),dstr(value2));
+ if ( (butxo= LP_utxoadd(1,coin->symbol,Q.txid,Q.vout,value,Q.txid2,Q.vout2,value2,Q.coinaddr,Q.srchash,G.gui,0,Q.satoshis)) == 0 )
+ recalc = 1;
+ else if ( bits256_cmp(Q.txid,butxo->payment.txid) != 0 || Q.vout != butxo->payment.vout || bits256_cmp(Q.txid2,butxo->deposit.txid) != 0 || Q.vout2 != butxo->deposit.vout )
+ recalc = 1;
+ }
+ } else return(retval);*/
 
+int32_t LP_isavailable(struct LP_utxoinfo *utxo)
+{
+    struct _LP_utxoinfo u;
+    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+    if ( LP_allocated(utxo->payment.txid,utxo->payment.vout) == 0 && LP_allocated(u.txid,u.vout) == 0 )
+        return(1);
+    else return(0);
+}
 /*int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double origprice)
  {
  double price,bid,ask; uint32_t now; cJSON *retjson; struct LP_quoteinfo Q; char *retstr;
@@ -1466,6 +2118,171 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
  if ( LP_ismine(utxo) > 0 && strcmp(utxo->coin,base) == 0 )
  LP_priceping(LP_mypubsock,utxo,rel,price * LP_profitratio);
  }*/
+
+int32_t LP_ismine(struct LP_utxoinfo *utxo)
+{
+    if ( utxo != 0 && bits256_cmp(utxo->pubkey,G.LP_mypub25519) == 0 )
+        return(1);
+    else return(0);
+}
+
+queue_t utxosQ;
+struct LP_utxos_qitem { struct queueitem DL; cJSON *argjson; };
+
+char *LP_postutxos_recv(cJSON *argjson)
+{
+    struct LP_utxos_qitem *uitem; struct iguana_info *coin; char *coinaddr,*symbol; bits256 utxoshash,pubkey; cJSON *obj; struct LP_pubkey_info *pubp;
+    printf("LP_postutxos_recv deprecated\n");
+    pubkey = jbits256(argjson,"pubkey");
+    pubp = LP_pubkeyfind(pubkey);
+    if ( pubp != 0 && pubp->numerrors > LP_MAXPUBKEY_ERRORS )
+        return(clonestr("{\"error\":\"blacklisted\"}"));
+    if ( (coinaddr= jstr(argjson,"coinaddr")) != 0 && (symbol= jstr(argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 )
+    {
+        if ( strcmp(coinaddr,coin->smartaddr) == 0 )
+        {
+            //printf("ignore my utxo from external source %s %s\n",symbol,coinaddr);
+            return(clonestr("{\"result\":\"success\"}"));
+        }
+    }
+    if ( (obj= jobj(argjson,"utxos")) != 0 )
+    {
+        utxoshash = LP_utxoshash_calc(obj);
+        //char str[65]; //printf("got utxoshash %s\n",bits256_str(str,utxoshash));
+        if ( LP_utxos_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,utxoshash) == 0 )
+        {
+            uitem = calloc(1,sizeof(*uitem));
+            uitem->argjson = jduplicate(argjson);
+            queue_enqueue("utxosQ",&utxosQ,&uitem->DL);
+            return(clonestr("{\"result\":\"success\"}"));
+        } //else printf("valid utxos sig %s\n",bits256_str(str,pubp->pubkey));
+    }
+    return(clonestr("{\"error\":\"sig failure\"}"));
+}
+
+/*MERK d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a ht.518777 -> {"pos":1,"merkle":["526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8", "f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd"],"block_height":518777} root.(0000000000000000000000000000000000000000000000000000000000000000)
+ MERK c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543 ht.518777 -> {"pos":2,"merkle":["fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501", "8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7"],"block_height":518777} root.(0000000000000000000000000000000000000000000000000000000000000000)*/
+/*526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8
+ d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
+ c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
+ fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501*/
+
+/*0: 526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8
+ 1: d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a
+ 2: c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543
+ 3: fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501
+ 4: 8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7
+ 5: f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd
+ 6: a87ee259560f20b20182760c0e7cc7896d44381f0ad58a2e755a2b6b895b01ec*/
+
+/*
+ 0 1 2 3
+ 4   5
+ 6
+ 
+ 1 -> [0, 5]
+ 2 -> [3, 4]
+ 
+ if odd -> right, else left
+ then /= 2
+ */
+
+/*void testmerk()
+ {
+ bits256 tree[256],roothash,txid; int32_t i; char str[65];
+ memset(tree,0,sizeof(tree));
+ decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
+ decode_hex(tree[1].bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
+ decode_hex(tree[2].bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
+ decode_hex(tree[3].bytes,32,"fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501");
+ roothash = iguana_merkle(tree,4);
+ for (i=0; i<256; i++)
+ {
+ if ( bits256_nonz(tree[i]) == 0 )
+ break;
+ printf("%d: %s\n",i,bits256_str(str,tree[i]));
+ }
+ memset(tree,0,sizeof(tree));
+ decode_hex(tree[0].bytes,32,"526f8be81718beccc16a541a2c550b612123218d80fa884d9f080f18284e2bd8");
+ decode_hex(tree[1].bytes,32,"f68b03a7b6e418c9b306d8d8b21917ae5a584696f9b0b8cb0741733d7097fdfd");
+ decode_hex(txid.bytes,32,"d6071f9b03d1428b648d51ae1268f1605d97f44422ed55ad0335b13fa655f61a");
+ roothash = validate_merkle(1,txid,tree,2);
+ printf("validate 1: %s\n",bits256_str(str,roothash));
+ memset(tree,0,sizeof(tree));
+ decode_hex(tree[0].bytes,32,"fdff0962fb95120a86a07ddf1ec784fcc5554a2d0a3791a8db2083d593920501");
+ decode_hex(tree[1].bytes,32,"8c116e974c842ad3ad8b3ddbd71da3debb150e3fe692f5bd628381bc167311a7");
+ decode_hex(txid.bytes,32,"c007e9c1881a83be453cb6ed3d1bd3bda85efd3b5ce60532c2e20ae3f8a82543");
+ roothash = validate_merkle(2,txid,tree,2);
+ printf("validate 2: %s\n",bits256_str(str,roothash));
+ }*/
+
+/*else if ( (retstr= LP_orderbook(coin->symbol,"KMD",-1)) != 0 )
+ {
+ if ( (orderbook= cJSON_Parse(retstr)) != 0 )
+ {
+ if ( (asks= jarray(&numasks,orderbook,"asks")) != 0 && numasks > 0 )
+ {
+ item = jitem(asks,0);
+ price = ask = jdouble(item,"price");
+ //printf("%s/%s ask %.8f\n",coin->symbol,"KMD",ask);
+ }
+ if ( (bids= jarray(&numbids,orderbook,"bids")) != 0 && numbids > 0 )
+ {
+ item = jitem(asks,0);
+ bid = jdouble(item,"price");
+ if ( price == 0. )
+ price = bid;
+ else price = (bid + ask) * 0.5;
+ //printf("%s/%s bid %.8f ask %.8f price %.8f\n",coin->symbol,"KMD",bid,ask,price);
+ }
+ KMDvalue = price * balance;
+ free_json(orderbook);
+ }
+ free(retstr);
+ }*/
+
+int32_t LP_utxosQ_process()
+{
+    struct LP_utxos_qitem *uitem; int32_t n; char *symbol,*coinaddr; struct LP_address *ap; struct iguana_info *coin; cJSON *array;
+    if ( (uitem= queue_dequeue(&utxosQ)) != 0 )
+    {
+        //printf("LP_utxosQ_process.(%s)\n",jprint(uitem->argjson,0));
+        if ( (coinaddr= jstr(uitem->argjson,"coinaddr")) != 0 && (symbol= jstr(uitem->argjson,"coin")) != 0 && (coin= LP_coinfind(symbol)) != 0 ) // addsig
+        {
+            if ( coin->electrum == 0 || (ap= LP_addressfind(coin,coinaddr)) != 0 )
+            {
+                if ( (array= jarray(&n,uitem->argjson,"utxos")) != 0 )
+                    LP_unspents_array(coin,coinaddr,array);
+            }
+            else if ( (array= electrum_address_listunspent(symbol,coin->electrum,&array,coinaddr,1)) != 0 )
+                free_json(array);
+        }
+        free_json(uitem->argjson);
+        free(uitem);
+        return(1);
+    }
+    return(0);
+}
+else if ( strcmp(method,"postutxos") == 0 )
+return(LP_postutxos_recv(argjson));
+
+void utxosQ_loop(void *myipaddr)
+{
+    strcpy(utxosQ_loop_stats.name,"utxosQ_loop");
+    utxosQ_loop_stats.threshold = 5000.;
+    while ( 1 )
+    {
+        LP_millistats_update(&utxosQ_loop_stats);
+        if ( LP_utxosQ_process() == 0 )
+            usleep(50000);
+    }
+}
+if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)utxosQ_loop,(void *)myipaddr) != 0 )
+{
+    printf("error launching utxosQ_loop for (%s)\n",myipaddr);
+    exit(-1);
+}
+
 /*
 bestprice = 0.;
 if ( (array= LP_tradecandidates(base)) != 0 )
@@ -1613,6 +2430,65 @@ void LP_address_monitor(struct LP_pubkeyinfo *pubp)
  return(LP_autotrade(ctx,myipaddr,pubsock,base,rel,price,jdouble(argjson,"relvolume"),jint(argjson,"timeout"),jint(argjson,"duration")));
  } else return(clonestr("{\"error\":\"no price set\"}"));
  }*/
+if ( flag != 0 )
+{
+    // need to find the requestid/quoteid for aliceid
+    if ( (retstr= basilisk_swapentries(bot->base,bot->rel,0)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(retjson)) != 0 )
+            {
+                for (flag=j=0; j<n; j++)
+                {
+                    item = jitem(retjson,j);
+                    aliceid = j64bits(item,"aliceid");
+                    for (i=0; i<bot->numtrades; i++)
+                    {
+                        if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->requestid == 0 && tp->quoteid == 0 )
+                        {
+                            if ( tp->aliceid == aliceid )
+                            {
+                                tp->requestid = juint(item,"requestid");
+                                tp->quoteid = juint(item,"quoteid");
+                                printf("found aliceid.%llx to set requestid.%u quoteid.%u\n",(long long)aliceid,tp->requestid,tp->quoteid);
+                                flag = 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+}
+// check for finished pending swap
+for (i=0; i<bot->numtrades; i++)
+{
+    if ( (tp= bot->trades[i]) != 0 && tp->finished == 0 && tp->requestid != 0 && tp->quoteid != 0 )
+    {
+        if ( (retstr= basilisk_swapentry(tp->requestid,tp->quoteid)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (status= jstr(retjson,"status")) != 0 && strcmp(status,"finished") == 0 )
+                {
+                    bot->pendbasesum -= tp->basevol, bot->basesum += tp->basevol;
+                    bot->pendrelsum -= tp->relvol, bot->relsum += tp->relvol;
+                    bot->numpending--, bot->completed++;
+                    printf("detected completion aliceid.%llx r.%u q.%u\n",(long long)tp->aliceid,tp->requestid,tp->quoteid);
+                    tp->finished = (uint32_t)time(NULL);
+                }
+                free_json(retjson);
+            }
+            free(retstr);
+        }
+    }
+}
+}
+
 int32_t LP_utxopurge(int32_t allutxos)
 {
     char str[65]; struct LP_utxoinfo *utxo,*tmp; int32_t iambob,n = 0;
@@ -1841,6 +2717,27 @@ char *LP_utxos(int32_t iambob,struct LP_peerinfo *mypeer,char *symbol,int32_t la
     }
     return(jprint(utxosjson,1));
 }
+int32_t LP_isunspent(struct LP_utxoinfo *utxo)
+{
+    struct LP_address_utxo *up; struct _LP_utxoinfo u; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(utxo->coin)) == 0 )
+        return(0);
+    if ( (up= LP_address_utxofind(coin,utxo->coinaddr,utxo->payment.txid,utxo->payment.vout)) != 0 && up->spendheight > 0 )
+    {
+        utxo->T.spentflag = up->spendheight;
+        return(0);
+    }
+    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+    if ( (up= LP_address_utxofind(coin,utxo->coinaddr,u.txid,u.vout)) != 0 && up->spendheight > 0 )
+    {
+        utxo->T.spentflag = up->spendheight;
+        return(0);
+    }
+    if ( utxo != 0 && utxo->T.spentflag == 0 && LP_isavailable(utxo) > 0 )
+        return(1);
+    else return(0);
+}
+
 void LP_utxo_clientpublish(struct LP_utxoinfo *utxo)
 {
     bits256 zero; char *msg;
@@ -1990,6 +2887,466 @@ else
     jaddnum(bestitem,"maxprice",maxprice);
     jaddstr(bestitem,"status","no response to request");
 }
+uint32_t LP_allocated(bits256 txid,int32_t vout)
+{
+    struct LP_utxoinfo *utxo;
+    if ( (utxo= _LP_utxofind(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    {
+        //char str[65]; printf("%s/v%d not available\n",bits256_str(str,txid),vout);
+        return(utxo);
+    }
+    if ( (utxo= _LP_utxo2find(0,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    {
+        //char str[65]; printf("%s/v%d not available2\n",bits256_str(str,txid),vout);
+        return(utxo);
+    }
+    if ( (utxo= _LP_utxofind(1,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    {
+        //char str[65]; printf("%s/v%d not available\n",bits256_str(str,txid),vout);
+        return(utxo);
+    }
+    if ( (utxo= _LP_utxo2find(1,txid,vout)) != 0 && LP_isavailable(utxo) == 0 )
+    {
+        //char str[65]; printf("%s/v%d not available2\n",bits256_str(str,txid),vout);
+        return(utxo);
+    }
+    return(0);
+}
+
+int32_t LP_isavailable(struct LP_utxoinfo *utxo)
+{
+    if ( time(NULL) > utxo->T.swappending )
+        utxo->T.swappending = 0;
+    if ( utxo != 0 && utxo->T.swappending == 0 && utxo->S.swap == 0 )
+        return(1);
+    else return(0);
+}
+
+int32_t LP_utxoaddptrs(struct LP_utxoinfo *ptrs[],int32_t n,struct LP_utxoinfo *utxo)
+{
+    int32_t i;
+    for (i=0; i<n; i++)
+        if ( ptrs[i] == utxo )
+            return(n);
+    ptrs[n++] = utxo;
+    return(n);
+}
+
+int32_t LP_utxocollisions(struct LP_utxoinfo *ptrs[],struct LP_utxoinfo *refutxo)
+{
+    int32_t iambob,n = 0; struct LP_utxoinfo *utxo; struct _LP_utxoinfo u;
+    if ( refutxo == 0 )
+        return(0);
+    portable_mutex_lock(&LP_utxomutex);
+    for (iambob=0; iambob<=1; iambob++)
+    {
+        if ( (utxo= _LP_utxofind(iambob,refutxo->payment.txid,refutxo->payment.vout)) != 0 && utxo != refutxo )
+            n = LP_utxoaddptrs(ptrs,n,utxo);
+        if ( (utxo= _LP_utxo2find(iambob,refutxo->payment.txid,refutxo->payment.vout)) != 0 && utxo != refutxo )
+            n = LP_utxoaddptrs(ptrs,n,utxo);
+        u = (refutxo->iambob != 0) ? refutxo->deposit : refutxo->fee;
+        if ( (utxo= _LP_utxofind(iambob,u.txid,u.vout)) != 0 && utxo != refutxo )
+            n = LP_utxoaddptrs(ptrs,n,utxo);
+        if ( (utxo= _LP_utxo2find(iambob,u.txid,u.vout)) != 0 && utxo != refutxo )
+            n = LP_utxoaddptrs(ptrs,n,utxo);
+    }
+    portable_mutex_unlock(&LP_utxomutex);
+    if ( 0 && n > 0 )
+        printf("LP_utxocollisions n.%d\n",n);
+    return(n);
+}
+
+int32_t _LP_availableset(struct LP_utxoinfo *utxo)
+{
+    int32_t flag = 0;
+    if ( utxo != 0 )
+    {
+        if ( bits256_nonz(utxo->S.otherpubkey) != 0 )
+            flag = 1, memset(&utxo->S.otherpubkey,0,sizeof(utxo->S.otherpubkey));
+        if ( utxo->S.swap != 0 )
+            flag = 1, utxo->S.swap = 0;
+        if ( utxo->T.swappending != 0 )
+            flag = 1, utxo->T.swappending = 0;
+        return(flag);
+    }
+    return(0);
+}
+
+void _LP_unavailableset(struct LP_utxoinfo *utxo,bits256 otherpubkey)
+{
+    if ( utxo != 0 )
+    {
+        utxo->T.swappending = (uint32_t)(time(NULL) + LP_RESERVETIME);
+        utxo->S.otherpubkey = otherpubkey;
+    }
+}
+
+void LP_unavailableset(struct LP_utxoinfo *utxo,bits256 otherpubkey)
+{
+    struct LP_utxoinfo *ptrs[8]; int32_t i,n; struct _LP_utxoinfo u;
+    memset(ptrs,0,sizeof(ptrs));
+    if ( (n= LP_utxocollisions(ptrs,utxo)) > 0 )
+    {
+        for (i=0; i<n; i++)
+            _LP_unavailableset(ptrs[i],otherpubkey);
+    }
+    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+    char str[65],str2[65]; printf("UTXO.[%d] RESERVED %s/v%d %s/v%d collisions.%d\n",utxo->iambob,bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,u.txid),u.vout,n);
+    _LP_unavailableset(utxo,otherpubkey);
+}
+
+void LP_availableset(struct LP_utxoinfo *utxo)
+{
+    struct LP_utxoinfo *ptrs[8]; int32_t i,n,count = 0; struct _LP_utxoinfo u;
+    if ( utxo != 0 )
+    {
+        memset(ptrs,0,sizeof(ptrs));
+        if ( (n= LP_utxocollisions(ptrs,utxo)) > 0 )
+        {
+            for (i=0; i<n; i++)
+                count += _LP_availableset(ptrs[i]);
+        }
+        count += _LP_availableset(utxo);
+        if ( count > 0 )
+        {
+            u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+            char str[65],str2[65]; printf("UTXO.[%d] AVAIL %s/v%d %s/v%d collisions.%d\n",utxo->iambob,bits256_str(str,utxo->payment.txid),utxo->payment.vout,bits256_str(str2,u.txid),u.vout,n);
+        }
+    }
+}
+
+
+cJSON *LP_inventoryjson(cJSON *item,struct LP_utxoinfo *utxo)
+{
+    struct _LP_utxoinfo u;
+    //jaddstr(item,"method","oldutxo");
+    if ( utxo == 0 )
+        return(item);
+    if ( utxo->gui[0] != 0 )
+        jaddstr(item,"gui",utxo->gui);
+    jaddstr(item,"coin",utxo->coin);
+    //jaddnum(item,"now",time(NULL));
+    jaddnum(item,"iambob",utxo->iambob);
+    jaddstr(item,"address",utxo->coinaddr);
+    jaddbits256(item,"txid",utxo->payment.txid);
+    jaddnum(item,"vout",utxo->payment.vout);
+    jadd64bits(item,"value",utxo->payment.value);
+    jadd64bits(item,"satoshis",utxo->S.satoshis);
+    u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+    if ( bits256_nonz(u.txid) != 0 )
+    {
+        jaddbits256(item,"txid2",u.txid);
+        jaddnum(item,"vout2",u.vout);
+        jadd64bits(item,"value2",u.value);
+    }
+    if ( utxo->T.swappending != 0 )
+        jaddnum(item,"pending",utxo->T.swappending);
+    if ( utxo->iambob != 0 )
+    {
+        jaddbits256(item,"srchash",utxo->pubkey);//LP_mypub25519);
+        if ( bits256_nonz(utxo->S.otherpubkey) != 0 )
+            jaddbits256(item,"desthash",utxo->S.otherpubkey);
+    }
+    else
+    {
+        jaddbits256(item,"desthash",utxo->pubkey);//LP_mypub25519);
+        if ( bits256_nonz(utxo->S.otherpubkey) != 0 )
+            jaddbits256(item,"srchash",utxo->S.otherpubkey);
+    }
+    //if ( utxo->S.swap != 0 )
+    //    jaddstr(item,"swap","in progress");
+    if ( utxo->T.spentflag != 0 )
+        jaddnum(item,"spent",utxo->T.spentflag);
+    jaddnum(item,"session",utxo->T.sessionid);
+    return(item);
+}
+
+cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
+{
+    cJSON *item = cJSON_CreateObject();
+    item = LP_inventoryjson(item,utxo);
+    jaddbits256(item,"pubkey",utxo->pubkey);
+    //jaddnum(item,"profit",utxo->S.profitmargin);
+    jaddstr(item,"base",utxo->coin);
+    //jaddstr(item,"script",utxo->spendscript);
+    return(item);
+}
+
+struct LP_utxoinfo *LP_utxo_bestfit(char *symbol,uint64_t destsatoshis)
+{
+    uint64_t srcvalue,srcvalue2; struct LP_utxoinfo *utxo,*tmp,*bestutxo = 0; int32_t bestsize,iambob = 0;
+    if ( symbol == 0 || destsatoshis == 0 )
+    {
+        printf("LP_utxo_bestfit error symbol.%p %.8f\n",symbol,dstr(destsatoshis));
+        return(0);
+    }
+    HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
+    {
+        if ( strcmp(symbol,utxo->coin) != 0 )
+            continue;
+        if ( LP_isavailable(utxo) > 0 && LP_ismine(utxo) > 0 )
+        {
+            //printf("(%.8f %.8f %.8f)\n",dstr(utxo->payment.value),dstr(utxo->fee.value),dstr(utxo->S.satoshis));
+            //char str[65]; printf("s%u %d [%.8f vs %.8f] check %s.%s avail.%d ismine.%d >= %d\n",utxo->T.spentflag,LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout),dstr(destsatoshis),dstr(utxo->S.satoshis),utxo->coin,bits256_str(str,utxo->payment.txid),LP_isavailable(utxo) > 0,LP_ismine(utxo) > 0,utxo->S.satoshis >= destsatoshis);
+            bestsize = 0;
+            if ( bestutxo == 0 )
+            {
+                if ( utxo->S.satoshis > destsatoshis/LP_MINCLIENTVOL )
+                    bestsize = 1;
+            }
+            else
+            {
+                if ( bestutxo->S.satoshis < destsatoshis )
+                {
+                    if ( utxo->S.satoshis > destsatoshis )
+                        bestsize = 1;
+                    else if ( utxo->S.satoshis > bestutxo->S.satoshis )
+                        bestsize = 1;
+                }
+                else
+                {
+                    if ( utxo->S.satoshis > destsatoshis && utxo->S.satoshis < bestutxo->S.satoshis )
+                        bestsize = 1;
+                }
+            }
+            if ( bestsize > 0 )
+            {
+                //printf("bestsize.%d %.8f %.8f -> %.8f\n",bestsize,dstr(utxo->payment.value),dstr(utxo->fee.value),dstr(utxo->S.satoshis));
+                if ( LP_iseligible(&srcvalue,&srcvalue2,utxo->iambob,symbol,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,utxo->fee.txid,utxo->fee.vout) == 0 )
+                {
+                    //if ( utxo->T.spentflag == 0 )
+                    //    utxo->T.spentflag = (uint32_t)time(NULL);
+                    continue;
+                }
+                bestutxo = utxo;
+            } //else printf("skip alice utxo %.8f vs dest %.8f, bestsize.%d %p\n",dstr(utxo->S.satoshis),dstr(destsatoshis),bestsize,bestutxo);
+        }
+    }
+    return(bestutxo);
+}
+
+void LP_spentnotify(struct LP_utxoinfo *utxo,int32_t selector)
+{
+    if ( utxo == 0 )
+        return;
+    utxo->T.spentflag = (uint32_t)time(NULL);
+}
+
+struct LP_utxoinfo *LP_utxofinds(int32_t iambob,bits256 txid,int32_t vout,bits256 txid2,int32_t vout2)
+{
+    struct LP_utxoinfo *utxo;
+    if ( (utxo= LP_utxofind(iambob,txid,vout)) != 0 || (utxo= LP_utxofind(iambob,txid2,vout2)) != 0 || (utxo= LP_utxo2find(iambob,txid,vout)) != 0 || (utxo= LP_utxo2find(iambob,txid2,vout2)) != 0 )
+        return(utxo);
+    else return(0);
+}
+
+struct LP_utxoinfo *LP_utxoadd(int32_t iambob,char *symbol,bits256 txid,int32_t vout,int64_t value,bits256 txid2,int32_t vout2,int64_t value2,char *coinaddr,bits256 pubkey,char *gui,uint32_t sessionid,uint64_t satoshis)
+{
+    uint64_t val,val2=0,txfee; int32_t spendvini,numconfirms,selector; bits256 spendtxid; struct iguana_info *coin; struct _LP_utxoinfo u; struct LP_utxoinfo *utxo = 0;
+    if ( symbol == 0 || symbol[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(txid2) == 0 || vout < 0 || vout2 < 0 || value <= 0 || value2 <= 0 )//|| sessionid == 0 )
+    {
+        char str[65],str2[65]; printf("REJECT (%s) iambob.%d %s utxoadd.(%.8f %.8f) %s/v%d %s/v%d\n",coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),vout,bits256_str(str2,txid2),vout2);
+        printf("session.%u addutxo %d %d %d %d %d %d %d %d\n",sessionid,symbol == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(txid2) == 0,vout < 0,vout2 < 0,value <= 0,value2 <= 0);
+        return(0);
+    }
+    if ( (coin= LP_coinfind(symbol)) == 0 || (IAMLP == 0 && coin->inactive != 0) )
+    {
+        //printf("LP_utxoadd reject inactive %s\n",symbol);
+        return(0);
+    }
+    txfee = LP_txfeecalc(coin,0,0);
+    char str[65],str2[65],dispflag = 0;//(iambob == 0);
+    if ( iambob == 0 && bits256_cmp(pubkey,G.LP_mypub25519) != 0 )
+    {
+        printf("trying to add Alice utxo when not mine? %s/v%d\n",bits256_str(str,txid),vout);
+        return(0);
+    }
+    if ( coin->inactive == 0 )
+    {
+        if ( LP_iseligible(&val,&val2,iambob,symbol,txid,vout,satoshis,txid2,vout2) <= 0 )
+        {
+            static uint32_t counter;
+            if ( counter++ < 3 )
+                printf("iambob.%d utxoadd %s inactive.%u got ineligible txid value %.8f:%.8f, value2 %.8f:%.8f, tmpsatoshis %.8f\n",iambob,symbol,coin->inactive,dstr(value),dstr(val),dstr(value2),dstr(val2),dstr(satoshis));
+            return(0);
+        }
+        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid,vout,0)) <= 0 )
+        {
+            printf("LP_utxoadd reject numconfirms.%d %s.%s\n",numconfirms,symbol,bits256_str(str,txid));
+            return(0);
+        }
+        if ( (numconfirms= LP_numconfirms(symbol,coinaddr,txid2,vout2,0)) <= 0 )
+        {
+            printf("LP_utxoadd reject2 numconfirms.%d %s %s/v%d\n",numconfirms,symbol,bits256_str(str,txid2),vout2);
+            return(0);
+        }
+    }
+    else
+    {
+        val = value;
+        val2 = value2;
+    }
+    dispflag = 0;
+    if ( dispflag != 0 )
+        printf("%.8f %.8f %s iambob.%d %s utxoadd.(%.8f %.8f) %s %s\n",dstr(val),dstr(val2),coinaddr,iambob,symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
+    dispflag = 1;
+    if ( (utxo= LP_utxofinds(iambob,txid,vout,txid2,vout2)) != 0 )
+    {
+        if ( 0 && LP_ismine(utxo) == 0 )
+        {
+            char str2[65],str3[65]; printf("iambob.%d %s %s utxoadd.(%.8f %.8f) %s %s\n",iambob,bits256_str(str3,pubkey),symbol,dstr(value),dstr(value2),bits256_str(str,txid),bits256_str(str2,txid2));
+            printf("duplicate %.8f %.8f %.8f vs utxo.(%.8f %.8f %.8f)\n",dstr(value),dstr(value2),dstr(satoshis),dstr(utxo->payment.value),dstr(utxo->deposit.value),dstr(utxo->S.satoshis));
+        }
+        u = (utxo->iambob != 0) ? utxo->deposit : utxo->fee;
+        if ( bits256_cmp(txid,utxo->payment.txid) != 0 || bits256_cmp(txid2,u.txid) != 0 || vout != utxo->payment.vout || value != utxo->payment.value || satoshis != utxo->S.satoshis || vout2 != u.vout || value2 != u.value || strcmp(symbol,utxo->coin) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || bits256_cmp(pubkey,utxo->pubkey) != 0 )
+        {
+            utxo->T.errors++;
+            char str[65],str2[65],str3[65],str4[65],str5[65],str6[65];
+            if ( utxo->T.spentflag != 0 || LP_txvalue(0,utxo->coin,utxo->payment.txid,utxo->payment.vout) < utxo->payment.value || LP_txvalue(0,utxo->coin,u.txid,u.vout) < u.value )
+            {
+                //if ( utxo->T.spentflag == 0 )
+                //    utxo->T.spentflag = (uint32_t)time(NULL);
+                printf("original utxo pair not valid\n");
+                if ( dispflag != 0 )
+                    printf("error on subsequent utxo iambob.%d %.8f %.8f add.(%s %s) when.(%s %s) %d %d %d %d %d %d %d %d %d %d pubkeys.(%s vs %s)\n",iambob,dstr(val),dstr(val2),bits256_str(str,txid),bits256_str(str2,txid2),bits256_str(str3,utxo->payment.txid),bits256_str(str4,utxo->deposit.txid),bits256_cmp(txid,utxo->payment.txid) != 0,bits256_cmp(txid2,u.txid) != 0,vout != utxo->payment.vout,satoshis != utxo->S.satoshis,vout2 != u.vout,value2 != u.value,strcmp(symbol,utxo->coin) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,bits256_cmp(pubkey,utxo->pubkey) != 0,value != utxo->payment.value,bits256_str(str5,pubkey),bits256_str(str6,utxo->pubkey));
+                utxo = 0;
+            }
+        }
+        if ( utxo != 0 )
+        {
+            if ( utxo->T.sessionid == 0 )
+                utxo->T.sessionid = sessionid;
+            //else if ( profitmargin > SMALLVAL )
+            //    utxo->S.profitmargin = profitmargin;
+            utxo->T.lasttime = (uint32_t)time(NULL);
+            //printf("return existing utxo[%d] %s %s\n",iambob,bits256_str(str,utxo->payment.txid),bits256_str(str2,iambob != 0 ? utxo->deposit.txid : utxo->fee.txid));
+            return(utxo);
+        }
+    }
+    utxo = calloc(1,sizeof(*utxo));
+    //utxo->S.profitmargin = profitmargin;
+    utxo->pubkey = pubkey;
+    safecopy(utxo->gui,gui,sizeof(utxo->gui));
+    safecopy(utxo->coin,symbol,sizeof(utxo->coin));
+    safecopy(utxo->coinaddr,coinaddr,sizeof(utxo->coinaddr));
+    //safecopy(utxo->spendscript,spendscript,sizeof(utxo->spendscript));
+    utxo->payment.txid = txid;
+    utxo->payment.vout = vout;
+    utxo->payment.value = value;
+    utxo->S.satoshis = satoshis;
+    if ( (utxo->iambob= iambob) != 0 )
+    {
+        utxo->deposit.txid = txid2;
+        utxo->deposit.vout = vout2;
+        utxo->deposit.value = value2;
+    }
+    else
+    {
+        utxo->fee.txid = txid2;
+        utxo->fee.vout = vout2;
+        utxo->fee.value = value2;
+    }
+    LP_utxosetkey(utxo->key,txid,vout);
+    LP_utxosetkey(utxo->key2,txid2,vout2);
+    if ( LP_ismine(utxo) > 0 )
+        utxo->T.sessionid = G.LP_sessionid;
+    else utxo->T.sessionid = sessionid;
+    if ( coin->inactive == 0 && (selector= LP_mempool_vinscan(&spendtxid,&spendvini,symbol,coinaddr,txid,vout,txid2,vout2)) >= 0 )
+    {
+        printf("utxoadd selector.%d spent in mempool %s vini.%d",selector,bits256_str(str,spendtxid),spendvini);
+        utxo->T.spentflag = (uint32_t)time(NULL);
+    }
+    //printf(" %s %.8f %.8f %p addutxo.%d (%s %s) session.%u iambob.%d <<<<<<<<<<<<<<< %.8f\n",symbol,dstr(value),dstr(value2),utxo,LP_ismine(utxo) > 0,bits256_str(str,utxo->payment.txid),bits256_str(str2,iambob != 0 ? utxo->deposit.txid : utxo->fee.txid),utxo->T.sessionid,iambob,dstr(satoshis));
+    portable_mutex_lock(&LP_utxomutex);
+    HASH_ADD_KEYPTR(hh,G.LP_utxoinfos[iambob],utxo->key,sizeof(utxo->key),utxo);
+    if ( _LP_utxo2find(iambob,txid2,vout2) == 0 )
+        HASH_ADD_KEYPTR(hh2,G.LP_utxoinfos2[iambob],utxo->key2,sizeof(utxo->key2),utxo);
+    portable_mutex_unlock(&LP_utxomutex);
+    if ( iambob != 0 )
+    {
+        if ( LP_ismine(utxo) > 0 )
+        {
+            //LP_utxo_clientpublish(utxo);
+            if ( LP_mypeer != 0 )
+                utxo->T.lasttime = (uint32_t)time(NULL);
+        }
+    }
+    return(utxo);
+}
+
+int32_t _LP_utxos_remove(bits256 txid,int32_t vout)
+{
+    struct LP_utxoinfo *utxo,*utxo2; int32_t retval = 0,iambob = 1;
+    utxo = utxo2 = 0;
+    if ( (utxo= _LP_utxofind(iambob,txid,vout)) != 0 )
+    {
+        if ( LP_isavailable(utxo) == 0 )
+            retval = -1;
+        else
+        {
+            if ( (utxo2= _LP_utxo2find(iambob,txid,vout)) != 0 )
+            {
+                if ( LP_isavailable(utxo) == 0 )
+                    retval = -1;
+                else
+                {
+                    _LP_utxo_delete(iambob,utxo);
+                    _LP_utxo2_delete(iambob,utxo2);
+                }
+            }
+        }
+    }
+    else if ( (utxo2= _LP_utxo2find(iambob,txid,vout)) != 0 )
+    {
+        if ( LP_isavailable(utxo2) == 0 )
+            retval = -1;
+        else _LP_utxo2_delete(iambob,utxo2);
+    }
+    return(retval);
+}
+
+int32_t LP_utxos_remove(bits256 txid,int32_t vout)
+{
+    int32_t retval;
+    portable_mutex_lock(&LP_utxomutex);
+    retval = _LP_utxos_remove(txid,vout);
+    portable_mutex_unlock(&LP_utxomutex);
+    return(retval);
+}
+
+cJSON *LP_inventory(char *symbol)
+{
+    struct LP_utxoinfo *utxo,*tmp; struct _LP_utxoinfo u; char *myipaddr; cJSON *array; uint64_t val,val2; int32_t iambob = 0; struct iguana_info *coin;
+    array = cJSON_CreateArray();
+    if ( LP_mypeer != 0 )
+        myipaddr = LP_mypeer->ipaddr;
+    else myipaddr = "127.0.0.1";
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+        LP_listunspent_both(symbol,coin->smartaddr,0);
+    HASH_ITER(hh,G.LP_utxoinfos[iambob],utxo,tmp)
+    {
+        char str[65];
+        //printf("iambob.%d iterate %s\n",iambob,bits256_str(str,LP_mypub25519));
+        if ( LP_isunspent(utxo) != 0 && strcmp(symbol,utxo->coin) == 0 && utxo->iambob == iambob && LP_ismine(utxo) > 0 )
+        {
+            u = (iambob != 0) ? utxo->deposit : utxo->fee;
+            if ( LP_iseligible(&val,&val2,iambob,utxo->coin,utxo->payment.txid,utxo->payment.vout,utxo->S.satoshis,u.txid,u.vout) == 0 )
+            {
+                //if ( utxo->T.spentflag == 0 )
+                //    utxo->T.spentflag = (uint32_t)time(NULL);
+                //printf("%s %s ineligible %.8f %.8f\n",utxo->coin,bits256_str(str,u.txid),dstr(val),dstr(val2));
+                continue;
+            }
+            //if ( iambob != 0 )
+            //    LP_utxo_clientpublish(utxo);
+            jaddi(array,LP_inventoryjson(cJSON_CreateObject(),utxo));
+        }
+        else if ( 0 && LP_ismine(utxo) > 0 && strcmp(symbol,utxo->coin) == 0 )
+            printf("skip %s %s %d %d %d %d\n",utxo->coin,bits256_str(str,utxo->payment.txid),LP_isunspent(utxo) != 0,strcmp(symbol,utxo->coin) == 0,utxo->iambob == iambob,LP_ismine(utxo) > 0);
+    }
+    return(array);
+}
+
 /*while ( time(NULL) < expiration )
  {
  if ( (price= LP_pricecache(qp,qp->srccoin,qp->destcoin,qp->txid,qp->vout)) > SMALLVAL )
@@ -1998,6 +3355,90 @@ else
  break;
  }
  sleep(1);
+ }*/
+//struct LP_pubkey_info *pubp,*ptmp; //cJSON *retjson; struct iguana_info *coin,*tmp;
+/*HASH_ITER(hh,LP_coins,coin,tmp) // firstrefht,firstscanht,lastscanht
+ {
+ if ( coin->electrum != 0 && time(NULL) > coin->lastunspent+30 )
+ {
+ //printf("call electrum listunspent.%s\n",coin->symbol);
+ if ( (retjson= electrum_address_listunspent(coin->symbol,coin->electrum,&retjson,coin->smartaddr,2)) != 0 )
+ free_json(retjson);
+ coin->lastunspent = (uint32_t)time(NULL);
+ }
+ }*/
+/*HASH_ITER(hh,LP_pubkeyinfos,pubp,ptmp)
+ {
+ pubp->dynamictrust = LP_dynamictrust(pubp->pubkey,0);
+ }*/
+/*void LP_prices_parse(struct LP_peerinfo *peer,cJSON *obj)
+ {
+ struct LP_pubkey_info *pubp; struct LP_priceinfo *basepp,*relpp; uint32_t timestamp; bits256 pubkey; cJSON *asks,*item; uint8_t rmd160[20]; int32_t i,n,relid,mismatch; char *base,*rel,*hexstr; double askprice; uint32_t now;
+ now = (uint32_t)time(NULL);
+ pubkey = jbits256(obj,"pubkey");
+ if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
+ {
+ if ( (hexstr= jstr(obj,"rmd160")) != 0 && strlen(hexstr) == 2*sizeof(rmd160) )
+ decode_hex(rmd160,sizeof(rmd160),hexstr);
+ if ( memcmp(pubp->rmd160,rmd160,sizeof(rmd160)) != 0 )
+ mismatch = 1;
+ else mismatch = 0;
+ if ( bits256_cmp(pubkey,G.LP_mypub25519) == 0 && mismatch == 0 )
+ peer->needping = 0;
+ LP_pubkey_sigcheck(pubp,obj);
+ timestamp = juint(obj,"timestamp");
+ if ( timestamp > now )
+ timestamp = now;
+ if ( timestamp >= pubp->timestamp && (asks= jarray(&n,obj,"asks")) != 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ item = jitem(asks,i);
+ base = jstri(item,0);
+ rel = jstri(item,1);
+ askprice = jdoublei(item,2);
+ if ( LP_pricevalid(askprice) > 0 )
+ {
+ if ( (basepp= LP_priceinfoptr(&relid,base,rel)) != 0 )
+ {
+ //char str[65]; printf("gotprice %s %s/%s (%d/%d) %.8f\n",bits256_str(str,pubkey),base,rel,basepp->ind,relid,askprice);
+ pubp->matrix[basepp->ind][relid] = askprice;
+ //pubp->timestamps[basepp->ind][relid] = timestamp;
+ if ( (relpp= LP_priceinfofind(rel)) != 0 )
+ {
+ dxblend(&basepp->relvals[relpp->ind],askprice,0.9);
+ dxblend(&relpp->relvals[basepp->ind],1. / askprice,0.9);
+ }
+ }
+ }
+ }
+ }
+ }
+ }
+ 
+ void LP_peer_pricesquery(struct LP_peerinfo *peer)
+ {
+ char *retstr; cJSON *array; int32_t i,n;
+ if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
+ return;
+ peer->needping = (uint32_t)time(NULL);
+ if ( (retstr= issue_LP_getprices(peer->ipaddr,peer->port)) != 0 )
+ {
+ if ( (array= cJSON_Parse(retstr)) != 0 )
+ {
+ if ( is_cJSON_Array(array) && (n= cJSON_GetArraySize(array)) > 0 )
+ {
+ for (i=0; i<n; i++)
+ LP_prices_parse(peer,jitem(array,i));
+ }
+ free_json(array);
+ }
+ free(retstr);
+ }
+ if ( peer->needping != 0 )
+ {
+ //printf("%s needs ping\n",peer->ipaddr);
+ }
  }*/
 
 if ( aliceutxo->S.swap == 0 )
@@ -2245,6 +3686,80 @@ void LP_price_broadcastloop(void *ctx)
         sleep(LP_ORDERBOOK_DURATION * .9);
     }
 }
+/*if ( expiration != 0 )
+ {
+ redeemlen = LP_deposit_addr(vinaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
+ if ( strcmp(depositaddr,vinaddr) == 0 )
+ {
+ claimtime = (uint32_t)time(NULL)-777;
+ if ( claimtime <= expiration )
+ {
+ printf("claimtime.%u vs locktime.%u, need to wait %d seconds\n",claimtime,timestamp,(int32_t)timestamp-claimtime);
+ return(clonestr("{\"error\":\"need to wait to claim\"}"));
+ }
+ sum += LP_claimtx(ctx,coin,txids,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
+ 
+ }*/
+/*timestamp = (now / LP_WEEKMULT) * LP_WEEKMULT + LP_WEEKMULT;
+ while ( timestamp > LP_FIRSTWEEKTIME )
+ {
+ if ( expiration != 0 )
+ timestamp = expiration;
+ else timestamp -= LP_WEEKMULT;
+ redeemlen = LP_deposit_addr(vinaddr,redeemscript,coin->taddr,coin->p2shtype,timestamp,G.LP_pubsecp);
+ if ( strcmp(depositaddr,vinaddr) == 0 )
+ {
+ claimtime = (uint32_t)time(NULL)-777;
+ if ( claimtime <= timestamp )
+ {
+ printf("claimtime.%u vs locktime.%u, need to wait %d seconds\n",claimtime,timestamp,(int32_t)timestamp-claimtime);
+ }
+ else
+ {
+ printf("found %s at timestamp.%u\n",vinaddr,timestamp);
+ memset(zero.bytes,0,sizeof(zero));
+ if ( (array= LP_listunspent(coin->symbol,vinaddr,zero,zero)) != 0 )
+ {
+ //printf("unspents.(%s)\n",jprint(array,0));
+ if ( (n= cJSON_GetArraySize(array)) > 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ item = jitem(array,i);
+ satoshis = LP_listunspent_parseitem(coin,&utxotxid,&utxovout,&height,item);
+ sum += LP_claimtx(ctx,coin,txids,utxotxid,utxovout,satoshis,vinaddr,claimtime,redeemscript,redeemlen);
+ }
+ }
+ free_json(array);
+ retjson = cJSON_CreateObject();
+ jaddstr(retjson,"result","success");
+ jaddnum(retjson,"claimed",dstr(sum));
+ jadd(retjson,"txids",txids);
+ return(jprint(retjson,1));
+ }
+ }
+ }
+ if ( expiration != 0 )
+ break;
+ }
+ return(clonestr("{\"error\":\"no instantdex deposits to claim\"}"));*/
+/*else
+ {
+ if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
+ {
+ if ( (n= cJSON_GetArraySize(array)) > 0 )
+ {
+ for (i=0; i<n; i++)
+ {
+ item = jitem(array,i);
+ balance += j64bits(item,"value");
+ }
+ }
+ free_json(array);
+ }
+ }*/
+
+
 //else if ( strcmp(method,"checktxid") == 0 )
 //    retstr = LP_spentcheck(argjson);
 //else if ( IAMLP == 0 && LP_isdisabled(base,rel) != 0 )
@@ -2275,10 +3790,37 @@ void LP_price_broadcastloop(void *ctx)
  retstr = clonestr("{\"result\":\"success\"}");
  } else retstr = clonestr("{\"error\":\"couldnt dereference sendmessage\"}");
  }
- else*/ #ifdef FROM_JS
+ else*/
+
+/*relvol = bot->totalrelvolume * .1;
+ p = LP_pricevol_invert(&v,bot->maxprice,relvol);
+ if ( bot->dispdir > 0 )
+ {
+ printf("simulated trade buy %s/%s maxprice %.8f volume %.8f, %.8f %s -> %s, price %.8f relvol %.8f\n",bot->base,bot->rel,bot->maxprice,bot->totalrelvolume - bot->relsum,relvol,bot->rel,bot->base,bot->maxprice,relvol);
+ }
+ else
+ {
+ minprice = LP_pricevol_invert(&basevol,bot->maxprice,bot->totalrelvolume - bot->relsum);
+ printf("simulated trade sell %s/%s minprice %.8f volume %.8f, %.8f %s -> %s price %.8f relvol %.8f\n",bot->rel,bot->base,minprice,basevol,v,bot->base,bot->rel,p,relvol);
+ }
+ if ( (LP_rand() % 2) == 0 )
+ {
+ bot->relsum += relvol;
+ bot->basesum += v;
+ bot->completed++;
+ }
+ else
+ {
+ bot->pendrelsum += relvol;
+ bot->pendbasesum += v;
+ bot->numpending++;
+ }
+ bot->numtrades++;
+ */
+#ifdef FROM_JS
 int32_t sentbytes,sock,peerind,maxind;
 if ( (maxind= LP_numpeers()) > 0 )
-peerind = (rand() % maxind) + 1;
+peerind = (LP_rand() % maxind) + 1;
 else peerind = 1;
 sock = LP_peerindsock(&peerind);
 if ( sock >= 0 )
@@ -2320,11 +3862,11 @@ void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32
     else
     {
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
+            peerind = (LP_rand() % maxind) + 1;
         else peerind = 1;
         sock0 = LP_peerindsock(&peerind);
         if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (rand() % maxind) + 1;
+            peerind = (LP_rand() % maxind) + 1;
         else peerind = 1;
         sock1 = LP_peerindsock(&peerind);
     }
@@ -2508,6 +4050,36 @@ if ( (0) )
  #undef aptr
  #undef bptr
  }*/
+/*if ( (utxo= LP_utxoadd(1,coin->symbol,up->U.txid,up->U.vout,up->U.value,up2->U.txid,up2->U.vout,up2->U.value,coinaddr,ap->pubkey,G.gui,0,targetval)) != 0 )
+ {
+ utxo->S.satoshis = targetval;
+ char str[65],str2[65]; printf("butxo.%p targetval %.8f, found val %.8f %s | targetval2 %.8f val2 %.8f %s\n",utxo,dstr(targetval),dstr(up->U.value),bits256_str(str,utxo->payment.txid),dstr(targetval2),dstr(up2->U.value),bits256_str(str2,utxo->deposit.txid));
+ return(butxo);
+ }*/
+
+/*if ( (sobj= jobj(v,"scriptPubKey")) != 0 )
+ {
+ if ( (scriptstr= jstr(sobj,"hex")) != 0 )
+ {
+ printf("amount64 %.8f vout.%d (%s) weeki.%d %.8f (%s)\n",dstr(amount64),vout,jprint(v,0),weeki,dstr(satoshis),scriptstr);
+ len = (int32_t)strlen(scriptstr) >> 1;
+ if ( len <= sizeof(spendscript)/sizeof(*spendscript) )
+ {
+ decode_hex(spendscript,len,scriptstr);
+ if ( spendscript[11] == 33 )
+ {
+ pub33 = &spendscript[12];
+ redeemlen = LP_deposit_addr(p2shaddr,redeemscript,coin->taddr,coin->p2shtype,timestamp,pub33);
+ if ( len == redeemlen && (timestamp % LP_WEEKMULT) == 0 )
+ {
+ bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pub33,33);
+ printf("%s -> matched %s script t.%u weeki.%d deposit %.8f\n",coinaddr,p2shaddr,timestamp,(timestamp-LP_FIRSTWEEKTIME)/LP_WEEKMULT,dstr(satoshis));
+ // add to pubp->credits;
+ }
+ }
+ }
+ }
+ }*/
 
 /*portable_mutex_lock(&ep->pendingQ.mutex);
  if ( ep->pendingQ.list != 0 )
@@ -2527,6 +4099,184 @@ if ( (0) )
  DL_APPEND(ep->pendingQ.list,&sitem->DL);
  portable_mutex_unlock(&ep->pendingQ.mutex);*/
 //printf("%p SENT.(%s) to %s:%u\n",sitem,sitem->str,ep->ipaddr,ep->port);
+
+#ifdef oldway
+struct LP_utxoinfo *LP_ordermatch_iter(struct LP_address_utxo **utxos,int32_t max,double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct iguana_info *basecoin,char *coinaddr,uint64_t asatoshis,double price,uint64_t txfee,uint64_t desttxfee,bits256 pubkey,char *gui)
+{
+    uint64_t basesatoshis; struct LP_utxoinfo *bestutxo;
+    basesatoshis = LP_basesatoshis(dstr(asatoshis),price,txfee,desttxfee);
+    //printf("basesatoshis %.8f price %.8f txfee %.8f desttxfee %.8f\n",dstr(basesatoshis),price,dstr(txfee),dstr(desttxfee));
+    if ( basesatoshis != 0 && (bestutxo= LP_address_utxopair(0,utxos,max,basecoin,coinaddr,txfee,dstr(basesatoshis)*price,price,desttxfee)) != 0 )
+    {
+        bestutxo->pubkey = pubkey;
+        safecopy(bestutxo->gui,gui,sizeof(bestutxo->gui));
+        *bestsatoshisp = basesatoshis;
+        *ordermatchpricep = price;
+        *bestdestsatoshisp = asatoshis;
+        return(bestutxo);
+    }
+    return(0);
+}
+
+struct LP_utxoinfo *LP_buyutxo(double *ordermatchpricep,int64_t *bestsatoshisp,int64_t *bestdestsatoshisp,struct LP_utxoinfo *autxo,char *base,double maxprice,int32_t duration,uint64_t txfee,uint64_t desttxfee,char *gui,bits256 *avoids,int32_t numavoids,bits256 destpubkey)
+{
+    bits256 pubkey; char *obookstr,coinaddr[64]; cJSON *orderbook,*asks,*rawasks,*item; int32_t maxiters,i,j,numasks,max; struct LP_address_utxo **utxos; double price; struct LP_pubkey_info *pubp; uint64_t asatoshis; struct iguana_info *basecoin; struct LP_utxoinfo *bestutxo = 0;
+    maxiters = 100;
+    *ordermatchpricep = 0.;
+    *bestsatoshisp = *bestdestsatoshisp = 0;
+    basecoin = LP_coinfind(base);
+    if ( duration <= 0 )
+        duration = LP_ORDERBOOK_DURATION;
+    if ( maxprice <= 0. || LP_priceinfofind(base) == 0 || basecoin == 0 )
+        return(0);
+    if ( basecoin->electrum == 0 )
+        max = 1000;
+    else max = LP_MAXDESIRED_UTXOS;
+    utxos = calloc(max,sizeof(*utxos));
+    LP_txfees(&txfee,&desttxfee,base,autxo->coin);
+    printf("LP_buyutxo maxprice %.8f relvol %.8f %s/%s %.8f %.8f\n",maxprice,dstr(autxo->S.satoshis),base,autxo->coin,dstr(txfee),dstr(desttxfee));
+    if ( (obookstr= LP_orderbook(base,autxo->coin,duration)) != 0 )
+    {
+        if ( (orderbook= cJSON_Parse(obookstr)) != 0 )
+        {
+            if ( (rawasks= jarray(&numasks,orderbook,"asks")) != 0 )
+            {
+                if ( (asks= LP_RTmetrics_sort(base,autxo->coin,rawasks,numasks,maxprice,dstr(autxo->S.satoshis))) == 0 )
+                    asks = rawasks;
+                for (i=0; i<numasks; i++)
+                {
+                    item = jitem(asks,i);
+                    price = jdouble(item,"price");
+                    //if ( price < maxprice && price > maxprice*0.8)
+                    //    price = price * 0.9 + 0.1 * maxprice;
+                    //else price *= 1.005;
+                    pubkey = jbits256(item,"pubkey");
+                    if ( bits256_nonz(destpubkey) != 0 && bits256_cmp(destpubkey,pubkey) != 0 )
+                        continue;
+                    if ( LP_RTmetrics_blacklisted(pubkey) >= 0 )
+                        continue;
+                    //printf("[%d/%d] %s pubcmp %d price %.8f vs maxprice %.8f asatoshis %.8f\n",i,numasks,jprint(item,0),bits256_cmp(pubkey,G.LP_mypub25519),price,maxprice,dstr(autxo->S.satoshis));
+                    if ( LP_pricevalid(price) > 0 && price <= maxprice )
+                    {
+                        if ( bits256_nonz(destpubkey) == 0 )
+                        {
+                            for (j=0; j<numavoids; j++)
+                                if ( bits256_cmp(pubkey,avoids[j]) == 0 )
+                                    break;
+                            if ( j != numavoids )
+                                continue;
+                        }
+                        if ( bits256_cmp(pubkey,G.LP_mypub25519) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
+                        {
+                            bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
+                            asatoshis = autxo->S.satoshis;
+                            //LP_listunspent_query(base,coinaddr);
+                            for (j=0; j<maxiters; j++)
+                            {
+                                if ( (bestutxo= LP_ordermatch_iter(utxos,max,ordermatchpricep,bestsatoshisp,bestdestsatoshisp,basecoin,coinaddr,asatoshis,maxprice*.999,txfee,desttxfee,pubp->pubkey,gui)) != 0 )
+                                {
+                                    //printf("j.%d/%d ordermatch %.8f best satoshis %.8f destsatoshis %.8f txfees (%.8f %.8f)\n",j,maxiters,price,dstr(*bestsatoshisp),dstr(*bestdestsatoshisp),dstr(txfee),dstr(desttxfee));
+                                    break;
+                                }
+                                asatoshis = (asatoshis / 64) * 63;
+                            }
+                            if ( j < maxiters )
+                                break;
+                        } else printf("self trading or blacklisted peer\n");
+                    }
+                    else
+                    {
+                        if ( i == 0 )
+                            printf("too expensive maxprice %.8f vs %.8f\n",maxprice,price);
+                        break;
+                    }
+                }
+                if ( asks != 0 && asks != rawasks )
+                    free_json(asks);
+            }
+            free_json(orderbook);
+        }
+        free(obookstr);
+    }
+    free(utxos);
+    if ( *ordermatchpricep == 0. || *bestdestsatoshisp == 0 )
+        return(0);
+    int32_t changed;
+    LP_mypriceset(&changed,autxo->coin,base,1. / *ordermatchpricep);
+    return(bestutxo);
+}
+#endif
+#ifdef oldway
+//LP_RTmetrics_update(base,rel);
+while ( 1 )
+{
+    if ( (bestutxo= LP_buyutxo(&ordermatchprice,&bestsatoshis,&bestdestsatoshis,autxo,base,maxprice,duration,txfee,desttxfee,gui,pubkeys,numpubs,destpubkey)) == 0 || ordermatchprice == 0. || bestdestsatoshis == 0 )
+    {
+        printf("bestutxo.%p ordermatchprice %.8f bestdestsatoshis %.8f\n",bestutxo,ordermatchprice,dstr(bestdestsatoshis));
+        return(clonestr("{\"error\":\"cant find ordermatch utxo, need to change relvolume to be closer to available\"}"));
+    }
+    pubkeys[numpubs++] = bestutxo->pubkey;
+    if ( LP_quoteinfoinit(&Q,bestutxo,rel,ordermatchprice,bestsatoshis,bestdestsatoshis) < 0 )
+        return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
+    if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,G.LP_mypub25519,autxo->coinaddr) < 0 )
+        return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
+    maxiters = 200;
+    qprice = 1. / SMALLVAL;
+    for (i=0; i<maxiters; i++)
+    {
+        if ( (qprice= LP_quote_validate(autxo,0,&Q,0)) <= SMALLVAL )
+        {
+            printf("quote validate error %.0f\n",qprice);
+            return(clonestr("{\"error\":\"quote validate error\"}"));
+        }
+        if ( qprice/ordermatchprice < 1.+SMALLVAL )
+        {
+            //printf("i.%d/%d qprice %.8f < ordermatchprice %.8f\n",i,maxiters,qprice,ordermatchprice);
+            if ( strcmp("BTC",Q.destcoin) == 0 || strcmp("BTC",Q.srccoin) == 0 )
+                Q.satoshis *= 0.999;
+            else Q.satoshis *= 0.9999;
+        } else break;
+    }
+    if ( i == maxiters || qprice > maxprice )
+    {
+        printf("i.%d maxiters.%d qprice %.8f vs maxprice %.8f, no acceptable quote for this pubkey\n",i,maxiters,dstr(qprice),dstr(maxprice));
+        if ( bits256_nonz(destpubkey) == 0 )
+            continue;
+        else return(clonestr("{\"error\":\"cant ordermatch to destpubkey\"}"));
+    }
+    printf("i.%d maxiters.%d qprice %.8f vs maxprice %.8f\n",i,maxiters,dstr(qprice),dstr(maxprice));
+    return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid,destpubkey));
+}
+return(clonestr("{\"error\":\"cant get here\"}"));
+#endif
+
+if ( 0 )
+{
+    char *p2sh = "bJVtQF2o8B6sdNjeXupzNw5rnidJUNwPJD",p2shaddr[64]; uint8_t script[512],pub33[33]; uint32_t timestamp;
+    decode_hex(pub33,33,"03fe754763c176e1339a3f62ee6b9484720e17ee4646b65a119e9f6370c7004abc");
+    for (timestamp=1510934803-3600*24; timestamp<1510934803+3600*24; timestamp++)
+    {
+        LP_deposit_addr(p2shaddr,script,0,85,timestamp,pub33);
+        if ( strcmp(p2shaddr,p2sh) == 0 )
+        {
+            printf("matched timestamp.%u\n",timestamp);
+            break;
+        } else printf("%s ",p2shaddr);
+    }
+}
+
+/*DL_FOREACH_SAFE(ap->utxos,up,tmp)
+ {
+ if ( up->spendheight <= 0 )
+ {
+ if ( up->U.value > *maxp )
+ *maxp = up->U.value;
+ if ( *minp == 0 || up->U.value < *minp )
+ *minp = up->U.value;
+ *balancep += up->U.value;
+ n++;
+ }
+ }*/
 
 char *LP_ordermatch(char *base,int64_t txfee,double maxprice,double maxvolume,char *rel,bits256 txid,int32_t vout,bits256 feetxid,int32_t feevout,int64_t desttxfee,int32_t duration)
 {
