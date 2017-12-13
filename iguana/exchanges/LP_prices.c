@@ -546,7 +546,7 @@ double LP_price(char *base,char *rel)
     {
         if ( (price= basepp->myprices[relind]) == 0. )
         {
-            //price = basepp->relvals[relind];
+            price = basepp->relvals[relind];
         }
     }
     return(price);
