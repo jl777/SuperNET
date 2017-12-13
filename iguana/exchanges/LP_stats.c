@@ -795,11 +795,31 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
 
 char *LP_ticker(char *refbase,char *refrel)
 {
-    cJSON *logjson; bits256 zero; uint32_t now = (uint32_t)time(NULL);
+    cJSON *logjson,*retjson,*item,*retitem,*swapsjson; double basevol,relvol; char *base,*rel; int32_t i,n; bits256 zero; uint32_t now = (uint32_t)time(NULL);
     memset(zero.bytes,0,sizeof(zero));
     if ( (logjson= LP_statslog_disp(now - 3600*24,now,"",zero,refbase,refrel)) != 0 )
-        return(jprint(logjson,1));
-    else return(clonestr("{\"error\":\"couldnt get logjson\"}"));
+    {
+        retjson = cJSON_CreateArray();
+        if ( (swapsjson= jarray(&n,logjson,"swaps")) != 0 )
+        {
+            for (i=n-1; i>=0; i--)
+            {
+                item = jitem(swapsjson,i);
+                retitem = cJSON_CreateObject();
+                if ( (base= jstr(item,"base")) != 0 && (rel= jstr(item,"rel")) != 0 && (basevol= jdouble(item,"basevol")) > SMALLVAL )
+                {
+                    relvol = jdouble(item,"relvol");
+                    jaddnum(retitem,"timestamp",juint(item,"timestamp"));
+                    jaddnum(retitem,base,basevol);
+                    jaddnum(retitem,rel,relvol);
+                    jaddnum(retitem,"price",relvol/basevol);
+                }
+                jaddi(retjson,retitem);
+            }
+        }
+        free_json(logjson);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"couldnt get logjson\"}"));
 }
 
 struct LP_ohlc
