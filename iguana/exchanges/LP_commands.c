@@ -110,6 +110,7 @@ enable(coin)\n\
 disable(coin)\n\
 notarizations(coin)\n\
 statsdisp(starttime=0, endtime=0, gui="", pubkey="", base="", rel="")\n\
+ticker(base="", rel="")\n\
 tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]\n\
 pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 getrawtransaction(coin, txid)\n\
@@ -283,6 +284,10 @@ instantdex_claim()\n\
         else if ( strcmp(method,"statsdisp") == 0 )
         {
             return(jprint(LP_statslog_disp(juint(argjson,"starttime"),juint(argjson,"endtime"),jstr(argjson,"gui"),jbits256(argjson,"pubkey"),jstr(argjson,"base"),jstr(argjson,"rel")),1));
+        }
+        else if ( strcmp(method,"ticker") == 0 )
+        {
+            return(LP_ticker(jstr(argjson,"base"),jstr(argjson,"rel")));
         }
         else if ( strcmp(method,"secretaddresses") == 0 )
         {

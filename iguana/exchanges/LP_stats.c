@@ -793,7 +793,14 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
     return(retjson);
 }
 
-//tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]
+char *LP_ticker(char *refbase,char *refrel)
+{
+    cJSON *logjson; bits256 zero; uint32_t now = (uint32_t)time(NULL);
+    memset(zero.bytes,0,sizeof(zero));
+    if ( (logjson= LP_statslog_disp(now - 3600*24,now,"",zero,refbase,refrel)) != 0 )
+        return(jprint(logjson,1));
+    else return(clonestr("{\"error\":\"couldnt get logjson\"}"));
+}
 
 struct LP_ohlc
 {

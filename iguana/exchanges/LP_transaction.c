@@ -1346,7 +1346,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
                 printf("incomplete signing withdraw (%s)\n",jprint(vins,0));
                 if ( signedtx != 0 )
                     free(signedtx), signedtx = 0;
-            } else printf("LP_withdraw %s -> %s\n",jprint(argjson,0),bits256_str(str,signedtxid));
+            } else printf("LP_withdraw.%s %s -> %s\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid));
             if ( signedtx == 0 )
                 break;
             datalen = (int32_t)strlen(signedtx) / 2;
