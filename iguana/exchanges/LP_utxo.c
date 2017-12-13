@@ -635,7 +635,7 @@ cJSON *LP_balances(char *coinaddr)
             }
             else
             {
-                bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
+                bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,coinaddr);
                 bitcoin_address(address,coin->taddr,coin->pubtype,rmd160,20);
             }
             if ( (retjson= LP_address_balance(coin,address,1)) != 0 )
