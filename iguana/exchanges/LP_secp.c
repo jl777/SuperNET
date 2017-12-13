@@ -132,7 +132,7 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
             }
             else
             {
-                if ( secp256k1_ecdsa_sign(0,&SIG,txhash2.bytes,privkey.bytes,funcp,entropy) != 0 )
+                if ( secp256k1_ecdsa_sign(ctx,&SIG,txhash2.bytes,privkey.bytes,funcp,entropy) != 0 )
                 {
                     if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIG) != 0 )
                         retval = (int32_t)siglen;
