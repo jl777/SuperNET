@@ -697,9 +697,9 @@ int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttim
         dispflag = 1;
     else if ( sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime )
         dispflag = 1;
-    if ( refbase != 0 && strcmp(refbase,sp->Q.srccoin) != 0 && strcmp(refbase,sp->Q.destcoin) != 0 )
+    if ( refbase != 0 && refbase[0] != 0 && strcmp(refbase,sp->Q.srccoin) != 0 && strcmp(refbase,sp->Q.destcoin) != 0 )
         dispflag = 0;
-    if ( refrel != 0 && strcmp(refrel,sp->Q.srccoin) != 0 && strcmp(refrel,sp->Q.destcoin) != 0 )
+    if ( refrel != 0 && refrel[0] != 0 && strcmp(refrel,sp->Q.srccoin) != 0 && strcmp(refrel,sp->Q.destcoin) != 0 )
         dispflag = 0;
     if ( dispflag != 0 )
     {
