@@ -98,7 +98,10 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
             return(-1);
         }
         if ( strcmp(symbol,"BCH") == 0 )
+        {
+            char str[65]; printf("BCH deterministic signature %s\n",bits256_str(str,txhash2));
             entropy = 0;
+        }
         else entropy = extra_entropy.bytes;
         if ( secp256k1_context_randomize(ctx,seed.bytes) != 0 )
         {
