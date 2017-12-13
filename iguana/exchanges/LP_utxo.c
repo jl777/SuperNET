@@ -654,7 +654,7 @@ cJSON *LP_balances(char *coinaddr)
                     if ( coin->electrum != 0 && strcmp(address,coin->smartaddr) == 0 && strcmp(coin->symbol,"KMD") == 0 )
                     {
                         jaddnum(item,"zcredits",dstr(LP_myzcredits()));
-                        jadd(item,"zdebits",LP_myzdebits());
+                        //jadd(item,"zdebits",LP_myzdebits());
                     }
                     jaddi(array,item);
                 }
@@ -676,7 +676,7 @@ cJSON *LP_balances(char *coinaddr)
                 if ( strcmp(coin->symbol,"KMD") == 0 )
                 {
                     jaddnum(item,"zcredits",dstr(LP_myzcredits()));
-                    jadd(item,"zdebits",LP_myzdebits());
+                    //jadd(item,"zdebits",LP_myzdebits());
                 }
                 jaddi(array,item);
             }
