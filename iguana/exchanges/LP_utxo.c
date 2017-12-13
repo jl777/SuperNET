@@ -632,10 +632,7 @@ cJSON *LP_balances(char *coinaddr)
         if ( coin->electrum != 0 || (coinaddr != 0 && coinaddr[0] != 0 && strcmp(coinaddr,coin->smartaddr) != 0) )
         {
             if ( coinaddr == 0 || coinaddr[0] == 0 )
-            {
-                coinaddr = coin->smartaddr;
-                strcpy(address,coinaddr);
-            }
+                strcpy(address,coin->smartaddr);
             else
             {
                 bitcoin_addr2rmd160(taddr,&addrtype,rmd160,coinaddr);
@@ -654,7 +651,7 @@ cJSON *LP_balances(char *coinaddr)
                         jaddnum(item,"KMDvalue",dstr(KMDvalue));
                         sum += KMDvalue;
                     }
-                    if ( coin->electrum != 0 && strcmp(coinaddr,coin->smartaddr) == 0 && strcmp(coin->symbol,"KMD") == 0 )
+                    if ( coin->electrum != 0 && strcmp(address,coin->smartaddr) == 0 && strcmp(coin->symbol,"KMD") == 0 )
                     {
                         jaddnum(item,"zcredits",dstr(LP_myzcredits()));
                         jadd(item,"zdebits",LP_myzdebits());
