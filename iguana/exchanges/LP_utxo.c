@@ -623,7 +623,7 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 cJSON *LP_balances(char *coinaddr)
 {
     struct iguana_info *coin,*tmp; char address[64]; uint8_t taddr,addrtype,rmd160[20]; uint64_t balance,KMDvalue,sum = 0; cJSON *array,*item,*retjson;
-    if ( coinaddr[0] == 't' && (coinaddr[1] == '1' || coinaddr[1] == '3') )
+    if ( coinaddr != 0 && coinaddr[0] != 0 && coinaddr[0] == 't' && (coinaddr[1] == '1' || coinaddr[1] == '3') )
         taddr = 1;
     else taddr = 0;
     array = cJSON_CreateArray();
