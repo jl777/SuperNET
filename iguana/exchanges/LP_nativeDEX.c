@@ -464,7 +464,7 @@ void command_rpcloop(void *ctx)
 {
     int32_t nonz = 0;
     strcpy(command_rpcloop_stats.name,"command_rpcloop");
-    command_rpcloop_stats.threshold = 1000.;
+    command_rpcloop_stats.threshold = 2500.;
     while ( 1 )
     {
         LP_millistats_update(&command_rpcloop_stats);
