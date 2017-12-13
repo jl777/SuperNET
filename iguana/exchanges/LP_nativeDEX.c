@@ -17,6 +17,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// command_rpcloop elapsed   11369.68 millis > threshold    1000.00, ave      34.99 millis, count.645639 broadcast
 // compress packets
 // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // portfolio to set prices from historical
@@ -1002,10 +1003,13 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
     return(n);
 }
 
+extern int32_t bitcoind_RPC_inittime;
+
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
     char *myipaddr=0,version[64]; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     sprintf(version,"Marketmaker %s.%s %s rsize.%ld",LP_MAJOR_VERSION,LP_MINOR_VERSION,LP_BUILD_NUMBER,sizeof(struct basilisk_request));
+    bitcoind_RPC_inittime = 1;
     printf("%s %u\n",version,calc_crc32(0,version,(int32_t)strlen(version)));
     if ( LP_MAXPRICEINFOS > 256 )
     {
@@ -1234,6 +1238,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
     int32_t nonz;
     LP_statslog_parse();
+    bitcoind_RPC_inittime = 0;
     while ( 1 )
     {
         nonz = 0;
