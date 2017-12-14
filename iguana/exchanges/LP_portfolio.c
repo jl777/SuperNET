@@ -423,7 +423,7 @@ double LP_tickered_price(int32_t bidask,char *base,char *rel,double price,cJSON 
                     else price += (gap * r) / 100.;
                 }
                 else //if ( (bidask == 0 && itemprice > price) || (bidask != 0 && itemprice < price) )
-                    price = (price * 0.777) + (0.223 * itemprice);
+                    price = (price * 0.95) + (0.05 * itemprice);
             }
         }
     }
