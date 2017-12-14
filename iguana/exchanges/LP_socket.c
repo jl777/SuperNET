@@ -1132,6 +1132,13 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
                 LP_cacheptrs_init(coin);
                 coin->loadedcache = (uint32_t)time(NULL);
             }
+            if ( 0 && strcmp(coin->symbol,"ZEC") == 0 )
+            {
+                void for_satinder();
+                sleep(3);
+                for_satinder();
+                getchar();
+            }
         }
     }
     else

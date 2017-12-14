@@ -202,10 +202,31 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
     return(jprint(retjson,1));
 }
 
+int32_t LP_wifstr_valid(char *wifstr)
+{
+    bits256 privkey; uint8_t wiftype; char cmpstr[128]; int32_t iter;
+    for (iter=0; iter<2; iter++)
+    {
+        bitcoin_wif2priv(0,&wiftype,&privkey,wifstr);
+        bitcoin_priv2wif(0,cmpstr,privkey,wiftype);
+        if ( strcmp(cmpstr,wifstr) == 0 )
+        {
+            //printf("%s is valid wif\n",wifstr);
+            return(1);
+        }
+    }
+    return(0);
+}
+
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     //static uint32_t counter;
     bits256 privkey,userpub,zero,userpass,checkkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype; int32_t notarized;
+    if ( (wifstr == 0 || wifstr[0] == 0) && LP_wifstr_valid(passphrase) > 0 )
+    {
+        wifstr = passphrase;
+        passphrase = 0;
+    }
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
         calc_NXTaddr(G.LP_NXTaddr,userpub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
@@ -217,13 +238,6 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     else
     {
         bitcoin_wif2priv(coin->wiftaddr,&tmptype,&privkey,wifstr);
-        if ( 0 )
-        {
-            char str[65],str2[65];
-            checkkey = iguana_wif2privkey(wifstr);
-            if ( bits256_cmp(checkkey,privkey) != 0 )
-                printf("WIF.(%s) -> %s or %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkkey));
-        }
     }
     privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
     bitcoin_priv2pub(ctx,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
@@ -235,8 +249,6 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         bitcoin_addr2rmd160(coin->taddr,&tmptype,G.LP_myrmd160,coin->smartaddr);
         LP_privkeyadd(privkey,G.LP_myrmd160);
         G.LP_privkey = privkey;
-        if ( 0 && (coin->pubtype != 60 || strcmp(coin->symbol,"KMD") == 0) )
-            printf("%s (%s) %d wif.(%s) (%s)\n",coin->symbol,coin->smartaddr,coin->pubtype,tmpstr,passphrase);
         if ( G.counter++ == 0 )
         {
             bitcoin_priv2wif(coin->wiftaddr,G.USERPASS_WIFSTR,privkey,188);

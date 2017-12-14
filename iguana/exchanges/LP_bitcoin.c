@@ -3321,9 +3321,64 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
 #endif
             len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
         }
+        revsigtxid = bits256_doublesha256(0,serialized,len);
+        for (i=0; i<sizeof(revsigtxid); i++)
+            sigtxid.bytes[31-i] = revsigtxid.bytes[i];
     }
     else
     {
+        /*
+         https://github.com/Bitcoin-UAHF/spec/blob/master/replay-protected-sighash.md
+        CHashWriter ss(SER_GETHASH, 0);
+        // Version
+        ss << txTo.nVersion;
+        // Input prevouts/nSequence (none/all, depending on flags)
+        ss << hashPrevouts;
+        ss << hashSequence;
+        // The input being signed (replacing the scriptSig with scriptCode +
+        // amount). The prevout may already be contained in hashPrevout, and the
+        // nSequence may already be contain in hashSequence.
+        ss << txTo.vin[nIn].prevout;
+        ss << static_cast<const CScriptBase &>(scriptCode);
+        ss << amount;
+        ss << txTo.vin[nIn].nSequence;
+        // Outputs (none/one/all, depending on flags)
+        ss << hashOutputs;
+        // Locktime
+        ss << txTo.nLockTime;
+        // Sighash type
+        ss << ((GetForkId() << 8) | nHashType);
+        return ss.GetHash();
+    }
+    Computation of midstates:
+    
+    uint256 GetPrevoutHash(const CTransaction &txTo) {
+        CHashWriter ss(SER_GETHASH, 0);
+        for (unsigned int n = 0; n < txTo.vin.size(); n++) {
+            ss << txTo.vin[n].prevout;
+        }
+        
+        return ss.GetHash();
+    }
+    
+    uint256 GetSequenceHash(const CTransaction &txTo) {
+        CHashWriter ss(SER_GETHASH, 0);
+        for (unsigned int n = 0; n < txTo.vin.size(); n++) {
+            ss << txTo.vin[n].nSequence;
+        }
+        
+        return ss.GetHash();
+    }
+    
+    uint256 GetOutputsHash(const CTransaction &txTo) {
+        CHashWriter ss(SER_GETHASH, 0);
+        for (unsigned int n = 0; n < txTo.vout.size(); n++) {
+            ss << txTo.vout[n];
+        }
+        
+        return ss.GetHash();
+    }
+    */
         bits256 prevouthash,seqhash,outputhash;
         for (i=len=0; i<dest.tx_in; i++)
         {
@@ -3331,35 +3386,66 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
             len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].prev_vout),&dest.vins[i].prev_vout);
         }
         prevouthash = bits256_doublesha256(0,serialized,len);
-        for (i=0; i<sizeof(prevouthash); i++)
-            prevouthash.bytes[31-i] = prevouthash.bytes[i];
+        
         for (i=len=0; i<dest.tx_in; i++)
             len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[i].sequence),&dest.vins[i].sequence);
         seqhash = bits256_doublesha256(0,serialized,len);
-        for (i=0; i<sizeof(seqhash); i++)
-            seqhash.bytes[31-i] = seqhash.bytes[i];
+        
         for (i=len=0; i<dest.tx_out; i++)
             len += iguana_voutparse(1,&serialized[len],&dest.vouts[i]);
         outputhash = bits256_doublesha256(0,serialized,len);
-        for (i=0; i<sizeof(outputhash); i++)
-            outputhash.bytes[31-i] = outputhash.bytes[i];
+
+        char str[65]; printf("prevouthash.%s ",bits256_str(str,prevouthash));
+        printf("seqhash.%s ",bits256_str(str,seqhash));
+        printf("outputhash.%s ",bits256_str(str,outputhash));
+        printf("vini.%d prev.%s/v%d\n",vini,bits256_str(str,dest.vins[vini].prev_hash),dest.vins[vini].prev_vout);
+        /*01000000
+        997c1040c67ee2f9ab21abf7457f7aec4503970e974e532b6578f326c270b7eb
+        445066705e799022b7095f7ceca255149f43acfc47e7f59e551f7bce2930b13b
+        b19ce2c564f7dc57b3f95593e2b287c72d388e86de12dc562d9f8a6bea65b310 01000000
+        1976a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac
+        5be9290000000000
+        ffffffff
+        a919fd9f636c08f4989be95c999230408dbc0f602c3f000bcedba9d5bbe98914
+        00000000
+        41000000*/
+        /*
+         01000000 ss.write size.4
+        ebb770c226f378652b534e970e970345ec7a7f45f7ab21abf9e27ec640107c99 ss.write size.32
+        3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e70665044 ss.write size.32
+        10b365ea6b8a9f2d56dc12de868e382dc787b2e29355f9b357dcf764c5e29cb1 ss.write size.32
+        01000000 ss.write size.4
+        19 ss.write size.1
+        76a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac ss.write size.25
+        76a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac scriptCode
+        5be9290000000000 ss.write size.8
+        ffffffff ss.write size.4
+        hashtype.41 locktime.0 seq.ffffffff amount 29e95b
+        1489e9bbd5a9dbce0b003f2c600fbc8d403092995ce99b98f4086c639ffd19a9 ss.write size.32
+        00000000 ss.write size.4
+        41000000 ss.write size.4
+        -> sighash.fc55acc3666c43b8f75908ca06ea2d343cd09eb846f14c5d7d0748a11e081a9d*/
         len = 0;
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.version),&dest.version);
         len += iguana_rwbignum(1,&serialized[len],sizeof(prevouthash),prevouthash.bytes);
         len += iguana_rwbignum(1,&serialized[len],sizeof(seqhash),seqhash.bytes);
         len += iguana_rwbignum(1,&serialized[len],sizeof(dest.vins[vini].prev_hash),dest.vins[vini].prev_hash.bytes);
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[vini].prev_vout),&dest.vins[vini].prev_vout);
+        serialized[len++] = spendlen;
         memcpy(&serialized[len],spendscript,spendlen), len += spendlen;
         len += iguana_rwnum(1,&serialized[len],sizeof(spendamount),&spendamount);
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.vins[vini].sequence),&dest.vins[vini].sequence);
         len += iguana_rwbignum(1,&serialized[len],sizeof(outputhash),outputhash.bytes);
         len += iguana_rwnum(1,&serialized[len],sizeof(dest.lock_time),&dest.lock_time);
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
-        printf("B path spendamount %.8f\n",dstr(spendamount));
+        for (i=0; i<len; i++)
+            printf("%02x",serialized[i]);
+        revsigtxid = bits256_doublesha256(0,serialized,len);
+        printf(" B path version.%08x spendamount %.8f locktime %u hashtype %08x %s\n",dest.version,dstr(spendamount),dest.lock_time,hashtype,bits256_str(str,revsigtxid));
+        //for (i=0; i<sizeof(revsigtxid); i++)
+        //    sigtxid.bytes[31-i] = revsigtxid.bytes[i];
+        sigtxid = revsigtxid;
     }
-    revsigtxid = bits256_doublesha256(0,serialized,len);
-    for (i=0; i<sizeof(revsigtxid); i++)
-        sigtxid.bytes[31-i] = revsigtxid.bytes[i];
     //char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
     free(dest.vins);
     free(dest.vouts);

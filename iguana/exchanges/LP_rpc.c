@@ -511,39 +511,6 @@ int32_t LP_listunspent_issue(char *symbol,char *coinaddr,int32_t fullflag,bits25
     return(n);
 }
 
-cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
-{
-    static void *ctx;
-    char buf[512],address[64]; cJSON *retjson; struct iguana_info *coin; int32_t doneflag = 0;
-    if ( symbol == 0 || symbol[0] == 0 )
-        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
-    coin = LP_coinfind(symbol);
-    if ( coin == 0 )
-        return(cJSON_Parse("{\"error\":\"no coin\"}"));
-    if ( coin->electrum != 0 )
-        return(cJSON_Parse("{\"result\":\"electrum should have local wallet\"}"));
-    if ( ctx == 0 )
-        ctx = bitcoin_ctx();
-    bitcoin_wif2addr(ctx,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
-    if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
-    {
-        if ( jobj(retjson,"ismine") != 0 && is_cJSON_True(jobj(retjson,"ismine")) != 0 )
-        {
-            doneflag = 1;
-            //printf("%s already ismine\n",address);
-        }
-        //printf("%s\n",jprint(retjson,0));
-        free_json(retjson);
-    }
-    if ( doneflag == 0 )
-    {
-        if ( coin->noimportprivkey_flag != 0 )
-            sprintf(buf,"[\"%s\"]",wifstr);
-        else sprintf(buf,"\"%s\", \"%s\", %s",wifstr,label,flag < 0 ? "false" : "true");
-        return(bitcoin_json(coin,"importprivkey",buf));
-    } else return(cJSON_Parse("{\"result\":\"success\"}"));
-}
-
 int32_t LP_importaddress(char *symbol,char *address)
 {
     char buf[1024],*retstr; cJSON *validatejson; int32_t isvalid=0,doneflag = 0; struct iguana_info *coin;
@@ -584,6 +551,45 @@ int32_t LP_importaddress(char *symbol,char *address)
         } //else printf("importaddress.(%s %s)\n",symbol,address);
         return(1);
     }
+}
+
+cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
+{
+    static void *ctx;
+    char buf[512],address[64]; cJSON *retjson; struct iguana_info *coin; int32_t doneflag = 0;
+    if ( symbol == 0 || symbol[0] == 0 )
+        return(cJSON_Parse("{\"error\":\"null symbol\"}"));
+    coin = LP_coinfind(symbol);
+    if ( coin == 0 )
+        return(cJSON_Parse("{\"error\":\"no coin\"}"));
+    if ( coin->electrum != 0 )
+        return(cJSON_Parse("{\"result\":\"electrum should have local wallet\"}"));
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
+    bitcoin_wif2addr(ctx,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
+#ifdef LP_DONT_IMPORTPRIVKEY
+    bitcoin_wif2addr(ctx,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
+    if ( LP_importaddress(symbol,address) < 0 )
+        return(cJSON_Parse("{\"error\":\"couldnt import\"}"));
+    else return(cJSON_Parse("{\"result\":\"success\"}"));
+#endif
+    if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
+    {
+        if ( jobj(retjson,"ismine") != 0 && is_cJSON_True(jobj(retjson,"ismine")) != 0 )
+        {
+            doneflag = 1;
+            //printf("%s already ismine\n",address);
+        }
+        //printf("%s\n",jprint(retjson,0));
+        free_json(retjson);
+    }
+    if ( doneflag == 0 )
+    {
+        if ( coin->noimportprivkey_flag != 0 )
+            sprintf(buf,"[\"%s\"]",wifstr);
+        else sprintf(buf,"\"%s\", \"%s\", %s",wifstr,label,flag < 0 ? "false" : "true");
+        return(bitcoin_json(coin,"importprivkey",buf));
+    } else return(cJSON_Parse("{\"result\":\"success\"}"));
 }
 
 double _LP_getestimatedrate(struct iguana_info *coin)

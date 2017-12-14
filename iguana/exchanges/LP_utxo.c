@@ -622,21 +622,22 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
 
 cJSON *LP_balances(char *coinaddr)
 {
-    struct iguana_info *coin,*tmp; char address[64]; uint8_t addrtype,rmd160[20]; uint64_t balance,KMDvalue,sum = 0; cJSON *array,*item,*retjson;
+    struct iguana_info *coin,*tmp; char address[64]; uint8_t taddr,addrtype,rmd160[20]; uint64_t balance,KMDvalue,sum = 0; cJSON *array,*item,*retjson;
+    if ( coinaddr != 0 && coinaddr[0] == 't' && (coinaddr[1] == '1' || coinaddr[1] == '3') )
+        taddr = 1;
+    else taddr = 0;
     array = cJSON_CreateArray();
     HASH_ITER(hh,LP_coins,coin,tmp)
     {
         if ( coin->electrum != 0 || (coinaddr != 0 && coinaddr[0] != 0 && strcmp(coinaddr,coin->smartaddr) != 0) )
         {
             if ( coinaddr == 0 || coinaddr[0] == 0 )
-            {
-                coinaddr = coin->smartaddr;
-                strcpy(address,coinaddr);
-            }
+                strcpy(address,coin->smartaddr);
             else
             {
-                bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
+                bitcoin_addr2rmd160(taddr,&addrtype,rmd160,coinaddr);
                 bitcoin_address(address,coin->taddr,coin->pubtype,rmd160,20);
+                //printf("%s taddr.%d addrtype.%u %s -> %s [%c %c].%d\n",coin->symbol,taddr,addrtype,coinaddr,address,coinaddr[0],coinaddr[1],coinaddr[0] == 't' && (coinaddr[1] == '1' || coinaddr[1] == '3'));
             }
             if ( (retjson= LP_address_balance(coin,address,1)) != 0 )
             {
@@ -650,10 +651,10 @@ cJSON *LP_balances(char *coinaddr)
                         jaddnum(item,"KMDvalue",dstr(KMDvalue));
                         sum += KMDvalue;
                     }
-                    if ( coin->electrum != 0 && strcmp(coinaddr,coin->smartaddr) == 0 && strcmp(coin->symbol,"KMD") == 0 )
+                    if ( coin->electrum != 0 && strcmp(address,coin->smartaddr) == 0 && strcmp(coin->symbol,"KMD") == 0 )
                     {
                         jaddnum(item,"zcredits",dstr(LP_myzcredits()));
-                        jadd(item,"zdebits",LP_myzdebits());
+                        //jadd(item,"zdebits",LP_myzdebits());
                     }
                     jaddi(array,item);
                 }
@@ -675,7 +676,7 @@ cJSON *LP_balances(char *coinaddr)
                 if ( strcmp(coin->symbol,"KMD") == 0 )
                 {
                     jaddnum(item,"zcredits",dstr(LP_myzcredits()));
-                    jadd(item,"zdebits",LP_myzdebits());
+                    //jadd(item,"zdebits",LP_myzdebits());
                 }
                 jaddi(array,item);
             }

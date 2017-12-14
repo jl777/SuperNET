@@ -440,7 +440,7 @@ char *LP_postprice_recv(cJSON *argjson)
             if ( LP_price_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,base,rel,j64bits(argjson,"price64")) == 0 )
             {
                 //printf("call pricefeed update\n");
-            LP_pricefeedupdate(pubkey,base,rel,price,jstr(argjson,"utxocoin"),jint(argjson,"n"),jdouble(argjson,"bal")*SATOSHIDEN,jdouble(argjson,"min")*SATOSHIDEN,jdouble(argjson,"max")*SATOSHIDEN,jdouble(argjson,"credits")*SATOSHIDEN);
+                LP_pricefeedupdate(pubkey,base,rel,price,jstr(argjson,"utxocoin"),jint(argjson,"n"),jdouble(argjson,"bal")*SATOSHIDEN,jdouble(argjson,"min")*SATOSHIDEN,jdouble(argjson,"max")*SATOSHIDEN,jdouble(argjson,"credits")*SATOSHIDEN);
                 return(clonestr("{\"result\":\"success\"}"));
             }
             else

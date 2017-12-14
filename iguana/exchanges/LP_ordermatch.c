@@ -856,7 +856,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         memset(&qp->txid2,0,sizeof(qp->txid2));
         qp->vout = qp->vout2 = -1;
     } else return(0);
-    printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
+    //printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
     if ( qprice > myprice )
     {
         r = (LP_rand() % 100);
@@ -1171,6 +1171,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         qprice = jdouble(argjson,"price");
         if ( strcmp(method,"reserved") == 0 )
         {
+            LP_autoprices_update(Q.srccoin,dstr(Q.satoshis),Q.destcoin,dstr(Q.destsatoshis));
             bestprice = LP_bob_competition(&counter,aliceid,qprice,1);
             //printf("%s lag %ld: aliceid.%llu price %.8f -> bestprice %.8f Alice max %.8f\n",jprint(argjson,0),Q.quotetime - (time(NULL)-20),(long long)aliceid,qprice,bestprice,LP_Alicemaxprice);
             if ( 0 )
@@ -1201,6 +1202,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         else if ( strcmp(method,"connected") == 0 )
         {
+            LP_autoprices_update(Q.srccoin,dstr(Q.satoshis),Q.destcoin,dstr(Q.destsatoshis));
             bestprice = LP_bob_competition(&counter,aliceid,qprice,1000);
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
@@ -1237,6 +1239,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         else if ( strcmp(method,"connect") == 0 )
         {
+            LP_autoprices_update(Q.srccoin,dstr(Q.satoshis),Q.destcoin,dstr(Q.destsatoshis));
             LP_bob_competition(&counter,aliceid,qprice,1000);
             if ( bits256_cmp(G.LP_mypub25519,Q.srchash) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0 )
             {
@@ -1303,7 +1306,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     memset(&A,0,sizeof(A));
     LP_address_utxo_reset(relcoin);
     if ( (autxo= LP_address_myutxopair(&A,0,utxos,max,relcoin,relcoin->smartaddr,txfee,dstr(destsatoshis),maxprice,desttxfee)) == 0 )
-        return(clonestr("{\"error\":\"cant find alice utxo that is close enough in size\"}"));
+        return(clonestr("{\"error\":\"cant find a deposit that is close enough in size. make another deposit that is just a bit larger than what you want to trade\"}"));
     //printf("bestfit selected alice (%.8f %.8f) for %.8f sats %.8f\n",dstr(autxo->payment.value),dstr(autxo->fee.value),dstr(destsatoshis),dstr(autxo->swap_satoshis));
     if ( destsatoshis - desttxfee < autxo->swap_satoshis )
     {
@@ -1320,7 +1323,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     if ( destsatoshis < (autxo->payment.value / LP_MINCLIENTVOL) || autxo->payment.value < desttxfee*LP_MINSIZE_TXFEEMULT )
     {
         printf("destsatoshis %.8f vs utxo %.8f this would have triggered an quote error -13\n",dstr(destsatoshis),dstr(autxo->payment.value));
-        return(clonestr("{\"error\":\"cant find alice utxo that is small enough\"}"));
+        return(clonestr("{\"error\":\"cant find a deposit that is close enough in size. make another deposit that is just a bit larger than what you want to trade\"}"));
     }
     bestsatoshis = 1.001 * LP_basesatoshis(dstr(destsatoshis),maxprice,txfee,desttxfee);
     memset(&B,0,sizeof(B));
