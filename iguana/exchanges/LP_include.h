@@ -27,7 +27,7 @@
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "17741"
+#define LP_BUILD_NUMBER "17742"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -485,7 +485,7 @@ int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
 int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool);
 void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid,uint32_t quoteid);
-void LP_autoprices_update(char *base,double basevol,char *rel,double relvol);
+void LP_autoprices_update(char *method,char *base,double basevol,char *rel,double relvol);
 cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len);
 cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len);
 uint64_t LP_RTsmartbalance(struct iguana_info *coin);
