@@ -593,7 +593,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 
 void LP_autoprices_update(char *base,double basevol,char *rel,double relvol)
 {
-    // printf("autoprice update %s/%s %.8f\n",base,rel,relvol/basevol);
+    printf("autoprice update %s/%s %.8f\n",base,rel,relvol/basevol);
 }
 
 int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
