@@ -530,7 +530,18 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 int32_t LP_autoprice(void *ctx,char *base,char *rel,cJSON *argjson)
 {
     //curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"MNZ\",\"rel\":\"KMD\",\"offset\":0.1,\"refbase\":\"KMD\",\refrel\":\"BTC\",\"factor\":15000,\"margin\":0.01}"
-    struct LP_priceinfo *basepp,*relpp; int32_t i,retval = -1; char *fundvalue_bid,*fundvalue_ask,*refbase="",*refrel=""; double minprice,margin,offset,factor,fixedprice; cJSON *fundvalue;
+    static cJSON *tickerjson; static uint32_t lasttime;
+    struct LP_priceinfo *basepp,*relpp; int32_t i,retval = -1; char *fundvalue_bid,*fundvalue_ask,*refbase="",*refrel="",*retstr; double minprice,margin,offset,factor,fixedprice; cJSON *fundvalue;
+    if ( time(NULL) > lasttime+60 )
+    {
+        if ( tickerjson != 0 )
+            free_json(tickerjson);
+        if ( (retstr= LP_ticker(refbase,refrel)) != 0 )
+        {
+            tickerjson = cJSON_Parse(retstr);
+            free(retstr);
+        }
+    }
     //printf("autoprice.(%s %s) %s\n",base,rel,jprint(argjson,0));
     if ( (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
