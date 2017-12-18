@@ -213,7 +213,7 @@ int32_t LP_wifstr_valid(char *wifstr)
         {
             //printf("%s is valid wif\n",wifstr);
             return(1);
-        }
+        } //else printf("invalid wifstr.(%s) wiftype.%d cmpstr.%s\n",wifstr,wiftype,cmpstr);
     }
     return(0);
 }
@@ -221,7 +221,7 @@ int32_t LP_wifstr_valid(char *wifstr)
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     //static uint32_t counter;
-    bits256 privkey,userpub,zero,userpass,checkkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype; int32_t notarized;
+    bits256 privkey,userpub,zero,userpass,checkkey,tmpkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype; int32_t notarized; uint64_t nxtaddr;
     if ( (wifstr == 0 || wifstr[0] == 0) && LP_wifstr_valid(passphrase) > 0 )
     {
         wifstr = passphrase;
@@ -231,6 +231,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     {
         calc_NXTaddr(G.LP_NXTaddr,userpub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
         conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+        privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
         //vcalc_sha256(0,checkkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
         //printf("SHA256.(%s) ",bits256_str(pstr,checkkey));
         //printf("privkey.(%s)\n",bits256_str(pstr,privkey));
@@ -238,8 +239,13 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     else
     {
         bitcoin_wif2priv(coin->wiftaddr,&tmptype,&privkey,wifstr);
+        bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,tmptype);
+        if ( strcmp(tmpstr,wifstr) != 0 )
+            printf("converted %s != %s\n",tmpstr,wifstr);
+        tmpkey = privkey;
+        nxtaddr = conv_NXTpassword(tmpkey.bytes,pubkeyp->bytes,0,0);
+        RS_encode(G.LP_NXTaddr,nxtaddr);
     }
-    privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
     bitcoin_priv2pub(ctx,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     if ( coin->counter == 0 )
     {

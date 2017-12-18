@@ -101,7 +101,7 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str,char *name
     {
 		#if defined(NATIVE_WINDOWS)
 		// need to do something with "confpath":"`${process.env.HOME}`/.muecore/mue.conf" under Windows
-		char *ht = "`${process.env.HOME}`", *ht_start, *p_ht;
+		char *ht = "`${process.env.USERHOME}`", *ht_start, *p_ht;
 		char ht_symbol[2];
 		
 		ht_start = strstr(confpath, ht);
