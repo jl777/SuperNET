@@ -443,7 +443,7 @@ double LP_tickered_price(int32_t bidask,char *base,char *rel,double price,cJSON 
 void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 {
     static cJSON *tickerjson; static uint32_t lasttime;
-    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double nxtkmd,price,factor,offset,newprice,margin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
+    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double bch_usd,bch_btc,nxtkmd,price,factor,offset,newprice,margin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
     if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
     {
         printf("trex error getting marketsummaries\n");
@@ -513,6 +513,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         }
     }
     kmd_btc = LP_CMCbtcprice(&kmd_usd,"komodo");
+    bch_btc = LP_CMCbtcprice(&bch_usd,"bitcoin-cash");
     for (i=0; i<num_LP_autorefs; i++)
     {
         rel = LP_autorefs[i].rel;
@@ -564,6 +565,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             {
                 if ( strcmp(rel,"KMD") == 0 )
                     price = kmd_btc / price_btc;
+                else if ( strcmp(rel,"BCH") == 0 )
+                    price = bch_btc / price_btc;
                 else if ( strcmp(rel,"BTC") == 0 )
                     price = 1. / price_btc;
                 else continue;
