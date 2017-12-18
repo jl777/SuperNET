@@ -211,7 +211,7 @@ int32_t LP_wifstr_valid(char *wifstr)
         bitcoin_priv2wif(0,cmpstr,privkey,wiftype);
         if ( strcmp(cmpstr,wifstr) == 0 )
         {
-            printf("%s is valid wif\n",wifstr);
+            //printf("%s is valid wif\n",wifstr);
             return(1);
         } //else printf("invalid wifstr.(%s) wiftype.%d cmpstr.%s\n",wifstr,wiftype,cmpstr);
     }
@@ -239,7 +239,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     else
     {
         bitcoin_wif2priv(coin->wiftaddr,&tmptype,&privkey,wifstr);
-        bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,coin->wiftype);
+        bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,tmptype);
         if ( strcmp(tmpstr,wifstr) != 0 )
             printf("converted %s != %s\n",tmpstr,wifstr);
         tmpkey = privkey;
