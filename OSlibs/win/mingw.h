@@ -5,6 +5,8 @@
 #include <io.h>
 
 #define _USE_W32_SOCKETS 1
+#define WIN32_LEAN_AND_MEAN
+#include <winsock2.h>
 #include <windows.h>
 #define PTW32_STATIC_LIB
 #include "pthread.h"
@@ -38,6 +40,9 @@
  * @author - fadedreamz@gmail.com
  */
 //TODO: need to update other values to match with WSAPoll() function 
+#define POLLRDNORM  0x0100
+#define POLLRDBAND  0x0200
+#define POLLWRNORM  0x0010
 #define POLLIN      POLLRDNORM | POLLRDBAND     /* There is data to read */
 #define POLLOUT     POLLWRNORM    /* Writing now will not block */
 #else
@@ -56,13 +61,18 @@
  * @remarks - #if (defined(_M_X64) || defined(__amd64__)) && defined(WIN32)
  *     is equivalent to #if defined(_M_X64) as _M_X64 is defined for MSVC only
  */
-#if !defined(_M_X64)
-struct pollfd {
-    SOCKET fd;        /* file descriptor */
-    short events;     /* requested events */
-    short revents;    /* returned events */
-};
-#endif
+
+
+// [Decker] pollfs is already defined in winsock2.h
+
+//#if !defined(_M_X64)
+//struct pollfd {
+    //SOCKET fd;        /* file descriptor */
+    //short events;     /* requested events */
+    //short revents;    /* returned events */
+//};
+//#endif
+
 
 #if defined(_M_X64)
 /*

@@ -38,6 +38,17 @@ deprecated/.DS_Store
 
 .DS_Store
 
+
+iguana/help/.tmpmarker
+
+iguana/genesis/.tmpmarker
+
+iguana/help.json
+
+iguana/autoAPI.md
+
+iguana/basilisk.o-2ad8cb38
+=======
 *.pbxproj
 
 iguana/tmp/.tmpmarker
@@ -159,7 +170,6 @@ iguana/help.json
 
 iguana/index7778.html
 
-*.json
 
 iguana/DB/KMD/utxo.dat
 
@@ -471,3 +481,21 @@ iguana/marketmaker.dSYM/Contents/Info.plist
 iguana/client
 
 iguana/marketmaker.dSYM/Contents/Resources/DWARF/marketmaker
+
+iguana/confs/97f18454bb61e9eb7a827cfbefe42fbf7ae2832dc74c4812bdaef8bcf5c10474
+
+iguana/DB/PRICES/.tmpmarker
+
+iguana/DB/KMD/0/.tmpmarker
+
+*.swp
+
+iguana/myipaddr
+
+iguana/DB/UNSPENTS/.tmpmarker
+
+*.RQ4z6KrMZeEnCSCsChv1ZoR9ExQitHjbpg
+
+iguana/DB/instantdex_RQ4z6KrMZeEnCSCsChv1ZoR9ExQitHjbpg_append.json
+
+iguana/DB/instantdex_RQ4z6KrMZeEnCSCsChv1ZoR9ExQitHjbpg.json

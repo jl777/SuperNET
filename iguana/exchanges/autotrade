@@ -1,2 +1,0 @@
-source userpass
-curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"autotrade\",\"base\":\"REVS\",\"rel\":\"KMD\",\"volume\":1.01,\"price\":1.234}"

@@ -1,0 +1,28 @@
+# makefile for marketmaker uses static nanomsg
+# author: fadedreamz@SuperNet.org
+# date: Aug, 2017
+
+LIB_ARCH=$(uname -m)
+
+.PHONY: clean all
+
+err:
+	@echo "no rule specified, use {clean,all}"
+	exit 1
+
+clean:
+	- rm -f ../agents/iguana *.o
+	- rm ../agents/marketmaker
+
+all: 
+	@echo "Add -j(core count + 1) to speed up build - e,g make -j5 -f m_mm_StaticNanoMsg; on a quad core cpu"
+	+$(MAKE) -C secp256k1 -f m_unix_Makefile all
+	+$(MAKE) -C ../crypto777 -f m_LP_StaticNanoMsg all
+	+$(MAKE) -C ../crypto777 -f m_LP_StaticNanoMsg clean
+	$(CC) -o ../agents/marketmaker -I../crypto777 exchanges/mm.c ../crypto777/cJSON.c mini-gmp.c secp256k1.o ../agents/libcrypto777.a ../OSlibs/linux/$(shell uname -m)/libnanomsg-static.a -lcurl -lpthread -lm -lanl
+	@echo "==========================="
+	@echo " marketmaker -> `pwd`/../agents/marketmaker"
+	@echo "==========================="
+
+
+

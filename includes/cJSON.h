@@ -73,6 +73,7 @@ extern "C"
         double valuedouble;			/* The item's number, if type==cJSON_Number */
         
         char *string;				/* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
+        uint32_t cjsonid;
     } cJSON;
     
     typedef struct cJSON_Hooks {
@@ -218,6 +219,8 @@ extern "C"
     char *nxt64str2(uint64_t nxt64bits);
     cJSON *addrs_jsonarray(uint64_t *addrs,int32_t num);
     int32_t myatoi(char *str,int32_t range);
+    void cJSON_register(cJSON *item);
+    void cJSON_unregister(cJSON *item);
 
     char *stringifyM(char *str);
 #define replace_backslashquotes unstringify

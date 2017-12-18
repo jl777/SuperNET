@@ -101,7 +101,7 @@ int nn_xreq_add(struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_pipe_setdata(pipe,data);
     nn_lb_add(&xreq->lb,&data->lb,pipe,sndprio);
     nn_fq_add(&xreq->fq,&data->fq,pipe,rcvprio);
-
+    printf("nn_xreq_add\n");
     return 0;
 }
 

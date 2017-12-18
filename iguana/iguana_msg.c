@@ -640,7 +640,7 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
-    if ( rwflag == 0 )
+    if ( rwflag == 0 && msg->tx_in > 0 )
         msg->vins = iguana_memalloc(mem,msg->tx_in * sizeof(*msg->vins),1);
     if ( maxsize-len <= 0 )
         return(-1);
@@ -671,7 +671,7 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
         return(-1);
     }
  //printf("numvouts.%d ",msg->tx_out);
-    if ( rwflag == 0 )
+    if ( rwflag == 0 && msg->tx_out > 0 )
         msg->vouts = iguana_memalloc(mem,msg->tx_out * sizeof(*msg->vouts),1);
     for (i=0; i<msg->tx_out; i++)
     {

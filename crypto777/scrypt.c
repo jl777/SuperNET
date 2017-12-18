@@ -69,7 +69,7 @@ static const uint32_t sha256_k[64] = {
 	0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-static inline void sha256_init(uint32_t *state)
+static inline void scrypt_sha256_init(uint32_t *state)
 {
 	memcpy(state, sha256_h, 32);
 }
@@ -102,7 +102,7 @@ W[i] + sha256_k[i])
 
 #define swab32(x) ((((x) << 24) & 0xff000000u) | (((x) << 8) & 0x00ff0000u) | (((x) >> 8) & 0x0000ff00u) | (((x) >> 24) & 0x000000ffu))
 
-static inline void sha256_transform(uint32_t *state, const uint32_t *block, int swap)
+static inline void scrypt_sha256_transform(uint32_t *state, const uint32_t *block, int swap)
 {
 	uint32_t W[64];
 	uint32_t S[8];
@@ -203,29 +203,29 @@ static inline void HMAC_SHA256_80_init(const uint32_t *key,uint32_t *tstate, uin
 	/* tstate is assumed to contain the midstate of key */
 	memcpy(pad, key + 16, 16);
 	memcpy(pad + 4, keypad, 48);
-	sha256_transform(tstate, pad, 0);
+	scrypt_sha256_transform(tstate, pad, 0);
 	memcpy(ihash, tstate, 32);
     
-	sha256_init(ostate);
+	scrypt_sha256_init(ostate);
 	for (i = 0; i < 8; i++)
 		pad[i] = ihash[i] ^ 0x5c5c5c5c;
 	for (; i < 16; i++)
 		pad[i] = 0x5c5c5c5c;
-	sha256_transform(ostate, pad, 0);
+	scrypt_sha256_transform(ostate, pad, 0);
     
-	sha256_init(tstate);
+	scrypt_sha256_init(tstate);
 	for (i = 0; i < 8; i++)
 		pad[i] = ihash[i] ^ 0x36363636;
 	for (; i < 16; i++)
 		pad[i] = 0x36363636;
-	sha256_transform(tstate, pad, 0);
+	scrypt_sha256_transform(tstate, pad, 0);
 }
 
 static inline void PBKDF2_SHA256_80_128(const uint32_t *tstate,const uint32_t *ostate, const uint32_t *salt, uint32_t *output)
 {
 	uint32_t istate[8], ostate2[8],ibuf[16], obuf[16]; int i, j;
 	memcpy(istate, tstate, 32);
-	sha256_transform(istate, salt, 0);
+	scrypt_sha256_transform(istate, salt, 0);
 	memcpy(ibuf, salt + 16, 16);
 	memcpy(ibuf + 5, innerpad, 44);
 	memcpy(obuf + 8, outerpad, 32);
@@ -233,9 +233,9 @@ static inline void PBKDF2_SHA256_80_128(const uint32_t *tstate,const uint32_t *o
     {
 		memcpy(obuf, istate, 32);
 		ibuf[4] = i + 1;
-		sha256_transform(obuf, ibuf, 0);
+		scrypt_sha256_transform(obuf, ibuf, 0);
 		memcpy(ostate2, ostate, 32);
-		sha256_transform(ostate2, obuf, 0);
+		scrypt_sha256_transform(ostate2, obuf, 0);
 		for (j = 0; j < 8; j++)
 			output[8 * i + j] = swab32(ostate2[j]);
 	}
@@ -244,12 +244,12 @@ static inline void PBKDF2_SHA256_80_128(const uint32_t *tstate,const uint32_t *o
 static inline void PBKDF2_SHA256_128_32(uint32_t *tstate, uint32_t *ostate,const uint32_t *salt, uint32_t *output)
 {
 	uint32_t buf[16]; int i;
-	sha256_transform(tstate, salt, 1);
-	sha256_transform(tstate, salt + 16, 1);
-	sha256_transform(tstate, finalblk, 0);
+	scrypt_sha256_transform(tstate, salt, 1);
+	scrypt_sha256_transform(tstate, salt + 16, 1);
+	scrypt_sha256_transform(tstate, finalblk, 0);
 	memcpy(buf, tstate, 32);
 	memcpy(buf + 8, outerpad, 32);
-	sha256_transform(ostate, buf, 0);
+	scrypt_sha256_transform(ostate, buf, 0);
 	for (i = 0; i < 8; i++)
 		output[i] = swab32(ostate[i]);
 }
@@ -363,8 +363,8 @@ void calc_scrypthash(uint32_t *hash,void *data)
     uint8_t *scratchbuf; uint32_t midstate[8];
     memset(midstate,0,sizeof(midstate));
     memset(hash,0,32);
-  	sha256_init(midstate);
-	sha256_transform(midstate,(void *)data,0);
+  	scrypt_sha256_init(midstate);
+	scrypt_sha256_transform(midstate,(void *)data,0);
     scratchbuf = malloc(1024 * 128 + 64);
     scrypt_1024_1_1_256((void *)data,hash,midstate,scratchbuf,1024);
     free(scratchbuf);

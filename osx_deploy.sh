@@ -6,13 +6,21 @@ TMP_DIR=~/tmp/iguana
 mkdir -p $TMP_DIR
 echo "making $TMP_DIR"
 
-binaries=("iguana")
+binaries=("iguana" "marketmaker")
 
 for binary in "${binaries[@]}";
 do
     echo "copying $binary to $TMP_DIR"
 
-    cp agents/$binary $TMP_DIR
+    if [ "$binary" = "iguana" ]
+        then
+        cp agents/$binary $TMP_DIR
+    fi
+
+    if [ "$binary" = "marketmaker" ]
+        then
+        cp iguana/$binary $TMP_DIR
+    fi
 
     # find the dylibs to copy for iguana
     DYLIBS=`otool -L $TMP_DIR/$binary | grep "/usr/local" | awk -F' ' '{ print $1 }'`

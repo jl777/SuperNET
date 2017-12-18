@@ -26,7 +26,7 @@ const struct ltc_hash_descriptor sha224_desc =
    9,
 
     &sha224_init,
-    &sha256_process,
+    &sha256i_process,
     &sha224_done,
     &sha224_test,
     NULL
@@ -69,7 +69,7 @@ int sha224_done(hash_state * md, unsigned char *out)
     LTC_ARGCHK(md  != NULL);
     LTC_ARGCHK(out != NULL);
 
-    err = sha256_done(md, buf);
+    err = sha256i_done(md, buf);
     XMEMCPY(out, buf, 28);
 #ifdef LTC_CLEAN_STACK
     zeromem(buf, sizeof(buf));

@@ -51,7 +51,7 @@ struct DEXstats_pricepoint
 
 struct DEXstats_pairinfo
 {
-    char dest[16];
+    char dest[128];
     int32_t numprices;
     struct DEXstats_pricepoint *prices;
 };
@@ -64,7 +64,7 @@ struct DEXstats_datenuminfo
 
 struct DEXstats_priceinfo
 {
-    char symbol[16];
+    char symbol[128];
     int32_t firstdatenum,numdates;
     struct DEXstats_datenuminfo *dates;
 } Prices[1024];
@@ -927,7 +927,8 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
 }
 
 #ifndef FROM_MARKETMAKER
-char *stats_JSON(char *myipaddr,int32_t mypubsock,double profitmargin,cJSON *argjson,char *remoteaddr,uint16_t port)
+#ifndef FROM_PRIVATEBET
+char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port)
 {
     char *method,*agent,*retstr,*source,*dest; struct tai T; uint32_t endtimestamp; struct DEXstats_disp prices[365]; int32_t leftdatenum,seconds,numdates;
     if ( (method= jstr(argjson,"method")) == 0 )
@@ -952,6 +953,7 @@ char *stats_JSON(char *myipaddr,int32_t mypubsock,double profitmargin,cJSON *arg
     }
     return(clonestr(jprint(argjson,0)));
 }
+#endif
 #endif
 
 #endif /* DEXstats_h */

@@ -21,7 +21,7 @@
 #define TAI_PACK 8
 #define TAI_UTC_DIFF ((uint64_t)4611686018427387914ULL)
 
-//#define UTC_ADJUST -36
+//#define UTC_ADJUST -37
 #define tai_approx(t) ((double) ((t)->x))
 #define tai_less(t,u) ((t)->x < (u)->x)
 
@@ -300,7 +300,7 @@ void tai_add(struct tai *t,struct tai *u,struct tai *v) { t->x = u->x + v->x; }
 void tai_sub(struct tai *t,struct tai *u,struct tai *v) { t->x = u->x - v->x; }
 
 // {"leapseconds":["+1972-06-30", "+1972-12-31", "+1973-12-31", "+1974-12-31", "+1975-12-31", "+1976-12-31", "+1977-12-31", "+1982-06-30", "+1983-06-30", "+1985-06-30", "+1987-12-31", "+1989-12-31", "+1990-12-31", "+1992-06-30", "+1993-06-30", "+1994-06-30", "+1995-12-31", "+1997-06-30", "+1998-12-31", "+2005-12-31", "+2008-12-31", "+2012-06-30", "+2015-06-30"]}
-char *leapseconds[] = { "+1972-06-30", "+1972-12-31", "+1973-12-31", "+1974-12-31", "+1975-12-31", "+1976-12-31", "+1977-12-31", "+1982-06-30", "+1983-06-30", "+1985-06-30", "+1987-12-31", "+1989-12-31", "+1990-12-31", "+1992-06-30", "+1993-06-30", "+1994-06-30", "+1995-12-31", "+1997-06-30", "+1998-12-31", "+2005-12-31", "+2008-12-31", "+2012-06-30", "+2015-06-30" };
+char *leapseconds[] = { "+1972-06-30", "+1972-12-31", "+1973-12-31", "+1974-12-31", "+1975-12-31", "+1976-12-31", "+1977-12-31", "+1982-06-30", "+1983-06-30", "+1985-06-30", "+1987-12-31", "+1989-12-31", "+1990-12-31", "+1992-06-30", "+1993-06-30", "+1994-06-30", "+1995-12-31", "+1997-06-30", "+1998-12-31", "+2005-12-31", "+2008-12-31", "+2012-06-30", "+2015-06-30",  "+2016-12-31" };
 struct tai leaptais[sizeof(leapseconds)/sizeof(*leapseconds)];
 
 char *dayname[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" } ;
@@ -355,9 +355,9 @@ struct tai tai_now()
     {
         First_TAI = t, First_utc = (uint32_t)now;
 #ifndef DISABLE_LEAPS
-        UTC_ADJUST = -36;
+        UTC_ADJUST = -37;
 #endif
-        printf("TAINOW.%llu %03.3f UTC.%u vs %u [diff %d]\n",(long long)t.x,t.millis,First_utc,tai2utc(t),UTC_ADJUST);
+        //printf("TAINOW.%llu %03.3f UTC.%u vs %u [diff %d]\n",(long long)t.x,t.millis,First_utc,tai2utc(t),UTC_ADJUST);
     }
     return(t);
 }
@@ -578,8 +578,8 @@ int32_t OS_conv_unixtime(struct tai *tp,int32_t *secondsp,time_t timestamp) // g
 
 int32_t conv_date(int32_t *secondsp,char *date)
 {
-    char origdate[64],tmpdate[64]; int32_t year,month,day,hour,min,sec,len;
-    strcpy(origdate,date), strcpy(tmpdate,date), tmpdate[8 + 2] = 0;
+    char origdate[512],tmpdate[512]; int32_t year,month,day,hour,min,sec,len;
+    safecopy(origdate,date,sizeof(origdate)), safecopy(tmpdate,date,sizeof(tmpdate)), tmpdate[8 + 2] = 0;
     year = atoi(tmpdate), month = atoi(tmpdate+5), day = atoi(tmpdate+8);
     *secondsp = 0;
     if ( (len= (int32_t)strlen(date)) <= 10 )
@@ -591,8 +591,8 @@ int32_t conv_date(int32_t *secondsp,char *date)
         if ( hour >= 0 && hour < 24 && min >= 0 && min < 60 && sec >= 0 && sec < 60 )
             *secondsp = (3600*hour + 60*min + sec);
         else printf("ERROR: seconds.%d %d %d %d, len.%d\n",*secondsp,hour,min,sec,len);
-    }
-    //printf("(%s) -> Y.%d M.%d D.%d %d:%d:%d\n",date,year,month,day,hour,min,sec);
+        //printf("(%s) -> Y.%d M.%d D.%d %d:%d:%d\n",date,year,month,day,hour,min,sec);
+    } //else printf("short len.(%s) from (%s)\n",date,origdate);
     sprintf(origdate,"%d-%02d-%02d",year,month,day); //2015-07-25T22:34:31Z
     if ( strcmp(tmpdate,origdate) != 0 )
     {

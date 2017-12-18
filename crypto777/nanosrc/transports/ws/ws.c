@@ -156,7 +156,7 @@ int nn_ws_send (int s, const void *msg, size_t len, uint8_t msg_type, int flags)
     struct nn_msghdr hdr;
     struct nn_cmsghdr *cmsg;
     size_t cmsgsz;
-
+printf("nn_ws_send\n");
     iov.iov_base = (void*) msg;
     iov.iov_len = len;
     

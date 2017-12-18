@@ -33,14 +33,14 @@
 int nn_efd_init(struct nn_efd *self)
 {
     int rc,flags,p[2];
-    PNACL_message("inside efd_init: pipe\n");
+    PNACL_msg("inside efd_init: pipe\n");
     //sleep(1);
 #if defined NN_HAVE_PIPE2
     rc = pipe2(p, O_NONBLOCK | O_CLOEXEC);
 #else
     rc = pipe(p);
 #endif
-    PNACL_message("rc efd_init: %d\n",rc);
+    PNACL_msg("rc efd_init: %d\n",rc);
     //sleep(1);
     if (rc != 0 && (errno == EMFILE || errno == ENFILE))
         return -EMFILE;
@@ -50,20 +50,20 @@ int nn_efd_init(struct nn_efd *self)
 
 #if !defined NN_HAVE_PIPE2 && defined FD_CLOEXEC
     rc = fcntl (self->r, F_SETFD, FD_CLOEXEC);
-    PNACL_message("pipe efd_init: F_SETFDr rc %d\n",rc);
+    PNACL_msg("pipe efd_init: F_SETFDr rc %d\n",rc);
     errno_assert(rc != -1);
     rc = fcntl(self->w, F_SETFD, FD_CLOEXEC);
-    PNACL_message("pipe efd_init: F_SETFDw rc %d\n",rc);
+    PNACL_msg("pipe efd_init: F_SETFDw rc %d\n",rc);
     errno_assert(rc != -1);
 #endif
 
 #if !defined NN_HAVE_PIPE2
     flags = fcntl(self->r, F_GETFL, 0);
-    PNACL_message("pipe efd_init: flags %d\n",flags);
+    PNACL_msg("pipe efd_init: flags %d\n",flags);
     if ( flags == -1 )
         flags = 0;
     rc = fcntl(self->r, F_SETFL, flags | O_NONBLOCK);
-    PNACL_message("pipe efd_init: rc %d flags.%d\n",rc,flags);
+    PNACL_msg("pipe efd_init: rc %d flags.%d\n",rc,flags);
     errno_assert (rc != -1);
 #endif
 

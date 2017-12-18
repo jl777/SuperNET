@@ -1,3 +1,5 @@
+Latest Readme is at http://pad.supernet.org/barterdex-readme
+
 DEPENDENCIES
 First of all you are going to need to have the komodod daemon and the assetchains running.
 Install dependency packages:
@@ -43,13 +45,13 @@ nano ~SuperNET/iguana/dexscripts/enable
 copy the default command and paste it below but with the coin edited to JUMBLR in this case:
 curl --url "http://127.0.0.1:7779" --data "{\"userpass\":\"$userpass\",\"method\":\"enable\",\"coin\":\"JUMBLR\"}"
 The same will happen for any other script in the dexscripts directory. You will need to edit the scripts to include or exclude the coins you want to trade.
-IMPORTANT: All these scripts are expecting a userpass file, which contains the definition of the $userpass variable to authenticate API access. This avoids evil webpages that try to issue port 7779 calls to steal your money. At first you wont know the value of userpass. To find out, just run any API script. The first one will return all the required data, the "userpass" field is first and you can copy that value and put it into ~/SuperNET/iguana/dexscripts/userpass file. If you dont, all subsequent API calls will get authorization errors.The userpass variable is linked to each passphrase and that is defined in the randval file. Put your passphrase in that file. You can find templates for these two files in the iguana/exchanges dir. (you need to copy the edited version of these files to ~/SuperNET/iguana/dexscripts).
+IMPORTANT: All these scripts are expecting a userpass file, which contains the definition of the $userpass variable to authenticate API access. This avoids evil webpages that try to issue port 7779 calls to steal your money. At first you wont know the value of userpass. To find out, just run any API script. The first one will return all the required data, the "userpass" field is first and you can copy that value and put it into ~/SuperNET/iguana/dexscripts/userpass file. If you dont, all subsequent API calls will get authorization errors.The userpass variable is linked to each passphrase and that is defined in the passphrase file. Put your passphrase in that file. You can find templates for these two files in the iguana/exchanges dir. (you need to copy the edited version of these files to ~/SuperNET/iguana/dexscripts).
 cd ~/SuperNET/iguana/dexscripts
 ./enable 
 (look for the userpass passphrase that will be generated and copy it)
-Now you have to paste the passphrase in both userpass and randval files:
+Now you have to paste the passphrase in both userpass and passphrase files:
 nano ./userpass 
-nano ./randval
+nano ./passphrase
 ( paste the passphrase generated into the files where it says: “<put the userpass value from the first API call here>”)
 EXCHANGE CLIENT STARTUP
 Next step is to actually start the marketmaker from ~/SuperNET/iguana/dexscripts. 

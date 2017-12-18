@@ -228,9 +228,9 @@ extern const struct ltc_hash_descriptor sha384_desc;
 #endif
 
 #ifdef LTC_SHA256
-int sha256_init(hash_state * md);
-int sha256_process(hash_state * md, const unsigned char *in, unsigned long inlen);
-int sha256_done(hash_state * md, unsigned char *hash);
+int sha256i_init(hash_state * md);
+int sha256i_process(hash_state * md, const unsigned char *in, unsigned long inlen);
+int sha256i_done(hash_state * md, unsigned char *hash);
 int sha256_test(void);
 extern const struct ltc_hash_descriptor sha256_desc;
 
@@ -239,7 +239,7 @@ extern const struct ltc_hash_descriptor sha256_desc;
    #error LTC_SHA256 is required for LTC_SHA224
 #endif
 int sha224_init(hash_state * md);
-#define sha224_process sha256_process
+#define sha224_process sha256i_process
 int sha224_done(hash_state * md, unsigned char *hash);
 int sha224_test(void);
 extern const struct ltc_hash_descriptor sha224_desc;
