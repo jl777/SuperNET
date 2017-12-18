@@ -213,7 +213,7 @@ int32_t LP_wifstr_valid(char *wifstr)
         {
             printf("%s is valid wif\n",wifstr);
             return(1);
-        } else printf("invalid wifstr.(%s) wiftype.%d cmpstr.%s\n",wifstr,wiftype,cmpstr);
+        } //else printf("invalid wifstr.(%s) wiftype.%d cmpstr.%s\n",wifstr,wiftype,cmpstr);
     }
     return(0);
 }
@@ -221,7 +221,7 @@ int32_t LP_wifstr_valid(char *wifstr)
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     //static uint32_t counter;
-    bits256 privkey,userpub,zero,userpass,checkkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype; int32_t notarized;
+    bits256 privkey,userpub,zero,userpass,checkkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype; int32_t notarized; uint64_t nxtaddr;
     if ( (wifstr == 0 || wifstr[0] == 0) && LP_wifstr_valid(passphrase) > 0 )
     {
         wifstr = passphrase;
@@ -238,6 +238,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     else
     {
         bitcoin_wif2priv(coin->wiftaddr,&tmptype,&privkey,wifstr);
+        nxtaddr = conv_NXTpassword(privkey.bytes,pubkeyp->bytes,0,0);
+        RS_encode(G.LP_NXTaddr,nxtaddr);
     }
     privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
     bitcoin_priv2pub(ctx,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
