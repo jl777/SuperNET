@@ -209,6 +209,8 @@ int32_t LP_wifstr_valid(char *wifstr)
     {
         bitcoin_wif2priv(0,&wiftype,&privkey,wifstr);
         bitcoin_priv2wif(0,cmpstr,privkey,wiftype);
+        char str[65]; printf("%s -> %s -> %s\n",wifstr,bits256_str(str,privkey),cmpstr);
+        return(1);
         if ( strcmp(cmpstr,wifstr) == 0 )
         {
             //printf("%s is valid wif\n",wifstr);

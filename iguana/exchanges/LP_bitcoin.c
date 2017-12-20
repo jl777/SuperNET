@@ -2195,12 +2195,15 @@ int32_t bitcoin_wif2addr(void *ctx,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtyp
 int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype)
 {
     uint8_t data[128]; int32_t offset,len = 32;
-    memcpy(data+1,privkey.bytes,sizeof(privkey));
     offset = 1 + (wiftaddr != 0);
+    memcpy(data+offset,privkey.bytes,sizeof(privkey));
     data[offset + len++] = 1;
     len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
+    {
+        char str[65]; printf("error making wif from %s\n",bits256_str(str,privkey));
         return(-1);
+    }
     if ( 1 )
     {
         uint8_t checktype; bits256 checkpriv; char str[65],str2[65];
