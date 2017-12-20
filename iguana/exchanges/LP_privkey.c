@@ -380,7 +380,7 @@ void LP_privkey_tests()
     for (i=0; i<10000000; i++)
     {
         privkey = rand256(0);
-        bitcoin_priv2wif(0,wifstr,privkey,0);
+        bitcoin_priv2wif(0,wifstr,privkey,0xff);
         bitcoin_wif2priv(0,&tmptype,&checkkey,wifstr);
         if ( bits256_cmp(privkey,checkkey) != 0 )
         {
