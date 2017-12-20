@@ -2137,13 +2137,18 @@ int32_t base58encode_checkbuf(uint8_t taddr,uint8_t addrtype,uint8_t *data,int32
 
 int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
 {
-    int32_t offset,len = -1; bits256 hash; uint8_t buf[256],*ptr;
+    int32_t offset,len = -1; bits256 hash; uint8_t pbuf[38],buf[256],*ptr;
     offset = 1 + (wiftaddr != 0);
     memset(buf,0,sizeof(buf));
     memset(privkeyp,0,sizeof(*privkeyp));
     if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
     {
-        ptr = buf;
+        if ( len < 38 )
+        {
+            memset(pbuf,0,sizeof(pbuf));
+            memcpy(pbuf+(38-len),buf,len);
+            ptr = pbuf;
+        } else ptr = buf;
         hash = bits256_doublesha256(0,ptr,len - 4);
         *addrtypep = (wiftaddr == 0) ? *ptr : ptr[1];
         memcpy(privkeyp,ptr+offset,32);
@@ -2155,7 +2160,7 @@ int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,c
             //printf("wifstr.(%s) valid len.%d\n",wifstr,len);
             return(32);
         }
-        else if ( 0 )
+        else //if ( 0 )
         {
             int32_t i; for (i=0; i<len; i++)
                 printf("%02x ",ptr[i]);
