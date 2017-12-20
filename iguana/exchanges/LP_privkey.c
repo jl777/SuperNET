@@ -204,18 +204,21 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
 
 int32_t LP_wifstr_valid(char *wifstr)
 {
-    bits256 privkey; uint8_t wiftype; char cmpstr[128]; int32_t iter;
+    bits256 privkey,cmpkey; uint8_t wiftype; char cmpstr[128]; int32_t iter;
     for (iter=0; iter<2; iter++)
     {
         bitcoin_wif2priv(0,&wiftype,&privkey,wifstr);
         bitcoin_priv2wif(0,cmpstr,privkey,wiftype);
-        char str[65]; printf("%s -> %s -> %s\n",wifstr,bits256_str(str,privkey),cmpstr);
-        return(1);
         if ( strcmp(cmpstr,wifstr) == 0 )
         {
             //printf("%s is valid wif\n",wifstr);
             return(1);
-        } else printf("invalid wifstr.(%s) wiftype.%d cmpstr.%s\n",wifstr,wiftype,cmpstr);
+        }
+        else
+        {
+            bitcoin_wif2priv(0,&wiftype,&cmpkey,cmpstr);
+            char str[65],str2[65]; printf("invalid wifstr %s -> %s -> %s %s\n",wifstr,bits256_str(str,privkey),cmpstr,bits256_str(str2,cmpkey));
+        }
     }
     return(0);
 }
