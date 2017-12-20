@@ -243,11 +243,23 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         //vcalc_sha256(0,checkkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
         //printf("SHA256.(%s) ",bits256_str(pstr,checkkey));
         //printf("privkey.(%s)\n",bits256_str(pstr,privkey));
+        bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,coin->wiftype);
+        bitcoin_wif2priv(coin->wiftaddr,&tmptype,&checkkey,tmpstr);
+        if ( bits256_cmp(privkey,checkkey) != 0 )
+        {
+            char str[65],str2[65]; printf("mismatched privkeys from wif conversion: %s -> %s -> %s\n",bits256_str(str,privkey),tmpstr,bits256_str(str2,checkkey));
+            exit(1);
+        }
     }
     else
     {
         bitcoin_wif2priv(coin->wiftaddr,&tmptype,&privkey,wifstr);
         bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,tmptype);
+        if ( strcmp(tmpstr,wifstr) != 0 )
+        {
+            printf("error reproducing the wifstr, likely edge case like non-supported uncompressed pubkey\n");
+            exit(1);
+        }
         tmpkey = privkey;
         nxtaddr = conv_NXTpassword(tmpkey.bytes,pubkeyp->bytes,0,0);
         RS_encode(G.LP_NXTaddr,nxtaddr);
