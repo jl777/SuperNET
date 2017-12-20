@@ -4363,7 +4363,7 @@ char *bitcoin_base58encode(char *coinaddr,uint8_t *data,int32_t datalen)
 
 int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 {
- 	uint32_t zeroes,be_sz=0; size_t count; const char *p,*p1; mpz_t bn58,bn;
+    uint32_t zeroes,be_sz=0; size_t count; const char *p,*p1; mpz_t bn58,bn; int32_t nonz=0;
     mpz_init_set_ui(bn58,58);
     mpz_init_set_ui(bn,0);
 	while ( isspace((uint32_t)(*coinaddr & 0xff)) )
@@ -4371,6 +4371,7 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 	for (p=coinaddr; *p; p++)
     {
 		p1 = strchr(base58_chars,*p);
+        printf("(%c -> %c) ",*p,*p1);
 		if ( p1 == 0 )
         {
 			while (isspace((uint32_t)*p))
@@ -4385,7 +4386,9 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 		}
         mpz_mul(bn,bn,bn58);
         mpz_add_ui(bn,bn,(int32_t)(p1 - base58_chars));
+        nonz++;
 	}
+    printf("nonz.%d\n",nonz);
     zeroes = 0;
 	for (p=coinaddr; *p==base58_chars[0]; p++)
 		data[zeroes++] = 0;
