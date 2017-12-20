@@ -122,6 +122,7 @@ int main(int argc, const char * argv[])
 #else
     if ( argc == 1 )
     {
+        LP_privkey_tests();
         LP_NXT_redeems();
         sleep(3);
         return(0);
