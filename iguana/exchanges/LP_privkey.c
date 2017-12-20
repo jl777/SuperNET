@@ -377,7 +377,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
 void LP_privkey_tests()
 {
     char wifstr[64],str[65],str2[65]; bits256 privkey,checkkey; int32_t i; uint8_t tmptype;
-    for (i=0; i<10000000; i++)
+    for (i=0; i<200000000; i++)
     {
         privkey = rand256(0);
         bitcoin_priv2wif(0,wifstr,privkey,0xff);
@@ -388,7 +388,7 @@ void LP_privkey_tests()
             exit(-1);
         }
         if ( (i % 1000000) == 0 )
-            fprintf(stderr,"%.1f%% ",100.*(double)i/10000000);
+            fprintf(stderr,"%.1f%% ",100.*(double)i/200000000);
     }
     printf("%d privkeys checked\n",i);
 }
