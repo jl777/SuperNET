@@ -2147,7 +2147,7 @@ int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,c
             memcpy(privkeyp,buf+offset,32);
         else
         {
-            printf("wif %s -> buf too short len.%d\n",wifstr,len);
+            //printf("wif %s -> buf too short len.%d\n",wifstr,len);
             return(-1);
         }
         ptr = buf;
