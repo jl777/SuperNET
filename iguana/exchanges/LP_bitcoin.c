@@ -2143,17 +2143,22 @@ int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,c
     memset(privkeyp,0,sizeof(*privkeyp));
     if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
     {
+        if ( len >= 32+offset )
+            memcpy(privkeyp,buf+offset,32);
+        else
+        {
+            printf("wif %s -> buf too short len.%d\n",wifstr,len);
+            return(-1);
+        }
         if ( len < 38 )
         {
             memset(pbuf,0,sizeof(pbuf));
             memcpy(pbuf+(38-len),buf,len);
             len += (38-len);
-            offset += (38-len);
             ptr = pbuf;
         } else ptr = buf;
         hash = bits256_doublesha256(0,ptr,len - 4);
         *addrtypep = (wiftaddr == 0) ? *ptr : ptr[1];
-        memcpy(privkeyp,ptr+offset,32);
         if ( (ptr[len - 4]&0xff) == hash.bytes[31] && (ptr[len - 3]&0xff) == hash.bytes[30] &&(ptr[len - 2]&0xff) == hash.bytes[29] && (ptr[len - 1]&0xff) == hash.bytes[28] )
         {
             //int32_t i; for (i=0; i<len; i++)
