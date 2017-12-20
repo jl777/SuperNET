@@ -213,7 +213,7 @@ int32_t LP_wifstr_valid(char *wifstr)
         {
             //printf("%s is valid wif\n",wifstr);
             return(1);
-        } //else printf("invalid wifstr.(%s) wiftype.%d cmpstr.%s\n",wifstr,wiftype,cmpstr);
+        } else printf("invalid wifstr.(%s) wiftype.%d cmpstr.%s\n",wifstr,wiftype,cmpstr);
     }
     return(0);
 }
