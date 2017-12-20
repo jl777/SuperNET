@@ -4371,7 +4371,6 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 	for (p=coinaddr; *p; p++)
     {
 		p1 = strchr(base58_chars,*p);
-        printf("(%c -> %c) ",*p,*p1);
 		if ( p1 == 0 )
         {
 			while (isspace((uint32_t)*p))
@@ -4386,6 +4385,7 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 		}
         mpz_mul(bn,bn,bn58);
         mpz_add_ui(bn,bn,(int32_t)(p1 - base58_chars));
+        printf("%d ",(int32_t)(p1 - base58_chars));
         nonz++;
 	}
     printf("nonz.%d\n",nonz);
