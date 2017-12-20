@@ -204,7 +204,7 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
 
 int32_t LP_wifstr_valid(char *wifstr)
 {
-    bits256 privkey,cmpkey; uint8_t wiftype; char cmpstr[128]; int32_t iter;
+    bits256 privkey,cmpkey; uint8_t wiftype; char cmpstr[128],cmpstr2[128]; int32_t iter;
     for (iter=0; iter<2; iter++)
     {
         bitcoin_wif2priv(0,&wiftype,&privkey,wifstr);
@@ -217,7 +217,10 @@ int32_t LP_wifstr_valid(char *wifstr)
         else
         {
             bitcoin_wif2priv(0,&wiftype,&cmpkey,cmpstr);
-            char str[65],str2[65]; printf("invalid wifstr %s -> %s -> %s %s\n",wifstr,bits256_str(str,privkey),cmpstr,bits256_str(str2,cmpkey));
+            bitcoin_priv2wiflong(0,cmpstr2,privkey,wiftype);
+            if ( bits256_cmp(privkey,cmpkey) == 0 )
+                return(1);
+            char str[65],str2[65]; printf("mismatched wifstr %s -> %s -> %s %s %s\n",wifstr,bits256_str(str,privkey),cmpstr,bits256_str(str2,cmpkey),cmpstr2);
         }
     }
     return(0);
@@ -245,8 +248,6 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     {
         bitcoin_wif2priv(coin->wiftaddr,&tmptype,&privkey,wifstr);
         bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,tmptype);
-        if ( strcmp(tmpstr,wifstr) != 0 )
-            printf("converted %s != %s\n",tmpstr,wifstr);
         tmpkey = privkey;
         nxtaddr = conv_NXTpassword(tmpkey.bytes,pubkeyp->bytes,0,0);
         RS_encode(G.LP_NXTaddr,nxtaddr);
