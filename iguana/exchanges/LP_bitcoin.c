@@ -2147,6 +2147,8 @@ int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,c
         {
             memset(pbuf,0,sizeof(pbuf));
             memcpy(pbuf+(38-len),buf,len);
+            len += (38-len);
+            offset += (38-len);
             ptr = pbuf;
         } else ptr = buf;
         hash = bits256_doublesha256(0,ptr,len - 4);
@@ -2160,7 +2162,7 @@ int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,c
             //printf("wifstr.(%s) valid len.%d\n",wifstr,len);
             return(32);
         }
-        else //if ( 0 )
+        else
         {
             int32_t i; for (i=0; i<len; i++)
                 printf("%02x ",ptr[i]);
