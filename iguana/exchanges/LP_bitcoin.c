@@ -2143,7 +2143,7 @@ int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,c
     if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
     {
         // validate with trailing hash, then remove hash
-        if ( len < 38 )
+        /*if ( len < 38 )
         {
             memset(pbuf,0,sizeof(pbuf));
             n = 1 + (wiftaddr!=0);
@@ -2155,7 +2155,10 @@ int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,c
             for (i=0; i<38; i++)
                 printf("%02x",pbuf[i]);
             printf(" len.%d -> 38\n",len);
-        } else ptr = buf;
+        } else*/
+        if ( len < 38 )
+            len = 38;
+        ptr = buf;
         hash = bits256_doublesha256(0,ptr,len - 4);
         *addrtypep = (wiftaddr == 0) ? *ptr : ptr[1];
         memcpy(privkeyp,ptr+offset,32);
