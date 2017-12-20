@@ -205,13 +205,15 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
 int32_t LP_wifstr_valid(char *wifstr)
 {
     bits256 privkey,cmpkey; uint8_t wiftype; char cmpstr[128],cmpstr2[128]; int32_t iter;
-    for (iter=0; iter<2; iter++)
+    memset(privkey.bytes,0,sizeof(privkey));
+    memset(cmpkey.bytes,0,sizeof(cmpkey));
+    for (iter=0; iter<1; iter++)
     {
         bitcoin_wif2priv(0,&wiftype,&privkey,wifstr);
         bitcoin_priv2wif(0,cmpstr,privkey,wiftype);
         if ( strcmp(cmpstr,wifstr) == 0 )
         {
-            //printf("%s is valid wif\n",wifstr);
+            printf("%s is valid wif\n",wifstr);
             return(1);
         }
         else
