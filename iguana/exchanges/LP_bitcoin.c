@@ -2155,7 +2155,7 @@ int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,c
         {
             memset(pbuf,0,sizeof(pbuf));
             memcpy(pbuf,buf,len-4);
-            memcpy(&pbuf[28],&buf[len-4],4);
+            memcpy(&pbuf[34],&buf[len-4],4);
             ptr = pbuf;
             int32_t i; for (i=0; i<38; i++)
                 printf("%02x ",pbuf[i]);
