@@ -382,10 +382,10 @@ void LP_privkey_tests()
         privkey = rand256(0);
         bitcoin_priv2wif(0,wifstr,privkey,0);
         bitcoin_wif2priv(0,&tmptype,&checkkey,wifstr);
-        //if ( bits256_cmp(privkey,checkkey) != 0 )
+        if ( bits256_cmp(privkey,checkkey) != 0 )
         {
             printf("i.%d: %s vs %s\n",i,bits256_str(str,privkey),bits256_str(str2,checkkey));
-            //exit(-1);
+            exit(-1);
         }
         if ( (i % 1000000) == 0 )
             fprintf(stderr,"%.1f%% ",100.*(double)i/10000000);
