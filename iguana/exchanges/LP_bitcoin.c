@@ -2169,7 +2169,7 @@ int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,c
             //int32_t i; for (i=0; i<len; i++)
             //    printf("%02x ",ptr[i]);
             //printf(" ptr, hash.%02x %02x %02x %02x ",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
-            printf("wifstr.(%s) valid len.%d\n",wifstr,len);
+            //printf("wifstr.(%s) valid len.%d\n",wifstr,len);
             return(32);
         }
         else if ( 0 ) // gets errors when len is 37
