@@ -2137,29 +2137,37 @@ int32_t base58encode_checkbuf(uint8_t taddr,uint8_t addrtype,uint8_t *data,int32
 
 int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
 {
-    int32_t offset,len = -1; bits256 hash; uint8_t buf[256];
+    int32_t offset,len = -1; bits256 hash; uint8_t buf[256],*ptr;
     offset = 1 + (wiftaddr != 0);
     memset(buf,0,sizeof(buf));
     if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
     {
         // validate with trailing hash, then remove hash
         if ( len < 38 )
+        {
+            printf("len.%d -> 38\n",len);
             len = 38;
-        hash = bits256_doublesha256(0,buf,len - 4);
-        *addrtypep = (wiftaddr == 0) ? *buf : buf[1];
-        memcpy(privkeyp,buf+offset,32);
-        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] && (buf[len - 1]&0xff) == hash.bytes[28] )
+        }
+        if ( buf[0] == 0x80 && buf[len-1] == 0 )
+        {
+            ptr = buf+1;
+            len--;
+        } else ptr = buf;
+        hash = bits256_doublesha256(0,ptr,len - 4);
+        *addrtypep = (wiftaddr == 0) ? *ptr : ptr[1];
+        memcpy(privkeyp,ptr+offset,32);
+        if ( (ptr[len - 4]&0xff) == hash.bytes[31] && (ptr[len - 3]&0xff) == hash.bytes[30] &&(ptr[len - 2]&0xff) == hash.bytes[29] && (ptr[len - 1]&0xff) == hash.bytes[28] )
         {
             //int32_t i; for (i=0; i<len; i++)
-            //    printf("%02x ",buf[i]);
-            //printf(" buf, hash.%02x %02x %02x %02x ",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
+            //    printf("%02x ",ptr[i]);
+            //printf(" ptr, hash.%02x %02x %02x %02x ",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
             //printf("wifstr.(%s) valid len.%d\n",wifstr,len);
             return(32);
         }
         else
         {
             int32_t i; for (i=0; i<len; i++)
-                printf("%02x ",buf[i]);
+                printf("%02x ",ptr[i]);
             printf(" buf, hash.%02x %02x %02x %02x\n",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
         }
     }

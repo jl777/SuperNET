@@ -4424,7 +4424,7 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
         privkey = mpz_to_bits256(bn);
         char str[65]; printf("bn -> %s\n",bits256_str(str,privkey));
     }*/
-    while ( count >= 2 && data[count - 1] == 0 && data[count - 2] >= 0x80 )
+    if ( count >= 2 && data[count - 1] == 0 && data[count - 2] >= 0x80 )
         count--;
     be_sz = (uint32_t)count + (uint32_t)zeroes;
     //memset(data,0,be_sz);
