@@ -4418,12 +4418,13 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
     for (p=coinaddr; *p==base58_chars[0]; p++)
         data[zeroes++] = 0;
     mpz_export(data+zeroes,&count,1,sizeof(data[0]),-1,0,bn);
+    /*if ( 0 )
     {
         bits256 privkey; char *bits256_str(char *str,bits256 privkey);
         privkey = mpz_to_bits256(bn);
         char str[65]; printf("bn -> %s\n",bits256_str(str,privkey));
-    }
-    if ( count >= 2 && data[count - 1] == 0 && data[count - 2] >= 0x80 )
+    }*/
+    while ( count >= 2 && data[count - 1] == 0 && data[count - 2] >= 0x80 )
         count--;
     be_sz = (uint32_t)count + (uint32_t)zeroes;
     //memset(data,0,be_sz);
