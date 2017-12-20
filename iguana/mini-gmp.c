@@ -4361,48 +4361,6 @@ char *bitcoin_base58encode(char *coinaddr,uint8_t *data,int32_t datalen)
     return(coinaddr);
 }
 
-int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
-{
-    uint32_t zeroes,be_sz=0; size_t count; const char *p,*p1; mpz_t bn58,bn; int32_t nonz=0;
-    mpz_init_set_ui(bn58,58);
-    mpz_init_set_ui(bn,0);
-	while ( isspace((uint32_t)(*coinaddr & 0xff)) )
-		coinaddr++;
-	for (p=coinaddr; *p; p++)
-    {
-		p1 = strchr(base58_chars,*p);
-		if ( p1 == 0 )
-        {
-			while (isspace((uint32_t)*p))
-				p++;
-			if ( *p != '\0' )
-            {
-                printf("bitcoin_base58decode error: p %02x != 0x00\n",*p);
-                mpz_clear(bn), mpz_clear(bn58);
-                return(-1);
-            }
-			break;
-		}
-        mpz_mul(bn,bn,bn58);
-        mpz_add_ui(bn,bn,(int32_t)(p1 - base58_chars));
-        printf("%d ",(int32_t)(p1 - base58_chars));
-        nonz++;
-	}
-    printf("nonz.%d\n",nonz);
-    zeroes = 0;
-	for (p=coinaddr; *p==base58_chars[0]; p++)
-		data[zeroes++] = 0;
-    mpz_export(data+zeroes,&count,1,sizeof(data[0]),-1,0,bn);
-	if ( count >= 2 && data[count - 1] == 0 && data[count - 2] >= 0x80 )
-		count--;
-    be_sz = (uint32_t)count + (uint32_t)zeroes;
-	//memset(data,0,be_sz);
-    //for (i=0; i<count; i++)
-    //    data[i+zeroes] = revdata[count - 1 - i];
-    //printf(" count.%d len.%d be_sz.%d zeroes.%d data[0] %02x %02x\n",(int32_t)count,be_sz+zeroes,be_sz,zeroes,data[0],data[1]);
-    mpz_clear(bn), mpz_clear(bn58);
-	return(be_sz);
-}
 
 #include "../includes/curve25519.h"
 
@@ -4426,6 +4384,54 @@ bits256 mpz_to_bits256(mpz_t bn)
     for (i=0; i<32; i++)
         x.bytes[i] = rev.bytes[31-i];
     return(x);
+}
+
+int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
+{
+    uint32_t zeroes,be_sz=0; size_t count; const char *p,*p1; mpz_t bn58,bn; int32_t nonz=0;
+    mpz_init_set_ui(bn58,58);
+    mpz_init_set_ui(bn,0);
+    while ( isspace((uint32_t)(*coinaddr & 0xff)) )
+        coinaddr++;
+    for (p=coinaddr; *p; p++)
+    {
+        p1 = strchr(base58_chars,*p);
+        if ( p1 == 0 )
+        {
+            while (isspace((uint32_t)*p))
+                p++;
+            if ( *p != '\0' )
+            {
+                printf("bitcoin_base58decode error: p %02x != 0x00\n",*p);
+                mpz_clear(bn), mpz_clear(bn58);
+                return(-1);
+            }
+            break;
+        }
+        mpz_mul(bn,bn,bn58);
+        mpz_add_ui(bn,bn,(int32_t)(p1 - base58_chars));
+        //printf("%d ",(int32_t)(p1 - base58_chars));
+        nonz++;
+    }
+    //printf("nonz.%d\n",nonz);
+    zeroes = 0;
+    for (p=coinaddr; *p==base58_chars[0]; p++)
+        data[zeroes++] = 0;
+    mpz_export(data+zeroes,&count,1,sizeof(data[0]),-1,0,bn);
+    {
+        bits256 privkey; char *bits256_str(char *str,bits256 privkey);
+        privkey = mpz_to_bits256(bn);
+        char str[65]; printf("bn -> %s\n",bits256_str(str,privkey));
+    }
+    if ( count >= 2 && data[count - 1] == 0 && data[count - 2] >= 0x80 )
+        count--;
+    be_sz = (uint32_t)count + (uint32_t)zeroes;
+    //memset(data,0,be_sz);
+    //for (i=0; i<count; i++)
+    //    data[i+zeroes] = revdata[count - 1 - i];
+    //printf(" count.%d len.%d be_sz.%d zeroes.%d data[0] %02x %02x\n",(int32_t)count,be_sz+zeroes,be_sz,zeroes,data[0],data[1]);
+    mpz_clear(bn), mpz_clear(bn58);
+    return(be_sz);
 }
 
 bits256 mpz_muldivcmp(bits256 oldval,int32_t mulval,int32_t divval,bits256 targetval)
