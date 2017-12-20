@@ -2907,7 +2907,7 @@ void *mpz_export (void *r, size_t *countp, int order, size_t size, int endian,si
                     bytes = sizeof (mp_limb_t);
                 }
                 *p = limb;
-                printf("{%02x} ",*p);
+                //printf("{%02x} ",*p);
                 limb >>= CHAR_BIT;
                 bytes--;
             }
@@ -2918,7 +2918,7 @@ void *mpz_export (void *r, size_t *countp, int order, size_t size, int endian,si
     
     if (countp)
         *countp = count;
-    printf("mpz_export.%d\n",(int32_t)count);
+    //printf("mpz_export.%d\n",(int32_t)count);
     return r;
 }
 
@@ -4377,6 +4377,7 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 				p++;
 			if ( *p != '\0' )
             {
+                printf("bitcoin_base58decode error: p %02x != 0x00\n",*p);
                 mpz_clear(bn), mpz_clear(bn58);
                 return(-1);
             }
@@ -4395,7 +4396,7 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 	//memset(data,0,be_sz);
     //for (i=0; i<count; i++)
     //    data[i+zeroes] = revdata[count - 1 - i];
-    printf(" count.%d len.%d be_sz.%d zeroes.%d data[0] %02x %02x\n",(int32_t)count,be_sz+zeroes,be_sz,zeroes,data[0],data[1]);
+    //printf(" count.%d len.%d be_sz.%d zeroes.%d data[0] %02x %02x\n",(int32_t)count,be_sz+zeroes,be_sz,zeroes,data[0],data[1]);
     mpz_clear(bn), mpz_clear(bn58);
 	return(be_sz);
 }
