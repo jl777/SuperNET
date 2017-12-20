@@ -219,7 +219,7 @@ int32_t LP_wifstr_valid(char *wifstr)
         printf("%s is valid wif\n",wifstr);
         return(1);
     }
-    else
+    else if ( bits256_nonz(privkey) != 0 )
     {
         bitcoin_wif2priv(0,&wiftype,&cmpkey,cmpstr);
         bitcoin_priv2wiflong(0,cmpstr2,privkey,wiftype);
