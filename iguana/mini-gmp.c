@@ -2836,89 +2836,90 @@ static int gmp_detect_endian (void)
 
 void *mpz_export (void *r, size_t *countp, int order, size_t size, int endian,size_t nails, const mpz_t u)
 {
-  size_t count;
-  mp_size_t un;
-
-  if (nails != 0)
-    gmp_die ("mpz_import: Nails not supported.");
-
-  assert (order == 1 || order == -1);
-  assert (endian >= -1 && endian <= 1);
-  assert (size > 0 || u->_mp_size == 0);
-
-  un = u->_mp_size;
-  count = 0;
-  if (un != 0)
+    size_t count;
+    mp_size_t un;
+    
+    if (nails != 0)
+        gmp_die ("mpz_import: Nails not supported.");
+    
+    assert (order == 1 || order == -1);
+    assert (endian >= -1 && endian <= 1);
+    assert (size > 0 || u->_mp_size == 0);
+    
+    un = u->_mp_size;
+    count = 0;
+    if (un != 0)
     {
-      size_t k;
-      uint8_t *p;
-      ptrdiff_t word_step;
-      /* The current (partial) limb. */
-      mp_limb_t limb;
-      /* The number of bytes left to to in this limb. */
-      size_t bytes;
-      /* The index where the limb was read. */
-      mp_size_t i;
-
-      un = GMP_ABS (un);
-
-      /* Count bytes in top limb. */
-      limb = u->_mp_d[un-1];
-      assert (limb != 0);
-
-      k = 0;
-      do {
-	k++; limb >>= CHAR_BIT;
-      } while (limb != 0);
-
-      count = (k + (un-1) * sizeof (mp_limb_t) + size - 1) / size;
-
-      if (!r)
-	r = malloc (count * size);
-
-      if (endian == 0)
-	endian = gmp_detect_endian ();
-
-      p = (uint8_t *) r;
-
-      word_step = (order != endian) ? 2 * size : 0;
-
-      /* Process bytes from the least significant end, so point p at the
-	 least significant word. */
-      if (order == 1)
-	{
-	  p += size * (count - 1);
-	  word_step = - word_step;
-	}
-
-      /* And at least significant byte of that word. */
-      if (endian == 1)
-	p += (size - 1);
-
-      for (bytes = 0, i = 0, k = 0; k < count; k++, p += word_step)
-	{
-	  size_t j;
-	  for (j = 0; j < size; j++, p -= (ptrdiff_t) endian)
-	    {
-	      if (bytes == 0)
-		{
-		  if (i < un)
-		    limb = u->_mp_d[i++];
-		  bytes = sizeof (mp_limb_t);
-		}
-	      *p = limb;
-	      limb >>= CHAR_BIT;
-	      bytes--;
-	    }
-	}
-      assert (i == un);
-      assert (k == count);
+        size_t k;
+        uint8_t *p;
+        ptrdiff_t word_step;
+        /* The current (partial) limb. */
+        mp_limb_t limb;
+        /* The number of bytes left to to in this limb. */
+        size_t bytes;
+        /* The index where the limb was read. */
+        mp_size_t i;
+        
+        un = GMP_ABS (un);
+        
+        /* Count bytes in top limb. */
+        limb = u->_mp_d[un-1];
+        assert (limb != 0);
+        
+        k = 0;
+        do {
+            k++; limb >>= CHAR_BIT;
+        } while (limb != 0);
+        
+        count = (k + (un-1) * sizeof (mp_limb_t) + size - 1) / size;
+        
+        if (!r)
+            r = malloc (count * size);
+        
+        if (endian == 0)
+            endian = gmp_detect_endian ();
+        
+        p = (uint8_t *) r;
+        
+        word_step = (order != endian) ? 2 * size : 0;
+        
+        /* Process bytes from the least significant end, so point p at the
+         least significant word. */
+        if (order == 1)
+        {
+            p += size * (count - 1);
+            word_step = - word_step;
+        }
+        
+        /* And at least significant byte of that word. */
+        if (endian == 1)
+            p += (size - 1);
+        
+        for (bytes = 0, i = 0, k = 0; k < count; k++, p += word_step)
+        {
+            size_t j;
+            for (j = 0; j < size; j++, p -= (ptrdiff_t) endian)
+            {
+                if (bytes == 0)
+                {
+                    if (i < un)
+                        limb = u->_mp_d[i++];
+                    bytes = sizeof (mp_limb_t);
+                }
+                *p = limb;
+                //printf("{%02x} ",*p);
+                limb >>= CHAR_BIT;
+                bytes--;
+            }
+        }
+        assert (i == un);
+        assert (k == count);
     }
-
-  if (countp)
-    *countp = count;
-
-  return r;
+    
+    if (countp)
+        *countp = count;
+    //printf("mpz_export.%d\n",(int32_t)count);
+    return r;
 }
 
 /////////////////////////////////
@@ -4360,44 +4361,6 @@ char *bitcoin_base58encode(char *coinaddr,uint8_t *data,int32_t datalen)
     return(coinaddr);
 }
 
-int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
-{
- 	uint32_t zeroes,be_sz=0; size_t count; const char *p,*p1; mpz_t bn58,bn;
-    mpz_init_set_ui(bn58,58);
-    mpz_init_set_ui(bn,0);
-	while ( isspace((uint32_t)(*coinaddr & 0xff)) )
-		coinaddr++;
-	for (p=coinaddr; *p; p++)
-    {
-		p1 = strchr(base58_chars,*p);
-		if ( p1 == 0 )
-        {
-			while (isspace((uint32_t)*p))
-				p++;
-			if ( *p != '\0' )
-            {
-                mpz_clear(bn), mpz_clear(bn58);
-                return(-1);
-            }
-			break;
-		}
-        mpz_mul(bn,bn,bn58);
-        mpz_add_ui(bn,bn,(int32_t)(p1 - base58_chars));
-	}
-    zeroes = 0;
-	for (p=coinaddr; *p==base58_chars[0]; p++)
-		data[zeroes++] = 0;
-    mpz_export(data+zeroes,&count,1,sizeof(data[0]),-1,0,bn);
-	if ( count >= 2 && data[count - 1] == 0 && data[count - 2] >= 0x80 )
-		count--;
-    be_sz = (uint32_t)count + (uint32_t)zeroes;
-	//memset(data,0,be_sz);
-    //for (i=0; i<count; i++)
-    //    data[i+zeroes] = revdata[count - 1 - i];
-    //printf(" count.%d len.%d be_sz.%d zeroes.%d data[0] %02x %02x\n",(int32_t)count,be_sz+zeroes,be_sz,zeroes,data[0],data[1]);
-    mpz_clear(bn), mpz_clear(bn58);
-	return(be_sz);
-}
 
 #include "../includes/curve25519.h"
 
@@ -4421,6 +4384,55 @@ bits256 mpz_to_bits256(mpz_t bn)
     for (i=0; i<32; i++)
         x.bytes[i] = rev.bytes[31-i];
     return(x);
+}
+
+int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
+{
+    uint32_t zeroes,be_sz=0; size_t count; const char *p,*p1; mpz_t bn58,bn; int32_t nonz=0;
+    mpz_init_set_ui(bn58,58);
+    mpz_init_set_ui(bn,0);
+    while ( isspace((uint32_t)(*coinaddr & 0xff)) )
+        coinaddr++;
+    for (p=coinaddr; *p; p++)
+    {
+        p1 = strchr(base58_chars,*p);
+        if ( p1 == 0 )
+        {
+            while (isspace((uint32_t)*p))
+                p++;
+            if ( *p != '\0' )
+            {
+                printf("bitcoin_base58decode error: p %02x != 0x00\n",*p);
+                mpz_clear(bn), mpz_clear(bn58);
+                return(-1);
+            }
+            break;
+        }
+        mpz_mul(bn,bn,bn58);
+        mpz_add_ui(bn,bn,(int32_t)(p1 - base58_chars));
+        //printf("%d ",(int32_t)(p1 - base58_chars));
+        nonz++;
+    }
+    //printf("nonz.%d\n",nonz);
+    zeroes = 0;
+    for (p=coinaddr; *p==base58_chars[0]; p++)
+        data[zeroes++] = 0;
+    mpz_export(data+zeroes,&count,1,sizeof(data[0]),-1,0,bn);
+    /*if ( 0 )
+    {
+        bits256 privkey; char *bits256_str(char *str,bits256 privkey);
+        privkey = mpz_to_bits256(bn);
+        char str[65]; printf("bn -> %s\n",bits256_str(str,privkey));
+    }*/
+    if ( count >= 2 && data[count - 1] == 0 && data[count - 2] >= 0x80 )
+        count--;
+    be_sz = (uint32_t)count + (uint32_t)zeroes;
+    //memset(data,0,be_sz);
+    //for (i=0; i<count; i++)
+    //    data[i+zeroes] = revdata[count - 1 - i];
+    //printf(" count.%d len.%d be_sz.%d zeroes.%d data[0] %02x %02x\n",(int32_t)count,be_sz+zeroes,be_sz,zeroes,data[0],data[1]);
+    mpz_clear(bn), mpz_clear(bn58);
+    return(be_sz);
 }
 
 bits256 mpz_muldivcmp(bits256 oldval,int32_t mulval,int32_t divval,bits256 targetval)

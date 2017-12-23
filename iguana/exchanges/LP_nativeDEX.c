@@ -17,9 +17,7 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// command_rpcloop elapsed   11369.68 millis > threshold    1000.00, ave      34.99 millis, count.645639 broadcast
 // compress packets
-// https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki for signing BCH/BTG
 // portfolio to set prices from historical
 // portfolio value based on ask?
 // else claim path

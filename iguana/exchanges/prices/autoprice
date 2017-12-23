@@ -3,8 +3,9 @@ margin=0.02
 source userpass
 ./auto_chipskmd
 ./auto_chipsbtc
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"BTC\",\"rel\":\"KMD\",\"fixed\":0.00025,\"margin\":0.01}"
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BTC\",\"fixed\":4000,\"margin\":0.01}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BTC\",\"margin\":0.01,\"refbase\":\"komodo\",\"refrel\":\"coinmarketcap\"}"
+#curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"BTC\",\"rel\":\"KMD\",\"fixed\":0.00025,\"margin\":0.01}"
+#curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BTC\",\"fixed\":4000,\"margin\":0.01}"
 #curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"MNZ\",\"offset\":0.0,\"refbase\":\"KMD\",\"refrel\":\"BTC\",\"factor\":15000,\"margin\":-0.2}"
 
 source crypto

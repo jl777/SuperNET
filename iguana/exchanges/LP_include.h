@@ -22,7 +22,9 @@
 #define LP_INCLUDE_H
 
 #ifdef FROMGUI
-#define printf(...)
+#define printf dontprintf
+
+voind dontprintf(char *formatstr,...) {}
 #endif
 
 #define LP_MAJOR_VERSION "0"

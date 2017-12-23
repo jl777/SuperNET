@@ -2137,30 +2137,46 @@ int32_t base58encode_checkbuf(uint8_t taddr,uint8_t addrtype,uint8_t *data,int32
 
 int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
 {
-    int32_t offset,len = -1; bits256 hash; uint8_t buf[256];
+    int32_t offset,len = -1; bits256 hash; uint8_t pbuf[38],buf[256],*ptr;
     offset = 1 + (wiftaddr != 0);
     memset(buf,0,sizeof(buf));
+    memset(privkeyp,0,sizeof(*privkeyp));
     if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
     {
-        // validate with trailing hash, then remove hash
-        if ( len < 38 )
+        if ( len >= 32+offset )
+            memcpy(privkeyp,buf+offset,32);
+        else
+        {
+            //printf("wif %s -> buf too short len.%d\n",wifstr,len);
+            return(-1);
+        }
+        ptr = buf;
+        /*if ( len < 38 )
+        {
+            memset(pbuf,0,sizeof(pbuf));
+            memcpy(pbuf,buf,len-4);
+            memcpy(&pbuf[34],&buf[len-4],4);
+            ptr = pbuf;
+            int32_t i; for (i=0; i<38; i++)
+                printf("%02x ",pbuf[i]);
+            printf("pbuf from %d\n",len);
             len = 38;
-        hash = bits256_doublesha256(0,buf,len - 4);
-        *addrtypep = (wiftaddr == 0) ? *buf : buf[1];
-        memcpy(privkeyp,buf+offset,32);
-        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] && (buf[len - 1]&0xff) == hash.bytes[28] )
+        }*/
+        hash = bits256_doublesha256(0,ptr,len - 4);
+        *addrtypep = (wiftaddr == 0) ? *ptr : ptr[1];
+        if ( (ptr[len - 4]&0xff) == hash.bytes[31] && (ptr[len - 3]&0xff) == hash.bytes[30] &&(ptr[len - 2]&0xff) == hash.bytes[29] && (ptr[len - 1]&0xff) == hash.bytes[28] )
         {
             //int32_t i; for (i=0; i<len; i++)
-            //    printf("%02x ",buf[i]);
-            //printf(" buf, hash.%02x %02x %02x %02x ",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
+            //    printf("%02x ",ptr[i]);
+            //printf(" ptr, hash.%02x %02x %02x %02x ",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
             //printf("wifstr.(%s) valid len.%d\n",wifstr,len);
             return(32);
         }
-        else
+        else if ( 0 ) // gets errors when len is 37
         {
             int32_t i; for (i=0; i<len; i++)
                 printf("%02x ",buf[i]);
-            printf(" buf, hash.%02x %02x %02x %02x\n",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
+            printf(" buf, hash.%02x %02x %02x %02x len.%d\n",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31],len);
         }
     }
     return(-1);
@@ -2180,12 +2196,15 @@ int32_t bitcoin_wif2addr(void *ctx,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtyp
 int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype)
 {
     uint8_t data[128]; int32_t offset,len = 32;
-    memcpy(data+1,privkey.bytes,sizeof(privkey));
     offset = 1 + (wiftaddr != 0);
+    memcpy(data+offset,privkey.bytes,sizeof(privkey));
     data[offset + len++] = 1;
     len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
+    {
+        char str[65]; printf("error making wif from %s\n",bits256_str(str,privkey));
         return(-1);
+    }
     if ( 1 )
     {
         uint8_t checktype; bits256 checkpriv; char str[65],str2[65];
