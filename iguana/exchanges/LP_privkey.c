@@ -300,7 +300,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         {
             if ( jobj(retjson,"error") != 0 )
             {
-                printf("cant importprivkey.%s -> (%s), abort session\n",coin->symbol,jprint(retjson,1));
+                printf("cant importprivkey.%s %s -> (%s), abort session\n",coin->symbol,coin->smartaddr,jprint(retjson,1));
                 exit(-1);
             }
             free_json(retjson);
