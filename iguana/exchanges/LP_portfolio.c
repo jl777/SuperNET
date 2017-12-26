@@ -26,7 +26,7 @@ struct LP_autoprice_ref
     double margin,factor,offset,lastbid,lastask;
     cJSON *fundvalue;
     uint32_t count;
-} LP_autorefs[100];
+} LP_autorefs[1024];
 
 int32_t LP_autoprices,num_LP_autorefs;
 char LP_portfolio_base[128],LP_portfolio_rel[128];
