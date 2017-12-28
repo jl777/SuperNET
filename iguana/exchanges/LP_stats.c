@@ -455,6 +455,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         {
             HASH_ITER(hh,LP_swapstats,sp,tmp)
             {
+                static uint32_t counter;
                 if ( sp->Q.R.requestid == requestid && sp->Q.R.quoteid == quoteid )
                 {
                     sp->methodind = methodind;
@@ -463,7 +464,8 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                         flag = 1;
                         break;
                     }
-                    printf("error after delayed match\n");
+                    if ( counter++ < 10 )
+                        printf("error after delayed match\n");
                 }
             }
         }
