@@ -596,7 +596,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
         LP_availableset(qp->desttxid,qp->vout);
         LP_availableset(qp->feetxid,qp->feevout);
         LP_aliceid(qp->tradeid,qp->aliceid,"error4",0,0);
-        printf("quote validate error %.0f\n",qprice);
+        printf("quote %s/%s validate error %.0f\n",qp->srccoin,qp->destcoin,qprice);
         return(clonestr("{\"error\":\"quote validation error\"}"));
     }
     if ( LP_myprice(&bid,&ask,qp->srccoin,qp->destcoin) <= SMALLVAL || bid <= SMALLVAL )
@@ -819,7 +819,7 @@ double LP_trades_pricevalidate(struct LP_quoteinfo *qp,struct iguana_info *coin,
     }
     if ( (qprice= LP_quote_validate(autxo,butxo,qp,1)) <= SMALLVAL )
     {
-        printf("quote validate error %.0f\n",qprice);
+        printf("quote %s/%s validate error %.0f\n",qp->srccoin,qp->destcoin,qprice);
         return(-3);
     }
     if ( qprice < (price - 0.00000001) * 0.998 )
