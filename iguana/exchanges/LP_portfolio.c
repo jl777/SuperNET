@@ -602,12 +602,12 @@ void LP_autoprices_update(char *method,char *base,double basevol,char *rel,doubl
         price = relvol/basevol;
         for (i=0; i<num_LP_autorefs; i++)
         {
-            if ( strcmp(LP_autorefs[i].rel,rel) == 0 && strcmp(base,LP_autorefs[i].base) == 0 && LP_autorefs[i].lastask > 0 && LP_autorefs[i].lastask < price )
+            if ( strcmp(LP_autorefs[i].rel,rel) == 0 && strcmp(base,LP_autorefs[i].base) == 0 && LP_autorefs[i].lastask > 0 && price < LP_autorefs[i].lastask )
             {
                 newprice = (LP_autorefs[i].lastask * 0.99) + (0.01 * price);
                 printf("%s: autoprice ask update %s/%s %.8f vs myprice %.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastask,newprice);
             }
-            else if ( strcmp(LP_autorefs[i].rel,base) == 0 && strcmp(rel,LP_autorefs[i].base) == 0 && LP_autorefs[i].lastbid > 0 && LP_autorefs[i].lastbid > price )
+            else if ( strcmp(LP_autorefs[i].rel,base) == 0 && strcmp(rel,LP_autorefs[i].base) == 0 && LP_autorefs[i].lastbid > 0 && price > LP_autorefs[i].lastbid )
             {
                 newprice = (LP_autorefs[i].lastbid * 0.99) + (0.01 * price);
                 printf("%s: autoprice bid update %s/%s %.8f vs myprice %.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,newprice);
