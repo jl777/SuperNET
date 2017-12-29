@@ -573,10 +573,18 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 if ( factor > 0. )
                     price = (price * factor) + offset;
                 newprice = (price * (1. + margin));
+                if ( LP_autorefs[i].lastbid < SMALLVAL )
+                    LP_autorefs[i].lastbid = newprice;
+                else LP_autorefs[i].lastbid = (LP_autorefs[i].lastbid * 0.9) + (0.1 *newprice);
+                newprice = LP_autorefs[i].lastbid;
                 LP_mypriceset(&changed,rel,base,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
                 //printf("price %.8f margin %.8f newprice %.8f %.8f\n",price,margin,newprice,(1. / price) * (1. + margin));
                 newprice = (1. / price) * (1. + margin);
+                if ( LP_autorefs[i].lastask < SMALLVAL )
+                    LP_autorefs[i].lastask = newprice;
+                else LP_autorefs[i].lastask = (LP_autorefs[i].lastask * 0.9) + (0.1 *newprice);
+                newprice = LP_autorefs[i].lastask;
                 LP_mypriceset(&changed,base,rel,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
             }
@@ -607,20 +615,20 @@ void LP_autoprices_update(char *method,char *base,double basevol,char *rel,doubl
                 newprice = (LP_autorefs[i].lastask * 0.99) + (0.01 * price);
                 if ( LP_autorefs[i].lastask > 0 && price < LP_autorefs[i].lastask )
                 {
-                    printf("%s: autoprice ask update %s/%s %.8f vs myprice %.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastask,newprice);
+                    printf("%s: autoprice ask update %s/%s %.8f vs myprice %.8f/%.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,LP_autorefs[i].lastask,newprice);
                     LP_autorefs[i].lastask = newprice;
                 }
-                else printf("%s: autoprice ask skip update %s/%s %.8f vs myprice %.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastask,newprice);
+                else printf("%s: autoprice ask skip update %s/%s %.8f vs myprice %.8f/%.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,LP_autorefs[i].lastask,newprice);
             }
             else if ( strcmp(LP_autorefs[i].rel,base) == 0 && strcmp(rel,LP_autorefs[i].base) == 0 )
             {
                 newprice = (LP_autorefs[i].lastbid * 0.99) + (0.01 * price);
                 if ( LP_autorefs[i].lastbid > 0 && price > LP_autorefs[i].lastbid )
                 {
-                    printf("%s: autoprice bid update %s/%s %.8f vs myprice %.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,newprice);
+                    printf("%s: autoprice bid update %s/%s %.8f vs myprice %.8f/%.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,LP_autorefs[i].lastask,newprice);
                     LP_autorefs[i].lastbid = newprice;
                 }
-                else printf("%s: autoprice bid skip update %s/%s %.8f vs myprice %.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,newprice);
+                else printf("%s: autoprice bid skip update %s/%s %.8f vs myprice %.8f/%.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,LP_autorefs[i].lastask,newprice);
             }
         }
     }
