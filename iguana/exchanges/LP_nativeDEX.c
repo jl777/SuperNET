@@ -741,7 +741,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
         for (i=0; i<n; i++)
         {
             item = jitem(coins,i);
-            printf("%s, ",jstr(item,"coin"));
+            printf("\"%s\", ",jstr(item,"coin"));
         }
     }
     printf("privkey updates\n");
@@ -881,6 +881,7 @@ void queue_loop(void *ctx)
                         bits256 magic;
                         magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
                         memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
+                        if ( 0 )
                         {
                             static FILE *fp;
                             if ( fp == 0 )
