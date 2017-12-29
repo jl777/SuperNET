@@ -876,6 +876,16 @@ void queue_loop(void *ctx)
                         bits256 magic;
                         magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
                         memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
+                        {
+                            static FILE *fp;
+                            if ( fp == 0 )
+                                fp = fopen("packet.log","wb");
+                            if ( fp != 0 )
+                            {
+                                fprintf(fp,"%s\n",(char *)ptr->msg);
+                                fflush(fp);
+                            }
+                        }
                         if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                             printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
                         else flag++;
