@@ -524,10 +524,10 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
             relpp->offsets[basepp->ind] = 0.;
             relpp->factors[basepp->ind] = 0.;
         }
-        else if ( basepp->myprices[relpp->ind] > SMALLVAL )
+        /*else if ( basepp->myprices[relpp->ind] > SMALLVAL )
         {
             price = (basepp->myprices[relpp->ind] * 0.9) + (0.1 * price);
-        }
+        }*/
         basepp->myprices[relpp->ind] = price;          // ask
         //printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
         //relpp->myprices[basepp->ind] = (1. / price);   // bid

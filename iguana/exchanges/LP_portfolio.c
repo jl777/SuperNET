@@ -596,13 +596,23 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 
 void LP_autoprices_update(char *method,char *base,double basevol,char *rel,double relvol)
 {
-    int32_t changed; double price,myprice,bid,ask,newprice;
-    if ( basevol > 0. && relvol > 0 && (myprice= LP_myprice(&bid,&ask,base,rel)) > SMALLVAL )
+    int32_t i; double price,newprice;
+    if ( basevol > 0. && relvol > 0. )
     {
         price = relvol/basevol;
-        newprice = (myprice * 0.95) + (0.05 * price);
-        printf("%s: autoprice update %s/%s %.8f vs myprice %.8f -> %.8f\n",method,base,rel,price,myprice,newprice);
-        LP_mypriceset(&changed,base,rel,newprice);
+        for (i=0; i<num_LP_autorefs; i++)
+        {
+            if ( strcmp(LP_autorefs[i].rel,rel) == 0 && strcmp(base,LP_autorefs[i].base) == 0 && LP_autorefs[i].lastask > SMALLVAL )
+            {
+                newprice = (LP_autorefs[i].lastask * 0.99) + (0.01 * price);
+                printf("%s: autoprice ask update %s/%s %.8f vs myprice %.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastask,newprice);
+            }
+            else if ( strcmp(LP_autorefs[i].rel,base) == 0 && strcmp(rel,LP_autorefs[i].base) == 0 && LP_autorefs[i].lastbid > SMALLVAL )
+            {
+                newprice = (LP_autorefs[i].lastbid * 0.99) + (0.01 * price);
+                printf("%s: autoprice bid update %s/%s %.8f vs myprice %.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,newprice);
+            }
+        }
     }
 }
 
