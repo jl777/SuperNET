@@ -118,7 +118,7 @@ int main(int argc, const char * argv[])
         {
             privkey = rand256(0);
             bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,28,184);
-            if ( strncmp(coinaddr+2,"hush",4) == 0 )
+            if ( strncmp(coinaddr+2,"HL",2) == 0 )
             {
                 bitcoin_priv2wif(28,wifstr,privkey,128);
                 printf("i.%d %s -> %s wif.%s\n",i,bits256_str(str,privkey),coinaddr,wifstr);
