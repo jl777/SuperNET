@@ -117,7 +117,7 @@ int main(int argc, const char * argv[])
         for (i=0; i<1000000000; i++)
         {
             OS_randombytes(privkey.bytes,sizeof(privkey));
-            bitcoin_priv2wif(0x36,wifstr,privkey,0xab);
+            bitcoin_priv2wif(0xab,wifstr,privkey,0x36);
             if ( wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )
             {
                 printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
