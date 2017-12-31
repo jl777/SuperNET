@@ -134,16 +134,16 @@ int main(int argc, const char * argv[])
         ctx = bitcoin_ctx();
         len = (int32_t)strlen(argv[2]);
         timestamp = (uint32_t)time(NULL);
-        printf("start vanitygen (%s) t.%u\n",argv[2],timestamp);
+        printf("start vanitygen (%s).%d t.%u\n",argv[2],len,timestamp);
         for (i=0; i<1000000000; i++)
         {
             OS_randombytes(privkey.bytes,sizeof(privkey));
             bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,0,60);
-            if ( strncmp(coinaddr+2,argv[2],len-1) == 0 )
+            if ( strncmp(coinaddr+3,argv[2],len-1) == 0 )
             {
                 bitcoin_priv2wif(0,wifstr,privkey,188);
                 printf("i.%d %s -> %s wif.%s\n",i,bits256_str(str,privkey),coinaddr,wifstr);
-                if ( coinaddr[2+len-1] == argv[2][len-1] )
+                if ( coinaddr[3+len-1] == argv[2][len-1] )
                     break;
             } //else printf("failed %s\n",wifstr);
         }
