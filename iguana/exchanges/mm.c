@@ -125,8 +125,12 @@ int main(int argc, const char * argv[])
             {
                 if ( wifstr[7] == 'h' && wifstr[8] == 'L' && wifstr[9] == 'i' )
                 {
-                    printf("{\"iters\":%d,\"privkey\":\"%s\",\"wif\":\"%s\",\"elapsed\":%ld}\n",i,bits256_str(str,privkey),wifstr,time(NULL) - timestamp);
-                    break;
+                    printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
+                    if ( wifstr[10] == 's' && wifstr[11] == 't' )
+                    {
+                        printf("{\"iters\":%d,\"privkey\":\"%s\",\"wif\":\"%s\",\"elapsed\":%ld}\n",i,bits256_str(str,privkey),wifstr,time(NULL) - timestamp);
+                        break;
+                    }
                 }
             } //else printf("failed %s\n",wifstr);
         }
