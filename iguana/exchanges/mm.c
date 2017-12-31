@@ -116,12 +116,12 @@ int main(int argc, const char * argv[])
         printf("start hush vanitygen t.%u\n",timestamp);
         for (i=0; i<1000000000; i++)
         {
-            privkey = rand256(0);
-            bitcoin_priv2wif(0x36,wifstr,privkey,0xab);
-            if ( wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )
+            OS_randombytes(privkey.bytes,sizeof(privkey));
+            bitcoin_priv2wif(0,wifstr,privkey,0xab);
+            if ( wifstr[1] == 'K' && wifstr[2] == 'H' && wifstr[3] == 'u' && wifstr[4] == 's' )
             {
                 printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
-                if ( wifstr[7] == 'h' )
+                if ( wifstr[5] == 'h' )
                     break;
             } //else printf("failed %s\n",wifstr);
         }
