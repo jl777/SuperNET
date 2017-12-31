@@ -117,14 +117,14 @@ int main(int argc, const char * argv[])
         for (i=0; i<100000000; i++)
         {
             privkey = rand256(0);
-            bitcoin_priv2wif(0,wifstr,privkey,0xab);
-            if ( wifstr[2] == 'h' && wifstr[3] == 'u' && wifstr[4] == 's' && wifstr[5] == 'h' )
+            bitcoin_priv2wif(0xab,wifstr,privkey,0x36);
+            if ( wifstr[3] == 'h' && wifstr[4] == 'u' && wifstr[5] == 's' )
             {
                 printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
                 break;
             } //else printf("failed %s\n",wifstr);
         }
-        printf("done hush vanitygen elapsed %d\n",(uint32_t)time(NULL) - timestamp);
+        printf("done hush vanitygen done %u elapsed %d\n",(uint32_t)time(NULL),(uint32_t)time(NULL) - timestamp);
         exit(0);
     }
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
