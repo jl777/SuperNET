@@ -109,7 +109,7 @@ int main(int argc, const char * argv[])
             printf("ERROR\n");
         exit(0);
     }
-    if ( strstr(argv[1],"hush") == 0 && argv[1] != 0 )
+    if ( argv[1] != 0 && strcmp(argv[1],"hush") == 0 )
     {
         uint8_t pubkey33[33]; char str[65],wifstr[128],coinaddr[64]; bits256 privkey; int32_t i; void *ctx = bitcoin_ctx();
         printf("start hush vanitygen\n");
