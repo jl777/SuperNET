@@ -2198,18 +2198,18 @@ int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t a
     uint8_t data[128]; int32_t offset,len = 32;
     if ( wiftaddr != 0 )
     {
-        data[0] = wiftaddr;
-        data[1] = addrtype;
+        //data[0] = wiftaddr;
+        //data[1] = addrtype;
         offset = 2;
     }
     else
     {
-        data[0] = addrtype;
+        //data[0] = addrtype;
         offset = 1;
     }
     memcpy(data+offset,privkey.bytes,sizeof(privkey));
     data[offset + len++] = 1;
-    //len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
+    len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
     {
         char str[65]; printf("error making wif from %s\n",bits256_str(str,privkey));
