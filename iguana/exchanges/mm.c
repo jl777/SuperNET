@@ -123,7 +123,7 @@ int main(int argc, const char * argv[])
                 printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
                 if ( wifstr[6] == 'h' )
                     break;
-            } //else printf("failed %s\n",wifstr);
+            } else printf("failed %s\n",wifstr);
         }
         printf("done hush vanitygen done %u elapsed %d\n",(uint32_t)time(NULL),(uint32_t)time(NULL) - timestamp);
         exit(0);
