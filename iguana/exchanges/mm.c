@@ -122,15 +122,17 @@ int main(int argc, const char * argv[])
             privkey.bytes[2] = 0xf9;
             privkey.bytes[3] = 0xc6;
             privkey.bytes[4] = 0x06;
+            privkey.bytes[5] = 0xdd;
+            privkey.bytes[6] = 0xbb;
             bitcoin_priv2wiflong(0xab,wifstr,privkey,0x36);
             if ( wifstr[2] == 'x' && wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )//&& wifstr[3] == 'x' )
             {
                 if ( wifstr[7] == 'h' && wifstr[8] == 'L' && wifstr[9] == 'i' )
                 {
-                    printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
+                    //printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
                     if ( wifstr[10] == 's' && wifstr[11] == 't' )
                     {
-                        printf("{\"iters\":%d,\"privkey\":\"%s\",\"wif\":\"%s\",\"elapsed\":%ld}\n",i,bits256_str(str,privkey),wifstr,time(NULL) - timestamp);
+                        printf("{\"iters\":%d,\"privkey\":\"%s\",\"wif\":\"%s\"}\n",i,bits256_str(str,privkey),wifstr);
                         break;
                     }
                 }
