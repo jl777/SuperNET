@@ -2207,7 +2207,7 @@ int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t a
         //data[0] = addrtype;
         offset = 1;
     }
-    memcpy(data+offset,privkey.bytes,sizeof(privkey));
+    memcpy(data+offset,privkey.bytes,len);
     data[offset + len++] = 1;
     len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
