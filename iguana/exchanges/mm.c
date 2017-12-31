@@ -111,16 +111,16 @@ int main(int argc, const char * argv[])
     }
     if ( argv[1] != 0 && strcmp(argv[1],"hush") == 0 )
     {
-        uint8_t pubkey33[33]; uint32_t timestamp; char str[65],wifstr[128],coinaddr[64]; bits256 privkey; int32_t i; void *ctx = bitcoin_ctx();
+        uint32_t timestamp; char str[65],wifstr[128],coinaddr[64]; bits256 privkey; int32_t i;
         timestamp = (uint32_t)time(NULL);
         printf("start hush vanitygen t.%u\n",timestamp);
         for (i=0; i<100000000; i++)
         {
             privkey = rand256(0);
-            bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,28,184);
-            if ( strncmp(coinaddr+2,"HL",2) == 0 )
+            //bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,28,184);
+            bitcoin_priv2wif(28,wifstr,privkey,128);
+            if ( strncmp(wifstr+1,"HL",2) == 0 )
             {
-                bitcoin_priv2wif(28,wifstr,privkey,128);
                 printf("i.%d %s -> %s wif.%s\n",i,bits256_str(str,privkey),coinaddr,wifstr);
                 break;
             }
