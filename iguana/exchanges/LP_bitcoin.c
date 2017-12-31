@@ -2196,12 +2196,17 @@ int32_t bitcoin_wif2addr(void *ctx,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtyp
 int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype)
 {
     uint8_t data[128]; int32_t offset,len = 32;
-    data[0] = wiftaddr;
     if ( wiftaddr != 0 )
     {
+        data[0] = wiftaddr;
         data[1] = addrtype;
         offset = 2;
-    } else offset = 1;
+    }
+    else
+    {
+        data[0] = addrtype;
+        offset = 1;
+    }
     memcpy(data+offset,privkey.bytes,sizeof(privkey));
     data[offset + len++] = 1;
     len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
