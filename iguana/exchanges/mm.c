@@ -117,6 +117,9 @@ int main(int argc, const char * argv[])
         for (i=0; i<1000000000; i++)
         {
             OS_randombytes(privkey.bytes,sizeof(privkey));
+            privkey.bytes[31] = 0x0e;
+            privkey.bytes[30] = 0x5b;
+            privkey.bytes[29] = 0xf9;
             bitcoin_priv2wiflong(0xab,wifstr,privkey,0x36);
             if ( wifstr[2] == 'x' && wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )//&& wifstr[3] == 'x' )
             {
