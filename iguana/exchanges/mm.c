@@ -123,9 +123,11 @@ int main(int argc, const char * argv[])
             bitcoin_priv2wiflong(0xab,wifstr,privkey,0x36);
             if ( wifstr[2] == 'x' && wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )//&& wifstr[3] == 'x' )
             {
-                printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
                 if ( wifstr[7] == 'h' )
+                {
+                    printf("{\"iters\":%d,\"privkey\":\"%s\",\"wif\":\"%s\"}\n",i,bits256_str(str,privkey),wifstr);
                     break;
+                }
             } //else printf("failed %s\n",wifstr);
         }
         printf("done hush vanitygen done %u elapsed %d\n",(uint32_t)time(NULL),(uint32_t)time(NULL) - timestamp);
