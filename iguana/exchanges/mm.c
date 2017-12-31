@@ -118,10 +118,10 @@ int main(int argc, const char * argv[])
         {
             OS_randombytes(privkey.bytes,sizeof(privkey));
             bitcoin_priv2wiflong(0xab,wifstr,privkey,0x36);
-            if ( wifstr[2] == 'x' && wifstr[3] == 'h' && wifstr[4] == 'u' && wifstr[5] == 's' )
+            if ( wifstr[2] == 'x' && wifstr[3] == 'r' && wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )
             {
                 printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
-                if ( wifstr[6] == 'h' )
+                if ( wifstr[7] == 'h' )
                     break;
             } else printf("failed %s\n",wifstr);
         }
