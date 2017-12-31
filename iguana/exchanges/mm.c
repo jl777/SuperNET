@@ -118,7 +118,7 @@ int main(int argc, const char * argv[])
         {
             OS_randombytes(privkey.bytes,sizeof(privkey));
             bitcoin_priv2wiflong(0xab,wifstr,privkey,0x36);
-            if ( wifstr[2] == 'y' && wifstr[3] == 'H' && wifstr[4] == 'u' && wifstr[5] == 's' )
+            if ( wifstr[2] == 'x' && wifstr[3] == 'H' && wifstr[4] == 'u' && wifstr[5] == 's' )
             {
                 printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
                 if ( wifstr[6] == 'h' )
@@ -130,17 +130,20 @@ int main(int argc, const char * argv[])
     }
     else if ( argv[1] != 0 && strcmp(argv[1],"vanity") == 0 && argv[2] != 0 )
     {
-        uint32_t timestamp; char str[65],wifstr[128]; bits256 privkey; int32_t i;
+        uint32_t timestamp; uint8_t pubkey33[33]; char str[65],coinaddr[64],wifstr[128]; bits256 privkey; int32_t i,len; void *ctx;
+        ctx = bitcoin_ctx();
+        len = (int32_t)strlen(argv[2]);
         timestamp = (uint32_t)time(NULL);
         printf("start vanitygen (%s) t.%u\n",argv[2],timestamp);
         for (i=0; i<1000000000; i++)
         {
             OS_randombytes(privkey.bytes,sizeof(privkey));
-            bitcoin_priv2wiflong(0xab,wifstr,privkey,0x36);
-            if ( wifstr[2] == 'x' && wifstr[3] == 'H' && wifstr[4] == 'u' && wifstr[5] == 's' )
+            bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,0,60);
+            if ( strncmp(coinaddr+2,argv[2],len-1) == 0 )
             {
-                printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
-                if ( wifstr[6] == 'h' )
+                bitcoin_priv2wif(0,wifstr,privkey,188);
+                printf("i.%d %s -> %s wif.%s\n",i,bits256_str(str,privkey),coinaddr,wifstr);
+                if ( coinaddr[2+len-1] == argv[2][len-1] )
                     break;
             } //else printf("failed %s\n",wifstr);
         }
