@@ -123,7 +123,7 @@ int main(int argc, const char * argv[])
             bitcoin_priv2wiflong(0xab,wifstr,privkey,0x36);
             if ( wifstr[2] == 'x' && wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )//&& wifstr[3] == 'x' )
             {
-                if ( wifstr[7] == 'h' )
+                if ( wifstr[7] == 'h' && wifstr[8] == 'L' )
                 {
                     printf("{\"iters\":%d,\"privkey\":\"%s\",\"wif\":\"%s\"}\n",i,bits256_str(str,privkey),wifstr);
                     break;
