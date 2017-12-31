@@ -139,11 +139,11 @@ int main(int argc, const char * argv[])
         {
             OS_randombytes(privkey.bytes,sizeof(privkey));
             bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,0,60);
-            if ( strncmp(coinaddr+2,argv[2],len-1) == 0 )
+            if ( strncmp(coinaddr+1,argv[2],len-1) == 0 )
             {
                 bitcoin_priv2wif(0,wifstr,privkey,188);
                 printf("i.%d %s -> %s wif.%s\n",i,bits256_str(str,privkey),coinaddr,wifstr);
-                if ( coinaddr[2+len-1] == argv[2][len-1] )
+                if ( coinaddr[1+len-1] == argv[2][len-1] )
                     break;
             } //else printf("failed %s\n",wifstr);
         }
