@@ -425,7 +425,7 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
                     {
                         free_json(txobj);
                         LP_instantdex_credit(dispflag,destaddr,satoshis,weeki,p2shaddr,txid);
-                    } else printf("already spent\n");
+                    } //else printf("already spent\n");
                 } else printf("error getting p2shaddr.(%s)\n",p2shaddr);
             }
         }

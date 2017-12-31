@@ -698,7 +698,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
     int32_t i,n,notarized; cJSON *item; char *symbol; struct iguana_info *coin;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
-        printf("%s ",activecoins[i]);
+        printf("%s, ",activecoins[i]);
         LP_coinfind(activecoins[i]);
         LP_priceinfoadd(activecoins[i]);
         if ( (coin= LP_coinfind(activecoins[i])) != 0 )
@@ -725,7 +725,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
             item = jitem(coins,i);
             if ( (symbol= jstr(item,"coin")) != 0 )
             {
-                printf("%s ",jstr(item,"coin"));
+                printf("%s, ",jstr(item,"coin"));
                 LP_coincreate(item);
                 LP_priceinfoadd(jstr(item,"coin"));
                 if ( (coin= LP_coinfind(symbol)) != 0 )
@@ -737,6 +737,11 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                         coin->txfee = LP_MIN_TXFEE;
                 }
             }
+        }
+        for (i=0; i<n; i++)
+        {
+            item = jitem(coins,i);
+            printf("\"%s\", ",jstr(item,"coin"));
         }
     }
     printf("privkey updates\n");
@@ -876,6 +881,17 @@ void queue_loop(void *ctx)
                         bits256 magic;
                         magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
                         memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
+                        if ( 0 )
+                        {
+                            static FILE *fp;
+                            if ( fp == 0 )
+                                fp = fopen("packet.log","wb");
+                            if ( fp != 0 )
+                            {
+                                fprintf(fp,"%s\n",(char *)ptr->msg);
+                                fflush(fp);
+                            }
+                        }
                         if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                             printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
                         else flag++;
