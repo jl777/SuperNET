@@ -118,11 +118,11 @@ int main(int argc, const char * argv[])
         {
             privkey = rand256(0);
             bitcoin_priv2wif(0,wifstr,privkey,128);
-            if ( wifstr[1] == 'H' )
+            if ( wifstr[2] == 'h' )
             {
                 printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
                 break;
-            } else printf("failed %s\n",wifstr);
+            } //else printf("failed %s\n",wifstr);
         }
         printf("done hush vanitygen elapsed %d\n",(uint32_t)time(NULL) - timestamp);
         exit(0);
