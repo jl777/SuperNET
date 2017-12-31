@@ -117,8 +117,8 @@ int main(int argc, const char * argv[])
         for (i=0; i<1000000000; i++)
         {
             privkey = rand256(0);
-            bitcoin_priv2wif(0x36,wifstr,privkey,0xab);
-            if ( wifstr[4] == 'h' && wifstr[5] == 'u' && wifstr[6] == 's' )
+            bitcoin_priv2wif(0xab,wifstr,privkey,0x36);
+            if ( wifstr[3] == 'h' && wifstr[4] == 'u' && wifstr[5] == 's' )
             {
                 printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
                 if ( wifstr[6] == 'h' )
