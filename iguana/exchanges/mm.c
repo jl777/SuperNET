@@ -118,10 +118,10 @@ int main(int argc, const char * argv[])
         {
             OS_randombytes(privkey.bytes,sizeof(privkey));
             bitcoin_priv2wiflong(0xab,wifstr,privkey,0x36);
-            if ( wifstr[2] == 'x' && wifstr[4] == 'H' && wifstr[5] == 'u' )//&& wifstr[3] == 'x' )
+            if ( wifstr[2] == 'x' && wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )//&& wifstr[3] == 'x' )
             {
                 printf("i.%d %s -> wif.%s\n",i,bits256_str(str,privkey),wifstr);
-                if ( wifstr[6] == 's' && wifstr[7] == 'h' )
+                if ( wifstr[7] == 'h' )
                     break;
             } //else printf("failed %s\n",wifstr);
         }
@@ -139,11 +139,11 @@ int main(int argc, const char * argv[])
         {
             OS_randombytes(privkey.bytes,sizeof(privkey));
             bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,0,60);
-            if ( strncmp(coinaddr+3,argv[2],len-1) == 0 )
+            if ( strncmp(coinaddr+4,argv[2],len-1) == 0 )
             {
                 bitcoin_priv2wif(0,wifstr,privkey,188);
                 printf("i.%d %s -> %s wif.%s\n",i,bits256_str(str,privkey),coinaddr,wifstr);
-                if ( coinaddr[3+len-1] == argv[2][len-1] )
+                if ( coinaddr[4+len-1] == argv[2][len-1] )
                     break;
             } //else printf("failed %s\n",wifstr);
         }
