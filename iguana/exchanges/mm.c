@@ -109,6 +109,22 @@ int main(int argc, const char * argv[])
             printf("ERROR\n");
         exit(0);
     }
+    if ( strstr(argv[0],"hush") != 0 && argv[1] != 0 )
+    {
+        uint8_t pubkey33[33]; char str[65],wifstr[128],coinaddr[64]; bits256 privkey; int32_t i; void *ctx = bitcoin_ctx();
+        for (i=0; i<100000000; i++)
+        {
+            privkey = rand256(0);
+            bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,28,184);
+            if ( strncmp(coinaddr+2,"hush",4) == 0 )
+            {
+                bitcoin_priv2wif(28,wifstr,privkey,128);
+                printf("i.%d %s -> %s wif.%s\n",i,bits256_str(str,privkey),coinaddr,wifstr);
+                break;
+            }
+        }
+        exit(0);
+    }
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
