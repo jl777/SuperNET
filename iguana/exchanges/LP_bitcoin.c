@@ -2235,7 +2235,7 @@ int32_t bitcoin_priv2wiflong(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8
     len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
         return(-1);
-    if ( 1 )
+    if ( 0 )
     {
         uint8_t checktype; bits256 checkpriv; char str[65],str2[65];
         if ( bitcoin_wif2priv(wiftaddr,&checktype,&checkpriv,wifstr) == sizeof(bits256) )
