@@ -17,7 +17,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// compress packets
 // portfolio to set prices from historical
 // portfolio value based on ask?
 // else claim path
