@@ -41,6 +41,9 @@ coins/kv_7776
 coins/ceal_7776
 coins/mesh_7776
 coins/mnz_7776
+coins/axo_7776
+coins/etomic_7776
+coins/btch_7776
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"

@@ -17,7 +17,6 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
-// compress packets
 // portfolio to set prices from historical
 // portfolio value based on ask?
 // else claim path
@@ -165,6 +164,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
     return(0);
 }
 
+#include "LP_mmjson.c"
 #include "LP_socket.c"
 #include "LP_secp.c"
 #include "LP_bitcoin.c"
@@ -347,11 +347,15 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock,char *remoteaddr,int32_t maxdepth)
 {
-    int32_t recvlen=1,nonz = 0; cJSON *argjson; void *ptr; char methodstr[64],*retstr,*str; struct nn_pollfd pfd;
+    static char *line;
+    int32_t recvlen=1,msglen,nonz = 0; cJSON *argjson,*recvjson; void *ptr,*msg; char methodstr[64],*decodestr,*retstr,*str; struct nn_pollfd pfd;
+    if ( line == 0 )
+        line = calloc(1,1024*1024);
     if ( sock >= 0 )
     {
         while ( nonz < maxdepth && recvlen > 0 )
         {
+            decodestr = 0;
             nonz++;
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
@@ -359,56 +363,67 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             if ( nn_poll(&pfd,1,1) != 1 )
                 break;
             ptr = 0;
-            //buf = malloc(1000000);
-            //if ( (recvlen= nn_recv(sock,buf,1000000,0)) > 0 )
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-                //ptr = buf;
-                methodstr[0] = 0;
-                //printf("%s.(%s)\n",typestr,(char *)ptr);
-                if ( 1 )
+                decodestr = 0;
+                if ( recvlen > 32768 )
                 {
-                    cJSON *recvjson; char *mstr;//,*cstr;
-                    if ( (recvjson= cJSON_Parse((char *)ptr)) != 0 )
+                    printf("unexpectedly large packet\n");
+                }
+                else
+                {
+                    msg = ptr;
+                    msglen = recvlen;
+                    if ( (recvjson= cJSON_Parse((char *)ptr)) == 0 )
                     {
-                        if ( (mstr= jstr(recvjson,"method")) != 0 )//&& strcmp(mstr,"uitem") == 0 && (cstr= jstr(recvjson,"coin")) != 0 && strcmp(cstr,"REVS") == 0 )
+                        if ( (decodestr= MMJSON_decode(ptr,recvlen)) != 0 )
                         {
-                            //printf("%s RECV.(%s)\n",typestr,(char *)ptr);
-                        }
+                            if ( (recvjson= cJSON_Parse(decodestr)) != 0 )
+                            {
+                                msg = decodestr;
+                                msglen = (int32_t)strlen(decodestr) + 1;
+                            }
+                            //printf("decoded.(%s)\n",decodestr);
+                        } else printf("couldnt decode linebuf[%d]\n",recvlen);
+                    }
+                    methodstr[0] = 0;
+                    //printf("%s.(%s)\n",typestr,(char *)ptr);
+                    if ( recvjson != 0 )
+                    {
                         safecopy(LP_methodstr,jstr(recvjson,"method"),sizeof(LP_methodstr));
                         free_json(recvjson);
                     }
-                }
-                int32_t validreq = 0;
-                if ( strlen((char *)ptr)+sizeof(bits256) <= recvlen )
-                {
-                    if ( LP_magic_check(ptr,recvlen,remoteaddr) <= 0 )
+                    int32_t validreq = 1;
+                    /*if ( strlen((char *)ptr)+sizeof(bits256) <= recvlen )
+                     {
+                     if ( LP_magic_check(ptr,recvlen,remoteaddr) <= 0 )
+                     {
+                     //printf("magic check error\n");
+                     } else validreq = 1;
+                     recvlen -= sizeof(bits256);
+                     }*/
+                    if ( validreq != 0 )
                     {
-                        //printf("magic check error\n");
-                    } else validreq = 1;
-                    recvlen -= sizeof(bits256);
-                }
-                if ( validreq != 0 )
-                {
-                    if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,ptr,recvlen,sock)) != 0 )
-                        free(retstr);
-                    if ( Broadcaststr != 0 )
-                    {
-                        //printf("self broadcast.(%s)\n",Broadcaststr);
-                        str = Broadcaststr;
-                        Broadcaststr = 0;
-                        if ( (argjson= cJSON_Parse(str)) != 0 )
+                        if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,msg,msglen,sock)) != 0 )
+                            free(retstr);
+                        if ( Broadcaststr != 0 )
                         {
-                            portable_mutex_lock(&LP_commandmutex);
-                            if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
+                            //printf("self broadcast.(%s)\n",Broadcaststr);
+                            str = Broadcaststr;
+                            Broadcaststr = 0;
+                            if ( (argjson= cJSON_Parse(str)) != 0 )
                             {
-                                if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
-                                    free(retstr);
+                                portable_mutex_lock(&LP_commandmutex);
+                                if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
+                                {
+                                    if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
+                                        free(retstr);
+                                }
+                                portable_mutex_unlock(&LP_commandmutex);
+                                free_json(argjson);
                             }
-                            portable_mutex_unlock(&LP_commandmutex);
-                            free_json(argjson);
+                            free(str);
                         }
-                        free(str);
                     }
                 }
             }
@@ -417,6 +432,8 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                 nn_freemsg(ptr), ptr = 0;
                 //free(buf);
             }
+            if ( decodestr != 0 )
+                free(decodestr);
         }
     }
     return(nonz);
@@ -860,7 +877,7 @@ void gc_loop(void *ctx)
 
 void queue_loop(void *ctx)
 {
-    struct LP_queue *ptr,*tmp; int32_t sentbytes,nonz,flag,duplicate,n=0;
+    struct LP_queue *ptr,*tmp; cJSON *json; uint8_t linebuf[32768]; int32_t k,sentbytes,nonz,flag,duplicate,n=0;
     strcpy(queue_loop_stats.name,"queue_loop");
     queue_loop_stats.threshold = 1000.;
     while ( 1 )
@@ -878,9 +895,9 @@ void queue_loop(void *ctx)
                 {
                     if ( LP_sockcheck(ptr->sock) > 0 )
                     {
-                        bits256 magic;
-                        magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
-                        memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
+                        //bits256 magic;
+                        //magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
+                        //memcpy(&ptr->msg[ptr->msglen - sizeof(bits256)],&magic,sizeof(magic));
                         if ( 0 )
                         {
                             static FILE *fp;
@@ -892,9 +909,25 @@ void queue_loop(void *ctx)
                                 fflush(fp);
                             }
                         }
-                        if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
-                            printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                        else flag++;
+                        if ( (json= cJSON_Parse((char *)ptr->msg)) != 0 )
+                        {
+                            if ( ptr->msglen < sizeof(linebuf) )
+                            {
+                                if ( (k= MMJSON_encode(linebuf,(char *)ptr->msg)) > 0 )
+                                {
+                                    if ( (sentbytes= nn_send(ptr->sock,linebuf,k,0)) != k )
+                                        printf("%d LP_send mmjson sent %d instead of %d\n",n,sentbytes,k);
+                                    else flag++;
+                                }
+                            }
+                            free_json(json);
+                        }
+                        if ( flag == 0 )
+                        {
+                            if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
+                                printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
+                            else flag++;
+                        }
                         ptr->sock = -1;
                         if ( ptr->peerind > 0 )
                             ptr->starttime = (uint32_t)time(NULL);

@@ -152,7 +152,7 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
     ptr->crc32 = crc32;
     ptr->sock = sock;
     ptr->peerind = peerind;
-    ptr->msglen = (int32_t)(msglen + sizeof(bits256));
+    ptr->msglen = (int32_t)(msglen + 0*sizeof(bits256));
     memcpy(ptr->msg,msg,msglen); // sizeof(bits256) at the end all zeroes
     DL_APPEND(LP_Q,ptr);
     LP_Qenqueued++;

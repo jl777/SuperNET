@@ -2196,8 +2196,18 @@ int32_t bitcoin_wif2addr(void *ctx,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtyp
 int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype)
 {
     uint8_t data[128]; int32_t offset,len = 32;
-    offset = 1 + (wiftaddr != 0);
-    memcpy(data+offset,privkey.bytes,sizeof(privkey));
+    if ( wiftaddr != 0 )
+    {
+        //data[0] = wiftaddr;
+        //data[1] = addrtype;
+        offset = 2;
+    }
+    else
+    {
+        //data[0] = addrtype;
+        offset = 1;
+    }
+    memcpy(data+offset,privkey.bytes,len);
     data[offset + len++] = 1;
     len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
@@ -2205,7 +2215,7 @@ int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t a
         char str[65]; printf("error making wif from %s\n",bits256_str(str,privkey));
         return(-1);
     }
-    if ( 1 )
+    if ( 0 )
     {
         uint8_t checktype; bits256 checkpriv; char str[65],str2[65];
         if ( bitcoin_wif2priv(wiftaddr,&checktype,&checkpriv,wifstr) == sizeof(bits256) )
@@ -2225,7 +2235,7 @@ int32_t bitcoin_priv2wiflong(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8
     len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
         return(-1);
-    if ( 1 )
+    if ( 0 )
     {
         uint8_t checktype; bits256 checkpriv; char str[65],str2[65];
         if ( bitcoin_wif2priv(wiftaddr,&checktype,&checkpriv,wifstr) == sizeof(bits256) )

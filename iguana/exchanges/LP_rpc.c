@@ -301,7 +301,12 @@ cJSON *LP_validateaddress(char *symbol,char *address)
         jaddstr(retjson,"address",address);
         bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,address);
         bitcoin_address(checkaddr,coin->taddr,addrtype,rmd160,20);
-        jadd(retjson,"isvalid",strcmp(address,checkaddr)==0? cJSON_CreateTrue() : cJSON_CreateFalse());
+        if ( addrtype != coin->pubtype && addrtype != coin->p2shtype )
+        {
+            jadd(retjson,"isvalid",cJSON_CreateFalse());
+            return(retjson);
+        }
+        jadd(retjson,"isvalid",strcmp(address,checkaddr)==0 ? cJSON_CreateTrue() : cJSON_CreateFalse());
         if ( addrtype == coin->pubtype )
         {
             strcpy(script,"76a914");
@@ -312,7 +317,7 @@ cJSON *LP_validateaddress(char *symbol,char *address)
             jaddstr(retjson,"scriptPubKey",script);
         }
         bitcoin_address(coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,20);
-        jadd(retjson,"ismine",strcmp(address,coin->smartaddr) == 0 ? cJSON_CreateTrue() : cJSON_CreateFalse());
+        jadd(retjson,"ismine",strcmp(coinaddr,coin->smartaddr) == 0 ? cJSON_CreateTrue() : cJSON_CreateFalse());
         jadd(retjson,"iswatchonly",cJSON_CreateTrue());
         jadd(retjson,"isscript",addrtype == coin->p2shtype ? cJSON_CreateTrue() : cJSON_CreateFalse());
         return(retjson);
