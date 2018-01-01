@@ -356,6 +356,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
     {
         while ( nonz < maxdepth && recvlen > 0 )
         {
+            decodestr = 0;
             nonz++;
             memset(&pfd,0,sizeof(pfd));
             pfd.fd = sock;
