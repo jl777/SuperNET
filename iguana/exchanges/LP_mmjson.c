@@ -16,7 +16,6 @@
 //  LP_mmjson.c
 //  marketmaker
 //
-
 #define MMJSON_IPADDR 255
 #define MMJSON_BITS256 254
 #define MMJSON_SECP33 253
@@ -122,7 +121,7 @@ int32_t MMJSON_rwnum(int32_t rwflag,uint8_t *buf,uint64_t *longp,int32_t n)
     return(n);
 }
 
-int32_t MMJSON_decodeitem(cJSON *lineobj,uint8_t *linebuf,int32_t i,int32_t len,int32_t ind,uint32_t *timestampp)
+int32_t MMJSON_decodeitem(cJSON *lineobj,uint8_t *linebuf,int32_t i,int32_t len,char *fieldstr,uint32_t *timestampp)
 {
     int32_t c,valind,j; char tmpstr[64],ipaddr[64],hexstr[256],arbstr[8192]; uint64_t l;
     switch ( (valind= linebuf[i++]) )
@@ -130,98 +129,98 @@ int32_t MMJSON_decodeitem(cJSON *lineobj,uint8_t *linebuf,int32_t i,int32_t len,
         case MMJSON_IPADDR:
             i += MMJSON_rwnum(0,&linebuf[i],&l,4);
             expand_ipbits(ipaddr,(uint32_t)l);
-            jaddstr(lineobj,MM_fields[ind],ipaddr);
+            jaddstr(lineobj,fieldstr,ipaddr);
             break;
         case MMJSON_BITS256:
             init_hexbytes_noT(hexstr,&linebuf[i],32);
             i += 32;
-            jaddstr(lineobj,MM_fields[ind],hexstr);
+            jaddstr(lineobj,fieldstr,hexstr);
             break;
         case MMJSON_SECP33:
             init_hexbytes_noT(hexstr,&linebuf[i],33);
             i += 33;
-            jaddstr(lineobj,MM_fields[ind],hexstr);
+            jaddstr(lineobj,fieldstr,hexstr);
             break;
         case MMJSON_SIG:
             init_hexbytes_noT(hexstr,&linebuf[i],65);
             i += 65;
-            jaddstr(lineobj,MM_fields[ind],hexstr);
+            jaddstr(lineobj,fieldstr,hexstr);
             break;
         case MMJSON_RMD160:
             init_hexbytes_noT(hexstr,&linebuf[i],20);
             i += 20;
-            jaddstr(lineobj,MM_fields[ind],hexstr);
+            jaddstr(lineobj,fieldstr,hexstr);
             break;
         case MMJSON_DECIMAL8:
             l = linebuf[i++];
-            jaddnum(lineobj,MM_fields[ind],l);
+            jaddnum(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL8STR:
             l = linebuf[i++];
-            jadd64bits(lineobj,MM_fields[ind],l);
+            jadd64bits(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL16:
             i += MMJSON_rwnum(0,&linebuf[i],&l,2);
-            jaddnum(lineobj,MM_fields[ind],l);
+            jaddnum(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL16STR:
             i += MMJSON_rwnum(0,&linebuf[i],&l,2);
-            jadd64bits(lineobj,MM_fields[ind],l);
+            jadd64bits(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL24:
             i += MMJSON_rwnum(0,&linebuf[i],&l,3);
-            jaddnum(lineobj,MM_fields[ind],l);
+            jaddnum(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL24STR:
             i += MMJSON_rwnum(0,&linebuf[i],&l,3);
             sprintf(tmpstr,"%llu",(long long)l);
-            jaddstr(lineobj,MM_fields[ind],tmpstr);
+            jaddstr(lineobj,fieldstr,tmpstr);
             break;
         case MMJSON_DECIMAL32:
             i += MMJSON_rwnum(0,&linebuf[i],&l,4);
             //printf("decimal32.%u %08x\n",(uint32_t)l,(uint32_t)l);
-            jaddnum(lineobj,MM_fields[ind],l);
+            jaddnum(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL32STR:
             i += MMJSON_rwnum(0,&linebuf[i],&l,4);
             //printf("decimal32.%u %08x\n",(uint32_t)l,(uint32_t)l);
-            jadd64bits(lineobj,MM_fields[ind],l);
+            jadd64bits(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL40:
             i += MMJSON_rwnum(0,&linebuf[i],&l,5);
-            jaddnum(lineobj,MM_fields[ind],l);
+            jaddnum(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL40STR:
             i += MMJSON_rwnum(0,&linebuf[i],&l,5);
-            jadd64bits(lineobj,MM_fields[ind],l);
+            jadd64bits(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL48:
             i += MMJSON_rwnum(0,&linebuf[i],&l,6);
-            jaddnum(lineobj,MM_fields[ind],l);
+            jaddnum(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL48STR:
             i += MMJSON_rwnum(0,&linebuf[i],&l,6);
-            jadd64bits(lineobj,MM_fields[ind],l);
+            jadd64bits(lineobj,fieldstr,l);
             break;
         case MMJSON_DOUBLE:
             i += MMJSON_rwnum(0,&linebuf[i],&l,8);
             //printf("double %llu -> %.8f\n",(long long)l,dstr(l));
-            jaddnum(lineobj,MM_fields[ind],dstr(l));
+            jaddnum(lineobj,fieldstr,dstr(l));
             break;
         case MMJSON_DECIMAL64:
             i += MMJSON_rwnum(0,&linebuf[i],&l,8);
-            jadd64bits(lineobj,MM_fields[ind],l);
+            jadd64bits(lineobj,fieldstr,l);
             break;
         case MMJSON_DECIMAL64STR:
             i += MMJSON_rwnum(0,&linebuf[i],&l,8);
-            jadd64bits(lineobj,MM_fields[ind],l);
+            jadd64bits(lineobj,fieldstr,l);
             break;
         case MMJSON_TIMESTAMP:
             if ( *timestampp == 0 )
             {
                 i += MMJSON_rwnum(0,&linebuf[i],&l,4);
                 *timestampp = (uint32_t)l;
-                jaddnum(lineobj,MM_fields[ind],l);
+                jaddnum(lineobj,fieldstr,l);
             }
             else
             {
@@ -231,21 +230,21 @@ int32_t MMJSON_decodeitem(cJSON *lineobj,uint8_t *linebuf,int32_t i,int32_t len,
             }
             break;
         case MMJSON_TIMEDIFF8:
-            jaddnum(lineobj,MM_fields[ind],*timestampp + linebuf[i++]);
+            jaddnum(lineobj,fieldstr,*timestampp + linebuf[i++]);
             break;
         case MMJSON_TIMEDIFF16:
             i += MMJSON_rwnum(0,&linebuf[i],&l,2);
-            jaddnum(lineobj,MM_fields[ind],*timestampp + l);
+            jaddnum(lineobj,fieldstr,*timestampp + l);
             break;
         case MMJSON_ZERO:
-            jaddnum(lineobj,MM_fields[ind],0);
+            jaddnum(lineobj,fieldstr,0);
             break;
         case MMJSON_ZEROSTR:
-            //printf("%s.zerostr\n",MM_fields[ind]);
-            jadd64bits(lineobj,MM_fields[ind],0);
+            //printf("%s.zerostr\n",fieldstr);
+            jadd64bits(lineobj,fieldstr,0);
             break;
         case MMJSON_COIN:
-            jaddstr(lineobj,MM_fields[ind],MM_coins[linebuf[i++]]);
+            jaddstr(lineobj,fieldstr,MM_coins[linebuf[i++]]);
             break;
         case MMJSON_STRING:
             j = 0;
@@ -260,14 +259,14 @@ int32_t MMJSON_decodeitem(cJSON *lineobj,uint8_t *linebuf,int32_t i,int32_t len,
                 arbstr[j++] = c;
             }
             arbstr[j] = 0;
-            jaddstr(lineobj,MM_fields[ind],arbstr);
+            jaddstr(lineobj,fieldstr,arbstr);
             break;
         default:
             if ( valind < MMJSON_BOUNDARY )
-                jaddstr(lineobj,MM_fields[ind],MM_fields[valind]);
+                jaddstr(lineobj,fieldstr,MM_fields[valind]);
             else
             {
-                printf("%s unhandled valind.%d k.%d len.%d (%s)\n",MM_fields[ind],valind,i,len,jprint(lineobj,0));
+                printf("%s unhandled valind.%d k.%d len.%d (%s)\n",fieldstr,valind,i,len,jprint(lineobj,0));
                 free_json(lineobj);
                 return(-1);
             }
@@ -278,16 +277,26 @@ int32_t MMJSON_decodeitem(cJSON *lineobj,uint8_t *linebuf,int32_t i,int32_t len,
 
 char *MMJSON_decode(uint8_t *linebuf,int32_t len)
 {
-    uint32_t timestamp = 0; uint64_t l; int32_t ind,i=0,j,m=-1; cJSON *obj,*item,*array,*lineobj = cJSON_CreateObject();
+    uint32_t timestamp = 0; char *fieldstr; uint64_t l; int32_t ind,i=0,j,m=-1; cJSON *obj,*item,*array,*lineobj = cJSON_CreateObject();
     while ( i+1 < len )
     {
         //printf("ind.%d i.%d vs len.%d\n",linebuf[i],i,len);
         if ( (ind= linebuf[i++]) >= MMJSON_BOUNDARY )
         {
-            printf("illegal field ind.%d (%s)\n",ind,jprint(lineobj,0));
-            free_json(lineobj);
-            return(0);
-        }
+            if ( ind != MMJSON_STRING )
+            {
+                printf("illegal field ind.%d (%s)\n",ind,jprint(lineobj,0));
+                free_json(lineobj);
+                return(0);
+            }
+            else
+            {
+                fieldstr = (char *)&linebuf[i++];
+                while ( linebuf[i] != 0 )
+                    i++;
+                i++;
+            }
+        } else fieldstr = MM_fields[ind];
         if ( linebuf[i] == MMJSON_ARRAY8 )
         {
             i++;
@@ -307,27 +316,27 @@ char *MMJSON_decode(uint8_t *linebuf,int32_t len)
         } else m = -1;
         if ( m >= 0 )
         {
-            //printf("%s i.%d m.%d\n",MM_fields[ind],i,m);
+            //printf("%s i.%d m.%d\n",fieldstr,i,m);
             array = cJSON_CreateArray();
             for (j=0; j<m; j++)
             {
                 item = cJSON_CreateObject();
-                if ( (i= MMJSON_decodeitem(item,linebuf,i,len,ind,&timestamp)) < 0 )
+                if ( (i= MMJSON_decodeitem(item,linebuf,i,len,fieldstr,&timestamp)) < 0 )
                 {
-                    printf("error decoding item ind.%d (%s)\n",ind,jprint(lineobj,0));
+                    printf("error decoding item ind.%s (%s)\n",fieldstr,jprint(lineobj,0));
                     free_json(array);
                     free_json(lineobj);
                     return(0);
                 }
-                obj = jobj(item,MM_fields[ind]);
+                obj = jobj(item,fieldstr);
                 jaddi(array,jduplicate(obj));
                 free_json(item);
             }
-            jadd(lineobj,MM_fields[ind],array);
+            jadd(lineobj,fieldstr,array);
         }
-        else if ( (i= MMJSON_decodeitem(lineobj,linebuf,i,len,ind,&timestamp)) < 0 )
+        else if ( (i= MMJSON_decodeitem(lineobj,linebuf,i,len,fieldstr,&timestamp)) < 0 )
         {
-            printf("error decoding item ind.%d (%s)\n",ind,jprint(lineobj,0));
+            printf("error decoding item ind.%s (%s)\n",fieldstr,jprint(lineobj,0));
             free_json(lineobj);
             return(0);
         }
@@ -336,13 +345,17 @@ char *MMJSON_decode(uint8_t *linebuf,int32_t len)
     return(jprint(lineobj,1));
 }
 
-int32_t MMJSON_encodeval(uint8_t *linebuf,int32_t k,int32_t ind,char *v,uint32_t *timestampp,cJSON *ptr)
+int32_t MMJSON_encodeval(uint8_t *linebuf,int32_t k,int32_t ind,char *v,uint32_t *timestampp,cJSON *ptr,char *fieldstr)
 {
-    double val; char checkstr[512]; uint64_t l; int32_t valind,len,isstr,coinind,j,dots,diff;
-    if ( strcmp("utxocoin",MM_fields[ind]) == 0 || strcmp("alice",MM_fields[ind]) == 0 || strcmp("bob",MM_fields[ind]) == 0 || strcmp("base",MM_fields[ind]) == 0 || strcmp("rel",MM_fields[ind]) == 0 || strcmp("coin",MM_fields[ind]) == 0 || strcmp("txfee",MM_fields[ind]) == 0 || strcmp("desttxfee",MM_fields[ind]) == 0 || strcmp("price64",MM_fields[ind]) == 0 || strcmp("satoshis",MM_fields[ind]) == 0 || strcmp("destsatoshis",MM_fields[ind]) == 0 )
-        isstr = 1;
-    else isstr = 0;
-    //printf("%s.(%s) k.%d\n",MM_fields[ind],v,k);
+    double val; char checkstr[512]; uint64_t l; int32_t valind,len,isstr=0,coinind,j,dots,diff;
+    if ( ind >= 0 )
+    {
+        fieldstr = MM_fields[ind];
+        if ( strcmp("utxocoin",fieldstr) == 0 || strcmp("alice",fieldstr) == 0 || strcmp("bob",fieldstr) == 0 || strcmp("base",fieldstr) == 0 || strcmp("rel",fieldstr) == 0 || strcmp("coin",fieldstr) == 0 || strcmp("txfee",fieldstr) == 0 || strcmp("desttxfee",fieldstr) == 0 || strcmp("price64",fieldstr) == 0 || strcmp("satoshis",fieldstr) == 0 || strcmp("destsatoshis",fieldstr) == 0 )
+            isstr = 1;
+        else isstr = 0;
+    }
+    //printf("%s.(%s) k.%d\n",fieldstr,v,k);
     if ( (valind= mmfind(v)) >= 0 )
     {
         linebuf[k++] = valind;
@@ -435,12 +448,12 @@ int32_t MMJSON_encodeval(uint8_t *linebuf,int32_t k,int32_t ind,char *v,uint32_t
         else if ( l < 0x1000000 )
         {
             linebuf[k++] = isstr != 0 ? MMJSON_DECIMAL24STR : MMJSON_DECIMAL24;
-            //printf("decimal24 %llu %s (%s) %d\n",(long long)l,v,MM_fields[ind],linebuf[k-1]);
+            //printf("decimal24 %llu %s (%s) %d\n",(long long)l,v,fieldstr,linebuf[k-1]);
             k += MMJSON_rwnum(1,&linebuf[k],&l,3);
         }
         else if ( l < 0x100000000LL )
         {
-            if ( v[0] != '"' && *timestampp == 0 && strcmp(MM_fields[ind],"timestamp") == 0 )
+            if ( v[0] != '"' && *timestampp == 0 && strcmp(fieldstr,"timestamp") == 0 )
             {
                 *timestampp = (uint32_t)atol(v);
                 //printf("<timestamp> ");
@@ -504,7 +517,7 @@ int32_t MMJSON_encodeval(uint8_t *linebuf,int32_t k,int32_t ind,char *v,uint32_t
             if ( v[j] == 0 )
             {
                 printf("unexpected missing string value.(%s)\n",v);
-                ind = mmadd(v);
+                //ind = mmadd(v);
                 //printf("%s.<%s>.%d ",s,v,ind);
                 //linebuf[k++] = ind;
                 linebuf[k++] = MMJSON_STRING;
@@ -566,11 +579,11 @@ int32_t MMJSON_encode(uint8_t *linebuf,char *line)
                 s = jfieldname(ptr);
                 if ( (ind= mmfind(s)) < 0 )
                 {
-                    printf("unexpected missing.(%s)\n",s);
+                    printf("missing field.(%s) add to MM_fields[]\n",s);
                     linebuf[k++] = MMJSON_STRING;
                     memcpy(&linebuf[k],s,strlen(s)+1);
                     k += (int32_t)strlen(s) + 1;
-                    ind = mmadd(s);
+                    //ind = mmadd(s);
                 } else linebuf[k++] = ind;
                 //printf("%s ",s);
                 if ( (array= jobj(lineobj,s)) != 0 && is_cJSON_Array(array) != 0 )
@@ -598,11 +611,11 @@ int32_t MMJSON_encode(uint8_t *linebuf,char *line)
                         if ( (v= jprint(jitem(array,z),0)) != 0 )
                         {
                             //printf("%d.(%s k.%d).%d ",z,v,k,asize);
-                            k = MMJSON_encodeval(linebuf,k,ind,v,&timestamp,ptr);
+                            k = MMJSON_encodeval(linebuf,k,ind,v,&timestamp,ptr,s);
                             free(v);
                         } else printf("ERROR.(%s) ",jprint(jitem(array,z),0));
                     }
-                    //printf("%s array.%d k.%d\n",MM_fields[ind],asize,k);
+                    //printf("%s array.%d k.%d\n",fieldstr,asize,k);
                     continue;
                 }
                 else if ( (v= jstr(lineobj,s)) == 0 )
@@ -614,7 +627,7 @@ int32_t MMJSON_encode(uint8_t *linebuf,char *line)
                 if ( v != 0 )
                 {
                     //printf("%s\n",v);
-                    k = MMJSON_encodeval(linebuf,k,ind,v,&timestamp,ptr);
+                    k = MMJSON_encodeval(linebuf,k,ind,v,&timestamp,ptr,s);
                 }
                 else printf("ERROR.(%s) ",jprint(jobj(lineobj,s),0));
                 if ( allocv_flag != 0 && v != 0 )
