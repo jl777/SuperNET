@@ -2200,10 +2200,10 @@ void iguana_main(void *arg)
             do_OStests = 1;
         else if ( strcmp((char *)arg,"stats") == 0 )
         {
-            void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag);
+            void iguana_notarystats(int32_t totals[64],int32_t dispflag);
             int32_t totals[64];
             memset(totals,0,sizeof(totals));
-            iguana_notarystats("signedmasks",totals,1);
+            iguana_notarystats(totals,1);
             exit(0);
         }
         else if ( strcmp((char *)arg,"notary") == 0 )

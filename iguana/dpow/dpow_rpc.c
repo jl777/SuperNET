@@ -171,63 +171,6 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
     return(num);
 }
 
-void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
-{
-    FILE *fp; uint64_t signedmask; long fpos,startfpos; int32_t i,height,iter,prevheight;
-    if ( (fp= fopen(fname,"rb")) != 0 )
-    {
-        printf("opened %s\n",fname);
-        startfpos = 0;
-        prevheight = -1;
-        for (iter=0; iter<2; iter++)
-        {
-            while ( 1 )
-            {
-                fpos = ftell(fp);
-                if (fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
-                {
-                    //printf("%6d %016llx\n",height,(long long)signedmask);
-                    if ( height < prevheight )
-                    {
-                        startfpos = fpos;
-                        if ( iter == 0 )
-                            printf("found reversed height %d vs %d\n",height,prevheight);
-                        else printf("fpos.%ld fatal unexpected height reversal %d vs %d\n",fpos,height,prevheight);
-                    }
-                    if ( iter == 1 && height >= 180000 )
-                    {
-                        for (i=0; i<64; i++)
-                        {
-                            if ( ((1LL << i) & signedmask) != 0 )
-                            {
-                                totals[i]++;
-                                printf("%d ",i);
-                            }
-                        }
-                        printf("height.%d %016llx\n",height,(long long)signedmask);
-                    }
-                    prevheight = height;
-                } else break;
-            }
-            if ( iter == 0 )
-            {
-                prevheight = -1;
-                fseek(fp,startfpos,SEEK_SET);
-                printf("set startfpos %ld\n",startfpos);
-            }
-        }
-        fclose(fp);
-        //if ( dispflag != 0 )
-        {
-            for (i=0; i<64; i++)
-            {
-                if ( totals[i] != 0 )
-                    printf("%s, %d\n",Notaries_elected[i][0],totals[i]);
-            }
-        }
-    } else printf("couldnt open.(%s)\n",fname);
-}
-
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *retstr; bits256 blockhash;
