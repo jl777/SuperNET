@@ -583,7 +583,7 @@ void _iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
                             printf("found reversed height %d vs %d\n",height,prevheight);
                         else printf("fpos.%ld fatal unexpected height reversal %d vs %d\n",fpos,height,prevheight);
                     }
-                    if ( iter == 1 && height >= 180000 )
+                    if ( iter == 1 && (height >= 180000 || strcmp(fname,"signedmasks") != 0) )
                     {
                         for (i=0; i<64; i++)
                         {
