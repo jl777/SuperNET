@@ -32,13 +32,15 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char 
 
 char *stats_validmethods[] =
 {
-    "psock", "getprices", "notify", "getpeers",  // from issue_  "uitem", "listunspent",
-    "orderbook", "statsdisp", "help", "getcoins", "pricearray", "balance", "tradesarray"
+    "psock", "ticker", "balances", "getprice", "notify", "getpeers",  // from issue_  "uitem", "listunspent",
+    "orderbook", "statsdisp", "fundvalue", "help", "getcoins", "pricearray", "balance", "tradesarray"
 };
 
 int32_t LP_valid_remotemethod(cJSON *argjson)
 {
     char *method; int32_t i;
+    if ( DOCKERFLAG != 0 )
+        return(1);
     if ( (method= jstr(argjson,"method")) != 0 )
     {
         for (i=0; i<sizeof(stats_validmethods)/sizeof(*stats_validmethods); i++)
@@ -712,7 +714,7 @@ void LP_rpc_processreq(void *_ptr)
                 response = malloc(strlen(retstr)+1024+1+1);
                 //printf("alloc response.%p\n",response);
             }
-            sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr));
+            sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr)+1);
             response[0] = '\0';
             strcat(response,hdrs);
             strcat(response,retstr);
@@ -791,7 +793,7 @@ void stats_rpcloop(void *args)
             //fcntl(bindsock, F_SETFL, fcntl(bindsock, F_GETFL, 0) | O_NONBLOCK);
 #endif
             //if ( counter++ < 1 )
-                printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
+                printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled at unixtime.%u <<<<<<<<<\n",port,bindsock,(uint32_t)time(NULL));
         }
         //printf("after sock.%d\n",sock);
         clilen = sizeof(cli_addr);
@@ -815,6 +817,8 @@ void stats_rpcloop(void *args)
         }
 #endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
+        if ( DOCKERFLAG != 0 && (DOCKERFLAG == 1 || ipbits == DOCKERFLAG) )
+            ipbits = localhostbits;
         if ( port == RPC_port && ipbits != localhostbits )
         {
             //printf("port.%u RPC_port.%u ipbits %x != %x\n",port,RPC_port,ipbits,localhostbits);

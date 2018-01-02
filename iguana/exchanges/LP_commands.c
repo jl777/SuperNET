@@ -110,6 +110,7 @@ enable(coin)\n\
 disable(coin)\n\
 notarizations(coin)\n\
 statsdisp(starttime=0, endtime=0, gui="", pubkey="", base="", rel="")\n\
+ticker(base="", rel="")\n\
 tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]\n\
 pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 getrawtransaction(coin, txid)\n\
@@ -119,7 +120,7 @@ buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
 withdraw(coin, outputs[])\n\
 sendrawtransaction(coin, signedtx)\n\
-swapstatus()\n\
+swapstatus(pending=0)\n\
 swapstatus(coin, limit=10)\n\
 swapstatus(base, rel, limit=10)\n\
 swapstatus(requestid, quoteid)\n\
@@ -135,6 +136,8 @@ listunspent(coin, address)\n\
 setconfirms(coin, numconfirms, maxconfirms=6)\n\
 trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
 balance(coin, address)\n\
+balances(address)\n\
+fundvalue(address="", holdings=[], divisor=0)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
 getprice(base, rel)\n\
@@ -155,7 +158,7 @@ bot_settings(botid, newprice, newvolume)\n\
 bot_status(botid)\n\
 bot_stop(botid)\n\
 bot_pause(botid)\n\
-instantdex_deposit(weeks, amount, broadcast=0)\n\
+instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
@@ -170,19 +173,22 @@ instantdex_claim()\n\
     {
         if ( G.USERPASS_COUNTER == 0 )
         {
+            char pub33str[67];
             G.USERPASS_COUNTER = 1;
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"userpass",G.USERPASS);
             jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+            init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
+            jaddstr(retjson,"pubsecp",pub33str);
             jadd(retjson,"coins",LP_coinsjson(LP_showwif));
             return(jprint(retjson,1));
         }
-        if ( strcmp(method,"passphrase") != 0 && ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) )
+        if ( ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) ) //strcmp(method,"passphrase") != 0 && 
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         jdelete(argjson,"userpass");
         if ( strcmp(method,"passphrase") == 0 )
         {
-            char coinaddr[64];
+            char coinaddr[64],pub33str[67];
             G.USERPASS_COUNTER = 1;
             if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
                 return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
@@ -191,11 +197,14 @@ instantdex_claim()\n\
                 jaddstr(retjson,"result","success");
                 jaddstr(retjson,"userpass",G.USERPASS);
                 jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+                init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
+                jaddstr(retjson,"pubsecp",pub33str);
                 bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
                 jaddstr(retjson,"KMD",coinaddr);
                 bitcoin_address(coinaddr,0,0,G.LP_myrmd160,20);
                 jaddstr(retjson,"BTC",coinaddr);
                 jaddstr(retjson,"NXT",G.LP_NXTaddr);
+                jadd(retjson,"coins",LP_coinsjson(LP_showwif));
                 return(jprint(retjson,1));
             }
         }
@@ -205,7 +214,7 @@ instantdex_claim()\n\
             {
                 if ( jint(argjson,"weeks") <= 0 || jdouble(argjson,"amount") < 10. )
                     return(clonestr("{\"error\":\"instantdex_deposit needs to have weeks and amount\"}"));
-                else return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jint(argjson,"broadcast")));
+                else return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jobj(argjson,"broadcast") != 0 ? jint(argjson,"broadcast") : 1));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
         }
@@ -276,6 +285,10 @@ instantdex_claim()\n\
         {
             return(jprint(LP_statslog_disp(juint(argjson,"starttime"),juint(argjson,"endtime"),jstr(argjson,"gui"),jbits256(argjson,"pubkey"),jstr(argjson,"base"),jstr(argjson,"rel")),1));
         }
+        else if ( strcmp(method,"ticker") == 0 )
+        {
+            return(LP_ticker(jstr(argjson,"base"),jstr(argjson,"rel")));
+        }
         else if ( strcmp(method,"secretaddresses") == 0 )
         {
             uint8_t taddr,pubtype;
@@ -287,14 +300,12 @@ instantdex_claim()\n\
         {
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
-            {
                 return(basilisk_swapentry(requestid,quoteid,1));
-            }
             else if ( coin[0] != 0 )
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
             else if ( base[0] != 0 && rel[0] != 0 )
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
-            else return(basilisk_swaplist(0,0,0));
+            else return(basilisk_swaplist(0,0,0,jint(argjson,"pending")));
         }
         else if ( strcmp(method,"dynamictrust") == 0 )
         {
@@ -320,21 +331,9 @@ instantdex_claim()\n\
             double price,bid,ask;
             if ( strcmp(method,"autoprice") == 0 )
             {
-                if ( LP_autoprice(base,rel,argjson) < 0 )
+                if ( LP_autoprice(ctx,base,rel,argjson) < 0 )
                     return(clonestr("{\"error\":\"couldnt set autoprice\"}"));
                 else return(clonestr("{\"result\":\"success\"}"));
-            }
-            else if ( strcmp(method,"getprice") == 0 )
-            {
-                double price;
-                price = LP_price(base,rel);
-                retjson = cJSON_CreateObject();
-                jaddstr(retjson,"result","success");
-                jaddstr(retjson,"base",base);
-                jaddstr(retjson,"rel",rel);
-                jaddnum(retjson,"timestamp",time(NULL));
-                jaddnum(retjson,"price",price);
-                return(jprint(retjson,1));
             }
             else if ( strcmp(method,"pricearray") == 0 )
             {
@@ -359,7 +358,7 @@ instantdex_claim()\n\
                     return(clonestr("{\"error\":\"couldnt set price\"}"));
                 //else if ( LP_mypriceset(&changed,rel,base,1./price) < 0 )
                 //    return(clonestr("{\"error\":\"couldnt set price\"}"));
-                else if ( jobj(argjson,"broadcast") == 0 || jint(argjson,"broadcast") != 0 )
+                else if ( price == 0. || jobj(argjson,"broadcast") == 0 || jint(argjson,"broadcast") != 0 )
                     return(LP_pricepings(ctx,myipaddr,LP_mypubsock,base,rel,price * LP_profitratio));
                 else return(clonestr("{\"result\":\"success\"}"));
             }
@@ -432,6 +431,8 @@ instantdex_claim()\n\
                             if ( strcmp(ptr->symbol,"KMD") == 0 )
                                 LP_importaddress("KMD",BOTS_BONDADDRESS);
                         }
+                        if ( 0 && strcmp(coin,"BCH") == 0 )
+                            test_validate(ptr,"010000000110b365ea6b8a9f2d56dc12de868e382dc787b2e29355f9b357dcf764c5e29cb1010000006b483045022100c605b993f1db5f31046ebb9065bea0a047f478342bbad8fcfc6af81d05236bd502206e9993a737a8814b935b5e522e750c915e7d37e3bd8367f087d4510f66acac47412102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ffffffff014bc22900000000001976a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac00000000");
                         array = cJSON_CreateArray();
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));
@@ -462,7 +463,7 @@ instantdex_claim()\n\
                             LP_address(ptr,coinaddr);
                             if ( strcmp(coinaddr,ptr->smartaddr) == 0 && bits256_nonz(G.LP_privkey) != 0 )
                             {
-                                //LP_listunspent_issue(coin,coinaddr,2);
+                                LP_listunspent_issue(coin,coinaddr,2,zero,zero);
                                 //LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
                             }
                             return(jprint(LP_listunspent(coin,coinaddr,zero,zero),1));
@@ -634,6 +635,27 @@ instantdex_claim()\n\
         return(LP_notify_recv(argjson));
     else if ( strcmp(method,"getpeers") == 0 )
         retstr = clonestr("{\"error\":\"deprecated\"}");
+    else if ( strcmp(method,"balances") == 0 )
+        return(jprint(LP_balances(jstr(argjson,"address")),1));
+    else if ( strcmp(method,"fundvalue") == 0 )
+        return(jprint(LP_fundvalue(argjson),1));
+    else if ( strcmp(method,"getprice") == 0 )
+    {
+        double price,bid,ask;
+        ask = LP_price(base,rel);
+        if ( (bid= LP_price(rel,base)) > SMALLVAL )
+            bid = 1./bid;
+        price = _pairaved(bid,ask);
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","success");
+        jaddstr(retjson,"base",base);
+        jaddstr(retjson,"rel",rel);
+        jaddnum(retjson,"timestamp",time(NULL));
+        jaddnum(retjson,"bid",bid);
+        jaddnum(retjson,"ask",ask);
+        jaddnum(retjson,"price",price);
+        return(jprint(retjson,1));
+    }
     /*else if ( strcmp(method,"getpeers") == 0 )
     {
         char *tmpstr;

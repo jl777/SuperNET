@@ -33,7 +33,7 @@ static char *assetids[][4] =
     { "13476425053110940554", "CRYPTO", "1000", "100000" },
     { "6932037131189568014", "HODL", "1", "100000000" },
     //{ "3006420581923704757", "SHARK", "10000", "10000" },
-    { "3006420581923704757", "MSHARK", "10000", "10000000" },
+    { "3006420581923704757", "MSHARK", "10", "10000000" },
     { "17571711292785902558", "BOTS", "1", "100000000" },
     { "10524562908394749924", "MGW", "1", "100000000" },
     { "8217222248380501882", "MESH", "10000", "10000" },
@@ -202,8 +202,10 @@ void NXTventure_liquidation()
 cJSON *LP_NXT_redeems()
 {
     char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[2][sizeof(assetids)/sizeof(*assetids)],mult,txnum,assetid,qty; int32_t i,ind,numtx=0,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
-    uint64_t txnum_marker = calc_nxt64bits("5509605741355242617");
-    uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143");
+    //sleep 1; fiat/supernet sendtoaddress RNZZuQYu8xJLZHuekhd96hYfoQuiCMz99T 1001.44150000 # txnum.8537615468620726612
+    //sleep 1; fiat/pangea sendtoaddress RWMdRaUmMZqKkEibwEhY6XS3RLCXJDWHTi 22.10910000 # txnum.2649622877615958504
+    uint64_t txnum_marker = calc_nxt64bits("8537615468620726612"); // 2649622877615958504"); // set to most recent processed
+    uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143"); // dont change, end marker
     char *passphrase = "";
     char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
     memset(totals,0,sizeof(totals));

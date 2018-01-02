@@ -49,7 +49,7 @@ int32_t _LP_inuse_delete(bits256 txid,int32_t vout)
             *lp = LP_inuse[--LP_numinuse];
         lp->ind = ind;
         memset(&LP_inuse[LP_numinuse],0,sizeof(struct LP_inuse_info));
-        printf("_LP_inuse_delete mark as free %s/v%d find.%p\n",bits256_str(str,txid),vout,_LP_inuse_find(txid,vout));
+        //printf("_LP_inuse_delete mark as free %s/v%d find.%p\n",bits256_str(str,txid),vout,_LP_inuse_find(txid,vout));
         for (ind=0; ind<LP_numinuse; ind++)
             if ( LP_inuse[ind].ind != ind )
                 printf("ind.%d of %d: mismatched ind.%d\n",ind,LP_numinuse,LP_inuse[ind].ind);
@@ -484,7 +484,11 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
-                else m++;
+                else
+                {
+                    m++;
+                    //printf("%.8f ",dstr(value));
+                }
             }
             //printf("added %d from listunspents\n",m);
         }
@@ -578,9 +582,9 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
 cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electrumret)
 {
     cJSON *array,*retjson,*item; bits256 zero; int32_t i,n; uint64_t balance = 0;
+    memset(zero.bytes,0,sizeof(zero));
     if ( coin->electrum == 0 )
     {
-        memset(zero.bytes,0,sizeof(zero));
         if ( (array= LP_listunspent(coin->symbol,coinaddr,zero,zero)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -596,23 +600,12 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
     }
     else
     {
-        //if ( strcmp(coin->smartaddr,coinaddr) == 0 )
-            balance = LP_unspents_load(coin->symbol,coinaddr);
-        /*else
+        if ( strcmp(coin->smartaddr,coinaddr) != 0 )
         {
-            if ( (array= LP_address_utxos(coin,coinaddr,1)) != 0 )
-            {
-                if ( (n= cJSON_GetArraySize(array)) > 0 )
-                {
-                    for (i=0; i<n; i++)
-                    {
-                        item = jitem(array,i);
-                        balance += j64bits(item,"value");
-                    }
-                }
-                free_json(array);
-            }
-        }*/
+            if ( (retjson= electrum_address_listunspent(coin->symbol,coin->electrum,&retjson,coinaddr,2,zero,zero)) != 0 )
+                free_json(retjson);
+        }
+        balance = LP_unspents_load(coin->symbol,coinaddr);
     }
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
@@ -625,6 +618,78 @@ cJSON *LP_address_balance(struct iguana_info *coin,char *coinaddr,int32_t electr
         jadd(retjson,"zdebits",LP_myzdebits());
     }
     return(retjson);
+}
+
+cJSON *LP_balances(char *coinaddr)
+{
+    struct iguana_info *coin,*tmp; char address[64]; uint8_t taddr,addrtype,rmd160[20]; uint64_t balance,KMDvalue,sum = 0; cJSON *array,*item,*retjson;
+    if ( coinaddr != 0 && coinaddr[0] == 't' && (coinaddr[1] == '1' || coinaddr[1] == '3') )
+        taddr = 1;
+    else taddr = 0;
+    array = cJSON_CreateArray();
+    HASH_ITER(hh,LP_coins,coin,tmp)
+    {
+        if ( coin->electrum != 0 || (coinaddr != 0 && coinaddr[0] != 0 && strcmp(coinaddr,coin->smartaddr) != 0) )
+        {
+            if ( coinaddr == 0 || coinaddr[0] == 0 )
+                strcpy(address,coin->smartaddr);
+            else
+            {
+                bitcoin_addr2rmd160(taddr,&addrtype,rmd160,coinaddr);
+                bitcoin_address(address,coin->taddr,coin->pubtype,rmd160,20);
+                //printf("%s taddr.%d addrtype.%u %s -> %s [%c %c].%d\n",coin->symbol,taddr,addrtype,coinaddr,address,coinaddr[0],coinaddr[1],coinaddr[0] == 't' && (coinaddr[1] == '1' || coinaddr[1] == '3'));
+            }
+            if ( (retjson= LP_address_balance(coin,address,1)) != 0 )
+            {
+                if ( (balance= jdouble(retjson,"balance")*SATOSHIDEN) > 0 )
+                {
+                    item = cJSON_CreateObject();
+                    jaddstr(item,"coin",coin->symbol);
+                    jaddnum(item,"balance",dstr(balance));
+                    if ( (KMDvalue= LP_KMDvalue(coin,balance)) != 0 )
+                    {
+                        jaddnum(item,"KMDvalue",dstr(KMDvalue));
+                        sum += KMDvalue;
+                    }
+                    if ( coin->electrum != 0 && strcmp(address,coin->smartaddr) == 0 && strcmp(coin->symbol,"KMD") == 0 )
+                    {
+                        jaddnum(item,"zcredits",dstr(LP_myzcredits()));
+                        //jadd(item,"zdebits",LP_myzdebits());
+                    }
+                    jaddi(array,item);
+                }
+                free_json(retjson);
+            }
+        }
+        else
+        {
+            if ( (balance= LP_RTsmartbalance(coin)) != 0 )
+            {
+                item = cJSON_CreateObject();
+                jaddstr(item,"coin",coin->symbol);
+                jaddnum(item,"balance",dstr(balance));
+                if ( (KMDvalue= LP_KMDvalue(coin,balance)) != 0 )
+                {
+                    jaddnum(item,"KMDvalue",dstr(KMDvalue));
+                    sum += KMDvalue;
+                }
+                if ( strcmp(coin->symbol,"KMD") == 0 )
+                {
+                    jaddnum(item,"zcredits",dstr(LP_myzcredits()));
+                    //jadd(item,"zdebits",LP_myzdebits());
+                }
+                jaddi(array,item);
+            }
+        }
+    }
+    if ( sum != 0 )
+    {
+        item = cJSON_CreateObject();
+        jaddstr(item,"coin","total");
+        jaddnum(item,"balance",dstr(sum));
+        jaddi(array,item);
+    }
+    return(array);
 }
 
 int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)

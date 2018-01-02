@@ -30,6 +30,7 @@ void *LP_alloc(uint64_t len);
 void LP_free(void *ptr);
 char *LP_clonestr(char *str);*/
 
+int32_t bitcoind_RPC_inittime;
 
 #if LIQUIDITY_PROVIDER
 #include <curl/curl.h>
@@ -73,7 +74,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     char *retstr = 0;
     cJSON *json,*result,*error;
 #ifdef FROM_MARKETMAKER
-    usleep(3000);
+    //usleep(3000);
 #endif
     //printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
@@ -190,7 +191,16 @@ try_again:
     curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
 	curl_easy_setopt(curl_handle,CURLOPT_NOPROGRESS,	1L);			// no progress callback
     if ( timeout > 0 )
-        curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,	timeout); // causes problems with iguana timeouts
+    {
+        if ( bitcoind_RPC_inittime != 0 )
+        {
+#ifndef _WIN32
+            curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,1);
+#else
+            curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT_MS, timeout*100);
+#endif
+        } else curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,timeout); // causes problems with iguana timeouts
+    }
     if ( strncmp(url,"https",5) == 0 )
     {
         curl_easy_setopt(curl_handle,CURLOPT_SSL_VERIFYPEER,0);

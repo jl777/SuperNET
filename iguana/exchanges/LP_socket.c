@@ -1034,8 +1034,10 @@ void LP_dedicatedloop(void *arg)
                     }
                     else
                     {
+#ifndef _WIN32
                         printf("no more electrum data when expected2\n");
                         electrum_kickstart(ep);
+#endif
                         break;
                     }
                 }
@@ -1129,6 +1131,13 @@ cJSON *LP_electrumserver(struct iguana_info *coin,char *ipaddr,uint16_t port)
             {
                 LP_cacheptrs_init(coin);
                 coin->loadedcache = (uint32_t)time(NULL);
+            }
+            if ( 0 && strcmp(coin->symbol,"ZEC") == 0 )
+            {
+                void for_satinder();
+                sleep(3);
+                for_satinder();
+                getchar();
             }
         }
     }

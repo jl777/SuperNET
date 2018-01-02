@@ -40,6 +40,15 @@ struct LP_tradebot
     struct LP_tradebot_trade *trades[LP_TRADEBOTS_MAXTRADES];
 } *LP_tradebots;
 
+void LP_tradebot_pauseall()
+{
+    struct LP_tradebot *bot,*tmp;
+    DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
+    {
+        bot->userpause = bot->pause = (uint32_t)time(NULL);
+    }
+}
+
 void LP_tradebot_updatestats(struct LP_tradebot *bot,struct LP_tradebot_trade *tp)
 {
     char *swapstr,*status; int32_t flag; cJSON *swapjson;

@@ -297,6 +297,10 @@ int32_t LP_finished_lastheight(struct LP_swapstats *sp)
     int32_t height = 1; struct iguana_info *bob,*alice; //char str[65];
     if ( (bob= LP_coinfind(sp->Q.srccoin)) != 0 && (alice= LP_coinfind(sp->Q.destcoin)) != 0 )
     {
+        if ( strcmp(bob->symbol,"BTC") == 0 )
+            sp->bobneeds_dPoW = 0;
+        if ( strcmp(alice->symbol,"BTC") == 0 )
+            sp->aliceneeds_dPoW = 0;
         if ( sp->bobneeds_dPoW != 0 )
         {
             if ( bits256_nonz(sp->bobdeposit) != 0 && sp->bobdeposit_ht == 0 )
@@ -451,6 +455,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         {
             HASH_ITER(hh,LP_swapstats,sp,tmp)
             {
+                static uint32_t counter;
                 if ( sp->Q.R.requestid == requestid && sp->Q.R.quoteid == quoteid )
                 {
                     sp->methodind = methodind;
@@ -459,7 +464,8 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                         flag = 1;
                         break;
                     }
-                    printf("error after delayed match\n");
+                    if ( counter++ < 10 )
+                        printf("error after delayed match\n");
                 }
             }
         }
@@ -643,7 +649,7 @@ char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
     //printf("gettradestatus.(%llu)\n",(long long)aliceid);
     if ( IAMLP != 0 )
     {
-        if ( (sp= LP_swapstats_find(aliceid)) != 0 )
+        if ( (sp= LP_swapstats_find(aliceid)) != 0 && sp->Q.satoshis != 0 && sp->Q.destsatoshis != 0 && bits256_nonz(sp->bobdeposit) != 0 )
         {
             if ( time(NULL) > sp->lasttime+60 )
             {
@@ -693,9 +699,9 @@ int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttim
         dispflag = 1;
     else if ( sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime )
         dispflag = 1;
-    if ( refbase != 0 && strcmp(refbase,sp->Q.srccoin) != 0 && strcmp(refbase,sp->Q.destcoin) != 0 )
+    if ( refbase != 0 && refbase[0] != 0 && strcmp(refbase,sp->Q.srccoin) != 0 && strcmp(refbase,sp->Q.destcoin) != 0 )
         dispflag = 0;
-    if ( refrel != 0 && strcmp(refrel,sp->Q.srccoin) != 0 && strcmp(refrel,sp->Q.destcoin) != 0 )
+    if ( refrel != 0 && refrel[0] != 0 && strcmp(refrel,sp->Q.srccoin) != 0 && strcmp(refrel,sp->Q.destcoin) != 0 )
         dispflag = 0;
     if ( dispflag != 0 )
     {
@@ -756,7 +762,7 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
     }
     HASH_ITER(hh,LP_pubkeyinfos,pubp,ptmp)
     {
-        pubp->dynamictrust = LP_dynamictrust(pubp->pubkey,0);
+        pubp->dynamictrust = LP_dynamictrust(0,pubp->pubkey,0);
     }
     //printf("RT.%d completed.%d\n",LP_RTcount,LP_swapscount);
     jadd(retjson,"swaps",array);
@@ -789,7 +795,34 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
     return(retjson);
 }
 
-//tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]
+char *LP_ticker(char *refbase,char *refrel)
+{
+    cJSON *logjson,*retjson,*item,*retitem,*swapsjson; double basevol,relvol; char *base,*rel; int32_t i,n; bits256 zero; uint32_t now = (uint32_t)time(NULL);
+    memset(zero.bytes,0,sizeof(zero));
+    if ( (logjson= LP_statslog_disp(now - 3600*24,now,"",zero,refbase,refrel)) != 0 )
+    {
+        retjson = cJSON_CreateArray();
+        if ( (swapsjson= jarray(&n,logjson,"swaps")) != 0 )
+        {
+            for (i=n-1; i>=0; i--)
+            {
+                item = jitem(swapsjson,i);
+                retitem = cJSON_CreateObject();
+                if ( (base= jstr(item,"base")) != 0 && (rel= jstr(item,"rel")) != 0 && (basevol= jdouble(item,"basevol")) > SMALLVAL )
+                {
+                    relvol = jdouble(item,"relvol");
+                    jaddnum(retitem,"timestamp",juint(item,"timestamp"));
+                    jaddnum(retitem,base,basevol);
+                    jaddnum(retitem,rel,relvol);
+                    jaddnum(retitem,"price",relvol/basevol);
+                }
+                jaddi(retjson,retitem);
+            }
+        }
+        free_json(logjson);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"couldnt get logjson\"}"));
+}
 
 struct LP_ohlc
 {
@@ -803,8 +836,9 @@ cJSON *LP_ohlc_json(struct LP_ohlc *bar,struct LP_ohlc *prevbar)
     memset(&tmp,0,sizeof(tmp));
     if ( bar->numtrades == 0 )
     {
-        tmp = *prevbar;
+        memset(&tmp,0,sizeof(tmp));
         tmp.timestamp = bar->timestamp;
+        tmp.open = tmp.high = tmp.low = tmp.close = prevbar->close;
         tmp.numtrades = 0;
         tmp.relsum = tmp.basesum = 0.;
     } else tmp = *bar;
@@ -851,9 +885,9 @@ void LP_ohlc_update(struct LP_ohlc *bar,uint32_t timestamp,double basevol,double
     }
 }
 
-cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,int32_t timescale)
+cJSON *LP_tradesarray(char *refbase,char *refrel,uint32_t starttime,uint32_t endtime,int32_t timescale)
 {
-    struct LP_ohlc *bars,nonz; cJSON *array,*item,*statsjson,*swaps; uint32_t timestamp; bits256 zero; int32_t i,n,numbars,bari;
+    struct LP_ohlc *bars,nonz; cJSON *array,*item,*statsjson,*swaps; uint32_t timestamp; bits256 zero; char *base,*rel; int32_t i,n,numbars,bari;
     if ( timescale < 60 )
         return(cJSON_Parse("{\"error\":\"one minute is shortest timescale\"}"));
     memset(zero.bytes,0,sizeof(zero));
@@ -865,7 +899,7 @@ cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,i
     bars = calloc(numbars,sizeof(*bars));
     for (bari=0; bari<numbars; bari++)
         bars[bari].timestamp = starttime + bari*timescale;
-    if ( (statsjson= LP_statslog_disp(starttime,endtime,"",zero,base,rel)) != 0 )
+    if ( (statsjson= LP_statslog_disp(starttime,endtime,"",zero,refbase,refrel)) != 0 )
     {
         if ( (swaps= jarray(&n,statsjson,"swaps")) != 0 )
         {
@@ -875,7 +909,12 @@ cJSON *LP_tradesarray(char *base,char *rel,uint32_t starttime,uint32_t endtime,i
                 if ( (timestamp= juint(item,"timestamp")) != 0 && timestamp >= starttime && timestamp <= endtime )
                 {
                     bari = (timestamp - starttime) / timescale;
+                    base = jstr(item,"base");
+                    rel = jstr(item,"rel");
+                    if ( strcmp(base,refbase) == 0 && strcmp(rel,refrel) == 0 )
                     LP_ohlc_update(&bars[bari],timestamp,jdouble(item,"basevol"),jdouble(item,"relvol"));
+                    else if ( strcmp(rel,refbase) == 0 && strcmp(base,refrel) == 0 )
+                        LP_ohlc_update(&bars[bari],timestamp,jdouble(item,"relvol"),jdouble(item,"basevol"));
                 } else printf("skip.(%s)\n",jprint(item,0));
             }
         }
