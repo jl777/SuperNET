@@ -173,8 +173,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
 
 void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
 {
-    FILE *fp; uint8_t pubkeys[64][33]; uint64_t signedmask; long fpos,startfpos; int32_t i,num,height,iter,prevheight;
-    num = komodo_notaries("KMD",pubkeys,180000);
+    FILE *fp; uint64_t signedmask; long fpos,startfpos; int32_t i,height,iter,prevheight;
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
         printf("opened %s\n",fname);
@@ -197,7 +196,7 @@ void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
                     }
                     if ( iter == 1 && height >= 180000 )
                     {
-                        for (i=0; i<num; i++)
+                        for (i=0; i<64; i++)
                         {
                             if ( ((1LL << i) & signedmask) != 0 )
                             {
@@ -220,7 +219,7 @@ void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
         fclose(fp);
         //if ( dispflag != 0 )
         {
-            for (i=0; i<num; i++)
+            for (i=0; i<64; i++)
             {
                 if ( totals[i] != 0 )
                     printf("%s, %d\n",Notaries_elected[i][0],totals[i]);
