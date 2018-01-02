@@ -171,6 +171,52 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
     return(num);
 }
 
+void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
+{
+    FILE *fp; uint8_t pubkeys[64][33]; uint64_t signedmask; long fpos,startfpos; int32_t i,num,height,iter,prevheight;
+    num = komodo_notaries("KMD",pubkeys,180000);
+    if ( (fp= fopen(fname,"rb")) != 0 )
+    {
+        startfpos = 0;
+        prevheight = -1;
+        for (iter=0; iter<2; iter++)
+        {
+            while ( 1 )
+            {
+                fpos = ftell(fp);
+                if (fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
+                {
+                    if ( height < prevheight )
+                    {
+                        startfpos = fpos;
+                        if ( iter == 0 )
+                            printf("found reversed height %d vs %d\n",height,prevheight);
+                        else printf("fatal unexpected height reversal %d vs %d\n",height,prevheight);
+                    }
+                    if ( iter == 1 && height >= 180000 )
+                    {
+                        for (i=0; i<num; i++)
+                            if ( ((1LL << i) & signedmask) != 0 )
+                                totals[i]++;
+                    }
+                    prevheight = height;
+                }
+            }
+            if ( iter == 0 )
+                fseek(fp,startfpos,SEEK_SET);
+        }
+        fclose(fp);
+        if ( dispflag != 0 )
+        {
+            for (i=0; i<num; i++)
+            {
+                if ( totals[i] != 0 )
+                    printf("%s, %d\n",Notaries_elected[i][0],totals[i]);
+            }
+        }
+    }
+}
+
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *retstr; bits256 blockhash;
