@@ -198,8 +198,14 @@ void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
                     if ( iter == 1 && height >= 180000 )
                     {
                         for (i=0; i<num; i++)
+                        {
                             if ( ((1LL << i) & signedmask) != 0 )
+                            {
                                 totals[i]++;
+                                printf("%d ",i);
+                            }
+                        }
+                        printf("height.%d %016llx\n",height,(long long)signedmask);
                     }
                     prevheight = height;
                 } else break;
@@ -212,7 +218,7 @@ void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
             }
         }
         fclose(fp);
-        if ( dispflag != 0 )
+        //if ( dispflag != 0 )
         {
             for (i=0; i<num; i++)
             {
