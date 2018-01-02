@@ -177,6 +177,7 @@ void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
     num = komodo_notaries("KMD",pubkeys,180000);
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
+        printf("opened %s\n",fname);
         startfpos = 0;
         prevheight = -1;
         for (iter=0; iter<2; iter++)
@@ -214,7 +215,7 @@ void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
                     printf("%s, %d\n",Notaries_elected[i][0],totals[i]);
             }
         }
-    }
+    } else printf("couldnt open.(%s)\n",fname);
 }
 
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
