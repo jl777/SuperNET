@@ -201,7 +201,7 @@ void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
                                 totals[i]++;
                     }
                     prevheight = height;
-                }
+                } else break;
             }
             if ( iter == 0 )
                 fseek(fp,startfpos,SEEK_SET);
