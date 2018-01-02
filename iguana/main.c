@@ -2198,11 +2198,19 @@ void iguana_main(void *arg)
     {
         if ( strcmp((char *)arg,"OStests") == 0 )
             do_OStests = 1;
+        else if ( strcmp((char *)arg,"stats") == 0 )
+        {
+            void iguana_notarystats(int32_t totals[64],int32_t dispflag);
+            int32_t totals[64];
+            memset(totals,0,sizeof(totals));
+            iguana_notarystats(totals,1);
+            exit(0);
+        }
         else if ( strcmp((char *)arg,"notary") == 0 )
         {
             myinfo->rpcport = IGUANA_NOTARYPORT;
             myinfo->IAMNOTARY = 1;
-            myinfo->DEXEXPLORER = 1;
+            myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
         }
         else if ( strncmp((char *)arg,"-port=",6) == 0 )
         {
@@ -2261,22 +2269,6 @@ void iguana_main(void *arg)
     else
     {
         basilisks_init(myinfo);
-    }
-    if ( (0) )
-    {
-        char *jsonstr = "[\"03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828\", \"02ebfc784a4ba768aad88d44d1045d240d47b26e248cafaf1c5169a42d7a61d344\", \"03750cf30d739cd7632f77c1c02812dd7a7181628b0558058d4755838117e05339\", \"0394f3529d2e8cc69ffa7a2b55f3761e7be978fa1896ef4c55dc9c275e77e5bf5e\", \"0243c1eeb3777af47187d542e5f8c84f0ac4b05cf5a7ad77faa8cb6d2d56db7823\", \"02bb298844175640a34e908ffdfa2839f77aba3d5edadefee16beb107826e00063\", \"02fa88e549b4b871498f892e527a5d57287916809f8cc3163f641d71c535e8df5a\", \"032f799e370f06476793a122fcd623db7804898fe5aef5572095cfee6353df34bf\", \"02c06fe5401faff4442ef87b7d1b56c2e5a214166615f9a2f2030c71b0cb067ae8\", \"038ac67ca49a8169bcc5de83fe020071095a2c3b2bc4d1c17386977329758956d5\"]";
-        
-        int32_t i,n; char coinaddr[64]; uint8_t pubkey33[33]; double val = 0.1; cJSON *array;
-        if ( (array= cJSON_Parse(jsonstr)) != 0 )
-        {
-            n = cJSON_GetArraySize(array);
-            for (i=0; i<n; i++)
-            {
-                decode_hex(pubkey33,33,jstri(array,i));
-                bitcoin_address(coinaddr,60,pubkey33,33);
-                printf("./komodo-cli -ac_name=REVS sendtoaddress %s %f\n",coinaddr,val);
-            }
-        } else printf("couldnt parse.(%s)\n",jsonstr);
     }
     iguana_launchdaemons(myinfo);
 }
