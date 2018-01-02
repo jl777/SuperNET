@@ -187,7 +187,7 @@ void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
                 fpos = ftell(fp);
                 if (fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
                 {
-                    printf("%6d %016llx\n",height,(long long)signedmask);
+                    //printf("%6d %016llx\n",height,(long long)signedmask);
                     if ( height < prevheight )
                     {
                         startfpos = fpos;
@@ -206,6 +206,7 @@ void iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
             }
             if ( iter == 0 )
             {
+                prevheight = -1;
                 fseek(fp,startfpos,SEEK_SET);
                 printf("set startfpos %ld\n",startfpos);
             }
