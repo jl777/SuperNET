@@ -32,7 +32,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char 
 
 char *stats_validmethods[] =
 {
-    "psock", "balances", "getprice", "notify", "getpeers",  // from issue_  "uitem", "listunspent",
+    "psock", "ticker", "balances", "getprice", "notify", "getpeers",  // from issue_  "uitem", "listunspent",
     "orderbook", "statsdisp", "fundvalue", "help", "getcoins", "pricearray", "balance", "tradesarray"
 };
 
@@ -714,7 +714,7 @@ void LP_rpc_processreq(void *_ptr)
                 response = malloc(strlen(retstr)+1024+1+1);
                 //printf("alloc response.%p\n",response);
             }
-            sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr));
+            sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr)+1);
             response[0] = '\0';
             strcat(response,hdrs);
             strcat(response,retstr);
@@ -793,7 +793,7 @@ void stats_rpcloop(void *args)
             //fcntl(bindsock, F_SETFL, fcntl(bindsock, F_GETFL, 0) | O_NONBLOCK);
 #endif
             //if ( counter++ < 1 )
-                printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
+                printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled at unixtime.%u <<<<<<<<<\n",port,bindsock,(uint32_t)time(NULL));
         }
         //printf("after sock.%d\n",sock);
         clilen = sizeof(cli_addr);

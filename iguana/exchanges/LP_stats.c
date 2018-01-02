@@ -455,6 +455,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         {
             HASH_ITER(hh,LP_swapstats,sp,tmp)
             {
+                static uint32_t counter;
                 if ( sp->Q.R.requestid == requestid && sp->Q.R.quoteid == quoteid )
                 {
                     sp->methodind = methodind;
@@ -463,7 +464,8 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                         flag = 1;
                         break;
                     }
-                    printf("error after delayed match\n");
+                    if ( counter++ < 10 )
+                        printf("error after delayed match\n");
                 }
             }
         }
@@ -697,9 +699,9 @@ int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttim
         dispflag = 1;
     else if ( sp->Q.timestamp >= starttime && sp->Q.timestamp <= endtime )
         dispflag = 1;
-    if ( refbase != 0 && strcmp(refbase,sp->Q.srccoin) != 0 && strcmp(refbase,sp->Q.destcoin) != 0 )
+    if ( refbase != 0 && refbase[0] != 0 && strcmp(refbase,sp->Q.srccoin) != 0 && strcmp(refbase,sp->Q.destcoin) != 0 )
         dispflag = 0;
-    if ( refrel != 0 && strcmp(refrel,sp->Q.srccoin) != 0 && strcmp(refrel,sp->Q.destcoin) != 0 )
+    if ( refrel != 0 && refrel[0] != 0 && strcmp(refrel,sp->Q.srccoin) != 0 && strcmp(refrel,sp->Q.destcoin) != 0 )
         dispflag = 0;
     if ( dispflag != 0 )
     {
@@ -793,7 +795,34 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
     return(retjson);
 }
 
-//tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]
+char *LP_ticker(char *refbase,char *refrel)
+{
+    cJSON *logjson,*retjson,*item,*retitem,*swapsjson; double basevol,relvol; char *base,*rel; int32_t i,n; bits256 zero; uint32_t now = (uint32_t)time(NULL);
+    memset(zero.bytes,0,sizeof(zero));
+    if ( (logjson= LP_statslog_disp(now - 3600*24,now,"",zero,refbase,refrel)) != 0 )
+    {
+        retjson = cJSON_CreateArray();
+        if ( (swapsjson= jarray(&n,logjson,"swaps")) != 0 )
+        {
+            for (i=n-1; i>=0; i--)
+            {
+                item = jitem(swapsjson,i);
+                retitem = cJSON_CreateObject();
+                if ( (base= jstr(item,"base")) != 0 && (rel= jstr(item,"rel")) != 0 && (basevol= jdouble(item,"basevol")) > SMALLVAL )
+                {
+                    relvol = jdouble(item,"relvol");
+                    jaddnum(retitem,"timestamp",juint(item,"timestamp"));
+                    jaddnum(retitem,base,basevol);
+                    jaddnum(retitem,rel,relvol);
+                    jaddnum(retitem,"price",relvol/basevol);
+                }
+                jaddi(retjson,retitem);
+            }
+        }
+        free_json(logjson);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"couldnt get logjson\"}"));
+}
 
 struct LP_ohlc
 {

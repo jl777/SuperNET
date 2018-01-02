@@ -395,7 +395,7 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
             if ( 0 && dispflag != 0 )
                 printf("InstantDEX credit.(%s) %.8f weeki.%d (%s) -> sum %.8f\n",coinaddr,dstr(satoshis),weeki,p2shaddr,dstr(ap->instantdex_credits));
             return(satoshis);
-        } else printf("null ap.%p or expired %ld\n",ap,time(NULL) - (timestamp-60*3600));
+        } //else printf("null ap.%p or expired %ld\n",ap,time(NULL) - (timestamp-60*3600));
     }
     return(0);
 }
@@ -425,7 +425,7 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
                     {
                         free_json(txobj);
                         LP_instantdex_credit(dispflag,destaddr,satoshis,weeki,p2shaddr,txid);
-                    } else printf("already spent\n");
+                    } //else printf("already spent\n");
                 } else printf("error getting p2shaddr.(%s)\n",p2shaddr);
             }
         }
@@ -515,7 +515,7 @@ int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
     {
         bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
         bitcoin_address(othersmartaddr,0,60,rmd160,20);
-        printf("proofcheck addrtype.%d (%s) -> %s\n",addrtype,coinaddr,othersmartaddr);
+        //printf("proofcheck addrtype.%d (%s) -> %s\n",addrtype,coinaddr,othersmartaddr);
         if ((ap= LP_address(coin,othersmartaddr)) != 0 )
         {
             ap->instantdex_credits = 0;
@@ -533,7 +533,7 @@ int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
             }
             credits = ap->instantdex_credits;
             ap->didinstantdex = 1;
-            if ( ap->instantdex_credits > 0 )
+            if ( 0 && ap->instantdex_credits > 0 )
                 printf("validated instantdex %s.[%d] proof.(%s) credits %.8f\n",othersmartaddr,num,jprint(proof,0),dstr(ap->instantdex_credits));
         } //else printf("cant find ap.%p or already did %d %.8f\n",ap,ap!=0?ap->didinstantdex:-1,ap!=0?dstr(ap->instantdex_credits):-1);
     }

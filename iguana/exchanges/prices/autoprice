@@ -1,0 +1,44 @@
+#!/bin/bash
+margin=0.02
+source userpass
+./auto_chipskmd
+./auto_chipsbtc
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BTC\",\"margin\":0.01,\"refbase\":\"komodo\",\"refrel\":\"coinmarketcap\"}"
+#curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"BTC\",\"rel\":\"KMD\",\"fixed\":0.00025,\"margin\":0.01}"
+#curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BTC\",\"fixed\":4000,\"margin\":0.01}"
+#curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"MNZ\",\"offset\":0.0,\"refbase\":\"KMD\",\"refrel\":\"BTC\",\"factor\":15000,\"margin\":-0.2}"
+
+source crypto
+source trackbtc
+
+source dex
+source trackbtc
+
+source jumblr
+source trackbtc
+
+source pangea
+source trackbtc
+
+source bots
+source trackbtc
+
+source bet
+source trackbtc
+
+source revs
+source trackbtc
+
+source mgw
+source trackbtc
+
+source revs
+source trackbtc
+
+sharkholdings="{\"coin\":\"iota\",\"balance\":1500000}, {\"coin\":\"bitcoin-cash\",\"balance\":1200}, {\"coin\":\"bitcoin\",\"balance\":145}"
+curl --url "http://127.0.0.1:7783" --data "{\"base\":\"MSHARK\",\"rel\":\"KMD\",\"fundvalue_bid\":\"NAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"address\":\"RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC\",\"holdings\":[$sharkholdings],\"divisor\":1400000}"
+
+
+curl --url "http://127.0.0.1:7783" --data "{\"base\":\"SUPERNET\",\"rel\":\"KMD\",\"fundvalue_bid\":\"NAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"address\":\"RRyyejME7LRTuvdziWsXkAbSW1fdiohGwK\",\"holdings\":[{\"coin\":\"iota\",\"balance\":11000000}, {\"coin\":\"stratis\",\"balance\":1300000}, {\"coin\":\"zcash\",\"balance\":10000}, {\"coin\":\"syscoin\",\"balance\":20000000}, {\"coin\":\"waves\",\"balance\":700000}, {\"coin\":\"bitcoin\",\"balance\":625}, {\"coin\":\"bitcoin-cash\",\"balance\":1500}, {\"coin\":\"heat-ledger\",\"balance\":2323851 }, {\"coin\":\"decred\",\"balance\":20000}, {\"coin\":\"vericoin\",\"balance\":2199368 }, {\"coin\":\"byteball\",\"balance\":4238}, {\"coin\":\"iocoin\",\"balance\":150000}, {\"coin\":\"quantum-resistant-ledger\",\"balance\":375000}, {\"coin\":\"chips\",\"balance\":2577006 }, {\"coin\":\"hush\",\"balance\":100000 }, {\"coin\":\"mobilego\",\"balance\":100000 }],\"divisor\":816016}"
+
+curl --url "http://127.0.0.1:7783" --data "{\"margin\":0.01,\"base\":\"HODL\",\"rel\":\"KMD\",\"fundvalue_bid\":\"assetNAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"address\":\"RNcUaMUEFLxVwtTo7rgruhwYanGk1jTkeU\",\"holdings\":[{\"coin\":\"siacoin\",\"balance\":185000000,\"comment\":\"using siafunds equal to million siacoin\"}],\"divisor\":10000000}"

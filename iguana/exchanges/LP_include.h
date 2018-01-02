@@ -22,14 +22,18 @@
 #define LP_INCLUDE_H
 
 #ifdef FROMGUI
-#define printf(...)
+#define printf dontprintf
+
+voind dontprintf(char *formatstr,...) {}
 #endif
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "17701"
+#define LP_BUILD_NUMBER "17752"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
+
+#define LP_DONT_IMPORTPRIVKEY
 
 #ifdef FROM_JS
 #include <emscripten.h>
@@ -49,7 +53,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
 #define LP_AUTOTRADE_TIMEOUT 60
 #define LP_RESERVETIME 600  //(LP_AUTOTRADE_TIMEOUT * 2)
-#define ELECTRUM_TIMEOUT 7
+#define ELECTRUM_TIMEOUT 13
 #define LP_ELECTRUM_KEEPALIVE 60
 #define LP_ELECTRUM_MAXERRORS 777
 #define LP_MEMPOOL_TIMEINCR 10
@@ -483,6 +487,7 @@ int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
 int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool);
 void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid,uint32_t quoteid);
+void LP_autoprices_update(char *method,char *base,double basevol,char *rel,double relvol);
 cJSON *LP_cache_transaction(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len);
 cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *serialized,int32_t len);
 uint64_t LP_RTsmartbalance(struct iguana_info *coin);
@@ -506,6 +511,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
 //void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo);
 struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout);
 int64_t LP_myzcredits();
+void test_validate(struct iguana_info *coin,char *signedtx);
 void LP_instantdex_depositadd(char *coinaddr,bits256 txid);
 int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256 txid,char *refaddr);
 int32_t LP_destaddr(char *destaddr,cJSON *item);

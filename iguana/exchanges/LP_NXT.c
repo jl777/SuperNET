@@ -202,8 +202,10 @@ void NXTventure_liquidation()
 cJSON *LP_NXT_redeems()
 {
     char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[2][sizeof(assetids)/sizeof(*assetids)],mult,txnum,assetid,qty; int32_t i,ind,numtx=0,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
-    uint64_t txnum_marker = calc_nxt64bits("5509605741355242617");
-    uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143");
+    //sleep 1; fiat/supernet sendtoaddress RNZZuQYu8xJLZHuekhd96hYfoQuiCMz99T 1001.44150000 # txnum.8537615468620726612
+    //sleep 1; fiat/pangea sendtoaddress RWMdRaUmMZqKkEibwEhY6XS3RLCXJDWHTi 22.10910000 # txnum.2649622877615958504
+    uint64_t txnum_marker = calc_nxt64bits("8537615468620726612"); // 2649622877615958504"); // set to most recent processed
+    uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143"); // dont change, end marker
     char *passphrase = "";
     char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
     memset(totals,0,sizeof(totals));

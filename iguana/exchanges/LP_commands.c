@@ -110,6 +110,7 @@ enable(coin)\n\
 disable(coin)\n\
 notarizations(coin)\n\
 statsdisp(starttime=0, endtime=0, gui="", pubkey="", base="", rel="")\n\
+ticker(base="", rel="")\n\
 tradesarray(base, rel, starttime=<now>-timescale*1024, endtime=<now>, timescale=60) -> [timestamp, high, low, open, close, relvolume, basevolume, aveprice, numtrades]\n\
 pricearray(base, rel, starttime=0, endtime=0, timescale=60) -> [timestamp, avebid, aveask, highbid, lowask]\n\
 getrawtransaction(coin, txid)\n\
@@ -172,19 +173,22 @@ instantdex_claim()\n\
     {
         if ( G.USERPASS_COUNTER == 0 )
         {
+            char pub33str[67];
             G.USERPASS_COUNTER = 1;
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"userpass",G.USERPASS);
             jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+            init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
+            jaddstr(retjson,"pubsecp",pub33str);
             jadd(retjson,"coins",LP_coinsjson(LP_showwif));
             return(jprint(retjson,1));
         }
-        if ( strcmp(method,"passphrase") != 0 && ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) )
+        if ( ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) ) //strcmp(method,"passphrase") != 0 && 
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         jdelete(argjson,"userpass");
         if ( strcmp(method,"passphrase") == 0 )
         {
-            char coinaddr[64];
+            char coinaddr[64],pub33str[67];
             G.USERPASS_COUNTER = 1;
             if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
                 return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
@@ -193,6 +197,8 @@ instantdex_claim()\n\
                 jaddstr(retjson,"result","success");
                 jaddstr(retjson,"userpass",G.USERPASS);
                 jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+                init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
+                jaddstr(retjson,"pubsecp",pub33str);
                 bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
                 jaddstr(retjson,"KMD",coinaddr);
                 bitcoin_address(coinaddr,0,0,G.LP_myrmd160,20);
@@ -278,6 +284,10 @@ instantdex_claim()\n\
         else if ( strcmp(method,"statsdisp") == 0 )
         {
             return(jprint(LP_statslog_disp(juint(argjson,"starttime"),juint(argjson,"endtime"),jstr(argjson,"gui"),jbits256(argjson,"pubkey"),jstr(argjson,"base"),jstr(argjson,"rel")),1));
+        }
+        else if ( strcmp(method,"ticker") == 0 )
+        {
+            return(LP_ticker(jstr(argjson,"base"),jstr(argjson,"rel")));
         }
         else if ( strcmp(method,"secretaddresses") == 0 )
         {
@@ -421,6 +431,8 @@ instantdex_claim()\n\
                             if ( strcmp(ptr->symbol,"KMD") == 0 )
                                 LP_importaddress("KMD",BOTS_BONDADDRESS);
                         }
+                        if ( 0 && strcmp(coin,"BCH") == 0 )
+                            test_validate(ptr,"010000000110b365ea6b8a9f2d56dc12de868e382dc787b2e29355f9b357dcf764c5e29cb1010000006b483045022100c605b993f1db5f31046ebb9065bea0a047f478342bbad8fcfc6af81d05236bd502206e9993a737a8814b935b5e522e750c915e7d37e3bd8367f087d4510f66acac47412102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ffffffff014bc22900000000001976a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac00000000");
                         array = cJSON_CreateArray();
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));

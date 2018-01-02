@@ -516,7 +516,6 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         
         if ( price == 0. || fabs(basepp->myprices[relpp->ind] - price)/price > 0.001 )
             *changedp = 1;
-        basepp->myprices[relpp->ind] = price;          // ask
         if ( price == 0. )
         {
             relpp->minprices[basepp->ind] = 0.;
@@ -525,6 +524,11 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
             relpp->offsets[basepp->ind] = 0.;
             relpp->factors[basepp->ind] = 0.;
         }
+        /*else if ( basepp->myprices[relpp->ind] > SMALLVAL )
+        {
+            price = (basepp->myprices[relpp->ind] * 0.9) + (0.1 * price);
+        }*/
+        basepp->myprices[relpp->ind] = price;          // ask
         //printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
         //relpp->myprices[basepp->ind] = (1. / price);   // bid
         if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
@@ -545,7 +549,9 @@ double LP_price(char *base,char *rel)
     if ( (basepp= LP_priceinfoptr(&relind,base,rel)) != 0 )
     {
         if ( (price= basepp->myprices[relind]) == 0. )
+        {
             price = basepp->relvals[relind];
+        }
     }
     return(price);
 }
