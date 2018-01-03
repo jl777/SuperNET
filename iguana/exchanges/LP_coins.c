@@ -354,6 +354,9 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     char *name2;
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
+    if ( strcmp(symbol,"PART") == 0 )
+        coin->txversion = 160;
+    else coin->txversion = 1;
     coin->updaterate = (uint32_t)time(NULL);
     coin->isPoS = isPoS;
     coin->taddr = taddr;
