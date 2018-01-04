@@ -160,7 +160,7 @@ bot_stop(botid)\n\
 bot_pause(botid)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
-jpg(srcfile, destfile, power2=7, passphrase, data="")\n\
+jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
