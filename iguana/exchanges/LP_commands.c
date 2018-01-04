@@ -160,6 +160,7 @@ bot_stop(botid)\n\
 bot_pause(botid)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
+jpg(srcfile, destfile, power2=7, passphrase, data="")\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
@@ -225,6 +226,10 @@ instantdex_claim()\n\
                 return(LP_instantdex_claim(ptr));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
+        }
+        else if ( strcmp(method,"jpg") == 0 )
+        {
+            return(LP_jpg(jstr(argjson,"srcfile"),jstr(argjson,"destfile"),jint(argjson,"power2"),jstr(argjson,"passphrase"),jstr(argjson,"data"),jint(argjson,"required")));
         }
         /*else if ( strcmp(method,"sendmessage") == 0 )
         {
