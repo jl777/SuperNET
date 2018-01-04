@@ -835,7 +835,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     V[0].ignore_cltverr = ignore_cltverr;
     if ( redeemlen != 0 )
         memcpy(V[0].p2shscript,redeemscript,redeemlen), V[0].p2shlen = redeemlen;
-    txobj = bitcoin_txcreate(symbol,isPoS,locktime,1,timestamp);
+    txobj = bitcoin_txcreate(symbol,isPoS,locktime,coin->txversion,timestamp);
     vins = cJSON_CreateArray();
     item = cJSON_CreateObject();
     if ( userdata != 0 && userdatalen > 0 )
@@ -1243,7 +1243,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     timestamp = (uint32_t)time(NULL);
     if ( locktime == 0 && strcmp("KMD",coin->symbol) == 0 )
         locktime = timestamp - 777;
-    txobj = bitcoin_txcreate(coin->symbol,coin->isPoS,locktime,1,timestamp);
+    txobj = bitcoin_txcreate(coin->symbol,coin->isPoS,locktime,coin->txversion,timestamp);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",jduplicate(vins));
     printf("change %.8f = total %.8f - amount %.8f, adjust %.8f numvouts.%d\n",dstr(change),dstr(total),dstr(amount),dstr(adjust),numvouts);
