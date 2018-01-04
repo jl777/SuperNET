@@ -1,5 +1,5 @@
 #!/bin/bash
-margin=0.02
+margin=0.05
 source userpass
 ./auto_chipskmd
 ./auto_chipsbtc
