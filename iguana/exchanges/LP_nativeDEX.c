@@ -214,14 +214,14 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
     return(retstr);
 }
 
-char *LP_decrypt(uint8_t *ptr,int32_t *recvlenp)
+char *LP_decrypt(uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],uint8_t *ptr,int32_t *recvlenp)
 {
-    uint8_t decoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],*nonce,*cipher; int32_t recvlen,cipherlen; char *jsonstr = 0;
+    uint8_t *nonce,*cipher; int32_t recvlen,cipherlen; char *jsonstr = 0;
     recvlen = *recvlenp;
     nonce = &ptr[2];
     cipher = &ptr[2 + crypto_box_NONCEBYTES];
     cipherlen = recvlen - (2 + crypto_box_NONCEBYTES);
-    if ( cipherlen > 0 && cipherlen <= sizeof(decoded) )
+    if ( cipherlen > 0 && cipherlen <= LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES )
     {
         if ( (jsonstr= (char *)_SuperNET_decipher(nonce,cipher,decoded,cipherlen,GENESIS_PUBKEY,G.LP_mypriv25519)) != 0 )
         {
@@ -232,7 +232,7 @@ char *LP_decrypt(uint8_t *ptr,int32_t *recvlenp)
                 jsonstr = 0;
             } //else printf("decrypted (%s)\n",jsonstr);
         }
-    } else printf("cipher.%d too big for %d\n",cipherlen,(int32_t)sizeof(decoded));
+    } else printf("cipher.%d too big for %d\n",cipherlen,LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES);
     *recvlenp = recvlen;
     return(jsonstr);
 }
@@ -240,7 +240,7 @@ char *LP_decrypt(uint8_t *ptr,int32_t *recvlenp)
 char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,uint8_t *ptr,int32_t recvlen,int32_t recvsock)
 {
     static uint32_t dup,uniq;
-    int32_t i,len,cipherlen,datalen=0,duplicate=0,encrypted=0; char *method,*method2,*tmp,*cipherstr,*retstr=0,*jsonstr=0; cJSON *argjson; uint32_t crc32;
+    uint8_t jdecoded[LP_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES]; int32_t i,len,cipherlen,datalen=0,duplicate=0,encrypted=0; char *method,*method2,*tmp,*cipherstr,*retstr=0,*jsonstr=0; cJSON *argjson; uint32_t crc32;
     //double millis = OS_milliseconds();
     crc32 = calc_crc32(0,&ptr[2],recvlen-2);
     if ( (crc32 & 0xff) == ptr[0] && ((crc32>>8) & 0xff) == ptr[1] )
@@ -257,7 +257,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
         if ( i >= 0 )
             LP_crc32find(&duplicate,i,crc32);
         if ( encrypted != 0 )
-            jsonstr = LP_decrypt(ptr,&recvlen);
+            jsonstr = LP_decrypt(jdecoded,ptr,&recvlen);
         else if ( (datalen= is_hexstr((char *)ptr,0)) > 0 )
         {
             datalen >>= 1;
@@ -278,7 +278,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                     cipherlen >>= 1;
                     decode_hex(decoded,cipherlen,cipherstr);
                     crc32 = calc_crc32(0,&decoded[2],cipherlen-2);
-                    if ( (tmp= LP_decrypt(decoded,&cipherlen)) != 0 )
+                    if ( (tmp= LP_decrypt(jdecoded,decoded,&cipherlen)) != 0 )
                     {
                         jsonstr = tmp;
                         free_json(argjson);
