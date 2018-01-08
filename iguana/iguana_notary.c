@@ -560,6 +560,77 @@ char NOTARY_CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF"
     "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
     "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH" }; // "LTC",
 
+void _iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
+{
+    FILE *fp; uint64_t signedmask; long fpos,startfpos; int32_t i,height,iter,prevheight;
+    if ( (fp= fopen(fname,"rb")) != 0 )
+    {
+        printf("opened %s\n",fname);
+        startfpos = 0;
+        prevheight = -1;
+        for (iter=0; iter<2; iter++)
+        {
+            while ( 1 )
+            {
+                fpos = ftell(fp);
+                if (fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
+                {
+                    //printf("%6d %016llx\n",height,(long long)signedmask);
+                    if ( height < prevheight )
+                    {
+                        startfpos = fpos;
+                        if ( iter == 0 )
+                            printf("found reversed height %d vs %d\n",height,prevheight);
+                        else printf("fpos.%ld fatal unexpected height reversal %d vs %d\n",fpos,height,prevheight);
+                    }
+                    if ( iter == 1 && (height >= 180000 || strcmp(fname,"signedmasks") != 0) )
+                    {
+                        for (i=0; i<64; i++)
+                        {
+                            if ( ((1LL << i) & signedmask) != 0 )
+                            {
+                                totals[i]++;
+                                if ( dispflag > 1 )
+                                    printf("%2d ",i);
+                            }
+                        }
+                        if ( dispflag > 1 )
+                            printf("height.%d %016llx %s\n",height,(long long)signedmask,fname);
+                    }
+                    prevheight = height;
+                } else break;
+            }
+            if ( iter == 0 )
+            {
+                prevheight = -1;
+                fseek(fp,startfpos,SEEK_SET);
+                printf("set startfpos %ld\n",startfpos);
+            }
+        }
+        fclose(fp);
+        if ( dispflag != 0 )
+        {
+            printf("after %s\n",fname);
+            for (i=0; i<64; i++)
+            {
+                if ( totals[i] != 0 )
+                    printf("%s, %d\n",Notaries_elected[i][0],totals[i]);
+            }
+        }
+    } else printf("couldnt open.(%s)\n",fname);
+}
+
+void iguana_notarystats(int32_t totals[64],int32_t dispflag)
+{
+    int32_t i; char fname[512];
+    _iguana_notarystats("signedmasks",totals,dispflag);
+    for (i=0; i<sizeof(NOTARY_CURRENCIES)/sizeof(*NOTARY_CURRENCIES); i++)
+    {
+        sprintf(fname,"%s/signedmasks",NOTARY_CURRENCIES[i]);
+        _iguana_notarystats(fname,totals,dispflag);
+    }
+}
+
 ZERO_ARGS(dpow,notarychains)
 {
     int32_t i; cJSON *array = cJSON_CreateArray();
