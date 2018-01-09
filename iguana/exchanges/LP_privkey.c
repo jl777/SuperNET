@@ -362,6 +362,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
         sleep(5);
     }
     memset(&G,0,sizeof(G));
+    vcalc_sha256(0,G.LP_passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     LP_privkey_updates(ctx,LP_mypubsock,passphrase);
     init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
     G.LP_sessionid = (uint32_t)time(NULL);
