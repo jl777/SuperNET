@@ -570,9 +570,9 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             //printf("%s/%s for %s/%s margin %.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,margin);
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
-                if ( strcmp(rel,"KMD") == 0 )
+                if ( strcmp(rel,"KMD") == 0 && kmd_btc > SMALLVAL )
                     price = kmd_btc / price_btc;
-                else if ( strcmp(rel,"BCH") == 0 )
+                else if ( strcmp(rel,"BCH") == 0 && bch_btc > SMALLVAL )
                     price = bch_btc / price_btc;
                 else if ( strcmp(rel,"BTC") == 0 )
                     price = 1. / price_btc;

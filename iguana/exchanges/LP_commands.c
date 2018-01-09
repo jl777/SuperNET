@@ -187,10 +187,11 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
         // if passphrase api and passphrase is right, ignore userpass, use hass of passphrase
         if ( strcmp(method,"passphrase") == 0 && (passphrase= jstr(argjson,"passphrase")) != 0 )
         {
-            bits256 passhash;
+            bits256 passhash; char str[65],str2[65];
             vcalc_sha256(0,passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
             if ( bits256_cmp(passhash,G.LP_passhash) == 0 )
                 authenticated = 1;
+            else printf("passhash %s != G %s\n",bits256_str(str,passhash),bits256_str(str2,G.LP_passhash));
         }
         if ( authenticated == 0 && ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) )
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
