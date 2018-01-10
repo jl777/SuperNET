@@ -431,9 +431,12 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
     coef_arrays = jpeg_read_coefficients(&inputinfo);
     // Copy DCT coeffs to a new array
     int num_components = inputinfo.num_components;
-    size_t block_row_size[num_components];
-    int width_in_blocks[num_components];
-    int height_in_blocks[num_components];
+    size_t *block_row_size;//[num_components];
+    int *width_in_blocks;//[num_components];
+    int *height_in_blocks;//[num_components];
+    block_row_size = calloc(sizeof(*block_row_size),num_components);
+    width_in_blocks = calloc(sizeof(*width_in_blocks),num_components);
+    height_in_blocks = calloc(sizeof(*height_in_blocks),num_components);
     *capacityp = modified = emit = totalrows = 0;
     if ( decoded != 0 )
         memset(decoded,0,required/8+1);
@@ -527,6 +530,9 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
     {
         printf("New DCT coefficients successfully written to %s, capacity %d modifiedrows.%d/%d emit.%d\n",outputfname,*capacityp,modified,totalrows,emit);
     }
+    free(block_row_size);
+    free(width_in_blocks);
+    free(height_in_blocks);
     return(modified);
 }
 
