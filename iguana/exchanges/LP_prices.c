@@ -38,7 +38,8 @@ struct LP_priceinfo
     double myprices[LP_MAXPRICEINFOS];
     double minprices[LP_MAXPRICEINFOS]; // autoprice
     double fixedprices[LP_MAXPRICEINFOS]; // fixedprices
-    double margins[LP_MAXPRICEINFOS];
+    double buymargins[LP_MAXPRICEINFOS];
+    double sellmargins[LP_MAXPRICEINFOS];
     double offsets[LP_MAXPRICEINFOS];
     double factors[LP_MAXPRICEINFOS];
 } LP_priceinfos[LP_MAXPRICEINFOS];
@@ -62,7 +63,8 @@ void LP_priceinfos_clear()
         memset(pp->myprices,0,sizeof(pp->myprices));
         memset(pp->minprices,0,sizeof(pp->minprices));
         memset(pp->fixedprices,0,sizeof(pp->fixedprices));
-        memset(pp->margins,0,sizeof(pp->margins));
+        memset(pp->buymargins,0,sizeof(pp->buymargins));
+        memset(pp->sellmargins,0,sizeof(pp->sellmargins));
         memset(pp->offsets,0,sizeof(pp->offsets));
         memset(pp->factors,0,sizeof(pp->factors));
     }
@@ -520,7 +522,8 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         {
             relpp->minprices[basepp->ind] = 0.;
             relpp->fixedprices[basepp->ind] = 0.;
-            relpp->margins[basepp->ind] = 0.;
+            relpp->buymargins[basepp->ind] = 0.;
+            relpp->sellmargins[basepp->ind] = 0.;
             relpp->offsets[basepp->ind] = 0.;
             relpp->factors[basepp->ind] = 0.;
         }
