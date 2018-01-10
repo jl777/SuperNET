@@ -23,7 +23,7 @@ cJSON *LP_transaction_fromdata(struct iguana_info *coin,bits256 txid,uint8_t *se
     uint8_t *extraspace; cJSON *txobj; char str[65],str2[65]; struct iguana_msgtx msgtx; bits256 checktxid;
     extraspace = calloc(1,4000000);
     memset(&msgtx,0,sizeof(msgtx));
-    txobj = bitcoin_data2json(coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,4000000,serialized,len,0,0,coin->zcash);
+    txobj = bitcoin_data2json(coin->symbol,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->height,&checktxid,&msgtx,extraspace,4000000,serialized,len,0,0,coin->zcash);
     //printf("TX.(%s) match.%d\n",jprint(txobj,0),bits256_cmp(txid,checktxid));
     free(extraspace);
     if ( bits256_cmp(txid,checktxid) != 0 )
@@ -45,10 +45,9 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
         vins = jarray(&numvins,txobj,"vin");
         vouts = jarray(&numvouts,txobj,"vout");
         tx = LP_transactionadd(coin,txid,height,numvouts,numvins);
-        tx->serialized = 0;//serialized;
-        free(serialized);
+        tx->serialized = serialized, tx->len = len;
+        // free(serialized), tx->len = 0;
         tx->fpos = fpos;
-        tx->len = 0;//tx->len;
         tx->SPV = tx->height = height;
         //printf("tx.%s numvins.%d numvouts.%d\n",bits256_str(str,txid),numvins,numvouts);
         for (i=0; i<numvouts; i++)
@@ -230,17 +229,24 @@ bits256 LP_merkleroot(struct iguana_info *coin,struct electrum_info *ep,int32_t 
 
 int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height)
 {
-    struct LP_transaction *tx=0; cJSON *merkobj,*merkles,*retjson; bits256 roothash,merkleroot; int32_t m,SPV = 0;
+    struct LP_transaction *tx=0; cJSON *merkobj,*merkles,*retjson; bits256 roothash,merkleroot; int32_t m,ht=0,SPV = 0;
     if ( height <= 0 )
         return(0);
     if ( (tx= LP_transactionfind(coin,txid)) == 0 && strcmp(coinaddr,coin->smartaddr) == 0 )
     {
-        if ( (retjson= electrum_transaction(coin->symbol,ep,&retjson,txid,0)) != 0 )
+        if ( (retjson= electrum_transaction(&ht,coin->symbol,ep,&retjson,txid,0)) != 0 )
             free_json(retjson);
     }
     if ( tx != 0 )
     {
-        tx->height = height;
+        if ( tx->height == 0 )
+        {
+            if ( height != 0 )
+                tx->height = height;
+            else if ( ht != 0 )
+                tx->height = ht;
+            height = tx->height;
+        }
         if ( tx->SPV > 0 )
             return(tx->SPV);
     }
@@ -262,7 +268,7 @@ int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_i
                     if ( tx != 0 )
                     {
                         tx->SPV = height;
-                        if ( tx->serialized != 0 )
+                        if ( strcmp(coinaddr,coin->smartaddr) != 0 && tx->serialized != 0 )
                         {
                             free(tx->serialized);
                             tx->serialized = 0;
@@ -314,7 +320,7 @@ void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedfla
 
 uint64_t LP_unspents_load(char *symbol,char *addr)
 {
-    char *arraystr; uint64_t balance = 0; int32_t i,n; cJSON *retjson,*item; struct iguana_info *coin;
+    char *arraystr; uint64_t balance = 0; int32_t i,n; bits256 zero; cJSON *retjson,*item; struct iguana_info *coin;
     if ( (coin= LP_coinfind(symbol)) != 0 )
     {
         if ( (arraystr= LP_unspents_filestr(symbol,addr)) != 0 )
@@ -330,7 +336,8 @@ uint64_t LP_unspents_load(char *symbol,char *addr)
                         balance += j64bits(item,"value");
                     }
                 }
-                electrum_process_array(coin,coin->electrum,coin->smartaddr,retjson,1);
+                memset(zero.bytes,0,sizeof(zero));
+                electrum_process_array(coin,coin->electrum,addr,retjson,1,zero,zero);
                 free_json(retjson);
             }
             free(arraystr);

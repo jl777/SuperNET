@@ -40,10 +40,19 @@ struct LP_tradebot
     struct LP_tradebot_trade *trades[LP_TRADEBOTS_MAXTRADES];
 } *LP_tradebots;
 
+void LP_tradebot_pauseall()
+{
+    struct LP_tradebot *bot,*tmp;
+    DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
+    {
+        bot->userpause = bot->pause = (uint32_t)time(NULL);
+    }
+}
+
 void LP_tradebot_updatestats(struct LP_tradebot *bot,struct LP_tradebot_trade *tp)
 {
     char *swapstr,*status; int32_t flag; cJSON *swapjson;
-    if ( (swapstr= basilisk_swapentry(tp->requestid,tp->quoteid)) != 0 )
+    if ( (swapstr= basilisk_swapentry(tp->requestid,tp->quoteid,1)) != 0 )
     {
         flag = 0;
         if ( (swapjson= cJSON_Parse(swapstr)) != 0 )
@@ -195,7 +204,7 @@ cJSON *LP_tradebot_json(struct LP_tradebot *bot)
     jadd(json,"trades",array);
     if ( bot->basesum > SMALLVAL && bot->relsum > SMALLVAL && bot->completed > 0 )
     {
-        jaddnum(json,"completed",bot->completed);
+        jadd(json,"complete",bot->completed!=0?jtrue():jfalse());
         jaddnum(json,"percentage",100. * (bot->relsum / bot->totalrelvolume));
         if ( bot->dispdir > 0 )
         {
@@ -413,11 +422,12 @@ void LP_tradebot_finished(uint32_t tradeid,uint32_t requestid,uint32_t quoteid)
 void LP_tradebots_timeslice(void *ctx)
 {
     static uint32_t lastnumfinished = 0;
-    struct iguana_info *relcoin; struct LP_tradebot *bot,*tmp;
+    struct iguana_info *relcoin; bits256 zero; struct LP_tradebot *bot,*tmp;
     DL_FOREACH_SAFE(LP_tradebots,bot,tmp)
     {
+        memset(zero.bytes,0,sizeof(zero));
         if ( (relcoin= LP_coinfind(bot->rel)) != 0 )
-            LP_listunspent_issue(bot->rel,relcoin->smartaddr,1);
+            LP_listunspent_issue(bot->rel,relcoin->smartaddr,1,zero,zero);
         if ( bot->relsum >= 0.99*bot->totalrelvolume-SMALLVAL || bot->basesum >= 0.99*bot->totalbasevolume-SMALLVAL )
             bot->dead = (uint32_t)time(NULL);
         else if ( (bot->pendrelsum+bot->relsum) >= 0.99*bot->totalrelvolume-SMALLVAL || (bot->basesum+bot->pendbasesum) >= 0.99*bot->totalbasevolume-SMALLVAL )
@@ -455,12 +465,12 @@ char *LP_tradebot_statuslist(void *ctx,int32_t pubsock,cJSON *argjson)
 
 char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,double relvolume)
 {
-    struct LP_tradebot *bot; char *retstr; double shortfall; int32_t i,n; cJSON *array,*item,*retjson; uint64_t sum,txfee,txfees,balance=0,abalance=0; struct iguana_info *basecoin,*relcoin;
+    struct LP_tradebot *bot; char *retstr; double shortfall; cJSON *retjson; uint64_t sum,txfee,txfees,balance=0,abalance=0; struct iguana_info *basecoin,*relcoin;
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( basecoin == 0 || relcoin == 0 || basecoin->inactive != 0 || relcoin->inactive != 0 )
         return(clonestr("{\"error\":\"one or more coins inactive\"}"));
-    if ( (array= LP_inventory(rel)) != 0 )
+    /*if ( (array= LP_inventory(rel)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 && is_cJSON_Array(array) != 0 )
         {
@@ -471,7 +481,7 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
             }
         }
         free_json(array);
-    }
+    }*/
     if ( (retstr= LP_orderbook(base,rel,0)) != 0 )
         free(retstr);
     txfee = LP_txfeecalc(relcoin,0,0);
@@ -481,8 +491,8 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
     else balance = LP_RTsmartbalance(relcoin);
     sum = (SATOSHIDEN*relvolume+2*dstr(txfees)) + 3 * ((SATOSHIDEN*relvolume+2*dstr(txfees))/777);
     printf("%s inventory balance %.8f, relvolume %.8f + txfees %.8f, utxobal %.8f sum %.8f\n",rel,dstr(abalance),relvolume,dstr(txfees),dstr(balance),dstr(sum));
-    if ( (abalance < SATOSHIDEN*relvolume + txfees) || ((balance-abalance) < (uint64_t)(SATOSHIDEN*relvolume)/777 + txfees) )
-    //if ( dstr(abalance) < relvolume && balance > sum+2*txfee )
+    //if ( (abalance < SATOSHIDEN*relvolume + txfees) || ((balance-abalance) < (uint64_t)(SATOSHIDEN*relvolume)/777 + txfees) )
+    if ( balance < sum+2*txfee )
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"error","not enough funds");
@@ -493,7 +503,7 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
         jaddnum(retjson,"txfees",dstr(txfees));
         shortfall = (relvolume + dstr(txfees)) - dstr(balance);
         jaddnum(retjson,"shortfall",shortfall);
-        if ( balance > sum+2*txfee )
+        /*if ( balance > sum+2*txfee )
         {
             char *withdrawstr; cJSON *outputjson,*withdrawjson,*outputs,*item;
             outputjson = cJSON_CreateObject();
@@ -518,7 +528,7 @@ char *LP_tradebot_buy(int32_t dispdir,char *base,char *rel,double maxprice,doubl
                 free(withdrawstr);
             }
             free_json(outputjson);
-        }
+        }*/
         return(jprint(retjson,1));
     }
     printf("disp.%d tradebot_buy(%s / %s) maxprice %.8f relvolume %.8f\n",dispdir,base,rel,maxprice,relvolume);

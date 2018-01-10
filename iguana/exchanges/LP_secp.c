@@ -86,21 +86,28 @@ bits256 bitcoin_pub256(void *ctx,bits256 *privkeyp,uint8_t odd_even)
 int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256 privkey,int32_t recoverflag)
 {
     int32_t fCompressed = 1;
-    secp256k1_ecdsa_signature SIG; secp256k1_ecdsa_recoverable_signature rSIG; bits256 extra_entropy,seed; int32_t recid,retval = -1; size_t siglen = 72; secp256k1_pubkey SECPUB,CHECKPUB;
+    secp256k1_ecdsa_signature SIG; void *funcp; secp256k1_ecdsa_recoverable_signature rSIG; bits256 extra_entropy,seed; uint8_t *entropy; int32_t recid,retval = -1; size_t siglen = 72; secp256k1_pubkey SECPUB,CHECKPUB;
     seed = rand256(0);
     extra_entropy = rand256(0);
     SECP_ENSURE_CTX
     {
+        funcp = secp256k1_nonce_function_rfc6979;
         if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) == 0 )
         {
             //printf("bitcoin_sign illegal privkey\n");
             return(-1);
         }
+        if ( strcmp(symbol,"BCH") == 0 || strcmp(symbol,"BTG") == 0 )
+        {
+            char str[65]; printf("BCH/BTG deterministic signature %s\n",bits256_str(str,txhash2));
+            funcp = 0;
+            entropy = 0;
+        } else entropy = extra_entropy.bytes;
         if ( secp256k1_context_randomize(ctx,seed.bytes) != 0 )
         {
             if ( recoverflag != 0 )
             {
-                if ( secp256k1_ecdsa_sign_recoverable(ctx,&rSIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) != 0 )
+                if ( secp256k1_ecdsa_sign_recoverable(ctx,&rSIG,txhash2.bytes,privkey.bytes,funcp,entropy) != 0 )
                 {
                     recid = -1;
                     secp256k1_ecdsa_recoverable_signature_serialize_compact(ctx,sig+1,&recid,&rSIG);
@@ -125,7 +132,7 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
             }
             else
             {
-                if ( secp256k1_ecdsa_sign(ctx,&SIG,txhash2.bytes,privkey.bytes,secp256k1_nonce_function_rfc6979,extra_entropy.bytes) != 0 )
+                if ( secp256k1_ecdsa_sign(ctx,&SIG,txhash2.bytes,privkey.bytes,funcp,entropy) != 0 )
                 {
                     if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIG) != 0 )
                         retval = (int32_t)siglen;

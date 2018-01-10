@@ -212,8 +212,8 @@ void LP_peer_recv(char *ipaddr,int32_t ismine)
     if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),RPC_port)) != 0 )
     {
         peer->numrecv++;
-        if ( ismine != 0 )
-            peer->recvtime = (uint32_t)time(NULL);
+        //if ( ismine != 0 )
+        peer->recvtime = (uint32_t)time(NULL);
     }
 }
 
@@ -262,7 +262,7 @@ uint16_t LP_rarestpeer(char *destip)
     {
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            if ( iter == 0 && peer->recvtime < now-3600*24 )
+            if ( strcmp(peer->ipaddr,LP_myipaddr) != 0 && iter == 0 && peer->recvtime < now-3600 )
                 continue;
             if ( peer->isLP != 0 )
             {
