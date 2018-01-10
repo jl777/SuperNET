@@ -568,7 +568,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         }
         else if ( strcmp(LP_autorefs[i].refrel,"coinmarketcap") == 0 )
         {
-            //printf("%s/%s for %s/%s margin %.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,margin);
+            printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
                 if ( strcmp(rel,"KMD") == 0 && kmd_btc > SMALLVAL )
@@ -587,7 +587,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 newprice = LP_autorefs[i].lastbid;
                 LP_mypriceset(&changed,rel,base,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
-                //printf("price %.8f margin %.8f newprice %.8f %.8f\n",price,margin,newprice,(1. / price) * (1. + margin));
+                printf("price %.8f margin %.8f/%.8f newprice %.8f %.8f\n",price,buymargin,sellmargin,newprice,(1. / price) * (1. + buymargin));
                 newprice = (1. / price) * (1. + sellmargin);
                 if ( LP_autorefs[i].lastask < SMALLVAL )
                     LP_autorefs[i].lastask = newprice;
