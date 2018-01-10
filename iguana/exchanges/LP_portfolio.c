@@ -278,19 +278,19 @@ void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *base
         if ( fabs(price) < SMALLVAL && refbase != 0 && refrel != 0 )
         {
             price = LP_myprice(&bid,&ask,refbase,refrel);
-            //printf("%s/%s USE ref %s/%s %.8f factor %.8f offset %.8f margin %.8f\n",basepp->symbol,relpp->symbol,refbase,refrel,price,factor,offset,margin);
+            printf("%s/%s USE ref %s/%s %.8f factor %.8f offset %.8f margin %.8f/%.8f\n",basepp->symbol,relpp->symbol,refbase,refrel,price,factor,offset,oppomargin,margin);
         }
         if ( LP_pricevalid(price) > 0 )
         {
             if ( factor > SMALLVAL )
             {
-                //double tmp = (price * factor) + offset;
-                //printf("price %.8f -> %.8f factor %.8f offset %.8f margin %.8f [%.8f %.8f] [%.8f %.8f]\n",price,tmp,factor,offset,margin,(tmp * (1. + margin)),1./(tmp * (1. - margin)),(tmp * (1. - margin)),1./(tmp * (1. + margin)));
+                double tmp = (price * factor) + offset;
+                printf("price %.8f -> %.8f factor %.8f offset %.8f margin %.8f [%.8f %.8f] [%.8f %.8f]\n",price,tmp,factor,offset,margin,(tmp * (1. + margin)),1./(tmp * (1. - margin)),(tmp * (1. - margin)),1./(tmp * (1. + margin)));
                 price = (price * factor) + offset;
             }
             if ( margin == 0. )
                 margin = oppomargin;
-            //printf("min %.8f %s/%s %.8f dir.%d margin %.8f (%.8f %.8f)\n",basepp->minprices[relpp->ind],relpp->symbol,basepp->symbol,price,dir,margin,1. / (price * (1. - margin)),(price * (1. + margin)));
+            printf("min %.8f %s/%s %.8f dir.%d margin %.8f (%.8f %.8f)\n",basepp->minprices[relpp->ind],relpp->symbol,basepp->symbol,price,dir,margin,1. / (price * (1. - margin)),(price * (1. + margin)));
             if ( dir > 0 )
                 newprice = (1. / price) * (1. + margin);
             else newprice = (price * (1. + margin));
@@ -302,7 +302,7 @@ void LP_autopriceset(int32_t ind,void *ctx,int32_t dir,struct LP_priceinfo *base
                         LP_autorefs[ind].lastask = newprice;
                     else LP_autorefs[ind].lastask = (LP_autorefs[ind].lastask * 0.9) + (0.1 *newprice);
                     newprice = LP_autorefs[ind].lastask;
-                    //printf("autopriceset %s/%s <- %.8f %.8f (%.8f %.8f)\n",basepp->symbol,relpp->symbol,price,newprice,LP_autorefs[ind].lastbid,LP_autorefs[ind].lastask);
+                    printf("autopriceset %s/%s <- %.8f %.8f (%.8f %.8f)\n",basepp->symbol,relpp->symbol,price,newprice,LP_autorefs[ind].lastbid,LP_autorefs[ind].lastask);
                 }
                 LP_mypriceset(&changed,relpp->symbol,basepp->symbol,newprice);
                 if ( changed != 0 || time(NULL) > lasttime+LP_ORDERBOOK_DURATION*.777)
@@ -568,7 +568,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         }
         else if ( strcmp(LP_autorefs[i].refrel,"coinmarketcap") == 0 )
         {
-            printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
+            //printf("%s/%s for %s/%s margin %.8f/%.8f\n",base,rel,LP_autorefs[i].refbase,LP_autorefs[i].refrel,buymargin,sellmargin);
             if ( (price_btc= LP_CMCbtcprice(&price_usd,LP_autorefs[i].refbase)) > SMALLVAL )
             {
                 if ( strcmp(rel,"KMD") == 0 && kmd_btc > SMALLVAL )
@@ -587,7 +587,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 newprice = LP_autorefs[i].lastbid;
                 LP_mypriceset(&changed,rel,base,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
-                printf("price %.8f margin %.8f/%.8f newprice %.8f %.8f\n",price,buymargin,sellmargin,newprice,(1. / price) * (1. + buymargin));
+                //printf("price %.8f margin %.8f/%.8f newprice %.8f %.8f\n",price,buymargin,sellmargin,newprice,(1. / price) * (1. + buymargin));
                 newprice = (1. / price) * (1. + sellmargin);
                 if ( LP_autorefs[i].lastask < SMALLVAL )
                     LP_autorefs[i].lastask = newprice;
@@ -603,7 +603,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             relpp = LP_priceinfofind(rel);
             if ( basepp != 0 && relpp != 0 )
             {
-                //printf("check ref-autoprice %s/%s %f %f (%.8f %.8f)\n",LP_autorefs[i].refbase,LP_autorefs[i].refrel,relpp->fixedprices[basepp->ind],basepp->fixedprices[relpp->ind],LP_autorefs[i].lastbid,LP_autorefs[i].lastask);
+                printf("check ref-autoprice %s/%s %f %f (%.8f %.8f)\n",LP_autorefs[i].refbase,LP_autorefs[i].refrel,relpp->fixedprices[basepp->ind],basepp->fixedprices[relpp->ind],LP_autorefs[i].lastbid,LP_autorefs[i].lastask);
                 LP_autopriceset(i,ctx,1,basepp,relpp,0.,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
             }
         }
