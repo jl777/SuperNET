@@ -603,7 +603,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
             relpp = LP_priceinfofind(rel);
             if ( basepp != 0 && relpp != 0 )
             {
-                printf("check ref-autoprice %s/%s %f %f (%.8f %.8f)\n",LP_autorefs[i].refbase,LP_autorefs[i].refrel,relpp->fixedprices[basepp->ind],basepp->fixedprices[relpp->ind],LP_autorefs[i].lastbid,LP_autorefs[i].lastask);
+                //printf("check ref-autoprice %s/%s %f %f (%.8f %.8f)\n",LP_autorefs[i].refbase,LP_autorefs[i].refrel,relpp->fixedprices[basepp->ind],basepp->fixedprices[relpp->ind],LP_autorefs[i].lastbid,LP_autorefs[i].lastask);
                 LP_autopriceset(i,ctx,1,basepp,relpp,0.,LP_autorefs[i].refbase,LP_autorefs[i].refrel);
             }
         }
