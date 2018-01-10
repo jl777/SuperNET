@@ -27,11 +27,13 @@ struct LP_metricinfo
     int32_t ind,numutxos,age,pendingswaps;
 };
 
+#define LP_NUMRT 1024
 struct LP_RTmetrics_pendings
 {
-    char refbase[65],refrel[65];
-    int32_t numswaps,numavoidtxids,numwhitelist,numblacklist,numpendings,pending_swaps[1024];
-    bits256 avoidtxids[8192],whitelist[1024],blacklist[1024],pending_pubkeys[1024];
+    char refbase[128],refrel[128];
+    int64_t pending_kmdvalue[LP_NUMRT];
+    int32_t numswaps,numavoidtxids,numwhitelist,numblacklist,numpendings,pending_swaps[LP_NUMRT];
+    bits256 avoidtxids[8192],whitelist[LP_NUMRT],blacklist[LP_NUMRT],pending_pubkeys[LP_NUMRT];
 } LP_RTmetrics;
 
 int32_t LP_bits256_find(bits256 *list,int32_t num,bits256 val)
@@ -72,11 +74,14 @@ int32_t LP_RTmetrics_blacklistadd(bits256 pubkey)
     return(LP_bits256_add("LP_RTmetrics_blacklistadd blacklist",LP_RTmetrics.blacklist,&LP_RTmetrics.numblacklist,(int32_t)(sizeof(LP_RTmetrics.blacklist)/sizeof(*LP_RTmetrics.blacklist)),pubkey));
 }
 
-int32_t LP_RTmetrics_pendingswap(bits256 pubkey)
+int32_t LP_RTmetrics_pendingswap(bits256 pubkey,int64_t kmdvalue)
 {
     int32_t ind;
     if ( (ind= LP_bits256_add("LP_RTmetrics_pendingswap",LP_RTmetrics.pending_pubkeys,&LP_RTmetrics.numpendings,(int32_t)(sizeof(LP_RTmetrics.pending_pubkeys)/sizeof(*LP_RTmetrics.pending_pubkeys)),pubkey)) >= 0 )
+    {
         LP_RTmetrics.pending_swaps[ind]++;
+        LP_RTmetrics.pending_kmdvalue[ind] += kmdvalue;
+    }
     return(ind);
 }
 
@@ -113,7 +118,9 @@ void LP_RTmetrics_swapsinfo(char *refbase,char *refrel,cJSON *swaps,int32_t nums
             base = "";
         if ( (rel= jstr(item,"rel")) == 0 )
             rel = "";
-        if ( strcmp(base,refbase) != 0 && strcmp(base,refrel) != 0 && strcmp(rel,refbase) != 0 && strcmp(rel,refrel) != 0 )
+        if ( refbase[0] != 0 && strcmp(base,refbase) != 0 && strcmp(base,refrel) != 0 )
+            continue;
+        if ( refrel[0] != 0 && strcmp(rel,refbase) != 0 && strcmp(rel,refrel) != 0 )
             continue;
         aliceid = j64bits(item,"aliceid");
         basesatoshis = SATOSHIDEN * jdouble(item,"basevol");
@@ -123,9 +130,9 @@ void LP_RTmetrics_swapsinfo(char *refbase,char *refrel,cJSON *swaps,int32_t nums
         price = jdouble(item,"price");
         requestid = juint(item,"requestid");
         quoteid = juint(item,"quoteid");
-        LP_RTmetrics_pendingswap(srcpub);
-        LP_RTmetrics_pendingswap(destpub);
-        if ( 0 && (retstr= basilisk_swapentry(requestid,quoteid)) != 0 ) // no need for this
+        LP_RTmetrics_pendingswap(srcpub,LP_kmdvalue(base,basesatoshis));
+        LP_RTmetrics_pendingswap(destpub,LP_kmdvalue(rel,relsatoshis));
+        if ( 0 && (retstr= basilisk_swapentry(requestid,quoteid,0)) != 0 ) // no need for this
         {
             if ( (swapjson= cJSON_Parse(retstr)) != 0 )
             {
@@ -142,9 +149,9 @@ void LP_RTmetrics_swapsinfo(char *refbase,char *refrel,cJSON *swaps,int32_t nums
     }
 }
 
-void LP_RTmetrics_update(char *base,char *rel)
+/*void LP_RTmetrics_init()
 {
-    struct LP_pubkeyinfo *pubp,*tmp; uint32_t futuretime; int32_t i,numswaps; bits256 zero; char *retstr; cJSON *statsjson,*swaps;
+    struct LP_pubkey_info *pubp,*tmp; uint32_t futuretime; int32_t i,numswaps; bits256 pubkey,zero; cJSON *statsjson,*swaps;
     memset(&LP_RTmetrics,0,sizeof(LP_RTmetrics));
     HASH_ITER(hh,LP_pubkeyinfos,pubp,tmp)
     {
@@ -152,31 +159,38 @@ void LP_RTmetrics_update(char *base,char *rel)
             LP_RTmetrics_whitelistadd(pubp->pubkey);
         else if ( pubp->istrusted < 0 )
             LP_RTmetrics_blacklistadd(pubp->pubkey);
+        pubp->swaps_kmdvalue = 0;
     }
     futuretime = (uint32_t)time(NULL) + 3600*100;
     memset(zero.bytes,0,sizeof(zero));
-    if ( (retstr= LP_statslog_disp(100,futuretime,futuretime,"",zero)) != 0 )
+    if ( (statsjson= LP_statslog_disp(futuretime,futuretime,"",zero,0,0)) != 0 )
     {
-        if ( (statsjson= cJSON_Parse(retstr)) != 0 )
+        if ( (swaps= jarray(&numswaps,statsjson,"swaps")) != 0 )
         {
-            if ( (swaps= jarray(&numswaps,statsjson,"swaps")) != 0 )
-            {
-                //printf("LP_RTmetrics_update for (%s)\n",jprint(swaps,0));
-                if ( numswaps > 0 )
-                    LP_RTmetrics_swapsinfo(base,rel,swaps,numswaps);
-            }
-            free_json(statsjson);
+            //printf("LP_RTmetrics_update for (%s)\n",jprint(swaps,0));
+            if ( numswaps > 0 )
+                LP_RTmetrics_swapsinfo("","",swaps,numswaps);
         }
-        free(retstr);
+        free_json(statsjson);
     }
     for (i=0; i<LP_RTmetrics.numpendings; i++)
+    {
+        pubkey = LP_RTmetrics.pending_pubkeys[i];
         if ( LP_RTmetrics.pending_swaps[i] > LP_MAXPENDING_SWAPS )
         {
-            char str[65]; printf("%s has %d pending swaps! which is more than %d\n",bits256_str(str,LP_RTmetrics.pending_pubkeys[i]),LP_RTmetrics.pending_swaps[i],LP_MAXPENDING_SWAPS);
-            LP_RTmetrics_blacklistadd(LP_RTmetrics.pending_pubkeys[i]);
+            char str[65]; printf("%s has %d pending swaps! which is more than %d\n",bits256_str(str,pubkey),LP_RTmetrics.pending_swaps[i],LP_MAXPENDING_SWAPS);
+            LP_RTmetrics_blacklistadd(pubkey);
         }
+        else if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
+        {
+            char str[65]; printf("%s has %d pending swaps %.8f kmdvalue\n",bits256_str(str,pubkey),LP_RTmetrics.pending_swaps[i],dstr(LP_RTmetrics.pending_kmdvalue[i]));
+            pubp->swaps_kmdvalue = LP_RTmetrics.pending_kmdvalue[i];
+        }
+    }
     //printf("%d pubkeys have pending swaps, whitelist.%d blacklist.%d avoidtxids.%d\n",LP_RTmetrics.numpendings,LP_RTmetrics.numwhitelist,LP_RTmetrics.numblacklist,LP_RTmetrics.numavoidtxids);
-}
+}*/
+
+
 
 double _LP_RTmetric_calc(struct LP_metricinfo *mp,double bestprice,double maxprice,double relvolume)
 {

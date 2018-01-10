@@ -1,0 +1,15 @@
+#!/bin/bash
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"REVS\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"CHIPS\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"KMD\",\"rel\":\"BTC\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"SUPERNET\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"CRYPTO\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"DEX\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"BOTS\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"BET\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"HODL\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"MSHARK\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"MGW\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"PANGEA\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getprice\",\"base\":\"JUMBLR\",\"rel\":\"KMD\"}"
