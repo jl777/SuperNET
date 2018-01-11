@@ -613,7 +613,6 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 void LP_autoprices_update(char *method,char *base,double basevol,char *rel,double relvol)
 {
     int32_t i; double price,newprice;
-    return;
     if ( basevol > 0. && relvol > 0. )
     {
         price = relvol/basevol;
@@ -633,7 +632,7 @@ void LP_autoprices_update(char *method,char *base,double basevol,char *rel,doubl
                 newprice = (LP_autorefs[i].lastbid * 0.99) + (0.01 * price);
                 if ( LP_autorefs[i].lastbid > 0 )
                 {
-                    printf("%s: autoprice bid update %s/%s %.8f vs myprice %.8f/%.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,LP_autorefs[i].lastask,newprice);
+                    //printf("%s: autoprice bid update %s/%s %.8f vs myprice %.8f/%.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,LP_autorefs[i].lastask,newprice);
                     LP_autorefs[i].lastbid = newprice;
                 } // else printf("%s: autoprice bid skip update %s/%s %.8f vs myprice %.8f/%.8f -> %.8f\n",method,base,rel,price,LP_autorefs[i].lastbid,LP_autorefs[i].lastask,newprice);
             }
