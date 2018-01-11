@@ -499,7 +499,7 @@ int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue)
                         printf("unfinished alice %llu r%u-r%u src.%s %.8f dest.%s %.8f -> price %.8f value %.8f\n",(long long)sp->aliceid,sp->Q.R.requestid,sp->Q.R.quoteid,sp->Q.srccoin,dstr(sp->Q.satoshis),sp->Q.destcoin,dstr(sp->Q.destsatoshis),(double)sp->Q.destsatoshis/(sp->Q.satoshis+1),dstr(LP_kmdvalue(sp->Q.destcoin,sp->Q.destsatoshis)));
                 }
             }
-            printf("REJECT: %s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
+            //printf("REJECT: %s instantdex_credits %.8f vs (%.8f + current %.8f)\n",coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue));
         }
         if ( 0 && credits != 0 )
             printf("%s %s othercredits %.8f debits %.8f + %.8f -> %.8f\n",coin->symbol,coinaddr,dstr(credits),dstr(swaps_kmdvalue),dstr(kmdvalue),dstr(credits - (swaps_kmdvalue+kmdvalue)));
