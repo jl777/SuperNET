@@ -21,6 +21,10 @@
 #ifndef LP_INCLUDE_H
 #define LP_INCLUDE_H
 
+#ifndef LP_TECHSUPPORT
+#define LP_TECHSUPPORT 1
+#endif
+
 #ifdef FROMGUI
 #define printf dontprintf
 
