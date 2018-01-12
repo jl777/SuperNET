@@ -1036,23 +1036,28 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             {
                 if ( time(NULL) > rswap.expiration+777 )
                 {
+                    printf("alice tries to claim bobdeposit\n");
                     flag = 0;
                     if ( bob->electrum == 0 )
                     {
                         if ( (txoutobj= LP_gettxout(rswap.bobcoin,rswap.bobdepositaddr,rswap.txids[BASILISK_BOBDEPOSIT],0)) != 0 )
                             free_json(txoutobj), flag = 0;
                         else flag = -1, rswap.depositspent = deadtxid;
-                    }
+                        printf("native mode flag.%d\n",flag);
+                    } else printf("SPV mode\n");
                     if ( flag == 0 )
                     {
                         if ( rswap.Dredeemlen != 0 )
                             redeemlen = rswap.Dredeemlen, memcpy(redeemscript,rswap.Dredeemscript,rswap.Dredeemlen);
                         else redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,rswap.dlocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rswap.privAm,zero,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
+                        printf("redeemlen.%d\n",redeemlen);
                         if ( redeemlen > 0 )
                         {
-                            if ( bits256_nonz(rswap.privBn) == 0 )
+                            /*if ( bits256_nonz(rswap.privBn) == 0 )
+                            {
                                 rswap.privBn = basilisk_swap_privBn_extract(&rswap.txids[BASILISK_BOBREFUND],rswap.bobcoin,rswap.txids[BASILISK_BOBDEPOSIT],rswap.privBn);
-                            if ( bits256_nonz(rswap.privBn) != 0 )
+                            }
+                            if ( bits256_nonz(rswap.privBn) != 0 )*/
                             {
                                 len = basilisk_swapuserdata(userdata,zero,1,rswap.myprivs[0],redeemscript,redeemlen);
                                 if ( (rswap.txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"aliceclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,0,rswap.expiration,&rswap.values[BASILISK_ALICECLAIM],0,0,rswap.bobdepositaddr,1,bob->zcash)) != 0 )
