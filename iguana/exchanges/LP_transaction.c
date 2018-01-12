@@ -1640,7 +1640,7 @@ bits256 _LP_swap_spendtxid(char *symbol,char *destaddr,char *coinaddr,bits256 ut
 
 bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t utxovout)
 {
-    bits256 spendtxid,txid,vintxid; int32_t spendvin,i,m,n; char coinaddr[64]; cJSON *array,*vins,*vin,*txobj; struct iguana_info *coin;
+    bits256 spendtxid,txid,vintxid; int32_t spendvin,i,j,m,n; char coinaddr[64]; cJSON *array,*vins,*vin,*txobj; struct iguana_info *coin;
     // listtransactions or listspents
     coinaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
@@ -1662,14 +1662,14 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
                         if ( (vins= jarray(&m,txobj,"vin")) != 0 )
                         {
 //printf("vins.(%s)\n",jprint(vins,0));
-                            if ( utxovout < m )
+                            for (j=0; j<m; j++)
                             {
-                                vin = jitem(vins,utxovout);
+                                vin = jitem(vins,j);
                                 vintxid = jbits256(vin,"txid");
-                                if ( bits256_cmp(vintxid,utxotxid) == 0 )
+                                if ( utxovout == jint(vin,"vout") && bits256_cmp(vintxid,utxotxid) == 0 )
                                 {
                                     LP_txdestaddr(destaddr,txid,0,txobj);
-                                    char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: found %s/v%d spends %s vs %s found.%d destaddr.(%s)\n",bits256_str(str,txid),utxovout,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),bits256_cmp(vintxid,utxotxid) == 0,destaddr);
+                                    char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: found %s/v%d spends %s vs %s/v%d found.%d destaddr.(%s)\n",bits256_str(str,txid),j,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),utxovout,bits256_cmp(vintxid,utxotxid) == 0,destaddr);
                                     spendtxid = txid;
                                     break;
                                 }
