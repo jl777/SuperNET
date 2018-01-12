@@ -1650,7 +1650,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
     }
     else if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum == 0 )
     {
-        printf("get received by %s\n",destaddr);
+        //printf("get received by %s\n",destaddr);
         if ( (array= LP_listreceivedbyaddress(symbol,destaddr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
