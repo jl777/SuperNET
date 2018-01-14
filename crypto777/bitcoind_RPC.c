@@ -30,6 +30,7 @@ void *LP_alloc(uint64_t len);
 void LP_free(void *ptr);
 char *LP_clonestr(char *str);*/
 
+int32_t bitcoind_RPC_inittime;
 
 #if LIQUIDITY_PROVIDER
 #include <curl/curl.h>
@@ -73,7 +74,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     char *retstr = 0;
     cJSON *json,*result,*error;
 #ifdef FROM_MARKETMAKER
-    usleep(3000);
+    //usleep(3000);
 #endif
     //printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
@@ -96,6 +97,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
         if ( (error->type&0xff) == cJSON_NULL && (result->type&0xff) != cJSON_NULL )
         {
             retstr = jprint(result,0);
+            //printf("%s %s rpc retstr.%p\n",command,params,retstr);
             len = strlen(retstr);
             if ( retstr[0] == '"' && retstr[len-1] == '"' )
             {
@@ -112,7 +114,10 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
             rpcstr = 0;
         }
         if ( rpcstr != 0 )
+        {
+            //printf("free rpcstr.%p\n",rpcstr);
             free(rpcstr);
+        }
     } else retstr = rpcstr;
     free_json(json);
     //fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: postprocess returns.(%s)\n",retstr);
@@ -186,7 +191,16 @@ try_again:
     curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
 	curl_easy_setopt(curl_handle,CURLOPT_NOPROGRESS,	1L);			// no progress callback
     if ( timeout > 0 )
-        curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,	timeout); // causes problems with iguana timeouts
+    {
+        if ( bitcoind_RPC_inittime != 0 )
+        {
+#ifndef _WIN32
+            curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,1);
+#else
+            curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT_MS, timeout*100);
+#endif
+        } else curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,timeout); // causes problems with iguana timeouts
+    }
     if ( strncmp(url,"https",5) == 0 )
     {
         curl_easy_setopt(curl_handle,CURLOPT_SSL_VERIFYPEER,0);
@@ -231,30 +245,30 @@ try_again:
         free(databuf);
         databuf = 0;
     }
+    retstr = chunk.memory; // retstr = s.ptr;
     if ( res != CURLE_OK )
     {
         numretries++;
         if ( specialcase != 0 || timeout != 0 )
         {
-            //printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,s.ptr,res);
-            free(chunk.memory); //free(s.ptr);
+            //printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,retstr,res);
+            free(retstr);
             return(0);
         }
         else if ( numretries >= 4 )
         {
             printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
             //printf("Maximum number of retries exceeded!\n");
-            free(chunk.memory);//free(s.ptr);
+            free(retstr);
             return(0);
         }
-        free(chunk.memory);//free(s.ptr);
+        free(retstr);
         sleep((1<<numretries));
         goto try_again;
         
     }
     else
     {
-        retstr = chunk.memory; // retstr = s.ptr;
         if ( command != 0 && specialcase == 0 )
         {
             count++;
@@ -279,9 +293,6 @@ try_again:
             return(retstr);
         }
     }
-    //printf("bitcoind_RPC: impossible case\n");
-    //free(s.ptr);
-    //return(0);
 }
 
 /************************************************************************
@@ -337,6 +348,7 @@ static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
     {
         //printf("curl needs %d more\n",(int32_t)realsize);
         mem->memory = (ptr != 0) ? realloc(mem->memory,needed) : malloc(needed);
+        //printf("mem->memory.%p len.%d\n",mem->memory,(int32_t)needed);
         mem->allocsize = needed;
     }
     //mem->memory = (ptr != 0) ? realloc(mem->memory,mem->size + realsize + 1) : malloc(mem->size + realsize + 1);
