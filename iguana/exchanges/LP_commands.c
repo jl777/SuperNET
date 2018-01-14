@@ -34,7 +34,7 @@ char *LP_numutxos()
 
 char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
 {
-    char *method,*userpass,*base,*rel,*coin,*retstr = 0; int32_t changed,flag = 0; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
+    char *method,*userpass,*base,*rel,*coin,*passphrase,*retstr = 0; int32_t authenticated=0,changed,flag = 0; cJSON *retjson,*reqjson = 0; struct iguana_info *ptr;
     method = jstr(argjson,"method");
     if ( method != 0 && (strcmp(method,"addr_unspents") == 0 || strcmp(method,"uitem") == 0 || strcmp(method,"postutxos") == 0) )
         return(0);
@@ -160,6 +160,7 @@ bot_stop(botid)\n\
 bot_pause(botid)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
+jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
@@ -183,9 +184,19 @@ instantdex_claim()\n\
             jadd(retjson,"coins",LP_coinsjson(LP_showwif));
             return(jprint(retjson,1));
         }
-        if ( ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) ) //strcmp(method,"passphrase") != 0 && 
+        // if passphrase api and passphrase is right, ignore userpass, use hass of passphrase
+        if ( strcmp(method,"passphrase") == 0 && (passphrase= jstr(argjson,"passphrase")) != 0 )
+        {
+            bits256 passhash; char str[65],str2[65];
+            vcalc_sha256(0,passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+            if ( bits256_cmp(passhash,G.LP_passhash) == 0 )
+                authenticated = 1;
+            else printf("passhash %s != G %s\n",bits256_str(str,passhash),bits256_str(str2,G.LP_passhash));
+        }
+        if ( authenticated == 0 && ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) )
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
-        jdelete(argjson,"userpass");
+        if ( jobj(argjson,"userpass") != 0 )
+            jdelete(argjson,"userpass");
         if ( strcmp(method,"passphrase") == 0 )
         {
             char coinaddr[64],pub33str[67];
@@ -225,6 +236,10 @@ instantdex_claim()\n\
                 return(LP_instantdex_claim(ptr));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
+        }
+        else if ( strcmp(method,"jpg") == 0 )
+        {
+            return(LP_jpg(jstr(argjson,"srcfile"),jstr(argjson,"destfile"),jint(argjson,"power2"),jstr(argjson,"passphrase"),jstr(argjson,"data"),jint(argjson,"required")));
         }
         /*else if ( strcmp(method,"sendmessage") == 0 )
         {

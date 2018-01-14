@@ -362,6 +362,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui)
         sleep(5);
     }
     memset(&G,0,sizeof(G));
+    vcalc_sha256(0,G.LP_passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     LP_privkey_updates(ctx,LP_mypubsock,passphrase);
     init_hexbytes_noT(G.LP_myrmd160str,G.LP_myrmd160,20);
     G.LP_sessionid = (uint32_t)time(NULL);
@@ -392,3 +393,189 @@ void LP_privkey_tests()
     }
     printf("%d privkeys checked\n",i);
 }
+
+
+// from https://github.com/owencm/C-Steganography-Framework
+#include "../../crypto777/jpeg/cdjpeg.h" // Common decls for compressing and decompressing jpegs
+
+int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uint8_t *decoded,uint8_t *data,int32_t required,int32_t power2,char *passphrase)
+{
+    struct jpeg_decompress_struct inputinfo;
+    struct jpeg_compress_struct outputinfo;
+    struct jpeg_error_mgr jerr;
+    jvirt_barray_ptr *coef_arrays;
+    JDIMENSION i,compnum,rownum,blocknum;
+    JBLOCKARRAY coef_buffers[MAX_COMPONENTS];
+    JBLOCKARRAY row_ptrs[MAX_COMPONENTS];
+    FILE *input_file,*output_file; int32_t val,modified,emit,totalrows,limit;
+    if ( power2 < 0 || power2 > 16 )
+        power2 = 4;
+    limit = 1;
+    while ( power2 > 0 )
+    {
+        limit <<= 1;
+        power2--;
+    }
+    if ((input_file = fopen(inputfname, READ_BINARY)) == NULL) {
+        fprintf(stderr, "Can't open %s\n", inputfname);
+        exit(EXIT_FAILURE);
+    }
+    // Initialize the JPEG compression and decompression objects with default error handling
+    inputinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_decompress(&inputinfo);
+    // Specify data source for decompression and recompression
+    jpeg_stdio_src(&inputinfo, input_file);
+    (void) jpeg_read_header(&inputinfo, TRUE);
+    for (compnum=0; compnum<inputinfo.num_components; compnum++)
+        coef_buffers[compnum] = ((&inputinfo)->mem->alloc_barray)((j_common_ptr)&inputinfo,JPOOL_IMAGE,inputinfo.comp_info[compnum].width_in_blocks,inputinfo.comp_info[compnum].height_in_blocks);
+    coef_arrays = jpeg_read_coefficients(&inputinfo);
+    // Copy DCT coeffs to a new array
+    int num_components = inputinfo.num_components;
+    size_t *block_row_size;//[num_components];
+    int *width_in_blocks;//[num_components];
+    int *height_in_blocks;//[num_components];
+    block_row_size = calloc(sizeof(*block_row_size),num_components);
+    width_in_blocks = calloc(sizeof(*width_in_blocks),num_components);
+    height_in_blocks = calloc(sizeof(*height_in_blocks),num_components);
+    *capacityp = modified = emit = totalrows = 0;
+    if ( decoded != 0 )
+        memset(decoded,0,required/8+1);
+    for (compnum=0; compnum<num_components; compnum++)
+    {
+        height_in_blocks[compnum] = inputinfo.comp_info[compnum].height_in_blocks;
+        width_in_blocks[compnum] = inputinfo.comp_info[compnum].width_in_blocks;
+        block_row_size[compnum] = (size_t) SIZEOF(JCOEF)*DCTSIZE2*width_in_blocks[compnum];
+        for (rownum=0; rownum<height_in_blocks[compnum]; rownum++)
+        {
+            row_ptrs[compnum] = ((&inputinfo)->mem->access_virt_barray)((j_common_ptr)&inputinfo,coef_arrays[compnum],rownum,(JDIMENSION)1,FALSE);
+            for (blocknum=0; blocknum<width_in_blocks[compnum]; blocknum++)
+            {
+                for (i=0; i<DCTSIZE2; i++)
+                {
+                    val = row_ptrs[compnum][0][blocknum][i];
+                    if ( val < -power2 || val > power2 )
+                    {
+                        if ( decoded != 0 && (val & 1) != 0 && *capacityp < required )
+                            decoded[*capacityp >> 3] |= (1 << (*capacityp & 7));
+                        (*capacityp)++;
+                    }
+                    coef_buffers[compnum][rownum][blocknum][i] = val;
+                }
+            }
+        }
+    }
+    printf("capacity %d required.%d\n",*capacityp,required);
+    if ( *capacityp > required && outputfname != 0 && outputfname[0] != 0 )
+    {
+        if ((output_file = fopen(outputfname, WRITE_BINARY)) == NULL) {
+            fprintf(stderr, "Can't open %s\n", outputfname);
+            exit(EXIT_FAILURE);
+        }
+        outputinfo.err = jpeg_std_error(&jerr);
+        jpeg_create_compress(&outputinfo);
+        jpeg_stdio_dest(&outputinfo, output_file);
+        jpeg_copy_critical_parameters(&inputinfo,&outputinfo);
+        // Print out or modify DCT coefficients
+        for (compnum=0; compnum<num_components; compnum++)
+        {
+            for (rownum=0; rownum<height_in_blocks[compnum]; rownum++)
+            {
+                for (blocknum=0; blocknum<width_in_blocks[compnum]; blocknum++)
+                {
+                    //printf("\n\nComponent: %i, Row:%i, Column: %i\n", compnum, rownum, blocknum);
+                    for (i=0; i<DCTSIZE2; i++)
+                    {
+                        val = coef_buffers[compnum][rownum][blocknum][i];
+                        if ( val < -power2 || val > power2 )
+                        {
+                            val &= ~1;
+                            if ( (data[emit >> 3] & (1 << (emit&7))) != 0 )
+                                val |= 1;
+                            emit++;
+                        }
+                        coef_buffers[compnum][rownum][blocknum][i] = val;
+                        //printf("%i,", coef_buffers[compnum][rownum][blocknum][i]);
+                    }
+                }
+            }
+        }
+        //printf("\n\n");
+        
+        /* Output the new DCT coeffs to a JPEG file */
+        modified = 0;
+        for (compnum=0; compnum<num_components; compnum++)
+        {
+            for (rownum=0; rownum<height_in_blocks[compnum]; rownum++)
+            {
+                row_ptrs[compnum] = ((&outputinfo)->mem->access_virt_barray)((j_common_ptr)&outputinfo,coef_arrays[compnum],rownum,(JDIMENSION)1,TRUE);
+                if ( memcmp(row_ptrs[compnum][0][0],coef_buffers[compnum][rownum][0],block_row_size[compnum]) != 0 )
+                {
+                    memcpy(row_ptrs[compnum][0][0],coef_buffers[compnum][rownum][0],block_row_size[compnum]);
+                    modified++;
+                }
+                totalrows++;
+            }
+        }
+        // Write to the output file
+        jpeg_write_coefficients(&outputinfo, coef_arrays);
+        // Finish compression and release memory
+        jpeg_finish_compress(&outputinfo);
+        jpeg_destroy_compress(&outputinfo);
+        fclose(output_file);
+    }
+    jpeg_finish_decompress(&inputinfo);
+    jpeg_destroy_decompress(&inputinfo);
+    fclose(input_file);
+    if ( modified != 0 )
+    {
+        printf("New DCT coefficients successfully written to %s, capacity %d modifiedrows.%d/%d emit.%d\n",outputfname,*capacityp,modified,totalrows,emit);
+    }
+    free(block_row_size);
+    free(width_in_blocks);
+    free(height_in_blocks);
+    return(modified);
+}
+
+char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *datastr,int32_t required)
+{
+    cJSON *retjson; int32_t len=0,modified,capacity; char *decodedstr; uint8_t *data=0,*decoded=0;
+    if ( srcfile != 0 && srcfile[0] != 0 )
+    {
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","success");
+        if ( datastr != 0 && datastr[0] != 0 )
+        {
+            if ( (len= is_hexstr(datastr,0)) > 0 )
+            {
+                len >>= 1;
+                data = calloc(1,len);
+                decode_hex(data,len,datastr);
+                required = len * 8;
+            }
+        }
+        if ( required > 0 )
+            decoded = calloc(1,len);
+        modified = LP_jpg_process(&capacity,srcfile,destfile,decoded,data,required,power2,passphrase);
+        jaddnum(retjson,"modifiedrows",modified);
+        if ( modified != 0 )
+            jaddstr(retjson,"outputfile",destfile);
+        jaddnum(retjson,"power2",power2);
+        jaddnum(retjson,"capacity",capacity);
+        jaddnum(retjson,"required",required);
+        if ( decoded != 0 )
+        {
+            decodedstr = calloc(1,len*2+1);
+            init_hexbytes_noT(decodedstr,decoded,len);
+            jaddstr(retjson,"decoded",decodedstr);
+            free(decodedstr);
+            free(decoded);
+        }
+        if ( data != 0 )
+            free(data);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"no source file error\"}"));
+}
+
+
+
+

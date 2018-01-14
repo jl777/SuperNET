@@ -835,7 +835,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     V[0].ignore_cltverr = ignore_cltverr;
     if ( redeemlen != 0 )
         memcpy(V[0].p2shscript,redeemscript,redeemlen), V[0].p2shlen = redeemlen;
-    txobj = bitcoin_txcreate(symbol,isPoS,locktime,1,timestamp);
+    txobj = bitcoin_txcreate(symbol,isPoS,locktime,coin->txversion,timestamp);
     vins = cJSON_CreateArray();
     item = cJSON_CreateObject();
     if ( userdata != 0 && userdatalen > 0 )
@@ -1243,7 +1243,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     timestamp = (uint32_t)time(NULL);
     if ( locktime == 0 && strcmp("KMD",coin->symbol) == 0 )
         locktime = timestamp - 777;
-    txobj = bitcoin_txcreate(coin->symbol,coin->isPoS,locktime,1,timestamp);
+    txobj = bitcoin_txcreate(coin->symbol,coin->isPoS,locktime,coin->txversion,timestamp);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",jduplicate(vins));
     printf("change %.8f = total %.8f - amount %.8f, adjust %.8f numvouts.%d\n",dstr(change),dstr(total),dstr(amount),dstr(adjust),numvouts);
@@ -1640,16 +1640,17 @@ bits256 _LP_swap_spendtxid(char *symbol,char *destaddr,char *coinaddr,bits256 ut
 
 bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t utxovout)
 {
-    bits256 spendtxid,txid,vintxid; int32_t spendvin,i,m,n; char coinaddr[64]; cJSON *array,*vins,*vin,*txobj; struct iguana_info *coin;
+    bits256 spendtxid,txid,vintxid; int32_t spendvin,i,j,m,n; char coinaddr[64]; cJSON *array,*vins,*vin,*txobj; struct iguana_info *coin;
     // listtransactions or listspents
     coinaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
     if ( LP_spendsearch(destaddr,&spendtxid,&spendvin,symbol,utxotxid,utxovout) > 0 )
     {
-        //char str[65]; printf("spend of %s/v%d detected\n",bits256_str(str,utxotxid),utxovout);
+        //char str[65]; printf("%s dest.%s spend of %s/v%d detected\n",symbol,destaddr,bits256_str(str,utxotxid),utxovout);
     }
     else if ( (coin= LP_coinfind(symbol)) != 0 && coin->electrum == 0 )
     {
+        //printf("get received by %s\n",destaddr);
         if ( (array= LP_listreceivedbyaddress(symbol,destaddr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -1662,14 +1663,14 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
                         if ( (vins= jarray(&m,txobj,"vin")) != 0 )
                         {
 //printf("vins.(%s)\n",jprint(vins,0));
-                            if ( utxovout < m )
+                            for (j=0; j<m; j++)
                             {
-                                vin = jitem(vins,utxovout);
+                                vin = jitem(vins,j);
                                 vintxid = jbits256(vin,"txid");
-                                if ( bits256_cmp(vintxid,utxotxid) == 0 )
+                                if ( utxovout == jint(vin,"vout") && bits256_cmp(vintxid,utxotxid) == 0 )
                                 {
                                     LP_txdestaddr(destaddr,txid,0,txobj);
-                                    char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: found %s/v%d spends %s vs %s found.%d destaddr.(%s)\n",bits256_str(str,txid),utxovout,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),bits256_cmp(vintxid,utxotxid) == 0,destaddr);
+                                    char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: found %s/v%d spends %s vs %s/v%d found.%d destaddr.(%s)\n",bits256_str(str,txid),j,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),utxovout,bits256_cmp(vintxid,utxotxid) == 0,destaddr);
                                     spendtxid = txid;
                                     break;
                                 }
