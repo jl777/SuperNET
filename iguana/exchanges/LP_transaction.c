@@ -1670,7 +1670,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
                                 if ( utxovout == jint(vin,"vout") && bits256_cmp(vintxid,utxotxid) == 0 )
                                 {
                                     LP_txdestaddr(destaddr,txid,0,txobj);
-                                    char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: found %s/v%d spends %s vs %s/v%d found.%d destaddr.(%s)\n",bits256_str(str,txid),j,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),utxovout,bits256_cmp(vintxid,utxotxid) == 0,destaddr);
+                                    //char str[65],str2[65],str3[65]; printf("LP_swap_spendtxid: found %s/v%d spends %s vs %s/v%d found.%d destaddr.(%s)\n",bits256_str(str,txid),j,bits256_str(str2,vintxid),bits256_str(str3,utxotxid),utxovout,bits256_cmp(vintxid,utxotxid) == 0,destaddr);
                                     spendtxid = txid;
                                     break;
                                 }
