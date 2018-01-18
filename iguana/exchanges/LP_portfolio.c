@@ -559,7 +559,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                         if ( LP_autorefs[i].lastask < SMALLVAL )
                             LP_autorefs[i].lastask = newprice;
                         else LP_autorefs[i].lastask = (LP_autorefs[i].lastask * 0.9) + (0.1 *newprice);
-                        if ( LP_autorefs[i].lastask > LP_autorefs[i].lastbid )
+                        if ( LP_autorefs[i].lastbid < SMALLVAL || LP_autorefs[i].lastask > LP_autorefs[i].lastbid )
                             newprice = LP_autorefs[i].lastask;
                         else newprice = LP_autorefs[i].lastbid * (1. + sellmargin);
                         LP_mypriceset(&changed,base,rel,newprice);
