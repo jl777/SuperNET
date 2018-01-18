@@ -16,8 +16,10 @@ curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\
 source crypto
 source trackbtc
 
-source dex
-source trackbtc
+./auto_dexkmd
+./auto_dexbtc
+#source dex
+#source trackbtc
 
 source jumblr
 source trackbtc
