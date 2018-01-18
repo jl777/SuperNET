@@ -38,8 +38,8 @@ curl --url "http://127.0.0.1:7783" --data "{\"margin\":$margin,\"base\":\"HODL\"
 dexholdings="{\"coin\":\"blocknet\",\"balance\":4975836}"
 curl --url "http://127.0.0.1:7783" --data "{\"base\":\"DEX\",\"rel\":\"KMD\",\"margin\":$margin,\"fundvalue_bid\":\"assetNAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"address\":\"RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf\",\"holdings\":[$dexholdings],\"divisor\":1000000}"
 
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BOTS\",\"offset\":0.0,\"refbase\":\"KMD\",\"refrel\":\"DEX\",\"factor\":3.33,\"buymargin\":0.01,\"sellmargin\":0.01}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BOTS\",\"offset\":0.0,\"refbase\":\"KMD\",\"refrel\":\"DEX\",\"factor\":3.5,\"buymargin\":0.01,\"sellmargin\":0.01}"
 curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"BOTS\",\"rel\":\"KMD\",\"offset\":0.0,\"refbase\":\"DEX\",\"refrel\":\"KMD\",\"factor\":0.3,\"buymargin\":0.01,\"sellmargin\":0.01}"
 
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"MGW\",\"offset\":0.0,\"refbase\":\"KMD\",\"refrel\":\"DEX\",\"factor\":10,\"buymargin\":0.01,\"sellmargin\":0.01}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"MGW\",\"offset\":0.0,\"refbase\":\"KMD\",\"refrel\":\"DEX\",\"factor\":11,\"buymargin\":0.01,\"sellmargin\":0.01}"
 curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"MGW\",\"rel\":\"KMD\",\"offset\":0.0,\"refbase\":\"DEX\",\"refrel\":\"KMD\",\"factor\":0.1,\"buymargin\":0.01,\"sellmargin\":0.01}"
