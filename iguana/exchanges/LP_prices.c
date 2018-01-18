@@ -561,6 +561,18 @@ double LP_price(char *base,char *rel)
     return(price);
 }
 
+double LP_getmyprice(char *base,char *rel)
+{
+    struct LP_priceinfo *basepp; int32_t relind; double price = 0.;
+    if ( (basepp= LP_priceinfoptr(&relind,base,rel)) != 0 )
+    {
+        if ( (price= basepp->myprices[relind]) == 0. )
+        {
+        }
+    }
+    return(price);
+}
+
 cJSON *LP_priceinfomatrix(int32_t usemyprices)
 {
     int32_t i,j,n,m; double total,sum,val; struct LP_priceinfo *pp; uint32_t now; struct LP_cacheinfo *ptr,*tmp; cJSON *vectorjson = cJSON_CreateObject();
