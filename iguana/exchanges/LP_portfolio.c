@@ -559,7 +559,9 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                         if ( LP_autorefs[i].lastask < SMALLVAL )
                             LP_autorefs[i].lastask = newprice;
                         else LP_autorefs[i].lastask = (LP_autorefs[i].lastask * 0.9) + (0.1 *newprice);
-                        newprice = LP_autorefs[i].lastask;
+                        if ( LP_autorefs[i].lastask > LP_autorefs[i].lastbid )
+                            newprice = LP_autorefs[i].lastask;
+                        else newprice = LP_autorefs[i].lastbid * (1. + sellmargin);
                         LP_mypriceset(&changed,base,rel,newprice);
                         LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
                         //printf("fundask %.8f margin %.8f newprice %.8f\n",price,sellmargin,newprice);
