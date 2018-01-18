@@ -538,7 +538,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 {
                     if ( LP_autorefs[i].fundbid[0] != 0 && (price= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL )
                     {
-                        //printf("%s/%s %s %.8f -> ",base,rel,LP_autorefs[i].fundbid,price);
+                        printf("%s/%s %s %.8f -> %.8f or %.8f",base,rel,LP_autorefs[i].fundbid,price,(1. / (price * (1. + buymargin))),(1. / (price * (1. - buymargin))));
                         if ( tickerjson != 0 && LP_autorefs[i].count == 0 )
                             price = LP_tickered_price(0,base,rel,price,tickerjson);
                         newprice = (1. / (price * (1. + buymargin)));
@@ -590,8 +590,8 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 newprice = LP_autorefs[i].lastbid;
                 LP_mypriceset(&changed,rel,base,newprice);
                 LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
-                //printf("price %.8f margin %.8f/%.8f newprice %.8f %.8f\n",price,buymargin,sellmargin,newprice,(1. / price) * (1. + buymargin));
-                newprice = (1. / (price * (1. + sellmargin)));
+                printf("%s/%s price %.8f margin %.8f/%.8f newprice %.8f %.8f\n",base,rel,price,buymargin,sellmargin,newprice,(1. / price) * (1. + sellmargin));
+                newprice = (1. / price) * (1. + sellmargin);
                 if ( LP_autorefs[i].lastask < SMALLVAL )
                     LP_autorefs[i].lastask = newprice;
                 else LP_autorefs[i].lastask = (LP_autorefs[i].lastask * 0.9) + (0.1 *newprice);
