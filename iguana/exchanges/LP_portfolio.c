@@ -411,7 +411,7 @@ double LP_pricesparse(void *ctx,int32_t trexflag,char *retstr,struct LP_priceinf
 double LP_autoprice_newprice(int32_t bidask,double price,double newprice)
 {
     double gap; int32_t r;
-    if ( (bidask == 0 && newprice < price) || (bidask != 0 && newprice > price) )
+    if ( price > SMALLVAL && ((bidask == 0 && newprice < price) || (bidask != 0 && newprice > price)) )
     {
         gap = fabs(newprice - price) * 2;
         r = (rand() % 100);
