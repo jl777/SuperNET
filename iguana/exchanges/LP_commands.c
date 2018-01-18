@@ -657,7 +657,7 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
         return(jprint(LP_fundvalue(argjson),1));
     else if ( strcmp(method,"getprice") == 0 || strcmp(method,"getmyprice") == 0 )
     {
-        double price,bid,ask;
+        double price,bid,ask,tmp;
         if ( strcmp(method,"getprice") == 0 )
         {
             ask = LP_price(base,rel);
@@ -666,8 +666,8 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
         }
         else
         {
-            ask = LP_myprice(&bid,&ask,base,rel);
-            if ( (bid= LP_myprice(&bid,&ask,rel,base)) > SMALLVAL )
+            ask = LP_myprice(&tmp,&tmp,base,rel);
+            if ( (bid= LP_myprice(&tmp,&tmp,rel,base)) > SMALLVAL )
                 bid = 1./bid;
         }
         price = _pairaved(bid,ask);
