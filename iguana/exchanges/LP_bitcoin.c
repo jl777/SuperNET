@@ -3320,6 +3320,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
             len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
             if ( sbtcflag != 0 )
             {
+                serialized[len++] = 4;
                 memcpy(&serialized[len],"sbtc",4);
                 len += 4;
             }
