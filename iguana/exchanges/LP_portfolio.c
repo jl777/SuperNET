@@ -542,9 +542,9 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                         if ( tickerjson != 0 && LP_autorefs[i].count == 0 )
                             price = LP_tickered_price(0,base,rel,price,tickerjson);
                         newprice = (1. / (price * (1. + buymargin)));
-                        //if ( LP_autorefs[i].lastbid < SMALLVAL )
+                        if ( LP_autorefs[i].lastbid < SMALLVAL )
                             LP_autorefs[i].lastbid = newprice;
-                        //else LP_autorefs[i].lastbid = (LP_autorefs[i].lastbid * 0.9) + (0.1 *newprice);
+                        else LP_autorefs[i].lastbid = (LP_autorefs[i].lastbid * 0.9) + (0.1 *newprice);
                         newprice = LP_autorefs[i].lastbid;
                         LP_mypriceset(&changed,rel,base,newprice);
                         LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,newprice);
@@ -583,7 +583,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 else continue;
                 if ( factor > 0. )
                     price = (price * factor) + offset;
-                newprice = (price * (1. + buymargin));
+                newprice = (price * (1. - buymargin));
                 if ( LP_autorefs[i].lastbid < SMALLVAL )
                     LP_autorefs[i].lastbid = newprice;
                 else LP_autorefs[i].lastbid = (LP_autorefs[i].lastbid * 0.9) + (0.1 *newprice);
