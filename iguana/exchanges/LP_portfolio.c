@@ -533,11 +533,12 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         {
             if ( (fundjson= LP_fundvalue(argjson)) != 0 )
             {
+                printf("%s\n",jprint(fundjson,0));
                 if ( jint(fundjson,"missing") == 0 )
                 {
                     if ( LP_autorefs[i].fundbid[0] != 0 && (price= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL )
                     {
-                        printf("%s %.8f -> ",LP_autorefs[i].fundbid,price);
+                        printf("%s/%s %s %.8f -> ",base,rel,LP_autorefs[i].fundbid,price);
                         if ( tickerjson != 0 && LP_autorefs[i].count == 0 )
                             price = LP_tickered_price(0,base,rel,price,tickerjson);
                         newprice = (1. / price) * (1. + buymargin);
@@ -551,7 +552,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                     }
                     if ( LP_autorefs[i].fundask[0] != 0 && (price= jdouble(fundjson,LP_autorefs[i].fundask)) > SMALLVAL )
                     {
-                        printf("%s %.8f -> ",LP_autorefs[i].fundask,price);
+                        printf("%s/%s %s %.8f -> ",base,rel,LP_autorefs[i].fundask,price);
                         if ( tickerjson != 0 && LP_autorefs[i].count == 0 )
                             price = LP_tickered_price(1,base,rel,price,tickerjson);
                         newprice = (price * (1. + sellmargin));
