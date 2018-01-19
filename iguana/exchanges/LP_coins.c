@@ -77,7 +77,7 @@ uint16_t LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
             if ( str != 0 )
             {
                 port = atoi(str);
-                //printf("RPCPORT.%u\n",port);
+                printf("found RPCPORT.%u\n",port);
                 free(str);
             }
         }
@@ -209,7 +209,7 @@ uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,
             printf("LP_statefname.(%s) <- %s %s %s (%s) (%s)\n",fname,name,symbol,assetname,userpass,confpath);
         return(port);
     } else printf("cant open.(%s)\n",fname);
-    return(0);
+    return(origport);
 }
 
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
@@ -389,6 +389,7 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     port = LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath,port);
 #endif
     sprintf(coin->serverport,"127.0.0.1:%u",port);
+    printf("set curl path for %s to %s\n",symbol,coin->serverport);
     if ( strcmp(symbol,"KMD") == 0 || coin->isassetchain != 0 || taddr != 0 )
         coin->zcash = LP_IS_ZCASHPROTOCOL;
     else if ( strcmp(symbol,"BCH") == 0 )
