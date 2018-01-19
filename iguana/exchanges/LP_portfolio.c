@@ -450,7 +450,7 @@ double LP_tickered_price(int32_t bidask,char *base,char *rel,double price,cJSON 
 void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
 {
     static cJSON *tickerjson; static uint32_t lasttime;
-    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double bch_usd,bch_btc,nxtkmd,price,factor,offset,newprice,buymargin,sellmargin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
+    char *retstr,*base,*rel; cJSON *retjson,*bid,*ask,*fundjson,*argjson; uint64_t bidsatoshis,asksatoshis; int32_t i,changed; double bidprice,askprice,bch_usd,bch_btc,nxtkmd,price,factor,offset,newprice,buymargin,sellmargin,price_btc,price_usd,kmd_btc,kmd_usd; struct LP_priceinfo *kmdpp,*fiatpp,*nxtpp,*basepp,*relpp;
     if ( (retstr= issue_curlt("https://bittrex.com/api/v1.1/public/getmarketsummaries",LP_HTTP_TIMEOUT*10)) == 0 )
     {
         printf("trex error getting marketsummaries\n");
@@ -536,7 +536,17 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 printf("%s\n",jprint(fundjson,0));
                 if ( jint(fundjson,"missing") == 0 )
                 {
-                    if ( 0 && LP_autorefs[i].fundbid[0] != 0 && (price= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL )
+                    if ( LP_autorefs[i].fundbid[0] != 0 && (bidprice= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL && LP_autorefs[i].fundask[0] != 0 && (askprice= jdouble(fundjson,LP_autorefs[i].fundask)) > SMALLVAL )
+                    {
+                        price = (bidprice + askprice) * 0.5;
+                        bidprice = price * (1. - buymargin);
+                        askprice = price * (1. + sellmargin);
+                        LP_mypriceset(&changed,rel,base,bidprice);
+                        LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,bidprice);
+                        LP_mypriceset(&changed,base,rel,askprice);
+                        LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,askprice);
+                    }
+                    /*if ( LP_autorefs[i].fundbid[0] != 0 && (price= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL )
                     {
                         printf("%s/%s %s %.8f -> %.8f or %.8f",base,rel,LP_autorefs[i].fundbid,price,(1. / (price * (1. + buymargin))),(1. / (price * (1. - buymargin))));
                         if ( tickerjson != 0 && LP_autorefs[i].count == 0 )
@@ -565,7 +575,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                         LP_mypriceset(&changed,base,rel,newprice);
                         LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,newprice);
                         printf("fundask %.8f margin %.8f newprice %.8f\n",price,sellmargin,newprice);
-                    }
+                    }*/
                     LP_autorefs[i].count++;
                 }
                 free_json(fundjson);
