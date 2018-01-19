@@ -748,6 +748,7 @@ void bech32_tests()
     {
         printf("bech32_encode produces incorrect result: '%s'\n",test);
     }
+    printf("end of bech32 tests\n");
 }
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
