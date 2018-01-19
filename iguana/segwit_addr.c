@@ -85,13 +85,13 @@ int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_l
     if ( i + chklen + 2 + data_len > 90 )
         return 0;
     //chk = bech32_polymod_step(chk);
-    chk = PolyMod_step(chk,0);
     while ( *hrp != 0 )
     {
         //chk = bech32_polymod_step(chk) ^ (*hrp & 0x1f);
         chk = PolyMod_step(chk,*hrp & 0x1f);
         *(output++) = *(hrp++);
     }
+    chk = PolyMod_step(chk,0);
     *(output++) = BECH32_DELIM;
     for (i = 0; i < data_len; ++i) {
         if (*data >> 5) return 0;
