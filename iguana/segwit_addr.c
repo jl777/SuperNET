@@ -131,7 +131,7 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
         if (input[i] >= 'a' && input[i] <= 'z') have_lower = 1;
         if (input[i] >= 'A' && input[i] <= 'Z') have_upper = 1;
         if (v == -1) {
-            printf("bech32_decode: invalid v.%d from input.[%d] %d\n",v,i,(int32_t)input[i]);
+            printf("bech32_decode: invalid v.%d from input.[%d] %d\n",(int32_t)v,(int32_t)i,(int32_t)input[i]);
             return 0;
         }
         chk = bech32_polymod_step(chk) ^ v;
