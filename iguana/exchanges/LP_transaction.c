@@ -746,8 +746,8 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
 {
     char *rawtxbytes=0,*signedtx=0,str[65],tmpaddr[64],hexstr[999],wifstr[128],_destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *txobj,*vins,*obj,*vouts,*item,*privkeys; int32_t completed,spendlen,n,ignore_cltverr=1; struct vin_info V[8]; uint32_t timestamp,locktime = 0,sequenceid = 0xffffffff * finalseqid; bits256 txid; uint64_t value=0,change = 0; struct iguana_msgtx msgtx; struct iguana_info *coin;
     LP_mark_spent(symbol,utxotxid,utxovout);
-    if ( txfee > 0 && txfee < 10000 )
-        txfee = 10000;
+    if ( txfee > 0 && txfee < LP_MIN_TXFEE )
+        txfee = LP_MIN_TXFEE;
     *destamountp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     if ( finalseqid == 0 )
@@ -1312,8 +1312,8 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     {
         autofee = 1;
         txfee = coin->txfee;
-        if ( txfee > 0 && txfee < 10000 )
-            txfee = 10000;
+        if ( txfee > 0 && txfee < LP_MIN_TXFEE )
+            txfee = LP_MIN_TXFEE;
     } else autofee = 0;
     suppress_pubkeys = 0;
     memset(signedtxid.bytes,0,sizeof(signedtxid));
