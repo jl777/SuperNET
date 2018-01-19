@@ -162,11 +162,7 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
         printf("bech32_decode: have_lower.%d have_upper.%d\n",have_lower,have_upper);
         return 0;
     }
-    if ( chk == 0 )
-    {
-        printf("checksum failure chk.%d\n",chk);
-        //return(1);
-    }
+    printf("checksum chk.%d lower.%d upper.%d inputlen.%d\n",chk,have_lower,have_upper,(int32_t)input_len);
     return chk == 1;
 }
 
