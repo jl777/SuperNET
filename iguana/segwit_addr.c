@@ -107,6 +107,7 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
         chk = PolyMod_step(chk,0);
     }
     chk ^= 1;
+    printf("emit >>>>>>> ");
     for (i = 0; i < chklen; ++i) {
         *output = charset[(chk >> ((checklen - 1 - i) * 5)) & 0x1f];
         printf("%c",*output);
