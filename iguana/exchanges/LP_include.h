@@ -33,7 +33,7 @@ voind dontprintf(char *formatstr,...) {}
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "17752"
+#define LP_BUILD_NUMBER "17762"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -559,5 +559,9 @@ int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout);
 
 void LP_listunspent_query(char *symbol,char *coinaddr);
 int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype);
+int segwit_addr_encode(char *output,const char *hrp,int ver,const uint8_t *prog,size_t prog_len);
+int segwit_addr_decode(int *ver,uint8_t *prog,size_t *prog_len,const char *hrp,const char *addr);
+int bech32_decode(char *hrp,uint8_t *data,size_t *data_len,const char *input);
+int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_len);
 
 #endif
