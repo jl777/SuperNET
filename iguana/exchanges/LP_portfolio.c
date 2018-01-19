@@ -539,7 +539,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                     if ( LP_autorefs[i].fundbid[0] != 0 && (bidprice= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL && LP_autorefs[i].fundask[0] != 0 && (askprice= jdouble(fundjson,LP_autorefs[i].fundask)) > SMALLVAL )
                     {
                         price = (bidprice + askprice) * 0.5;
-                        bidprice = (1. / price * (1. - buymargin));
+                        bidprice = (1. / price * (1. + buymargin));
                         askprice = price * (1. + sellmargin);
                         LP_mypriceset(&changed,rel,base,bidprice);
                         LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,bidprice);
