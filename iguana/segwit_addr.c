@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "segwit_addr.h"
+#define BECH32_DELIM ':'
 
 uint32_t bech32_polymod_step(uint32_t pre) {
     uint8_t b = pre >> 25;
@@ -66,7 +67,7 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
         chk = bech32_polymod_step(chk) ^ (*hrp & 0x1f);
         *(output++) = *(hrp++);
     }
-    *(output++) = '1';
+    *(output++) = BECH32_DELIM;
     for (i = 0; i < data_len; ++i) {
         if (*data >> 5) return 0;
         chk = bech32_polymod_step(chk) ^ (*data);
@@ -90,20 +91,23 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
     size_t hrp_len;
     int have_lower = 0, have_upper = 0;
     if (input_len < 8 || input_len > 90) {
+        printf("bech32_decode: invalid input_len.%d\n",(int32_t)input_len);
         return 0;
     }
     *data_len = 0;
-    while (*data_len < input_len && input[(input_len - 1) - *data_len] != '1') {
+    while (*data_len < input_len && input[(input_len - 1) - *data_len] != BECH32_DELIM) {
         ++(*data_len);
     }
     hrp_len = input_len - (1 + *data_len);
     if (hrp_len < 1 || *data_len < 6) {
+        printf("bech32_decode: invalid hrp_len.%d or datalen.%d\n",(int32_t)hrp_len,(int32_t)*data_len);
         return 0;
     }
     *(data_len) -= 6;
     for (i = 0; i < hrp_len; ++i) {
         int ch = input[i];
         if (ch < 33 || ch > 126) {
+            printf("bech32_decode: invalid char.%d\n",ch);
             return 0;
         }
         if (ch >= 'a' && ch <= 'z') {
@@ -126,6 +130,7 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
         if (input[i] >= 'a' && input[i] <= 'z') have_lower = 1;
         if (input[i] >= 'A' && input[i] <= 'Z') have_upper = 1;
         if (v == -1) {
+            printf("bech32_decode: invalid v.%d from input.[%d] %d\n",v,i,(int32_t)input[i]);
             return 0;
         }
         chk = bech32_polymod_step(chk) ^ v;
@@ -135,6 +140,7 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
         ++i;
     }
     if (have_lower && have_upper) {
+        printf("bech32_decode: have_lower.%d have_upper.%d\n",have_lower,have_upper);
         return 0;
     }
     return chk == 1;
