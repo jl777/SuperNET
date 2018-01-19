@@ -108,10 +108,12 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
     }
     chk ^= 1;
     for (i = 0; i < chklen; ++i) {
-        *(output++) = charset[(chk >> ((checklen - 1 - i) * 5)) & 0x1f];
+        *output = charset[(chk >> ((checklen - 1 - i) * 5)) & 0x1f];
+        printf("%c",*output);
+        output++;
     }
     *output = 0;
-    printf("checksum %llx\n",(long long)chk);
+    printf(" checksum %llx\n",(long long)chk);
     return 1;
 }
 
