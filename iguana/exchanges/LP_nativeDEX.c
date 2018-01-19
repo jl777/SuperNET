@@ -737,25 +737,24 @@ void bech32_tests()
     //char *test = "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs";
     char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
     //char *test = "prefix:x64nx6hz";
-    uint8_t data[82],data2[64],rmd160[20],addrtype; char rebuild[92],hrp[84]; size_t data_len,data_len2; int32_t i;
+    uint8_t data[82],data2[64],rmd160[21],addrtype; char rebuild[92],hrp[84]; size_t data_len,data_len2; int32_t i;
     if ( bech32_decode(hrp,data,&data_len,test) == 0 )
     {
         printf("bech32_decode fails: '%s'\n",test);
     }
     else
     {
-        bitcoin_addr2rmd160(0,&addrtype,rmd160,"1BpEi6DfDAUFd7GtittLSdBeYJvcoaVggu");
+        bitcoin_addr2rmd160(0,&addrtype,rmd160+1,"1BpEi6DfDAUFd7GtittLSdBeYJvcoaVggu");
         for (i=0; i<data_len; i++)
             printf("%02x",data[i]);
         printf(" datalen.%d <- %s (%s) -> ",(int32_t)data_len,test,"1BpEi6DfDAUFd7GtittLSdBeYJvcoaVggu");
         for (i=0; i<20; i++)
-            printf("%02x",rmd160[i]);
+            printf("%02x",rmd160[i+1]);
         printf("\n");
     }
     data_len2 = 0;
-    data2[0] = 0;
-    bech32_convert_bits(data2 + 1,&data_len2,5,rmd160,20,8,1);
-    data_len2++;
+    rmd160[0] = (0 << 3);
+    bech32_convert_bits(data2,&data_len2,5,rmd160,21,8,1);
     for (i=0; i<data_len2; i++)
         printf("%02x",data2[i]);
     printf(" converted bits.%d\n",(int32_t)data_len2);
