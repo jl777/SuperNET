@@ -63,7 +63,7 @@ const int8_t charset_rev[128] = {
 
 int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_len)
 {
-    uint64_t chk = 1; size_t i = 0; int32_t ch,chklen = 8; //6;
+    uint64_t chk = 1; size_t i = 0; int32_t ch,chklen = 8;
     while ( hrp[i] != 0 )
     {
         ch = hrp[i];
@@ -77,34 +77,32 @@ int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_l
             printf("bech32_encode illegal uppercase.%c\n",ch);
             return 0;
         }
-        //chk = bech32_polymod_step(chk) ^ (ch >> 5);
-        //chk = PolyMod_step(chk,ch >> 5);
-        ++i;
+        i++;
     }
-    printf("after hrp.(%s)\n",hrp);
+    printf("bech32_encode after hrp.(%s)\n",hrp);
     if ( i + chklen + 2 + data_len > 90 )
         return 0;
-    //chk = bech32_polymod_step(chk);
     while ( *hrp != 0 )
     {
-        //chk = bech32_polymod_step(chk) ^ (*hrp & 0x1f);
         chk = PolyMod_step(chk,*hrp & 0x1f);
         *(output++) = *(hrp++);
     }
     chk = PolyMod_step(chk,0);
     *(output++) = BECH32_DELIM;
-    for (i = 0; i < data_len; ++i) {
-        if (*data >> 5) return 0;
-        //chk = bech32_polymod_step(chk) ^ (*data);
+    for (i=0; i<data_len; i++)
+    {
+        if ( *data >> 5 )
+        {
+            printf("bech32_encode out of band data.%c\n",*data);
+            return 0;
+        }
         chk = PolyMod_step(chk,*data);
         *(output++) = charset[*(data++)];
     }
-    for (i = 0; i < chklen; ++i) {
-        //chk = bech32_polymod_step(chk);
+    for (i = 0; i < chklen; ++i)
         chk = PolyMod_step(chk,0);
-    }
     chk ^= 1;
-    printf("emit >>>>>>> ");
+    printf("bech32_encode emit >>>>>>> ");
     for (i = 0; i < chklen; ++i) {
         *output = charset[(chk >> ((chklen - 1 - i) * 5)) & 0x1f];
         printf("%c",*output);
@@ -115,63 +113,64 @@ int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_l
     return 1;
 }
 
-int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input) {
+int bech32_decode(char *hrp,uint8_t *data,size_t *data_len,const char *input)
+{
     uint64_t chk = 1; int32_t chklen = 8; size_t i,hrp_len,input_len = strlen(input);
     int have_lower = 0, have_upper = 0;
-    if (input_len < 8 || input_len > 90) {
+    if ( input_len < 8 || input_len > 90 )
+    {
         printf("bech32_decode: invalid input_len.%d\n",(int32_t)input_len);
         return 0;
     }
     *data_len = 0;
-    while (*data_len < input_len && input[(input_len - 1) - *data_len] != BECH32_DELIM) {
+    while ( *data_len < input_len && input[(input_len - 1) - *data_len] != BECH32_DELIM )
         ++(*data_len);
-    }
     hrp_len = input_len - (1 + *data_len);
-    if (hrp_len < 1 || *data_len < chklen) {
+    if ( hrp_len < 1 || *data_len < chklen )
+    {
         printf("bech32_decode: invalid hrp_len.%d or datalen.%d\n",(int32_t)hrp_len,(int32_t)*data_len);
         return 0;
     }
     *(data_len) -= chklen;
-    for (i = 0; i < hrp_len; ++i) {
+    for (i=0; i<hrp_len; i++)
+    {
         int ch = input[i];
-        if (ch < 33 || ch > 126) {
+        if ( ch < 33 || ch > 126 )
+        {
             printf("bech32_decode: invalid char.%d\n",ch);
             return 0;
         }
-        if (ch >= 'a' && ch <= 'z') {
+        if ( ch >= 'a' && ch <= 'z' )
             have_lower = 1;
-        } else if (ch >= 'A' && ch <= 'Z') {
+        else if ( ch >= 'A' && ch <= 'Z' )
+        {
             have_upper = 1;
             ch = (ch - 'A') + 'a';
         }
         hrp[i] = ch;
-        //chk = bech32_polymod_step(chk) ^ (ch >> 5);
-        chk = PolyMod_step(chk,ch);
+        chk = PolyMod_step(chk,ch & 0x1f);
     }
-    hrp[i] = 0;
-    //chk = bech32_polymod_step(chk);
+    hrp[i++] = 0;
     chk = PolyMod_step(chk,0);
-    for (i = 0; i < hrp_len; ++i) {
-        //chk = bech32_polymod_step(chk) ^ (input[i] & 0x1f);
-        chk = PolyMod_step(chk,input[i] & 0x1f);
-    }
-    ++i;
-    while (i < input_len) {
+    while ( i < input_len )
+    {
         int v = (input[i] & 0x80) ? -1 : charset_rev[(int)input[i]];
-        if (input[i] >= 'a' && input[i] <= 'z') have_lower = 1;
-        if (input[i] >= 'A' && input[i] <= 'Z') have_upper = 1;
-        if (v == -1) {
+        if ( input[i] >= 'a' && input[i] <= 'z' )
+            have_lower = 1;
+        else if ( input[i] >= 'A' && input[i] <= 'Z' )
+            have_upper = 1;
+        if ( v == -1 )
+        {
             printf("bech32_decode: invalid v.%d from input.[%d] %d\n",(int32_t)v,(int32_t)i,(int32_t)input[i]);
             return 0;
         }
-        //chk = bech32_polymod_step(chk) ^ v;
         chk = PolyMod_step(chk,v);
-        if (i + chklen < input_len) {
+        if (i + chklen < input_len)
             data[i - (1 + hrp_len)] = v;
-        }
         ++i;
     }
-    if (have_lower && have_upper) {
+    if ( have_lower && have_upper )
+    {
         printf("bech32_decode: have_lower.%d have_upper.%d\n",have_lower,have_upper);
         return 0;
     }
