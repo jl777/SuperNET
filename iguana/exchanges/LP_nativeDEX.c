@@ -735,9 +735,9 @@ int my_strncasecmp(const char *s1,const char *s2,size_t n)
 void bech32_tests()
 {
     //char *test = "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs";
-    //char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
-    char *test = "prefix:x64nx6hz";
-    uint8_t data[82],rmd160[20],addrtype; char rebuild[92],hrp[84]; size_t data_len; int32_t i;
+    char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
+    //char *test = "prefix:x64nx6hz";
+    uint8_t data[82],data2[64],rmd160[20],addrtype; char rebuild[92],hrp[84]; size_t data_len,data_len2; int32_t i;
     if ( bech32_decode(hrp,data,&data_len,test) == 0 )
     {
         printf("bech32_decode fails: '%s'\n",test);
@@ -752,7 +752,11 @@ void bech32_tests()
             printf("%02x",rmd160[i]);
         printf("\n");
     }
-    if ( bech32_encode(rebuild,hrp,data,data_len) == 0 )
+    data_len2 = 0;
+    data2[0] = 0;
+    bech32_convert_bits(data2 + 1,&data_len2,5,data,data_len,8,1);
+    data_len++;
+    if ( bech32_encode(rebuild,hrp,data2,data_len2) == 0 )
     {
         for (i=0; i<data_len; i++)
             printf("%02x",data[i]);

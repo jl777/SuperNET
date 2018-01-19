@@ -175,11 +175,11 @@ int bech32_decode(char *hrp,uint8_t *data,size_t *data_len,const char *input)
         return 0;
     }
     printf("checksum chk.%llx lower.%d upper.%d inputlen.%d\n",(long long)chk,have_lower,have_upper,(int32_t)input_len);
-return(1);
     return chk == 1;
 }
 
-static int convert_bits(uint8_t* out, size_t* outlen, int outbits, const uint8_t* in, size_t inlen, int inbits, int pad) {
+int bech32_convert_bits(uint8_t *out,size_t *outlen,int outbits,const uint8_t *in,size_t inlen,int inbits,int pad)
+{
     uint32_t val = 0;
     int bits = 0;
     uint32_t maxv = (((uint32_t)1) << outbits) - 1;
@@ -201,7 +201,7 @@ static int convert_bits(uint8_t* out, size_t* outlen, int outbits, const uint8_t
     return 1;
 }
 
-int segwit_addr_encode(char *output, const char *hrp, int witver, const uint8_t *witprog, size_t witprog_len) {
+/*int segwit_addr_encode(char *output, const char *hrp, int witver, const uint8_t *witprog, size_t witprog_len) {
     uint8_t data[65];
     size_t datalen = 0;
     if (witver > 16) return 0;
@@ -227,4 +227,4 @@ int segwit_addr_decode(int* witver, uint8_t* witdata, size_t* witdata_len, const
     if (data[0] == 0 && *witdata_len != 20 && *witdata_len != 32) return 0;
     *witver = data[0];
     return 1;
-}
+}*/
