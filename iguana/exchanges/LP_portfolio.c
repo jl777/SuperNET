@@ -536,7 +536,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                 printf("%s\n",jprint(fundjson,0));
                 if ( jint(fundjson,"missing") == 0 )
                 {
-                    if ( LP_autorefs[i].fundbid[0] != 0 && (price= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL )
+                    if ( 0 && LP_autorefs[i].fundbid[0] != 0 && (price= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL )
                     {
                         printf("%s/%s %s %.8f -> %.8f or %.8f",base,rel,LP_autorefs[i].fundbid,price,(1. / (price * (1. + buymargin))),(1. / (price * (1. - buymargin))));
                         if ( tickerjson != 0 && LP_autorefs[i].count == 0 )
