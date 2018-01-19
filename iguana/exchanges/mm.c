@@ -84,12 +84,18 @@ void LP_main(void *ptr)
             netid = juint(argjson,"netid");
         if ( netid < 0 )
             netid = 0;
+        else if ( netid > (65535-30-LP_RPCPORT)/3 )
+        {
+            printf("netid.%d overflow vs max netid.%d 19240?\n",netid,(65535-30-LP_RPCPORT)/3);
+            exit(-1);
+        }
         if ( netid != 0 )
         {
             netmod = (netid % 10);
             netdiv = (netid / 10);
             otherports = (netdiv * 30) + (LP_RPCPORT + netmod);
         } else otherports = LP_RPCPORT;
+        printf("RPCport.%d remoteport.%d, nanoports %d %d %d\n",port,port-1,otherports+10,otherports+20,otherports+30);
         LPinit(port,otherports+10,otherports+20,otherports+30,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
