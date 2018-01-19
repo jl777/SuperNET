@@ -533,7 +533,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
         {
             if ( (fundjson= LP_fundvalue(argjson)) != 0 )
             {
-                printf("%s\n",jprint(fundjson,0));
+                //printf("%s\n",jprint(fundjson,0));
                 if ( jint(fundjson,"missing") == 0 )
                 {
                     if ( LP_autorefs[i].fundbid[0] != 0 && (bidprice= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL && LP_autorefs[i].fundask[0] != 0 && (askprice= jdouble(fundjson,LP_autorefs[i].fundask)) > SMALLVAL )
@@ -545,7 +545,7 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                         LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,bidprice);
                         LP_mypriceset(&changed,base,rel,askprice);
                         LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,base,rel,askprice);
-                        printf("price %.8f -> %.8f %.8f\n",price,bidprice,askprice);
+                        //printf("price %.8f -> %.8f %.8f\n",price,bidprice,askprice);
                     }
                     /*if ( LP_autorefs[i].fundbid[0] != 0 && (price= jdouble(fundjson,LP_autorefs[i].fundbid)) > SMALLVAL )
                     {
