@@ -62,7 +62,7 @@ static const int8_t charset_rev[128] = {
 };
 
 int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t data_len) {
-    uint64_t chk = 1; size_t i = 0; int32_t chklen = 8; //6;
+    uint64_t chk = 1; size_t i = 0; int32_t c,chklen = 8; //6;
     while (hrp[i] != 0) {
         int ch = hrp[i];
         if (ch < 33 || ch > 126) {
