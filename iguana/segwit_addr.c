@@ -36,6 +36,24 @@ uint32_t bech32_polymod_step(uint32_t pre) {
         (-((b >> 4) & 1) & 0x2a1462b3UL);
 }
 
+uint64_t PolyMod(const data &v)
+{
+    uint64_t c = 1;
+    for (uint8_t d : v)
+    {
+        uint8_t c0 = c >> 35;
+        c = ((c & 0x07ffffffff) << 5) ^ d;
+        
+        if (c0 & 0x01) c ^= 0x98f2bc8e61;
+        if (c0 & 0x02) c ^= 0x79b76d99e2;
+        if (c0 & 0x04) c ^= 0xf33e5fb3c4;
+        if (c0 & 0x08) c ^= 0xae2eabe2a8;
+        if (c0 & 0x10) c ^= 0x1e4f43e470;
+    }
+    
+    return c ^ 1;
+}
+
 static const char* charset = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
 static const int8_t charset_rev[128] = {
@@ -143,6 +161,11 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
     if (have_lower && have_upper) {
         printf("bech32_decode: have_lower.%d have_upper.%d\n",have_lower,have_upper);
         return 0;
+    }
+    if ( chk == 0 )
+    {
+        printf("checksum failure chk.%d\n",chk);
+        return(1);
     }
     return chk == 1;
 }
