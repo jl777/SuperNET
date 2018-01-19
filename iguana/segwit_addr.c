@@ -66,12 +66,22 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
     while (hrp[i] != 0) {
         int ch = hrp[i];
         if (ch < 33 || ch > 126) {
+            printf("bech32_encode illegal ch.%d\n",ch);
             return 0;
         }
 
-        if (ch >= 'A' && ch <= 'Z') return 0;
+        if (ch >= 'A' && ch <= 'Z')
+        {
+            printf("bech32_encode illegal uppercase.%c\n",ch);
+            return 0;
+        }
+        if ( (c= charset_rev[ch]) < 0 )
+        {
+            printf("bech32_encode illegal base32.%d\n",ch);
+            return 0;
+        }
         //chk = bech32_polymod_step(chk) ^ (ch >> 5);
-        chk = PolyMod_step(chk,ch >> 5);
+        chk = PolyMod_step(chk,c);
         ++i;
     }
     if (i + 7 + data_len > 90) return 0;
@@ -98,6 +108,7 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
         *(output++) = charset[(chk >> ((5 - i) * 5)) & 0x1f];
     }
     *output = 0;
+    printf("checksum %llx\n",(long long)chk);
     return 1;
 }
 

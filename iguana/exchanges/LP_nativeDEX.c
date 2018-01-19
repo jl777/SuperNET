@@ -754,7 +754,9 @@ void bech32_tests()
     }
     if ( bech32_encode(rebuild,hrp,data,data_len) == 0 )
     {
-        printf("bech32_encode fails: '%s'\n",test);
+        for (i=0; i<data_len; i++)
+            printf("%02x",data[i]);
+        printf(" bech32_encode fails: '%s' -> hrp.(%s) datalen.%d\n",test,hrp,(int32_t)data_len);
     }
     if ( my_strncasecmp(rebuild,test,92))
     {
