@@ -62,7 +62,7 @@ static const int8_t charset_rev[128] = {
 };
 
 int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t data_len) {
-    uint32_t chk = 1;
+    uint64_t chk = 1;
     size_t i = 0;
     while (hrp[i] != 0) {
         int ch = hrp[i];
@@ -76,7 +76,8 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
         ++i;
     }
     if (i + 7 + data_len > 90) return 0;
-    chk = bech32_polymod_step(chk);
+    //chk = bech32_polymod_step(chk);
+    chk = PolyMod_step(chk,0);
     while (*hrp != 0) {
         //chk = bech32_polymod_step(chk) ^ (*hrp & 0x1f);
         chk = PolyMod_step(chk,*hrp & 0x1f);
