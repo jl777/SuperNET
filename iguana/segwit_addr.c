@@ -83,13 +83,8 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
             printf("bech32_encode illegal uppercase.%c\n",ch);
             return 0;
         }
-        if ( (c= charset_rev[ch]) < 0 )
-        {
-            printf("bech32_encode illegal base32.%d\n",ch);
-            return 0;
-        }
         //chk = bech32_polymod_step(chk) ^ (ch >> 5);
-        chk = PolyMod_step(chk,c);
+        chk = PolyMod_step(chk,c & 0x1f);
         ++i;
     }
     if (i + 7 + data_len > 90) return 0;
