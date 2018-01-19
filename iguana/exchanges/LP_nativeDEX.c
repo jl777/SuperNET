@@ -754,9 +754,12 @@ void bech32_tests()
     }
     data_len2 = 0;
     data2[0] = 0;
-    bech32_convert_bits(data2 + 1,&data_len2,5,data,data_len,8,1);
-    data_len++;
-    if ( bech32_encode(rebuild,hrp,data2,data_len2) == 0 )
+    bech32_convert_bits(data2 + 1,&data_len2,5,rmd160,20,8,1);
+    data_len2++;
+    for (i=0; i<data_len2; i++)
+        printf("%02x",data2[i]);
+    printf(" converted bits.%d\n",(int32_t)data_len2);
+    if ( bech32_encode(rebuild,hrp,data,data_len) == 0 )
     {
         for (i=0; i<data_len; i++)
             printf("%02x",data[i]);
