@@ -62,8 +62,7 @@ static const int8_t charset_rev[128] = {
 };
 
 int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t data_len) {
-    uint64_t chk = 1;
-    size_t i = 0;
+    uint64_t chk = 1; size_t i = 0; int32_t chklen = 8; //6;
     while (hrp[i] != 0) {
         int ch = hrp[i];
         if (ch < 33 || ch > 126) {
@@ -90,12 +89,12 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
         chk = PolyMod_step(chk,*data);
         *(output++) = charset[*(data++)];
     }
-    for (i = 0; i < 6; ++i) {
+    for (i = 0; i < chklen; ++i) {
         //chk = bech32_polymod_step(chk);
         chk = PolyMod_step(chk,0);
     }
     chk ^= 1;
-    for (i = 0; i < 6; ++i) {
+    for (i = 0; i < chklen; ++i) {
         *(output++) = charset[(chk >> ((5 - i) * 5)) & 0x1f];
     }
     *output = 0;
@@ -103,10 +102,7 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
 }
 
 int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input) {
-    uint64_t chk = 1;
-    size_t i;
-    size_t input_len = strlen(input);
-    size_t hrp_len;
+    uint64_t chk = 1; int32_t chklen = 8; size_t i,hrp_len,input_len = strlen(input);
     int have_lower = 0, have_upper = 0;
     if (input_len < 8 || input_len > 90) {
         printf("bech32_decode: invalid input_len.%d\n",(int32_t)input_len);
@@ -117,11 +113,11 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
         ++(*data_len);
     }
     hrp_len = input_len - (1 + *data_len);
-    if (hrp_len < 1 || *data_len < 6) {
+    if (hrp_len < 1 || *data_len < chklen) {
         printf("bech32_decode: invalid hrp_len.%d or datalen.%d\n",(int32_t)hrp_len,(int32_t)*data_len);
         return 0;
     }
-    *(data_len) -= 6;
+    *(data_len) -= chklen;
     for (i = 0; i < hrp_len; ++i) {
         int ch = input[i];
         if (ch < 33 || ch > 126) {
@@ -156,7 +152,7 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
         }
         //chk = bech32_polymod_step(chk) ^ v;
         chk = PolyMod_step(chk,v);
-        if (i + 6 < input_len) {
+        if (i + chklen < input_len) {
             data[i - (1 + hrp_len)] = v;
         }
         ++i;
@@ -166,6 +162,7 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
         return 0;
     }
     printf("checksum chk.%llx lower.%d upper.%d inputlen.%d\n",(long long)chk,have_lower,have_upper,(int32_t)input_len);
+return(1);
     return chk == 1;
 }
 
