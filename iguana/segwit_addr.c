@@ -26,7 +26,7 @@
 #include "segwit_addr.h"
 #define BECH32_DELIM ':'
 
-uint32_t bech32_polymod_step(uint32_t pre) {
+/*uint32_t bech32_polymod_step(uint32_t pre) {
     uint8_t b = pre >> 25;
     return ((pre & 0x1FFFFFF) << 5) ^
         (-((b >> 0) & 1) & 0x3b6a57b2UL) ^
@@ -34,25 +34,19 @@ uint32_t bech32_polymod_step(uint32_t pre) {
         (-((b >> 2) & 1) & 0x1ea119faUL) ^
         (-((b >> 3) & 1) & 0x3d4233ddUL) ^
         (-((b >> 4) & 1) & 0x2a1462b3UL);
-}
-
-/*uint64_t PolyMod(const data &v)
-{
-    uint64_t c = 1;
-    for (uint8_t d : v)
-    {
-        uint8_t c0 = c >> 35;
-        c = ((c & 0x07ffffffff) << 5) ^ d;
-        
-        if (c0 & 0x01) c ^= 0x98f2bc8e61;
-        if (c0 & 0x02) c ^= 0x79b76d99e2;
-        if (c0 & 0x04) c ^= 0xf33e5fb3c4;
-        if (c0 & 0x08) c ^= 0xae2eabe2a8;
-        if (c0 & 0x10) c ^= 0x1e4f43e470;
-    }
-    
-    return c ^ 1;
 }*/
+
+uint64_t PolyMod_step(uint64_t c,uint8_t d)
+{
+    uint8_t c0 = c >> 35;
+    c = ((c & 0x07ffffffff) << 5) ^ d;
+    if (c0 & 0x01) c ^= 0x98f2bc8e61;
+    if (c0 & 0x02) c ^= 0x79b76d99e2;
+    if (c0 & 0x04) c ^= 0xf33e5fb3c4;
+    if (c0 & 0x08) c ^= 0xae2eabe2a8;
+    if (c0 & 0x10) c ^= 0x1e4f43e470;
+    return(c);
+}
 
 static const char* charset = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
@@ -104,7 +98,7 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
 }
 
 int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input) {
-    uint32_t chk = 1;
+    uint64_t chk = 1;
     size_t i;
     size_t input_len = strlen(input);
     size_t hrp_len;
@@ -136,12 +130,14 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
             ch = (ch - 'A') + 'a';
         }
         hrp[i] = ch;
-        chk = bech32_polymod_step(chk) ^ (ch >> 5);
+        //chk = bech32_polymod_step(chk) ^ (ch >> 5);
+        chk = PolyMod_step(chk,ch);
     }
     hrp[i] = 0;
     chk = bech32_polymod_step(chk);
     for (i = 0; i < hrp_len; ++i) {
-        chk = bech32_polymod_step(chk) ^ (input[i] & 0x1f);
+        //chk = bech32_polymod_step(chk) ^ (input[i] & 0x1f);
+        chk = PolyMod_step(chk,input[i] & 0x1f);
     }
     ++i;
     while (i < input_len) {
@@ -152,7 +148,8 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
             printf("bech32_decode: invalid v.%d from input.[%d] %d\n",(int32_t)v,(int32_t)i,(int32_t)input[i]);
             return 0;
         }
-        chk = bech32_polymod_step(chk) ^ v;
+        //chk = bech32_polymod_step(chk) ^ v;
+        chk = PolyMod_step(chk,v);
         if (i + 6 < input_len) {
             data[i - (1 + hrp_len)] = v;
         }
@@ -162,7 +159,7 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
         printf("bech32_decode: have_lower.%d have_upper.%d\n",have_lower,have_upper);
         return 0;
     }
-    printf("checksum chk.%d lower.%d upper.%d inputlen.%d\n",chk,have_lower,have_upper,(int32_t)input_len);
+    printf("checksum chk.%llx lower.%d upper.%d inputlen.%d\n",(long long)chk,have_lower,have_upper,(int32_t)input_len);
     return chk == 1;
 }
 
