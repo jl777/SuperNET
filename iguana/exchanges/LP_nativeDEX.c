@@ -735,7 +735,8 @@ int my_strncasecmp(const char *s1,const char *s2,size_t n)
 void bech32_tests()
 {
     //char *test = "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs";
-    char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
+    //char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
+    char *test = "bitcoincash:qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy";
     //char *test = "prefix:x64nx6hz";
     uint8_t data[82],data2[64],rmd160[21],addrtype; char rebuild[92],hrp[84]; size_t data_len,data_len2; int32_t i;
     if ( bech32_decode(hrp,data,&data_len,test) == 0 )
@@ -744,10 +745,10 @@ void bech32_tests()
     }
     else
     {
-        bitcoin_addr2rmd160(0,&addrtype,rmd160+1,"1BpEi6DfDAUFd7GtittLSdBeYJvcoaVggu");
+        bitcoin_addr2rmd160(0,&addrtype,rmd160+1,"1KXrWXciRDZUpQwQmuM1DbwsKDLYAYsVLR");
         for (i=0; i<data_len; i++)
             printf("%02x",data[i]);
-        printf(" datalen.%d <- %s (%s) -> ",(int32_t)data_len,test,"1BpEi6DfDAUFd7GtittLSdBeYJvcoaVggu");
+        printf(" datalen.%d <- %s (%s) -> ",(int32_t)data_len,test,"1KXrWXciRDZUpQwQmuM1DbwsKDLYAYsVLR");
         for (i=0; i<20; i++)
             printf("%02x",rmd160[i+1]);
         printf("\n");
@@ -758,7 +759,7 @@ void bech32_tests()
     for (i=0; i<data_len2; i++)
         printf("%02x",data2[i]);
     printf(" converted bits.%d\n",(int32_t)data_len2);
-    if ( bech32_encode(rebuild,hrp,data,data_len) == 0 )
+    if ( bech32_encode(rebuild,hrp,data2,data_len2) == 0 )
     {
         for (i=0; i<data_len; i++)
             printf("%02x",data[i]);
