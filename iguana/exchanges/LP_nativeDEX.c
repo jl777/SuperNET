@@ -734,11 +734,22 @@ int my_strncasecmp(const char *s1,const char *s2,size_t n)
 
 void bech32_tests()
 {
-    char *test = "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs";
-    uint8_t data[82]; char rebuild[92],hrp[84]; size_t data_len;
+    //char *test = "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs";
+    char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
+    uint8_t data[82],rmd160[20],addrtype; char rebuild[92],hrp[84]; size_t data_len; int32_t i;
     if ( bech32_decode(hrp,data,&data_len,test) == 0 )
     {
         printf("bech32_decode fails: '%s'\n",test);
+    }
+    else
+    {
+        bitcoin_addr2rmd160(0,&addrtype,rmd160,"1BpEi6DfDAUFd7GtittLSdBeYJvcoaVggu");
+        for (i=0; i<data_len; i++)
+            printf("%02x",data[i]);
+        printf(" datalen.%d <- %s (%s) -> ",(int32_t)data_len,test,"1BpEi6DfDAUFd7GtittLSdBeYJvcoaVggu");
+        for (i=0; i<20; i++)
+            printf("%02x",rmd160[i]);
+        printf("\n");
     }
     if ( bech32_encode(rebuild,hrp,data,data_len) == 0 )
     {
