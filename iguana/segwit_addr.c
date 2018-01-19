@@ -39,12 +39,14 @@
 uint64_t PolyMod_step(uint64_t c,uint8_t d)
 {
     uint8_t c0 = c >> 35;
+    printf("step (%llx) + %d -> ",(long long)c,d);
     c = ((c & 0x07ffffffff) << 5) ^ d;
     if (c0 & 0x01) c ^= 0x98f2bc8e61;
     if (c0 & 0x02) c ^= 0x79b76d99e2;
     if (c0 & 0x04) c ^= 0xf33e5fb3c4;
     if (c0 & 0x08) c ^= 0xae2eabe2a8;
     if (c0 & 0x10) c ^= 0x1e4f43e470;
+    printf("%llx\n",(long long)c);
     return(c);
 }
 
