@@ -139,7 +139,8 @@ int bech32_decode(char* hrp, uint8_t *data, size_t *data_len, const char *input)
         chk = PolyMod_step(chk,ch);
     }
     hrp[i] = 0;
-    chk = bech32_polymod_step(chk);
+    //chk = bech32_polymod_step(chk);
+    chk = PolyMod_step(chk,0);
     for (i = 0; i < hrp_len; ++i) {
         //chk = bech32_polymod_step(chk) ^ (input[i] & 0x1f);
         chk = PolyMod_step(chk,input[i] & 0x1f);
