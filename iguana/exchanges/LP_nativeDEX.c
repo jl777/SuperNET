@@ -795,7 +795,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                         coin->txfee = LP_MIN_TXFEE;
                     if ( strcmp(coin->symbol,"BCH") == 0 )
                     {
-                        bech32_test();
+                        bech32_tests();
                     }
                 }
             }
