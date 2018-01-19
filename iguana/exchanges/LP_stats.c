@@ -101,9 +101,12 @@ void LP_tradecommand_log(cJSON *argjson)
     static FILE *logfp; char *jsonstr;
     if ( logfp == 0 )
     {
+#ifndef _WIN32
         if ( (logfp= fopen(LP_STATSLOG_FNAME,"rb+")) != 0 )
             fseek(logfp,0,SEEK_END);
-        else logfp = fopen(LP_STATSLOG_FNAME,"wb");
+        else
+#endif
+            logfp = fopen(LP_STATSLOG_FNAME,"wb");
     }
     if ( logfp != 0 )
     {
