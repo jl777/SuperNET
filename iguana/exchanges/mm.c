@@ -73,14 +73,24 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 
 void LP_main(void *ptr)
 {
-    char *passphrase; double profitmargin; uint16_t port; cJSON *argjson = ptr;
+    char *passphrase; double profitmargin; int32_t netmod,netdiv,netid=0; uint16_t port,otherports; cJSON *argjson = ptr;
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
         LP_profitratio += profitmargin;
         if ( (port= juint(argjson,"rpcport")) < 1000 )
             port = LP_RPCPORT;
-        LPinit(port,LP_RPCPORT+10,LP_RPCPORT+20,LP_RPCPORT+30,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+        if ( jobj(argjson,"netid") != 0 )
+            netid = juint(argjson,"netid");
+        if ( netid < 0 )
+            netid = 0;
+        if ( netid != 0 )
+        {
+            netmod = (netid % 10);
+            netdiv = (netid / 10);
+            otherports = (netdiv * 30) + (LP_RPCPORT + netmod);
+        } else otherports = LP_RPCPORT;
+        LPinit(port,otherports+10,otherports+20,otherports+30,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 
