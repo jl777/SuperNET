@@ -61,28 +61,33 @@ const int8_t charset_rev[128] = {
     -1, -1, 29, -1, 24, 13, 25, 9,  8,  23, -1, 18, 22, 31, 27, 19, -1, 1,  0,
     3,  16, 11, 28, 12, 14, 6,  4,  2,  -1, -1, -1, -1, -1};
 
-int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t data_len) {
-    uint64_t chk = 1; size_t i = 0; int32_t chklen = 8; //6;
-    while (hrp[i] != 0)
+int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_len)
+{
+    uint64_t chk = 1; size_t i = 0; int32_t ch,chklen = 8; //6;
+    while ( hrp[i] != 0 )
     {
-        int ch = hrp[i];
-        if (ch < 33 || ch > 126) {
+        ch = hrp[i];
+        if ( ch < 33 || ch > 126 )
+        {
             printf("bech32_encode illegal ch.%d\n",ch);
             return 0;
         }
-        if (ch >= 'A' && ch <= 'Z')
+        if ( ch >= 'A' && ch <= 'Z' )
         {
             printf("bech32_encode illegal uppercase.%c\n",ch);
             return 0;
         }
         //chk = bech32_polymod_step(chk) ^ (ch >> 5);
-        chk = PolyMod_step(chk,ch >> 5);
+        //chk = PolyMod_step(chk,ch >> 5);
         ++i;
     }
-    if (i + 7 + data_len > 90) return 0;
+    printf("after hrp.(%s)\n",hrp);
+    if ( i + chklen + 2 + data_len > 90 )
+        return 0;
     //chk = bech32_polymod_step(chk);
     chk = PolyMod_step(chk,0);
-    while (*hrp != 0) {
+    while ( *hrp != 0 )
+    {
         //chk = bech32_polymod_step(chk) ^ (*hrp & 0x1f);
         chk = PolyMod_step(chk,*hrp & 0x1f);
         *(output++) = *(hrp++);
