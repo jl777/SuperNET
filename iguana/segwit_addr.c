@@ -71,23 +71,27 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
         }
 
         if (ch >= 'A' && ch <= 'Z') return 0;
-        chk = bech32_polymod_step(chk) ^ (ch >> 5);
+        //chk = bech32_polymod_step(chk) ^ (ch >> 5);
+        chk = PolyMod_step(chk,ch >> 5);
         ++i;
     }
     if (i + 7 + data_len > 90) return 0;
     chk = bech32_polymod_step(chk);
     while (*hrp != 0) {
-        chk = bech32_polymod_step(chk) ^ (*hrp & 0x1f);
+        //chk = bech32_polymod_step(chk) ^ (*hrp & 0x1f);
+        chk = PolyMod_step(chk,*hrp & 0x1f);
         *(output++) = *(hrp++);
     }
     *(output++) = BECH32_DELIM;
     for (i = 0; i < data_len; ++i) {
         if (*data >> 5) return 0;
-        chk = bech32_polymod_step(chk) ^ (*data);
+        //chk = bech32_polymod_step(chk) ^ (*data);
+        chk = PolyMod_step(chk,*data);
         *(output++) = charset[*(data++)];
     }
     for (i = 0; i < 6; ++i) {
-        chk = bech32_polymod_step(chk);
+        //chk = bech32_polymod_step(chk);
+        chk = PolyMod_step(chk,0);
     }
     chk ^= 1;
     for (i = 0; i < 6; ++i) {
