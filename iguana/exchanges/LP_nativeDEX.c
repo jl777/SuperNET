@@ -735,7 +735,8 @@ int my_strncasecmp(const char *s1,const char *s2,size_t n)
 void bech32_tests()
 {
     //char *test = "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs";
-    char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
+    //char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
+    char *test = "prefix:x64nx6hz";
     uint8_t data[82],rmd160[20],addrtype; char rebuild[92],hrp[84]; size_t data_len; int32_t i;
     if ( bech32_decode(hrp,data,&data_len,test) == 0 )
     {
