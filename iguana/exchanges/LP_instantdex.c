@@ -508,12 +508,12 @@ int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue)
     return(0);
 }
 
-int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
+int64_t LP_instantdex_proofcheck(char *symbol,char *coinaddr,cJSON *proof,int32_t num)
 {
     uint8_t rmd160[20],addrtype; int64_t credits=0; int32_t i,j; bits256 prevtxid,txid; char othersmartaddr[64]; struct iguana_info *coin; struct LP_address *ap = 0;
     if ( (coin= LP_coinfind("KMD")) != 0 )
     {
-        bitcoin_addr2rmd160(coin->symbol,0,&addrtype,rmd160,coinaddr);
+        bitcoin_addr2rmd160(symbol,0,&addrtype,rmd160,coinaddr);
         bitcoin_address("KMD",othersmartaddr,0,60,rmd160,20);
         //printf("proofcheck addrtype.%d (%s) -> %s\n",addrtype,coinaddr,othersmartaddr);
         if ((ap= LP_address(coin,othersmartaddr)) != 0 )
@@ -547,7 +547,7 @@ int64_t LP_myzcredits()
     {
         if ( (proof= LP_instantdex_txids(0,coin->smartaddr)) != 0 )
         {
-            zcredits = LP_instantdex_proofcheck(coin->smartaddr,proof,cJSON_GetArraySize(proof));
+            zcredits = LP_instantdex_proofcheck(coin->symbol,coin->smartaddr,proof,cJSON_GetArraySize(proof));
             free_json(proof);
             return(zcredits);
         }
