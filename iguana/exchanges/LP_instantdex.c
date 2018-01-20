@@ -153,12 +153,12 @@ void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
     LP_instantdex_filescreate(coinaddr);
 }
 
-int32_t LP_deposit_addr(char *p2shaddr,uint8_t *script,uint8_t taddr,uint8_t p2shtype,uint32_t timestamp,uint8_t *pubsecp33)
+int32_t LP_deposit_addr(char *symbol,char *p2shaddr,uint8_t *script,uint8_t taddr,uint8_t p2shtype,uint32_t timestamp,uint8_t *pubsecp33)
 {
     uint8_t elsepub33[33],p2sh_rmd160[20]; int32_t n;
     decode_hex(elsepub33,33,BOTS_BONDPUBKEY33);
     n = bitcoin_performancebond(p2sh_rmd160,script,0,timestamp,pubsecp33,elsepub33);
-    bitcoin_address(p2shaddr,taddr,p2shtype,script,n);
+    bitcoin_address(symbol,p2shaddr,taddr,p2shtype,script,n);
     return(n);
 }
 
@@ -181,7 +181,7 @@ char *LP_instantdex_deposit(struct iguana_info *coin,int32_t weeks,double amount
         if ( weeks >= 10000 )
             return(clonestr("{\"error\":\"numweeks must be less than 10000\"}"));
     } else timestamp = (uint32_t)time(NULL) + 300, weeki = 0;
-    scriptlen = LP_deposit_addr(p2shaddr,script,coin->taddr,coin->p2shtype,timestamp,G.LP_pubsecp);
+    scriptlen = LP_deposit_addr(coin->symbol,p2shaddr,script,coin->taddr,coin->p2shtype,timestamp,G.LP_pubsecp);
     argjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     item = cJSON_CreateObject();
@@ -306,7 +306,7 @@ int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info 
                     if ( iter == 1 )
                         expiration = ((weeki * LP_WEEKMULTBAD + j*3600) + LP_FIRSTWEEKTIME);
                     else expiration = ((weeki * LP_WEEKMULT + j*3600) + LP_FIRSTWEEKTIME);
-                    redeemlen = LP_deposit_addr(checkaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
+                    redeemlen = LP_deposit_addr(coin->symbol,checkaddr,redeemscript,coin->taddr,coin->p2shtype,expiration,G.LP_pubsecp);
                     if ( strcmp(checkaddr,vinaddr) == 0 )
                     {
                         flagi = 1;
@@ -471,7 +471,7 @@ int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue)
     struct LP_pubswap *ptr,*tmp; struct LP_swapstats *sp; struct LP_pubkey_info *pubp; struct LP_address *ap; char coinaddr[64]; struct iguana_info *coin; int64_t swaps_kmdvalue = 0;
     if ( (coin= LP_coinfind("KMD")) != 0 && (pubp= LP_pubkeyfind(pubkey)) != 0 )
     {
-        bitcoin_address(coinaddr,coin->taddr,coin->pubtype,pubp->pubsecp,33);
+        bitcoin_address(coin->symbol,coinaddr,coin->taddr,coin->pubtype,pubp->pubsecp,33);
         DL_FOREACH_SAFE(pubp->bobswaps,ptr,tmp)
         {
             if ( (sp= ptr->swap) != 0 && LP_swap_finished(sp,1) == 0 )
@@ -513,8 +513,8 @@ int64_t LP_instantdex_proofcheck(char *coinaddr,cJSON *proof,int32_t num)
     uint8_t rmd160[20],addrtype; int64_t credits=0; int32_t i,j; bits256 prevtxid,txid; char othersmartaddr[64]; struct iguana_info *coin; struct LP_address *ap = 0;
     if ( (coin= LP_coinfind("KMD")) != 0 )
     {
-        bitcoin_addr2rmd160(0,&addrtype,rmd160,coinaddr);
-        bitcoin_address(othersmartaddr,0,60,rmd160,20);
+        bitcoin_addr2rmd160(coin->symbol,0,&addrtype,rmd160,coinaddr);
+        bitcoin_address("KMD",othersmartaddr,0,60,rmd160,20);
         //printf("proofcheck addrtype.%d (%s) -> %s\n",addrtype,coinaddr,othersmartaddr);
         if ((ap= LP_address(coin,othersmartaddr)) != 0 )
         {

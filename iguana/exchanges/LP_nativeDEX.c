@@ -745,7 +745,7 @@ void bech32_tests()
     }
     else
     {
-        bitcoin_addr2rmd160(0,&addrtype,rmd160+1,"1KXrWXciRDZUpQwQmuM1DbwsKDLYAYsVLR");
+        bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160+1,"1KXrWXciRDZUpQwQmuM1DbwsKDLYAYsVLR");
         for (i=0; i<data_len; i++)
             printf("%02x",data[i]);
         printf(" datalen.%d <- %s (%s) -> ",(int32_t)data_len,test,"1KXrWXciRDZUpQwQmuM1DbwsKDLYAYsVLR");

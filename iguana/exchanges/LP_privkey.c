@@ -171,17 +171,17 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
     else if ( n > 777 )
         n = 777;
     conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-    bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
+    bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,taddr,pubtype);
     printf("generator (%s) secrets.[%d] <%s> t.%u p.%u\n",coinaddr,n,passphrase,taddr,pubtype);
     sprintf(output,"\"addresses\":[");
     for (i=0; i<n; i++)
     {
         sprintf(buf,"%s %s %03d",prefix,passphrase,i);
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)buf,(int32_t)strlen(buf));
-        bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,taddr,pubtype);
+        bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,taddr,pubtype);
         bitcoin_priv2wif(0,wifstr,privkey,188);
         bitcoin_wif2priv(0,&tmptype,&checkprivkey,wifstr);
-        bitcoin_addr2rmd160(taddr,&tmptype,rmd160,coinaddr);
+        bitcoin_addr2rmd160("KMD",taddr,&tmptype,rmd160,coinaddr);
         if ( bits256_cmp(checkprivkey,privkey) != 0 )
         {
             printf("WIF.(%s) error -> %s vs %s?\n",wifstr,bits256_str(str,privkey),bits256_str(str2,checkprivkey));
@@ -268,13 +268,13 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         nxtaddr = conv_NXTpassword(tmpkey.bytes,pubkeyp->bytes,0,0);
         RS_encode(G.LP_NXTaddr,nxtaddr);
     }
-    bitcoin_priv2pub(ctx,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
+    bitcoin_priv2pub(ctx,coin->symbol,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     if ( coin->counter == 0 )
     {
         coin->counter++;
         memcpy(G.LP_pubsecp,coin->pubkey33,33);
         bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,coin->wiftype);
-        bitcoin_addr2rmd160(coin->taddr,&tmptype,G.LP_myrmd160,coin->smartaddr);
+        bitcoin_addr2rmd160(coin->symbol,coin->taddr,&tmptype,G.LP_myrmd160,coin->smartaddr);
         LP_privkeyadd(privkey,G.LP_myrmd160);
         G.LP_privkey = privkey;
         if ( G.counter++ == 0 )

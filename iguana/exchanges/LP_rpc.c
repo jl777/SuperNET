@@ -299,8 +299,8 @@ cJSON *LP_validateaddress(char *symbol,char *address)
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"address",address);
-        bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,address);
-        bitcoin_address(checkaddr,coin->taddr,addrtype,rmd160,20);
+        bitcoin_addr2rmd160(symbol,coin->taddr,&addrtype,rmd160,address);
+        bitcoin_address(symbol,checkaddr,coin->taddr,addrtype,rmd160,20);
         if ( addrtype != coin->pubtype && addrtype != coin->p2shtype )
         {
             jadd(retjson,"isvalid",cJSON_CreateFalse());
@@ -316,7 +316,7 @@ cJSON *LP_validateaddress(char *symbol,char *address)
             strcat(script,"88ac");
             jaddstr(retjson,"scriptPubKey",script);
         }
-        bitcoin_address(coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,20);
+        bitcoin_address(symbol,coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,20);
         jadd(retjson,"ismine",strcmp(coinaddr,coin->smartaddr) == 0 ? cJSON_CreateTrue() : cJSON_CreateFalse());
         jadd(retjson,"iswatchonly",cJSON_CreateTrue());
         jadd(retjson,"isscript",addrtype == coin->p2shtype ? cJSON_CreateTrue() : cJSON_CreateFalse());
@@ -571,9 +571,9 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
         return(cJSON_Parse("{\"result\":\"electrum should have local wallet\"}"));
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    bitcoin_wif2addr(ctx,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
+    bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
 #ifdef LP_DONT_IMPORTPRIVKEY
-    bitcoin_wif2addr(ctx,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
+    bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
     if ( LP_importaddress(symbol,address) < 0 )
         return(cJSON_Parse("{\"error\":\"couldnt import\"}"));
     else return(cJSON_Parse("{\"result\":\"success\"}"));

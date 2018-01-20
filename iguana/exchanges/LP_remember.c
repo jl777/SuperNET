@@ -73,7 +73,7 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"trigger\":\"%s\"",bits256_str(str,triggertxid));
         if ( bits256_nonz(swap->I.pubAm) != 0 && bits256_nonz(swap->I.pubBn) != 0 )
         {
-            basilisk_alicescript(redeemscript,&len,script,0,coinaddr,alicecoin->taddr,alicecoin->p2shtype,swap->I.pubAm,swap->I.pubBn);
+            basilisk_alicescript(alicecoin->symbol,redeemscript,&len,script,0,coinaddr,alicecoin->taddr,alicecoin->p2shtype,swap->I.pubAm,swap->I.pubBn);
             LP_importaddress(swap->I.alicestr,coinaddr);
             fprintf(fp,",\"Apayment\":\"%s\"",coinaddr);
         }
@@ -570,9 +570,9 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
             {
                 decode_hex(rswap->pubkey33,33,dest33);
                 if ( rswap->iambob != 0 && (coin= LP_coinfind(rswap->src)) != 0 )
-                    bitcoin_address(rswap->destaddr,coin->taddr,coin->pubtype,rswap->pubkey33,33);
+                    bitcoin_address(coin->symbol,rswap->destaddr,coin->taddr,coin->pubtype,rswap->pubkey33,33);
                 else if ( rswap->iambob == 0 && (coin= LP_coinfind(rswap->dest)) != 0 )
-                    bitcoin_address(rswap->Adestaddr,coin->taddr,coin->pubtype,rswap->pubkey33,33);
+                    bitcoin_address(coin->symbol,rswap->Adestaddr,coin->taddr,coin->pubtype,rswap->pubkey33,33);
                 //for (i=0; i<33; i++)
                 //    printf("%02x",pubkey33[i]);
                 //printf(" <- %s dest33\n",dest33);
@@ -586,9 +586,9 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
                 if ( i < 33 )
                     memcpy(rswap->other33,other33,33);
                 if ( rswap->iambob != 0 && (coin= LP_coinfind(rswap->dest)) != 0 )
-                    bitcoin_address(rswap->Adestaddr,coin->taddr,coin->pubtype,rswap->other33,33);
+                    bitcoin_address(coin->symbol,rswap->Adestaddr,coin->taddr,coin->pubtype,rswap->other33,33);
                 else if ( rswap->iambob == 0 && (coin= LP_coinfind(rswap->src)) != 0 )
-                    bitcoin_address(rswap->destaddr,coin->taddr,coin->pubtype,rswap->other33,33);
+                    bitcoin_address(coin->symbol,rswap->destaddr,coin->taddr,coin->pubtype,rswap->other33,33);
                 //printf("(%s, %s) <- %s other33\n",rswap->destaddr,rswap->Adestaddr,dest33);
             }
             if ( (rswap->plocktime= juint(item,"plocktime")) == 0 )
@@ -921,7 +921,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     {
         if ( alice != 0 )
         {
-            bitcoin_address(otheraddr,alice->taddr,alice->pubtype,rswap.other33,33);
+            bitcoin_address(alice->symbol,otheraddr,alice->taddr,alice->pubtype,rswap.other33,33);
             destBdest = otheraddr;
             destAdest = rswap.Adestaddr;
             if ( LP_TECHSUPPORT == 0 && strcmp(alice->smartaddr,rswap.Adestaddr) != 0 )
@@ -936,7 +936,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         }
         if ( (bob= LP_coinfind(rswap.bobcoin)) != 0 )
         {
-            bitcoin_address(rswap.Sdestaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
+            bitcoin_address(bob->symbol,rswap.Sdestaddr,bob->taddr,bob->pubtype,rswap.pubkey33,33);
             srcAdest = rswap.Sdestaddr;
         }
         srcBdest = rswap.destaddr;
@@ -945,7 +945,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     {
         if ( bob != 0 )
         {
-            bitcoin_address(otheraddr,bob->taddr,bob->pubtype,rswap.other33,33);
+            bitcoin_address(bob->symbol,otheraddr,bob->taddr,bob->pubtype,rswap.other33,33);
             srcAdest = otheraddr;
             srcBdest = rswap.destaddr;
             if ( LP_TECHSUPPORT == 0 && strcmp(bob->smartaddr,rswap.destaddr) != 0 )
@@ -960,7 +960,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         }
         if ( (alice= LP_coinfind(rswap.alicecoin)) != 0 )
         {
-            bitcoin_address(rswap.Sdestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
+            bitcoin_address(alice->symbol,rswap.Sdestaddr,alice->taddr,alice->pubtype,rswap.pubkey33,33);
             destBdest = rswap.Sdestaddr;
         }
         destAdest = rswap.Adestaddr;
@@ -1021,7 +1021,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             {
                                 char privaddr[64]; uint8_t privpub33[33];
                                 bitcoin_pubkey33(ctx,privpub33,rswap.myprivs[0]);
-                                bitcoin_address(privaddr,0,60,privpub33,33);
+                                bitcoin_address(rswap.bobcoin,privaddr,0,60,privpub33,33);
                                 printf("alicespend len.%d redeemlen.%d priv0addr.(%s) priv0.(%s)\n",len,redeemlen,privaddr,bits256_str(str,rswap.myprivs[0]));
                             }
                             for (j=0; j<32; j++)

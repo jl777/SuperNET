@@ -519,7 +519,7 @@ void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr
     uint8_t addrtype,rmd160[20]; struct iguana_info *src,*dest;
     if ( (src= LP_coinfind(srccoin)) != 0 && (dest= LP_coinfind(destcoin)) != 0 )
     {
-        bitcoin_addr2rmd160(src->taddr,&addrtype,rmd160,coinaddr);
-        bitcoin_address(otheraddr,dest->taddr,dest->pubtype,rmd160,20);
+        bitcoin_addr2rmd160(srccoin,src->taddr,&addrtype,rmd160,coinaddr);
+        bitcoin_address(destcoin,otheraddr,dest->taddr,dest->pubtype,rmd160,20);
     } else printf("couldnt find %s or %s\n",srccoin,destcoin);
 }

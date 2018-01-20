@@ -79,7 +79,7 @@ int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_l
         }
         i++;
     }
-    printf("bech32_encode after hrp.(%s)\n",hrp);
+    //printf("bech32_encode after hrp.(%s)\n",hrp);
     if ( i + chklen + 2 + data_len > 90 )
         return 0;
     while ( *hrp != 0 )
@@ -102,14 +102,14 @@ int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_l
     for (i = 0; i < chklen; ++i)
         chk = PolyMod_step(chk,0);
     chk ^= 1;
-    printf("bech32_encode emit >>>>>>> ");
+    //printf("bech32_encode emit >>>>>>> ");
     for (i = 0; i < chklen; ++i) {
         *output = charset[(chk >> ((chklen - 1 - i) * 5)) & 0x1f];
-        printf("%c",*output);
+        //printf("%c",*output);
         output++;
     }
     *output = 0;
-    printf(" checksum %llx\n",(long long)chk);
+    //printf(" checksum %llx\n",(long long)chk);
     return 1;
 }
 
@@ -174,7 +174,7 @@ int bech32_decode(char *hrp,uint8_t *data,size_t *data_len,const char *input)
         printf("bech32_decode: have_lower.%d have_upper.%d\n",have_lower,have_upper);
         return 0;
     }
-    printf("checksum chk.%llx lower.%d upper.%d inputlen.%d\n",(long long)chk,have_lower,have_upper,(int32_t)input_len);
+    //printf("checksum chk.%llx lower.%d upper.%d inputlen.%d\n",(long long)chk,have_lower,have_upper,(int32_t)input_len);
     return chk == 1;
 }
 

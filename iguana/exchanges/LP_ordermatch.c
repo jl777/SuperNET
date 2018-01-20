@@ -451,7 +451,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
         printf("cant find coin.%s\n",qp->srccoin);
         return(-1);
     }
-    privkey = LP_privkey(coin->smartaddr,coin->taddr);
+    privkey = LP_privkey(coin->symbol,coin->smartaddr,coin->taddr);
     if ( bits256_nonz(privkey) != 0 && bits256_cmp(G.LP_mypub25519,qp->srchash) == 0 )
     {
         LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis-qp->txfee,rel,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
@@ -615,7 +615,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
         LP_aliceid(qp->tradeid,qp->aliceid,"error6",0,0);
         return(clonestr("{\"error\":\"cant get alicecoin\"}"));
     }
-    qp->privkey = LP_privkey(qp->destaddr,coin->taddr);
+    qp->privkey = LP_privkey(coin->symbol,qp->destaddr,coin->taddr);
     if ( bits256_nonz(qp->privkey) != 0 )//&& qp->quotetime >= qp->timestamp-3 )
     {
         retjson = cJSON_CreateObject();

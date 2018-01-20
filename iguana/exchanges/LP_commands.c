@@ -211,9 +211,9 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
                 jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
                 init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
                 jaddstr(retjson,"pubsecp",pub33str);
-                bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
+                bitcoin_address("KMD",coinaddr,0,60,G.LP_myrmd160,20);
                 jaddstr(retjson,"KMD",coinaddr);
-                bitcoin_address(coinaddr,0,0,G.LP_myrmd160,20);
+                bitcoin_address("BTC",coinaddr,0,0,G.LP_myrmd160,20);
                 jaddstr(retjson,"BTC",coinaddr);
                 jaddstr(retjson,"NXT",G.LP_NXTaddr);
                 jadd(retjson,"coins",LP_coinsjson(LP_showwif));
