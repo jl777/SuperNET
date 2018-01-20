@@ -2073,12 +2073,36 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
 
 char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,int32_t len)
 {
-    int32_t offset,i; uint8_t data[26]; bits256 hash;// char checkaddr[65];
+    int32_t offset,i,len5; char prefixed[64]; uint8_t data[64],data5[64]; bits256 hash;
+    coinaddr[0] = 0;
     offset = 1 + (taddr != 0);
     if ( len != 20 )
         calc_rmd160_sha256(data+offset,pubkey_or_rmd160,len);
     else memcpy(data+offset,pubkey_or_rmd160,20);
-    //btc_convrmd160(checkaddr,addrtype,data+1);
+    if ( strcmp(symbol,"BCH") == 0 )
+    {
+        len5 = 0;
+        if ( addrtype == 0 )
+            data[0] = (0 << 3);
+        else data[0] = (1 << 3);
+        bech32_convert_bits(data5,&len5,5,data,21,8,1);
+        if ( bech32_encode(prefixed,"bitcoincash",data5,len5) == 0 )
+        {
+            for (i=0; prefixed[i]!=0; i++)
+                if ( prefixed[i] == ':' )
+                    break;
+            if ( prefixed[i] == ':' )
+            {
+                strcpy(coinaddr,&prefixed[i+1]);
+                return(coinaddr);
+            } else return(0);
+        }
+        return(coinaddr);
+    }
+    else if ( strcmp(symbol,"GRS") == 0 )
+    {
+        return(0);
+    }
     if ( taddr != 0 )
     {
         data[0] = taddr;
