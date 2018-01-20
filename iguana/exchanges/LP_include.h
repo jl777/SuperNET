@@ -21,6 +21,10 @@
 #ifndef LP_INCLUDE_H
 #define LP_INCLUDE_H
 
+#ifndef LP_TECHSUPPORT
+#define LP_TECHSUPPORT 0
+#endif
+
 #ifdef FROMGUI
 #define printf dontprintf
 
@@ -29,7 +33,7 @@ voind dontprintf(char *formatstr,...) {}
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "17752"
+#define LP_BUILD_NUMBER "17763"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -90,7 +94,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_PEERGOOD_ERRORDECAY 0.9
 
 #define LP_SWAPSTEP_TIMEOUT 30
-#define LP_MIN_TXFEE 10000
+#define LP_MIN_TXFEE 1000
 #define LP_MINVOL 20
 #define LP_MINCLIENTVOL 200
 #define LP_MINSIZE_TXFEEMULT 10
@@ -349,7 +353,7 @@ struct LP_address
     int64_t balance,total,instantdex_credits;
     uint32_t timestamp,n,unspenttime;
     int32_t unspentheight;
-    char coinaddr[40];
+    char coinaddr[64];
     uint8_t pubsecp[33],didinstantdex;
 };
 
@@ -554,6 +558,10 @@ struct LP_address *LP_addressfind(struct iguana_info *coin,char *coinaddr);
 int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout);
 
 void LP_listunspent_query(char *symbol,char *coinaddr);
-int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype);
+int32_t bitcoin_priv2wif(char *symbol,uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype);
+int bech32_convert_bits(uint8_t *out,int32_t *outlen,int outbits,const uint8_t *in,int32_t inlen,int inbits,int pad);
+int bech32_decode(char *hrp,uint8_t *data,int32_t *data_len,const char *input);
+int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_len);
+void HashGroestl(void * buf, const void * pbegin, int len);
 
 #endif

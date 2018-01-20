@@ -260,7 +260,7 @@ struct LP_address *_LP_addressfind(struct iguana_info *coin,char *coinaddr)
     HASH_FIND(hh,coin->addresses,coinaddr,strlen(coinaddr),ap);
     if ( ap != 0 && bits256_nonz(ap->pubkey) == 0 )
     {
-        bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,coinaddr);
+        bitcoin_addr2rmd160(coin->symbol,coin->taddr,&addrtype,rmd160,coinaddr);
         if ( (pubp= LP_pubkey_rmd160find(rmd160)) != 0 )
         {
             ap->pubkey = pubp->pubkey;
@@ -275,7 +275,7 @@ struct LP_address *_LP_addressadd(struct iguana_info *coin,char *coinaddr)
     uint8_t rmd160[20],addrtype; struct LP_address *ap; struct LP_pubkey_info *pubp;
     ap = calloc(1,sizeof(*ap));
     safecopy(ap->coinaddr,coinaddr,sizeof(ap->coinaddr));
-    bitcoin_addr2rmd160(coin->taddr,&addrtype,rmd160,coinaddr);
+    bitcoin_addr2rmd160(coin->symbol,coin->taddr,&addrtype,rmd160,coinaddr);
     if ( (pubp= LP_pubkey_rmd160find(rmd160)) != 0 )
     {
         ap->pubkey = pubp->pubkey;
@@ -513,6 +513,8 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
 {
     struct LP_priceinfo *basepp,*relpp; struct LP_pubkey_info *pubp;
     *changedp = 0;
+    //if ( strcmp("DEX",base) == 0 || strcmp("DEX",rel) == 0 )
+    //    printf("%s/%s setprice %.8f\n",base,rel,price);
     if ( base != 0 && rel != 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         
@@ -554,6 +556,18 @@ double LP_price(char *base,char *rel)
         if ( (price= basepp->myprices[relind]) == 0. )
         {
             price = basepp->relvals[relind];
+        }
+    }
+    return(price);
+}
+
+double LP_getmyprice(char *base,char *rel)
+{
+    struct LP_priceinfo *basepp; int32_t relind; double price = 0.;
+    if ( (basepp= LP_priceinfoptr(&relind,base,rel)) != 0 )
+    {
+        if ( (price= basepp->myprices[relind]) == 0. )
+        {
         }
     }
     return(price);
@@ -783,7 +797,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
         }
         if ( pubp->timestamp < oldest )
             continue;
-        bitcoin_address(coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
+        bitcoin_address(base,coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
         avesatoshis = maxsatoshis = n = 0;
         ap = 0;
         if ( (price= LP_pubkey_price(&n,&avesatoshis,&maxsatoshis,pubp,baseid,relid)) > SMALLVAL ) //pubp->matrix[baseid][relid]) > SMALLVAL )//&& pubp->timestamps[baseid][relid] >= oldest )

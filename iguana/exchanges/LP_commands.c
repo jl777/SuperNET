@@ -140,6 +140,7 @@ balances(address)\n\
 fundvalue(address="", holdings=[], divisor=0)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
+getmyprice(base, rel)\n\
 getprice(base, rel)\n\
 //sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
 //getmessages(firsti=0, num=100)\n\
@@ -210,9 +211,9 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
                 jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
                 init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
                 jaddstr(retjson,"pubsecp",pub33str);
-                bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
+                bitcoin_address("KMD",coinaddr,0,60,G.LP_myrmd160,20);
                 jaddstr(retjson,"KMD",coinaddr);
-                bitcoin_address(coinaddr,0,0,G.LP_myrmd160,20);
+                bitcoin_address("BTC",coinaddr,0,0,G.LP_myrmd160,20);
                 jaddstr(retjson,"BTC",coinaddr);
                 jaddstr(retjson,"NXT",G.LP_NXTaddr);
                 jadd(retjson,"coins",LP_coinsjson(LP_showwif));
@@ -654,12 +655,21 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
         return(jprint(LP_balances(jstr(argjson,"address")),1));
     else if ( strcmp(method,"fundvalue") == 0 )
         return(jprint(LP_fundvalue(argjson),1));
-    else if ( strcmp(method,"getprice") == 0 )
+    else if ( strcmp(method,"getprice") == 0 || strcmp(method,"getmyprice") == 0 )
     {
         double price,bid,ask;
-        ask = LP_price(base,rel);
-        if ( (bid= LP_price(rel,base)) > SMALLVAL )
-            bid = 1./bid;
+        if ( strcmp(method,"getprice") == 0 )
+        {
+            ask = LP_price(base,rel);
+            if ( (bid= LP_price(rel,base)) > SMALLVAL )
+                bid = 1./bid;
+        }
+        else
+        {
+            ask = LP_getmyprice(base,rel);
+            if ( (bid= LP_getmyprice(rel,base)) > SMALLVAL )
+                bid = 1./bid;
+        }
         price = _pairaved(bid,ask);
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
