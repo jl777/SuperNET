@@ -575,7 +575,10 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 #ifdef LP_DONT_IMPORTPRIVKEY
     bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
     if ( LP_importaddress(symbol,address) < 0 )
+    {
+        printf("%s importaddress %s from %s failed\n",symbol,address,wifstr);
         return(cJSON_Parse("{\"error\":\"couldnt import\"}"));
+    }
     else return(cJSON_Parse("{\"result\":\"success\"}"));
 #endif
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
