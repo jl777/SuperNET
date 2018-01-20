@@ -88,7 +88,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
         len = (int32_t)strlen(txbytes) >> 1;
         ptr = malloc(len);
         decode_hex(ptr,len,txbytes);
-        expectedtxid = bits256_doublesha256(0,ptr,len);
+        expectedtxid = bits256_calctxid(symbol,ptr,len);
         free(ptr);
     }
     for (i=0; i<2; i++)
@@ -149,7 +149,7 @@ bits256 LP_broadcast_tx(char *name,char *symbol,uint8_t *data,int32_t datalen)
     {
         signedtx = malloc(datalen*2 + 1);
         init_hexbytes_noT(signedtx,data,datalen);
-        txid = bits256_doublesha256(0,data,datalen);
+        txid = bits256_calctxid(symbol,data,datalen);
 #ifdef BASILISK_DISABLESENDTX
         char str[65]; printf("%s <- dont sendrawtransaction (%s) %s\n",name,bits256_str(str,txid),signedtx);
 #else
@@ -890,7 +890,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         changelen = bitcoin_standardspend(changescript,0,changermd160);
         txobj = bitcoin_txoutput(txobj,changescript,changelen,change);
     }
-    if ( (rawtxbytes= bitcoin_json2hex(isPoS,&txid,txobj,V)) != 0 )
+    if ( (rawtxbytes= bitcoin_json2hex(symbol,isPoS,&txid,txobj,V)) != 0 )
     {
         char str[65];
         completed = 0;
@@ -1286,7 +1286,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     }
     if ( change != 0 )
         txobj = bitcoin_txoutput(txobj,script,scriptlen,change);
-    if ( (rawtxbytes= bitcoin_json2hex(coin->isPoS,&txid,txobj,V)) != 0 )
+    if ( (rawtxbytes= bitcoin_json2hex(coin->symbol,coin->isPoS,&txid,txobj,V)) != 0 )
     {
     } else printf("error making rawtx suppress.%d\n",suppress_pubkeys);
     *txobjp = txobj;

@@ -46,7 +46,7 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"tx\":\"");
             for (i=0; i<rawtx->I.datalen; i++)
                 fprintf(fp,"%02x",rawtx->txbytes[i]);
-            fprintf(fp,"\",\"txid\":\"%s\"",bits256_str(str,bits256_doublesha256(0,rawtx->txbytes,rawtx->I.datalen)));
+            fprintf(fp,"\",\"txid\":\"%s\"",bits256_str(str,bits256_calctxid(rawtx->symbol,rawtx->txbytes,rawtx->I.datalen)));
             if ( rawtx == &swap->bobdeposit || rawtx == &swap->bobpayment )
             {
                 LP_swap_coinaddr(bobcoin,coinaddr,0,rawtx->txbytes,rawtx->I.datalen,0);

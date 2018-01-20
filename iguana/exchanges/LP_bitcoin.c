@@ -2018,6 +2018,24 @@ char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *met
     return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,timeout));
 }
 
+bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t  len)
+{
+    bits256 txid;
+    if ( strcmp(symbol,"GRS") != 0 )
+        txid = bits256_doublesha256(0,serialized,len);
+    else vcalc_sha256(0,txid.bytes,serialized,len);
+    return(txid);
+}
+
+bits256 bits256_calcaddrhash(char *symbol,uint8_t *serialized,int32_t  len)
+{
+    bits256 txid;
+    if ( strcmp(symbol,"GRS") != 0 )
+        txid = bits256_doublesha256(0,serialized,len);
+    else HashGroestl(txid.bytes,serialized,len);
+    return(txid);
+}
+
 int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
 {
     bits256 hash; uint8_t *buf,_buf[26],data5[128],rmd21[21]; char prefixaddr[64],hrp[64]; int32_t len,len5,offset;
@@ -2037,10 +2055,6 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
         memcpy(rmd160,&rmd21[1],20);
         return(20);
     }
-    else if ( strcmp(symbol,"GRS") == 0 )
-    {
-        return(0);
-    }
     offset = 1 + (taddr != 0);
     memset(rmd160,0,20);
     *addrtypep = 0;
@@ -2048,7 +2062,7 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
     if ( (len= bitcoin_base58decode(buf,coinaddr)) >= 4 )
     {
         // validate with trailing hash, then remove hash
-        hash = bits256_doublesha256(0,buf,20+offset);
+        hash = bits256_calcaddrhash(0,buf,20+offset);
         *addrtypep = (taddr == 0) ? *buf : buf[1];
         memcpy(rmd160,buf+offset,20);
         if ( (buf[20+offset]&0xff) == hash.bytes[31] && (buf[21+offset]&0xff) == hash.bytes[30] &&(buf[22+offset]&0xff) == hash.bytes[29] && (buf[23+offset]&0xff) == hash.bytes[28] )
@@ -2060,9 +2074,7 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
         {
             int32_t i;
             if ( len > 20 )
-            {
-                hash = bits256_doublesha256(0,buf,len);
-            }
+                hash = bits256_calcaddrhash(0,buf,len);
             for (i=0; i<len; i++)
                 printf("%02x ",buf[i]);
             char str[65]; printf("\naddrtype.%d taddr.%02x checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",*addrtypep,taddr,coinaddr,len,buf[len-1]&0xff,buf[len-2]&0xff,buf[len-3]&0xff,buf[len-4]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
@@ -2096,16 +2108,12 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
         strcpy(coinaddr,&prefixed[i+1]);
         return(coinaddr);
     }
-    else if ( strcmp(symbol,"GRS") == 0 )
-    {
-        return(0);
-    }
     if ( taddr != 0 )
     {
         data[0] = taddr;
         data[1] = addrtype;
     } else data[0] = addrtype;
-    hash = bits256_doublesha256(0,data,20+offset);
+    hash = bits256_calcaddrhash(symbol,data,20+offset);
     for (i=0; i<4; i++)
         data[20+offset+i] = hash.bytes[31-i];
     if ( (coinaddr= bitcoin_base58encode(coinaddr,data,24+offset)) != 0 )
@@ -3368,7 +3376,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
                 len += 4;
             }
         }
-        revsigtxid = bits256_doublesha256(0,serialized,len);
+        revsigtxid = bits256_calctxid(symbol,serialized,len);
         for (i=0; i<sizeof(revsigtxid); i++)
             sigtxid.bytes[31-i] = revsigtxid.bytes[i];
     }
@@ -3543,7 +3551,7 @@ uint32_t LP_sighash(char *symbol,int32_t zcash)
 
 int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash)
 {
-    int32_t i,j,n,segtxlen,len = 0,extraused=0; uint32_t tmp,segitems; uint8_t *segtx=0,segwitflag=0,spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; uint64_t spendamount; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
+    int32_t i,j,n,segtxlen,len = 0,extraused=0; uint32_t tmp,segitems; uint8_t *segtx=0,segwitflag=0,spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; uint64_t spendamount; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
     
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( json != 0 )
@@ -3675,7 +3683,7 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
                 //printf("), ");
             }
             memcpy(&segtx[segtxlen-sizeof(int32_t)],&serialized[len],sizeof(int32_t));
-            *txidp = bits256_doublesha256(0,segtx,segtxlen);
+            *txidp = bits256_calctxid(symbol,segtx,segtxlen);
             free(segtx);
             //char str[65]; printf("witness sum %d vs max.%d txid %s\n",len,maxsize,bits256_str(str,txid));
         }
@@ -3736,7 +3744,7 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
         jaddnum(json,"numvouts",msg->tx_out);
     }
     if ( segwitflag == 0 )
-        *txidp = bits256_doublesha256(txidstr,txstart,len);
+        *txidp = bits256_calctxid(symbol,txstart,len);
     if ( json != 0 )
     {
         jaddnum(json,"locktime",msg->lock_time);
@@ -3748,7 +3756,7 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
     return(len);
 }
 
-bits256 iguana_parsetxobj(uint8_t isPoS,int32_t *txstartp,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,cJSON *txobj,struct vin_info *V)
+bits256 iguana_parsetxobj(char *symbol,uint8_t isPoS,int32_t *txstartp,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,cJSON *txobj,struct vin_info *V)
 {
     int32_t i,n,numvins,numvouts,len = 0,rwflag=1; cJSON *array=0; bits256 txid; char vpnstr[64];
     memset(&txid,0,sizeof(txid));
@@ -3810,7 +3818,7 @@ bits256 iguana_parsetxobj(uint8_t isPoS,int32_t *txstartp,uint8_t *serialized,in
     //msg->txid = jbits256(txobj,"txid");
     *txstartp = 0;
     msg->allocsize = len;
-    msg->txid = txid = bits256_doublesha256(0,serialized,len);
+    msg->txid = txid = bits256_calctxid(symbol,serialized,len);
     return(txid);
 }
 
@@ -3829,7 +3837,7 @@ char *iguana_rawtxbytes(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     return(txbytes);
 }
 
-char *bitcoin_json2hex(uint8_t isPoS,bits256 *txidp,cJSON *txjson,struct vin_info *V)
+char *bitcoin_json2hex(char *symbol,uint8_t isPoS,bits256 *txidp,cJSON *txjson,struct vin_info *V)
 {
     int32_t txstart; uint8_t *serialized; struct iguana_msgtx msgtx; char *txbytes = 0;
     if ( txjson == 0 )
@@ -3838,7 +3846,7 @@ char *bitcoin_json2hex(uint8_t isPoS,bits256 *txidp,cJSON *txjson,struct vin_inf
         return(0);
     }
     serialized = malloc(IGUANA_MAXPACKETSIZE*1.5);
-    *txidp = iguana_parsetxobj(isPoS,&txstart,serialized,IGUANA_MAXPACKETSIZE*1.5,&msgtx,txjson,V);
+    *txidp = iguana_parsetxobj(symbol,isPoS,&txstart,serialized,IGUANA_MAXPACKETSIZE*1.5,&msgtx,txjson,V);
     if ( msgtx.allocsize > 0 )
     {
         txbytes = malloc(msgtx.allocsize*2 + 1);

@@ -562,5 +562,6 @@ int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t a
 int bech32_convert_bits(uint8_t *out,int32_t *outlen,int outbits,const uint8_t *in,int32_t inlen,int inbits,int pad);
 int bech32_decode(char *hrp,uint8_t *data,int32_t *data_len,const char *input);
 int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_len);
+void HashGroestl(void * buf, const void * pbegin, int len);
 
 #endif

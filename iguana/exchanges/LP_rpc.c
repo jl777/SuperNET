@@ -765,7 +765,7 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
                     len >>= 1;
                     data = malloc(len);
                     decode_hex(data,len,hexstr);
-                    *signedtxidp = bits256_doublesha256(0,data,len);
+                    *signedtxidp = bits256_calctxid(coin->symbol,data,len);
                 }
                 //else
                 printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
