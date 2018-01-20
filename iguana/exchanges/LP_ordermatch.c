@@ -451,7 +451,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
         printf("cant find coin.%s\n",qp->srccoin);
         return(-1);
     }
-    privkey = LP_privkey(coin->smartaddr,coin->taddr);
+    privkey = LP_privkey(coin->symbol,coin->smartaddr,coin->taddr);
     if ( bits256_nonz(privkey) != 0 && bits256_cmp(G.LP_mypub25519,qp->srchash) == 0 )
     {
         LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis-qp->txfee,rel,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
@@ -481,7 +481,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,base,rel,zero,jprint(reqjson,0));
-                if ( IAMLP == 0 )
+                //if ( IAMLP == 0 )
                 {
                     sleep(1);
                     LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
@@ -615,7 +615,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
         LP_aliceid(qp->tradeid,qp->aliceid,"error6",0,0);
         return(clonestr("{\"error\":\"cant get alicecoin\"}"));
     }
-    qp->privkey = LP_privkey(qp->destaddr,coin->taddr);
+    qp->privkey = LP_privkey(coin->symbol,qp->destaddr,coin->taddr);
     if ( bits256_nonz(qp->privkey) != 0 )//&& qp->quotetime >= qp->timestamp-3 )
     {
         retjson = cJSON_CreateObject();
@@ -837,7 +837,8 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     qp = newqp;
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
         return(0);
-    //printf("LP_trades_gotrequest %s/%s %.8f\n",qp->srccoin,qp->destcoin,LP_trades_bobprice(&bid,&ask,qp));
+    //if ( strcmp(qp->srccoin,"GRS") == 0 || strcmp(qp->destcoin,"GRS") == 0 )
+    //    printf("LP_trades_gotrequest %s/%s myprice %.8f\n",qp->srccoin,qp->destcoin,LP_trades_bobprice(&bid,&ask,qp));
     if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
         return(0);
     autxo = &A;
@@ -856,7 +857,8 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         memset(&qp->txid2,0,sizeof(qp->txid2));
         qp->vout = qp->vout2 = -1;
     } else return(0);
-    //printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
+    //if ( strcmp(qp->srccoin,"GRS") == 0 || strcmp(qp->destcoin,"GRS") == 0 )
+    //    printf("LP_trades_gotrequest qprice %.8f vs myprice %.8f\n",qprice,myprice);
     if ( qprice > myprice )
     {
         r = (LP_rand() % 100);
@@ -893,6 +895,8 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     }
     if ( (qprice= LP_trades_pricevalidate(qp,coin,myprice)) < 0. )
         return(0);
+    //if ( strcmp(qp->srccoin,"GRS") == 0 || strcmp(qp->destcoin,"GRS") == 0 )
+    //    printf("final checks\n");
     if ( LP_allocated(qp->txid,qp->vout) == 0 && LP_allocated(qp->txid2,qp->vout2) == 0 )
     {
         reqjson = LP_quotejson(qp);
@@ -906,7 +910,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         bits256 zero;
         memset(zero.bytes,0,sizeof(zero));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
-        if ( IAMLP == 0 )
+        //if ( IAMLP == 0 )
         {
             sleep(1);
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
@@ -1071,7 +1075,7 @@ void LP_tradesloop(void *ctx)
                 }
                 else
                 {
-                    if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all cone
+                    if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all done
                     {
                         flag = 1;
                         tp->negotiationdone = now;
@@ -1166,7 +1170,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         LP_tradecommand_log(argjson);
         printf("%-4d (%-10u %10u) %12s id.%22llu %5s/%-5s %12.8f -> %11.8f price %11.8f | RT.%d %d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,LP_RTcount,LP_swapscount);
-        LP_autoprices_update(method,Q.srccoin,dstr(Q.satoshis),Q.destcoin,dstr(Q.destsatoshis));
+        //LP_autoprices_update(method,Q.srccoin,dstr(Q.satoshis),Q.destcoin,dstr(Q.destsatoshis));
         retval = 1;
         aliceid = j64bits(argjson,"aliceid");
         qprice = jdouble(argjson,"price");
@@ -1207,7 +1211,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             {
                 //printf("CONNECTED.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
-                    Q.othercredits = LP_instantdex_proofcheck(Q.coinaddr,proof,num);
+                    Q.othercredits = LP_instantdex_proofcheck(Q.srccoin,Q.coinaddr,proof,num);
                 if ( Qtrades == 0 )
                     LP_trades_gotconnected(ctx,&Q,&Q2,jstr(argjson,"pair"));
                 else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECTED);
@@ -1232,6 +1236,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         if ( strcmp(method,"request") == 0 )
         {
             bestprice = LP_bob_competition(&counter,aliceid,qprice,-1);
+            //if ( strcmp(Q.srccoin,"GRS") == 0 || strcmp(Q.destcoin,"GRS") == 0 )
+            //    printf("%s lag %ld: aliceid.%llu price %.8f -> bestprice %.8f\n",jprint(argjson,0),Q.quotetime - (time(NULL)-20),(long long)aliceid,qprice,bestprice);
             if ( Qtrades == 0 )
                 LP_trades_gotrequest(ctx,&Q,&Q2,jstr(argjson,"pair"));
             else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_REQUEST);
@@ -1243,7 +1249,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             {
                 printf("CONNECT.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
-                    Q.othercredits = LP_instantdex_proofcheck(Q.destaddr,proof,num);
+                    Q.othercredits = LP_instantdex_proofcheck(Q.destcoin,Q.destaddr,proof,num);
                 if ( Qtrades == 0 )
                     LP_trades_gotconnect(ctx,&Q,&Q2,jstr(argjson,"pair"));
                 else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECT);
