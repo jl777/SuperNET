@@ -2087,16 +2087,13 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
         else data[0] = (1 << 3);
         bech32_convert_bits(data5,&len5,5,data,21,8,1);
         if ( bech32_encode(prefixed,"bitcoincash",data5,len5) == 0 )
-        {
-            for (i=0; prefixed[i]!=0; i++)
-                if ( prefixed[i] == ':' )
-                    break;
+            return(0);
+        for (i=0; prefixed[i]!=0; i++)
             if ( prefixed[i] == ':' )
-            {
-                strcpy(coinaddr,&prefixed[i+1]);
-                return(coinaddr);
-            } else return(0);
-        }
+                break;
+        if ( prefixed[i] != ':' )
+            return(0);
+        strcpy(coinaddr,&prefixed[i+1]);
         return(coinaddr);
     }
     else if ( strcmp(symbol,"GRS") == 0 )
