@@ -850,6 +850,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     jaddbits256(item,"txid",utxotxid);
     jaddnum(item,"vout",utxovout);
     bitcoin_address(symbol,tmpaddr,taddr,pubtype,pubkey33,33);
+    printf("%s tmpaddr.%s\n",symbol,tmpaddr);
     bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,tmpaddr);
     if ( redeemlen != 0 )
     {
@@ -858,7 +859,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         if ( vinaddr != 0 )
             bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,vinaddr);
         spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
-        //printf("P2SH path.%s\n",vinaddr!=0?vinaddr:0);
+        printf("P2SH path.%s\n",vinaddr!=0?vinaddr:0);
     } else spendlen = bitcoin_standardspend(spendscript,0,rmd160);
     init_hexbytes_noT(hexstr,spendscript,spendlen);
     jaddstr(item,"scriptPubKey",hexstr);
@@ -1465,7 +1466,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
     }
     free_json(argjson);
     return(retval);
-#ifdef old
+/*#ifdef old
     int32_t retval=-1,iter; char *signedtx,*changeaddr = 0,_changeaddr[64]; struct iguana_info *coin; int64_t newtxfee=0,destamount;
     char str2[65]; printf("%s rawtxgen.(%s/v%d)\n",rawtx->name,bits256_str(str2,rawtx->utxotxid),rawtx->utxovout);
     if ( (coin= rawtx->coin) == 0 )
@@ -1500,7 +1501,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
             break;
     }
     return(retval);
-#endif
+#endif*/
 }
 
 int32_t basilisk_rawtx_sign(char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen,int32_t ignore_cltverr,uint8_t *changermd160,char *vinaddr,int32_t zcash)
@@ -1987,7 +1988,7 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
     return(0);
 }
 
-/**/
+/*
 
 #ifdef old
 int32_t basilisk_alicepayment_spend(struct basilisk_swap *swap,struct basilisk_rawtx *dest)
@@ -2018,7 +2019,7 @@ int32_t basilisk_alicepayment_spend(struct basilisk_swap *swap,struct basilisk_r
     }
     return(-1);
 }
-#endif
+#endif*/
 
 void basilisk_alicepayment(struct basilisk_swap *swap,struct iguana_info *coin,struct basilisk_rawtx *alicepayment,bits256 pubAm,bits256 pubBn)
 {
@@ -2232,7 +2233,7 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
             memcpy(swap->alicespend.I.pubkey33,swap->persistent_pubkey33,33);
             bitcoin_address(coin->symbol,swap->alicespend.I.destaddr,coin->taddr,coin->pubtype,swap->persistent_pubkey33,33);
             //char str[65],str2[65]; printf("bobpaid privAm.(%s) myprivs[0].(%s)\n",bits256_str(str,swap->I.privAm),bits256_str(str2,swap->I.myprivs[0]));
-            if ( (retval= basilisk_rawtx_sign(coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,swap,&swap->alicespend,&swap->bobpayment,swap->I.myprivs[0],0,userdata,len,1,swap->changermd160,swap->alicepayment.I.destaddr,coin->zcash)) == 0 )
+            if ( (retval= basilisk_rawtx_sign(coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,swap,&swap->alicespend,&swap->bobpayment,swap->I.myprivs[0],0,userdata,len,1,swap->changermd160,swap->bobpayment.I.destaddr,coin->zcash)) == 0 )
             {
                 /*for (i=0; i<swap->bobpayment.I.datalen; i++)
                  printf("%02x",swap->bobpayment.txbytes[i]);
