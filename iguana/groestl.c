@@ -3118,7 +3118,7 @@ sph_groestl512_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
     
 void HashGroestl(void * buf, const void * pbegin, int len)
 {
-    sph_groestl512_context  ctx_gr[2];
+    sph_groestl512_context  ctx_gr[2]; unsigned int i;
     static unsigned char pblank[1];
     char hash[64];
     char hash2[64];
@@ -3131,7 +3131,7 @@ void HashGroestl(void * buf, const void * pbegin, int len)
     sph_groestl512(&ctx_gr[1],hash,64);
     sph_groestl512_close(&ctx_gr[1],hash2);
     
-    for (unsigned int i = 0; i < 32; i++){
+    for (i = 0; i < 32; i++){
         ((char*)buf)[i] = hash2[i];
     }
     
