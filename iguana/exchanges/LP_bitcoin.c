@@ -2020,10 +2020,16 @@ char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *met
 
 bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t  len)
 {
-    bits256 txid;
+    bits256 txid,revtxid; int32_t i;
+    memset(txid.bytes,0,sizeof(txid));
     if ( strcmp(symbol,"GRS") != 0 )
         txid = bits256_doublesha256(0,serialized,len);
-    else vcalc_sha256(0,txid.bytes,serialized,len);
+    else
+    {
+        vcalc_sha256(0,revtxid.bytes,serialized,len);
+        for (i=0; i<32; i++)
+            txid.bytes[i] = revtxid.bytes[31 - i];
+    }
     return(txid);
 }
 
