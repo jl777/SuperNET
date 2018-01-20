@@ -2226,6 +2226,8 @@ int32_t bitcoin_wif2priv(uint8_t wiftaddr,uint8_t *addrtypep,bits256 *privkeyp,c
 int32_t bitcoin_wif2addr(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,char *coinaddr,char *wifstr)
 {
     bits256 privkey; uint8_t addrtype,pubkey33[33];
+    if ( strcmp(symbol,"BCH") == 0 )
+        symbol = "BTC";
     coinaddr[0] = 0;
     if ( bitcoin_wif2priv(wiftaddr,&addrtype,&privkey,wifstr) == sizeof(privkey) )
     {
