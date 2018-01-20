@@ -2083,7 +2083,7 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
             if ( len > 20 )
                 hash = bits256_calcaddrhash(0,buf,len);
             for (i=0; i<len; i++)
-                printf("%02x ",buf[i]);
+                printf("%02x ",hash.bytes[i]);
             char str[65]; printf("\naddrtype.%d taddr.%02x checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",*addrtypep,taddr,coinaddr,len,buf[len-1]&0xff,buf[len-2]&0xff,buf[len-3]&0xff,buf[len-4]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
         }
     }
@@ -2121,8 +2121,16 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
         data[1] = addrtype;
     } else data[0] = addrtype;
     hash = bits256_calcaddrhash(symbol,data,20+offset);
-    for (i=0; i<4; i++)
-        data[20+offset+i] = hash.bytes[31-i];
+    if ( strcmp(symbol,"GRS") != 0 )
+    {
+        for (i=0; i<4; i++)
+            data[20+offset+i] = hash.bytes[31-i];
+    }
+    else
+    {
+        for (i=0; i<4; i++)
+            data[20+offset+i] = hash.bytes[i];
+    }
     if ( (coinaddr= bitcoin_base58encode(coinaddr,data,24+offset)) != 0 )
     {
     } else printf("null coinaddr taddr.%02x\n",taddr);
@@ -2145,11 +2153,17 @@ int32_t bitcoin_validaddress(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t 
     if ( coinaddr == 0 || coinaddr[0] == 0 )
         return(-1);
     else if ( bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,coinaddr) < 0 )
+    {
+        printf("bitcoin_validaddress addr2rmd160 error\n");
         return(-1);
+    }
     else if ( addrtype != pubtype && addrtype != p2shtype )
         return(-1);
     else if ( bitcoin_address(symbol,checkaddr,addrtype,taddr,rmd160,sizeof(rmd160)) != checkaddr || strcmp(checkaddr,coinaddr) != 0 )
+    {
+        printf("bitcoin_validaddress checkaddr.%s != %s\n",checkaddr,coinaddr);
         return(-1);
+    }
     return(0);
 }
 
