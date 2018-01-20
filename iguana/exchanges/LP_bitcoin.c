@@ -2020,7 +2020,7 @@ char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *met
 
 int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
 {
-    bits256 hash; uint8_t *buf,_buf[26],data5[128]; char prefixaddr[64],hrp[64]; int32_t len,len5,offset;
+    bits256 hash; uint8_t *buf,_buf[26],data5[128],rmd21[21]; char prefixaddr[64],hrp[64]; int32_t len,len5,offset;
     if ( strcmp(symbol,"BCH") == 0 && strlen(coinaddr) == 42 )
     {
         strcpy(prefixaddr,"bitcoincash:");
@@ -2030,6 +2030,12 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
             printf("bitcoin_addr2rmd160 bech32_decode error.(%s)\n",coinaddr);
             return(0);
         }
+        len = 0;
+        if ( bech32_convert_bits(rmd21,&len,8,data5,len5,5,0) == 0 )
+            printf("error converting data5\n");
+        *addrtypep = rmd21[0] == 0 ? 0 : 5;
+        memcpy(rmd160,&rmd21[1],20);
+        return(20);
     }
     else if ( strcmp(symbol,"GRS") == 0 )
     {
