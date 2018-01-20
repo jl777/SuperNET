@@ -33,7 +33,7 @@ voind dontprintf(char *formatstr,...) {}
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "17762"
+#define LP_BUILD_NUMBER "17763"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
