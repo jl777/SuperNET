@@ -2072,16 +2072,18 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
         hash = bits256_calcaddrhash(symbol,buf,20+offset);
         *addrtypep = (taddr == 0) ? *buf : buf[1];
         memcpy(rmd160,buf+offset,20);
-        if ( (buf[20+offset]&0xff) == hash.bytes[31] && (buf[21+offset]&0xff) == hash.bytes[30] &&(buf[22+offset]&0xff) == hash.bytes[29] && (buf[23+offset]&0xff) == hash.bytes[28] )
+        if ( strcmp(symbol,"GRS") != 0 && (buf[20+offset]&0xff) == hash.bytes[31] && (buf[21+offset]&0xff) == hash.bytes[30] && (buf[22+offset]&0xff) == hash.bytes[29] && (buf[23+offset]&0xff) == hash.bytes[28] )
         {
             //printf("coinaddr.(%s) valid checksum addrtype.%02x\n",coinaddr,*addrtypep);
             return(20);
         }
+        else if ( strcmp(symbol,"GRS") == 0 && (buf[20+offset]&0xff) == hash.bytes[0] && (buf[21+offset]&0xff) == hash.bytes[1] && (buf[22+offset]&0xff) == hash.bytes[2] && (buf[23+offset]&0xff) == hash.bytes[3] )
+            return(20);
         else
         {
             int32_t i;
-            if ( len > 20 )
-                hash = bits256_calcaddrhash(symbol,buf,len);
+            //if ( len > 20 )
+            //    hash = bits256_calcaddrhash(symbol,buf,len);
             for (i=0; i<len; i++)
                 printf("%02x ",hash.bytes[i]);
             char str[65]; printf("\naddrtype.%d taddr.%02x checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",*addrtypep,taddr,coinaddr,len,buf[len-1]&0xff,buf[len-2]&0xff,buf[len-3]&0xff,buf[len-4]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
