@@ -353,7 +353,7 @@ struct LP_address
     int64_t balance,total,instantdex_credits;
     uint32_t timestamp,n,unspenttime;
     int32_t unspentheight;
-    char coinaddr[40];
+    char coinaddr[64];
     uint8_t pubsecp[33],didinstantdex;
 };
 
@@ -559,8 +559,8 @@ int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout);
 
 void LP_listunspent_query(char *symbol,char *coinaddr);
 int32_t bitcoin_priv2wif(uint8_t wiftaddr,char *wifstr,bits256 privkey,uint8_t addrtype);
-int bech32_convert_bits(uint8_t *out,size_t *outlen,int outbits,const uint8_t *in,size_t inlen,int inbits,int pad);
-int bech32_decode(char *hrp,uint8_t *data,size_t *data_len,const char *input);
-int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_len);
+int bech32_convert_bits(uint8_t *out,int32_t *outlen,int outbits,const uint8_t *in,int32_t inlen,int inbits,int pad);
+int bech32_decode(char *hrp,uint8_t *data,int32_t *data_len,const char *input);
+int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_len);
 
 #endif

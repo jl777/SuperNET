@@ -39,14 +39,14 @@
 uint64_t PolyMod_step(uint64_t c,uint8_t d)
 {
     uint8_t c0 = c >> 35;
-    printf("step (%llx) + %d -> ",(long long)c,d);
+    //printf("step (%llx) + %d -> ",(long long)c,d);
     c = ((c & 0x07ffffffff) << 5) ^ d;
     if (c0 & 0x01) c ^= 0x98f2bc8e61;
     if (c0 & 0x02) c ^= 0x79b76d99e2;
     if (c0 & 0x04) c ^= 0xf33e5fb3c4;
     if (c0 & 0x08) c ^= 0xae2eabe2a8;
     if (c0 & 0x10) c ^= 0x1e4f43e470;
-    printf("%llx\n",(long long)c);
+    //printf("%llx\n",(long long)c);
     return(c);
 }
 
@@ -61,7 +61,7 @@ const int8_t charset_rev[128] = {
     -1, -1, 29, -1, 24, 13, 25, 9,  8,  23, -1, 18, 22, 31, 27, 19, -1, 1,  0,
     3,  16, 11, 28, 12, 14, 6,  4,  2,  -1, -1, -1, -1, -1};
 
-int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_len)
+int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_len)
 {
     uint64_t chk = 1; size_t i = 0; int32_t ch,chklen = 8;
     while ( hrp[i] != 0 )
@@ -113,7 +113,7 @@ int bech32_encode(char *output,const char *hrp,const uint8_t *data,size_t data_l
     return 1;
 }
 
-int bech32_decode(char *hrp,uint8_t *data,size_t *data_len,const char *input)
+int bech32_decode(char *hrp,uint8_t *data,int32_t *data_len,const char *input)
 {
     uint64_t chk = 1; int32_t chklen = 8; size_t i,hrp_len,input_len = strlen(input);
     int have_lower = 0, have_upper = 0;
@@ -178,7 +178,7 @@ int bech32_decode(char *hrp,uint8_t *data,size_t *data_len,const char *input)
     return chk == 1;
 }
 
-int bech32_convert_bits(uint8_t *out,size_t *outlen,int outbits,const uint8_t *in,size_t inlen,int inbits,int pad)
+int bech32_convert_bits(uint8_t *out,int32_t *outlen,int outbits,const uint8_t *in,int32_t inlen,int inbits,int pad)
 {
     uint32_t val = 0;
     int bits = 0;

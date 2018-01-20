@@ -738,13 +738,19 @@ void bech32_tests()
     //char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
     char *test = "bitcoincash:qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy";
     //char *test = "prefix:x64nx6hz";
-    uint8_t data[82],data2[64],rmd160[21],addrtype; char rebuild[92],hrp[84]; size_t data_len,data_len2; int32_t i;
+    uint8_t data[82],data2[64],rmd160[21],addrtype; char rebuild[92],hrp[84]; int32_t data_len,data_len2; int32_t i;
     if ( bech32_decode(hrp,data,&data_len,test) == 0 )
     {
         printf("bech32_decode fails: '%s'\n",test);
     }
     else
     {
+        data_len2 = 0;
+        if ( bech32_convert_bits(data2,&data_len2,8,data,data_len,5,0) == 0 )
+            printf("error converting data5\n");
+        for (i=0; i<data_len2; i++)
+            printf("%02x",data2[i]);
+        printf(" compacted 5's -> %d\n",data_len2);
         bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160+1,"1KXrWXciRDZUpQwQmuM1DbwsKDLYAYsVLR");
         for (i=0; i<data_len; i++)
             printf("%02x",data[i]);

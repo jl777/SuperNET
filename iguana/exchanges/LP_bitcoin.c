@@ -2020,7 +2020,21 @@ char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *met
 
 int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
 {
-    bits256 hash; uint8_t *buf,_buf[26]; int32_t len,offset;
+    bits256 hash; uint8_t *buf,_buf[26],data5[128]; char prefixaddr[64],hrp[64]; int32_t len,len5,offset;
+    if ( strcmp(symbol,"BCH") == 0 && strlen(coinaddr) == 42 )
+    {
+        strcpy(prefixaddr,"bitcoincash:");
+        strcat(prefixaddr,coinaddr);
+        if ( bech32_decode(hrp,data5,&len5,prefixaddr) == 0 )
+        {
+            printf("bitcoin_addr2rmd160 bech32_decode error.(%s)\n",coinaddr);
+            return(0);
+        }
+    }
+    else if ( strcmp(symbol,"GRS") == 0 )
+    {
+        return(0);
+    }
     offset = 1 + (taddr != 0);
     memset(rmd160,0,20);
     *addrtypep = 0;
