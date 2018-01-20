@@ -218,8 +218,8 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     jaddstr(item,"coin",coin->symbol);
     if ( showwif != 0 )
     {
-        bitcoin_priv2wif(coin->wiftaddr,wifstr,G.LP_privkey,coin->wiftype);
-        bitcoin_wif2priv(coin->wiftaddr,&tmptype,&checkkey,wifstr);
+        bitcoin_priv2wif(coin->symbol,coin->wiftaddr,wifstr,G.LP_privkey,coin->wiftype);
+        bitcoin_wif2priv(coin->symbol,coin->wiftaddr,&tmptype,&checkkey,wifstr);
         if ( bits256_cmp(G.LP_privkey,checkkey) == 0 )
             jaddstr(item,"wif",wifstr);
         else jaddstr(item,"wif","error creating wif");

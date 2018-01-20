@@ -179,8 +179,8 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
         sprintf(buf,"%s %s %03d",prefix,passphrase,i);
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)buf,(int32_t)strlen(buf));
         bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,taddr,pubtype);
-        bitcoin_priv2wif(0,wifstr,privkey,188);
-        bitcoin_wif2priv(0,&tmptype,&checkprivkey,wifstr);
+        bitcoin_priv2wif("KMD",0,wifstr,privkey,188);
+        bitcoin_wif2priv("KMD",0,&tmptype,&checkprivkey,wifstr);
         bitcoin_addr2rmd160("KMD",taddr,&tmptype,rmd160,coinaddr);
         if ( bits256_cmp(checkprivkey,privkey) != 0 )
         {
@@ -204,7 +204,7 @@ char *LP_secretaddresses(void *ctx,char *prefix,char *passphrase,int32_t n,uint8
 
 static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-int32_t LP_wifstr_valid(char *wifstr)
+int32_t LP_wifstr_valid(char *symbol,char *wifstr)
 {
     bits256 privkey,cmpkey; uint8_t wiftype; char cmpstr[128],cmpstr2[128]; int32_t i;
     memset(privkey.bytes,0,sizeof(privkey));
@@ -212,8 +212,8 @@ int32_t LP_wifstr_valid(char *wifstr)
     for (i=0; wifstr[i]!=0; i++)
         if ( strchr(base58_chars,wifstr[i]) == 0 )
             return(0);
-    bitcoin_wif2priv(0,&wiftype,&privkey,wifstr);
-    bitcoin_priv2wif(0,cmpstr,privkey,wiftype);
+    bitcoin_wif2priv(symbol,0,&wiftype,&privkey,wifstr);
+    bitcoin_priv2wif(symbol,0,cmpstr,privkey,wiftype);
     if ( strcmp(cmpstr,wifstr) == 0 )
     {
         printf("%s is valid wif\n",wifstr);
@@ -221,8 +221,8 @@ int32_t LP_wifstr_valid(char *wifstr)
     }
     else if ( bits256_nonz(privkey) != 0 )
     {
-        bitcoin_wif2priv(0,&wiftype,&cmpkey,cmpstr);
-        bitcoin_priv2wiflong(0,cmpstr2,privkey,wiftype);
+        bitcoin_wif2priv(symbol,0,&wiftype,&cmpkey,cmpstr);
+        bitcoin_priv2wiflong(symbol,0,cmpstr2,privkey,wiftype);
         char str[65],str2[65]; printf("mismatched wifstr %s -> %s -> %s %s %s\n",wifstr,bits256_str(str,privkey),cmpstr,bits256_str(str2,cmpkey),cmpstr2);
         if ( bits256_cmp(privkey,cmpkey) == 0 )
             return(1);
@@ -234,7 +234,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
 {
     //static uint32_t counter;
     bits256 privkey,userpub,zero,userpass,checkkey,tmpkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype; int32_t notarized; uint64_t nxtaddr;
-    if ( (wifstr == 0 || wifstr[0] == 0) && LP_wifstr_valid(passphrase) > 0 )
+    if ( (wifstr == 0 || wifstr[0] == 0) && LP_wifstr_valid(coin->symbol,passphrase) > 0 )
     {
         wifstr = passphrase;
         passphrase = 0;
@@ -247,8 +247,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         //vcalc_sha256(0,checkkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
         //printf("SHA256.(%s) ",bits256_str(pstr,checkkey));
         //printf("privkey.(%s)\n",bits256_str(pstr,privkey));
-        bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,coin->wiftype);
-        bitcoin_wif2priv(coin->wiftaddr,&tmptype,&checkkey,tmpstr);
+        bitcoin_priv2wif(coin->symbol,coin->wiftaddr,tmpstr,privkey,coin->wiftype);
+        bitcoin_wif2priv(coin->symbol,coin->wiftaddr,&tmptype,&checkkey,tmpstr);
         if ( bits256_cmp(privkey,checkkey) != 0 )
         {
             char str[65],str2[65]; printf("mismatched privkeys from wif conversion: %s -> %s -> %s\n",bits256_str(str,privkey),tmpstr,bits256_str(str2,checkkey));
@@ -257,8 +257,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     }
     else
     {
-        bitcoin_wif2priv(coin->wiftaddr,&tmptype,&privkey,wifstr);
-        bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,tmptype);
+        bitcoin_wif2priv(coin->symbol,coin->wiftaddr,&tmptype,&privkey,wifstr);
+        bitcoin_priv2wif(coin->symbol,coin->wiftaddr,tmpstr,privkey,tmptype);
         if ( strcmp(tmpstr,wifstr) != 0 )
         {
             printf("error reproducing the wifstr, likely edge case like non-supported uncompressed pubkey\n");
@@ -273,14 +273,14 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     {
         coin->counter++;
         memcpy(G.LP_pubsecp,coin->pubkey33,33);
-        bitcoin_priv2wif(coin->wiftaddr,tmpstr,privkey,coin->wiftype);
+        bitcoin_priv2wif(coin->symbol,coin->wiftaddr,tmpstr,privkey,coin->wiftype);
         bitcoin_addr2rmd160(coin->symbol,coin->taddr,&tmptype,G.LP_myrmd160,coin->smartaddr);
         LP_privkeyadd(privkey,G.LP_myrmd160);
         G.LP_privkey = privkey;
         if ( G.counter++ == 0 )
         {
-            bitcoin_priv2wif(coin->wiftaddr,G.USERPASS_WIFSTR,privkey,188);
-            bitcoin_wif2priv(coin->wiftaddr,&tmptype,&checkkey,G.USERPASS_WIFSTR);
+            bitcoin_priv2wif(coin->symbol,coin->wiftaddr,G.USERPASS_WIFSTR,privkey,188);
+            bitcoin_wif2priv(coin->symbol,coin->wiftaddr,&tmptype,&checkkey,G.USERPASS_WIFSTR);
             if ( bits256_cmp(checkkey,privkey) != 0 )
             {
                 char str[65],str2[65];
@@ -381,8 +381,8 @@ void LP_privkey_tests()
     for (i=0; i<200000000; i++)
     {
         privkey = rand256(0);
-        bitcoin_priv2wif(0,wifstr,privkey,0xff);
-        bitcoin_wif2priv(0,&tmptype,&checkkey,wifstr);
+        bitcoin_priv2wif("KMD",0,wifstr,privkey,0xff);
+        bitcoin_wif2priv("KMD",0,&tmptype,&checkkey,wifstr);
         if ( bits256_cmp(privkey,checkkey) != 0 )
         {
             printf("i.%d: %s vs %s\n",i,bits256_str(str,privkey),bits256_str(str2,checkkey));

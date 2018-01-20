@@ -324,7 +324,7 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
     return(0);
 }
 
-bits256 iguana_str2priv(uint8_t wiftaddr,char *str)
+bits256 iguana_str2priv(char *symbol,uint8_t wiftaddr,char *str)
 {
     bits256 privkey; int32_t n; uint8_t addrtype; //struct iguana_waccount *wacct=0; struct iguana_waddress *waddr;
     memset(&privkey,0,sizeof(privkey));
@@ -333,7 +333,7 @@ bits256 iguana_str2priv(uint8_t wiftaddr,char *str)
         n = (int32_t)strlen(str) >> 1;
         if ( n == sizeof(bits256) && is_hexstr(str,sizeof(bits256)) > 0 )
             decode_hex(privkey.bytes,sizeof(privkey),str);
-        else if ( bitcoin_wif2priv(wiftaddr,&addrtype,&privkey,str) != sizeof(bits256) )
+        else if ( bitcoin_wif2priv(symbol,wiftaddr,&addrtype,&privkey,str) != sizeof(bits256) )
         {
             //if ( (waddr= iguana_waddresssearch(&wacct,str)) != 0 )
             //    privkey = waddr->privkey;
@@ -523,7 +523,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
                         privkeystr = jstr(item,0);
                         if ( privkeystr == 0 || privkeystr[0] == 0 )
                             continue;
-                        privkeys[i] = privkey = iguana_str2priv(wiftaddr,privkeystr);
+                        privkeys[i] = privkey = iguana_str2priv(symbol,wiftaddr,privkeystr);
                         bitcoin_pubkey33(ctx,pubkeys[i],privkey);
                         //if ( bits256_nonz(privkey) != 0 )
                         //    iguana_ensure_privkey(coin,privkey);
@@ -825,13 +825,13 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     {
         V[0].signers[1].privkey = *privkey2p;
         bitcoin_pubkey33(ctx,V[0].signers[1].pubkey,*privkey2p);
-        bitcoin_priv2wif(wiftaddr,wifstr,*privkey2p,wiftype);
+        bitcoin_priv2wif(symbol,wiftaddr,wifstr,*privkey2p,wiftype);
         jaddistr(privkeys,wifstr);
         V[0].N = V[0].M = 2;
     } else V[0].N = V[0].M = 1;
     V[0].signers[0].privkey = privkey;
     bitcoin_pubkey33(ctx,V[0].signers[0].pubkey,privkey);
-    bitcoin_priv2wif(wiftaddr,wifstr,privkey,wiftype);
+    bitcoin_priv2wif(symbol,wiftaddr,wifstr,privkey,wiftype);
     jaddistr(privkeys,wifstr);
     V[0].suppress_pubkeys = suppress_pubkeys;
     V[0].ignore_cltverr = ignore_cltverr;
@@ -1015,7 +1015,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     *totalp = 0;
     interestsum = 0;
     init_hexbytes_noT(spendscriptstr,script,scriptlen);
-    bitcoin_priv2wif(coin->wiftaddr,wifstr,privkey,coin->wiftype);
+    bitcoin_priv2wif(coin->symbol,coin->wiftaddr,wifstr,privkey,coin->wiftype);
     n = 0;
     min0 = min1 = 0;
     memset(preselected,0,sizeof(preselected));

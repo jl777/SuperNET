@@ -140,7 +140,7 @@ int main(int argc, const char * argv[])
             privkey.bytes[4] = 0x06;
             privkey.bytes[5] = 0xdd;
             privkey.bytes[6] = 0xbb;
-            bitcoin_priv2wiflong(0xab,wifstr,privkey,0x36);
+            bitcoin_priv2wiflong("HUSH",0xab,wifstr,privkey,0x36);
             if ( wifstr[2] == 'x' && wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )//&& wifstr[3] == 'x' )
             {
                 if ( wifstr[7] == 'h' && wifstr[8] == 'L' && wifstr[9] == 'i' )
@@ -170,7 +170,7 @@ int main(int argc, const char * argv[])
             bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,0,60);
             if ( strncmp(coinaddr+1,argv[2],len-1) == 0 )
             {
-                bitcoin_priv2wif(0,wifstr,privkey,188);
+                bitcoin_priv2wif("KMD",0,wifstr,privkey,188);
                 printf("i.%d %s -> %s wif.%s\n",i,bits256_str(str,privkey),coinaddr,wifstr);
                 if ( coinaddr[1+len-1] == argv[2][len-1] )
                     break;
