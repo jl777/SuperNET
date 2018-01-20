@@ -2029,11 +2029,18 @@ bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t  len)
 
 bits256 bits256_calcaddrhash(char *symbol,uint8_t *serialized,int32_t  len)
 {
-    bits256 txid;
+    bits256 hash;
     if ( strcmp(symbol,"GRS") != 0 )
-        txid = bits256_doublesha256(0,serialized,len);
-    else HashGroestl(txid.bytes,serialized,len);
-    return(txid);
+        hash = bits256_doublesha256(0,serialized,len);
+    else
+    {
+        HashGroestl(hash.bytes,serialized,len);
+        int32_t i; char str[65];
+        for (i=0; i<len; i++)
+            printf("%02x",serialized[i]);
+        printf(" HashGroestl %d -> %s\n",len,bits256_str(str,hash));
+    }
+    return(hash);
 }
 
 int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
@@ -2124,29 +2131,12 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
 
 void bitcoin_priv2pub(void *ctx,char *symbol,uint8_t *pubkey33,char *coinaddr,bits256 privkey,uint8_t taddr,uint8_t addrtype)
 {
-    bits256 pub; //char privstr[65],url[512],postdata[1024],*retstr,*pubstr,*addr; cJSON *retjson;
+    bits256 pub;
     memset(pubkey33,0,33);
     coinaddr[0] = 0;
     crypto_box_priv2pub(pub.bytes,privkey.bytes);
-    //jaddbits256(retjson,"curve25519",pub);
     bitcoin_pubkey33(ctx,pubkey33,privkey);
     bitcoin_address(symbol,coinaddr,taddr,addrtype,pubkey33,33);
-    
-    /*bits256_str(privstr,privkey);
-     sprintf(url,"%s/?",IGUANA_URL);
-     sprintf(postdata,"{\"agent\":\"SuperNET\",\"method\":\"priv2pub\",\"privkey\":\"%s\",\"addrtype\":%u,\"taddr\":%u}",privstr,addrtype,taddr);
-     if ( (retstr= bitcoind_RPC(0,"SuperNET",url,0,"priv2pub",postdata,0)) != 0 )
-     {
-     if ( (retjson= cJSON_Parse(retstr)) != 0 )
-     {
-     if ( (pubstr= jstr(retjson,"secp256k1")) != 0 && strlen(pubstr) == 66 )
-     decode_hex(pubkey33,33,pubstr);
-     if ( (addr= jstr(retjson,"result")) != 0 && strlen(addr) < 64 )
-     strcpy(coinaddr,addr);
-     free_json(retjson);
-     }
-     free(retstr);
-     }*/
 }
 
 int32_t bitcoin_validaddress(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,char *coinaddr)
