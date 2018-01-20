@@ -35,7 +35,7 @@
  *       prog_len: Number of data bytes in prog.
  *  Returns 1 if successful.
  */
-int segwit_addr_encode(char *output,const char *hrp,int ver,const uint8_t *prog,size_t prog_len);
+int segwit_addr_encode(char *output,const char *hrp,int ver,const uint8_t *prog,int32_t prog_len);
 
 /** Decode a SegWit address
  *
@@ -50,7 +50,7 @@ int segwit_addr_encode(char *output,const char *hrp,int ver,const uint8_t *prog,
  *       addr:     Pointer to the null-terminated address.
  *  Returns 1 if successful.
  */
-int segwit_addr_decode(int *ver,uint8_t *prog,size_t *prog_len,const char *hrp,const char *addr);
+int segwit_addr_decode(int *ver,uint8_t *prog,int32_t *prog_len,const char *hrp,const char *addr);
 
 /** Encode a Bech32 string
  *
@@ -65,7 +65,7 @@ int bech32_encode(
     char *output,
     const char *hrp,
     const uint8_t *data,
-    size_t data_len
+    int32_t data_len
 );
 
 /** Decode a Bech32 string
@@ -82,7 +82,7 @@ int bech32_encode(
 int bech32_decode(
     char *hrp,
     uint8_t *data,
-    size_t *data_len,
+    int32_t *data_len,
     const char *input
 );
 
