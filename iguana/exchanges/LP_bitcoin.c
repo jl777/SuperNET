@@ -2169,7 +2169,7 @@ int32_t bitcoin_validaddress(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t 
     return(0);
 }
 
-int32_t base58encode_checkbuf(uint8_t taddr,uint8_t addrtype,uint8_t *data,int32_t data_len)
+int32_t base58encode_checkbuf(char *symbol,uint8_t taddr,uint8_t addrtype,uint8_t *data,int32_t data_len)
 {
     uint8_t i,offset; bits256 hash;
     offset = 1 + (taddr != 0);
@@ -2181,12 +2181,20 @@ int32_t base58encode_checkbuf(uint8_t taddr,uint8_t addrtype,uint8_t *data,int32
     //for (i=0; i<data_len+1; i++)
     //    printf("%02x",data[i]);
     //printf(" extpriv -> ");
-    hash = bits256_doublesha256(0,data,(int32_t)data_len+offset);
+    hash = bits256_calcaddrhash(symbol,data,(int32_t)data_len+offset);
     //for (i=0; i<32; i++)
     //    printf("%02x",hash.bytes[i]);
     //printf(" checkhash\n");
-    for (i=0; i<4; i++)
-        data[data_len+i+offset] = hash.bytes[31-i];
+    if ( strcmp(symbol,"GRS") != 0 )
+    {
+        for (i=0; i<4; i++)
+            data[data_len+i+offset] = hash.bytes[31-i];
+    }
+    else
+    {
+        for (i=0; i<4; i++)
+            data[data_len+i+offset] = hash.bytes[i];
+    }
     return(data_len + 4 + offset);
 }
 
@@ -2219,7 +2227,7 @@ int32_t bitcoin_wif2priv(char *symbol,uint8_t wiftaddr,uint8_t *addrtypep,bits25
         }*/
         hash = bits256_calcaddrhash(symbol,ptr,len - 4);
         *addrtypep = (wiftaddr == 0) ? *ptr : ptr[1];
-        if ( (ptr[len - 4]&0xff) == hash.bytes[31] && (ptr[len - 3]&0xff) == hash.bytes[30] &&(ptr[len - 2]&0xff) == hash.bytes[29] && (ptr[len - 1]&0xff) == hash.bytes[28] )
+        if ( strcmp(symbol,"GRS") != 0 && (ptr[len - 4]&0xff) == hash.bytes[31] && (ptr[len - 3]&0xff) == hash.bytes[30] &&(ptr[len - 2]&0xff) == hash.bytes[29] && (ptr[len - 1]&0xff) == hash.bytes[28] )
         {
             //int32_t i; for (i=0; i<len; i++)
             //    printf("%02x ",ptr[i]);
@@ -2227,6 +2235,8 @@ int32_t bitcoin_wif2priv(char *symbol,uint8_t wiftaddr,uint8_t *addrtypep,bits25
             //printf("wifstr.(%s) valid len.%d\n",wifstr,len);
             return(32);
         }
+        else if ( strcmp(symbol,"GRS") == 0 && (ptr[len - 4]&0xff) == hash.bytes[0] && (ptr[len - 3]&0xff) == hash.bytes[1] &&(ptr[len - 2]&0xff) == hash.bytes[2] && (ptr[len - 1]&0xff) == hash.bytes[3] )
+            return(32);
         else if ( 0 ) // gets errors when len is 37
         {
             int32_t i; for (i=0; i<len; i++)
@@ -2266,7 +2276,7 @@ int32_t bitcoin_priv2wif(char *symbol,uint8_t wiftaddr,char *wifstr,bits256 priv
     }
     memcpy(data+offset,privkey.bytes,len);
     data[offset + len++] = 1;
-    len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
+    len = base58encode_checkbuf(symbol,wiftaddr,addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
     {
         char str[65]; printf("error making wif from %s\n",bits256_str(str,privkey));
@@ -2289,7 +2299,7 @@ int32_t bitcoin_priv2wiflong(char *symbol,uint8_t wiftaddr,char *wifstr,bits256 
     uint8_t data[128]; int32_t offset,len = 32;
     offset = 1 + (wiftaddr != 0);
     memcpy(data+offset,privkey.bytes,sizeof(privkey));
-    len = base58encode_checkbuf(wiftaddr,addrtype,data,len);
+    len = base58encode_checkbuf(symbol,wiftaddr,addrtype,data,len);
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
         return(-1);
     if ( 0 )
