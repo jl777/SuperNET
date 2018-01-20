@@ -989,7 +989,7 @@ int64_t LP_hodlcoin_interest(int32_t coinheight,int32_t utxoheight,bits256 txid,
         if ( htdiff > 16830 )
             htdiff = 16830;
         minutes = (htdiff * 154) / 60;
-        interest = ((nValue * minutes) / 10512000);
+        interest = ((nValue * minutes) / 10743920);
     }
     return(interest);
 }
