@@ -980,6 +980,20 @@ cJSON *LP_inputjson(bits256 txid,int32_t vout,char *spendscriptstr)
     return(item);
 }
 
+int64_t LP_hodlcoin_interest(int32_t coinheight,int32_t utxoheight,bits256 txid,int64_t nValue)
+{
+    int64_t interest = 0; int32_t minutes,htdiff;
+    if ( coinheight > utxoheight )
+    {
+        htdiff = (coinheight - utxoheight);
+        if ( htdiff > 16830 )
+            htdiff = 16830;
+        minutes = (htdiff * 154) / 60;
+        interest = ((nValue * minutes) / 10512000);
+    }
+    return(interest);
+}
+
 uint64_t _komodo_interestnew(uint64_t nValue,uint32_t nLockTime,uint32_t tiptime)
 {
     int32_t minutes; uint64_t interest = 0;
@@ -1141,6 +1155,14 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
             {
                 interestsum += interest;
                 char str[65]; printf("%s/%d %.8f interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
+            }
+        }
+        else if ( strcmp(coin->symbol,"HODLC") == 0 )
+        {
+            if ( (interest= LP_hodlcoin_interest(coin->height,up->U.height,up->U.txid,up->U.value)) > 0 )
+            {
+                interestsum += interest;
+                char str[65]; printf("%s/%d %.8f hodl interest %.8f -> sum %.8f\n",bits256_str(str,up->U.txid),up->U.vout,dstr(up->U.value),dstr(interest),dstr(interestsum));
             }
         }
         printf("numunspents.%d vini.%d value %.8f, total %.8f remains %.8f interest %.8f sum %.8f %s/v%d\n",numunspents,n,dstr(up->U.value),dstr(total),dstr(remains),dstr(interest),dstr(interestsum),bits256_str(str,up->U.txid),up->U.vout);
