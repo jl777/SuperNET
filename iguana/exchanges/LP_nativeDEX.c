@@ -710,6 +710,78 @@ int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int
     return(nonz);
 }
 
+int my_strncasecmp(const char *s1,const char *s2,size_t n)
+{
+    size_t i = 0;
+    while ( i < n )
+    {
+        char c1 = s1[i];
+        char c2 = s2[i];
+        if ( c1 >= 'A' && c1 <= 'Z')
+            c1 = (c1 - 'A') + 'a';
+        if ( c2 >= 'A' && c2 <= 'Z')
+            c2 = (c2 - 'A') + 'a';
+        if ( c1 < c2 )
+            return(-1);
+        if ( c1 > c2 )
+            return(1);
+        if ( c1 == 0 )
+            return(0);
+        ++i;
+    }
+    return(0);
+}
+
+void bech32_tests()
+{
+    //char *test = "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs";
+    //char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
+    char *test = "bitcoincash:qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy";
+    //char *test = "prefix:x64nx6hz";
+    uint8_t data[82],data2[64],rmd160[21],addrtype; char rebuild[92],hrp[84]; int32_t data_len,data_len2; int32_t i;
+    if ( bech32_decode(hrp,data,&data_len,test) == 0 )
+    {
+        printf("bech32_decode fails: '%s'\n",test);
+    }
+    else
+    {
+        bitcoin_addr2rmd160("BCH",0,&addrtype,rmd160,"qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy");
+        for (i=0; i<20; i++)
+            printf("%02x",rmd160[i]);
+        printf("addr2rmd160 %d\n",addrtype);
+        data_len2 = 0;
+        if ( bech32_convert_bits(data2,&data_len2,8,data,data_len,5,0) == 0 )
+            printf("error converting data5\n");
+        for (i=0; i<data_len2; i++)
+            printf("%02x",data2[i]);
+        printf(" compacted 5's -> %d\n",data_len2);
+        bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160+1,"1KXrWXciRDZUpQwQmuM1DbwsKDLYAYsVLR");
+        for (i=0; i<data_len; i++)
+            printf("%02x",data[i]);
+        printf(" datalen.%d <- %s (%s) -> ",(int32_t)data_len,test,"1KXrWXciRDZUpQwQmuM1DbwsKDLYAYsVLR");
+        for (i=0; i<20; i++)
+            printf("%02x",rmd160[i+1]);
+        printf("\n");
+    }
+    data_len2 = 0;
+    rmd160[0] = (0 << 3);
+    bech32_convert_bits(data2,&data_len2,5,rmd160,21,8,1);
+    for (i=0; i<data_len2; i++)
+        printf("%02x",data2[i]);
+    printf(" converted bits.%d\n",(int32_t)data_len2);
+    if ( bech32_encode(rebuild,hrp,data2,data_len2) == 0 )
+    {
+        for (i=0; i<data_len; i++)
+            printf("%02x",data[i]);
+        printf(" bech32_encode fails: '%s' -> hrp.(%s) datalen.%d\n",test,hrp,(int32_t)data_len);
+    }
+    if ( my_strncasecmp(rebuild,test,92))
+    {
+        printf("bech32_encode produces incorrect result: '%s'\n",test);
+    }
+    printf("end of bech32 tests\n");
+}
+
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
     int32_t i,n,notarized; cJSON *item; char *symbol; struct iguana_info *coin;
@@ -752,6 +824,10 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     else LP_unspents_load(coin->symbol,coin->smartaddr);
                     if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
                         coin->txfee = LP_MIN_TXFEE;
+                    if ( 0 && strcmp(coin->symbol,"BCH") == 0 )
+                    {
+                        bech32_tests();
+                    }
                 }
             }
         }
@@ -911,7 +987,7 @@ void queue_loop(void *ctx)
                         }
                         if ( (json= cJSON_Parse((char *)ptr->msg)) != 0 )
                         {
-                            if ( ptr->msglen < sizeof(linebuf) )
+                            if ( 1 && ptr->msglen < sizeof(linebuf) )
                             {
                                 if ( (k= MMJSON_encode(linebuf,(char *)ptr->msg)) > 0 )
                                 {
@@ -1207,10 +1283,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     LP_initcoins(ctx,pubsock,coinsjson);
     G.waiting = 1;
     LP_passphrase_init(passphrase,jstr(argjson,"gui"));
-    //char coinaddr[64]; bits256 zero;
-    //bitcoin_address(coinaddr,0,60,G.LP_myrmd160,20);
-    //memset(zero.bytes,0,sizeof(zero));
-    //LP_instantdex_depositadd(coinaddr,zero);
 #ifndef FROM_JS
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {
