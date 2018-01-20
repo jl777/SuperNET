@@ -2081,7 +2081,7 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
         {
             int32_t i;
             if ( len > 20 )
-                hash = bits256_calcaddrhash(0,buf,len);
+                hash = bits256_calcaddrhash(symbol,buf,len);
             for (i=0; i<len; i++)
                 printf("%02x ",hash.bytes[i]);
             char str[65]; printf("\naddrtype.%d taddr.%02x checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",*addrtypep,taddr,coinaddr,len,buf[len-1]&0xff,buf[len-2]&0xff,buf[len-3]&0xff,buf[len-4]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
