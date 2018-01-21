@@ -746,10 +746,12 @@ void bech32_tests()
     }
     else
     {
-        bitcoin_addr2rmd160("BCH",0,&addrtype,rmd160,"qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy");
+        bitcoin_addr2rmd160("BCH",0,&addrtype,rmd160,"pq4p38fll9uuh2mzkesqhmgt66du4u0zzy92jchqqa");
+        bitcoin_address("BTC",rebuild,0,5,rmd160,20);
         for (i=0; i<20; i++)
             printf("%02x",rmd160[i]);
-        printf("addr2rmd160 %d\n",addrtype);
+        printf("addr2rmd160 %d -> %s\n",addrtype,rebuild);
+        
         data_len2 = 0;
         if ( bech32_convert_bits(data2,&data_len2,8,data,data_len,5,0) == 0 )
             printf("error converting data5\n");
