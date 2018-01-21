@@ -767,7 +767,7 @@ void bech32_tests()
         printf("\n");
     }
     data_len2 = 0;
-    rmd160[0] = (0 << 3);
+    rmd160[0] = (1 << 3);
     bech32_convert_bits(data2,&data_len2,5,rmd160,21,8,1);
     for (i=0; i<data_len2; i++)
         printf("%02x",data2[i]);
@@ -780,7 +780,7 @@ void bech32_tests()
     }
     if ( my_strncasecmp(rebuild,test,92))
     {
-        printf("bech32_encode produces incorrect result: '%s'\n",test);
+        printf("bech32_encode produces incorrect result: '%s' vs (%s)\n",test,rebuild);
     }
     printf("end of bech32 tests\n");
 }
