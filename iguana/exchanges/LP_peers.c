@@ -140,10 +140,10 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     pushsock = -1;
                     printf("error connecting to push.(%s)\n",pushaddr);
                 }
-            } else printf("%s pushport.%u subport.%u pushsock.%d\n",ipaddr,pushport,subport,pushsock);
+            } else printf("%s pushport.%u subport.%u pushsock.%d isLP.%d\n",ipaddr,pushport,subport,pushsock,isLP);
             if ( peer->pushsock >= 0 && peer->subsock >= 0 )
             {
-                printf("add peer %s isLP.%d\n",peer->ipaddr,peer->isLP);
+                //printf("add peer %s isLP.%d\n",peer->ipaddr,peer->isLP);
                 portable_mutex_lock(&LP_peermutex);
                 HASH_ADD(hh,LP_peerinfos,ip_port,sizeof(peer->ip_port),peer);
                 if ( mypeer != 0 )

@@ -860,7 +860,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
             {
                 LP_addpeer(mypeer,pubsock,default_LPnodes[i],myport,pushport,subport,0,G.LP_sessionid);
             }
-        } else LP_addpeer(mypeer,pubsock,seednode,myport,pushport,subport,0,G.LP_sessionid);
+        } else LP_addpeer(mypeer,pubsock,seednode,myport,pushport,subport,1,G.LP_sessionid);
     }
     else
     {
@@ -881,7 +881,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
                 //issue_LP_getpeers(default_LPnodes[i],myport);
                 //LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport);
             }
-        } else LP_addpeer(mypeer,pubsock,seednode,myport,pushport,subport,0,G.LP_sessionid);
+        } else LP_addpeer(mypeer,pubsock,seednode,myport,pushport,subport,1,G.LP_sessionid);
     }
 }
 
