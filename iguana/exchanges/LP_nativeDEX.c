@@ -1096,7 +1096,7 @@ void LP_reserved_msgs(void *ignore)
                 else if ( num_Reserved_msgs[0] > 0 )
                 {
                     num_Reserved_msgs[0]--;
-printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
+//printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
                     LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
                     Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
                 }
@@ -1255,7 +1255,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                     nn_close(pubsock), pubsock = -1;
             }
         } else printf("error getting pubsock %d\n",pubsock);
-        printf(">>>>>>>>> myipaddr.(%s) (%s) pullsock.%d valid.%d pubbindaddr.%s\n",bindaddr,subaddr,pubsock,valid,bindaddr);
+        printf(">>>>>>>>> myipaddr.(%s) (%s) pullsock.%d valid.%d pubbindaddr.%s pubsock.%d\n",bindaddr,subaddr,pubsock,valid,bindaddr,pubsock);
         LP_mypubsock = pubsock;
     }
     printf("got %s, initpeers\n",myipaddr);

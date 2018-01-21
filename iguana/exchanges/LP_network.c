@@ -156,7 +156,7 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
     memcpy(ptr->msg,msg,msglen); // sizeof(bits256) at the end all zeroes
     DL_APPEND(LP_Q,ptr);
     LP_Qenqueued++;
-    //printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
+    printf("Q.%p: peerind.%d msglen.%d sock.%d\n",ptr,peerind,msglen,sock);
 }
 
 uint32_t _LP_magic_check(bits256 hash,bits256 magic)
@@ -307,7 +307,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
 #ifdef FROM_MARKETMAKER
     if ( G.LP_IAMLP == 0 )
 #else
-    if ( IAMLP == 0 )
+    if ( IAMLP == 0 || pubsock < 0 )
 #endif
     {
         free(msg);
