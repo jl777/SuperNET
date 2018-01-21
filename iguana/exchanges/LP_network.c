@@ -304,6 +304,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
     msglen = (int32_t)strlen((char *)msg) + 1;
     if ( crc32 == 0 )
         crc32 = calc_crc32(0,&msg[2],msglen - 2);
+    printf("crc32.%x IAMLP.%d pubsock.%d\n",crc32,G.LP_IAMLP,pubsock);
 #ifdef FROM_MARKETMAKER
     if ( G.LP_IAMLP == 0 )
 #else

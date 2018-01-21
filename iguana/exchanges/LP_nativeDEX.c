@@ -1258,10 +1258,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf(">>>>>>>>> myipaddr.(%s) (%s) valid.%d pubbindaddr.%s pubsock.%d\n",bindaddr,subaddr,valid,bindaddr,pubsock);
         LP_mypubsock = pubsock;
     }
-    printf("got %s, initpeers\n",myipaddr);
+    printf("got %s, initpeers. LP_mypubsock.%d\n",myipaddr,LP_mypubsock);
     LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),mypullport,mypubport);
     RPC_port = myport;
-    printf("get public socket\n");
     LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     strcpy(LP_publicaddr,pushaddr);
     LP_publicport = mypullport;
