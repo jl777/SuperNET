@@ -4386,6 +4386,8 @@ bits256 mpz_to_bits256(mpz_t bn)
     return(x);
 }
 
+extern int32_t zeroval();
+
 int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 {
     uint32_t zeroes,be_sz=0; size_t count; const char *p,*p1; mpz_t bn58,bn; int32_t nonz=0;
@@ -4404,6 +4406,7 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
             {
                 printf("bitcoin_base58decode error: p %02x != 0x00\n",*p);
                 mpz_clear(bn), mpz_clear(bn58);
+                printf("death.%d\n",1/zeroval());
                 return(-1);
             }
             break;

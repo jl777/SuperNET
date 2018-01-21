@@ -2052,7 +2052,7 @@ bits256 bits256_calcaddrhash(char *symbol,uint8_t *serialized,int32_t  len)
 int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
 {
     bits256 hash; uint8_t *buf,_buf[26],data5[128],rmd21[21]; char prefixaddr[64],hrp[64]; int32_t len,len5,offset;
-    if ( strcmp(symbol,"BCH") == 0 && strlen(coinaddr) == 42 )
+    if ( strcmp(symbol,"BCH") == 0 )//&& strlen(coinaddr) == 42 )
     {
         strcpy(prefixaddr,"bitcoincash:");
         strcat(prefixaddr,coinaddr);
