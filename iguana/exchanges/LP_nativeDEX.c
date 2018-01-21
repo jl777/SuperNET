@@ -998,11 +998,13 @@ void queue_loop(void *ctx)
                                         printf("%d LP_send mmjson sent %d instead of %d\n",n,sentbytes,k);
                                     else flag++;
                                 }
+                                printf("k.%d SEND.(%s)\n",k,(char *)ptr->msg);
                             }
                             free_json(json);
                         }
                         if ( flag == 0 )
                         {
+                            printf("len.%d SEND.(%s)\n",ptr->msglen,(char *)ptr->msg);
                             if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                                 printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
                             else flag++;
