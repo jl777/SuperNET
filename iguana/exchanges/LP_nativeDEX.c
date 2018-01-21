@@ -365,7 +365,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             ptr = 0;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-                printf("%s nn_recv.%d\n",typestr,recvlen);
+                //printf("%s nn_recv.%d\n",typestr,recvlen);
                 decodestr = 0;
                 if ( recvlen > 32768 )
                 {
@@ -997,13 +997,13 @@ void queue_loop(void *ctx)
                                         printf("%d LP_send mmjson sent %d instead of %d\n",n,sentbytes,k);
                                     else flag++;
                                 }
-                                printf("k.%d SEND.(%s) sock.%d\n",k,(char *)ptr->msg,ptr->sock);
+                                //printf("k.%d SEND.(%s) sock.%d\n",k,(char *)ptr->msg,ptr->sock);
                             }
                             free_json(json);
                         }
                         if ( flag == 0 )
                         {
-                            printf("len.%d SEND.(%s) sock.%d\n",ptr->msglen,(char *)ptr->msg,ptr->sock);
+                            //printf("len.%d SEND.(%s) sock.%d\n",ptr->msglen,(char *)ptr->msg,ptr->sock);
                             if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                                 printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
                             else flag++;
