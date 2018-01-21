@@ -365,6 +365,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             ptr = 0;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
+                printf("nn_recv.%d\n",recvlen);
                 decodestr = 0;
                 if ( recvlen > 32768 )
                 {
@@ -383,7 +384,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                                 msg = decodestr;
                                 msglen = (int32_t)strlen(decodestr) + 1;
                             }
-                            printf("decoded.(%s)\n",decodestr);
+                            //printf("decoded.(%s)\n",decodestr);
                         } else printf("couldnt decode linebuf[%d]\n",recvlen);
                     }
                     methodstr[0] = 0;
@@ -440,13 +441,13 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
 
 int32_t LP_nanomsg_recvs(void *ctx)
 {
-    int32_t nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp;
+    int32_t n=0,nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp;
     if ( (origipaddr= LP_myipaddr) == 0 )
         origipaddr = "127.0.0.1";
     //portable_mutex_lock(&LP_nanorecvsmutex);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
-        if ( peer->errors >= LP_MAXPEER_ERRORS )
+        if ( n++ > 0 && peer->errors >= LP_MAXPEER_ERRORS )
         {
             if ( (LP_rand() % 10000) == 0 )
                 peer->errors--;
