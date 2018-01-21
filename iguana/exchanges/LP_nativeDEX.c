@@ -387,7 +387,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                         } else printf("couldnt decode linebuf[%d]\n",recvlen);
                     }
                     methodstr[0] = 0;
-                    //printf("%s.(%s)\n",typestr,(char *)ptr);
+printf("%s.(%s)\n",typestr,(char *)ptr);
                     if ( recvjson != 0 )
                     {
                         safecopy(LP_methodstr,jstr(recvjson,"method"),sizeof(LP_methodstr));
@@ -1095,7 +1095,7 @@ void LP_reserved_msgs(void *ignore)
                 else if ( num_Reserved_msgs[0] > 0 )
                 {
                     num_Reserved_msgs[0]--;
-//printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
+printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
                     LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
                     Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
                 }
