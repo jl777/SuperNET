@@ -383,11 +383,10 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                                 msg = decodestr;
                                 msglen = (int32_t)strlen(decodestr) + 1;
                             }
-                            //printf("decoded.(%s)\n",decodestr);
+                            printf("decoded.(%s)\n",decodestr);
                         } else printf("couldnt decode linebuf[%d]\n",recvlen);
                     }
                     methodstr[0] = 0;
-printf("%s.(%s)\n",typestr,(char *)ptr);
                     if ( recvjson != 0 )
                     {
                         safecopy(LP_methodstr,jstr(recvjson,"method"),sizeof(LP_methodstr));
