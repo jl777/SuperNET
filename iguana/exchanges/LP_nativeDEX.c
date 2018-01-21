@@ -457,8 +457,8 @@ int32_t LP_nanomsg_recvs(void *ctx)
                 continue;
             }
         }
-        //printf("check %s pubsock.%d\n",peer->ipaddr,peer->subsock);
-        nonz += LP_sock_check("PULL",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr,1);
+        printf("check %s subsock.%d\n",peer->ipaddr,peer->subsock);
+        nonz += LP_sock_check("SUB",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr,1);
     }
     /*HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
      {
@@ -469,7 +469,8 @@ int32_t LP_nanomsg_recvs(void *ctx)
      }*/
     if ( LP_mypullsock >= 0 )
     {
-        nonz += LP_sock_check("SUB",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
+        printf("check %s pullsock.%d\n",peer->ipaddr,LP_mypullsock);
+        nonz += LP_sock_check("PULL",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
     }
     //portable_mutex_unlock(&LP_nanorecvsmutex);
     return(nonz);
@@ -998,13 +999,13 @@ void queue_loop(void *ctx)
                                         printf("%d LP_send mmjson sent %d instead of %d\n",n,sentbytes,k);
                                     else flag++;
                                 }
-                                printf("k.%d SEND.(%s)\n",k,(char *)ptr->msg);
+                                printf("k.%d SEND.(%s) sock.%d\n",k,(char *)ptr->msg,ptr->sock);
                             }
                             free_json(json);
                         }
                         if ( flag == 0 )
                         {
-                            printf("len.%d SEND.(%s)\n",ptr->msglen,(char *)ptr->msg);
+                            printf("len.%d SEND.(%s) sock.%d\n",ptr->msglen,(char *)ptr->msg,ptr->sock);
                             if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                                 printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
                             else flag++;
@@ -1256,7 +1257,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                     nn_close(pubsock), pubsock = -1;
             }
         } else printf("error getting pubsock %d\n",pubsock);
-        printf(">>>>>>>>> myipaddr.(%s) (%s) pullsock.%d valid.%d\n",bindaddr,subaddr,pubsock,valid);
+        printf(">>>>>>>>> myipaddr.(%s) (%s) pullsock.%d valid.%d pubbindaddr.%s\n",bindaddr,subaddr,pubsock,valid,bindaddr);
         LP_mypubsock = pubsock;
     }
     printf("got %s, initpeers\n",myipaddr);
