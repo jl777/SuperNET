@@ -825,7 +825,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                     else LP_unspents_load(coin->symbol,coin->smartaddr);
                     if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
                         coin->txfee = LP_MIN_TXFEE;
-                    if ( 0 && strcmp(coin->symbol,"BCH") == 0 )
+                    if ( strcmp(coin->symbol,"BCH") == 0 )
                     {
                         bech32_tests();
                     }
