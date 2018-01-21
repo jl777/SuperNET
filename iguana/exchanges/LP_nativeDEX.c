@@ -738,7 +738,7 @@ void bech32_tests()
     //char *test = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
     //char *test = "bitcoincash:qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy";
     //char *test = "prefix:x64nx6hz";
-    char *test = "bitcoincash:pq4p38fll9uuh2mzkesqhmgt66du4u0zzy92jchqqa";
+    char *test = "bitcoincash:pq4p38fll9uuh2mzkesqhmgt66du4u0zzy92jchqqa"; // 35Xbnq3kLoNsjN67knFewiRc9fqewrCzMW
     uint8_t data[82],data2[64],rmd160[21],addrtype; char rebuild[92],hrp[84]; int32_t data_len,data_len2; int32_t i;
     if ( bech32_decode(hrp,data,&data_len,test) == 0 )
     {
@@ -758,10 +758,10 @@ void bech32_tests()
         for (i=0; i<data_len2; i++)
             printf("%02x",data2[i]);
         printf(" compacted 5's -> %d\n",data_len2);
-        bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160+1,"1KXrWXciRDZUpQwQmuM1DbwsKDLYAYsVLR");
+        bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160+1,"35Xbnq3kLoNsjN67knFewiRc9fqewrCzMW");
         for (i=0; i<data_len; i++)
             printf("%02x",data[i]);
-        printf(" datalen.%d <- %s (%s) -> ",(int32_t)data_len,test,"1KXrWXciRDZUpQwQmuM1DbwsKDLYAYsVLR");
+        printf(" datalen.%d <- %s (%s) -> ",(int32_t)data_len,test,"35Xbnq3kLoNsjN67knFewiRc9fqewrCzMW");
         for (i=0; i<20; i++)
             printf("%02x",rmd160[i+1]);
         printf("\n");
