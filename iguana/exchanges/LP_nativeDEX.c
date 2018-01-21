@@ -365,7 +365,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
             ptr = 0;
             if ( (recvlen= nn_recv(sock,&ptr,NN_MSG,0)) > 0 )
             {
-                printf("nn_recv.%d\n",recvlen);
+                printf("%s nn_recv.%d\n",typestr,recvlen);
                 decodestr = 0;
                 if ( recvlen > 32768 )
                 {
@@ -457,7 +457,6 @@ int32_t LP_nanomsg_recvs(void *ctx)
                 continue;
             }
         }
-        printf("check %s subsock.%d\n",peer->ipaddr,peer->subsock);
         nonz += LP_sock_check("SUB",ctx,origipaddr,LP_mypubsock,peer->subsock,peer->ipaddr,1);
     }
     /*HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
@@ -469,7 +468,6 @@ int32_t LP_nanomsg_recvs(void *ctx)
      }*/
     if ( LP_mypullsock >= 0 )
     {
-        printf("check %s pullsock.%d\n",peer->ipaddr,LP_mypullsock);
         nonz += LP_sock_check("PULL",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
     }
     //portable_mutex_unlock(&LP_nanorecvsmutex);
