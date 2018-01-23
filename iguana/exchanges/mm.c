@@ -211,7 +211,7 @@ int main(int argc, const char * argv[])
             exit(-1);
         } //else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
-        while ( (1) )
+        while ( LP_STOP_RECEIVED == 0 )
             sleep(100000);
     }
 #endif
