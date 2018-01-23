@@ -68,8 +68,11 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     {
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
-            if ( isLP != 0 )
-                peer->isLP = isLP;
+            if ( isLP != 0 && peer->isLP == 0 )
+            {
+                if ( (peer->isLP= isLP) != 0 )
+                    LP_numactive_LP++;
+            }
             /*if ( numpeers > peer->numpeers )
                 peer->numpeers = numpeers;
             if ( numutxos > peer->numutxos )
@@ -77,7 +80,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             if ( peer->sessionid == 0 )
                 peer->sessionid = sessionid;*/
         }
-        else
+        else if ( IAMLP != 0 || LP_numactive_LP < 3 )
         {
             //printf("addpeer (%s:%u) pushport.%u subport.%u\n",ipaddr,port,pushport,subport);
             peer = calloc(1,sizeof(*peer));
@@ -88,7 +91,8 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             strcpy(peer->ipaddr,ipaddr);
             //peer->profitmargin = profitmargin;
             peer->ipbits = ipbits;
-            peer->isLP = isLP;
+            if ( (peer->isLP= isLP) != 0 )
+                LP_numactive_LP++;
             peer->port = port;
             peer->ip_port = ((uint64_t)port << 32) | ipbits;
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
@@ -124,7 +128,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                         if ( valid > 0 )
                         {
                             peer->subsock = subsock;
-                            printf("connected to sub.(%s) subsock.%d valid.%d\n",subaddr,peer->subsock,valid);
+                            printf("connected to sub.(%s) subsock.%d valid.%d numactive.%d\n",subaddr,peer->subsock,valid,LP_numactive_LP);
                         }
                         else
                         {

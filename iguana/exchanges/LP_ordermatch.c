@@ -481,11 +481,9 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,base,rel,zero,jprint(reqjson,0));
-                //if ( IAMLP == 0 )
-                {
-                    sleep(1);
-                    LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
-                }
+                sleep(1);
+                LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+                sleep(1);
                 LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
                 free_json(reqjson);
                 LP_importaddress(qp->destcoin,qp->destaddr);
@@ -910,12 +908,12 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         bits256 zero;
         memset(zero.bytes,0,sizeof(zero));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
-        //if ( IAMLP == 0 )
+        if ( 0 )//if ( IAMLP == 0 )
         {
             sleep(1);
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
         }
-        LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
+        //LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
         free_json(reqjson);
         return(qp);
     } else printf("request processing selected ineligible utxos?\n");
@@ -1016,7 +1014,7 @@ void LP_tradesloop(void *ctx)
     strcpy(LP_tradesloop_stats.name,"LP_tradesloop");
     LP_tradesloop_stats.threshold = 10000;
     sleep(5);
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         LP_millistats_update(&LP_tradesloop_stats);
         nonz = 0;

@@ -213,7 +213,7 @@ int32_t LP_magic_check(uint8_t *msg,int32_t recvlen,char *remoteaddr)
 
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
 {
-    static uint32_t crcs[4096]; static unsigned long dup,total;
+    static uint32_t crcs[16384]; static unsigned long dup,total;
     int32_t i;
     *duplicatep = 0;
     if ( ind < 0 )
@@ -416,7 +416,7 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
     int32_t i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];
     strcpy(LP_psockloop_stats.name,"LP_psockloop");
     LP_psockloop_stats.threshold = 200.;
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         LP_millistats_update(&LP_psockloop_stats);
         now = (uint32_t)time(NULL);

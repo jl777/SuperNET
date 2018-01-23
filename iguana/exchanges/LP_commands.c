@@ -268,7 +268,8 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
         else if ( strcmp(method,"stop") == 0 )
         {
             printf("DEBUG stop\n");
-            exit(0);
+            LP_STOP_RECEIVED = 1;
+            return(clonestr("{\"result\":\"success\"}"));
         }
         else if ( strcmp(method,"millis") == 0 )
         {

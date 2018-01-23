@@ -100,7 +100,7 @@ struct LP_trade *LP_trades,*LP_tradesQ;
 //uint32_t LP_deadman_switch;
 uint16_t LP_fixed_pairport,LP_publicport;
 uint32_t LP_lastnonce,LP_swap_endcritical,LP_swap_critical,LP_RTcount,LP_swapscount;
-int32_t LP_mybussock = -1;
+int32_t LP_STOP_RECEIVED,LP_numactive_LP,LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
 int32_t LP_numfinished,LP_showwif,IAMLP = 0;
@@ -480,7 +480,7 @@ void command_rpcloop(void *ctx)
     int32_t nonz = 0;
     strcpy(command_rpcloop_stats.name,"command_rpcloop");
     command_rpcloop_stats.threshold = 2500.;
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         LP_millistats_update(&command_rpcloop_stats);
         nonz = LP_nanomsg_recvs(ctx);
@@ -515,7 +515,7 @@ void LP_coinsloop(void *_coins)
         strcpy(LP_coinsloop_stats.name,"other coins loop");
         LP_coinsloop_stats.threshold = 5000.;
     }
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         if ( strcmp("BTC",coins) == 0 )
             LP_millistats_update(&LP_coinsloopBTC_stats);
@@ -874,7 +874,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
             //LP_addpeer(mypeer,pubsock,"51.15.86.136",myport,pushport,subport,0,G.LP_sessionid);
             OS_randombytes((void *)&r,sizeof(r));
             //r = 0;
-            for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
+            for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes)&&j<5; j++)
             {
                 i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
                 LP_addpeer(mypeer,pubsock,default_LPnodes[i],myport,pushport,subport,0,G.LP_sessionid);
@@ -891,7 +891,7 @@ void LP_pubkeysloop(void *ctx)
     strcpy(LP_pubkeysloop_stats.name,"LP_pubkeysloop");
     LP_pubkeysloop_stats.threshold = 15000.;
     sleep(10);
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         LP_millistats_update(&LP_pubkeysloop_stats);
         if ( time(NULL) > lasttime+LP_ORDERBOOK_DURATION*0.5 )
@@ -910,7 +910,7 @@ void LP_swapsloop(void *ctx)
     strcpy(LP_swapsloop_stats.name,"LP_swapsloop");
     LP_swapsloop_stats.threshold = 605000.;
     sleep(50);
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         LP_millistats_update(&LP_swapsloop_stats);
         if ( (retstr= basilisk_swapentry(0,0,0)) != 0 )
@@ -924,7 +924,7 @@ void gc_loop(void *ctx)
     uint32_t now; struct LP_address_utxo *up,*utmp; struct rpcrequest_info *req,*rtmp; int32_t flag = 0;
     strcpy(LP_gcloop_stats.name,"gc_loop");
     LP_gcloop_stats.threshold = 11000.;
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         flag = 0;
         LP_millistats_update(&LP_gcloop_stats);
@@ -959,7 +959,7 @@ void queue_loop(void *ctx)
     struct LP_queue *ptr,*tmp; cJSON *json; uint8_t linebuf[32768]; int32_t k,sentbytes,nonz,flag,duplicate,n=0;
     strcpy(queue_loop_stats.name,"queue_loop");
     queue_loop_stats.threshold = 1000.;
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         LP_millistats_update(&queue_loop_stats);
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
@@ -1068,7 +1068,7 @@ void LP_reserved_msgs(void *ignore)
     memset(zero.bytes,0,sizeof(zero));
     strcpy(LP_reserved_msgs_stats.name,"LP_reserved_msgs");
     LP_reserved_msgs_stats.threshold = 150.;
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         nonz = 0;
         LP_millistats_update(&LP_reserved_msgs_stats);
@@ -1362,7 +1362,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     int32_t nonz;
     LP_statslog_parse();
     bitcoind_RPC_inittime = 0;
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         nonz = 0;
         G.waiting = 1;
@@ -1379,6 +1379,8 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             usleep(1000);
     }
 #endif
+    sleep(5);
+    printf("marketmaker exiting in 5 seconds\n");
 }
 
 #ifdef FROM_JS

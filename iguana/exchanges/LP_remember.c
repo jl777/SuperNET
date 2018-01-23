@@ -489,7 +489,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     item = cJSON_CreateObject();
     if ( LP_swap_endcritical < LP_swap_critical )
     {
-        jaddstr(item,"warning","swaps in critical section");
+        jaddstr(item,"warning","swaps in critical section, dont exit now");
         jaddnum(item,"critical",LP_swap_critical);
         jaddnum(item,"endcritical",LP_swap_endcritical);
     }

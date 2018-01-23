@@ -771,7 +771,7 @@ void LP_rpc_processreq(void *_ptr)
     spawned--;
 }
 
-extern int32_t IAMLP;
+extern int32_t IAMLP,LP_STOP_RECEIVED;
 //int32_t LP_bindsock_reset,LP_bindsock = -1;
 
 void stats_rpcloop(void *args)
@@ -782,7 +782,7 @@ void stats_rpcloop(void *args)
     printf("Start stats_rpcloop.%u\n",port);
     localhostbits = (uint32_t)calc_ipbits("127.0.0.1");
     //initial_bindsock_reset = LP_bindsock_reset;
-    while ( 1 )//LP_bindsock_reset == initial_bindsock_reset )
+    while ( LP_STOP_RECEIVED == 0 )//LP_bindsock_reset == initial_bindsock_reset )
     {
         //printf("LP_bindsock.%d\n",LP_bindsock);
         if ( bindsock < 0 )
@@ -1196,7 +1196,7 @@ int main(int argc, const char * argv[])
         exit(-1);
     }
     printf("DEX stats running\n");
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         if ( (filestr= stats_update(logfp,STATS_DEST,statefname,komodofile)) != 0 )
         {
