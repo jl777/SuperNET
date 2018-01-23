@@ -113,10 +113,11 @@ struct LP_globals
     //struct LP_utxoinfo  *LP_utxoinfos[2],*LP_utxoinfos2[2];
     bits256 LP_mypub25519,LP_privkey,LP_mypriv25519,LP_passhash;
     uint64_t LP_skipstatus[10000];
+    uint16_t netid;
     uint8_t LP_myrmd160[20],LP_pubsecp[33];
     uint32_t LP_sessionid,counter;
     int32_t LP_IAMLP,LP_pendingswaps,USERPASS_COUNTER,LP_numprivkeys,initializing,waiting,LP_numskips;
-    char USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[16],LP_NXTaddr[64];
+    char seednode[64],USERPASS[65],USERPASS_WIFSTR[64],LP_myrmd160str[41],gui[16],LP_NXTaddr[64];
     struct LP_privkey LP_privkeys[100];
 } G;
 
@@ -1286,7 +1287,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
     LP_initcoins(ctx,pubsock,coinsjson);
     G.waiting = 1;
-    LP_passphrase_init(passphrase,jstr(argjson,"gui"));
+    LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {

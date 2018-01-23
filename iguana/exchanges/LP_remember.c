@@ -1202,7 +1202,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         {
             jaddstr(item,"method","tradestatus");
             jaddnum(item,"finishtime",rswap.finishtime);
-            jaddstr(item,"gui",G.gui);
+            if ( jobj(item,"gui") == 0 )
+                jaddstr(item,"gui",G.gui);
             //jaddbits256(item,"srchash",rswap.Q.srchash);
             //jaddbits256(item,"desthash",rswap.desthash);
             itemstr = jprint(item,0);

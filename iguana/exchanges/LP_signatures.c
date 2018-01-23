@@ -42,7 +42,8 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
 cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 {
     double price; cJSON *retjson = cJSON_CreateObject();
-    jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
+    if ( jobj(retjson,"gui") == 0 )
+        jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jadd64bits(retjson,"aliceid",qp->aliceid);
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);

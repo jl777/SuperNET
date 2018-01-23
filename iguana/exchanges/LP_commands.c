@@ -123,7 +123,7 @@ sendrawtransaction(coin, signedtx)\n\
 swapstatus(pending=0)\n\
 swapstatus(coin, limit=10)\n\
 swapstatus(base, rel, limit=10)\n\
-swapstatus(requestid, quoteid)\n\
+swapstatus(requestid, quoteid, pending=0)\n\
 recentswaps(limit=3)\n\
 notarizations(coin)\n\
 public API:\n \
@@ -131,7 +131,7 @@ getcoins()\n\
 getcoin(coin)\n\
 portfolio()\n\
 getpeers()\n\
-passphrase(passphrase, gui)\n\
+passphrase(passphrase, gui, netid=0, seednode="")\n\
 listunspent(coin, address)\n\
 setconfirms(coin, numconfirms, maxconfirms=6)\n\
 trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
@@ -202,7 +202,7 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
         {
             char coinaddr[64],pub33str[67];
             G.USERPASS_COUNTER = 1;
-            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
+            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode")) < 0 )
                 return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
             {
                 retjson = cJSON_CreateObject();
@@ -571,7 +571,7 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
                     {
                         ptr->privkeydepth = 0;
                         LP_address_utxo_reset(ptr);
-                        LP_passphrase_init(jstr(argjson,"passphrase"),G.gui);
+                        LP_passphrase_init(jstr(argjson,"passphrase"),G.gui,G.netid,G.seednode);
                     }
                     if ( bits256_nonz(G.LP_privkey) != 0 )
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
