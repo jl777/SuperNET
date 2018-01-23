@@ -1381,6 +1381,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 #endif
     printf("marketmaker exiting in 5 seconds\n");
     sleep(5);
+    exit(0);
 }
 
 #ifdef FROM_JS
