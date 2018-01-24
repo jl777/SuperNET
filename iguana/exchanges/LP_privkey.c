@@ -482,8 +482,8 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 for (i=0; i<DCTSIZE2; i++)
                 {
                     val = row_ptrs[compnum][0][blocknum][i];
-                    if ( val == 0 || val == 1 )
-                    //if ( val < -limit || val > limit )
+                    //if ( val == 0 || val == 1 )
+                    if ( val < -8 || val > 8 )
                     {
                         if ( (*capacityp) < required )
                         {
@@ -518,18 +518,17 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 for (blocknum=0; blocknum<width_in_blocks[compnum]; blocknum++)
                 {
                     //printf("\n\nComponent: %i, Row:%i, Column: %i\n", compnum, rownum, blocknum);
-                    for (i=0; i<DCTSIZE2; i++)
+                    for (i=0; i<DCTSIZE2&&emit<required; i++)
                     {
                         val = coef_buffers[compnum][rownum][blocknum][i];
-                       // if ( val < -limit || val > limit )
-                        if ( val == 0 || val == 1 )
+                        if ( val < -8 || val > 8 )
                         {
                             val &= ~1;
-                            if ( (emit < required && GETBIT(data,emit) != 0) || (emit >= required && (rand() & 1) != 0) )
+                            if (GETBIT(data,emit) != 0 )//|| (emit >= required && (rand() & 1) != 0) )
                                 val |= 1;
+                            coef_buffers[compnum][rownum][blocknum][i] = val;
                             emit++;
                         }
-                        coef_buffers[compnum][rownum][blocknum][i] = val;
                         //printf("%i,", coef_buffers[compnum][rownum][blocknum][i]);
                     }
                 }
