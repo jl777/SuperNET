@@ -440,6 +440,8 @@ int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t 
     msglen += crypto_box_NONCEBYTES;
     msg = encoded;
     msglen += len;
+    encoded[0] = msglen & 0xff;
+    encoded[1] = (msglen >> 8) & 0xff;
     int32_t i; for (i=0; i<msglen; i++)
         printf("%02x",encoded[i]);
     printf(" encoded.%d\n",i);
@@ -454,6 +456,9 @@ uint8_t *JPG_decrypt(int32_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTED
     pubkey = acct777_pubkey(privkey);
     msglen = ((int32_t)encoded[1] << 8) | encoded[0];
     ind = ((int32_t)encoded[3] << 8) | encoded[2];
+    int32_t i; for (i=0; i<128; i++)
+        printf("%02x",encoded[i]);
+    printf(" encoded.%d\n",i);
     nonce = &encoded[len];
     cipher = &encoded[len + crypto_box_NONCEBYTES];
     cipherlen = msglen - (len + crypto_box_NONCEBYTES);
