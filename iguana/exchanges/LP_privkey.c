@@ -426,7 +426,7 @@ void LP_privkey_tests()
 
 int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t *msg,int32_t msglen,bits256 privkey)
 {
-    bits256 pubkey; int32_t len = 2; uint8_t space[JPG_ENCRYPTED_MAXSIZE],*nonce,*cipher; uint32_t crc32=0;
+    bits256 pubkey; int32_t len = 0; uint8_t space[JPG_ENCRYPTED_MAXSIZE],*nonce,*cipher;
     pubkey = acct777_pubkey(privkey);
     encoded[len++] = msglen & 0xff;
     encoded[len++] = (msglen >> 8) & 0xff;
@@ -437,9 +437,6 @@ int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t 
     cipher = &encoded[len + crypto_box_NONCEBYTES];
     msglen = _SuperNET_cipher(nonce,&encoded[len + crypto_box_NONCEBYTES],msg,msglen,pubkey,privkey,space);
     msglen += crypto_box_NONCEBYTES;
-    crc32 = calc_crc32(0,&encoded[2],msglen + len - 2);
-    encoded[0] = crc32 & 0xff;
-    encoded[1] = (crc32 >> 8) & 0xff;
     msg = encoded;
     msglen += len;
     return(msglen);
@@ -447,29 +444,24 @@ int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t 
 
 uint8_t *JPG_decrypt(int32_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],uint8_t *encoded,bits256 privkey)
 {
-    bits256 pubkey; uint8_t *extracted=0,*nonce,*cipher; uint32_t crc32; uint16_t msglen,ind,crc16; int32_t cipherlen,len = 6;
+    bits256 pubkey; uint8_t *extracted=0,*nonce,*cipher; uint16_t msglen,ind; int32_t cipherlen,len = 4;
     *recvlenp = 0;
     *indp = -1;
     pubkey = acct777_pubkey(privkey);
-    crc16 = ((int32_t)encoded[1] << 8) | encoded[0];
-    msglen = ((int32_t)encoded[3] << 8) | encoded[2];
-    ind = ((int32_t)encoded[5] << 8) | encoded[4];
-    crc32 = calc_crc32(0,&encoded[2],msglen + len - 2);
-    if ( (uint16_t)crc32 == crc16 )
+    msglen = ((int32_t)encoded[1] << 8) | encoded[0];
+    ind = ((int32_t)encoded[3] << 8) | encoded[2];
+    nonce = &encoded[len];
+    cipher = &encoded[len + crypto_box_NONCEBYTES];
+    cipherlen = msglen - (len + crypto_box_NONCEBYTES);
+    if ( cipherlen > 0 && cipherlen <= JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES )
     {
-        nonce = &encoded[len];
-        cipher = &encoded[len + crypto_box_NONCEBYTES];
-        cipherlen = msglen - (len + crypto_box_NONCEBYTES);
-        if ( cipherlen > 0 && cipherlen <= JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES )
+        if ( (extracted= _SuperNET_decipher(nonce,cipher,space,cipherlen,pubkey,privkey)) != 0 )
         {
-            if ( (extracted= _SuperNET_decipher(nonce,cipher,space,cipherlen,pubkey,privkey)) != 0 )
-            {
-                msglen = (cipherlen - crypto_box_ZEROBYTES);
-                *recvlenp = msglen;
-                *indp = ind;
-            }
-        } else printf("cipher.%d too big for %d\n",cipherlen,JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES);
-    } else printf("JPG_decrypt crc16 mismatch %08x vs %04x\n",crc32,crc16);
+            msglen = (cipherlen - crypto_box_ZEROBYTES);
+            *recvlenp = msglen;
+            *indp = ind;
+        }
+    } else printf("cipher.%d too big for %d\n",cipherlen,JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES);
     return(extracted);
 }
 
@@ -506,8 +498,8 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
             free(space);
         }
     } else data = origdata;
-    if ( power2 < 0 || power2 > 16 )
-        power2 = 4;
+    if ( power2 < 0 || power2 > 30 )
+        power2 = 7;
     limit = 1;
     while ( power2 > 0 )
     {
