@@ -209,7 +209,7 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
     bits256 privkey,cmpkey; uint8_t wiftype; char cmpstr[128],cmpstr2[128]; int32_t i,len,n,a,A;
     if ( (len= (int32_t)strlen(wifstr)) < 50 || len > 54 )
     {
-        printf("len.%d is wrong for wif %s\n",len,wifstr);
+        //printf("len.%d is wrong for wif %s\n",len,wifstr);
         return(0);
     }
     memset(privkey.bytes,0,sizeof(privkey));
