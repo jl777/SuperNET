@@ -443,9 +443,11 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
         limit <<= 1;
         power2--;
     }
-    if ((input_file = fopen(inputfname, READ_BINARY)) == NULL) {
+    if ((input_file = fopen(inputfname, READ_BINARY)) == NULL)
+    {
         fprintf(stderr, "Can't open %s\n", inputfname);
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return(-1);
     }
     // Initialize the JPEG compression and decompression objects with default error handling
     inputinfo.err = jpeg_std_error(&jerr);
@@ -569,7 +571,6 @@ char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *
     if ( srcfile != 0 && srcfile[0] != 0 )
     {
         retjson = cJSON_CreateObject();
-        jaddstr(retjson,"result","success");
         if ( datastr != 0 && datastr[0] != 0 )
         {
             if ( (len= is_hexstr(datastr,0)) > 0 )
@@ -581,14 +582,19 @@ char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *
             }
         }
         if ( required > 0 )
-            decoded = calloc(1,len);
-        modified = LP_jpg_process(&capacity,srcfile,destfile,decoded,data,required,power2,passphrase);
-        jaddnum(retjson,"modifiedrows",modified);
-        if ( modified != 0 )
-            jaddstr(retjson,"outputfile",destfile);
-        jaddnum(retjson,"power2",power2);
-        jaddnum(retjson,"capacity",capacity);
-        jaddnum(retjson,"required",required);
+            decoded = calloc(1,len+required);
+        if ( (modified= LP_jpg_process(&capacity,srcfile,destfile,decoded,data,required,power2,passphrase)) < 0 )
+            jaddstr(retjson,"error","file not found");
+        else
+        {
+            jaddstr(retjson,"result","success");
+            jaddnum(retjson,"modifiedrows",modified);
+            if ( modified != 0 )
+                jaddstr(retjson,"outputfile",destfile);
+            jaddnum(retjson,"power2",power2);
+            jaddnum(retjson,"capacity",capacity);
+            jaddnum(retjson,"required",required);
+        }
         if ( decoded != 0 )
         {
             decodedstr = calloc(1,len*2+1);
