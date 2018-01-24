@@ -488,7 +488,6 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                         {
                             if ( (val & 1) != 0 )
                                 decoded[*capacityp >> 3] |= (1 << (*capacityp&7));
-                            else decoded[(*capacityp) >> 3] &= ~(1 << (*capacityp&7));
                         }
                         (*capacityp)++;
                     }
