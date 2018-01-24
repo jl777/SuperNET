@@ -482,7 +482,8 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 for (i=0; i<DCTSIZE2; i++)
                 {
                     val = row_ptrs[compnum][0][blocknum][i];
-                    if ( val < -limit || val > limit )
+                    if ( val == 0 || val == 1 )
+                    //if ( val < -limit || val > limit )
                     {
                         if ( (*capacityp) < required )
                         {
@@ -498,7 +499,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
             }
         }
     }
-    printf(" capacity %d required.%d power2.%d limit.%d\n",*capacityp,required,power2,limit);
+    //printf(" capacity %d required.%d power2.%d limit.%d\n",*capacityp,required,power2,limit);
     if ( *capacityp > required && outputfname != 0 && outputfname[0] != 0 )
     {
         if ((output_file = fopen(outputfname, WRITE_BINARY)) == NULL) {
@@ -520,7 +521,8 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                     for (i=0; i<DCTSIZE2; i++)
                     {
                         val = coef_buffers[compnum][rownum][blocknum][i];
-                        if ( val < -limit || val > limit )
+                       // if ( val < -limit || val > limit )
+                        if ( val == 0 || val == 1 )
                         {
                             val &= ~1;
                             if ( (emit < required && GETBIT(data,emit) != 0) || (emit >= required && (rand() & 1) != 0) )
