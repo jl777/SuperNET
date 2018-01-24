@@ -483,12 +483,13 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 {
                     val = row_ptrs[compnum][0][blocknum][i];
                     //if ( val < -8 || val > 8 )
-                    if ( val >= 0 && val < 2 )
+                    if ( val == 0 || val == 1 )
                     {
                         if ( (*capacityp) < required )
                         {
                             if ( (val & 1) != 0 )
                                 decoded[(*capacityp) >> 3] |= (1 << ((*capacityp)&7));
+                            printf("%c",(val&1)!=0?'1':'0');
                         }
                         (*capacityp)++;
                     }
@@ -497,7 +498,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
             }
         }
     }
-    printf("capacity %d required.%d power2.%d limit.%d\n",*capacityp,required,power2,limit);
+    printf(" capacity %d required.%d power2.%d limit.%d\n",*capacityp,required,power2,limit);
     if ( *capacityp > required && outputfname != 0 && outputfname[0] != 0 )
     {
         if ((output_file = fopen(outputfname, WRITE_BINARY)) == NULL) {
@@ -520,12 +521,13 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                     {
                         val = coef_buffers[compnum][rownum][blocknum][i];
                         //if ( val < -8 || val > 8 )
-                        if ( val >= 0 && val < 2 )
+                        if ( val == 0 || val == 1 )
                         {
                             val &= ~1;
                             if ( (emit < required && (data[emit >> 3] & (1 << (emit&7))) != 0) || (rand() & 1) != 0 )
                                 val |= 1;
                             emit++;
+                            printf("%c",(val&1)!=0?'1':'0');
                         }
                         coef_buffers[compnum][rownum][blocknum][i] = val;
                         //printf("%i,", coef_buffers[compnum][rownum][blocknum][i]);
@@ -533,9 +535,8 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 }
             }
         }
-        //printf("\n\n");
-        
-        /* Output the new DCT coeffs to a JPEG file */
+        printf(" emit.%d\n",emit);
+        // Output the new DCT coeffs to a JPEG file
         modified = 0;
         for (compnum=0; compnum<num_components; compnum++)
         {
