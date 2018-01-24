@@ -439,7 +439,10 @@ int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t 
     msglen += len;
     encoded[0] = msglen & 0xff;
     encoded[1] = (msglen >> 8) & 0xff;
-    return(msglen);
+    int32_t i; for (i=0; i<msglen; i++)
+        printf("%02x",encoded[i]);
+    printf(" encoded.%d\n",msglen);
+   return(msglen);
 }
 
 uint8_t *JPG_decrypt(uint16_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],uint8_t *encoded,bits256 privkey)
@@ -450,6 +453,9 @@ uint8_t *JPG_decrypt(uint16_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTE
     pubkey = acct777_pubkey(privkey);
     msglen = ((int32_t)encoded[1] << 8) | encoded[0];
     ind = ((int32_t)encoded[3] << 8) | encoded[2];
+    int32_t i; for (i=0; i<64; i++)
+        printf("%02x",encoded[i]);
+    printf(" encoded\n");
     nonce = &encoded[len];
     cipher = &encoded[len + crypto_box_NONCEBYTES];
     cipherlen = msglen - (len + crypto_box_NONCEBYTES);
@@ -499,12 +505,12 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
             {
                 space = calloc(1,JPG_ENCRYPTED_MAXSIZE);
                 if ( (decrypted= JPG_decrypt(&checkind,&recvlen,space,data,privkey)) == 0 || recvlen != origrequired/8 || checkind != *indp || memcmp(decrypted,origdata,origrequired/8) != 0 )
-                    printf("decryption error: checkind.%d vs %d, recvlen.%d vs %d, decrypted.%p\n",checkind,*indp,recvlen,origrequired/8,decrypted);
+                    printf("A decryption error: checkind.%d vs %d, recvlen.%d vs %d, decrypted.%p\n",checkind,*indp,recvlen,origrequired/8,decrypted);
                 else
                 {
                     for (i=0; i<recvlen; i++)
                         printf("%02x",decrypted[i]);
-                    printf(" decrypted.%d ind.%d\n",recvlen,*indp);
+                    printf(" decrypted.%d ind.%d msglen.%d required.%d\n",recvlen,*indp,msglen,required);
                 }
                 free(space);
             }
