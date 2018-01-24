@@ -236,7 +236,7 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
     bitcoin_priv2wif(symbol,0,cmpstr,privkey,wiftype);
     if ( strcmp(cmpstr,wifstr) == 0 )
     {
-        printf("%s is valid wif\n",wifstr);
+        //printf("%s is valid wif\n",wifstr);
         return(1);
     }
     else if ( bits256_nonz(privkey) != 0 )

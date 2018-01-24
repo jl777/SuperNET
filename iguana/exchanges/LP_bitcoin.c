@@ -2219,9 +2219,9 @@ int32_t bitcoin_wif2priv(char *symbol,uint8_t wiftaddr,uint8_t *addrtypep,bits25
         if ( len >= 32+offset )
         {
             memcpy(privkeyp,buf+offset,32);
-            if ( len > 32+offset )
+            /*if ( len > 32+offset )
                 printf("wif %s: extra byte %d len.%d vs %d addrtype.%d\n",wifstr,buf[32+offset],len,32+offset,(wiftaddr == 0) ? buf[0] : buf[1]);
-            else printf("%s is for uncompressed\n",wifstr);
+            else printf("%s is for uncompressed\n",wifstr);*/
         }
         else
         {
