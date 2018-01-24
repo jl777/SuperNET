@@ -98,7 +98,7 @@ struct LP_address_utxo *LP_garbage_collector2;
 struct LP_trade *LP_trades,*LP_tradesQ;
 
 //uint32_t LP_deadman_switch;
-uint16_t LP_fixed_pairport,LP_publicport;
+uint16_t LP_fixed_pairport;//,LP_publicport;
 uint32_t LP_lastnonce,LP_swap_endcritical,LP_swap_critical,LP_RTcount,LP_swapscount;
 int32_t LP_STOP_RECEIVED,LP_numactive_LP;//,LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
@@ -252,7 +252,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
         dup++;
     else uniq++;
     portable_mutex_lock(&LP_commandmutex);
-    if ( (LP_rand() % 10000) == 0 )
+    if ( (LP_rand() % 100000) == 0 )
         printf("%s dup.%d (%u / %u) %.1f%% encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,duplicate,dup,dup+uniq,(double)100*dup/(dup+uniq),encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
     if ( duplicate == 0 )
     {
@@ -1279,9 +1279,9 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),mypullport,mypubport);
     LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     strcpy(LP_publicaddr,pushaddr);
-    LP_publicport = mypullport;
+    //LP_publicport = mypullport;
     //LP_mybussock = LP_coinbus(mybusport);
-    printf("got %s, initpeers. LP_mypubsock.%d/%d myport.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,pubsock,myport,mypullport,mypubport,pushaddr);
+    printf("got %s, initpeers. LP_mypubsock.%d/%d pullsock.%d myport.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,pubsock,LP_mypullsock,myport,mypullport,mypubport,pushaddr);
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )

@@ -738,7 +738,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
         *mypullportp = 0;
         if ( ispaired == 0 )
         {
-            strcpy(publicaddr,"127.0.0.1");
+            sprintf(publicaddr,"127.0.0.1:%u",mypullport);
             return(-1);
         }
         while ( *mypullportp == 0 )
