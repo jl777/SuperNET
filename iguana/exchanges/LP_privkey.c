@@ -227,9 +227,9 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
     }
     if ( n == 0 || A == 0 || a == 0 )
         return(0);
-    if ( A > 5*a || a < 5*A || n < a/20 || n < A/20 ) // unlikely it is a real wif
+    if ( A > 5*a || a < 5*A || a > n*20 || A > n*20 ) // unlikely it is a real wif
     {
-        printf("reject wif %s due to n.%d a.%d A.%d\n",wifstr,n,a,A);
+        printf("reject wif %s due to n.%d a.%d A.%d (%d %d %d %d)\n",wifstr,n,a,A,A > 5*a,a < 5*A,a > n*20,A > n*20);
         return(0);
     }
     bitcoin_wif2priv(symbol,0,&wiftype,&privkey,wifstr);
