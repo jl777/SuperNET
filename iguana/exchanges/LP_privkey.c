@@ -588,7 +588,7 @@ char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *
                 decode_hex(data,len,datastr);
                 required = len * 8;
                 for (i=0; i<required; i++)
-                    printf("%c",'0'+GETBIT(data,i));
+                    printf("%c",'0'+(GETBIT(data,i)!=0));
                 printf(" datastr.%d %s\n",required,datastr);
             }
         }
