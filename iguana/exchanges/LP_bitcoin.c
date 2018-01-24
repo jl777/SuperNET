@@ -2217,24 +2217,17 @@ int32_t bitcoin_wif2priv(char *symbol,uint8_t wiftaddr,uint8_t *addrtypep,bits25
     if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
     {
         if ( len >= 32+offset )
+        {
             memcpy(privkeyp,buf+offset,32);
+            if ( len > 32+offset )
+                printf("wif: extra byte %d len.%d vs %d\n",buf[32+offset],len,32+offset);
+        }
         else
         {
             //printf("wif %s -> buf too short len.%d\n",wifstr,len);
             return(-1);
         }
         ptr = buf;
-        /*if ( len < 38 )
-        {
-            memset(pbuf,0,sizeof(pbuf));
-            memcpy(pbuf,buf,len-4);
-            memcpy(&pbuf[34],&buf[len-4],4);
-            ptr = pbuf;
-            int32_t i; for (i=0; i<38; i++)
-                printf("%02x ",pbuf[i]);
-            printf("pbuf from %d\n",len);
-            len = 38;
-        }*/
         hash = bits256_calcaddrhash(symbol,ptr,len - 4);
         *addrtypep = (wiftaddr == 0) ? *ptr : ptr[1];
         if ( strcmp(symbol,"GRS") != 0 && (ptr[len - 4]&0xff) == hash.bytes[31] && (ptr[len - 3]&0xff) == hash.bytes[30] &&(ptr[len - 2]&0xff) == hash.bytes[29] && (ptr[len - 1]&0xff) == hash.bytes[28] )
