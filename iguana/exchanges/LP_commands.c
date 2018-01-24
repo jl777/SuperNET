@@ -161,7 +161,7 @@ bot_stop(botid)\n\
 bot_pause(botid)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
-jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
+jpg(srcfile, destfile, power2=7, password, data="", required)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
@@ -240,7 +240,7 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
         }
         else if ( strcmp(method,"jpg") == 0 )
         {
-            return(LP_jpg(jstr(argjson,"srcfile"),jstr(argjson,"destfile"),jint(argjson,"power2"),jstr(argjson,"passphrase"),jstr(argjson,"data"),jint(argjson,"required")));
+            return(LP_jpg(jstr(argjson,"srcfile"),jstr(argjson,"destfile"),jint(argjson,"power2"),jstr(argjson,"password"),jstr(argjson,"data"),jint(argjson,"required")));
         }
         /*else if ( strcmp(method,"sendmessage") == 0 )
         {

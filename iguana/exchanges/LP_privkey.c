@@ -482,10 +482,14 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 for (i=0; i<DCTSIZE2; i++)
                 {
                     val = row_ptrs[compnum][0][blocknum][i];
-                    if ( val < -limit || val > limit )
+                    if ( val < -8 || val > 8 )
                     {
-                        if ( decoded != 0 && (val & 1) != 0 && *capacityp < required )
-                            decoded[*capacityp >> 3] |= (1 << (*capacityp & 7));
+                        if ( *capacityp < required )
+                        {
+                            if ( (val & 1) != 0 )
+                                decoded[*capacityp >> 3] |= (1 << (*capacityp&7));
+                            else decoded[(*capacityp) >> 3] &= ~(1 << (*capacityp&7));
+                        }
                         (*capacityp)++;
                     }
                     coef_buffers[compnum][rownum][blocknum][i] = val;
@@ -515,10 +519,10 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                     for (i=0; i<DCTSIZE2; i++)
                     {
                         val = coef_buffers[compnum][rownum][blocknum][i];
-                        if ( val < -limit || val > limit )
+                        if ( val < -8 || val > 8 )
                         {
                             val &= ~1;
-                            if ( (data[emit >> 3] & (1 << (emit&7))) != 0 )
+                            if ( (emit < required && (data[emit >> 3] & (1 << (emit&7))) != 0) || (rand() & 1) != 0 )
                                 val |= 1;
                             emit++;
                         }
