@@ -2281,12 +2281,12 @@ int32_t bitcoin_priv2wif(char *symbol,uint8_t wiftaddr,char *wifstr,bits256 priv
     memcpy(data+offset,privkey.bytes,len);
     data[offset + len++] = 1;
     len = base58encode_checkbuf(symbol,wiftaddr,addrtype,data,len);
-    if ( bitcoin_base58encode(wifstr,data,len+offset) == 0 )
+    if ( bitcoin_base58encode(wifstr,data,len) == 0 ) // skips last byte?
     {
         char str[65]; printf("error making wif from %s\n",bits256_str(str,privkey));
         return(-1);
     }
-    if ( 0 )
+    if ( 1 )
     {
         uint8_t checktype; bits256 checkpriv; char str[65],str2[65];
         if ( bitcoin_wif2priv(symbol,wiftaddr,&checktype,&checkpriv,wifstr) == sizeof(bits256) )
