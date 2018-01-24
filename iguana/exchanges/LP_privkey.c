@@ -525,10 +525,10 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                         if ( val == 0 || val == 1 )
                         {
                             val &= ~1;
-                            if ( (emit < required && GETBIT(data,emit) != 0) || (rand() & 1) != 0 )
+                            if ( (emit < required && GETBIT(data,emit) != 0) || (emit >= required && (rand() & 1) != 0) )
                                 val |= 1;
                             if ( emit < required )
-                                printf("%c",(val&1)!=0?'1':'0');
+                                printf("%d",val-'0');
                             emit++;
                         }
                         coef_buffers[compnum][rownum][blocknum][i] = val;

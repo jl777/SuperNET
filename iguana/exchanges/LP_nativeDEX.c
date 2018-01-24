@@ -1068,7 +1068,7 @@ void LP_reserved_msgs(void *ignore)
     bits256 zero; int32_t flag,nonz; struct nn_pollfd pfd;
     memset(zero.bytes,0,sizeof(zero));
     strcpy(LP_reserved_msgs_stats.name,"LP_reserved_msgs");
-    LP_reserved_msgs_stats.threshold = 150.;
+    LP_reserved_msgs_stats.threshold = 1000.;
     while ( LP_STOP_RECEIVED == 0 )
     {
         nonz = 0;
