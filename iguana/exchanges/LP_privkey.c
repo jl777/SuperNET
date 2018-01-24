@@ -283,7 +283,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         if ( strcmp(tmpstr,wifstr) != 0 )
         {
             bitcoin_wif2priv(coin->symbol,coin->wiftaddr,&tmptype,&privkey,tmpstr);
-            char str[65]; printf("error reproducing the wifstr, likely edge case like non-supported uncompressed pubkey privkey.%s\n",bits256_str(str,privkey));
+            char str[65]; printf("%s error reproducing the wifstr, likely edge case like non-supported uncompressed pubkey privkey.%s\n",coin->symbol,bits256_str(str,privkey));
             exit(1);
         }
         tmpkey = privkey;
