@@ -484,10 +484,10 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                     val = row_ptrs[compnum][0][blocknum][i];
                     if ( val < -8 || val > 8 )
                     {
-                        if ( *capacityp < required )
+                        if ( (*capacityp) < required )
                         {
                             if ( (val & 1) != 0 )
-                                decoded[*capacityp >> 3] |= (1 << (*capacityp&7));
+                                decoded[(*capacityp) >> 3] |= (1 << ((*capacityp)&7));
                         }
                         (*capacityp)++;
                     }
