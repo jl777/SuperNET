@@ -243,9 +243,9 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
     {
         bitcoin_wif2priv(symbol,0,&wiftype,&cmpkey,cmpstr);
         bitcoin_priv2wiflong(symbol,0,cmpstr2,privkey,wiftype);
-        char str[65],str2[65]; printf("mismatched wifstr %s -> %s -> %s %s %s\n",wifstr,bits256_str(str,privkey),cmpstr,bits256_str(str2,cmpkey),cmpstr2);
         if ( bits256_cmp(privkey,cmpkey) == 0 )
             return(1);
+        char str[65],str2[65]; printf("%s mismatched wifstr %s -> %s -> %s %s %s\n",symbol,wifstr,bits256_str(str,privkey),cmpstr,bits256_str(str2,cmpkey),cmpstr2);
     }
     char str[65]; printf("%s is not a wif, privkey.%s\n",wifstr,bits256_str(str,privkey));
     return(0);
