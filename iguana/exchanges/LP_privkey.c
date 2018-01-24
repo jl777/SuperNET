@@ -492,7 +492,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
         //exit(EXIT_FAILURE);
         return(-1);
     }
-    if ( 0 && origdata != 0 && password != 0 && password[0] != 0 )
+    if ( origdata != 0 && password != 0 && password[0] != 0 )
     {
         if ( required/8 > JPG_ENCRYPTED_MAXSIZE-60 )
             return(-1);
@@ -547,13 +547,12 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 for (i=0; i<DCTSIZE2; i++)
                 {
                     val = row_ptrs[compnum][0][blocknum][i];
-                    if ( val >= limit ) //val < -limit ||
+                    if ( val < -limit || val >= limit )
                     {
                         if ( (*capacityp) < required )
                         {
                             if ( (val & 1) != 0 )
                                 SETBIT(decoded,(*capacityp));
-                                //decoded[(*capacityp) >> 3] |= (1 << ((*capacityp)&7));
                             //printf("%c",(val&1)!=0?'1':'0');
                         }
                         (*capacityp)++;
@@ -587,7 +586,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                     for (i=0; i<DCTSIZE2&&emit<required; i++)
                     {
                         val = coef_buffers[compnum][rownum][blocknum][i];
-                        if ( val >= limit ) //val < -limit ||
+                        if ( val < -limit || val >= limit )
                         {
                             val &= ~1;
                             if (GETBIT(data,emit) != 0 )//|| (emit >= required && (rand() & 1) != 0) )
