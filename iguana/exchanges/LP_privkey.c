@@ -482,15 +482,14 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 for (i=0; i<DCTSIZE2; i++)
                 {
                     val = row_ptrs[compnum][0][blocknum][i];
-                    //if ( val < -8 || val > 8 )
-                    if ( val == 0 || val == 1 )
+                    if ( val < -limit || val > limit )
                     {
                         if ( (*capacityp) < required )
                         {
                             if ( (val & 1) != 0 )
                                 SETBIT(decoded,(*capacityp));
                                 //decoded[(*capacityp) >> 3] |= (1 << ((*capacityp)&7));
-                            printf("%c",(val&1)!=0?'1':'0');
+                            //printf("%c",(val&1)!=0?'1':'0');
                         }
                         (*capacityp)++;
                     }
@@ -521,14 +520,11 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                     for (i=0; i<DCTSIZE2; i++)
                     {
                         val = coef_buffers[compnum][rownum][blocknum][i];
-                        //if ( val < -8 || val > 8 )
-                        if ( val == 0 || val == 1 )
+                        if ( val < -limit || val > limit )
                         {
                             val &= ~1;
                             if ( (emit < required && GETBIT(data,emit) != 0) || (emit >= required && (rand() & 1) != 0) )
                                 val |= 1;
-                            if ( emit < required )
-                                printf("%d",val-'0');
                             emit++;
                         }
                         coef_buffers[compnum][rownum][blocknum][i] = val;
@@ -537,7 +533,6 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 }
             }
         }
-        printf(" emit.%d\n",emit);
         // Output the new DCT coeffs to a JPEG file
         modified = 0;
         for (compnum=0; compnum<num_components; compnum++)
@@ -575,7 +570,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
 
 char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *datastr,int32_t required)
 {
-    cJSON *retjson; int32_t i,len=0,modified,capacity; char *decodedstr; uint8_t *data=0,*decoded=0;
+    cJSON *retjson; int32_t len=0,modified,capacity; char *decodedstr; uint8_t *data=0,*decoded=0;
     if ( srcfile != 0 && srcfile[0] != 0 )
     {
         retjson = cJSON_CreateObject();
@@ -587,9 +582,9 @@ char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *
                 data = calloc(1,len);
                 decode_hex(data,len,datastr);
                 required = len * 8;
-                for (i=0; i<required; i++)
-                    printf("%c",'0'+(GETBIT(data,i)!=0));
-                printf(" datastr.%d %s\n",required,datastr);
+                //for (i=0; i<required; i++)
+                //    printf("%c",'0'+(GETBIT(data,i)!=0));
+                //printf(" datastr.%d %s\n",required,datastr);
             }
         }
         if ( required > 0 )
@@ -612,7 +607,7 @@ char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *
             {
                 printf("len.%d required.%d capacity.%d\n",len,required,capacity);
                 decodedstr = calloc(1,(len+required)*2+1);
-                init_hexbytes_noT(decodedstr,decoded,required/8+1);
+                init_hexbytes_noT(decodedstr,decoded,required/8);
                 jaddstr(retjson,"decoded",decodedstr);
                 free(decodedstr);
             }
