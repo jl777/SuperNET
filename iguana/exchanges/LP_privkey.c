@@ -510,7 +510,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 {
                     for (i=0; i<recvlen; i++)
                         printf("%02x",decrypted[i]);
-                    printf(" decrypted.%d ind.%d msglen.%d required.%d\n",recvlen,*indp,msglen,required);
+                    printf(" VERIFIED decryption.%d ind.%d msglen.%d required.%d\n",recvlen,*indp,msglen,required);
                 }
                 free(space);
             }
@@ -579,10 +579,10 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
         {
             for (i=0; i<recvlen; i++)
             {
-                printf("%02x",decrypted[i]);
+                //printf("%02x",decrypted[i]);
                 decoded[i] = decrypted[i];
             }
-            printf(" decrypted.%d ind.%d\n",recvlen,*indp);
+            //printf(" decrypted.%d ind.%d\n",recvlen,*indp);
         }
         free(space);
     }
