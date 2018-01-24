@@ -597,10 +597,13 @@ char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *
         }
         if ( decoded != 0 )
         {
-            decodedstr = calloc(1,len*2+1);
-            init_hexbytes_noT(decodedstr,decoded,len);
-            jaddstr(retjson,"decoded",decodedstr);
-            free(decodedstr);
+            if ( capacity > 0 )
+            {
+                decodedstr = calloc(1,len*2+1);
+                init_hexbytes_noT(decodedstr,decoded,len);
+                jaddstr(retjson,"decoded",decodedstr);
+                free(decodedstr);
+            }
             free(decoded);
         }
         if ( data != 0 )
