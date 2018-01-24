@@ -426,13 +426,10 @@ void LP_privkey_tests()
 
 int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t *msg,int32_t msglen,bits256 privkey)
 {
-    bits256 pubkey; int32_t len = 0; uint8_t space[JPG_ENCRYPTED_MAXSIZE],*nonce,*cipher;
+    bits256 pubkey; int32_t len = 2; uint8_t space[JPG_ENCRYPTED_MAXSIZE],*nonce,*cipher;
     pubkey = acct777_pubkey(privkey);
-    encoded[len++] = msglen & 0xff;
-    encoded[len++] = (msglen >> 8) & 0xff;
     encoded[len++] = ind & 0xff;
     encoded[len++] = (ind >> 8) & 0xff;
-    printf("msglen.%d ind.%d -> %d %d %d %d\n",msglen,ind,encoded[0],encoded[1],encoded[2],encoded[3]);
     nonce = &encoded[len];
     OS_randombytes(nonce,crypto_box_NONCEBYTES);
     cipher = &encoded[len + crypto_box_NONCEBYTES];
@@ -442,9 +439,6 @@ int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t 
     msglen += len;
     encoded[0] = msglen & 0xff;
     encoded[1] = (msglen >> 8) & 0xff;
-    int32_t i; for (i=0; i<msglen; i++)
-        printf("%02x",encoded[i]);
-    printf(" encoded.%d\n",i);
     return(msglen);
 }
 
@@ -456,9 +450,6 @@ uint8_t *JPG_decrypt(int32_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTED
     pubkey = acct777_pubkey(privkey);
     msglen = ((int32_t)encoded[1] << 8) | encoded[0];
     ind = ((int32_t)encoded[3] << 8) | encoded[2];
-    int32_t i; for (i=0; i<128; i++)
-        printf("%02x",encoded[i]);
-    printf(" encoded.%d\n",i);
     nonce = &encoded[len];
     cipher = &encoded[len + crypto_box_NONCEBYTES];
     cipherlen = msglen - (len + crypto_box_NONCEBYTES);
@@ -504,6 +495,12 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
             space = calloc(1,required/8+512);
             if ( (decrypted= JPG_decrypt(&checkind,&recvlen,space,data,privkey)) == 0 || recvlen != required/8 || checkind != ind || memcmp(decrypted,origdata,required/8) != 0 )
                 printf("decryption error: checkind.%d vs %d, recvlen.%d vs %d, decrypted.%p\n",checkind,ind,recvlen,required/8,decrypted);
+            else
+            {
+                for (i=0; i<recvlen; i++)
+                    printf("%02x",decrypted[i]);
+                printf(" decrypted.%d\n",recvlen);
+            }
             free(space);
         }
     } else data = origdata;
