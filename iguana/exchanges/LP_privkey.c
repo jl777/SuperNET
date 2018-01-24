@@ -422,10 +422,61 @@ void LP_privkey_tests()
 }
 
 
+#define JPG_ENCRYPTED_MAXSIZE 32768
+
+int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t *msg,int32_t msglen,bits256 privkey)
+{
+    bits256 pubkey; int32_t len = 2; uint8_t space[JPG_ENCRYPTED_MAXSIZE],*nonce,*cipher; uint32_t crc32=0;
+    pubkey = acct777_pubkey(privkey);
+    encoded[len++] = msglen & 0xff;
+    encoded[len++] = (msglen >> 8) & 0xff;
+    encoded[len++] = ind & 0xff;
+    encoded[len++] = (ind >> 8) & 0xff;
+    nonce = &encoded[len];
+    OS_randombytes(nonce,crypto_box_NONCEBYTES);
+    cipher = &encoded[len + crypto_box_NONCEBYTES];
+    msglen = _SuperNET_cipher(nonce,&encoded[len + crypto_box_NONCEBYTES],msg,msglen,pubkey,privkey,space);
+    msglen += crypto_box_NONCEBYTES;
+    crc32 = calc_crc32(0,&encoded[2],msglen + len - 2);
+    encoded[0] = crc32 & 0xff;
+    encoded[1] = (crc32 >> 8) & 0xff;
+    msg = encoded;
+    msglen += len;
+    return(msglen);
+}
+
+uint8_t *JPG_decrypt(int32_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],uint8_t *encoded,bits256 privkey)
+{
+    bits256 pubkey; uint8_t *extracted=0,*nonce,*cipher; uint32_t crc32; uint16_t msglen,ind,crc16; int32_t cipherlen,len = 6;
+    *recvlenp = 0;
+    *indp = -1;
+    pubkey = acct777_pubkey(privkey);
+    crc16 = ((int32_t)encoded[1] << 8) | encoded[0];
+    msglen = ((int32_t)encoded[3] << 8) | encoded[2];
+    ind = ((int32_t)encoded[5] << 8) | encoded[4];
+    crc32 = calc_crc32(0,&encoded[2],msglen + len - 2);
+    if ( (uint16_t)crc32 == crc16 )
+    {
+        nonce = &encoded[len];
+        cipher = &encoded[len + crypto_box_NONCEBYTES];
+        cipherlen = msglen - (len + crypto_box_NONCEBYTES);
+        if ( cipherlen > 0 && cipherlen <= JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES )
+        {
+            if ( (extracted= _SuperNET_decipher(nonce,cipher,space,cipherlen,pubkey,privkey)) != 0 )
+            {
+                msglen = (cipherlen - crypto_box_ZEROBYTES);
+                *recvlenp = msglen;
+                *indp = ind;
+            }
+        } else printf("cipher.%d too big for %d\n",cipherlen,JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES);
+    } else printf("JPG_decrypt crc16 mismatch %08x vs %04x\n",crc32,crc16);
+    return(extracted);
+}
+
 // from https://github.com/owencm/C-Steganography-Framework
 #include "../../crypto777/jpeg/cdjpeg.h" // Common decls for compressing and decompressing jpegs
 
-int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uint8_t *decoded,uint8_t *data,int32_t required,int32_t power2,char *passphrase)
+int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uint8_t *decoded,uint8_t *origdata,int32_t required,int32_t power2,char *password)
 {
     struct jpeg_decompress_struct inputinfo;
     struct jpeg_compress_struct outputinfo;
@@ -434,7 +485,27 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
     JDIMENSION i,compnum,rownum,blocknum;
     JBLOCKARRAY coef_buffers[MAX_COMPONENTS];
     JBLOCKARRAY row_ptrs[MAX_COMPONENTS];
-    FILE *input_file,*output_file; int32_t val,modified,emit,totalrows,limit;
+    bits256 privkey; FILE *input_file,*output_file; int32_t checkind,recvlen,msglen,val,modified,emit,totalrows,limit,ind=0; uint8_t *decrypted,*space,*data=0;
+    if ((input_file = fopen(inputfname, READ_BINARY)) == NULL)
+    {
+        fprintf(stderr, "Can't open %s\n", inputfname);
+        //exit(EXIT_FAILURE);
+        return(-1);
+    }
+    if ( 0 && origdata != 0 && password != 0 && password[0] != 0 )
+    {
+        if ( required/8 > JPG_ENCRYPTED_MAXSIZE-60 )
+            return(-1);
+        data = calloc(1,required/8+512);
+        vcalc_sha256(0,privkey.bytes,(uint8_t *)password,(int32_t)strlen(password));
+        msglen = JPG_encrypt(ind,data,origdata,required/8,privkey);
+        {
+            space = calloc(1,required/8+512);
+            if ( (decrypted= JPG_decrypt(&checkind,&recvlen,space,data,privkey)) == 0 || recvlen != required/8 || checkind != ind || memcmp(decrypted,origdata,required/8) != 0 )
+                printf("decryption error: checkind.%d vs %d, recvlen.%d vs %d, decrypted.%p\n",checkind,ind,recvlen,required/8,decrypted);
+            free(space);
+        }
+    } else data = origdata;
     if ( power2 < 0 || power2 > 16 )
         power2 = 4;
     limit = 1;
@@ -442,12 +513,6 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
     {
         limit <<= 1;
         power2--;
-    }
-    if ((input_file = fopen(inputfname, READ_BINARY)) == NULL)
-    {
-        fprintf(stderr, "Can't open %s\n", inputfname);
-        //exit(EXIT_FAILURE);
-        return(-1);
     }
     // Initialize the JPEG compression and decompression objects with default error handling
     inputinfo.err = jpeg_std_error(&jerr);
@@ -482,7 +547,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 for (i=0; i<DCTSIZE2; i++)
                 {
                     val = row_ptrs[compnum][0][blocknum][i];
-                    if ( val < -limit || val >= limit )
+                    if ( val >= limit ) //val < -limit ||
                     {
                         if ( (*capacityp) < required )
                         {
@@ -503,7 +568,9 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
     {
         if ((output_file = fopen(outputfname, WRITE_BINARY)) == NULL) {
             fprintf(stderr, "Can't open %s\n", outputfname);
-            exit(EXIT_FAILURE);
+            if ( data != origdata )
+                free(data);
+            return(-1);
         }
         outputinfo.err = jpeg_std_error(&jerr);
         jpeg_create_compress(&outputinfo);
@@ -520,7 +587,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                     for (i=0; i<DCTSIZE2&&emit<required; i++)
                     {
                         val = coef_buffers[compnum][rownum][blocknum][i];
-                        if ( val < -limit || val >= limit )
+                        if ( val >= limit ) //val < -limit ||
                         {
                             val &= ~1;
                             if (GETBIT(data,emit) != 0 )//|| (emit >= required && (rand() & 1) != 0) )
