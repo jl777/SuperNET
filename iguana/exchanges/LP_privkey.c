@@ -488,7 +488,8 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                         if ( (*capacityp) < required )
                         {
                             if ( (val & 1) != 0 )
-                                decoded[(*capacityp) >> 3] |= (1 << ((*capacityp)&7));
+                                SETBIT(decoded,(*capacityp));
+                                //decoded[(*capacityp) >> 3] |= (1 << ((*capacityp)&7));
                             printf("%c",(val&1)!=0?'1':'0');
                         }
                         (*capacityp)++;
@@ -524,7 +525,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                         if ( val == 0 || val == 1 )
                         {
                             val &= ~1;
-                            if ( (emit < required && (data[emit >> 3] & (1 << (emit&7))) != 0) || (rand() & 1) != 0 )
+                            if ( (emit < required && GETBIT(data,emit) != 0) || (rand() & 1) != 0 )
                                 val |= 1;
                             if ( emit < required )
                                 printf("%c",(val&1)!=0?'1':'0');
@@ -574,7 +575,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
 
 char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *datastr,int32_t required)
 {
-    cJSON *retjson; int32_t len=0,modified,capacity; char *decodedstr; uint8_t *data=0,*decoded=0;
+    cJSON *retjson; int32_t i,len=0,modified,capacity; char *decodedstr; uint8_t *data=0,*decoded=0;
     if ( srcfile != 0 && srcfile[0] != 0 )
     {
         retjson = cJSON_CreateObject();
@@ -586,6 +587,9 @@ char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *
                 data = calloc(1,len);
                 decode_hex(data,len,datastr);
                 required = len * 8;
+                for (i=0; i<required; i++)
+                    printf("%c",'0'+GETBIT(data,i));
+                printf(" datastr.%d %s\n",required,datastr);
             }
         }
         if ( required > 0 )
