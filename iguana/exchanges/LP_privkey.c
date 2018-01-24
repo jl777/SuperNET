@@ -206,12 +206,26 @@ static const char base58_chars[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijk
 
 int32_t LP_wifstr_valid(char *symbol,char *wifstr)
 {
-    bits256 privkey,cmpkey; uint8_t wiftype; char cmpstr[128],cmpstr2[128]; int32_t i;
+    bits256 privkey,cmpkey; uint8_t wiftype; char cmpstr[128],cmpstr2[128]; int32_t i,len,n,a,A;
+    if ( (len= (int32_t)strlen(wifstr)) < 50 || len > 54 )
+        return(0);
     memset(privkey.bytes,0,sizeof(privkey));
     memset(cmpkey.bytes,0,sizeof(cmpkey));
-    for (i=0; wifstr[i]!=0; i++)
+    for (i=n=a=A=0; wifstr[i]!=0; i++)
+    {
         if ( strchr(base58_chars,wifstr[i]) == 0 )
             return(0);
+        if ( wifstr[i] >= '1' && wifstr[i] <= '9' )
+            n++;
+        else if ( wifstr[i] >= 'A' && wifstr[i] <= 'Z' )
+            A++;
+        else if ( wifstr[i] >= 'a' && wifstr[i] <= 'z' )
+            a++;
+    }
+    if ( n == 0 || A == 0 || a == 0 )
+        return(0);
+    if ( A > 10*a || a < 10*A || n < 20*a || n < 20*A ) // unlikely it is a real wif
+        return(0);
     bitcoin_wif2priv(symbol,0,&wiftype,&privkey,wifstr);
     bitcoin_priv2wif(symbol,0,cmpstr,privkey,wiftype);
     if ( strcmp(cmpstr,wifstr) == 0 )
