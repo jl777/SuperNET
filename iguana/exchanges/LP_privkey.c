@@ -599,7 +599,8 @@ char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *
         {
             if ( capacity > 0 )
             {
-                decodedstr = calloc(1,required/8+1);
+                printf("len.%d required.%d capacity.%d\n",len,required,capacity);
+                decodedstr = calloc(1,(len+required)*2+1);
                 init_hexbytes_noT(decodedstr,decoded,required/8+1);
                 jaddstr(retjson,"decoded",decodedstr);
                 free(decodedstr);
