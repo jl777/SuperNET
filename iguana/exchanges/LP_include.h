@@ -299,7 +299,7 @@ struct iguana_info
     UT_hash_handle hh;
     portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
-    int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,bussock,height; uint16_t busport;
+    int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport;
     uint32_t txversion,dPoWtime,loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
     char symbol[128],smartaddr[64],userpass[1024],serverport[128],instantdex_address[64];
@@ -487,7 +487,7 @@ int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t
 void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedflag);
 uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
-int32_t LP_coinbus(uint16_t coin_busport);
+//int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
 int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool);
 void LP_aliceid(uint32_t tradeid,uint64_t aliceid,char *event,uint32_t requestid,uint32_t quoteid);

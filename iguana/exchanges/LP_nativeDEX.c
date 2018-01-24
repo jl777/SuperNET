@@ -100,7 +100,7 @@ struct LP_trade *LP_trades,*LP_tradesQ;
 //uint32_t LP_deadman_switch;
 uint16_t LP_fixed_pairport,LP_publicport;
 uint32_t LP_lastnonce,LP_swap_endcritical,LP_swap_critical,LP_RTcount,LP_swapscount;
-int32_t LP_STOP_RECEIVED,LP_numactive_LP,LP_mybussock = -1;
+int32_t LP_STOP_RECEIVED,LP_numactive_LP;//,LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
 int32_t LP_mypullsock = -1;
 int32_t LP_numfinished,LP_showwif,IAMLP = 0;
@@ -1274,15 +1274,14 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         exit(-1);
     }
     LP_initcoins(ctx,pubsock,coinsjson);
-    G.waiting = 1;
-    printf("got %s, initpeers. LP_mypubsock.%d\n",myipaddr,LP_mypubsock);
-    LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),mypullport,mypubport);
     RPC_port = myport;
+    G.waiting = 1;
+    printf("got %s, initpeers. LP_mypubsock.%d/%d myport.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,pubsock,myport,mypullport,mypubport,pushaddr);
+    LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),mypullport,mypubport);
     LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     strcpy(LP_publicaddr,pushaddr);
     LP_publicport = mypullport;
-    LP_mybussock = LP_coinbus(mybusport);
-    //LP_deadman_switch = (uint32_t)time(NULL);
+    //LP_mybussock = LP_coinbus(mybusport);
     printf("canbind.%d my command address is (%s) pullsock.%d pullport.%u\n",LP_canbind,pushaddr,LP_mypullsock,mypullport);
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS

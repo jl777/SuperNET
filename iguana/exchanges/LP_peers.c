@@ -156,9 +156,9 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d other.(%d)\n",ipaddr,mypeer->numpeers,mypubsock,isLP);
                 } else peer->numpeers = 1; // will become mypeer
                 portable_mutex_unlock(&LP_peermutex);
-                if ( IAMLP != 0 && mypubsock >= 0 )
+                /*if ( IAMLP != 0 && mypubsock >= 0 )
                 {
-                    struct iguana_info *coin,*ctmp; char busaddr[64]; //
+                    //struct iguana_info *coin,*ctmp; char busaddr[64]; //
                     //memset(zero.bytes,0,sizeof(zero));
                     //LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
                     //LP_reserved_msg(0,"","",zero,jprint(LP_peerjson(peer),1));
@@ -173,14 +173,14 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                             }
                         }
                     }
-                }
+                }*/
             } else printf("%s invalid pushsock.%d or subsock.%d\n",peer->ipaddr,peer->pushsock,peer->subsock);
         }
     } else printf("LP_addpeer: checkip.(%s) vs (%s)\n",checkip,ipaddr);
     return(peer);
 }
 
-int32_t LP_coinbus(uint16_t coin_busport)
+/*int32_t LP_coinbus(uint16_t coin_busport)
 {
     struct LP_peerinfo *peer,*tmp; char busaddr[64]; int32_t timeout,bussock = -1;
     return(-1);
@@ -208,7 +208,7 @@ int32_t LP_coinbus(uint16_t coin_busport)
         }
     }
     return(bussock);
-}
+}*/
 
 void LP_peer_recv(char *ipaddr,int32_t ismine)
 {
