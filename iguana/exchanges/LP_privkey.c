@@ -482,7 +482,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 for (i=0; i<DCTSIZE2; i++)
                 {
                     val = row_ptrs[compnum][0][blocknum][i];
-                    if ( val < -power2 || val > power2 )
+                    if ( val < -limit || val > limit )
                     {
                         if ( decoded != 0 && (val & 1) != 0 && *capacityp < required )
                             decoded[*capacityp >> 3] |= (1 << (*capacityp & 7));
@@ -493,7 +493,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
             }
         }
     }
-    printf("capacity %d required.%d\n",*capacityp,required);
+    printf("capacity %d required.%d power2.%d limit.%d\n",*capacityp,required,power2,limit);
     if ( *capacityp > required && outputfname != 0 && outputfname[0] != 0 )
     {
         if ((output_file = fopen(outputfname, WRITE_BINARY)) == NULL) {
@@ -515,7 +515,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                     for (i=0; i<DCTSIZE2; i++)
                     {
                         val = coef_buffers[compnum][rownum][blocknum][i];
-                        if ( val < -power2 || val > power2 )
+                        if ( val < -limit || val > limit )
                         {
                             val &= ~1;
                             if ( (data[emit >> 3] & (1 << (emit&7))) != 0 )
