@@ -1,0 +1,2 @@
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"jpg\",\"srcfile\":\"utxos.jpg\",\"destfile\":\"utxosdest.jpg\",\"power2\":3,\"passphrase\":\"default\",\"data\":\"68656c6c6f20776f726c64\",\"required\":\"required\"}"
