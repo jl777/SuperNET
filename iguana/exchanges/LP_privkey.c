@@ -526,8 +526,9 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                             val &= ~1;
                             if ( (emit < required && (data[emit >> 3] & (1 << (emit&7))) != 0) || (rand() & 1) != 0 )
                                 val |= 1;
+                            if ( emit < required )
+                                printf("%c",(val&1)!=0?'1':'0');
                             emit++;
-                            printf("%c",(val&1)!=0?'1':'0');
                         }
                         coef_buffers[compnum][rownum][blocknum][i] = val;
                         //printf("%i,", coef_buffers[compnum][rownum][blocknum][i]);
