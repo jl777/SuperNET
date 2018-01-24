@@ -468,7 +468,7 @@ uint8_t *JPG_decrypt(int32_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTED
 // from https://github.com/owencm/C-Steganography-Framework
 #include "../../crypto777/jpeg/cdjpeg.h" // Common decls for compressing and decompressing jpegs
 
-int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uint8_t *decoded,uint8_t *origdata,int32_t required,int32_t power2,char *password)
+int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uint8_t *decoded,uint8_t *origdata,int32_t origrequired,int32_t power2,char *password)
 {
     struct jpeg_decompress_struct inputinfo;
     struct jpeg_compress_struct outputinfo;
@@ -477,31 +477,37 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
     JDIMENSION i,compnum,rownum,blocknum;
     JBLOCKARRAY coef_buffers[MAX_COMPONENTS];
     JBLOCKARRAY row_ptrs[MAX_COMPONENTS];
-    bits256 privkey; FILE *input_file,*output_file; int32_t checkind,recvlen,msglen,val,modified,emit,totalrows,limit,ind=0; uint8_t *decrypted,*space,*data=0;
+    bits256 privkey; FILE *input_file,*output_file; int32_t checkind,recvlen,msglen,val,modified,emit,totalrows,limit,required,ind=0; uint8_t *decrypted,*space,*data=0;
     if ((input_file = fopen(inputfname, READ_BINARY)) == NULL)
     {
         fprintf(stderr, "Can't open %s\n", inputfname);
         //exit(EXIT_FAILURE);
         return(-1);
     }
-    if ( origdata != 0 && password != 0 && password[0] != 0 )
+    required = origrequired;
+    memset(privkey.bytes,0,sizeof(privkey));
+    if ( password != 0 && password[0] != 0 )
     {
         if ( required/8 > JPG_ENCRYPTED_MAXSIZE-60 )
             return(-1);
         data = calloc(1,required/8+512);
         vcalc_sha256(0,privkey.bytes,(uint8_t *)password,(int32_t)strlen(password));
-        msglen = JPG_encrypt(ind,data,origdata,required/8,privkey);
+        if ( origdata != 0 )
         {
-            space = calloc(1,required/8+512);
-            if ( (decrypted= JPG_decrypt(&checkind,&recvlen,space,data,privkey)) == 0 || recvlen != required/8 || checkind != ind || memcmp(decrypted,origdata,required/8) != 0 )
-                printf("decryption error: checkind.%d vs %d, recvlen.%d vs %d, decrypted.%p\n",checkind,ind,recvlen,required/8,decrypted);
-            else
+            msglen = JPG_encrypt(ind,data,origdata,required/8,privkey);
+            required = msglen * 8;
             {
-                for (i=0; i<recvlen; i++)
-                    printf("%02x",decrypted[i]);
-                printf(" decrypted.%d\n",recvlen);
+                space = calloc(1,JPG_ENCRYPTED_MAXSIZE);
+                if ( (decrypted= JPG_decrypt(&checkind,&recvlen,space,data,privkey)) == 0 || recvlen != required/8 || checkind != ind || memcmp(decrypted,origdata,required/8) != 0 )
+                    printf("decryption error: checkind.%d vs %d, recvlen.%d vs %d, decrypted.%p\n",checkind,ind,recvlen,required/8,decrypted);
+                else
+                {
+                    for (i=0; i<recvlen; i++)
+                        printf("%02x",decrypted[i]);
+                    printf(" decrypted.%d\n",recvlen);
+                }
+                free(space);
             }
-            free(space);
         }
     } else data = origdata;
     if ( power2 < 0 || power2 > 30 )
@@ -560,7 +566,20 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
             }
         }
     }
-    //printf(" capacity %d required.%d power2.%d limit.%d\n",*capacityp,required,power2,limit);
+    if ( password != 0 && password[0] != 0 )
+    {
+        space = calloc(1,JPG_ENCRYPTED_MAXSIZE);
+        if ( (decrypted= JPG_decrypt(&checkind,&recvlen,space,decoded,privkey)) == 0 || recvlen != required/8 || checkind != ind || memcmp(decrypted,origdata,required/8) != 0 )
+            printf("decryption error: checkind.%d vs %d, recvlen.%d vs %d, decrypted.%p\n",checkind,ind,recvlen,required/8,decrypted);
+        else
+        {
+            for (i=0; i<recvlen; i++)
+                printf("%02x",decrypted[i]);
+            printf(" decrypted.%d\n",recvlen);
+        }
+        free(space);
+    }
+   //printf(" capacity %d required.%d power2.%d limit.%d\n",*capacityp,required,power2,limit);
     if ( *capacityp > required && outputfname != 0 && outputfname[0] != 0 )
     {
         if ((output_file = fopen(outputfname, WRITE_BINARY)) == NULL) {
@@ -631,6 +650,8 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
     free(block_row_size);
     free(width_in_blocks);
     free(height_in_blocks);
+    if ( data != origdata )
+        free(data);
     return(modified);
 }
 
