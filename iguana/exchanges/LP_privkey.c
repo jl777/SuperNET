@@ -208,7 +208,10 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
 {
     bits256 privkey,cmpkey; uint8_t wiftype; char cmpstr[128],cmpstr2[128]; int32_t i,len,n,a,A;
     if ( (len= (int32_t)strlen(wifstr)) < 50 || len > 54 )
+    {
+        printf("len.%d is wrong for wif %s\n",len,wifstr);
         return(0);
+    }
     memset(privkey.bytes,0,sizeof(privkey));
     memset(cmpkey.bytes,0,sizeof(cmpkey));
     for (i=n=a=A=0; wifstr[i]!=0; i++)
@@ -225,7 +228,10 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
     if ( n == 0 || A == 0 || a == 0 )
         return(0);
     if ( A > 10*a || a < 10*A || n < 20*a || n < 20*A ) // unlikely it is a real wif
+    {
+        printf("reject wif %s due to n.%d a.%d A.%d\n",wifstr,n,a,A);
         return(0);
+    }
     bitcoin_wif2priv(symbol,0,&wiftype,&privkey,wifstr);
     bitcoin_priv2wif(symbol,0,cmpstr,privkey,wiftype);
     if ( strcmp(cmpstr,wifstr) == 0 )
@@ -241,6 +247,7 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
         if ( bits256_cmp(privkey,cmpkey) == 0 )
             return(1);
     }
+    char str[65]; printf("%s is not a wif, privkey.%s\n",wifstr,bits256_str(str,privkey));
     return(0);
 }
 
