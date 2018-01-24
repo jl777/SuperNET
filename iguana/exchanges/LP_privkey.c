@@ -432,6 +432,7 @@ int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t 
     encoded[len++] = (msglen >> 8) & 0xff;
     encoded[len++] = ind & 0xff;
     encoded[len++] = (ind >> 8) & 0xff;
+    printf("msglen.%d ind.%d -> %d %d %d %d\n",msglen,ind,encoded[0],encoded[1],encoded[2],encoded[3]);
     nonce = &encoded[len];
     OS_randombytes(nonce,crypto_box_NONCEBYTES);
     cipher = &encoded[len + crypto_box_NONCEBYTES];
@@ -439,6 +440,9 @@ int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t 
     msglen += crypto_box_NONCEBYTES;
     msg = encoded;
     msglen += len;
+    int32_t i; for (i=0; i<msglen; i++)
+        printf("%02x",encoded[i]);
+    printf(" encoded.%d\n",i);
     return(msglen);
 }
 
