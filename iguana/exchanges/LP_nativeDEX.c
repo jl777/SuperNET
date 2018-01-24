@@ -1236,15 +1236,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         pubsock = -1;
         nanomsg_transportname(0,subaddr,myipaddr,mypubport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
-        //nanomsg_transportname2(1,bindaddr2,myipaddr,mypubport);
         valid = 0;
         if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
         {
             valid = 0;
             if ( nn_bind(pubsock,bindaddr) >= 0 )
                 valid++;
-            //if ( nn_bind(pubsock,bindaddr2) >= 0 )
-            //    valid++;
             if ( valid > 0 )
             {
                 timeout = 1;
@@ -1260,15 +1257,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf(">>>>>>>>> myipaddr.(%s) (%s) valid.%d pubbindaddr.%s pubsock.%d\n",bindaddr,subaddr,valid,bindaddr,pubsock);
         LP_mypubsock = pubsock;
     }
-    printf("got %s, initpeers. LP_mypubsock.%d\n",myipaddr,LP_mypubsock);
-    LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),mypullport,mypubport);
-    RPC_port = myport;
-    LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
-    strcpy(LP_publicaddr,pushaddr);
-    LP_publicport = mypullport;
-    LP_mybussock = LP_coinbus(mybusport);
-    //LP_deadman_switch = (uint32_t)time(NULL);
-    printf("canbind.%d my command address is (%s) pullsock.%d pullport.%u\n",LP_canbind,pushaddr,LP_mypullsock,mypullport);
     if ( (coinsjson= jobj(argjson,"coins")) == 0 )
     {
         if ( (coins_str= OS_filestr(&filesize,"coins.json")) != 0 || (coins_str= OS_filestr(&filesize,"exchanges/coins.json")) != 0 )
@@ -1287,6 +1275,15 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     }
     LP_initcoins(ctx,pubsock,coinsjson);
     G.waiting = 1;
+    printf("got %s, initpeers. LP_mypubsock.%d\n",myipaddr,LP_mypubsock);
+    LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),mypullport,mypubport);
+    RPC_port = myport;
+    LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
+    strcpy(LP_publicaddr,pushaddr);
+    LP_publicport = mypullport;
+    LP_mybussock = LP_coinbus(mybusport);
+    //LP_deadman_switch = (uint32_t)time(NULL);
+    printf("canbind.%d my command address is (%s) pullsock.%d pullport.%u\n",LP_canbind,pushaddr,LP_mypullsock,mypullport);
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
