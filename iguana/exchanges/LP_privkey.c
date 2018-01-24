@@ -453,9 +453,6 @@ uint8_t *JPG_decrypt(uint16_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTE
     pubkey = acct777_pubkey(privkey);
     msglen = ((int32_t)encoded[1] << 8) | encoded[0];
     ind = ((int32_t)encoded[3] << 8) | encoded[2];
-    int32_t i; for (i=0; i<64; i++)
-        printf("%02x",encoded[i]);
-    printf(" encoded\n");
     nonce = &encoded[len];
     cipher = &encoded[len + crypto_box_NONCEBYTES];
     cipherlen = msglen - (len + crypto_box_NONCEBYTES);
@@ -463,6 +460,9 @@ uint8_t *JPG_decrypt(uint16_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTE
     {
         if ( (extracted= _SuperNET_decipher(nonce,cipher,space,cipherlen,pubkey,privkey)) != 0 )
         {
+            int32_t i; for (i=0; i<msglen; i++)
+                printf("%02x",encoded[i]);
+            printf(" restored\n");
             msglen = (cipherlen - crypto_box_ZEROBYTES);
             *recvlenp = msglen;
             *indp = ind;
@@ -575,12 +575,13 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
     if ( password != 0 && password[0] != 0 )
     {
         space = calloc(1,JPG_ENCRYPTED_MAXSIZE);
-        if ( (decrypted= JPG_decrypt(indp,&recvlen,space,decoded,privkey)) == 0 || recvlen != origrequired/8 )
-            printf("decryption error: ind.%d recvlen.%d vs %d, decrypted.%p\n",*indp,recvlen,origrequired/8,decrypted);
-        else
+        if ( (decrypted= JPG_decrypt(indp,&recvlen,space,decoded,privkey)) != 0 && recvlen == origrequired/8 )
         {
             for (i=0; i<recvlen; i++)
+            {
                 printf("%02x",decrypted[i]);
+                decoded[i] = decrypted[i];
+            }
             printf(" decrypted.%d ind.%d\n",recvlen,*indp);
         }
         free(space);
