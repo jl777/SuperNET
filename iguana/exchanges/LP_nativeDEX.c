@@ -1276,13 +1276,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     LP_initcoins(ctx,pubsock,coinsjson);
     RPC_port = myport;
     G.waiting = 1;
-    printf("got %s, initpeers. LP_mypubsock.%d/%d myport.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,pubsock,myport,mypullport,mypubport,pushaddr);
     LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),mypullport,mypubport);
     LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     strcpy(LP_publicaddr,pushaddr);
     LP_publicport = mypullport;
     //LP_mybussock = LP_coinbus(mybusport);
-    printf("canbind.%d my command address is (%s) pullsock.%d pullport.%u\n",LP_canbind,pushaddr,LP_mypullsock,mypullport);
+    printf("got %s, initpeers. LP_mypubsock.%d/%d myport.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,pubsock,myport,mypullport,mypubport,pushaddr);
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
