@@ -514,7 +514,7 @@ int32_t LP_jpg_process(int32_t *capacityp,char *inputfname,char *outputfname,uin
                 }
                 free(space);
             }
-        }
+        } else required += 60 * 8;
     } else data = origdata;
     if ( power2 < 0 || power2 > 30 )
         power2 = 7;
