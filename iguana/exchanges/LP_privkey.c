@@ -278,7 +278,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     }
     else
     {
-        bitcoin_wif2priv(coin->symbol,coin->wiftaddr,&tmptype,&privkey,wifstr);
+        bitcoin_wif2priv(coin->symbol,0,&tmptype,&privkey,wifstr);
         bitcoin_priv2wif(coin->symbol,coin->wiftaddr,tmpstr,privkey,tmptype);
         if ( strcmp(tmpstr,wifstr) != 0 )
         {
