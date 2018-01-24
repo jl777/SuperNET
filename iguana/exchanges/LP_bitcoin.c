@@ -2220,7 +2220,7 @@ int32_t bitcoin_wif2priv(char *symbol,uint8_t wiftaddr,uint8_t *addrtypep,bits25
         {
             memcpy(privkeyp,buf+offset,32);
             if ( len > 32+offset )
-                printf("wif: extra byte %d len.%d vs %d\n",buf[32+offset],len,32+offset);
+                printf("wif: extra byte %d len.%d vs %d addrtype.%d\n",buf[32+offset],len,32+offset,(wiftaddr == 0) ? buf[0] : buf[1]);
         }
         else
         {
