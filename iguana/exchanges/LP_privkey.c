@@ -467,7 +467,7 @@ uint8_t *JPG_decrypt(uint16_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTE
             *recvlenp = msglen;
             *indp = ind;
         }
-    } else printf("cipher.%d too big for %d\n",cipherlen,JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES);
+    } //else printf("cipher.%d too big for %d\n",cipherlen,JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES);
     return(extracted);
 }
 
@@ -700,7 +700,7 @@ char *LP_jpg(char *srcfile,char *destfile,int32_t power2,char *passphrase,char *
         {
             if ( capacity > 0 )
             {
-                printf("len.%d required.%d capacity.%d\n",len,required,capacity);
+                //printf("len.%d required.%d capacity.%d\n",len,required,capacity);
                 decodedstr = calloc(1,(len+required)*2+1);
                 init_hexbytes_noT(decodedstr,decoded,required/8);
                 jaddstr(retjson,"decoded",decodedstr);
