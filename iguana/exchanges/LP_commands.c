@@ -193,7 +193,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             vcalc_sha256(0,passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
             if ( bits256_cmp(passhash,G.LP_passhash) == 0 )
                 authenticated = 1;
-            else printf("(%s) passhash %s != G %s\n",passphrase,bits256_str(str,passhash),bits256_str(str2,G.LP_passhash));
+            else printf("passhash %s != G %s\n",bits256_str(str,passhash),bits256_str(str2,G.LP_passhash));
         }
         if ( authenticated == 0 && ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) )
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
