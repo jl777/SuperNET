@@ -203,8 +203,10 @@ int main(int argc, const char * argv[])
             DOCKERFLAG = 1;
         else if ( jstr(retjson,"docker") != 0 )
             DOCKERFLAG = (uint32_t)calc_ipbits(jstr(retjson,"docker"));
+        if ( jobj(retjson,"passphrase") != 0 )
+            jdelete(retjson,"passphrase");
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
-            jaddstr(retjson,"passphrase","test");
+            jaddstr(retjson,"passphrase","default");
         if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)retjson) != 0 )
         {
             printf("error launching LP_main (%s)\n",jprint(retjson,0));
