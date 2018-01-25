@@ -377,16 +377,19 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
         ctx = bitcoin_ctx();
     if ( G.LP_pendingswaps != 0 )
         return(-1);
-    if ( IAMLP != 0 && netid != G.netid )
+    if ( netid != G.netid )
     {
-        printf("sorry, LP nodes can only set netid during startup\n");
-        return(-1);
-    }
-    else if ( IAMLP == 0 && netid != G.netid )
-    {
-        printf("netid.%d vs G.netid %d\n",netid,G.netid);
-        LP_closepeers();
-        LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,netid,seednode);
+        if ( IAMLP != 0 )
+        {
+            printf("sorry, LP nodes can only set netid during startup\n");
+            return(-1);
+        }
+        else
+        {
+            printf(">>>>>>>>>>>>> netid.%d vs G.netid %d\n",netid,G.netid);
+            LP_closepeers();
+            LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,netid,seednode);
+        }
     }
     G.initializing = 1;
     if ( gui == 0 )

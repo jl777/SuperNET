@@ -544,7 +544,10 @@ void LP_coinsloop(void *_coins)
                 }
             }
             if ( coin->smartaddr[0] == 0 )
+            {
                 printf("%s has no smartaddress??\n",coin->symbol);
+                continue;
+            }
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
@@ -1250,6 +1253,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 #endif
     if ( IAMLP != 0 )
     {
+        G.netid = juint(argjson,"netid");
         LP_mypubsock = -1;
         nanomsg_transportname(0,subaddr,myipaddr,mypubport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
