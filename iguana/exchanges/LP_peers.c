@@ -181,6 +181,27 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     return(peer);
 }
 
+uint64_t ip_port;
+uint32_t recvtime,numrecv,ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
+uint16_t port,netid;
+
+
+void LP_closepeers()
+{
+    struct LP_peerinfo *peer,*tmp; 
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        portable_mutex_lock(&LP_peermutex);
+        HASH_DELETE(hh,LP_peerinfos,peer);
+        portable_mutex_unlock(&LP_peermutex);
+        if ( peer->pushsock >= 0 )
+            nn_close(peer->pushsock), peer->pushsock = -1;
+        if ( peer->subsock >= 0 )
+            nn_close(peer->subsock), peer->subsock = -1;
+        // free(peer); a small memleak to avoid freein inflight requests
+    }
+}
+
 /*int32_t LP_coinbus(uint16_t coin_busport)
 {
     struct LP_peerinfo *peer,*tmp; char busaddr[64]; int32_t timeout,bussock = -1;

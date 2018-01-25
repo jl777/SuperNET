@@ -382,6 +382,11 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
         printf("sorry, LP nodes can only set netid during startup\n");
         return(-1);
     }
+    else if ( IAMLP == 0 && netid != G.netid )
+    {
+        LP_closepeers();
+        LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,netid,seednode);
+    }
     G.initializing = 1;
     if ( gui == 0 )
         gui = "cli";
@@ -392,8 +397,6 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
         sleep(5);
     }
     memset(&G,0,sizeof(G));
-    if ( IAMLP == 0 )
-        LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,netid,seednode);
     G.netid = netid;
     safecopy(G.seednode,seednode,sizeof(G.seednode));
     vcalc_sha256(0,G.LP_passhash.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
