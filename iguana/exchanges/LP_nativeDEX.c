@@ -135,7 +135,7 @@ uint32_t LP_rand()
 
 char *activecoins[] = { "BTC", "KMD" };
 char GLOBAL_DBDIR[] = { "DB" };
-char LP_myipaddr[64],LP_publicaddr[64],USERHOME[512] = { "/root" };
+char LP_myipaddr[64],USERHOME[512] = { "/root" };
 char LP_gui[16] = { "cli" };
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203",
@@ -669,7 +669,7 @@ void LP_coinsloop(void *_coins)
     }
 }
 
-int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock,char *pushaddr,uint16_t myport)
+int32_t LP_mainloop_iter(void *ctx,char *myipaddr,struct LP_peerinfo *mypeer,int32_t pubsock)
 {
     static uint32_t counter;//,didinstantdex;
     struct iguana_info *coin,*ctmp; char *origipaddr; uint32_t now; int32_t notarized,height,nonz = 0;
@@ -849,9 +849,10 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
     printf("privkey updates\n");
 }
 
-void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,char *seednode,uint16_t pushport,uint16_t subport)
+void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint16_t myport,uint16_t netid,char *seednode)
 {
-    int32_t i,j; uint32_t r;
+    int32_t i,j; uint32_t r; uint16_t pushport,subport,busport;
+    LP_ports(&pushport,&subport,&busport,netid);
     if ( IAMLP != 0 )
     {
         LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,pushport,subport,1,G.LP_sessionid);
@@ -1149,7 +1150,7 @@ extern int32_t bitcoind_RPC_inittime;
 
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybusport,char *passphrase,int32_t amclient,char *userhome,cJSON *argjson)
 {
-    char *myipaddr=0,version[64]; long filesize,n; int32_t valid,timeout,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
+    char *myipaddr=0,version[64]; long filesize,n; int32_t valid,timeout; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128],bindaddr[128],*coins_str=0; cJSON *coinsjson=0; void *ctx = bitcoin_ctx();
     sprintf(version,"Marketmaker %s.%s %s rsize.%ld",LP_MAJOR_VERSION,LP_MINOR_VERSION,LP_BUILD_NUMBER,sizeof(struct basilisk_request));
     bitcoind_RPC_inittime = 1;
     printf("%s %u\n",version,calc_crc32(0,version,(int32_t)strlen(version)));
@@ -1246,29 +1247,29 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
 #endif
     if ( IAMLP != 0 )
     {
-        pubsock = -1;
+        LP_mypubsock = -1;
         nanomsg_transportname(0,subaddr,myipaddr,mypubport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypubport);
         valid = 0;
-        if ( (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
+        if ( (LP_mypubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
         {
             valid = 0;
-            if ( nn_bind(pubsock,bindaddr) >= 0 )
+            if ( nn_bind(LP_mypubsock,bindaddr) >= 0 )
                 valid++;
             if ( valid > 0 )
             {
                 timeout = 1;
-                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                nn_setsockopt(LP_mypubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             }
             else
             {
-                printf("error binding to (%s).%d\n",subaddr,pubsock);
-                if ( pubsock >= 0 )
-                    nn_close(pubsock), pubsock = -1;
+                printf("error binding to (%s).%d\n",subaddr,LP_mypubsock);
+                if ( LP_mypubsock >= 0 )
+                    nn_close(LP_mypubsock), LP_mypubsock = -1;
             }
-        } else printf("error getting pubsock %d\n",pubsock);
-        printf(">>>>>>>>> myipaddr.(%s) (%s) valid.%d pubbindaddr.%s pubsock.%d\n",bindaddr,subaddr,valid,bindaddr,pubsock);
-        LP_mypubsock = pubsock;
+        } else printf("error getting pubsock %d\n",LP_mypubsock);
+        printf(">>>>>>>>> myipaddr.(%s) (%s) valid.%d pubbindaddr.%s pubsock.%d\n",bindaddr,subaddr,valid,bindaddr,LP_mypubsock);
+        LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     }
     if ( (coinsjson= jobj(argjson,"coins")) == 0 )
     {
@@ -1286,15 +1287,15 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("no coins object or coins.json file, must abort\n");
         exit(-1);
     }
-    LP_initcoins(ctx,pubsock,coinsjson);
+    LP_initcoins(ctx,LP_mypubsock,coinsjson);
     RPC_port = myport;
     G.waiting = 1;
-    LP_initpeers(pubsock,mypeer,myipaddr,myport,jstr(argjson,"seednode"),mypullport,mypubport);
-    LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
-    strcpy(LP_publicaddr,pushaddr);
+    LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,juint(argjson,"netid"),jstr(argjson,"seednode"));
+    //LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
+    //strcpy(LP_publicaddr,pushaddr);
     //LP_publicport = mypullport;
     //LP_mybussock = LP_coinbus(mybusport);
-    printf("got %s, initpeers. LP_mypubsock.%d/%d pullsock.%d myport.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,pubsock,LP_mypullsock,myport,mypullport,mypubport,pushaddr);
+    printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport,pushaddr);
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
@@ -1374,12 +1375,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
             //fprintf(stderr,".");
             sleep(3);
         }
-        if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
+        if ( LP_mainloop_iter(ctx,myipaddr,mypeer,LP_mypubsock) != 0 )
             nonz++;
         if ( didremote == 0 && LP_cmdcount > 0 )
         {
             didremote = 1;
-            uint16_t myport2 = myport-1;
+            uint16_t myport2 = RPC_port-1;
             printf("start remote port\n");
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport2) != 0 )
             {
@@ -1450,7 +1451,7 @@ void LP_fromjs_iter()
     //LP_pubkeys_query();
     //LP_utxosQ_process();
     //LP_nanomsg_recvs(ctx);
-    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock,LP_publicaddr,LP_RPCPORT);
+    LP_mainloop_iter(ctx,LP_myipaddr,0,LP_mypubsock);
     //queue_loop(0);
     if ( 0 ) // 10 seconds
     {

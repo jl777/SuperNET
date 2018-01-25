@@ -861,7 +861,7 @@ continue;
 #ifndef FROM_MARKETMAKER
 
 portable_mutex_t LP_commandmutex;
-uint16_t LP_RPCPORT;
+uint16_t LP_RPCPORT = 7763;
 
 void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
