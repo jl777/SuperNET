@@ -102,7 +102,7 @@ uint16_t LP_fixed_pairport;//,LP_publicport;
 uint32_t LP_lastnonce,LP_swap_endcritical,LP_swap_critical,LP_RTcount,LP_swapscount;
 int32_t LP_STOP_RECEIVED,LP_numactive_LP;//,LP_mybussock = -1;
 int32_t LP_mypubsock = -1;
-int32_t LP_mypullsock = -1;
+int32_t LP_cmdcount,LP_mypullsock = -1;
 int32_t LP_numfinished,LP_showwif,IAMLP = 0;
 double LP_profitratio = 1.;
 
@@ -1299,12 +1299,6 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
-    uint16_t myport2 = myport-1;
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport2) != 0 )
-    {
-        printf("error launching stats rpcloop for port.%u\n",myport);
-        exit(-1);
-    }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,ctx) != 0 )
     {
         printf("error launching command_rpcloop for ctx.%p\n",ctx);
@@ -1355,7 +1349,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    int32_t nonz;
+    int32_t nonz,didremote=0;
     LP_statslog_parse();
     bitcoind_RPC_inittime = 0;
     while ( LP_STOP_RECEIVED == 0 )
@@ -1369,6 +1363,16 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         }
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,pubsock,pushaddr,myport) != 0 )
             nonz++;
+        if ( didremote == 0 && LP_cmdcount > 0 )
+        {
+            didremote = 1;
+            uint16_t myport2 = myport-1;
+            if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport2) != 0 )
+            {
+                printf("error launching stats rpcloop for port.%u\n",myport);
+                exit(-1);
+            }
+        }
         if ( nonz == 0 )
             usleep(1000);
         else if ( IAMLP == 0 )

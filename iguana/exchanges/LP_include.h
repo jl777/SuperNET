@@ -363,7 +363,7 @@ struct LP_peerinfo
     uint64_t ip_port;
     uint32_t recvtime,numrecv,ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
     int32_t pushsock,subsock,isLP;
-    uint16_t port;
+    uint16_t port,netid;
     char ipaddr[64];
 };
 

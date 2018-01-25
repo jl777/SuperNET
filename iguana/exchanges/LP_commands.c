@@ -198,6 +198,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         if ( jobj(argjson,"userpass") != 0 )
             jdelete(argjson,"userpass");
+        LP_cmdcount++;
         if ( strcmp(method,"passphrase") == 0 )
         {
             char coinaddr[64],pub33str[67];
@@ -651,7 +652,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
     else if ( strcmp(method,"notify") == 0 )
         return(LP_notify_recv(argjson));
     else if ( strcmp(method,"getpeers") == 0 )
-        retstr = clonestr("{\"error\":\"deprecated\"}");
+        return(LP_peers());
     else if ( strcmp(method,"balances") == 0 )
         return(jprint(LP_balances(jstr(argjson,"address")),1));
     else if ( strcmp(method,"fundvalue") == 0 )

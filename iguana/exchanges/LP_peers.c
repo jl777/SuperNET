@@ -33,6 +33,7 @@ cJSON *LP_peerjson(struct LP_peerinfo *peer)
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"isLP",peer->ipaddr);
     jaddnum(item,"port",peer->port);
+    jaddnum(item,"netid",peer->netid);
     if ( strcmp(peer->ipaddr,LP_myipaddr) == 0 )
     {
         jaddnum(item,"session",G.LP_sessionid);
