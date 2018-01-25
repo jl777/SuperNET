@@ -949,6 +949,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     jaddstr(retjson,"base",base);
     jaddstr(retjson,"rel",rel);
     jaddnum(retjson,"timestamp",now);
+    jaddnum(retjson,"netid",G.netid);
     if ( bids != 0 )
         free(bids);
     if ( asks != 0 )
