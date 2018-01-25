@@ -518,6 +518,11 @@ void LP_coinsloop(void *_coins)
     }
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
+        {
+            sleep(10);
+            continue;
+        }
         if ( strcmp("BTC",coins) == 0 )
             LP_millistats_update(&LP_coinsloopBTC_stats);
         else if ( strcmp("KMD",coins) == 0 )
@@ -894,12 +899,15 @@ void LP_pubkeysloop(void *ctx)
     sleep(10);
     while ( LP_STOP_RECEIVED == 0 )
     {
-        LP_millistats_update(&LP_pubkeysloop_stats);
-        if ( time(NULL) > lasttime+LP_ORDERBOOK_DURATION*0.5 )
+        if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") != 0 )
         {
-//printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
-            LP_notify_pubkeys(ctx,LP_mypubsock);
-            lasttime = (uint32_t)time(NULL);
+            LP_millistats_update(&LP_pubkeysloop_stats);
+            if ( time(NULL) > lasttime+LP_ORDERBOOK_DURATION*0.5 )
+            {
+                //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
+                LP_notify_pubkeys(ctx,LP_mypubsock);
+                lasttime = (uint32_t)time(NULL);
+            }
         }
         sleep(3);
     }
@@ -913,10 +921,13 @@ void LP_swapsloop(void *ctx)
     sleep(50);
     while ( LP_STOP_RECEIVED == 0 )
     {
-        LP_millistats_update(&LP_swapsloop_stats);
-        if ( (retstr= basilisk_swapentry(0,0,0)) != 0 )
-            free(retstr);
-        sleep(600);
+        if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") != 0 )
+        {
+            LP_millistats_update(&LP_swapsloop_stats);
+            if ( (retstr= basilisk_swapentry(0,0,0)) != 0 )
+                free(retstr);
+            sleep(600);
+        } else sleep(10);
     }
 }
 
@@ -1116,6 +1127,8 @@ void LP_reserved_msgs(void *ignore)
 int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg)
 {
     int32_t n = 0;
+    if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
+        return(-1);
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs[priority] < sizeof(Reserved_msgs[priority])/sizeof(*Reserved_msgs[priority]) )
     {
@@ -1356,7 +1369,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     {
         nonz = 0;
         G.waiting = 1;
-        while ( G.initializing != 0 )
+        while ( G.initializing != 0 && strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
         {
             //fprintf(stderr,".");
             sleep(3);
