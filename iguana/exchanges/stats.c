@@ -29,6 +29,7 @@
 #define STATS_DEST "/var/www/html/DEXstats.json"
 #include "DEXstats.h"
 char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
+extern uint32_t DOCKERFLAG;
 
 char *stats_validmethods[] =
 {
