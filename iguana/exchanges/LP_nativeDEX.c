@@ -1290,7 +1290,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     LP_initcoins(ctx,LP_mypubsock,coinsjson);
     RPC_port = myport;
     G.waiting = 1;
-    LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,juint(argjson,"netid"),jstr(argjson,"seednode"));
+        LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,juint(argjson,"netid"),jstr(argjson,"seednode"));
     //LP_mypullsock = LP_initpublicaddr(ctx,&mypullport,pushaddr,myipaddr,mypullport,0);
     //strcpy(LP_publicaddr,pushaddr);
     //LP_publicport = mypullport;
