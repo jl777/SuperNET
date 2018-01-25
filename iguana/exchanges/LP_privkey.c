@@ -384,6 +384,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
     }
     else if ( IAMLP == 0 && netid != G.netid )
     {
+        printf("netid.%d vs G.netid %d\n",netid,G.netid);
         LP_closepeers();
         LP_initpeers(LP_mypubsock,LP_mypeer,LP_myipaddr,RPC_port,netid,seednode);
     }
