@@ -47,6 +47,7 @@ int32_t LP_valid_remotemethod(cJSON *argjson)
         for (i=0; i<sizeof(stats_validmethods)/sizeof(*stats_validmethods); i++)
             if ( strcmp(method,stats_validmethods[i]) == 0 )
                 return(1);
+        printf("got invalid method.%s remotely\n",method);
     }
     return(-1);
 }

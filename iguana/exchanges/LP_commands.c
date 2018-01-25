@@ -103,7 +103,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
          return(clonestr("{\"result\":\" \
 available localhost RPC commands: \n \
 setprice(base, rel, price, broadcast=1)\n\
-autoprice(base, rel, fixed, minprice, margin, refbase, refrel, factor, offset)*\n\
+autoprice(base, rel, fixed, minprice, maxprice, margin, refbase, refrel, factor, offset)*\n\
 goal(coin=*, val=<autocalc>)\n\
 myprice(base, rel)\n\
 enable(coin)\n\
