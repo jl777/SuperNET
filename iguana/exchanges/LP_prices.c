@@ -539,7 +539,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
             if ( price > (1. / maxprice) )
             {
                 printf("%s/%s price %.8f less than maxprice %.8f, more than %.8f\n",base,rel,price,maxprice,1./maxprice);
-                price = maxprice;
+                price = (1. / maxprice);
             }
         }
         /*else if ( basepp->myprices[relpp->ind] > SMALLVAL )
