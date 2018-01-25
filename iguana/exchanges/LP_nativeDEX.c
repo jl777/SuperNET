@@ -867,6 +867,7 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         {
             if ( netid == 0 )
             {
+                printf("load default seednodes\n");
                 for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
                 {
                     LP_addpeer(mypeer,pubsock,default_LPnodes[i],myport,pushport,subport,0,G.LP_sessionid,netid);
