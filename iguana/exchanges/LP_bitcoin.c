@@ -2173,7 +2173,7 @@ int32_t bitcoin_validaddress(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t 
         return(-1);
     else if ( bitcoin_address(symbol,checkaddr,addrtype,taddr,rmd160,sizeof(rmd160)) != checkaddr || strcmp(checkaddr,coinaddr) != 0 )
     {
-        printf("bitcoin_validaddress checkaddr.%s != %s\n",checkaddr,coinaddr);
+        printf("%s pubtype.%d bitcoin_validaddress checkaddr.%s != %s\n",symbol,pubtype,checkaddr,coinaddr);
         return(-1);
     }
     return(0);
