@@ -56,7 +56,7 @@ char *LP_peers()
     return(jprint(peersjson,1));
 }
 
-struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t isLP,uint32_t sessionid)
+struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t isLP,uint32_t sessionid,uint16_t netid)
 {
     uint32_t ipbits; int32_t valid,pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
 #ifdef LP_STRICTPEERS
@@ -69,6 +69,11 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     {
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
+            if ( peer->netid != netid )
+            {
+                printf("netid mismatch for %s? %d vs %d\n",peer->ipaddr,peer->netid,G.netid);
+                return(0);
+            }
             if ( isLP != 0 && peer->isLP == 0 )
             {
                 if ( (peer->isLP= isLP) != 0 )
@@ -90,6 +95,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             else peer->sessionid = sessionid;
             peer->pushsock = peer->subsock = pushsock = subsock = -1;
             strcpy(peer->ipaddr,ipaddr);
+            peer->netid = netid;
             //peer->profitmargin = profitmargin;
             peer->ipbits = ipbits;
             if ( (peer->isLP= isLP) != 0 )
@@ -180,11 +186,6 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     } else printf("LP_addpeer: checkip.(%s) vs (%s)\n",checkip,ipaddr);
     return(peer);
 }
-
-uint64_t ip_port;
-uint32_t recvtime,numrecv,ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
-uint16_t port,netid;
-
 
 void LP_closepeers()
 {

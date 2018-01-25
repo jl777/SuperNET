@@ -570,7 +570,7 @@ char *LP_notify_recv(cJSON *argjson)
                     G.LP_IAMLP = 1;
                 }
             }
-            LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,RPC_port,RPC_port+10,RPC_port+20,1,juint(argjson,"session"));
+            LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,RPC_port,RPC_port+10,RPC_port+20,1,juint(argjson,"session"),G.netid);
         }
         //char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);
     }
