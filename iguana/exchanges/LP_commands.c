@@ -198,7 +198,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         if ( jobj(argjson,"userpass") != 0 )
             jdelete(argjson,"userpass");
-        LP_cmdcount++;
+        if ( LP_cmdcount++ == 0 )
+            printf("got first rpc command\n");
         if ( strcmp(method,"passphrase") == 0 )
         {
             char coinaddr[64],pub33str[67];
