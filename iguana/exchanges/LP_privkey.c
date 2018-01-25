@@ -372,7 +372,7 @@ void LP_privkey_updates(void *ctx,int32_t pubsock,char *passphrase)
 
 int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seednode)
 {
-    static void *ctx; int32_t counter; //iambob,; struct LP_utxoinfo *utxo,*tmp;
+    static void *ctx; struct iguana_info *coin,*tmp; int32_t counter;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( G.LP_pendingswaps != 0 )
@@ -395,6 +395,10 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
     if ( gui == 0 )
         gui = "cli";
     counter = G.USERPASS_COUNTER;
+    HASH_ITER(hh,LP_coins,coin,tmp)
+    {
+        coin->importedprivkey = 0;
+    }
     while ( G.waiting == 0 )
     {
         printf("waiting for G.waiting\n");
