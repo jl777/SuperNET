@@ -250,7 +250,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
     if ( duplicate != 0 )
         dup++;
     else uniq++;
-    portable_mutex_lock(&LP_commandmutex);
+    //portable_mutex_lock(&LP_commandmutex);
     if ( (LP_rand() % 100000) == 0 )
         printf("%s dup.%d (%u / %u) %.1f%% encrypted.%d recv.%u [%02x %02x] vs %02x %02x\n",typestr,duplicate,dup,dup+uniq,(double)100*dup/(dup+uniq),encrypted,crc32,ptr[0],ptr[1],crc32&0xff,(crc32>>8)&0xff);
     if ( duplicate == 0 )
@@ -340,7 +340,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 free_json(argjson);
         }
     } //else printf("DUPLICATE.(%s)\n",(char *)ptr);
-    portable_mutex_unlock(&LP_commandmutex);
+    //portable_mutex_unlock(&LP_commandmutex);
     if ( jsonstr != 0 && (void *)jsonstr != (void *)ptr && encrypted == 0 )
         free(jsonstr);
     return(retstr);
@@ -414,13 +414,13 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                             Broadcaststr = 0;
                             if ( (argjson= cJSON_Parse(str)) != 0 )
                             {
-                                portable_mutex_lock(&LP_commandmutex);
+                                //portable_mutex_lock(&LP_commandmutex);
                                 if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
                                 {
                                     if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,remoteaddr,0)) != 0 )
                                         free(retstr);
                                 }
-                                portable_mutex_unlock(&LP_commandmutex);
+                                //portable_mutex_unlock(&LP_commandmutex);
                                 free_json(argjson);
                             }
                             free(str);
