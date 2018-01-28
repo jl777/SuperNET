@@ -280,7 +280,7 @@ try_again:
                 *retstrp = retstr;
                 return(retstr);
             }
-printf("%s <- %s\n",url,command);
+//printf("%s <- %s\n",url,command);
             return(post_process_bitcoind_RPC(debugstr,command,retstr,params));
         }
         else
