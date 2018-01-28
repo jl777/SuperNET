@@ -115,7 +115,7 @@ int32_t hseek(HUFF *hp,int32_t offset,int32_t mode);
 #define GENESIS_SECRET "It was a bright cold day in April, and the clocks were striking thirteen."
 
 #define SATOSHIDEN ((uint64_t)100000000L)
-#define dstr(x) ((double)(x) / SATOSHIDEN)
+#define dstr(x) ((double)((uint64_t)(x)) / SATOSHIDEN)
 
 #define SMALLVAL 0.000000000000001
 

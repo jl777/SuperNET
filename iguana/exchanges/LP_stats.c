@@ -556,7 +556,7 @@ cJSON *LP_swapstats_json(struct LP_swapstats *sp)
     jaddbits256(item,"dest",sp->Q.desthash);
     jaddstr(item,"rel",sp->Q.destcoin);
     jaddnum(item,"relvol",dstr(sp->Q.destsatoshis));
-    jaddnum(item,"price",sp->qprice);
+    jaddnum(item,"price",dstr(SATOSHIDEN * sp->qprice));
     jaddnum(item,"requestid",sp->Q.R.requestid);
     jaddnum(item,"quoteid",sp->Q.R.quoteid);
     jaddnum(item,"finished",sp->finished);
@@ -823,7 +823,7 @@ char *LP_ticker(char *refbase,char *refrel)
                     jaddnum(retitem,"timestamp",juint(item,"timestamp"));
                     jaddnum(retitem,base,basevol);
                     jaddnum(retitem,rel,relvol);
-                    jaddnum(retitem,"price",relvol/basevol);
+                    jaddnum(retitem,"price",dstr(SATOSHIDEN * (relvol/basevol)));
                 }
                 jaddi(retjson,retitem);
             }

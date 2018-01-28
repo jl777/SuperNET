@@ -567,7 +567,7 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
     jaddnum(item,"satoshis",sp->Q.satoshis);
     jaddstr(item,"rel",sp->Q.destcoin);
     jaddnum(item,"destsatoshis",sp->Q.destsatoshis);
-    jaddnum(item,"price",sp->Q.destsatoshis/((double)sp->Q.satoshis+1));
+    jaddnum(item,"price",dstr(SATOSHIDEN * (sp->Q.destsatoshis/((double)sp->Q.satoshis+1))));
     if ( LP_swap_finished(sp,1) == 0 )
     {
         jaddnum(item,"finished",sp->finished);

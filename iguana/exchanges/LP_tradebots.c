@@ -142,13 +142,13 @@ cJSON *LP_tradebot_tradejson(struct LP_tradebot_trade *tp,int32_t dispflag)
     {
         if ( dispflag > 0 )
         {
-            jaddnum(item,"price",tp->relvol/tp->basevol);
+            jaddnum(item,"price",dstr(SATOSHIDEN * (tp->relvol/tp->basevol)));
             jaddnum(item,"volume",tp->relvol);
         }
         else
         {
             price = LP_pricevol_invert(&basevol,tp->relvol / tp->basevol,tp->relvol);
-            jaddnum(item,"price",price);
+            jaddnum(item,"price",dstr(SATOSHIDEN * price));
             jaddnum(item,"volume",basevol);
         }
     }
