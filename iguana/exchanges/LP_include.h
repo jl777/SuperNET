@@ -416,7 +416,7 @@ struct LP_swapstats
     uint64_t aliceid;
     int32_t bobneeds_dPoW,aliceneeds_dPoW;
     uint32_t ind,methodind,finished,expired,lasttime,dPoWfinished;
-    char alicegui[32],bobgui[32];
+    char alicegui[65],bobgui[65];
 };
 
 struct LP_pubswap { struct LP_pubswap *next,*prev; struct LP_swapstats *swap; };
