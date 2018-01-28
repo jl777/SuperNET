@@ -1402,7 +1402,7 @@ char *LP_recent_swaps(int32_t limit)
                                     jaddnum(subitem,"price",-destamount/srcamount);
                                     jaddi(item,subitem);
                                 }
-                            } else printf("base.%p rel.%p statusstr.%p baseind.%d relind.%d\n",base,rel,statusstr,baseind,relind);
+                            } //else printf("base.%p rel.%p statusstr.%p baseind.%d relind.%d\n",base,rel,statusstr,baseind,relind);
                             free_json(swapjson);
                         } else printf("error parsing.(%s)\n",retstr);
                         free(retstr);
