@@ -351,7 +351,7 @@ struct LP_address
     struct LP_address_utxo *utxos;
     bits256 pubkey;
     int64_t balance,total,instantdex_credits;
-    uint32_t timestamp,n,unspenttime;
+    uint32_t timestamp,n,unspenttime,instantdextime;
     int32_t unspentheight;
     char coinaddr[64];
     uint8_t pubsecp[33],didinstantdex;
