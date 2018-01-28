@@ -343,7 +343,7 @@ loop_end:
     {
         item->valueint = (int)number;
     }
-    printf("number %f -> %f %llu\n",number,item->valuedouble,(long long)item->valueint);
+    //printf("number %f -> %f %llu\n",number,item->valuedouble,(long long)item->valueint);
     item->type = cJSON_Number;
     
     input_buffer->offset += (size_t)(after_end - number_c_string);
@@ -505,7 +505,7 @@ static cJSON_bool print_number(const cJSON * const item, printbuffer * const out
     else
     {
         if ( fabs(d - (int64_t)d) < 0.0000001 )
-            length = sprintf((char *)number_buffer, "%llu", (long long)d);
+            length = sprintf((char *)number_buffer, "%llu", (long long)item->valueint);
         /* Try 8 decimal places of precision to avoid nonsignificant nonzero digits */
         else length = sprintf((char *)number_buffer, "%0.8f", d);
         printf("d A -> (%s)\n",number_buffer);
@@ -514,7 +514,7 @@ static cJSON_bool print_number(const cJSON * const item, printbuffer * const out
         if ((sscanf((char *)number_buffer, "%lg", &test) != 1) || ((double)test != d))
         {
             if ( fabs(d - (int64_t)d) < 0.0000001 )
-                length = sprintf((char *)number_buffer, "%llu", (long long)d);
+                length = sprintf((char *)number_buffer, "%llu", (long long)item->valueint);
             /* If not, print with 8 decimal places of precision */
             else length = sprintf((char *)number_buffer, "%0.8f", d);
             printf("d B -> (%s)\n",number_buffer);
