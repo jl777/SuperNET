@@ -71,7 +71,7 @@ cJSON *LP_portfolio_entry(struct iguana_info *coin)
     jaddstr(item,"coin",coin->symbol);
     jaddstr(item,"address",coin->smartaddr);
     jaddnum(item,"amount",dstr(coin->maxamount));
-    jaddnum(item,"price",dstr(SATOSHIDEN * coin->price_kmd));
+    jaddnum(item,"price",coin->price_kmd);
     jaddnum(item,"kmd_equiv",dstr(coin->kmd_equiv));
     jaddnum(item,"perc",coin->perc);
     jaddnum(item,"goal",coin->goal);

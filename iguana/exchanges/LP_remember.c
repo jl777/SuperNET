@@ -1399,7 +1399,7 @@ char *LP_recent_swaps(int32_t limit)
                                     subitem = cJSON_CreateObject();
                                     jaddnum(subitem,base,srcamount);
                                     jaddnum(subitem,rel,destamount);
-                                    jaddnum(subitem,"price",dstr(SATOSHIDEN * -destamount/srcamount));
+                                    jaddnum(subitem,"price",-destamount/srcamount);
                                     jaddi(item,subitem);
                                 }
                             } else printf("base.%p rel.%p statusstr.%p baseind.%d relind.%d\n",base,rel,statusstr,baseind,relind);

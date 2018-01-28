@@ -741,7 +741,7 @@ cJSON *LP_orderbookjson(char *symbol,struct LP_orderbookentry *op)
     {
         jaddstr(item,"coin",symbol);
         jaddstr(item,"address",op->coinaddr);
-        jaddnum(item,"price",dstr(SATOSHIDEN * op->price));
+        jaddnum(item,"price",op->price);
         jaddnum(item,"numutxos",op->numutxos);
         jaddnum(item,"avevolume",dstr(op->avesatoshis)*0.8);
         jaddnum(item,"maxvolume",dstr(op->maxsatoshis)*0.8);

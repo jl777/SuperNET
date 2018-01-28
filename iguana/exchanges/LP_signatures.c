@@ -92,7 +92,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
         if ( qp->satoshis != 0 )
         {
             price = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
-            jaddnum(retjson,"price",dstr(SATOSHIDEN * price));
+            jaddnum(retjson,"price",price);
         }
     }
     if ( qp->R.requestid != 0 )
@@ -405,7 +405,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
         jaddstr(reqjson,"base",base);
         jaddstr(reqjson,"rel",rel);
         price64 = price * SATOSHIDEN + 0.0000000049;
-        jaddnum(reqjson,"price",dstr(price64));
+        jaddnum(reqjson,"price",price);
         jadd64bits(reqjson,"price64",price64);
         jaddstr(reqjson,"method","postprice");
         timestamp = (uint32_t)time(NULL);

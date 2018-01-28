@@ -181,7 +181,7 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
         return(-33);
     }
     if ( qp->satoshis != 0 )
-        qprice = ((double)qp->destsatoshis / (qp->satoshis-qp->txfee)) + 0.000000049;
+        qprice = ((double)qp->destsatoshis / (qp->satoshis-qp->txfee));
     LP_txfees(&txfee,&desttxfee,qp->srccoin,qp->destcoin);
     if ( txfee < qp->txfee )
         txfee = qp->txfee;
@@ -846,7 +846,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     LP_abutxo_set(autxo,butxo,qp);
     if ( bits256_nonz(qp->srchash) == 0 || bits256_cmp(qp->srchash,G.LP_mypub25519) == 0 )
     {
-        qprice = (double)qp->destsatoshis / (qp->satoshis - qp->txfee) + 0.000000049;
+        qprice = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
         strcpy(qp->gui,G.gui);
         strcpy(qp->coinaddr,coin->smartaddr);
         strcpy(butxo->coinaddr,coin->smartaddr);
@@ -980,7 +980,7 @@ int32_t LP_trades_bestpricecheck(void *ctx,struct LP_trade *tp)
     //printf("check bestprice %.8f vs new price %.8f\n",tp->bestprice,(double)Q.destsatoshis/Q.satoshis);
     if ( Q.satoshis != 0 && (pubp= LP_pubkeyadd(Q.srchash)) != 0 )//(qprice= LP_trades_alicevalidate(ctx,&Q)) > 0. )
     {
-        qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee) + 0.000000049;
+        qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee);
         LP_aliceid(Q.tradeid,tp->aliceid,"reserved",0,0);
         if ( (retstr= LP_quotereceived(&Q)) != 0 )
             free(retstr);

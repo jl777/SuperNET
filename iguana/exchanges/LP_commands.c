@@ -681,7 +681,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         jaddnum(retjson,"timestamp",time(NULL));
         jaddnum(retjson,"bid",bid);
         jaddnum(retjson,"ask",ask);
-        jaddnum(retjson,"price",dstr(SATOSHIDEN * price));
+        jaddnum(retjson,"price",price);
         return(jprint(retjson,1));
     }
     /*else if ( strcmp(method,"getpeers") == 0 )
