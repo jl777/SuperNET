@@ -343,7 +343,7 @@ loop_end:
     {
         item->valueint = (int)number;
     }
-    
+    printf("number %f -> %f %llu\n",number,item->valuedouble,(long long)item->valueint);
     item->type = cJSON_Number;
     
     input_buffer->offset += (size_t)(after_end - number_c_string);
