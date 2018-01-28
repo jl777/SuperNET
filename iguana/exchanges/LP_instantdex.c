@@ -435,7 +435,7 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
 }
 
 #ifdef bruteforce
-void LP_instantdex_deposits(struct iguana_info *coin)
+/*void LP_instantdex_deposits(struct iguana_info *coin)
 {
     static int dispflag = 1;
     cJSON *array,*item; int32_t i,n,height,vout; bits256 txid; struct LP_address *ap,*tmp;
@@ -463,7 +463,7 @@ void LP_instantdex_deposits(struct iguana_info *coin)
         free_json(array);
     }
     dispflag = 0;
-}
+}*/
 #endif
 
 int64_t LP_dynamictrust(int64_t credits,bits256 pubkey,int64_t kmdvalue)
