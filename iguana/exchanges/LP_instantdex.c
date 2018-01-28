@@ -133,7 +133,7 @@ void LP_instantdex_depositadd(char *coinaddr,bits256 txid)
                         {
                             prevtxid = jbits256i(array,i);
                             //char str[65]; printf("instantdex iter.%d i.%d check %s\n",iter,i,bits256_str(str,prevtxid));
-                            if ( LP_instantdex_creditcalc(coin,0,prevtxid,coinaddr) > 0 )
+                            if ( LP_instantdex_creditcalc(coin,0,prevtxid,coinaddr,coinaddr) > 0 )
                             {
                                 LP_instantdex_deposituniq(fp,prevtxid);
                                 fflush(fp);
@@ -400,7 +400,7 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
     return(0);
 }
 
-int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256 txid,char *refaddr)
+int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256 txid,char *refaddr,char *origcoinaddr)
 {
     cJSON *txjson,*vouts,*txobj,*item; int64_t satoshis=0,amount64; int32_t weeki,numvouts; char destaddr[64],p2shaddr[64];
     if ( (txjson= LP_gettx(coin->symbol,txid,0)) != 0 )
@@ -410,7 +410,7 @@ int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits2
         {
             if ( refaddr != 0 && strcmp(refaddr,destaddr) != 0 )
             {
-                printf("LP_instantdex_creditcalc for (%s) but deposit sent for (%s)\n",refaddr,destaddr);
+                printf("LP_instantdex_creditcalc for (%s) but deposit sent for orig.(%s) (%s)\n",refaddr,origcoinaddr,destaddr);
             }
             else
             {
@@ -529,7 +529,7 @@ int64_t LP_instantdex_proofcheck(char *symbol,char *coinaddr,cJSON *proof,int32_
                         break;
                 }
                 if ( j == i )
-                    LP_instantdex_creditcalc(coin,1,txid,othersmartaddr);
+                    LP_instantdex_creditcalc(coin,1,txid,othersmartaddr,coinaddr);
             }
             credits = ap->instantdex_credits;
             ap->didinstantdex = 1;
