@@ -115,6 +115,11 @@ int main(int argc, const char * argv[])
 {
     char dirname[512],*passphrase; double incr; cJSON *retjson;
     OS_init();
+    {
+        cJSON *test = cJSON_CreateObject();
+        jaddnum(test,"test",-5);
+        printf("test (%s)\n",jprint(test,0));
+    }
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
     {
         uint8_t addrtype,rmd160[20],rmd160b[20]; char coinaddr[64],coinaddr2[64];
