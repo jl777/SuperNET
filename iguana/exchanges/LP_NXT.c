@@ -213,6 +213,7 @@ cJSON *LP_NXT_redeems()
     printf("calling (%s)\n",url);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
+        printf("got.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (array= jarray(&numtx,retjson,"transactions")) != 0 )
@@ -226,7 +227,7 @@ cJSON *LP_NXT_redeems()
                     txnum = j64bits(item,"transaction");
                     if ( txnum == txnum_marker )
                         past_marker = 1;
-                    printf("%d: %s\n",i,jprint(item,0));
+                    //printf("%d: %s\n",i,jprint(item,0));
                     if ( (recv= jstr(item,"recipientRS")) != 0 && strcmp(recv,"NXT-MRBN-8DFH-PFMK-A4DBM") == 0 )
                     {
                         if ( (attach= jobj(item,"attachment")) != 0 && jint(attach,"version.AssetTransfer") == 1 )
@@ -298,7 +299,7 @@ cJSON *LP_NXT_redeems()
             //free_json(retjson);
         }
         free(retstr);
-    }
+    } else printf("null return from NXT api call\n");
     printf("\nTotal redeemed.%d\n",numtx);
     for (past_marker=0; past_marker<2; past_marker++)
     {
