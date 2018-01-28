@@ -504,14 +504,18 @@ static cJSON_bool print_number(const cJSON * const item, printbuffer * const out
     }
     else
     {
+        if ( fabs(d - (int64_t)d) < 0.0000001 )
+            length = sprintf((char*)number_buffer, "%llu", (long long)d);
         /* Try 8 decimal places of precision to avoid nonsignificant nonzero digits */
-        length = sprintf((char*)number_buffer, "%1.8g", d);
+        else length = sprintf((char*)number_buffer, "%0.8f", d);
         
         /* Check whether the original double can be recovered */
         if ((sscanf((char*)number_buffer, "%lg", &test) != 1) || ((double)test != d))
         {
+            if ( fabs(d - (int64_t)d) < 0.0000001 )
+                length = sprintf((char*)number_buffer, "%llu", (long long)d);
             /* If not, print with 8 decimal places of precision */
-            length = sprintf((char*)number_buffer, "%1.8g", d);
+            else length = sprintf((char*)number_buffer, "%0.8f", d);
         }
     }
     
