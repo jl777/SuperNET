@@ -911,9 +911,9 @@ void LP_pubkeysloop(void *ctx)
         if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") != 0 )
         {
             LP_millistats_update(&LP_pubkeysloop_stats);
-            if ( time(NULL) > lasttime+60 )
+            if ( time(NULL) > lasttime+100 )
             {
-                printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
+                //printf("LP_pubkeysloop %u\n",(uint32_t)time(NULL));
                 LP_notify_pubkeys(ctx,LP_mypubsock);
                 lasttime = (uint32_t)time(NULL);
             }
