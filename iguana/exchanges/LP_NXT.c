@@ -210,10 +210,10 @@ cJSON *LP_NXT_redeems()
     char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
     memset(totals,0,sizeof(totals));
     sprintf(url,"http://127.0.0.1:7876/nxt?requestType=getBlockchainTransactions&account=%s",account);
-    printf("calling (%s)\n",url);
+    //printf("calling (%s)\n",url);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
-        printf("got.(%s)\n",retstr);
+        //printf("got.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (array= jarray(&numtx,retjson,"transactions")) != 0 )
