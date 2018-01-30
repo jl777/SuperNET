@@ -2167,7 +2167,7 @@ void bitcoin_priv2pub(void *ctx,char *symbol,uint8_t *pubkey33,char *coinaddr,bi
 
 int32_t bitcoin_validaddress(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,char *coinaddr)
 {
-    uint8_t rmd160[20],addrtype; char checkaddr[128];
+    uint8_t rmd160[20],addrtype; char checkaddr[64],checkaddr2[64];
     if ( coinaddr == 0 || coinaddr[0] == 0 )
         return(-1);
     else if ( bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,coinaddr) < 0 )
@@ -2179,7 +2179,9 @@ int32_t bitcoin_validaddress(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t 
         return(-1);
     else if ( bitcoin_address(symbol,checkaddr,addrtype,taddr,rmd160,sizeof(rmd160)) != checkaddr || strcmp(checkaddr,coinaddr) != 0 )
     {
-        printf("%s pubtype.%d bitcoin_validaddress checkaddr.%s != %s\n",symbol,pubtype,checkaddr,coinaddr);
+        bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,coinaddr);
+        bitcoin_address(symbol,checkaddr2,addrtype,taddr,rmd160,sizeof(rmd160));
+        printf("%s pubtype.%d taddr.%d bitcoin_validaddress checkaddr.%s != %s, checkaddr2.(%s)\n",symbol,pubtype,taddr,checkaddr,coinaddr,checkaddr2);
         return(-1);
     }
     return(0);
