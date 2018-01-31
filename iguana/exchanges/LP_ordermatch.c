@@ -481,11 +481,9 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,base,rel,zero,jprint(reqjson,0));
-                //if ( IAMLP == 0 )
-                {
-                    sleep(1);
-                    LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
-                }
+                sleep(1);
+                LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+                sleep(1);
                 LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
                 free_json(reqjson);
                 LP_importaddress(qp->destcoin,qp->destaddr);
@@ -910,12 +908,12 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         bits256 zero;
         memset(zero.bytes,0,sizeof(zero));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
-        //if ( IAMLP == 0 )
+        if ( 0 )//if ( IAMLP == 0 )
         {
             sleep(1);
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
         }
-        LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
+        //LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
         free_json(reqjson);
         return(qp);
     } else printf("request processing selected ineligible utxos?\n");
@@ -1016,7 +1014,7 @@ void LP_tradesloop(void *ctx)
     strcpy(LP_tradesloop_stats.name,"LP_tradesloop");
     LP_tradesloop_stats.threshold = 10000;
     sleep(5);
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         LP_millistats_update(&LP_tradesloop_stats);
         nonz = 0;
@@ -1169,7 +1167,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_quoteparse(&Q,argjson);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         LP_tradecommand_log(argjson);
-        printf("%-4d (%-10u %10u) %12s id.%22llu %5s/%-5s %12.8f -> %11.8f price %11.8f | RT.%d %d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,LP_RTcount,LP_swapscount);
+        printf("%-4d (%-10u %10u) %12s id.%-20llu %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,LP_RTcount,LP_swapscount,G.netid);
         //LP_autoprices_update(method,Q.srccoin,dstr(Q.satoshis),Q.destcoin,dstr(Q.destsatoshis));
         retval = 1;
         aliceid = j64bits(argjson,"aliceid");

@@ -2052,13 +2052,23 @@ bits256 bits256_calcaddrhash(char *symbol,uint8_t *serialized,int32_t  len)
 int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
 {
     bits256 hash; uint8_t *buf,_buf[26],data5[128],rmd21[21]; char prefixaddr[64],hrp[64]; int32_t len,len5,offset;
-    if ( strcmp(symbol,"BCH") == 0 && strlen(coinaddr) == 42 )
+    if ( coinaddr == 0 || coinaddr[0] == 0 )
     {
-        strcpy(prefixaddr,"bitcoincash:");
-        strcat(prefixaddr,coinaddr);
+        *addrtypep = 0;
+        memset(rmd160,0,20);
+        return(0);
+    }
+    if ( strcmp(symbol,"BCH") == 0 )//&& strlen(coinaddr) == 42 )
+    {
+        char *bchprefix = "bitcoincash:";
+        if ( strncmp(coinaddr,bchprefix,strlen(bchprefix)) != 0 )
+        {
+            strcpy(prefixaddr,bchprefix);
+            strcat(prefixaddr,coinaddr);
+        } else strcpy(prefixaddr,coinaddr);
         if ( bech32_decode(hrp,data5,&len5,prefixaddr) == 0 )
         {
-            printf("bitcoin_addr2rmd160 bech32_decode error.(%s)\n",coinaddr);
+            printf("bitcoin_addr2rmd160 bech32_decode error.(%s)\n",prefixaddr);
             return(0);
         }
         len = 0;
@@ -2157,7 +2167,7 @@ void bitcoin_priv2pub(void *ctx,char *symbol,uint8_t *pubkey33,char *coinaddr,bi
 
 int32_t bitcoin_validaddress(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,char *coinaddr)
 {
-    uint8_t rmd160[20],addrtype; char checkaddr[128];
+    uint8_t rmd160[20],addrtype; char checkaddr[64],checkaddr2[64];
     if ( coinaddr == 0 || coinaddr[0] == 0 )
         return(-1);
     else if ( bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,coinaddr) < 0 )
@@ -2169,7 +2179,9 @@ int32_t bitcoin_validaddress(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t 
         return(-1);
     else if ( bitcoin_address(symbol,checkaddr,addrtype,taddr,rmd160,sizeof(rmd160)) != checkaddr || strcmp(checkaddr,coinaddr) != 0 )
     {
-        printf("bitcoin_validaddress checkaddr.%s != %s\n",checkaddr,coinaddr);
+        bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,coinaddr);
+        bitcoin_address(symbol,checkaddr2,addrtype,taddr,rmd160,sizeof(rmd160));
+        printf("%s pubtype.%d taddr.%d bitcoin_validaddress checkaddr.%s != %s, checkaddr2.(%s)\n",symbol,pubtype,taddr,checkaddr,coinaddr,checkaddr2);
         return(-1);
     }
     return(0);
@@ -2213,24 +2225,18 @@ int32_t bitcoin_wif2priv(char *symbol,uint8_t wiftaddr,uint8_t *addrtypep,bits25
     if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
     {
         if ( len >= 32+offset )
+        {
             memcpy(privkeyp,buf+offset,32);
+            /*if ( len > 32+offset )
+                printf("wif %s: extra byte %d len.%d vs %d addrtype.%d\n",wifstr,buf[32+offset],len,32+offset,(wiftaddr == 0) ? buf[0] : buf[1]);
+            else printf("%s is for uncompressed\n",wifstr);*/
+        }
         else
         {
-            //printf("wif %s -> buf too short len.%d\n",wifstr,len);
+            printf("wif %s -> buf too short len.%d\n",wifstr,len);
             return(-1);
         }
         ptr = buf;
-        /*if ( len < 38 )
-        {
-            memset(pbuf,0,sizeof(pbuf));
-            memcpy(pbuf,buf,len-4);
-            memcpy(&pbuf[34],&buf[len-4],4);
-            ptr = pbuf;
-            int32_t i; for (i=0; i<38; i++)
-                printf("%02x ",pbuf[i]);
-            printf("pbuf from %d\n",len);
-            len = 38;
-        }*/
         hash = bits256_calcaddrhash(symbol,ptr,len - 4);
         *addrtypep = (wiftaddr == 0) ? *ptr : ptr[1];
         if ( strcmp(symbol,"GRS") != 0 && (ptr[len - 4]&0xff) == hash.bytes[31] && (ptr[len - 3]&0xff) == hash.bytes[30] &&(ptr[len - 2]&0xff) == hash.bytes[29] && (ptr[len - 1]&0xff) == hash.bytes[28] )
@@ -2283,7 +2289,7 @@ int32_t bitcoin_priv2wif(char *symbol,uint8_t wiftaddr,char *wifstr,bits256 priv
     memcpy(data+offset,privkey.bytes,len);
     data[offset + len++] = 1;
     len = base58encode_checkbuf(symbol,wiftaddr,addrtype,data,len);
-    if ( bitcoin_base58encode(wifstr,data,len) == 0 )
+    if ( bitcoin_base58encode(wifstr,data,len) == 0 ) // skips last byte?
     {
         char str[65]; printf("error making wif from %s\n",bits256_str(str,privkey));
         return(-1);

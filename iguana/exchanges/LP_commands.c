@@ -103,7 +103,7 @@ char *stats_JSON(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,char *r
          return(clonestr("{\"result\":\" \
 available localhost RPC commands: \n \
 setprice(base, rel, price, broadcast=1)\n\
-autoprice(base, rel, fixed, minprice, margin, refbase, refrel, factor, offset)*\n\
+autoprice(base, rel, fixed, minprice, maxprice, margin, refbase, refrel, factor, offset)*\n\
 goal(coin=*, val=<autocalc>)\n\
 myprice(base, rel)\n\
 enable(coin)\n\
@@ -123,7 +123,7 @@ sendrawtransaction(coin, signedtx)\n\
 swapstatus(pending=0)\n\
 swapstatus(coin, limit=10)\n\
 swapstatus(base, rel, limit=10)\n\
-swapstatus(requestid, quoteid)\n\
+swapstatus(requestid, quoteid, pending=0)\n\
 recentswaps(limit=3)\n\
 notarizations(coin)\n\
 public API:\n \
@@ -131,7 +131,7 @@ getcoins()\n\
 getcoin(coin)\n\
 portfolio()\n\
 getpeers()\n\
-passphrase(passphrase, gui)\n\
+passphrase(passphrase, gui, netid=0, seednode="")\n\
 listunspent(coin, address)\n\
 setconfirms(coin, numconfirms, maxconfirms=6)\n\
 trust(pubkey, trust) # positive to trust, 0 for normal, negative to blacklist\n\
@@ -161,7 +161,7 @@ bot_stop(botid)\n\
 bot_pause(botid)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
-jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
+jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
     
@@ -183,6 +183,7 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
             init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
             jaddstr(retjson,"pubsecp",pub33str);
             jadd(retjson,"coins",LP_coinsjson(LP_showwif));
+            LP_cmdcount++;
             return(jprint(retjson,1));
         }
         // if passphrase api and passphrase is right, ignore userpass, use hass of passphrase
@@ -198,11 +199,12 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         if ( jobj(argjson,"userpass") != 0 )
             jdelete(argjson,"userpass");
+        LP_cmdcount++;
         if ( strcmp(method,"passphrase") == 0 )
         {
             char coinaddr[64],pub33str[67];
             G.USERPASS_COUNTER = 1;
-            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui")) < 0 )
+            if ( LP_passphrase_init(jstr(argjson,"passphrase"),jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode")) < 0 )
                 return(clonestr("{\"error\":\"couldnt change passphrase\"}"));
             {
                 retjson = cJSON_CreateObject();
@@ -240,7 +242,7 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
         }
         else if ( strcmp(method,"jpg") == 0 )
         {
-            return(LP_jpg(jstr(argjson,"srcfile"),jstr(argjson,"destfile"),jint(argjson,"power2"),jstr(argjson,"passphrase"),jstr(argjson,"data"),jint(argjson,"required")));
+            return(LP_jpg(jstr(argjson,"srcfile"),jstr(argjson,"destfile"),jint(argjson,"power2"),jstr(argjson,"password"),jstr(argjson,"data"),jint(argjson,"required"),juint(argjson,"ind")));
         }
         /*else if ( strcmp(method,"sendmessage") == 0 )
         {
@@ -268,7 +270,8 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
         else if ( strcmp(method,"stop") == 0 )
         {
             printf("DEBUG stop\n");
-            exit(0);
+            LP_STOP_RECEIVED = 1;
+            return(clonestr("{\"result\":\"success\"}"));
         }
         else if ( strcmp(method,"millis") == 0 )
         {
@@ -570,7 +573,7 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
                     {
                         ptr->privkeydepth = 0;
                         LP_address_utxo_reset(ptr);
-                        LP_passphrase_init(jstr(argjson,"passphrase"),G.gui);
+                        LP_passphrase_init(jstr(argjson,"passphrase"),G.gui,G.netid,G.seednode);
                     }
                     if ( bits256_nonz(G.LP_privkey) != 0 )
                         LP_privkey_init(-1,ptr,G.LP_privkey,G.LP_mypub25519);
@@ -650,7 +653,7 @@ jpg(srcfile, destfile, power2=7, passphrase, data="", required)\n\
     else if ( strcmp(method,"notify") == 0 )
         return(LP_notify_recv(argjson));
     else if ( strcmp(method,"getpeers") == 0 )
-        retstr = clonestr("{\"error\":\"deprecated\"}");
+        return(LP_peers());
     else if ( strcmp(method,"balances") == 0 )
         return(jprint(LP_balances(jstr(argjson,"address")),1));
     else if ( strcmp(method,"fundvalue") == 0 )

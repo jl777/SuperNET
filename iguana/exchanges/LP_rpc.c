@@ -104,7 +104,7 @@ int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
             coin->height = height = jint(retjson,"blocks");
             if ( (*notarizedp= jint(retjson,"notarized")) != 0 && *notarizedp != coin->notarized )
             {
-                printf("new notarized %s %d -> %d\n",coin->symbol,coin->notarized,*notarizedp);
+                //printf("new notarized %s %d -> %d\n",coin->symbol,coin->notarized,*notarizedp);
                 coin->notarized = *notarizedp;
                 coin->notarizationtxid = jbits256(retjson,"notarizedtxid");
                 coin->notarizedhash = jbits256(retjson,"notarizedhash");
