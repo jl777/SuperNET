@@ -1,0 +1,2 @@
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"minprice\":0.05,\"maxprice\":0.2,\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"GRS\",\"rel\":\"KMD\",\"margin\":0.05,\"refbase\":\"groestlcoin\",\"refrel\":\"coinmarketcap\"}"

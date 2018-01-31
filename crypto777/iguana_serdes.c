@@ -80,7 +80,7 @@ int32_t iguana_sethdr(struct iguana_msghdr *H,const uint8_t netmagic[4],char *co
     iguana_rwnum(1,H->serdatalen,sizeof(int32_t),&datalen);
     if ( data != 0 )
     {
-        hash2 = bits256_doublesha256(0,data,datalen);
+        hash2 = bits256_doublesha256(0,data,datalen); // GRS?
         iguana_rwbignum(1,tmp.bytes,sizeof(tmp),hash2.bytes);
         for (i=0; i<4; i++)
             H->hash[i] = tmp.bytes[i];

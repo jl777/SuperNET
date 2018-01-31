@@ -433,7 +433,9 @@ cJSON *electrum_submit(char *symbol,struct electrum_info *ep,cJSON **retjsonp,ch
             if ( *retjsonp == 0 || jobj(*retjsonp,"error") != 0 )
             {
                 if ( ++ep->numerrors >= LP_ELECTRUM_MAXERRORS )
-                    electrum_kickstart(ep);
+                {
+                    // electrum_kickstart(ep); seems to hurt more than help
+                }
             } else if ( ep->numerrors > 0 )
                 ep->numerrors--;
             if ( ep->prev == 0 )

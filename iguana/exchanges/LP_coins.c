@@ -77,7 +77,7 @@ uint16_t LP_userpassfp(char *symbol,char *username,char *password,FILE *fp)
             if ( str != 0 )
             {
                 port = atoi(str);
-                //printf("RPCPORT.%u\n",port);
+                printf("found RPCPORT.%u\n",port);
                 free(str);
             }
         }
@@ -209,7 +209,7 @@ uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,
             printf("LP_statefname.(%s) <- %s %s %s (%s) (%s)\n",fname,name,symbol,assetname,userpass,confpath);
         return(port);
     } else printf("cant open.(%s)\n",fname);
-    return(0);
+    return(origport);
 }
 
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
@@ -218,8 +218,8 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
     jaddstr(item,"coin",coin->symbol);
     if ( showwif != 0 )
     {
-        bitcoin_priv2wif(coin->wiftaddr,wifstr,G.LP_privkey,coin->wiftype);
-        bitcoin_wif2priv(coin->wiftaddr,&tmptype,&checkkey,wifstr);
+        bitcoin_priv2wif(coin->symbol,coin->wiftaddr,wifstr,G.LP_privkey,coin->wiftype);
+        bitcoin_wif2priv(coin->symbol,coin->wiftaddr,&tmptype,&checkkey,wifstr);
         if ( bits256_cmp(G.LP_privkey,checkkey) == 0 )
             jaddstr(item,"wif",wifstr);
         else jaddstr(item,"wif","error creating wif");
@@ -351,7 +351,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
 uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *assetname,int32_t isPoS,uint16_t port,uint8_t pubtype,uint8_t p2shtype,uint8_t wiftype,uint64_t txfee,double estimatedrate,int32_t longestchain,uint8_t wiftaddr,uint8_t taddr,uint16_t busport,char *confpath)
 {
     static void *ctx;
-    char *name2;
+    char *name2; uint16_t origport = port;
     memset(coin,0,sizeof(*coin));
     safecopy(coin->symbol,symbol,sizeof(coin->symbol));
     if ( strcmp(symbol,"PART") == 0 )
@@ -368,7 +368,7 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     coin->p2shtype = p2shtype;
     coin->wiftype = wiftype;
     coin->inactive = (uint32_t)time(NULL);
-    coin->bussock = LP_coinbus(busport);
+    //coin->bussock = LP_coinbus(busport);
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     coin->ctx = ctx;
@@ -389,6 +389,8 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     port = LP_userpass(coin->userpass,symbol,assetname,name,name2,confpath,port);
 #endif
     sprintf(coin->serverport,"127.0.0.1:%u",port);
+    if ( port != origport )
+        printf("set curl path for %s to %s\n",symbol,coin->serverport);
     if ( strcmp(symbol,"KMD") == 0 || coin->isassetchain != 0 || taddr != 0 )
         coin->zcash = LP_IS_ZCASHPROTOCOL;
     else if ( strcmp(symbol,"BCH") == 0 )
@@ -517,7 +519,7 @@ void LP_otheraddress(char *destcoin,char *otheraddr,char *srccoin,char *coinaddr
     uint8_t addrtype,rmd160[20]; struct iguana_info *src,*dest;
     if ( (src= LP_coinfind(srccoin)) != 0 && (dest= LP_coinfind(destcoin)) != 0 )
     {
-        bitcoin_addr2rmd160(src->taddr,&addrtype,rmd160,coinaddr);
-        bitcoin_address(otheraddr,dest->taddr,dest->pubtype,rmd160,20);
+        bitcoin_addr2rmd160(srccoin,src->taddr,&addrtype,rmd160,coinaddr);
+        bitcoin_address(destcoin,otheraddr,dest->taddr,dest->pubtype,rmd160,20);
     } else printf("couldnt find %s or %s\n",srccoin,destcoin);
 }
