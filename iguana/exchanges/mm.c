@@ -69,11 +69,35 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 #endif
 #endif
 
+
 #include "LP_nativeDEX.c"
+
+void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t netid)
+{
+    int32_t netmod,netdiv; uint16_t otherports;
+    *pullportp = *pubportp = *busportp = 0;
+    if ( netid < 0 )
+        netid = 0;
+    else if ( netid > (65535-40-LP_RPCPORT)/4 )
+    {
+        printf("netid.%d overflow vs max netid.%d 14420?\n",netid,(65535-40-LP_RPCPORT)/4);
+        exit(-1);
+    }
+    if ( netid != 0 )
+    {
+        netmod = (netid % 10);
+        netdiv = (netid / 10);
+        otherports = (netdiv * 40) + (LP_RPCPORT + netmod);
+    } else otherports = LP_RPCPORT;
+    *pullportp = otherports + 10;
+    *pubportp = otherports + 20;
+    *busportp = otherports + 30;
+    printf("RPCport.%d remoteport.%d, nanoports %d %d %d\n",RPC_port,RPC_port-1,*pullportp,*pubportp,*busportp);
+}
 
 void LP_main(void *ptr)
 {
-    char *passphrase; double profitmargin; int32_t netmod,netdiv,netid=0; uint16_t port,otherports; cJSON *argjson = ptr;
+    char *passphrase; double profitmargin; uint16_t netid=0,port,pullport,pubport,busport; cJSON *argjson = ptr;
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
@@ -82,21 +106,8 @@ void LP_main(void *ptr)
             port = LP_RPCPORT;
         if ( jobj(argjson,"netid") != 0 )
             netid = juint(argjson,"netid");
-        if ( netid < 0 )
-            netid = 0;
-        else if ( netid > (65535-40-LP_RPCPORT)/4 )
-        {
-            printf("netid.%d overflow vs max netid.%d 14420?\n",netid,(65535-40-LP_RPCPORT)/4);
-            exit(-1);
-        }
-        if ( netid != 0 )
-        {
-            netmod = (netid % 10);
-            netdiv = (netid / 10);
-            otherports = (netdiv * 40) + (LP_RPCPORT + netmod);
-        } else otherports = LP_RPCPORT;
-        printf("RPCport.%d remoteport.%d, nanoports %d %d %d\n",port,port-1,otherports+10,otherports+20,otherports+30);
-        LPinit(port,otherports+10,otherports+20,otherports+30,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+        LP_ports(&pullport,&pubport,&busport,netid);
+        LPinit(port,pullport,pubport,busport,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 
@@ -203,15 +214,17 @@ int main(int argc, const char * argv[])
             DOCKERFLAG = 1;
         else if ( jstr(retjson,"docker") != 0 )
             DOCKERFLAG = (uint32_t)calc_ipbits(jstr(retjson,"docker"));
+        if ( jobj(retjson,"passphrase") != 0 )
+            jdelete(retjson,"passphrase");
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
-            jaddstr(retjson,"passphrase","test");
+            jaddstr(retjson,"passphrase","default");
         if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)retjson) != 0 )
         {
             printf("error launching LP_main (%s)\n",jprint(retjson,0));
             exit(-1);
         } //else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
-        while ( (1) )
+        while ( LP_STOP_RECEIVED == 0 )
             sleep(100000);
     }
 #endif

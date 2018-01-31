@@ -489,7 +489,7 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     item = cJSON_CreateObject();
     if ( LP_swap_endcritical < LP_swap_critical )
     {
-        jaddstr(item,"warning","swaps in critical section");
+        jaddstr(item,"warning","swaps in critical section, dont exit now");
         jaddnum(item,"critical",LP_swap_critical);
         jaddnum(item,"endcritical",LP_swap_endcritical);
     }
@@ -1044,7 +1044,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             free_json(txoutobj), flag = 0;
                         else flag = -1, rswap.depositspent = deadtxid;
                     }
-                    if ( flag == 0 )
+                    //if ( flag == 0 )
                     {
                         if ( rswap.Dredeemlen != 0 )
                             redeemlen = rswap.Dredeemlen, memcpy(redeemscript,rswap.Dredeemscript,rswap.Dredeemlen);
@@ -1119,7 +1119,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         free_json(txoutobj), flag = 0;
                     else flag = -1, rswap.paymentspent = deadtxid;
                 }
-                if ( flag == 0 && time(NULL) > rswap.expiration+777 )
+                if ( time(NULL) > rswap.expiration+777 )
                 {
                     // bobreclaim
                     redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,rswap.plocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,zero,rswap.privBn,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
@@ -1148,7 +1148,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         free_json(txoutobj), flag = 0;
                     else flag = -1, rswap.depositspent = deadtxid;
                 }
-                if ( flag == 0 && (bits256_nonz(rswap.Apaymentspent) != 0 || time(NULL) > rswap.expiration+777) )
+                if ( bits256_nonz(rswap.Apaymentspent) != 0 || time(NULL) > rswap.expiration+777 )
                 {
                     printf("do the refund! paymentspent.%s now.%u vs expiration.%u\n",bits256_str(str,rswap.paymentspent),(uint32_t)time(NULL),rswap.expiration);
                     //if ( txbytes[BASILISK_BOBREFUND] == 0 )
@@ -1202,7 +1202,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         {
             jaddstr(item,"method","tradestatus");
             jaddnum(item,"finishtime",rswap.finishtime);
-            jaddstr(item,"gui",G.gui);
+            if ( jobj(item,"gui") == 0 )
+                jaddstr(item,"gui",G.gui);
             //jaddbits256(item,"srchash",rswap.Q.srchash);
             //jaddbits256(item,"desthash",rswap.desthash);
             itemstr = jprint(item,0);
@@ -1401,7 +1402,7 @@ char *LP_recent_swaps(int32_t limit)
                                     jaddnum(subitem,"price",-destamount/srcamount);
                                     jaddi(item,subitem);
                                 }
-                            } else printf("base.%p rel.%p statusstr.%p baseind.%d relind.%d\n",base,rel,statusstr,baseind,relind);
+                            } //else printf("base.%p rel.%p statusstr.%p baseind.%d relind.%d\n",base,rel,statusstr,baseind,relind);
                             free_json(swapjson);
                         } else printf("error parsing.(%s)\n",retstr);
                         free(retstr);

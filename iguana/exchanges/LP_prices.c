@@ -511,7 +511,7 @@ char *LP_myprices()
 
 int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
 {
-    struct LP_priceinfo *basepp,*relpp; struct LP_pubkey_info *pubp;
+    struct LP_priceinfo *basepp,*relpp; struct LP_pubkey_info *pubp; double minprice,maxprice;
     *changedp = 0;
     //if ( strcmp("DEX",base) == 0 || strcmp("DEX",rel) == 0 )
     //    printf("%s/%s setprice %.8f\n",base,rel,price);
@@ -528,6 +528,19 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
             relpp->sellmargins[basepp->ind] = 0.;
             relpp->offsets[basepp->ind] = 0.;
             relpp->factors[basepp->ind] = 0.;
+        }
+        else if ( (minprice= basepp->minprices[relpp->ind]) > SMALLVAL && price < minprice )
+        {
+            printf("%s/%s price %.8f less than minprice %.8f\n",base,rel,price,minprice);
+            price = minprice;
+        }
+        else if ( (maxprice= relpp->minprices[basepp->ind]) > SMALLVAL )
+        {
+            if ( price > (1. / maxprice) )
+            {
+                printf("%s/%s price %.8f less than maxprice %.8f, more than %.8f\n",base,rel,price,maxprice,1./maxprice);
+                price = (1. / maxprice);
+            }
         }
         /*else if ( basepp->myprices[relpp->ind] > SMALLVAL )
         {
@@ -936,6 +949,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
     jaddstr(retjson,"base",base);
     jaddstr(retjson,"rel",rel);
     jaddnum(retjson,"timestamp",now);
+    jaddnum(retjson,"netid",G.netid);
     if ( bids != 0 )
         free(bids);
     if ( asks != 0 )

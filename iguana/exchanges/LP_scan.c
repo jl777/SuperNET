@@ -453,7 +453,7 @@ int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
         return(-1);
     }
     expiration = (uint32_t)time(NULL) + duration;
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         if ( LP_gettx_presence(symbol,txid) != 0 )
             numconfirms = 0;

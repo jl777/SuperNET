@@ -635,7 +635,7 @@ cJSON *LP_balances(char *coinaddr)
                 strcpy(address,coin->smartaddr);
             else
             {
-                bitcoin_addr2rmd160(coin->symbol,taddr,&addrtype,rmd160,coinaddr);
+                bitcoin_addr2rmd160("KMD",taddr,&addrtype,rmd160,coinaddr);
                 bitcoin_address(coin->symbol,address,coin->taddr,coin->pubtype,rmd160,20);
                 //printf("%s taddr.%d addrtype.%u %s -> %s [%c %c].%d\n",coin->symbol,taddr,addrtype,coinaddr,address,coinaddr[0],coinaddr[1],coinaddr[0] == 't' && (coinaddr[1] == '1' || coinaddr[1] == '3'));
             }
