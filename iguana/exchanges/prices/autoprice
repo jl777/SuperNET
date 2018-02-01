@@ -12,11 +12,13 @@ curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\
 curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BTCH\",\"offset\":0.0,\"refbase\":\"KMD\",\"refrel\":\"HUSH\",\"factor\":1.44,\"buymargin\":0.05,\"sellmargin\":0.05}"
 curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"BTCH\",\"rel\":\"KMD\",\"offset\":0.0,\"refbase\":\"HUSH\",\"refrel\":\"KMD\",\"factor\":0.7,\"buymargin\":0.05,\"sellmargin\":0.05}"
 
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"BEER\",\"rel\":\"PIZZA\",\"fixed\":0.0001,\"margin\":0.00001}"
+
 source crypto
 source trackbtc
 
-source jumblr
-source trackbtc
+#source jumblr
+#source trackbtc
 
 source pangea
 source trackbtc
@@ -24,8 +26,8 @@ source trackbtc
 source bet
 source trackbtc
 
-source revs
-source trackbtc
+#source revs
+#source trackbtc
 
 sharkholdings="{\"coin\":\"iota\",\"balance\":1500000}, {\"coin\":\"bitcoin-cash\",\"balance\":1200}, {\"coin\":\"bitcoin\",\"balance\":145}"
 curl --url "http://127.0.0.1:7783" --data "{\"base\":\"MSHARK\",\"rel\":\"KMD\",\"fundvalue_bid\":\"NAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"margin\":$margin,\"address\":\"RTu3JZZKLJTcfNwBa19dWRagEfQq49STqC\",\"holdings\":[$sharkholdings],\"divisor\":1400000}"
@@ -40,4 +42,8 @@ curl --url "http://127.0.0.1:7783" --data "{\"base\":\"DEX\",\"rel\":\"KMD\",\"m
 
 curl --url "http://127.0.0.1:7783" --data "{\"base\":\"BOTS\",\"rel\":\"KMD\",\"margin\":$margin,\"fundvalue_bid\":\"assetNAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"address\":\"RNdqHx26GWy9bk8MtmH1UiXjQcXE4RKK2P\",\"holdings\":[$dexholdings],\"divisor\":3333333}"
 
-curl --url "http://127.0.0.1:7783" --data "{\"base\":\"MGW\",\"rel\":\"KMD\",\"margin\":$margin,\"fundvalue_bid\":\"assetNAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"holdings\":[$dexholdings],\"divisor\":10000000}"
+curl --url "http://127.0.0.1:7783" --data "{\"base\":\"JUMBLR\",\"rel\":\"KMD\",\"margin\":$margin,\"fundvalue_bid\":\"assetNAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"address\":\"RGhxXpXSSBTBm9EvNsXnTQczthMCxHX91t\",\"holdings\":[$dexholdings],\"divisor\":3333333}"
+
+curl --url "http://127.0.0.1:7783" --data "{\"base\":\"MGW\",\"rel\":\"KMD\",\"margin\":$margin,\"fundvalue_bid\":\"assetNAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"holdings\":[$dexholdings],\"divisor\":13000000}"
+
+curl --url "http://127.0.0.1:7783" --data "{\"base\":\"REVS\",\"rel\":\"KMD\",\"margin\":$margin,\"fundvalue_bid\":\"assetNAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"holdings\":[$dexholdings],\"divisor\":9000000}"

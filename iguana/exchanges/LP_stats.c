@@ -201,9 +201,11 @@ int32_t LP_statslog_parse()
 struct LP_swapstats *LP_swapstats_find(uint64_t aliceid)
 {
     struct LP_swapstats *sp;
+    portable_mutex_lock(&LP_statslogmutex);
     HASH_FIND(hh,LP_RTstats,&aliceid,sizeof(aliceid),sp);
     if ( sp == 0 )
         HASH_FIND(hh,LP_swapstats,&aliceid,sizeof(aliceid),sp);
+    portable_mutex_unlock(&LP_statslogmutex);
     return(sp);
 }
 
@@ -214,9 +216,11 @@ struct LP_swapstats *LP_swapstats_add(uint64_t aliceid,int32_t RTflag)
     {
         sp = calloc(1,sizeof(*sp));
         sp->aliceid = aliceid;
+        portable_mutex_lock(&LP_statslogmutex);
         if ( RTflag != 0 )
             HASH_ADD(hh,LP_RTstats,aliceid,sizeof(aliceid),sp);
         else HASH_ADD(hh,LP_swapstats,aliceid,sizeof(aliceid),sp);
+        portable_mutex_unlock(&LP_statslogmutex);
     }
     return(LP_swapstats_find(aliceid));
 }
@@ -742,8 +746,10 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
     {
         if ( LP_stats_dispiter(array,sp,starttime,endtime,refbase,refrel,refgui,refpubkey) > 0 )
         {
+            portable_mutex_lock(&LP_statslogmutex);
             HASH_DELETE(hh,LP_RTstats,sp);
             HASH_ADD(hh,LP_swapstats,aliceid,sizeof(sp->aliceid),sp);
+            portable_mutex_unlock(&LP_statslogmutex);
         }
         else
         {

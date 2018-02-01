@@ -156,7 +156,7 @@ void _LP_sendqueueadd(uint32_t crc32,int32_t sock,uint8_t *msg,int32_t msglen,in
     memcpy(ptr->msg,msg,msglen); // sizeof(bits256) at the end all zeroes
     DL_APPEND(LP_Q,ptr);
     LP_Qenqueued++;
-    //printf("Q.%p: peerind.%d msglen.%d\n",ptr,peerind,msglen);
+    //printf("Q.%p: peerind.%d msglen.%d sock.%d\n",ptr,peerind,msglen,sock);
 }
 
 uint32_t _LP_magic_check(bits256 hash,bits256 magic)
@@ -213,7 +213,7 @@ int32_t LP_magic_check(uint8_t *msg,int32_t recvlen,char *remoteaddr)
 
 int32_t LP_crc32find(int32_t *duplicatep,int32_t ind,uint32_t crc32)
 {
-    static uint32_t crcs[4096]; static unsigned long dup,total;
+    static uint32_t crcs[16384]; static unsigned long dup,total;
     int32_t i;
     *duplicatep = 0;
     if ( ind < 0 )
@@ -304,10 +304,11 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
     msglen = (int32_t)strlen((char *)msg) + 1;
     if ( crc32 == 0 )
         crc32 = calc_crc32(0,&msg[2],msglen - 2);
+    //printf("crc32.%x IAMLP.%d pubsock.%d\n",crc32,G.LP_IAMLP,pubsock);
 #ifdef FROM_MARKETMAKER
-    if ( G.LP_IAMLP == 0 )
+    if ( G.LP_IAMLP == 0 || pubsock < 0 )
 #else
-    if ( IAMLP == 0 )
+    if ( IAMLP == 0 || pubsock < 0 )
 #endif
     {
         free(msg);
@@ -320,7 +321,13 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
         msg = (void *)jprint(argjson,0);
         msglen = (int32_t)strlen((char *)msg) + 1;
         LP_queuesend(crc32,-1,base,rel,msg,msglen);
-    } else LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
+        if ( pubsock >= 0 )
+            LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
+    }
+    else
+    {
+        LP_queuesend(crc32,pubsock,base,rel,msg,msglen);
+    }
     free(msg);
 }
 
@@ -410,8 +417,8 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
     static struct nn_pollfd *pfds;
     int32_t i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];
     strcpy(LP_psockloop_stats.name,"LP_psockloop");
-    LP_psockloop_stats.threshold = 200.;
-    while ( 1 )
+    LP_psockloop_stats.threshold = 1000.;
+    while ( LP_STOP_RECEIVED == 0 )
     {
         LP_millistats_update(&LP_psockloop_stats);
         now = (uint32_t)time(NULL);
@@ -733,7 +740,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
         *mypullportp = 0;
         if ( ispaired == 0 )
         {
-            strcpy(publicaddr,"127.0.0.1");
+            sprintf(publicaddr,"127.0.0.1:%u",mypullport);
             return(-1);
         }
         while ( *mypullportp == 0 )

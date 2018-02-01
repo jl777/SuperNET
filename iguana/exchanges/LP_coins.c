@@ -368,7 +368,7 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     coin->p2shtype = p2shtype;
     coin->wiftype = wiftype;
     coin->inactive = (uint32_t)time(NULL);
-    coin->bussock = LP_coinbus(busport);
+    //coin->bussock = LP_coinbus(busport);
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     coin->ctx = ctx;

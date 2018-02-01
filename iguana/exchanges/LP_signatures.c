@@ -42,7 +42,8 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
 cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 {
     double price; cJSON *retjson = cJSON_CreateObject();
-    jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
+    if ( jobj(retjson,"gui") == 0 )
+        jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jadd64bits(retjson,"aliceid",qp->aliceid);
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
@@ -542,8 +543,8 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
             jaddstr(reqjson,"isLP",LPipaddr);
             if ( strcmp(LPipaddr,LP_myipaddr) == 0 )
                 jaddnum(reqjson,"ismine",1);
-        }
-        else printf("no LPipaddr\n");
+            //printf("notify send isLP.%s ismine.%d\n",LPipaddr,strcmp(LPipaddr,LP_myipaddr) == 0);
+        } else printf("no LPipaddr\n");
     }
     jaddnum(reqjson,"session",G.LP_sessionid);
     LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
@@ -569,7 +570,7 @@ char *LP_notify_recv(cJSON *argjson)
                     G.LP_IAMLP = 1;
                 }
             }
-            LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,RPC_port,RPC_port+10,RPC_port+20,1,juint(argjson,"session"));
+            LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,RPC_port,RPC_port+10,RPC_port+20,1,juint(argjson,"session"),G.netid);
         }
         //char str[65]; printf("%.3f NOTIFIED pub %s rmd160 %s\n",OS_milliseconds()-millis,bits256_str(str,pub),rmd160str);
     }
@@ -676,6 +677,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
         memset(&zero,0,sizeof(zero));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
         //if ( strcmp(method,"request") == 0 )
+        if ( 0 )
         {
             sleep(1);
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
