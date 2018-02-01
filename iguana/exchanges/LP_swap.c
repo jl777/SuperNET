@@ -861,15 +861,21 @@ void LP_aliceloop(void *_swap)
         {
             LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
+            if ( swap->I.alicetomic[0] != 0 )
+            {
+                // artem: do stuff alice needs to do at the beginning of the swap, before dexfee
+            }
             if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
                 printf("error sending alicefee\n");
             else if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_bobdeposit) < 0 )
                 printf("error waiting for bobdeposit\n");
             else
             {
-                /*if ( strcmp(swap->I.bobstr,"BTC") == 0 )
-                    m = 0;
-                else*/ m = swap->I.bobconfirms;
+                if ( swap->I.alicetomic[0] != 0 )
+                {
+                    // artem: do stuff alice needs to do after bobdeposit comes in
+                }
+                m = swap->I.bobconfirms;
                 while ( (n= LP_numconfirms(swap->I.bobstr,swap->bobdeposit.I.destaddr,swap->bobdeposit.I.signedtxid,0,1)) < m )
                 {
                     LP_swap_critical = (uint32_t)time(NULL);
@@ -880,9 +886,11 @@ void LP_aliceloop(void *_swap)
                     printf("error sending alicepayment\n");
                 else
                 {
-                    /*if ( strcmp(swap->I.alicestr,"BTC") == 0 )
-                        m = 0;
-                    else*/ m = swap->I.aliceconfirms;
+                    if ( swap->I.alicetomic[0] != 0 )
+                    {
+                        // artem: do stuff alice needs to do right before alicepayment goes out
+                    }
+                    m = swap->I.aliceconfirms;
                     while ( (n= LP_numconfirms(swap->I.alicestr,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m )
                     {
                         LP_swap_critical = (uint32_t)time(NULL);
@@ -895,22 +903,20 @@ void LP_aliceloop(void *_swap)
                         printf("error waiting for bobpayment\n");
                     else
                     {
+                        if ( swap->I.alicetomic[0] != 0 )
+                        {
+                            // artem: do stuff alice needs to do after bobpayment comes in
+                        }
                         LP_swap_endcritical = (uint32_t)time(NULL);
                         while ( (n= LP_numconfirms(swap->I.bobstr,swap->bobpayment.I.destaddr,swap->bobpayment.I.signedtxid,0,1)) < swap->I.bobconfirms )
                         {
                             char str[65];printf("%d wait for bobpayment %s numconfs.%d %s %s\n",n,swap->bobpayment.I.destaddr,swap->I.bobconfirms,swap->I.bobstr,bits256_str(str,swap->bobpayment.I.signedtxid));
                             sleep(10);
                         }
-                        /*if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x20000,data,maxlen,&swap->alicespend,0x40000,0) == 0 )
-                         printf("error sending alicespend\n");
-                         while ( (n= LP_numconfirms(swap->I.alicestr,swap->alicespend.I.destaddr,swap->alicespend.I.signedtxid,0,1)) < swap->I.aliceconfirms )
-                         {
-                         char str[65];printf("%d wait for alicespend %s numconfs.%d %s %s\n",n,swap->alicespend.I.destaddr,swap->I.aliceconfirms,swap->I.bobstr,bits256_str(str,swap->alicespend.I.signedtxid));
-                         sleep(LP_SWAPSTEP_TIMEOUT);
-                         }*/
                         if ( swap->N.pair >= 0 )
                             nn_close(swap->N.pair), swap->N.pair = -1;
                         LP_swap_endcritical = (uint32_t)time(NULL);
+                        // spending is done in LP_remember.c
                         LP_swapwait(swap,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*2,swap->I.aliceconfirms == 0 ? 3 : 30);
                     }
                 }
@@ -1040,6 +1046,8 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag=-2,x = -1; struct iguana_info *bobcoin,*alicecoin;
     strcpy(swap->I.bobstr,swap->I.req.src);
     strcpy(swap->I.alicestr,swap->I.req.dest);
+    LP_etomicsymbol(swap->I.bobtomic,swap->I.bobstr);
+    LP_etomicsymbol(swap->I.alicetomic,swap->I.bobstr);
     if ( (alicecoin= LP_coinfind(swap->I.alicestr)) == 0 )
     {
         printf("missing alicecoin src.%p dest.%p\n",LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));

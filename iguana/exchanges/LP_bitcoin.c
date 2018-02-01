@@ -2041,10 +2041,10 @@ bits256 bits256_calcaddrhash(char *symbol,uint8_t *serialized,int32_t  len)
     else
     {
         HashGroestl(hash.bytes,serialized,len);
-        int32_t i; char str[65];
+        /*int32_t i; char str[65];
         for (i=0; i<len; i++)
             printf("%02x",serialized[i]);
-        printf(" HashGroestl %d -> %s\n",len,bits256_str(str,hash));
+        printf(" HashGroestl %d -> %s\n",len,bits256_str(str,hash));*/
     }
     return(hash);
 }

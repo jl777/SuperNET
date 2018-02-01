@@ -41,13 +41,17 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
 
 cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 {
-    double price; cJSON *retjson = cJSON_CreateObject();
+    double price; char etomic[64]; cJSON *retjson = cJSON_CreateObject();
     if ( jobj(retjson,"gui") == 0 )
         jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jadd64bits(retjson,"aliceid",qp->aliceid);
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
+    if ( LP_etomicsymbol(etomic,qp->srccoin) != 0 )
+        jaddstr(retjson,"esrc",etomic);
     jaddstr(retjson,"rel",qp->destcoin);
+    if ( LP_etomicsymbol(etomic,qp->destcoin) != 0 )
+        jaddstr(retjson,"edest",etomic);
     if ( qp->coinaddr[0] != 0 )
         jaddstr(retjson,"address",qp->coinaddr);
     if ( qp->timestamp != 0 )
@@ -104,12 +108,28 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 {
-    uint32_t rid,qid;
+    uint32_t rid,qid; char etomic[64],*etomicstr;
     memset(qp,0,sizeof(*qp));
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
+    if ( LP_etomicsymbol(etomic,qp->srccoin) != 0 )
+    {
+        if ( (etomicstr= jstr(argjson,"esrc")) == 0 || strcmp(etomicstr,etomic) != 0 )
+        {
+            printf("etomic src mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
+            return(-1);
+        }
+    }
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
+    if ( LP_etomicsymbol(etomic,qp->destcoin) != 0 )
+    {
+        if ( (etomicstr= jstr(argjson,"edest")) == 0 || strcmp(etomicstr,etomic) != 0 )
+        {
+            printf("etomic dest mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
+            return(-1);
+        }
+    }
     safecopy(qp->destaddr,jstr(argjson,"destaddr"),sizeof(qp->destaddr));
     qp->aliceid = j64bits(argjson,"aliceid");
     qp->tradeid = juint(argjson,"tradeid");

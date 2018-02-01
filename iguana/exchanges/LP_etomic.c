@@ -55,7 +55,7 @@ extern "C" {
         char* bobAddress;
         char* aliceHash;
         char* bobSecret;
-    } AliceClaimsAlicePaymentInput;
+    } AliceReclaimsAlicePaymentInput;
     
     typedef struct {
         char* dealId;
@@ -64,7 +64,7 @@ extern "C" {
         char* aliceAddress;
         char* aliceSecret;
         char* bobHash;
-    } BobClaimsAlicePaymentInput;
+    } BobSpendsAlicePaymentInput;
     
     typedef struct {
         char* depositId;
@@ -87,7 +87,7 @@ extern "C" {
         char* aliceAddress;
         char* bobSecret;
         char* aliceCanClaimAfter;
-    } BobClaimsDepositInput;
+    } BobRefundsDepositInput;
     
     typedef struct {
         char* depositId;
@@ -119,7 +119,7 @@ extern "C" {
         char* aliceAddress;
         char* aliceHash;
         char* bobCanClaimAfter;
-    } BobClaimsBobPaymentInput;
+    } BobReclaimsBobPaymentInput;
     
     typedef struct {
         char* paymentId;
@@ -128,22 +128,57 @@ extern "C" {
         char* aliceSecret;
         char* bobAddress;
         char* bobCanClaimAfter;
-    } AliceClaimsBobPaymentInput;
+    } AliceSpendsBobPaymentInput;
     
-    void approveErc20(char* amount, char* from, char* secret, char* buffer, int nonce);
-    void aliceInitsEthDeal(AliceInitEthInput input, BasicTxData txData, char* result);
-    void aliceInitsErc20Deal(AliceInitErc20Input input, BasicTxData txData, char* result);
-    void aliceClaimsAlicePayment(AliceClaimsAlicePaymentInput input, BasicTxData txData, char* result);
-    void bobClaimsAlicePayment(BobClaimsAlicePaymentInput input, BasicTxData txData, char* result);
-    void bobMakesEthDeposit(BobMakesEthDepositInput input, BasicTxData txData, char* result);
-    void bobMakesErc20Deposit(BobMakesErc20DepositInput input, BasicTxData txData, char* result);
-    void bobClaimsDeposit(BobClaimsDepositInput input, BasicTxData txData, char* result);
-    void aliceClaimsBobDeposit(AliceClaimsBobDepositInput input, BasicTxData txData, char* result);
-    void bobMakesEthPayment(BobMakesEthPaymentInput input, BasicTxData txData, char* result);
-    void bobMakesErc20Payment(BobMakesErc20PaymentInput input, BasicTxData txData, char* result);
-    void bobClaimsBobPayment(BobClaimsBobPaymentInput input, BasicTxData txData, char* result);
-    void aliceClaimsBobPayment(AliceClaimsBobPaymentInput input, BasicTxData txData, char* result);
     // Your prototype or Definition
 #ifdef __cplusplus
 }
 #endif
+
+#define ETOMIC_ALICECONTRACT "0xe1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c"
+#define ETOMIC_BOBCONTRACT "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2"
+#define ETOMIC_SATOSHICAT "0000000000"
+
+char *aliceInitsEthDeal(AliceInitEthInput input,BasicTxData txData);
+char *aliceInitsErc20Deal(AliceInitErc20Input input,BasicTxData txData);
+char *aliceMakesEthPayment(AliceMakesEthPaymentInput input,BasicTxData txData);
+char *aliceMakesErc20Payment(AliceMakesErc20PaymentInput input,BasicTxData txData);
+char *aliceSpendsBobPayment(AliceSpendsBobPaymentInput input,BasicTxData txData);
+char *aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input,BasicTxData txData);
+char *aliceClaimsBobDeposit(AliceClaimsBobDepositInput input,BasicTxData txData);
+
+char *bobMakesEthDeposit(BobMakesEthDepositInput input,BasicTxData txData);
+char *bobMakesErc20Deposit(BobMakesErc20DepositInput input,BasicTxData txData);
+char *bobMakesEthPayment(BobMakesEthPaymentInput input,BasicTxData txData);
+char *bobMakesErc20Payment(BobMakesErc20PaymentInput input,BasicTxData txData);
+char *bobSpendsAlicePayment(BobSpendsAlicePaymentInput input,BasicTxData txData);
+char *bobReclaimsBobPayment(BobReclaimsBobPaymentInput input,BasicTxData txData);
+char *bobRefundsDeposit(BobRefundsDepositInput input,BasicTxData txData);
+
+char *approveErc20(char *amount,char *from,char *secret,char *buffer,int32_t nonce);
+
+int32_t LP_etomicsymbol(char *etomic,char *symbol)
+{
+    struct iguana_info *coin;
+    etomic[0] = 0;
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+        strcpy(etomic,coin->etomic);
+    return(etomic[0] != 0);
+}
+
+char *LP_etomicalice_start(struct basilisk_swap *swap)
+{
+    AliceInitEthInput input; AliceInitErc20Input input20; BasicTxData txData;
+    // set input and txData fields from the swap data structure
+    memset(&txData,0,sizeof(txData));
+    if ( strcmp(swap->I.alicestr,"ETH") == 0 )
+    {
+        memset(&input,0,sizeof(input));
+        return(aliceInitsEthDeal(input,txData));
+    }
+    else
+    {
+        memset(&input20,0,sizeof(input20));
+        return(aliceInitsErc20Deal(input20,txData));
+    }
+}

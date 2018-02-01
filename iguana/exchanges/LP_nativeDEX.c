@@ -174,6 +174,7 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_NXT.c"
 #include "LP_cache.c"
 #include "LP_RTmetrics.c"
+#include "LP_etomic.c"
 #include "LP_utxo.c"
 #include "LP_prices.c"
 #include "LP_scan.c"
@@ -795,7 +796,7 @@ void bech32_tests()
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
-    int32_t i,n,notarized; cJSON *item; char *symbol; struct iguana_info *coin;
+    int32_t i,n,notarized; cJSON *item; char *symbol,*etomic; struct iguana_info *coin;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
         printf("%s, ",activecoins[i]);
@@ -830,9 +831,14 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                 LP_priceinfoadd(jstr(item,"coin"));
                 if ( (coin= LP_coinfind(symbol)) != 0 )
                 {
-                    if ( LP_getheight(&notarized,coin) <= 0 )
-                        coin->inactive = (uint32_t)time(NULL);
-                    else LP_unspents_load(coin->symbol,coin->smartaddr);
+                    if ( (etomic= jstr(item,"etomic")) != 0 )
+                        safecopy(coin->etomic,etomic,sizeof(coin->etomic));
+                    else
+                    {
+                        if ( LP_getheight(&notarized,coin) <= 0 )
+                            coin->inactive = (uint32_t)time(NULL);
+                        else LP_unspents_load(coin->symbol,coin->smartaddr);
+                    }
                     if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
                         coin->txfee = LP_MIN_TXFEE;
                     if ( 0 && strcmp(coin->symbol,"BCH") == 0 )
