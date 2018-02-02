@@ -29,6 +29,7 @@
 #define STATS_DEST "/var/www/html/DEXstats.json"
 #include "DEXstats.h"
 char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
+extern uint32_t DOCKERFLAG;
 
 char *stats_validmethods[] =
 {
@@ -46,6 +47,7 @@ int32_t LP_valid_remotemethod(cJSON *argjson)
         for (i=0; i<sizeof(stats_validmethods)/sizeof(*stats_validmethods); i++)
             if ( strcmp(method,stats_validmethods[i]) == 0 )
                 return(1);
+        printf("got invalid method.%s remotely\n",method);
     }
     return(-1);
 }
@@ -221,7 +223,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                 return(-1);
             }
         }
-        if ( listen(sock,1) != 0 )
+        if ( listen(sock,4096) != 0 )
         {
             printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
             if ( sock >= 0 )
@@ -681,9 +683,9 @@ void LP_rpc_processreq(void *_ptr)
     if ( recvlen > 0 )
     {
         jsonflag = postflag = 0;
-        portable_mutex_lock(&LP_commandmutex);
+        //portable_mutex_lock(&LP_commandmutex);
         retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,req->port);
-        portable_mutex_unlock(&LP_commandmutex);
+        //portable_mutex_unlock(&LP_commandmutex);
         if ( filetype[0] != 0 )
         {
             static cJSON *mimejson; char *tmp,*typestr=0; long tmpsize;
@@ -771,7 +773,7 @@ void LP_rpc_processreq(void *_ptr)
     spawned--;
 }
 
-extern int32_t IAMLP;
+extern int32_t IAMLP,LP_STOP_RECEIVED;
 //int32_t LP_bindsock_reset,LP_bindsock = -1;
 
 void stats_rpcloop(void *args)
@@ -782,7 +784,7 @@ void stats_rpcloop(void *args)
     printf("Start stats_rpcloop.%u\n",port);
     localhostbits = (uint32_t)calc_ipbits("127.0.0.1");
     //initial_bindsock_reset = LP_bindsock_reset;
-    while ( 1 )//LP_bindsock_reset == initial_bindsock_reset )
+    while ( LP_STOP_RECEIVED == 0 )//LP_bindsock_reset == initial_bindsock_reset )
     {
         //printf("LP_bindsock.%d\n",LP_bindsock);
         if ( bindsock < 0 )
@@ -817,6 +819,7 @@ void stats_rpcloop(void *args)
         }
 #endif*/
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
+//printf("port.%u got incoming from %x\n",port,ipbits);
         if ( DOCKERFLAG != 0 && (DOCKERFLAG == 1 || ipbits == DOCKERFLAG) )
             ipbits = localhostbits;
         if ( port == RPC_port && ipbits != localhostbits )
@@ -858,7 +861,7 @@ continue;
 #ifndef FROM_MARKETMAKER
 
 portable_mutex_t LP_commandmutex;
-uint16_t LP_RPCPORT;
+uint16_t LP_RPCPORT = 7763;
 
 void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
@@ -1196,7 +1199,7 @@ int main(int argc, const char * argv[])
         exit(-1);
     }
     printf("DEX stats running\n");
-    while ( 1 )
+    while ( LP_STOP_RECEIVED == 0 )
     {
         if ( (filestr= stats_update(logfp,STATS_DEST,statefname,komodofile)) != 0 )
         {

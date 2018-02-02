@@ -70,19 +70,46 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 #endif
 #endif
 
+
 #include "LP_nativeDEX.c"
 #include <cpp-ethereum/etomicswap/etomiclib.h>
 
+void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t netid)
+{
+    int32_t netmod,netdiv; uint16_t otherports;
+    *pullportp = *pubportp = *busportp = 0;
+    if ( netid < 0 )
+        netid = 0;
+    else if ( netid > (65535-40-LP_RPCPORT)/4 )
+    {
+        printf("netid.%d overflow vs max netid.%d 14420?\n",netid,(65535-40-LP_RPCPORT)/4);
+        exit(-1);
+    }
+    if ( netid != 0 )
+    {
+        netmod = (netid % 10);
+        netdiv = (netid / 10);
+        otherports = (netdiv * 40) + (LP_RPCPORT + netmod);
+    } else otherports = LP_RPCPORT;
+    *pullportp = otherports + 10;
+    *pubportp = otherports + 20;
+    *busportp = otherports + 30;
+    printf("RPCport.%d remoteport.%d, nanoports %d %d %d\n",RPC_port,RPC_port-1,*pullportp,*pubportp,*busportp);
+}
+
 void LP_main(void *ptr)
 {
-    char *passphrase; double profitmargin; uint16_t port; cJSON *argjson = ptr;
+    char *passphrase; double profitmargin; uint16_t netid=0,port,pullport,pubport,busport; cJSON *argjson = ptr;
     if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
     {
         profitmargin = jdouble(argjson,"profitmargin");
         LP_profitratio += profitmargin;
         if ( (port= juint(argjson,"rpcport")) < 1000 )
             port = LP_RPCPORT;
-        LPinit(port,LP_RPCPORT+10,LP_RPCPORT+20,LP_RPCPORT+30,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
+        if ( jobj(argjson,"netid") != 0 )
+            netid = juint(argjson,"netid");
+        LP_ports(&pullport,&pubport,&busport,netid);
+        LPinit(port,pullport,pubport,busport,passphrase,jint(argjson,"client"),jstr(argjson,"userhome"),argjson);
     }
 }
 
@@ -110,18 +137,18 @@ int main(int argc, const char * argv[])
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
     {
         uint8_t addrtype,rmd160[20],rmd160b[20]; char coinaddr[64],coinaddr2[64];
-        bitcoin_addr2rmd160(0,&addrtype,rmd160,(char *)argv[1]);
+        bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160,(char *)argv[1]);
         if ( addrtype == 0 )
         {
-            bitcoin_address(coinaddr,0,60,rmd160,20);
-            bitcoin_addr2rmd160(0,&addrtype,rmd160b,coinaddr);
-            bitcoin_address(coinaddr2,0,0,rmd160b,20);
+            bitcoin_address("KMD",coinaddr,0,60,rmd160,20);
+            bitcoin_addr2rmd160("KMD",0,&addrtype,rmd160b,coinaddr);
+            bitcoin_address("BTC",coinaddr2,0,0,rmd160b,20);
         }
         else if ( addrtype == 60 )
         {
-            bitcoin_address(coinaddr,0,0,rmd160,20);
-            bitcoin_addr2rmd160(0,&addrtype,rmd160b,coinaddr);
-            bitcoin_address(coinaddr2,0,60,rmd160b,20);
+            bitcoin_address("BTC",coinaddr,0,0,rmd160,20);
+            bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160b,coinaddr);
+            bitcoin_address("KMD",coinaddr2,0,60,rmd160b,20);
         }
         printf("(%s) -> %s -> %s\n",(char *)argv[1],coinaddr,coinaddr2);
         if ( strcmp((char *)argv[1],coinaddr2) != 0 )
@@ -143,7 +170,7 @@ int main(int argc, const char * argv[])
             privkey.bytes[4] = 0x06;
             privkey.bytes[5] = 0xdd;
             privkey.bytes[6] = 0xbb;
-            bitcoin_priv2wiflong(0xab,wifstr,privkey,0x36);
+            bitcoin_priv2wiflong("HUSH",0xab,wifstr,privkey,0x36);
             if ( wifstr[2] == 'x' && wifstr[4] == 'H' && wifstr[5] == 'u' && wifstr[6] == 's' )//&& wifstr[3] == 'x' )
             {
                 if ( wifstr[7] == 'h' && wifstr[8] == 'L' && wifstr[9] == 'i' )
@@ -170,10 +197,10 @@ int main(int argc, const char * argv[])
         for (i=0; i<1000000000; i++)
         {
             OS_randombytes(privkey.bytes,sizeof(privkey));
-            bitcoin_priv2pub(ctx,pubkey33,coinaddr,privkey,0,60);
+            bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,0,60);
             if ( strncmp(coinaddr+1,argv[2],len-1) == 0 )
             {
-                bitcoin_priv2wif(0,wifstr,privkey,188);
+                bitcoin_priv2wif("KMD",0,wifstr,privkey,188);
                 printf("i.%d %s -> %s wif.%s\n",i,bits256_str(str,privkey),coinaddr,wifstr);
                 if ( coinaddr[1+len-1] == argv[2][len-1] )
                     break;
@@ -206,15 +233,17 @@ int main(int argc, const char * argv[])
             DOCKERFLAG = 1;
         else if ( jstr(retjson,"docker") != 0 )
             DOCKERFLAG = (uint32_t)calc_ipbits(jstr(retjson,"docker"));
+        if ( jobj(retjson,"passphrase") != 0 )
+            jdelete(retjson,"passphrase");
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
-            jaddstr(retjson,"passphrase","test");
+            jaddstr(retjson,"passphrase","default");
         if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)retjson) != 0 )
         {
             printf("error launching LP_main (%s)\n",jprint(retjson,0));
             exit(-1);
         } //else printf("(%s) launched.(%s)\n",argv[1],passphrase);
         incr = 100.;
-        while ( (1) )
+        while ( LP_STOP_RECEIVED == 0 )
             sleep(100000);
     }
 #endif

@@ -248,8 +248,10 @@
     <ClCompile Include="crypto777\scrypt.c" />
     <ClCompile Include="crypto777\tweetnacl.c" />
     <ClCompile Include="iguana\exchanges\mm.c" />
+    <ClCompile Include="iguana\groestl.c" />
     <ClCompile Include="iguana\mini-gmp.c" />
     <ClCompile Include="iguana\secp256k1\src\secp256k1.c" />
+    <ClCompile Include="iguana\segwit_addr.c" />
     <ClCompile Include="OSlibs\win\mingw.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
