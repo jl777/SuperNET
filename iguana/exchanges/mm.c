@@ -214,7 +214,7 @@ int main(int argc, const char * argv[])
                     bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
                     bitcoin_address("KMD",coinaddr,0,addrtype == 184 ? 60 : 85,rmd160,20);
                     bitcoin_addr2rmd160("KMD",0,&checktype,checkrmd160,coinaddr);
-                    bitcoin_address("HUSH",checkaddr,28,addrtype == 60 ? 184 : 189,checkrmd160,20);
+                    bitcoin_address("HUSH",checkaddr,28,checktype == 60 ? 184 : 189,checkrmd160,20);
                     if ( memcmp(rmd160,checkrmd160,20) != 0 || strcmp(coinaddr,checkaddr) != 0 )
                         printf("address calc error (%s) -> (%s) -> (%s)?\n",buf,coinaddr,checkaddr);
                     else
