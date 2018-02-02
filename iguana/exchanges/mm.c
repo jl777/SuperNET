@@ -72,7 +72,6 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 
 
 #include "LP_nativeDEX.c"
-#include <cpp-ethereum/etomicswap/etomiclib.h>
 
 void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t netid)
 {
@@ -130,7 +129,7 @@ int main(int argc, const char * argv[])
 
     char* ethSignedTx;
     ethSignedTx = bobSendsEthDeposit(input, txData);
-    printf("%s", ethSignedTx);
+    printf("%s\n", ethSignedTx);
     free(ethSignedTx);
     char dirname[512],*passphrase; double incr; cJSON *retjson;
     OS_init();
