@@ -213,7 +213,7 @@ int main(int argc, const char * argv[])
                 printf("(%s) (%s) <- %s\n",buf,coinaddr,flag);
             }
             fclose(fp);
-        }
+        } else printf("couldnt open (%s)\n",argv[2]);
         exit(0);
     }
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
