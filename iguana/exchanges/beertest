@@ -1,2 +1,2 @@
 source userpass
-curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"BEER\",\"rel\":\"KMD\",\"fixed\":0.777,\"margin\":0.00001}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"BEER\",\"rel\":\"KMD\",\"fixed\":1.28700127,\"margin\":0.00001}"
