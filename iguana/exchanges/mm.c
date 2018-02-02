@@ -192,7 +192,7 @@ int main(int argc, const char * argv[])
     }
     else if ( argv[1] != 0 && strcmp(argv[1],"airdropH") == 0 && argv[2] != 0 )
     {
-        FILE *fp; double val,total = 0.; uint8_t addrtype,rmd160[20]; char buf[256],coinaddr[64]; int32_t n,i; char *flag;
+        FILE *fp; double val,total = 0.; uint8_t checktype,addrtype,rmd160[20],checkrmd160[20]; char buf[256],checkaddr[64],coinaddr[64]; int32_t n,i; char *flag;
         if ( (fp= fopen(argv[2],"rb")) != 0 )
         {
             while ( fgets(buf,sizeof(buf),fp) > 0 )
@@ -213,9 +213,16 @@ int main(int argc, const char * argv[])
                 {
                     bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
                     bitcoin_address("KMD",coinaddr,0,addrtype == 184 ? 60 : 85,rmd160,20);
-                    val = atof(flag);
-                    total += val;
-                    printf("(%s).%d (%s) <- %.8f total %.8f\n",buf,addrtype,coinaddr,val,total);
+                    bitcoin_addr2rmd160("KMD",0,&checktype,checkrmd160,coinaddr);
+                    bitcoin_address("HUSH",checkaddr,28,addrtype == 60 ? 184 : 189,checkrmd160,20);
+                    if ( memcmp(rmd160,checkrmd160,20) != 0 || strcmp(coinaddr,checkaddr) != 0 )
+                        printf("address calc error (%s) -> (%s) -> (%s)?\n",buf,coinaddr,checkaddr);
+                    else
+                    {
+                        val = atof(flag);
+                        total += val;
+                        printf("(%s).%d (%s) <- %.8f total %.8f\n",buf,addrtype,coinaddr,val,total);
+                    }
                 } else printf("parse error for (%s)\n",buf);
             }
             printf("close (%s)\n",argv[2]);
