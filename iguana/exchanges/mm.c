@@ -192,7 +192,7 @@ int main(int argc, const char * argv[])
     }
     else if ( argv[1] != 0 && strcmp(argv[1],"airdropH") == 0 && argv[2] != 0 )
     {
-        FILE *fp; uint8_t addrtype,rmd160[20]; char buf[256],coinaddr[64]; int32_t n,i; char *flag;
+        FILE *fp; double val,total = 0.; uint8_t addrtype,rmd160[20]; char buf[256],coinaddr[64]; int32_t n,i; char *flag;
         if ( (fp= fopen(argv[2],"rb")) != 0 )
         {
             while ( fgets(buf,sizeof(buf),fp) > 0 )
@@ -213,7 +213,9 @@ int main(int argc, const char * argv[])
                 {
                     bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
                     bitcoin_address("KMD",coinaddr,0,60,rmd160,20);
-                    printf("(%s) (%s) <- %s\n",buf,coinaddr,flag);
+                    val = atof(flag);
+                    total += val;
+                    printf("(%s) (%s) <- %.8f total %.8f\n",buf,coinaddr,val,total);
                 } else printf("parse error for (%s)\n",buf);
             }
             printf("close (%s)\n",argv[2]);
