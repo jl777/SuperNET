@@ -222,7 +222,7 @@ int main(int argc, const char * argv[])
                         printf(" vs. ");
                         for (i=0; i<20; i++)
                             printf("%02x",checkrmd160[i]);
-                        printf(" address calc error (%s) -> (%s) -> (%s) %.8f?\n",buf,coinaddr,checkaddr,atof(flag));
+                        printf(" address calc error (%s).%d -> (%s).%d -> (%s) %.8f?\n",buf,addrtype,coinaddr,checktype,checkaddr,atof(flag));
                     }
                     else
                     {
