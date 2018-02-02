@@ -174,11 +174,12 @@ char *LP_etomicalice_start(struct basilisk_swap *swap)
     if ( strcmp(swap->I.alicestr,"ETH") == 0 )
     {
         memset(&input,0,sizeof(input));
-        return(aliceInitsEthDeal(input,txData));
+        //return(aliceInitsEthDeal(input,txData));
     }
     else
     {
         memset(&input20,0,sizeof(input20));
-        return(aliceInitsErc20Deal(input20,txData));
+        //return(aliceInitsErc20Deal(input20,txData));
     }
+    return(0);
 }
