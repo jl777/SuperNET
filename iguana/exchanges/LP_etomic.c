@@ -141,8 +141,8 @@ extern "C" {
 
 char *aliceInitsEthDeal(AliceInitEthInput input,BasicTxData txData);
 char *aliceInitsErc20Deal(AliceInitErc20Input input,BasicTxData txData);
-char *aliceMakesEthPayment(AliceMakesEthPaymentInput input,BasicTxData txData);
-char *aliceMakesErc20Payment(AliceMakesErc20PaymentInput input,BasicTxData txData);
+//char *aliceMakesEthPayment(AliceMakesEthPaymentInput input,BasicTxData txData);
+//char *aliceMakesErc20Payment(AliceMakesErc20PaymentInput input,BasicTxData txData);
 char *aliceSpendsBobPayment(AliceSpendsBobPaymentInput input,BasicTxData txData);
 char *aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input,BasicTxData txData);
 char *aliceClaimsBobDeposit(AliceClaimsBobDepositInput input,BasicTxData txData);
