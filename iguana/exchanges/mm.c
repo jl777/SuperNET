@@ -215,14 +215,14 @@ int main(int argc, const char * argv[])
                     bitcoin_address("KMD",coinaddr,0,addrtype == 184 ? 60 : 85,rmd160,20);
                     bitcoin_addr2rmd160("KMD",0,&checktype,checkrmd160,coinaddr);
                     bitcoin_address("HUSH",checkaddr,28,checktype == 60 ? 184 : 189,checkrmd160,20);
-                    if ( memcmp(rmd160,checkrmd160,20) != 0 || strcmp(coinaddr,checkaddr) != 0 )
+                    if ( memcmp(rmd160,checkrmd160,20) != 0 || strcmp(buf,checkaddr) != 0 )
                     {
                         for (i=0; i<20; i++)
                             printf("%02x",rmd160[i]);
                         printf(" vs. ");
                         for (i=0; i<20; i++)
                             printf("%02x",checkrmd160[i]);
-                        printf(" address calc error (%s) -> (%s) -> (%s) %d %d?\n",buf,coinaddr,checkaddr,memcmp(rmd160,checkrmd160,20),strcmp(coinaddr,checkaddr));
+                        printf(" address calc error (%s) -> (%s) -> (%s) %d %d?\n",buf,coinaddr,checkaddr,memcmp(rmd160,checkrmd160,20),strcmp(buf,checkaddr));
                     }
                     else
                     {
