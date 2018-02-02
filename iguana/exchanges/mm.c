@@ -215,7 +215,7 @@ int main(int argc, const char * argv[])
                     bitcoin_address("KMD",coinaddr,0,addrtype == 184 ? 60 : 85,rmd160,20);
                     val = atof(flag);
                     total += val;
-                    printf("(%s) (%s) <- %.8f total %.8f\n",buf,coinaddr,val,total);
+                    printf("(%s).%d (%s) <- %.8f total %.8f\n",buf,addrtype,coinaddr,val,total);
                 } else printf("parse error for (%s)\n",buf);
             }
             printf("close (%s)\n",argv[2]);
