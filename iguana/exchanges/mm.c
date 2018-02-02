@@ -190,6 +190,32 @@ int main(int argc, const char * argv[])
         printf("done vanitygen.(%s) done %u elapsed %d\n",argv[2],(uint32_t)time(NULL),(uint32_t)time(NULL) - timestamp);
         exit(0);
     }
+    else if ( argv[1] != 0 && strcmp(argv[1],"airdropH") == 0 && argv[2] != 0 )
+    {
+        FILE *fp; uint8_t addrtype,rmd160[20]; char buf[256],coinaddr[64]; int32_t n,i; char *flag;
+        if ( (fp= fopen(argv[2],"rb")) != 0 )
+        {
+            while ( fgets(buf,sizeof(buf),fp) > 0 )
+            {
+                if ( (n= (int32_t)strlen(buf)) > 0 )
+                    buf[--n] = 0;
+                flag = 0;
+                for (i=0; i<n; i++)
+                {
+                    if ( buf[i] == ',' )
+                    {
+                        buf[i] = 0;
+                        flag = &buf[i+1];
+                    }
+                }
+                bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
+                bitcoin_address("KMD",coinaddr,0,60,rmd160,20);
+                printf("(%s) (%s) <- %s\n",buf,coinaddr,flag);
+            }
+            fclose(fp);
+        }
+        exit(0);
+    }
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
