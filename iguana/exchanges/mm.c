@@ -192,9 +192,10 @@ int main(int argc, const char * argv[])
     }
     else if ( argv[1] != 0 && strcmp(argv[1],"airdropH") == 0 && argv[2] != 0 )
     {
-        FILE *fp; double val,total = 0.; uint8_t checktype,addrtype,rmd160[21],checkrmd160[21]; char buf[256],checkaddr[64],coinaddr[64]; int32_t n,i; char *flag;
+        FILE *fp; double val,total = 0.; uint8_t checktype,addrtype,rmd160[21],checkrmd160[21]; char buf[256],checkaddr[64],coinaddr[64],manystrs[64][128],cmd[64*128]; int32_t n,i,num; char *flag;
         if ( (fp= fopen(argv[2],"rb")) != 0 )
         {
+            num = 0;
             while ( fgets(buf,sizeof(buf),fp) > 0 )
             {
                 if ( (n= (int32_t)strlen(buf)) > 0 )
@@ -227,12 +228,33 @@ int main(int argc, const char * argv[])
                     else
                     {
                         val = atof(flag);
+                        sprintf(manystrs[num++],"\\\"%s\\\":%0.8f",coinaddr,val);
+                        if ( num >= sizeof(manystrs)/sizeof(*manystrs) )
+                        {
+                            sprintf(cmd,"fiat/btch sendmany \"\" \"{ ");
+                            for (i=0; i<num; i++)
+                                sprintf(cmd + strlen(cmd),"%s%c",manystrs[i],i<num-1?',':' ');
+                            strcat(cmd,"}\"");
+                            printf("%s\n",cmd);
+                            num = 0;
+                            memset(manystrs,0,sizeof(manystrs));
+                        }
                         total += val;
-                        printf("(%s).%d (%s) <- %.8f total %.8f\n",buf,addrtype,coinaddr,val,total);
+                        //printf("(%s).%d (%s) <- %.8f total %.8f\n",buf,addrtype,coinaddr,val,total);
                     }
                 } else printf("parse error for (%s)\n",buf);
             }
-            printf("close (%s)\n",argv[2]);
+            if ( num > 0 )
+            {
+                sprintf(cmd,"fiat/btch sendmany \"\" \"{ ");
+                for (i=0; i<num; i++)
+                    sprintf(cmd + strlen(cmd),"%s%c",manystrs[i],i<num-1?',':' ');
+                strcat(cmd,"}\"");
+                printf("%s\n",cmd);
+                num = 0;
+                memset(manystrs,0,sizeof(manystrs));
+            }
+            printf("close (%s) total %.8f\n",argv[2],total);
             fclose(fp);
         } else printf("couldnt open (%s)\n",argv[2]);
         exit(0);
