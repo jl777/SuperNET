@@ -1,0 +1,5 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_executable(marketmaker mm.c)
+include_directories(../../crypto777)
+target_sources(marketmaker PRIVATE ../mini-gmp.c)
+target_link_libraries(marketmaker PRIVATE nanomsg curl pthread m libcrypto777 libjpeg libsecp256k1 "-Wl,--allow-multiple-definition" etomiclib)

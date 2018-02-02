@@ -28,6 +28,7 @@ void PNACL_message(char *arg,...)
 
 #include <stdio.h>
 #include <stdint.h>
+// #include "lib.h"
 #ifndef NATIVE_WINDOWS
 #include "OS_portable.h"
 #else
@@ -70,6 +71,7 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 #endif
 
 #include "LP_nativeDEX.c"
+#include <cpp-ethereum/etomicswap/etomiclib.h>
 
 void LP_main(void *ptr)
 {
@@ -86,6 +88,23 @@ void LP_main(void *ptr)
 
 int main(int argc, const char * argv[])
 {
+    BasicTxData txData;
+    txData.amount = "1000000000000000000";
+    txData.from = "0xA7EF3f65714AE266414C9E58bB4bAa4E6FB82B41";
+    txData.to = "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2";
+    txData.secretKey = getenv("BOB_PK");
+    txData.nonce = 1;
+
+    BobSendsEthDepositInput input = {
+        .aliceAddress = "0x485d2cc2d13a9e12E4b53D606DB1c8adc884fB8a",
+        .depositId = "0x28c5a7c25911ef59a577ddf811d0e58edb827efb0646a8a38df6e921ba53f431",
+        .bobHash = "0xd66ca5295806fb95ead3f2be1d193a206a376371"
+    };
+
+    char* ethSignedTx;
+    ethSignedTx = bobSendsEthDeposit(input, txData);
+    printf("%s", ethSignedTx);
+    free(ethSignedTx);
     char dirname[512],*passphrase; double incr; cJSON *retjson;
     OS_init();
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )

@@ -1,0 +1,3 @@
+[submodule "cpp-ethereum"]
+	path = cpp-ethereum
+	url = git@github.com:artemii235/cpp-ethereum.git
