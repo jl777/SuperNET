@@ -51,4 +51,5 @@ char *LP_etomicalice_start(struct basilisk_swap *swap)
         memset(&input20,0,sizeof(input20));
         return(aliceSendsErc20Payment(input20,txData));
     }
+    return(0);
 }
