@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #define HAVE_STRUCT_TIMESPEC
 #include <ctype.h>
 #include <fcntl.h>
