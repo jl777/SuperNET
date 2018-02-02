@@ -206,12 +206,17 @@ int main(int argc, const char * argv[])
                     {
                         buf[i] = 0;
                         flag = &buf[i+1];
+                        break;
                     }
                 }
-                bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
-                bitcoin_address("KMD",coinaddr,0,60,rmd160,20);
-                printf("(%s) (%s) <- %s\n",buf,coinaddr,flag);
+                if ( flag != 0 )
+                {
+                    bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
+                    bitcoin_address("KMD",coinaddr,0,60,rmd160,20);
+                    printf("(%s) (%s) <- %s\n",buf,coinaddr,flag);
+                } else printf("parse error for (%s)\n",buf);
             }
+            printf("close (%s)\n",argv[2]);
             fclose(fp);
         } else printf("couldnt open (%s)\n",argv[2]);
         exit(0);
