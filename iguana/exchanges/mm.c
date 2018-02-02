@@ -231,10 +231,10 @@ int main(int argc, const char * argv[])
                         sprintf(manystrs[num++],"\\\"%s\\\":%0.8f",coinaddr,val);
                         if ( num >= sizeof(manystrs)/sizeof(*manystrs) )
                         {
-                            sprintf(cmd,"fiat/btch sendmany \"\" \"{");
+                            sprintf(cmd,"fiat/btch sendmany \\\"\\\" \"{");
                             for (i=0; i<num; i++)
                                 sprintf(cmd + strlen(cmd),"%s%s",manystrs[i],i<num-1?",":"");
-                            strcat(cmd,"} 0\"");
+                            strcat(cmd,"}\" 0");
                             printf("%s\n",cmd);
                             num = 0;
                             memset(manystrs,0,sizeof(manystrs));
@@ -246,10 +246,10 @@ int main(int argc, const char * argv[])
             }
             if ( num > 0 )
             {
-                sprintf(cmd,"fiat/btch sendmany \"\" \"{");
+                sprintf(cmd,"fiat/btch sendmany \\\"\\\" \"{");
                 for (i=0; i<num; i++)
                     sprintf(cmd + strlen(cmd),"%s%s",manystrs[i],i<num-1?",":"");
-                strcat(cmd,"}\"");
+                strcat(cmd,"}\" 0");
                 printf("%s\n",cmd);
                 num = 0;
                 memset(manystrs,0,sizeof(manystrs));
