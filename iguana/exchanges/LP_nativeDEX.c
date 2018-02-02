@@ -483,6 +483,11 @@ void command_rpcloop(void *ctx)
     command_rpcloop_stats.threshold = 2500.;
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         LP_millistats_update(&command_rpcloop_stats);
         nonz = LP_nanomsg_recvs(ctx);
         //if ( LP_mybussock >= 0 )
@@ -518,6 +523,11 @@ void LP_coinsloop(void *_coins)
     }
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
         {
             sleep(10);
@@ -914,6 +924,11 @@ void LP_pubkeysloop(void *ctx)
     sleep(10);
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") != 0 )
         {
             LP_millistats_update(&LP_pubkeysloop_stats);
@@ -936,6 +951,11 @@ void LP_swapsloop(void *ctx)
     sleep(50);
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") != 0 )
         {
             LP_millistats_update(&LP_swapsloop_stats);
@@ -953,6 +973,11 @@ void gc_loop(void *ctx)
     LP_gcloop_stats.threshold = 11000.;
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         flag = 0;
         LP_millistats_update(&LP_gcloop_stats);
         portable_mutex_lock(&LP_gcmutex);
@@ -988,6 +1013,11 @@ void queue_loop(void *ctx)
     queue_loop_stats.threshold = 1000.;
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         LP_millistats_update(&queue_loop_stats);
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = nonz = flag = 0;
@@ -1097,6 +1127,11 @@ void LP_reserved_msgs(void *ignore)
     LP_reserved_msgs_stats.threshold = 1000.;
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         nonz = 0;
         LP_millistats_update(&LP_reserved_msgs_stats);
         if ( num_Reserved_msgs[0] > 0 || num_Reserved_msgs[1] > 0 )
@@ -1389,6 +1424,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         {
             //fprintf(stderr,".");
             sleep(3);
+        }
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
         }
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,LP_mypubsock) != 0 )
             nonz++;
