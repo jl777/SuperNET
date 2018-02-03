@@ -1029,21 +1029,26 @@ void LP_tradesloop(void *ctx)
             HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
             if ( tp == 0 )
             {
-                tp = qtp;
-                HASH_ADD(hh,LP_trades,aliceid,sizeof(tp->aliceid),tp);
-                portable_mutex_unlock(&LP_tradesmutex);
-                if ( tp->iambob != 0 && funcid == LP_REQUEST ) // bob maybe sends LP_RESERVED
+                if ( now > Q.timestamp+LP_AUTOTRADE_TIMEOUT*20 ) // eat expired
+                    free(qtp);
+                else
                 {
-                    if ( (qp= LP_trades_gotrequest(ctx,&Q,&tp->Qs[LP_REQUEST],tp->pairstr)) != 0 )
-                        tp->Qs[LP_RESERVED] = Q;
+                    tp = qtp;
+                    HASH_ADD(hh,LP_trades,aliceid,sizeof(tp->aliceid),tp);
+                    portable_mutex_unlock(&LP_tradesmutex);
+                    if ( tp->iambob != 0 && funcid == LP_REQUEST ) // bob maybe sends LP_RESERVED
+                    {
+                        if ( (qp= LP_trades_gotrequest(ctx,&Q,&tp->Qs[LP_REQUEST],tp->pairstr)) != 0 )
+                            tp->Qs[LP_RESERVED] = Q;
+                    }
+                    else if ( tp->iambob == 0 && funcid == LP_RESERVED ) // alice maybe sends LP_CONNECT
+                    {
+                        LP_trades_bestpricecheck(ctx,tp);
+                    }
+                    nonz++;
+                    tp->firstprocessed = tp->lastprocessed = (uint32_t)time(NULL);
+                    //printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
                 }
-                else if ( tp->iambob == 0 && funcid == LP_RESERVED ) // alice maybe sends LP_CONNECT
-                {
-                    LP_trades_bestpricecheck(ctx,tp);
-                }
-                nonz++;
-                tp->firstprocessed = tp->lastprocessed = (uint32_t)time(NULL);
-//printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
                 continue;
             }
             portable_mutex_unlock(&LP_tradesmutex);
@@ -1120,7 +1125,7 @@ void LP_tradesloop(void *ctx)
                         }
                     }
                 }
-                else if ( now > tp->firstprocessed+timeout*10 )
+                if ( now > tp->firstprocessed+timeout*10 )
                 {
                     //printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
                     portable_mutex_lock(&LP_tradesmutex);
@@ -1165,6 +1170,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"reserved") == 0 ||strcmp(method,"connected") == 0 || strcmp(method,"request") == 0 || strcmp(method,"connect") == 0) )
     {
         LP_quoteparse(&Q,argjson);
+        if ( time(NULL) > Q.timestamp + LP_AUTOTRADE_TIMEOUT*20 ) // eat expired packets
+            return(1);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         LP_tradecommand_log(argjson);
         printf("%-4d (%-10u %10u) %12s id.%-20llu %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,LP_RTcount,LP_swapscount,G.netid);
