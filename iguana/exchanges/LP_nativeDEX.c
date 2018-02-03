@@ -1094,7 +1094,20 @@ void LP_reserved_msgs(void *ignore)
     {
         nonz = 0;
         LP_millistats_update(&LP_reserved_msgs_stats);
-        if ( num_Reserved_msgs[0] > 0 || num_Reserved_msgs[1] > 0 )
+        if ( num_Reserved_msgs[1] > 0 )
+        {
+            nonz++;
+            portable_mutex_lock(&LP_reservedmutex);
+            if ( num_Reserved_msgs[1] > 0 )
+            {
+                num_Reserved_msgs[1]--;
+                //printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
+                LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[1][num_Reserved_msgs[1]]);
+                Reserved_msgs[1][num_Reserved_msgs[1]] = 0;
+            }
+            portable_mutex_unlock(&LP_reservedmutex);
+        }
+        else if ( num_Reserved_msgs[0] > 0 )
         {
             nonz++;
             flag = 0;
@@ -1109,20 +1122,10 @@ void LP_reserved_msgs(void *ignore)
             if ( flag == 1 )
             {
                 portable_mutex_lock(&LP_reservedmutex);
-                if ( num_Reserved_msgs[1] > 0 )
-                {
-                    num_Reserved_msgs[1]--;
-//printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
-                    LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[1][num_Reserved_msgs[1]]);
-                    Reserved_msgs[1][num_Reserved_msgs[1]] = 0;
-                }
-                else if ( num_Reserved_msgs[0] > 0 )
-                {
-                    num_Reserved_msgs[0]--;
-//printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
-                    LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
-                    Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
-                }
+                num_Reserved_msgs[0]--;
+                //printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
+                LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
+                Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
                 portable_mutex_unlock(&LP_reservedmutex);
             }
         }

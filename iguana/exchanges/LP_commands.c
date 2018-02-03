@@ -643,7 +643,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
     if ( strcmp(method,"swapstatus") == 0 )
         return(LP_swapstatus_recv(argjson));
     else if ( strcmp(method,"gettradestatus") == 0 )
-        return(LP_gettradestatus(j64bits(argjson,"aliceid"),juint(argjson,"requestid"),juint(argjson,"quoteid")));
+    {
+        retstr = clonestr("{\"error\":\"deprecated\"}");
+        //return(LP_gettradestatus(j64bits(argjson,"aliceid"),juint(argjson,"requestid"),juint(argjson,"quoteid")));
+    }
     else if ( strcmp(method,"postprice") == 0 )
         return(LP_postprice_recv(argjson));
     else if ( strcmp(method,"uitem") == 0 )
