@@ -1097,8 +1097,8 @@ void LP_reserved_msgs(void *ignore)
         if ( num_Reserved_msgs[0] > 0 || num_Reserved_msgs[1] > 0 )
         {
             nonz++;
-            flag = 0;
-            if ( LP_mypubsock >= 0 )
+            flag = 1;
+            if ( flag == 0 && LP_mypubsock >= 0 )
             {
                 memset(&pfd,0,sizeof(pfd));
                 pfd.fd = LP_mypubsock;
@@ -1128,9 +1128,8 @@ void LP_reserved_msgs(void *ignore)
         }
         if ( ignore == 0 )
             break;
-        if ( nonz != 0 )
-            usleep(1000);
-        else usleep(5000);
+        if ( nonz == 0 )
+            usleep(5000);
     }
 }
 
@@ -1148,7 +1147,7 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
     if ( num_Reserved_msgs[priority] > max_Reserved_msgs[priority] )
     {
         max_Reserved_msgs[priority] = num_Reserved_msgs[priority];
-        if ( (max_Reserved_msgs[priority] % 100) == 0 )
+        //if ( (max_Reserved_msgs[priority] % 100) == 0 )
             printf("New priority.%d max_Reserved_msgs.%d\n",priority,max_Reserved_msgs[priority]);
     }
     portable_mutex_unlock(&LP_reservedmutex);
