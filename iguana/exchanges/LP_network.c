@@ -779,7 +779,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                 //if ( nn_bind(pullsock,bindaddr2) >= 0 )
                 //    printf("bound to %s\n",bindaddr2);
             }
-            timeout = 1;
+            timeout = 100;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             //maxsize = 2 * 1024 * 1024;

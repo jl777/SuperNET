@@ -1270,7 +1270,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                 valid++;
             if ( valid > 0 )
             {
-                timeout = 1;
+                timeout = 100;
                 nn_setsockopt(LP_mypubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             }
             else
