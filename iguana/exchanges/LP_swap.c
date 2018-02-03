@@ -479,7 +479,7 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
             } // else printf("error nn_recv\n");
         }
     }
-    printf("waitfor timedout\n");
+    printf("waitfor timedout aliceid.%llu requestid.%u quoteid.%u\n",(long long)swap->aliceid,swap->I.req.requestid,swap->I.req.quoteid);
     return(retval);
 }
 

@@ -1166,12 +1166,13 @@ void LP_tradecommandQ(struct LP_quoteinfo *qp,char *pairstr,int32_t funcid)
 int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
 {
     int32_t Qtrades = 1;
-    char *method,str[65]; int32_t num,DEXselector = 0; uint64_t aliceid; double qprice,bestprice,price,bid,ask; cJSON *proof; struct iguana_info *coin; struct LP_quoteinfo Q,Q2; int32_t counter,retval=-1;
+    char *method,str[65]; int32_t i,num,DEXselector = 0; uint64_t aliceid; double qprice,bestprice,price,bid,ask; cJSON *proof; uint64_t rq; struct iguana_info *coin; struct LP_quoteinfo Q,Q2; int32_t counter,retval=-1;
     if ( (method= jstr(argjson,"method")) != 0 && (strcmp(method,"reserved") == 0 ||strcmp(method,"connected") == 0 || strcmp(method,"request") == 0 || strcmp(method,"connect") == 0) )
     {
         LP_quoteparse(&Q,argjson);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         LP_tradecommand_log(argjson);
+        rq = ((uint64_t)Q.R.requestid << 32) | Q.R.quoteid;
         printf("%-4d (%-10u %10u) %12s id.%-20llu %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,LP_RTcount,LP_swapscount,G.netid);
         if ( Q.timestamp > 0 && time(NULL) > Q.timestamp + LP_AUTOTRADE_TIMEOUT*20 ) // eat expired packets
         {
@@ -1217,7 +1218,17 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             bestprice = LP_bob_competition(&counter,aliceid,qprice,1000);
             if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
             {
-                //printf("CONNECTED.(%s)\n",jprint(argjson,0));
+                static uint64_t rqs[1024];
+                for (i=0; i<sizeof(rqs)/sizeof(*rqs); i++)
+                    if ( rq == rqs[i] )
+                        return(retval);
+                for (i=0; i<sizeof(rqs)/sizeof(*rqs); i++)
+                    if ( rqs[i] == 0 )
+                        break;
+                if ( i == sizeof(rqs)/sizeof(*rqs) )
+                    i = (rand() % (sizeof(rqs)/sizeof(*rqs)));
+                rqs[i] = rq;
+  //printf("CONNECTED.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.srccoin,Q.coinaddr,proof,num);
                 if ( 1 || Qtrades == 0 )
@@ -1255,6 +1266,16 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             LP_bob_competition(&counter,aliceid,qprice,1000);
             if ( bits256_cmp(G.LP_mypub25519,Q.srchash) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0 )
             {
+                static uint64_t rqs[1024];
+                for (i=0; i<sizeof(rqs)/sizeof(*rqs); i++)
+                    if ( rq == rqs[i] )
+                        return(retval);
+                for (i=0; i<sizeof(rqs)/sizeof(*rqs); i++)
+                    if ( rqs[i] == 0 )
+                        break;
+                if ( i == sizeof(rqs)/sizeof(*rqs) )
+                    i = (rand() % (sizeof(rqs)/sizeof(*rqs)));
+                rqs[i] = rq;
                 printf("CONNECT.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.destcoin,Q.destaddr,proof,num);
