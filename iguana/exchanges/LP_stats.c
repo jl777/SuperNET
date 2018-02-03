@@ -471,7 +471,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                         flag = 1;
                         break;
                     }
-                    if ( counter++ < 10 )
+                    if ( counter++ < 1 )
                         printf("error after delayed match\n");
                 }
             }
