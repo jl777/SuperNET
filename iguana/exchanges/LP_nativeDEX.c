@@ -1097,7 +1097,7 @@ void LP_reserved_msgs(void *ignore)
         if ( num_Reserved_msgs[0] > 0 || num_Reserved_msgs[1] > 0 )
         {
             nonz++;
-            flag = 1;
+            flag = 0;
             if ( flag == 0 && LP_mypubsock >= 0 )
             {
                 memset(&pfd,0,sizeof(pfd));
