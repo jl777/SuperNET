@@ -864,7 +864,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         price = myprice + (r * range) / 100.;
         bestprice = LP_bob_competition(&counter,qp->aliceid,price,0);
         printf("%llu >>>>>>> qprice %.8f r.%d range %.8f -> %.8f, bestprice %.8f counter.%d\n",(long long)qp->aliceid,qprice,r,range,price,bestprice,counter);
-        if ( counter > 3 && price >= bestprice+SMALLVAL ) // skip if late or bad price
+        if ( counter > 3 && price > bestprice+SMALLVAL ) // skip if late or bad price
             return(0);
     } else return(0);
     //LP_RTmetrics_update(qp->srccoin,qp->destcoin);
@@ -1258,7 +1258,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 printf("CONNECT.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.destcoin,Q.destaddr,proof,num);
-                if ( Qtrades == 0 )
+                if ( 1 || Qtrades == 0 )
                     LP_trades_gotconnect(ctx,&Q,&Q2,jstr(argjson,"pair"));
                 else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECT);
             }
