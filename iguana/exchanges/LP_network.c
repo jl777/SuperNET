@@ -628,7 +628,7 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
         {
             if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
             {
-                timeout = 1;
+                timeout = 100;
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                 nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 if ( ispaired != 0 )
@@ -641,6 +641,9 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
                     nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 }
+                timeout = 2;
+                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
+                nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
                 nanomsg_transportname(0,pushaddr,myipaddr,publicport);
                 nanomsg_transportname(0,subaddr,myipaddr,subport);
                 LP_psockadd(ispaired,pullsock,publicport,pubsock,subport,subaddr,pushaddr);
