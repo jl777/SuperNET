@@ -52,6 +52,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #endif
 //#define LP_STRICTPEERS
 
+#define LP_DISABLE_DISTCOMBINE
 
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
