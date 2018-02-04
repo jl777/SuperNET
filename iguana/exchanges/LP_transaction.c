@@ -2044,9 +2044,9 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
             //LP_importaddress(coin->symbol,swap->alicepayment.I.destaddr);
             strcpy(swap->alicepayment.p2shaddr,swap->alicepayment.I.destaddr);
             retval = 0;
-            for (i=0; i<swap->alicepayment.I.datalen; i++)
-                printf("%02x",swap->alicepayment.txbytes[i]);
-            printf(" ALICE PAYMENT created.(%s)\n",swap->alicepayment.I.destaddr);
+            //for (i=0; i<swap->alicepayment.I.datalen; i++)
+            //    printf("%02x",swap->alicepayment.txbytes[i]);
+            //printf(" ALICE PAYMENT created.(%s)\n",swap->alicepayment.I.destaddr);
             LP_unspents_mark(coin->symbol,swap->alicepayment.vins);
             //LP_importaddress(coin->symbol,swap->alicepayment.I.destaddr);
             //basilisk_txlog(swap,&swap->alicepayment,-1);

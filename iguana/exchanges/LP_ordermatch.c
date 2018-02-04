@@ -871,9 +871,9 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         printf("request from blacklisted %s, ignore\n",bits256_str(str,qp->desthash));
         return(0);
     }
-    printf("LP_address_utxo_reset\n");
+    printf("LP_address_utxo_reset.%s\n",coin->symbol);
     LP_address_utxo_reset(coin);
-    printf("done LP_address_utxo_reset\n");
+    printf("done LP_address_utxo_reset.%s\n",coin->symbol);
     if ( (butxo= LP_address_myutxopair(butxo,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
     {
         strcpy(qp->gui,G.gui);

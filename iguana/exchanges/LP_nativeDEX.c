@@ -1154,11 +1154,11 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
                 {
                     pubp->pairsock = -1;
                     LP_peer_pairsock(pubkey);
-                    printf("mark cmdchannel %d closed sentbytes.%d\n",pubp->pairsock,sentbytes);
+                    //printf("mark cmdchannel %d closed sentbytes.%d\n",pubp->pairsock,sentbytes);
                 }
                 else
                 {
-                    printf("sent %d bytes to cmdchannel.%d\n",sentbytes,pubp->pairsock);
+                    //printf("sent %d bytes to cmdchannel.%d\n",sentbytes,pubp->pairsock);
                     return(sentbytes);
                 }
             }
