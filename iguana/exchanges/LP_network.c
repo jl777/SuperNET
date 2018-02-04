@@ -430,7 +430,7 @@ void LP_psockloop(void *_ptr)
             {
                 if ( ptr->cmdchannel != 0 )
                 {
-                    printf("got cmdchannel.(%s)\n",buf);
+                    printf("got cmdchannel.(%s)\n",(char *)buf);
                 }
                 else if ( (sentbytes= nn_send(sendsock,buf,size,0)) != size ) // need tight loop
                     printf("LP_psockloop sent %d instead of %d\n",sentbytes,size);
@@ -530,8 +530,8 @@ void LP_psockloop(void *_ptr)
                 {
                     if ( (retval= nn_poll(pfds,n,1)) <= 0 )
                     {
-                        if ( retval != 0 )
-                            printf("nn_poll retval.%d\n",retval);
+                        //if ( retval != 0 )
+                        //    printf("nn_poll retval.%d\n",retval);
                         break;
                     } else printf("num pfds.%d retval.%d\n",n,retval);
                 }
@@ -721,7 +721,7 @@ char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmd
     sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d",destip,destport-1,ispaired,cmdchannel);
     //return(LP_issue_curl("psock",destip,destport,url));
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
-    printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
+    printf("issue_LP_psock got (%s) from %s\n",retstr,url);
     return(retstr);
 }
 
