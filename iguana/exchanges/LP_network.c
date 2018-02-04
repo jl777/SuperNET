@@ -662,7 +662,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
                                 break;
                             }
                     }
-                    printf("pairsock for %s <- %d\n",bits256_str(str,pubkey),pubp->pairsock);
+                    printf("pairsock for %s <- %d\n",bits256_str(str,pubkey),pullsock);
                     pubp->pairsock = pullsock;
                 }
             }
@@ -675,7 +675,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             jaddnum(retjson,"cmdchannel",cmdchannel);
             jaddstr(retjson,"publicaddr",pushaddr);
             jaddnum(retjson,"publicport",publicport);
-            printf("cmd.%d publicaddr.(%s) for subaddr.(%s), pullsock.%d pubsock.%d\n",cmdchannel,pushaddr,subaddr,pullsock,pubsock);
+            //printf("cmd.%d publicaddr.(%s) for subaddr.(%s), pullsock.%d pubsock.%d\n",cmdchannel,pushaddr,subaddr,pullsock,pubsock);
             *pullsockp = pullsock;
             if ( cmdchannel == 0 )
                 *pubsockp = pubsock;
@@ -703,6 +703,8 @@ char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchanne
     }
     else
     {
+        if ( cmdchannel != 0 && bits256_nonz(pubkey) == 0 )
+            return(clonestr("{\"error\",\"cant do pairsock for null pubkey\"}"));
         maxport = 65534;
         publicport = subport = Pcmdport++;
     }

@@ -417,6 +417,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
     LP_priceinfos_clear();
     G.USERPASS_COUNTER = counter;
     G.initializing = 0;
+    LP_cmdchannels();
     return(0);
 }
 
