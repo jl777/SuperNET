@@ -438,7 +438,7 @@ void LP_commandQ_loop(void *ctx)
             {
                 if ( (retstr= LP_command_process(ctx,"127.0.0.1",ptr->responsesock,argjson,(uint8_t *)ptr->msg,ptr->msglen,ptr->stats_JSONonly)) != 0 )
                 {
-                    printf("processed.(%s)\n",retstr);
+                    //printf("processed.(%s)\n",retstr);
                     if ( ptr->responsesock >= 0  && (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
                         printf("error sending result\n");
                     if ( ptr->retstrp != 0 )
