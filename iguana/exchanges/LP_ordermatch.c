@@ -242,7 +242,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
                     //timeout = 1;
                     //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                     //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-                    printf("nanobind %s to %d\n",pairstr,pairsock);
+                    //printf("nanobind %s to %d\n",pairstr,pairsock);
                     return(pairsock);
                 } else printf("error binding to %s for %s\n",bindaddr,pairstr);
                 if ( LP_fixed_pairport != 0 )
@@ -430,7 +430,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                                 LP_butxo_set(butxo,iambob,coin,up,up2,targetval);
                                 return(butxo);
                             } else printf("cant find utxos[mini %d]\n",mini);
-                        } else printf("cant find targetval2 %.8f\n",dstr(targetval2));
+                        } //else printf("cant find targetval2 %.8f\n",dstr(targetval2));
                     } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
                 } else if ( targetval != 0 && mini >= 0 )
                     printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
@@ -477,7 +477,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 jaddstr(reqjson,"pair",pairstr);
                 if ( (kmdcoin= LP_coinfind("KMD")) != 0 )
                     jadd(reqjson,"proof",LP_instantdex_txids(0,kmdcoin->smartaddr));
-                char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
+                //char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
                 LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
                 if ( 0 )
                 {
@@ -888,7 +888,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     }
     else
     {
-        printf("cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f\n",(long long)qp->aliceid,qp->srccoin,qp->destcoin,dstr(LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee)),dstr(qp->destsatoshis));
+        //printf("cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f\n",(long long)qp->aliceid,qp->srccoin,qp->destcoin,dstr(LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee)),dstr(qp->destsatoshis));
         return(0);
     }
     if ( (qprice= LP_trades_pricevalidate(qp,coin,myprice)) < 0. )
@@ -1002,7 +1002,7 @@ void LP_tradesloop(void *ctx)
 {
     struct LP_trade *qtp,*tp,*tmp; struct LP_quoteinfo *qp,Q; uint32_t now; int32_t timeout,funcid,flag,nonz; struct iguana_info *coin; struct LP_pubkey_info *pubp;
     strcpy(LP_tradesloop_stats.name,"LP_tradesloop");
-    LP_tradesloop_stats.threshold = 10000;
+    LP_tradesloop_stats.threshold = 30000;
     sleep(5);
     while ( LP_STOP_RECEIVED == 0 )
     {
@@ -1280,7 +1280,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 if ( i == sizeof(rqs)/sizeof(*rqs) )
                     i = (rand() % (sizeof(rqs)/sizeof(*rqs)));
                 rqs[i] = rq;
-                printf("CONNECT.(%s)\n",jprint(argjson,0));
+                //printf("CONNECT.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.destcoin,Q.destaddr,proof,num);
                 if ( Qtrades == 0 )
