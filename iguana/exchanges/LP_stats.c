@@ -727,7 +727,7 @@ int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttim
 cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey,char *refbase,char *refrel)
 {
     static int32_t rval;
-    cJSON *retjson,*array,*item,*reqjson; struct LP_pubkey_info *pubp,*ptmp; bits256 zero; uint32_t now; struct LP_swapstats *sp,*tmp; int32_t i,n,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    cJSON *retjson,*array,*item; struct LP_pubkey_info *pubp,*ptmp; uint32_t now; struct LP_swapstats *sp,*tmp; int32_t i,n,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     if ( rval == 0 )
         rval = (LP_rand() % 300) + 60;
     if ( starttime > endtime )

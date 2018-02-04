@@ -512,7 +512,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             }
             if ( is_cJSON_Array(argjson) != 0 && (n= cJSON_GetArraySize(argjson)) > 0 )
             {
-                char *buf; cJSON *retitem,*retarray = cJSON_CreateArray();
+                cJSON *retitem,*retarray = cJSON_CreateArray();
                 origargjson = argjson;
                 symbol[0] = 0;
                 for (i=0; i<n; i++)
@@ -529,7 +529,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                         //free(buf);
                         //while ( retstr == 0 )
                         //    usleep(10000);
-                        if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
+                        if ( (retstr= stats_JSON(ctx,"127.0.0.1",-1,argjson,remoteaddr,port)) != 0 )
                         {
                             if ( (retitem= cJSON_Parse(retstr)) != 0 )
                                 jaddi(retarray,retitem);
@@ -556,7 +556,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             }
             else
             {
-                cJSON *arg; char *buf;
+                cJSON *arg; //char *buf;
                 if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
                 {
                     arg = jobj(argjson,"params");

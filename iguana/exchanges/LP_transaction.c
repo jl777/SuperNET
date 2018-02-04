@@ -1845,7 +1845,7 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,b
 int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay)
 {
     static bits256 zero;
-    uint8_t userdata[512]; int32_t retval,i,len = 0; struct iguana_info *coin;
+    uint8_t userdata[512]; int32_t retval,len = 0; struct iguana_info *coin;
     if ( (coin= LP_coinfind(swap->I.bobstr)) != 0 )
     {
         //printf("basilisk_bobpayment_reclaim\n");
@@ -2031,7 +2031,7 @@ void basilisk_alicepayment(struct basilisk_swap *swap,struct iguana_info *coin,s
 
 int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    char coinaddr[64]; int32_t i,retval = -1; struct iguana_info *coin;
+    char coinaddr[64]; int32_t retval = -1; struct iguana_info *coin;
     if ( (coin= LP_coinfind(swap->I.alicestr)) != 0 )
     {
         if ( swap->alicepayment.I.datalen == 0 )
