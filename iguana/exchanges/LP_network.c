@@ -481,6 +481,7 @@ void LP_psockloop(void *_ptr)
                                 if ( ptr->cmdchannel != 0 )
                                     sendsock = ptr->sendsock;
                                 else sendsock = ptr->publicsock;
+                                printf("nn_recv.(%s)\n",(char *)buf);
                                 nexti = i+1;
                                 break;
                             }
@@ -542,8 +543,8 @@ void LP_psockloop(void *_ptr)
                     } else printf("num pfds.%d retval.%d\n",n,retval);
                 }
             }
-            //free(pfds);
-            //printf("sendsock.%d Numpsocks.%d\n",sendsock,Numpsocks);
+            if ( sendsock >= 0 )
+                printf("sendsock.%d Numpsocks.%d\n",sendsock,Numpsocks);
             if ( sendsock < 0 )
             {
                 for (i=nonz=0; i<Numpsocks; i++)
