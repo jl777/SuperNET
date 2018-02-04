@@ -1035,7 +1035,7 @@ void LP_tradesloop(void *ctx)
                     }
                     nonz++;
                     tp->firstprocessed = tp->lastprocessed = (uint32_t)time(NULL);
-                    //printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
+                    printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
                 }
                 continue;
             }
@@ -1046,7 +1046,10 @@ void LP_tradesloop(void *ctx)
 //printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
             free(qtp);
             if ( tp->negotiationdone != 0 )
+            {
+                printf("iambob.%d negotiationdone.%u\n",tp->iambob,tp->negotiationdone);
                 continue;
+            }
             flag = 0;
             if ( qtp->iambob == tp->iambob )
             {
@@ -1070,6 +1073,7 @@ void LP_tradesloop(void *ctx)
                     {
                         flag = 1;
                         tp->negotiationdone = now;
+                        printf("bob sets negotiationdone.%u\n",now);
                         LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
                     }
                 }
@@ -1078,7 +1082,7 @@ void LP_tradesloop(void *ctx)
                     tp->lastprocessed = (uint32_t)time(NULL);
                     nonz++;
                 }
-            }
+            } else printf("qtp->iambob.%d vs tp->iambob.%d\n",qtp->iambob,tp->iambob);
         }
         HASH_ITER(hh,LP_trades,tp,tmp)
         {
