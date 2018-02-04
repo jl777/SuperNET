@@ -853,7 +853,7 @@ char *LP_orderbook(char *base,char *rel,int32_t duration)
             suppress_prefetch = 1;
         duration = LP_ORDERBOOK_DURATION;
     }
-    LP_pubkeys_query();
+    //LP_pubkeys_query();
     baseid = basepp->ind;
     relid = relpp->ind;
     now = (uint32_t)time(NULL);

@@ -1141,7 +1141,21 @@ void LP_reserved_msgs(void *ignore)
 
 int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg)
 {
-    struct LP_pubkey_info *pubp; int32_t sentbytes,n = 0;
+    struct LP_pubkey_info *pubp; uint32_t timestamp; char *method; cJSON *argjson; int32_t skip,sentbytes,n = 0;
+    skip = 0;
+    if ( (argjson= cJSON_Parse(msg)) != 0 )
+    {
+        if ( (method= jstr(argjson,"method")) != 0 )
+        {
+            if ( strcmp(method,"gettradestatus") == 0 || strcmp(method,"wantnotify") == 0 || strcmp(method,"getdPoW") == 0 )
+                skip = 1;
+        }
+        if ( (timestamp= juint(argjson,"timestamp")) != 0 && time(NULL) > timestamp+60 )
+            skip = 1;
+        free_json(argjson);
+    }
+    if ( skip != 0 )
+        return(-1);
     if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
         return(-1);
     if ( priority > 0 && bits256_nonz(pubkey) != 0 )
