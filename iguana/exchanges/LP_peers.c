@@ -71,6 +71,7 @@ void LP_cmdchannel(struct LP_peerinfo *peer)
                 sentbytes = nn_send(peer->pairsock,hellostr,(int32_t)strlen(hellostr)+1,0);
                 if ( sentbytes > 0 )
                     break;
+                printf("sentbytes.%d %s\n",sentbytes,nn_strerror(nn_errno()));
                 sleep(1);
             }
             printf("cmdchannel %d created %s sent.%d\n",peer->pairsock,retstr,sentbytes);
