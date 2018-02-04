@@ -478,11 +478,12 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 if ( (kmdcoin= LP_coinfind("KMD")) != 0 )
                     jadd(reqjson,"proof",LP_instantdex_txids(0,kmdcoin->smartaddr));
                 //char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
+                bits256 zero;
+                memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+                LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
                 if ( 0 )
                 {
-                    bits256 zero;
-                    memset(zero.bytes,0,sizeof(zero));
                     LP_reserved_msg(1,base,rel,zero,jprint(reqjson,0));
                     LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
                 }
