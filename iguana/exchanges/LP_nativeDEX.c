@@ -1126,7 +1126,7 @@ void LP_reserved_msgs(void *ignore)
             {
                 portable_mutex_lock(&LP_reservedmutex);
                 num_Reserved_msgs[0]--;
-                printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
+                //printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
                 LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
                 Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
                 portable_mutex_unlock(&LP_reservedmutex);
