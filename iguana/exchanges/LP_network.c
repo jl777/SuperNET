@@ -626,7 +626,7 @@ int32_t LP_psockmark(char *publicaddr)
 
 char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_t publicport,uint16_t subport,int32_t ispaired,int32_t cmdchannel,bits256 pubkey)
 {
-    int32_t i,pullsock,pubsock,arg; struct LP_pubkey_info *pubp; char pushaddr[128],subaddr[128]; cJSON *retjson = 0;
+    int32_t i,pullsock,bindflag=0,pubsock,arg; struct LP_pubkey_info *pubp; char pushaddr[128],subaddr[128]; cJSON *retjson = 0;
     pullsock = pubsock = -1;
     *pullsockp = *pubsockp = -1;
     nanomsg_transportname(1,pushaddr,ipaddr,publicport);
@@ -647,8 +647,10 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_MAXTTL,&arg,sizeof(arg));
             if ( pubsock >= 0 )
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_MAXTTL,&arg,sizeof(arg));
-            nanomsg_transportname(0,pushaddr,ipaddr,publicport);
-            nanomsg_transportname(0,subaddr,ipaddr,subport);
+            if ( cmdchannel != 0 && IAMLP != 0 )
+                bindflag = 1;
+            nanomsg_transportname(bindflag,pushaddr,ipaddr,publicport);
+            nanomsg_transportname(bindflag,subaddr,ipaddr,subport);
             LP_psockadd(ispaired,pullsock,publicport,pubsock,subport,subaddr,pushaddr,cmdchannel);
             if ( IAMLP != 0 && bits256_nonz(pubkey) != 0 )
             {
