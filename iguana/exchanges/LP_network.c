@@ -417,7 +417,7 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
 void LP_psockloop(void *_ptr)
 {
     static struct nn_pollfd *pfds;
-    int32_t nexti=0,j,i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];
+    int32_t nexti=0,j,i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512]; void *ctx = bitcoin_ctx();
     strcpy(LP_psockloop_stats.name,"LP_psockloop");
     LP_psockloop_stats.threshold = 1000.;
     while ( LP_STOP_RECEIVED == 0 )
@@ -428,11 +428,7 @@ void LP_psockloop(void *_ptr)
         {
             if ( size > 0 )
             {
-                if ( ptr->cmdchannel != 0 )
-                {
-                    printf("got cmdchannel.(%s)\n",(char *)buf);
-                }
-                else if ( (sentbytes= nn_send(sendsock,buf,size,0)) != size ) // need tight loop
+                if ( (sentbytes= nn_send(sendsock,buf,size,0)) != size ) // need tight loop
                     printf("LP_psockloop sent %d instead of %d\n",sentbytes,size);
                 if ( buf != 0 )
                 {
@@ -473,15 +469,27 @@ void LP_psockloop(void *_ptr)
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
+                            printf("cmd.%d publicsock.%d %s has pollin\n",ptr->cmdchannel,ptr->publicsock,ptr->publicaddr);
                             buf = 0;
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
                                 ptr->lasttime = now;
-                                if ( ptr->cmdchannel != 0 )
+                                if ( ptr->cmdchannel == 0 )
                                     sendsock = ptr->sendsock;
-                                else sendsock = ptr->publicsock;
-                                printf("nn_recv.(%s)\n",(char *)buf);
+                                else
+                                {
+                                    char *retstr; cJSON *argjson;
+                                    printf("nn_recv.(%s)\n",(char *)buf);
+                                    if ( (argjson= cJSON_Parse((char *)buf)) != 0 )
+                                    {
+                                        if ( (retstr= LP_command_process(ctx,"127.0.0.0",ptr->publicsock,argjson,buf,size)) != 0 )
+                                        {
+                                            printf("processed.(%s)\n",retstr);
+                                            free(retstr);
+                                        }
+                                        free_json(argjson);
+                                    }
+                                }
                                 nexti = i+1;
                                 break;
                             }

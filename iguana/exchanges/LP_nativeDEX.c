@@ -206,7 +206,7 @@ char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson
                 //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
         }
     }
-    else if ( LP_statslog_parse() > 0 )
+    else if ( LP_statslog_parse() > 0 && 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
         if ( (retjson= LP_statslog_disp(2000000000,2000000000,"",zero,0,0))) // pending swaps
