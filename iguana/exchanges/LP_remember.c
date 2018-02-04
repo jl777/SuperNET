@@ -235,7 +235,7 @@ bits256 basilisk_swap_privbob_extract(char *symbol,bits256 spendtxid,int32_t vin
                 privkey.bytes[31 - i] = script[siglen+2+i];
             else privkey.bytes[i] = script[siglen+2+i];
         }
-        char str[65]; printf("extracted privbob.(%s)\n",bits256_str(str,privkey));
+        //char str[65]; printf("extracted privbob.(%s)\n",bits256_str(str,privkey));
     }
     return(privkey);
 }

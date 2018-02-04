@@ -411,7 +411,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                 {
                     up = utxos[mini];
                     utxos[mini] = 0;
-                    printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
+                    //printf("found mini.%d %.8f for targetval %.8f -> targetval2 %.8f, ratio %.2f\n",mini,dstr(up->U.value),dstr(targetval),dstr(targetval2),(double)up->U.value/targetval);
                     if ( (double)up->U.value/targetval < ratio-1 )
                         
                     {
@@ -1019,7 +1019,7 @@ void LP_tradesloop(void *ctx)
             HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
             if ( tp == 0 )
             {
-                if ( 0 && now > Q.timestamp+LP_AUTOTRADE_TIMEOUT*20 ) // eat expired
+                if ( now > Q.timestamp+LP_AUTOTRADE_TIMEOUT*20 ) // eat expired
                     free(qtp);
                 else
                 {
@@ -1135,7 +1135,7 @@ void LP_tradesloop(void *ctx)
                 timeout += LP_AUTOTRADE_TIMEOUT * .5;
             if ( now > tp->firstprocessed+timeout*10 )
             {
-                printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
+                //printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
                 portable_mutex_lock(&LP_tradesmutex);
                 HASH_DELETE(hh,LP_trades,tp);
                 portable_mutex_unlock(&LP_tradesmutex);
@@ -1180,13 +1180,12 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
         LP_tradecommand_log(argjson);
         rq = ((uint64_t)Q.R.requestid << 32) | Q.R.quoteid;
-        printf("%-4d (%-10u %10u) %12s id.%-20llu %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,LP_RTcount,LP_swapscount,G.netid);
         if ( Q.timestamp > 0 && time(NULL) > Q.timestamp + LP_AUTOTRADE_TIMEOUT*20 ) // eat expired packets, some old timestamps floating about?
         {
             printf("aliceid.%llu is expired by %d\n",(long long)Q.aliceid,(uint32_t)time(NULL) - (Q.timestamp + LP_AUTOTRADE_TIMEOUT*20));
             return(1);
         }
-        //LP_autoprices_update(method,Q.srccoin,dstr(Q.satoshis),Q.destcoin,dstr(Q.destsatoshis));
+        printf("%-4d (%-10u %10u) %12s id.%-20llu %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,LP_RTcount,LP_swapscount,G.netid);
         retval = 1;
         aliceid = j64bits(argjson,"aliceid");
         qprice = jdouble(argjson,"price");

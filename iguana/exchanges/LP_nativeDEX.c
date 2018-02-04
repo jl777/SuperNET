@@ -85,7 +85,7 @@ void LP_millistats_update(struct LP_millistats *mp)
 }
 
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex,LP_statslogmutex,LP_tradesmutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex,LP_statslogmutex,LP_tradesmutex,LP_commandQmutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[2][1000];
 int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
@@ -192,12 +192,12 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_messages.c"
 #include "LP_commands.c"
 
-char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
+char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,int32_t stats_JSONonly)
 {
     char *retstr=0; cJSON *retjson; bits256 zero;
     if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
         return(0);
-    if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
+    if ( stats_JSONonly != 0 || LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
     {
         if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,"127.0.0.1",0)) != 0 )
         {
@@ -331,9 +331,10 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 }
                 else
                 {
-                    if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
-                    {
-                    }
+                    LP_queuecommand(0,jsonstr,pubsock,0);
+                    //if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
+                    //{
+                    //}
                 }
             }
             if ( argjson != 0 )
@@ -349,7 +350,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock,char *remoteaddr,int32_t maxdepth)
 {
     static char *line;
-    int32_t recvlen=1,msglen,nonz = 0; cJSON *argjson,*recvjson; void *ptr,*msg; char methodstr[64],*decodestr,*retstr,*str; struct nn_pollfd pfd;
+    int32_t recvlen=1,msglen,nonz = 0; cJSON *recvjson; void *ptr,*msg; char methodstr[64],*decodestr,*retstr,*str; struct nn_pollfd pfd;
     if ( line == 0 )
         line = calloc(1,1024*1024);
     if ( sock >= 0 )
@@ -407,12 +408,14 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     {
                         if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,msg,msglen,sock)) != 0 )
                             free(retstr);
+                        
                         if ( Broadcaststr != 0 )
                         {
                             //printf("self broadcast.(%s)\n",Broadcaststr);
                             str = Broadcaststr;
                             Broadcaststr = 0;
-                            if ( (argjson= cJSON_Parse(str)) != 0 )
+                            LP_queuecommand(0,str,pubsock,0);
+                            /*if ( (argjson= cJSON_Parse(str)) != 0 )
                             {
                                 //portable_mutex_lock(&LP_commandmutex);
                                 if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
@@ -422,7 +425,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                                 }
                                 //portable_mutex_unlock(&LP_commandmutex);
                                 free_json(argjson);
-                            }
+                            }*/
                             free(str);
                         }
                     }
@@ -1257,6 +1260,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_logmutex);
     portable_mutex_init(&LP_statslogmutex);
     portable_mutex_init(&LP_tradesmutex);
+    portable_mutex_init(&LP_commandQmutex);
     myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
 #ifndef FROM_JS
@@ -1397,6 +1401,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_swapsloop for ctx.%p\n",ctx);
         exit(-1);
     }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_commandQ_loop,ctx) != 0 )
+    {
+        printf("error launching LP_commandQ_loop for ctx.%p\n",ctx);
+        exit(-1);
+    }
     int32_t nonz,didremote=0;
     LP_statslog_parse();
     bitcoind_RPC_inittime = 0;
@@ -1464,7 +1473,10 @@ char *barterDEX(char *argstr)
     printf("barterDEX.(%s)\n",argstr);
     if ( (argjson= cJSON_Parse(argstr)) != 0 )
     {
-        retstr = LP_command_process(ctx,LP_myipaddr,LP_mypubsock,argjson,(uint8_t *)argstr,(int32_t)strlen(argstr));
+        LP_queuecommand(&retstr,argstr,LP_mypubsock);
+        //retstr = LP_command_process(ctx,LP_myipaddr,LP_mypubsock,argjson,(uint8_t *)argstr,(int32_t)strlen(argstr));
+        while ( retstr == 0 )
+            usleep(50000);
         free_json(argjson);
     } else retstr = clonestr("{\"error\":\"couldnt parse request\"}");
     return(retstr);

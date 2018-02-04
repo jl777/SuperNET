@@ -680,7 +680,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
         else
         {
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
-            LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,clonestr(msg));
+            //LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,clonestr(msg));
         }
         free(msg);
         /*portable_mutex_lock(&LP_reservedmutex);

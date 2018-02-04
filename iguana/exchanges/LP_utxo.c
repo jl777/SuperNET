@@ -454,7 +454,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         printf("LP_address_utxo_reset: cant find address data\n");
         return(0);
     }
-    if ( time(NULL) < coin->lastresetutxo+30 )
+    if ( IAMLP != 0 && time(NULL) < coin->lastresetutxo+30 )
         return(ap);
     coin->lastresetutxo = (uint32_t)time(NULL);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )

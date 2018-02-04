@@ -52,7 +52,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #endif
 //#define LP_STRICTPEERS
 
-#define LP_DISABLE_DISTCOMBINE
+//#define LP_DISABLE_DISTCOMBINE
 
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
@@ -479,7 +479,7 @@ int32_t LP_forward(void *ctx,char *myipaddr,int32_t pubsock,bits256 pubkey,char 
 struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port);
 uint64_t LP_value_extract(cJSON *obj,int32_t addinterest);
 int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
-char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen);
+char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,int32_t stats_JSONonly);
 int64_t LP_kmdvalue(char *symbol,int64_t satoshis);
 int64_t LP_komodo_interest(bits256 txid,int64_t value);
 void LP_availableset(bits256 txid,int32_t vout);
