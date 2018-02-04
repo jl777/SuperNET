@@ -460,6 +460,7 @@ void LP_psockloop(void *_ptr)
                     if ( iter == 0 )
                     {
                         pfds[n].fd = ptr->publicsock;
+                        printf("check sock.%d\n",ptr->publicsock);
                         pfds[n].events = POLLIN;
                     }
                     else
@@ -472,7 +473,7 @@ void LP_psockloop(void *_ptr)
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            //printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
+                            printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
                             buf = 0;
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
@@ -509,7 +510,7 @@ void LP_psockloop(void *_ptr)
                             {
                                 if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
                                 {
-                                    //printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
+                                    printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
                                     ptr->lasttime = now;
                                     if ( ptr->ispaired != 0 )
                                     {
@@ -626,11 +627,11 @@ int32_t LP_psockmark(char *publicaddr)
 
 char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_t publicport,uint16_t subport,int32_t ispaired,int32_t cmdchannel,bits256 pubkey)
 {
-    int32_t i,pullsock,bindflag=0,pubsock,arg; struct LP_pubkey_info *pubp; char pushaddr[128],subaddr[128]; cJSON *retjson = 0;
+    int32_t i,pullsock,bindflag=(IAMLP != 0),pubsock,arg; struct LP_pubkey_info *pubp; char pushaddr[128],subaddr[128]; cJSON *retjson = 0;
     pullsock = pubsock = -1;
     *pullsockp = *pubsockp = -1;
-    nanomsg_transportname(1,pushaddr,ipaddr,publicport);
-    nanomsg_transportname(1,subaddr,ipaddr,subport);
+    nanomsg_transportname(bindflag,pushaddr,ipaddr,publicport);
+    nanomsg_transportname(bindflag,subaddr,ipaddr,subport);
     if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (cmdchannel != 0 ||(pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PAIR)) >= 0) )
     {
         if ( nn_bind(pullsock,pushaddr) >= 0 && (cmdchannel != 0 || nn_bind(pubsock,subaddr) >= 0) )
@@ -647,10 +648,8 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_MAXTTL,&arg,sizeof(arg));
             if ( pubsock >= 0 )
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_MAXTTL,&arg,sizeof(arg));
-            if ( cmdchannel != 0 && IAMLP != 0 )
-                bindflag = 1;
-            nanomsg_transportname(bindflag,pushaddr,ipaddr,publicport);
-            nanomsg_transportname(bindflag,subaddr,ipaddr,subport);
+            nanomsg_transportname(0,pushaddr,ipaddr,publicport);
+            nanomsg_transportname(0,subaddr,ipaddr,subport);
             LP_psockadd(ispaired,pullsock,publicport,pubsock,subport,subaddr,pushaddr,cmdchannel);
             if ( IAMLP != 0 && bits256_nonz(pubkey) != 0 )
             {
