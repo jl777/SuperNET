@@ -167,9 +167,10 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                 portable_mutex_unlock(&LP_peermutex);
                 if ( IAMLP == 0 )
                 {
-                    char connectaddr[64],publicaddr[64],*retstr; int32_t pullsock,pubsock; uint16_t cmdport;
+                    char connectaddr[128],publicaddr[128],*retstr; int32_t pullsock,pubsock; uint16_t cmdport;
                     if ( (cmdport= LP_psock_get(connectaddr,publicaddr,1,1,peer->ipaddr)) != 0 )
                     {
+                        printf("call _LP_psock_create\n");
                         if ( (retstr= _LP_psock_create(&pullsock,&pubsock,peer->ipaddr,cmdport,cmdport,1,1)) != 0 )
                         {
                             printf("cmdchannel! %s\n",retstr);

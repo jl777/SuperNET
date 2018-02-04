@@ -623,7 +623,7 @@ int32_t LP_psockmark(char *publicaddr)
 
 char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_t publicport,uint16_t subport,int32_t ispaired,int32_t cmdchannel)
 {
-    int32_t pullsock,pubsock,arg; char pushaddr[64],subaddr[64]; cJSON *retjson = 0;
+    int32_t pullsock,pubsock,arg; char pushaddr[128],subaddr[128]; cJSON *retjson = 0;
     pullsock = pubsock = -1;
     *pullsockp = *pubsockp = -1;
     nanomsg_transportname(1,pushaddr,ipaddr,publicport);
@@ -726,7 +726,7 @@ char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmd
     sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d",destip,destport-1,ispaired,cmdchannel);
     //return(LP_issue_curl("psock",destip,destport,url));
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
-    printf("issue_LP_psock got (%s) from %s\n",retstr,url);
+    //printf("issue_LP_psock got (%s) from %s\n",retstr,url);
     return(retstr);
 }
 
@@ -752,13 +752,12 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired,int32_
                     publicport = juint(retjson,"publicport");
                 free_json(retjson);
             }
-            printf("got.(%s) connect.%s public.%s\n",retstr,connectaddr,publicaddr);
+            //printf("got.(%s) connect.%s public.%s publicport.%u\n",retstr,connectaddr,publicaddr,publicport);
             free(retstr);
+            return(publicport);
         } else printf("error psock from %s:%u\n",peer->ipaddr,peer->port);
-        if ( publicport != 0 )
-            break;
     }
-    return(publicport);
+    return(0);
 }
 
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
