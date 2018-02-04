@@ -454,23 +454,18 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
     privkey = LP_privkey(coin->symbol,coin->smartaddr,coin->taddr);
     if ( bits256_nonz(privkey) != 0 && bits256_cmp(G.LP_mypub25519,qp->srchash) == 0 )
     {
-        printf("Rinit\n");
         LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis-qp->txfee,rel,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
-        printf("Check swaps\n");
-        if ( LP_pendingswap(qp->R.requestid,qp->R.quoteid) > 0 )
+        /*if ( LP_pendingswap(qp->R.requestid,qp->R.quoteid) > 0 )
         {
             printf("requestid.%u quoteid.%u is already in progres\n",qp->R.requestid,qp->R.quoteid);
             return(-1);
-        }
-        printf("calc dtrust\n");
+        }*/
         dtrust = LP_dynamictrust(qp->othercredits,qp->desthash,LP_kmdvalue(qp->destcoin,qp->destsatoshis));
-        printf("swap init\n");
         if ( (swap= LP_swapinit(1,0,privkey,&qp->R,qp,dtrust > 0)) == 0 )
         {
             printf("cant initialize swap\n");
             return(-1);
         }
-        printf("nanobind\n");
         if ( (pair= LP_nanobind(ctx,pairstr)) >= 0 )
         {
             swap->N.pair = pair;
@@ -578,13 +573,13 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
     printf("CONNECTED numpending.%d tradeid.%u requestid.%u quoteid.%u pairstr.%s\n",G.LP_pendingswaps,qp->tradeid,qp->R.requestid,qp->R.quoteid,pairstr!=0?pairstr:"");
     LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
     //printf("calculated requestid.%u quoteid.%u\n",qp->R.requestid,qp->R.quoteid);
-    if ( LP_pendingswap(qp->R.requestid,qp->R.quoteid) > 0 )
+    /*if ( LP_pendingswap(qp->R.requestid,qp->R.quoteid) > 0 )
     {
         printf("requestid.%u quoteid.%u is already in progres\n",qp->R.requestid,qp->R.quoteid);
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"error","swap already in progress");
         return(jprint(retjson,1));
-    }
+    }*/
     /*if ( LP_quotecmp(1,qp,&LP_Alicereserved) == 0 )
     {
         printf("mismatched between reserved and connected\n");
