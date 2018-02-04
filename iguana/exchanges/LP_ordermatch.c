@@ -468,8 +468,6 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
         if ( (pair= LP_nanobind(ctx,pairstr)) >= 0 )
         {
             swap->N.pair = pair;
-            //utxo->S.swap = swap;
-            //swap->utxo = utxo;
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_bobloop,(void *)swap) == 0 )
             {
                 reqjson = LP_quotejson(qp);
@@ -665,7 +663,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
             LP_aliceid(qp->tradeid,qp->aliceid,"error10",qp->R.requestid,qp->R.quoteid);
             printf("connect error %s\n",nn_strerror(nn_errno()));
         }
-        printf("connected result.(%s)\n",jprint(retjson,0));
+        //printf("connected result.(%s)\n",jprint(retjson,0));
         if ( jobj(retjson,"error") != 0 )
         {
             LP_availableset(qp->desttxid,qp->vout);
@@ -935,7 +933,7 @@ struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,str
 struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr)
 {
     double myprice,qprice,bid,ask; struct iguana_info *coin;
-    //char str[65]; printf("bob %s received CONNECT.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
+    char str[65]; printf("bob %s received CONNECT.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
     *newqp = *qp;
     qp = newqp;
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
