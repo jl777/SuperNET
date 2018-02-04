@@ -469,7 +469,7 @@ void LP_psockloop(void *_ptr)
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            printf("cmd.%d publicsock.%d %s has pollin\n",ptr->cmdchannel,ptr->publicsock,ptr->publicaddr);
+                            //printf("cmd.%d publicsock.%d %s has pollin\n",ptr->cmdchannel,ptr->publicsock,ptr->publicaddr);
                             buf = 0;
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
@@ -485,6 +485,8 @@ void LP_psockloop(void *_ptr)
                                         if ( (retstr= LP_command_process(ctx,"127.0.0.0",ptr->publicsock,argjson,buf,size)) != 0 )
                                         {
                                             printf("processed.(%s)\n",retstr);
+                                            if ( (size= nn_send(ptr->publicsock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
+                                                printf("error sending result\n");
                                             free(retstr);
                                         }
                                         free_json(argjson);
