@@ -995,8 +995,8 @@ int32_t instantdex_pubkeyargs(struct basilisk_swap *swap,int32_t numpubs,bits256
         }
         n++;
     }
-    if ( n > 2 || m > 2 )
-        printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->I.numpubs);
+    //if ( n > 2 || m > 2 )
+    //    printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->I.numpubs);
     return(n);
 }
 

@@ -1008,6 +1008,59 @@ void LP_tradesloop(void *ctx)
     {
         LP_millistats_update(&LP_tradesloop_stats);
         nonz = 0;
+        HASH_ITER(hh,LP_trades,tp,tmp)
+        {
+            if ( tp->negotiationdone != 0 )
+                continue;
+            timeout = LP_AUTOTRADE_TIMEOUT;
+            if ( (coin= LP_coinfind(tp->Q.srccoin)) != 0 && coin->electrum != 0 )
+                timeout += LP_AUTOTRADE_TIMEOUT * .5;
+            if ( (coin= LP_coinfind(tp->Q.destcoin)) != 0 && coin->electrum != 0 )
+                timeout += LP_AUTOTRADE_TIMEOUT * .5;
+            now = (uint32_t)time(NULL);
+            if ( now > tp->lastprocessed )
+            {
+                if ( tp->iambob == 0 )
+                {
+                    if ( tp->bestprice > 0. )
+                    {
+                        if ( tp->connectsent == 0 )
+                        {
+                            tp->negotiationdone = (uint32_t)time(NULL);
+                            LP_Alicemaxprice = tp->bestprice;
+                            LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
+                            tp->connectsent = now;
+                            //printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
+                        }
+                        else if ( now < tp->firstprocessed+timeout && ((tp->firstprocessed - now) % 10) == 9 )
+                        {
+                            //LP_Alicemaxprice = tp->bestprice;
+                            //LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
+                            printf("mark slow LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
+                            if ( (pubp= LP_pubkeyfind(tp->Qs[LP_CONNECT].srchash)) != 0 )
+                                pubp->slowresponse++;
+                        }
+                    }
+                }
+            }
+        }
+        now = (uint32_t)time(NULL);
+        HASH_ITER(hh,LP_trades,tp,tmp)
+        {
+            timeout = LP_AUTOTRADE_TIMEOUT;
+            if ( (coin= LP_coinfind(tp->Q.srccoin)) != 0 && coin->electrum != 0 )
+                timeout += LP_AUTOTRADE_TIMEOUT * .5;
+            if ( (coin= LP_coinfind(tp->Q.destcoin)) != 0 && coin->electrum != 0 )
+                timeout += LP_AUTOTRADE_TIMEOUT * .5;
+            if ( now > tp->firstprocessed+timeout*10 )
+            {
+                //printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
+                portable_mutex_lock(&LP_tradesmutex);
+                HASH_DELETE(hh,LP_trades,tp);
+                portable_mutex_unlock(&LP_tradesmutex);
+                free(tp);
+            }
+        }
         DL_FOREACH_SAFE(LP_tradesQ,qtp,tmp)
         {
             now = (uint32_t)time(NULL);
@@ -1088,59 +1141,6 @@ void LP_tradesloop(void *ctx)
                     nonz++;
                 }
             } else printf("qtp->iambob.%d vs tp->iambob.%d\n",qtp->iambob,tp->iambob);
-        }
-        HASH_ITER(hh,LP_trades,tp,tmp)
-        {
-            if ( tp->negotiationdone != 0 )
-                continue;
-            timeout = LP_AUTOTRADE_TIMEOUT;
-            if ( (coin= LP_coinfind(tp->Q.srccoin)) != 0 && coin->electrum != 0 )
-                timeout += LP_AUTOTRADE_TIMEOUT * .5;
-            if ( (coin= LP_coinfind(tp->Q.destcoin)) != 0 && coin->electrum != 0 )
-                timeout += LP_AUTOTRADE_TIMEOUT * .5;
-            now = (uint32_t)time(NULL);
-            if ( now > tp->lastprocessed )
-            {
-                if ( tp->iambob == 0 )
-                {
-                    if ( tp->bestprice > 0. )
-                    {
-                        if ( tp->connectsent == 0 )
-                        {
-                            tp->negotiationdone = (uint32_t)time(NULL);
-                            LP_Alicemaxprice = tp->bestprice;
-                            LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
-                            tp->connectsent = now;
-                            //printf("send LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
-                        }
-                        else if ( now < tp->firstprocessed+timeout && ((tp->firstprocessed - now) % 10) == 9 )
-                        {
-                            //LP_Alicemaxprice = tp->bestprice;
-                            //LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
-                            printf("mark slow LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
-                            if ( (pubp= LP_pubkeyfind(tp->Qs[LP_CONNECT].srchash)) != 0 )
-                                pubp->slowresponse++;
-                        }
-                    }
-                }
-            }
-        }
-        now = (uint32_t)time(NULL);
-        HASH_ITER(hh,LP_trades,tp,tmp)
-        {
-            timeout = LP_AUTOTRADE_TIMEOUT;
-            if ( (coin= LP_coinfind(tp->Q.srccoin)) != 0 && coin->electrum != 0 )
-                timeout += LP_AUTOTRADE_TIMEOUT * .5;
-            if ( (coin= LP_coinfind(tp->Q.destcoin)) != 0 && coin->electrum != 0 )
-                timeout += LP_AUTOTRADE_TIMEOUT * .5;
-            if ( now > tp->firstprocessed+timeout*10 )
-            {
-                //printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
-                portable_mutex_lock(&LP_tradesmutex);
-                HASH_DELETE(hh,LP_trades,tp);
-                portable_mutex_unlock(&LP_tradesmutex);
-                free(tp);
-            }
         }
         if ( nonz == 0 )
             sleep(1);
