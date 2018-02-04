@@ -1108,6 +1108,7 @@ void LP_tradesloop(void *ctx)
                     {
                         if ( tp->connectsent == 0 )
                         {
+                            tp->negotiationdone = (uint32_t)time(NULL);
                             LP_Alicemaxprice = tp->bestprice;
                             LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
                             tp->connectsent = now;
@@ -1123,14 +1124,23 @@ void LP_tradesloop(void *ctx)
                         }
                     }
                 }
-                if ( now > tp->firstprocessed+timeout*10 )
-                {
-                    //printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
-                    portable_mutex_lock(&LP_tradesmutex);
-                    HASH_DELETE(hh,LP_trades,tp);
-                    portable_mutex_unlock(&LP_tradesmutex);
-                    free(tp);
-                }
+            }
+        }
+        now = (uint32_t)time(NULL);
+        HASH_ITER(hh,LP_trades,tp,tmp)
+        {
+            timeout = LP_AUTOTRADE_TIMEOUT;
+            if ( (coin= LP_coinfind(tp->Q.srccoin)) != 0 && coin->electrum != 0 )
+                timeout += LP_AUTOTRADE_TIMEOUT * .5;
+            if ( (coin= LP_coinfind(tp->Q.destcoin)) != 0 && coin->electrum != 0 )
+                timeout += LP_AUTOTRADE_TIMEOUT * .5;
+            if ( now > tp->firstprocessed+timeout*10 )
+            {
+                printf("purge swap aliceid.%llu\n",(long long)tp->aliceid);
+                portable_mutex_lock(&LP_tradesmutex);
+                HASH_DELETE(hh,LP_trades,tp);
+                portable_mutex_unlock(&LP_tradesmutex);
+                free(tp);
             }
         }
         if ( nonz == 0 )
