@@ -86,7 +86,7 @@ void LP_cmdchannels()
     {
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            if ( peer->pairsock == 0 )
+            if ( peer->pairsock <= 0 )
                 LP_cmdchannel(peer);
         }
     }
@@ -101,7 +101,7 @@ void LP_peer_pairsock(bits256 pubkey)
         {
             if ( bits256_cmp(pubkey,peer->pubkey) == 0 )
             {
-                LP_cmdchannel(peer);
+                peer->pairsock = -1;
                 break;
             }
         }
