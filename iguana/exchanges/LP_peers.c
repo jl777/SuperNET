@@ -163,38 +163,20 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                 {
                     mypeer->numpeers++;
                     printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d other.(%d)\n",ipaddr,mypeer->numpeers,mypubsock,isLP);
-                    if ( IAMLP == 0 )
-                    {
-                        char connectaddr[64],publicaddr[64],*retstr; int32_t pullsock,pubsock; uint16_t cmdport;
-                        if ( (cmdport= LP_psock_get(connectaddr,publicaddr,1,1,peer->ipaddr)) != 0 )
-                        {
-                            if ( (retstr= _LP_psock_create(&pullsock,&pubsock,peer->ipaddr,cmdport,cmdport,1,1)) != 0 )
-                            {
-                                printf("cmdchannel! %s\n",retstr);
-                                free(retstr);
-                            }
-                        } else printf("error getting cmdchannel with %s\n",peer->ipaddr);
-                    }
                 } else peer->numpeers = 1; // will become mypeer
                 portable_mutex_unlock(&LP_peermutex);
-                /*if ( IAMLP != 0 && mypubsock >= 0 )
+                if ( IAMLP == 0 )
                 {
-                    //struct iguana_info *coin,*ctmp; char busaddr[64]; //
-                    //memset(zero.bytes,0,sizeof(zero));
-                    //LP_send(mypubsock,msg,(int32_t)strlen(msg)+1,1);
-                    //LP_reserved_msg(0,"","",zero,jprint(LP_peerjson(peer),1));
-                    if ( 0 )
+                    char connectaddr[64],publicaddr[64],*retstr; int32_t pullsock,pubsock; uint16_t cmdport;
+                    if ( (cmdport= LP_psock_get(connectaddr,publicaddr,1,1,peer->ipaddr)) != 0 )
                     {
-                        HASH_ITER(hh,LP_coins,coin,ctmp)
+                        if ( (retstr= _LP_psock_create(&pullsock,&pubsock,peer->ipaddr,cmdport,cmdport,1,1)) != 0 )
                         {
-                            if ( coin->bussock >= 0 )
-                            {
-                                nanomsg_transportname(0,busaddr,peer->ipaddr,coin->busport);
-                                nn_connect(coin->bussock,busaddr);
-                            }
+                            printf("cmdchannel! %s\n",retstr);
+                            free(retstr);
                         }
-                    }
-                }*/
+                    } else printf("error getting cmdchannel with %s\n",peer->ipaddr);
+                }
             } else printf("%s invalid pushsock.%d or subsock.%d\n",peer->ipaddr,peer->pushsock,peer->subsock);
         }
     } else printf("LP_addpeer: checkip.(%s) vs (%s)\n",checkip,ipaddr);
