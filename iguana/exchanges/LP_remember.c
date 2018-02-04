@@ -235,7 +235,7 @@ bits256 basilisk_swap_privbob_extract(char *symbol,bits256 spendtxid,int32_t vin
                 privkey.bytes[31 - i] = script[siglen+2+i];
             else privkey.bytes[i] = script[siglen+2+i];
         }
-        char str[65]; printf("extracted privbob.(%s)\n",bits256_str(str,privkey));
+        //char str[65]; printf("extracted privbob.(%s)\n",bits256_str(str,privkey));
     }
     return(privkey);
 }
@@ -1027,7 +1027,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             for (j=0; j<32; j++)
                                 rev.bytes[j] = rswap.myprivs[0].bytes[31 - j];
                             if ( (rswap.txbytes[BASILISK_ALICESPEND]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"alicespend",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBPAYMENT],0,0,rswap.pubkey33,1,rswap.expiration,&rswap.values[BASILISK_ALICESPEND],0,0,rswap.bobpaymentaddr,1,bob->zcash)) != 0 )
-                                printf("alicespend.(%s)\n",rswap.txbytes[BASILISK_ALICESPEND]);
+                            {
+                                //printf("alicespend.(%s)\n",rswap.txbytes[BASILISK_ALICESPEND]);
+                            }
                         }
                         LP_txbytes_update("alicespend",rswap.bobcoin,rswap.txbytes[BASILISK_ALICESPEND],&rswap.txids[BASILISK_ALICESPEND],&rswap.paymentspent,&rswap.sentflags[BASILISK_ALICESPEND]);
                     }
@@ -1137,7 +1139,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     LP_txbytes_update("bobreclaim",rswap.bobcoin,rswap.txbytes[BASILISK_BOBRECLAIM],&rswap.txids[BASILISK_BOBRECLAIM],&rswap.paymentspent,&rswap.sentflags[BASILISK_BOBRECLAIM]);
                 }
                 else if ( flag == 0 )
-                    printf("bobpayment: now.%u < expiration %u\n",(uint32_t)time(NULL),rswap.expiration);
+                {
+                    //printf("bobpayment: now.%u < expiration %u\n",(uint32_t)time(NULL),rswap.expiration);
+                }
             }
             if ( rswap.sentflags[BASILISK_BOBREFUND] == 0 && rswap.sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(rswap.txids[BASILISK_BOBDEPOSIT]) != 0 && bits256_nonz(rswap.depositspent) == 0 )
             {

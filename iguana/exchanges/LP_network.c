@@ -414,10 +414,68 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
     return(nextbits);
 }
 
+struct LP_queuedcommand
+{
+    struct LP_queuedcommand *next,*prev;
+    char **retstrp;
+    int32_t responsesock,msglen,stats_JSONonly;
+    char msg[];
+} *LP_commandQ;
+    
+void LP_commandQ_loop(void *ctx)
+{
+    struct LP_queuedcommand *ptr,*tmp; int32_t size,nonz; char *retstr; cJSON *argjson;
+    while ( LP_STOP_RECEIVED == 0 )
+    {
+        nonz = 0;
+        DL_FOREACH_SAFE(LP_commandQ,ptr,tmp)
+        {
+            nonz++;
+            portable_mutex_lock(&LP_commandQmutex);
+            DL_DELETE(LP_commandQ,ptr);
+            portable_mutex_unlock(&LP_commandQmutex);
+            if ( (argjson= cJSON_Parse(ptr->msg)) != 0 )
+            {
+                if ( (retstr= LP_command_process(ctx,"127.0.0.1",ptr->responsesock,argjson,(uint8_t *)ptr->msg,ptr->msglen,ptr->stats_JSONonly)) != 0 )
+                {
+                    //printf("processed.(%s)\n",retstr);
+                    if ( ptr->responsesock >= 0  && (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
+                        printf("error sending result\n");
+                    if ( ptr->retstrp != 0 )
+                        (*ptr->retstrp) = retstr;
+                    else free(retstr);
+                }
+                else if ( ptr->retstrp != 0 )
+                    (*ptr->retstrp) = clonestr("{\"error\":\"timeout\"}");
+                free_json(argjson);
+            }
+            free(ptr);
+        }
+        if ( nonz == 0 )
+            sleep (1);
+    }
+}
+    
+void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly)
+{
+    struct LP_queuedcommand *ptr; int32_t msglen;
+    msglen = (int32_t)strlen(buf) + 1;
+    portable_mutex_lock(&LP_commandQmutex);
+    ptr = calloc(1,sizeof(*ptr) + msglen);
+    if ( (ptr->retstrp= retstrp) != 0 )
+        *retstrp = 0;
+    ptr->responsesock = responsesock;
+    ptr->msglen = msglen;
+    ptr->stats_JSONonly = stats_JSONonly;
+    memcpy(ptr->msg,buf,msglen);
+    DL_APPEND(LP_commandQ,ptr);
+    portable_mutex_unlock(&LP_commandQmutex);
+}
+
 void LP_psockloop(void *_ptr)
 {
     static struct nn_pollfd *pfds;
-    int32_t nexti=0,j,i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512]; void *ctx = bitcoin_ctx();
+    int32_t nexti=0,j,i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];
     strcpy(LP_psockloop_stats.name,"LP_psockloop");
     LP_psockloop_stats.threshold = 1000.;
     while ( LP_STOP_RECEIVED == 0 )
@@ -476,22 +534,7 @@ void LP_psockloop(void *_ptr)
                                 ptr->lasttime = now;
                                 if ( ptr->cmdchannel == 0 )
                                     sendsock = ptr->sendsock;
-                                else
-                                {
-                                    char *retstr; cJSON *argjson;
-                                    //printf("nn_recv.(%s)\n",(char *)buf);
-                                    if ( (argjson= cJSON_Parse((char *)buf)) != 0 )
-                                    {
-                                        if ( (retstr= LP_command_process(ctx,"127.0.0.0",ptr->publicsock,argjson,buf,size)) != 0 )
-                                        {
-                                            printf("processed.(%s)\n",retstr);
-                                            if ( (size= nn_send(ptr->publicsock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
-                                                printf("error sending result\n");
-                                            free(retstr);
-                                        }
-                                        free_json(argjson);
-                                    }
-                                }
+                                else LP_queuecommand(0,(char *)buf,ptr->publicsock,0);
                                 nexti = i+1;
                                 break;
                             }
@@ -671,7 +714,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
                 {
                     if ( pubp->pairsock > 0 )
                     {
-                        printf("warning %s already has pairsock.%d, mark for purge\n",bits256_str(str,pubkey),pubp->pairsock);
+                        //printf("warning %s already has pairsock.%d, mark for purge\n",bits256_str(str,pubkey),pubp->pairsock);
                         for (i=0; i<Numpsocks; i++)
                             if ( PSOCKS[i].publicsock == pubp->pairsock )
                             {
@@ -779,7 +822,7 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired,int32_
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                printf("from %s:%u (%s)\n",peer->ipaddr,peer->port,retstr);
+                //printf("from %s:%u (%s)\n",peer->ipaddr,peer->port,retstr);
                 if ( (addr= jstr(retjson,"publicaddr")) != 0 )
                     safecopy(publicaddr,addr,128);
                 if ( (addr= jstr(retjson,"connectaddr")) != 0 )
@@ -791,7 +834,7 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired,int32_
             //printf("got.(%s) connect.%s public.%s publicport.%u\n",retstr,connectaddr,publicaddr,publicport);
             free(retstr);
             return(publicport);
-        } else printf("error psock from %s:%u\n",peer->ipaddr,peer->port);
+        } //else printf("error psock from %s:%u\n",peer->ipaddr,peer->port);
     }
     return(0);
 }

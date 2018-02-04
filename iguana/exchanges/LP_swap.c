@@ -625,7 +625,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     if ( recvlen != datalen+rawtx->I.redeemlen+75 )
         printf("RECVLEN %d != %d + %d\n",recvlen,datalen,rawtx->I.redeemlen);
     txid = bits256_calctxid(coin->symbol,data,datalen);
-    char str[65]; printf("rawtx.%s txid %s\n",rawtx->name,bits256_str(str,txid));
+    //char str[65]; printf("rawtx.%s txid %s\n",rawtx->name,bits256_str(str,txid));
     if ( bits256_cmp(txid,rawtx->I.actualtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
         rawtx->I.actualtxid = txid;
     if ( (txobj= bitcoin_data2json(coin->symbol,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,height,&rawtx->I.signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys,coin->zcash)) != 0 )
@@ -659,9 +659,8 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
                     retval = 0;
                     if ( rawtx == &swap->otherfee )
                     {
-                        char str[65];
                         LP_swap_coinaddr(coin,rawtx->p2shaddr,0,data,datalen,0);
-                        printf("got %s txid.%s (%s) -> %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0),rawtx->p2shaddr);
+                        //printf("got %s txid.%s (%s) -> %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0),rawtx->p2shaddr);
                     } else bitcoin_address(coin->symbol,rawtx->p2shaddr,coin->taddr,coin->p2shtype,rawtx->spendscript,hexlen);
                 }
             } else printf("%s satoshis %.8f ERROR.(%s) txfees.[%.8f %.8f: %.8f] amount.%.8f -> %.8f\n",rawtx->name,dstr(j64bits(vout,"satoshis")),jprint(txobj,0),dstr(swap->I.Atxfee),dstr(swap->I.Btxfee),dstr(txfee),dstr(rawtx->I.amount),dstr(rawtx->I.amount)-dstr(txfee));

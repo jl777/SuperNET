@@ -735,7 +735,7 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
         printf("incomplete signing %s (%s)\n",rawtx,jprint(vins,0));
         if ( signedtx != 0 )
             free(signedtx), signedtx = 0;
-    } else printf("basilisk_swap_bobtxspend %s -> %s\n",rawtx,bits256_str(str,*signedtxidp));
+    } // else printf("basilisk_swap_bobtxspend %s -> %s\n",rawtx,bits256_str(str,*signedtxidp));
     if ( signedtx == 0 )
     {
         retjson = cJSON_CreateObject();
