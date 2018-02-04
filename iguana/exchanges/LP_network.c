@@ -566,7 +566,7 @@ void LP_psockloop(void *_ptr)
                             {
                                 if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
                                 {
-                                    printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
+                                    //printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
                                     ptr->lasttime = now;
                                     if ( ptr->ispaired != 0 )
                                     {

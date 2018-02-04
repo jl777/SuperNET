@@ -1125,7 +1125,7 @@ printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long
                         if ( tp->connectsent == 0 )
                             flag = LP_trades_bestpricecheck(ctx,tp);
                     }
-                    else if ( funcid == LP_CONNECTED && tp->connectsent != 0 && tp->negotiationdone == 0 ) // alice all done
+                    else if ( funcid == LP_CONNECTED && tp->negotiationdone == 0 ) // alice all done  tp->connectsent != 0 &&
                     {
                         flag = 1;
                         tp->negotiationdone = now;
