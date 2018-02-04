@@ -1104,7 +1104,7 @@ void LP_reserved_msgs(void *ignore)
             if ( num_Reserved_msgs[1] > 0 )
             {
                 num_Reserved_msgs[1]--;
-                printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
+                //printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
                 LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[1][num_Reserved_msgs[1]]);
                 Reserved_msgs[1][num_Reserved_msgs[1]] = 0;
             }
@@ -1162,7 +1162,7 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
     {
         if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
         {
-            if ( pubp->pairsock > 0 )
+            if ( pubp->pairsock >= 0 )
             {
                 if ( (sentbytes= nn_send(pubp->pairsock,msg,(int32_t)strlen(msg)+1,0)) < 0 )
                 {

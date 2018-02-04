@@ -712,7 +712,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
                 char str[65];
                 if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
                 {
-                    if ( pubp->pairsock > 0 )
+                    if ( pubp->pairsock >= 0 )
                     {
                         //printf("warning %s already has pairsock.%d, mark for purge\n",bits256_str(str,pubkey),pubp->pairsock);
                         for (i=0; i<Numpsocks; i++)
@@ -805,7 +805,7 @@ char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmd
     sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d&pubkey=%s",destip,destport-1,ispaired,cmdchannel,bits256_str(str,G.LP_mypub25519));
     //return(LP_issue_curl("psock",destip,destport,url));
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
-    //printf("issue_LP_psock got (%s) from %s\n",retstr,url); // this is needed?!
+    printf("issue_LP_psock got (%s) from %s\n",retstr,url); // this is needed?!
     return(retstr);
 }
 

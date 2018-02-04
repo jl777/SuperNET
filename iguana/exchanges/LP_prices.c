@@ -304,6 +304,7 @@ struct LP_pubkey_info *LP_pubkeyadd(bits256 pubkey)
     {
         pubp = calloc(1,sizeof(*pubp));
         pubp->pubkey = pubkey;
+        pubp->pairsock = -1;
         if ( bits256_cmp(G.LP_mypub25519,pubkey) == 0 )
         {
             memcpy(pubp->rmd160,G.LP_myrmd160,sizeof(pubp->rmd160));
