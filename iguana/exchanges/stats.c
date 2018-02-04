@@ -575,8 +575,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     while ( retstr == 0 )
                         usleep(10000);
                     //retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
-                }
-                else retstr = clonestr("{\"error\":\"invalid remote method\"}");
+                } else retstr = clonestr("{\"error\":\"invalid remote method\"}");
 #else
                 buf = jprint(arg,0);
                 LP_queuecommand(&retstr,buf,-1,1);
@@ -591,7 +590,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
         free_json(json);
         if ( tmpjson != 0 )
             free(tmpjson);
-        //printf("stats_JSON rpc return.(%s)\n",retstr);
+printf("stats_JSON rpc return.(%s)\n",retstr);
         return(retstr);
     }
     free_json(argjson);
