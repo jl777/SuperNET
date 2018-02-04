@@ -56,6 +56,21 @@ char *LP_peers()
     return(jprint(peersjson,1));
 }
 
+void LP_cmdchannel(struct LP_peerinfo *peer)
+{
+    char connectaddr[128],publicaddr[128],*retstr; int32_t pubsock; uint16_t cmdport;
+    if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
+        return;
+    if ( (cmdport= LP_psock_get(connectaddr,publicaddr,1,1,peer->ipaddr)) != 0 )
+    {
+        if ( (retstr= _LP_psock_create(&peer->pairsock,&pubsock,peer->ipaddr,cmdport,cmdport,1,1,G.LP_mypub25519)) != 0 )
+        {
+            printf("cmdchannel created %s\n",retstr);
+            free(retstr);
+        }
+    } else printf("error getting cmdchannel with %s\n",peer->ipaddr);
+}
+
 struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t isLP,uint32_t sessionid,uint16_t netid)
 {
     uint32_t ipbits; int32_t valid,pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
@@ -79,6 +94,8 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                 if ( (peer->isLP= isLP) != 0 )
                     LP_numactive_LP++;
             }
+            if ( IAMLP == 0 && peer->pairsock == 0 )
+                LP_cmdchannel(peer);
             /*if ( numpeers > peer->numpeers )
                 peer->numpeers = numpeers;
             if ( numutxos > peer->numutxos )
@@ -117,8 +134,6 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
                     timeout = 100;
                     nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                    //maxsize = 2 * 1024 * 1024;
-                    //nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDBUF,&maxsize,sizeof(maxsize));
                     printf("connected to push.(%s) pushsock.%d valid.%d  | ",pushaddr,pushsock,valid);
                     peer->connected = (uint32_t)time(NULL);
                     peer->pushsock = pushsock;
@@ -128,12 +143,9 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                         nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                         nn_setsockopt(subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
                         nanomsg_transportname(0,subaddr,peer->ipaddr,subport);
-                        //nanomsg_transportname2(0,subaddr2,peer->ipaddr,subport);
                         valid = 0;
                         if ( nn_connect(subsock,subaddr) >= 0 )
                             valid++;
-                        //if ( nn_connect(subsock,subaddr2) >= 0 )
-                        //    valid++;
                         if ( valid > 0 )
                         {
                             peer->subsock = subsock;
@@ -165,19 +177,8 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                     printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d other.(%d)\n",ipaddr,mypeer->numpeers,mypubsock,isLP);
                 } else peer->numpeers = 1; // will become mypeer
                 portable_mutex_unlock(&LP_peermutex);
-                if ( IAMLP == 0 )
-                {
-                    char connectaddr[128],publicaddr[128],*retstr; int32_t pullsock,pubsock; uint16_t cmdport;
-                    if ( (cmdport= LP_psock_get(connectaddr,publicaddr,1,1,peer->ipaddr)) != 0 )
-                    {
-                        printf("call _LP_psock_create\n");
-                        if ( (retstr= _LP_psock_create(&pullsock,&pubsock,peer->ipaddr,cmdport,cmdport,1,1)) != 0 )
-                        {
-                            printf("cmdchannel! %s\n",retstr);
-                            free(retstr);
-                        }
-                    } else printf("error getting cmdchannel with %s\n",peer->ipaddr);
-                }
+                if ( IAMLP == 0 && peer->pairsock == 0 )
+                    LP_cmdchannel(peer);
             } else printf("%s invalid pushsock.%d or subsock.%d\n",peer->ipaddr,peer->pushsock,peer->subsock);
         }
     } else printf("LP_addpeer: checkip.(%s) vs (%s)\n",checkip,ipaddr);
@@ -230,13 +231,18 @@ void LP_closepeers()
     return(bussock);
 }*/
 
-void LP_peer_recv(char *ipaddr,int32_t ismine)
+void LP_peer_recv(char *ipaddr,int32_t ismine,struct LP_pubkey_info *pubp)
 {
     struct LP_peerinfo *peer;
     if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),RPC_port)) != 0 )
     {
         peer->numrecv++;
-        //if ( ismine != 0 )
+        if ( ismine != 0 && (bits256_nonz(peer->pubkey) == 0 || pubp->pairsock <= 0) )
+        {
+            peer->pubkey = pubp->pubkey;
+            pubp->pairsock = peer->pairsock;
+            char str[65]; printf("set pubkey for %s <- %s, pairsock.%d\n",ipaddr,bits256_str(str,pubp->pubkey),pubp->pairsock);
+        }
         peer->recvtime = (uint32_t)time(NULL);
     }
 }

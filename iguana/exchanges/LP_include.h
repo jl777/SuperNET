@@ -361,9 +361,10 @@ struct LP_address
 struct LP_peerinfo
 {
     UT_hash_handle hh;
+    bits256 pubkey;
     uint64_t ip_port;
     uint32_t recvtime,numrecv,ipbits,errortime,errors,numpeers,needping,lasttime,connected,lastutxos,lastpeers,diduquery,good,sessionid;
-    int32_t pushsock,subsock,isLP;
+    int32_t pushsock,subsock,isLP,pairsock;
     uint16_t port,netid;
     char ipaddr[64];
 };
@@ -544,6 +545,7 @@ int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag);
 uint16_t LP_randpeer(char *destip);
 void LP_tradebot_pauseall();
 void LP_portfolio_reset();
+struct LP_pubkey_info *LP_pubkeyadd(bits256 pubkey);
 uint32_t LP_atomic_locktime(char *base,char *rel);
 struct LP_pubkey_info *LP_pubkeyfind(bits256 pubkey);
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmdchannel);

@@ -621,9 +621,9 @@ int32_t LP_psockmark(char *publicaddr)
     return(retval);
 }
 
-char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_t publicport,uint16_t subport,int32_t ispaired,int32_t cmdchannel)
+char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_t publicport,uint16_t subport,int32_t ispaired,int32_t cmdchannel,bits256 pubkey)
 {
-    int32_t pullsock,pubsock,arg; char pushaddr[128],subaddr[128]; cJSON *retjson = 0;
+    int32_t i,pullsock,pubsock,arg; struct LP_pubkey_info *pubp; char pushaddr[128],subaddr[128]; cJSON *retjson = 0;
     pullsock = pubsock = -1;
     *pullsockp = *pubsockp = -1;
     nanomsg_transportname(1,pushaddr,ipaddr,publicport);
@@ -647,6 +647,25 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             nanomsg_transportname(0,pushaddr,ipaddr,publicport);
             nanomsg_transportname(0,subaddr,ipaddr,subport);
             LP_psockadd(ispaired,pullsock,publicport,pubsock,subport,subaddr,pushaddr,cmdchannel);
+            if ( IAMLP != 0 && bits256_nonz(pubkey) != 0 )
+            {
+                char str[65];
+                if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
+                {
+                    if ( pubp->pairsock > 0 )
+                    {
+                        printf("warning %s already has pairsock.%d, mark for purge\n",bits256_str(str,pubkey),pubp->pairsock);
+                        for (i=0; i<Numpsocks; i++)
+                            if ( PSOCKS[i].publicsock == pubp->pairsock )
+                            {
+                                PSOCKS[i].lasttime = (uint32_t)time(NULL) - PSOCK_KEEPALIVE - 1;
+                                break;
+                            }
+                    }
+                    printf("pairsock for %s <- %d\n",bits256_str(str,pubkey),pubp->pairsock);
+                    pubp->pairsock = pullsock;
+                }
+            }
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"result","success");
             jaddstr(retjson,"LPipaddr",ipaddr);
@@ -671,7 +690,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
     return(0);
 }
         
-char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchannel)
+char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchannel,bits256 pubkey)
 {
     char *retstr=0; uint16_t i,publicport,subport,maxport; int32_t pullsock=-1;
     *pubsockp = -1;
@@ -693,7 +712,7 @@ char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchanne
             publicport = MIN_PSOCK_PORT+1;
         if ( cmdchannel == 0 && subport <= publicport )
             subport = publicport +  1;
-        if ( (retstr= _LP_psock_create(&pullsock,pubsockp,ipaddr,publicport,subport,ispaired,cmdchannel)) != 0 )
+        if ( (retstr= _LP_psock_create(&pullsock,pubsockp,ipaddr,publicport,subport,ispaired,cmdchannel,pubkey)) != 0 )
         {
             //printf("LP_psock returns.(%s)\n",retstr);
             return(retstr);
@@ -722,8 +741,8 @@ char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchanne
 
 char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmdchannel)
 {
-    char url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d",destip,destport-1,ispaired,cmdchannel);
+    char str[65],url[512],*retstr;
+    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d&mypub=%s",destip,destport-1,ispaired,cmdchannel,bits256_str(str,G.LP_mypub25519));
     //return(LP_issue_curl("psock",destip,destport,url));
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
     printf("issue_LP_psock got (%s) from %s\n",retstr,url);
