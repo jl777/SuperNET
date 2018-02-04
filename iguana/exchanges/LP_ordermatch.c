@@ -835,6 +835,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     double price,qprice,myprice,bestprice,range,bid,ask; struct iguana_info *coin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65]; struct LP_address_utxo *utxos[1000]; int32_t r,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
     *newqp = *qp;
     qp = newqp;
+    printf("bob %s received REQUEST.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
         return(0);
     if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
@@ -905,6 +906,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         jaddstr(reqjson,"method","reserved");
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
         free_json(reqjson);
+        printf("Send RESERVED id.%llu\n",(long long)qp->aliceid);
         return(qp);
     } else printf("request processing selected ineligible utxos?\n");
     return(0);
@@ -929,6 +931,7 @@ struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,str
 struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr)
 {
     double myprice,qprice,bid,ask; struct iguana_info *coin;
+    char str[65]; printf("bob %s received CONNECT.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
     *newqp = *qp;
     qp = newqp;
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
@@ -1066,13 +1069,13 @@ void LP_tradesloop(void *ctx)
             now = (uint32_t)time(NULL);
             Q = qtp->Q;
             funcid = qtp->funcid;
-//printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
+printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
             portable_mutex_lock(&LP_tradesmutex);
             DL_DELETE(LP_tradesQ,qtp);
             HASH_FIND(hh,LP_trades,&qtp->aliceid,sizeof(qtp->aliceid),tp);
             if ( tp == 0 )
             {
-                if ( now > Q.timestamp+LP_AUTOTRADE_TIMEOUT*20 ) // eat expired
+                if ( now > Q.timestamp+LP_AUTOTRADE_TIMEOUT*2 ) // eat expired
                     free(qtp);
                 else
                 {
@@ -1088,11 +1091,15 @@ void LP_tradesloop(void *ctx)
                     {
                         LP_trades_bestpricecheck(ctx,tp);
                     }
+                    else if ( tp->iambob == 0 && funcid == LP_CONNECTED )
+                    {
+                        tp->negotiationdone = now;
+                        LP_trades_gotconnected(ctx,&tp->Q,&tp->Qs[LP_CONNECTED],tp->pairstr);
+                    }
                     nonz++;
                     tp->firstprocessed = tp->lastprocessed = (uint32_t)time(NULL);
                     if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all done
                     {
-                        flag = 1;
                         tp->negotiationdone = now;
                         //printf("bob sets negotiationdone.%u\n",now);
                         LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
@@ -1104,7 +1111,7 @@ void LP_tradesloop(void *ctx)
             tp->Q = qtp->Q;
             if ( qtp->iambob == tp->iambob && qtp->pairstr[0] != 0 )
                 safecopy(tp->pairstr,qtp->pairstr,sizeof(tp->pairstr));
-//printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
+printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
             free(qtp);
             if ( tp->negotiationdone != 0 )
                 continue;
@@ -1127,7 +1134,15 @@ void LP_tradesloop(void *ctx)
                 }
                 else
                 {
-                    if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all done
+                    if ( funcid == LP_REQUEST ) // bob maybe sends LP_RESERVED
+                    {
+                        if ( (qp= LP_trades_gotrequest(ctx,&Q,&tp->Qs[LP_REQUEST],tp->pairstr)) != 0 )
+                        {
+                            tp->Qs[LP_RESERVED] = Q;
+                            flag = 1;
+                        }
+                    }
+                    else if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all done
                     {
                         flag = 1;
                         tp->negotiationdone = now;
@@ -1237,7 +1252,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
   //printf("CONNECTED.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.srccoin,Q.coinaddr,proof,num);
-                if ( 1 || Qtrades == 0 )
+                if ( Qtrades == 0 )
                     LP_trades_gotconnected(ctx,&Q,&Q2,jstr(argjson,"pair"));
                 else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECTED);
             }
@@ -1261,7 +1276,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         if ( strcmp(method,"request") == 0 ) // bob
         {
             bestprice = LP_bob_competition(&counter,aliceid,qprice,-1);
-            if ( 1 || Qtrades == 0 || (bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0) )
+            if ( Qtrades == 0 )//|| (bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0) )
                 LP_trades_gotrequest(ctx,&Q,&Q2,jstr(argjson,"pair"));
             else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_REQUEST);
         }
