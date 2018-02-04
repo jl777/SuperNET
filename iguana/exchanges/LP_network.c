@@ -657,10 +657,10 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&arg,sizeof(arg));
             if ( pubsock >= 0 )
                 nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_RCVTIMEO,&arg,sizeof(arg));
-            arg = 2;
-            nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_MAXTTL,&arg,sizeof(arg));
-            if ( pubsock >= 0 )
-                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_MAXTTL,&arg,sizeof(arg));
+            //arg = 2;
+            //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_MAXTTL,&arg,sizeof(arg));
+            //if ( pubsock >= 0 )
+            //    nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_MAXTTL,&arg,sizeof(arg));
             nanomsg_transportname(0,pushaddr,ipaddr,publicport);
             nanomsg_transportname(0,subaddr,ipaddr,subport);
             LP_psockadd(ispaired,pullsock,publicport,pubsock,subport,subaddr,pushaddr,cmdchannel);
@@ -696,7 +696,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             *pullsockp = pullsock;
             *pubsockp = pubsock;
             return(jprint(retjson,1));
-        } else printf("bind error on %s or %s\n",pushaddr,subaddr);
+        } //else printf("bind error on %s or %s\n",pushaddr,subaddr);
         if ( pullsock >= 0 )
             nn_close(pullsock);
         if ( pubsock >= 0 )

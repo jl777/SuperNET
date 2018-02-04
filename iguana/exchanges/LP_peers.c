@@ -167,8 +167,8 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                 //    valid++;
                 if ( valid > 0 )
                 {
-                    timeout = 10;
-                    nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
+                    //timeout = 10;
+                    //nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
                     timeout = 100;
                     nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                     printf("connected to push.(%s) pushsock.%d valid.%d  | ",pushaddr,pushsock,valid);

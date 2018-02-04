@@ -1085,7 +1085,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         else
         {
             printf("couldnt add address_utxo after not finding\n");
-            return(0);
+            //return(0);
         }
     }
     if ( dustcombine >= 1 && min0 != 0 && min0->U.value < LP_DUSTCOMBINE_THRESHOLD && (coin->electrum == 0 || min0->SPV > 0) )
