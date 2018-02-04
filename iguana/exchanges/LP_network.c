@@ -445,6 +445,8 @@ void LP_commandQ_loop(void *ctx)
                         (*ptr->retstrp) = retstr;
                     else free(retstr);
                 }
+                else if ( ptr->retstrp != 0 )
+                    (*ptr->retstrp) = clonestr("{\"error\":\"timeout\"}");
                 free_json(argjson);
             }
             free(ptr);
