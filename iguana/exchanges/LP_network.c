@@ -21,12 +21,12 @@
 struct psock
 {
     uint32_t lasttime,lastping,errors;
-    int32_t publicsock,sendsock,ispaired;
+    int32_t publicsock,sendsock,ispaired,cmdchannel;
     uint16_t publicport,sendport;
     char sendaddr[128],publicaddr[128];
 } *PSOCKS;
 
-uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT;
+uint16_t Numpsocks,Psockport = MIN_PSOCK_PORT,Pcmdport = MAX_PSOCK_PORT;
 
 #ifdef FROM_JS
 
@@ -299,16 +299,18 @@ void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *m
 
 void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON *argjson,uint32_t crc32)
 {
-    int32_t msglen;
+    int32_t msglen; char *method;
+    if ( (method= jstr(argjson,"method")) == 0 )
+        return;
     msg = (void *)jprint(argjson,0);
     msglen = (int32_t)strlen((char *)msg) + 1;
     if ( crc32 == 0 )
         crc32 = calc_crc32(0,&msg[2],msglen - 2);
     //printf("crc32.%x IAMLP.%d pubsock.%d\n",crc32,G.LP_IAMLP,pubsock);
 #ifdef FROM_MARKETMAKER
-    if ( G.LP_IAMLP == 0 || pubsock < 0 )
+    if ( (G.LP_IAMLP == 0 || pubsock < 0) && strcmp(method,"psock") != 0 )
 #else
-    if ( IAMLP == 0 || pubsock < 0 )
+    if ( (IAMLP == 0 || pubsock < 0 && strcmp(method,"psock") != 0 )
 #endif
     {
         free(msg);
@@ -412,10 +414,10 @@ uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbit
     return(nextbits);
 }
 
-void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to work
+void LP_psockloop(void *_ptr)
 {
     static struct nn_pollfd *pfds;
-    int32_t i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512];
+    int32_t nexti=0,j,i,n,nonz,iter,retval,sentbytes,size=0,sendsock = -1; uint32_t now; struct psock *ptr=0; void *buf=0; char keepalive[512]; void *ctx = bitcoin_ctx();
     strcpy(LP_psockloop_stats.name,"LP_psockloop");
     LP_psockloop_stats.threshold = 1000.;
     while ( LP_STOP_RECEIVED == 0 )
@@ -447,12 +449,14 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
             memset(pfds,0,sizeof(*pfds) * ((Numpsocks*2 <= MAX_PSOCK_PORT) ? Numpsocks*2 : MAX_PSOCK_PORT));
             for (iter=0; iter<2; iter++)
             {
-                for (i=n=0; i<Numpsocks; i++)
+                for (j=n=0; j<Numpsocks; j++)
                 {
+                    i = (j + nexti) % Numpsocks;
                     ptr = &PSOCKS[i];
                     if ( iter == 0 )
                     {
                         pfds[n].fd = ptr->publicsock;
+                        //printf("check sock.%d\n",ptr->publicsock);
                         pfds[n].events = POLLIN;
                     }
                     else
@@ -460,16 +464,35 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                         if ( pfds[n].fd != ptr->publicsock )
                         {
                             printf("unexpected fd.%d mismatched publicsock.%d\n",pfds[n].fd,ptr->publicsock);
+                            nexti = i+1;
                             break;
                         }
                         else if ( (pfds[n].revents & POLLIN) != 0 )
                         {
-                            //printf("publicsock.%d %s has pollin\n",ptr->publicsock,ptr->publicaddr);
+                            //printf("cmd.%d publicsock.%d %s has pollin\n",ptr->cmdchannel,ptr->publicsock,ptr->publicaddr);
                             buf = 0;
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
                                 ptr->lasttime = now;
-                                sendsock = ptr->sendsock;
+                                if ( ptr->cmdchannel == 0 )
+                                    sendsock = ptr->sendsock;
+                                else
+                                {
+                                    char *retstr; cJSON *argjson;
+                                    //printf("nn_recv.(%s)\n",(char *)buf);
+                                    if ( (argjson= cJSON_Parse((char *)buf)) != 0 )
+                                    {
+                                        if ( (retstr= LP_command_process(ctx,"127.0.0.0",ptr->publicsock,argjson,buf,size)) != 0 )
+                                        {
+                                            printf("processed.(%s)\n",retstr);
+                                            if ( (size= nn_send(ptr->publicsock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
+                                                printf("error sending result\n");
+                                            free(retstr);
+                                        }
+                                        free_json(argjson);
+                                    }
+                                }
+                                nexti = i+1;
                                 break;
                             }
                             else if ( buf != 0 )
@@ -481,52 +504,57 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                         }
                     }
                     n++;
-                    if ( iter == 0 )
+                    if ( ptr->sendsock > 0 )
                     {
-                        pfds[n].fd = ptr->sendsock;
-                        pfds[n].events = POLLIN;
-                    }
-                    else
-                    {
-                        if ( pfds[n].fd != ptr->sendsock )
+                        if ( iter == 0 )
                         {
-                            printf("unexpected fd.%d mismatched sendsock.%d\n",pfds[n].fd,ptr->sendsock);
-                            break;
+                            pfds[n].fd = ptr->sendsock;
+                            pfds[n].events = POLLIN;
                         }
-                        else if ( (pfds[n].revents & POLLIN) != 0 )
+                        else
                         {
-                            if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
+                            if ( pfds[n].fd != ptr->sendsock )
                             {
-                                //printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
-                                ptr->lasttime = now;
-                                if ( ptr->ispaired != 0 )
+                                printf("unexpected fd.%d mismatched sendsock.%d\n",pfds[n].fd,ptr->sendsock);
+                                nexti = i+1;
+                                break;
+                            }
+                            else if ( (pfds[n].revents & POLLIN) != 0 )
+                            {
+                                if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
                                 {
-                                    sendsock = ptr->publicsock;
-                                    break;
+                                    printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
+                                    ptr->lasttime = now;
+                                    if ( ptr->ispaired != 0 )
+                                    {
+                                        sendsock = ptr->publicsock;
+                                        nexti = i+1;
+                                        break;
+                                    }
+                                }
+                                if ( buf != 0 )
+                                {
+                                    nn_freemsg(buf);
+                                    buf = 0;
+                                    size = 0;
                                 }
                             }
-                            if ( buf != 0 )
-                            {
-                                nn_freemsg(buf);
-                                buf = 0;
-                                size = 0;
-                            }
                         }
+                        n++;
                     }
-                    n++;
                 }
                 if ( iter == 0 )
                 {
                     if ( (retval= nn_poll(pfds,n,1)) <= 0 )
                     {
-                        if ( retval != 0 )
-                            printf("nn_poll retval.%d\n",retval);
+                        //if ( retval != 0 )
+                        //    printf("nn_poll retval.%d\n",retval);
                         break;
-                    } else printf("num pfds.%d retval.%d\n",n,retval);
+                    } // else printf("num pfds.%d retval.%d\n",n,retval);
                 }
             }
-            //free(pfds);
-            //printf("sendsock.%d Numpsocks.%d\n",sendsock,Numpsocks);
+            if ( sendsock >= 0 )
+                printf("sendsock.%d Numpsocks.%d\n",sendsock,Numpsocks);
             if ( sendsock < 0 )
             {
                 for (i=nonz=0; i<Numpsocks; i++)
@@ -537,10 +565,10 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
                         if ( now > ptr->lasttime+PSOCK_KEEPALIVE )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->publicport,ptr->sendport,now - ptr->lasttime);
+                            if ( ptr->sendsock != ptr->publicsock && ptr->sendsock >= 0 )
+                                nn_close(ptr->sendsock);
                             if ( ptr->publicsock >= 0 )
                                 nn_close(ptr->publicsock);
-                            if ( ptr->sendsock >= 0 )
-                                nn_close(ptr->sendsock);
                             //portable_mutex_lock(&LP_psockmutex);
                             if ( Numpsocks > 1 )
                             {
@@ -573,13 +601,14 @@ void LP_psockloop(void *_ptr) // printouts seem to be needed for forwarding to w
     }
 }
 
-void LP_psockadd(int32_t ispaired,int32_t publicsock,uint16_t recvport,int32_t sendsock,uint16_t sendport,char *subaddr,char *publicaddr)
+void LP_psockadd(int32_t ispaired,int32_t publicsock,uint16_t recvport,int32_t sendsock,uint16_t sendport,char *subaddr,char *publicaddr,int32_t cmdchannel)
 {
     struct psock *ptr;
     portable_mutex_lock(&LP_psockmutex);
     PSOCKS = realloc(PSOCKS,sizeof(*PSOCKS) * (Numpsocks + 1));
     ptr = &PSOCKS[Numpsocks++];
     ptr->ispaired = ispaired;
+    ptr->cmdchannel = cmdchannel;
     ptr->publicsock = publicsock;
     ptr->publicport = recvport;
     ptr->sendsock = sendsock;
@@ -609,65 +638,111 @@ int32_t LP_psockmark(char *publicaddr)
     return(retval);
 }
 
-char *LP_psock(char *myipaddr,int32_t ispaired)
+char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_t publicport,uint16_t subport,int32_t ispaired,int32_t cmdchannel,bits256 pubkey)
 {
-    char pushaddr[128],subaddr[128]; uint16_t i,publicport,subport,maxiters=100; int32_t timeout,pullsock=-1,pubsock=-1; cJSON *retjson=0;
-    retjson = cJSON_CreateObject();
-    publicport = Psockport++;
-    subport = Psockport++;
-    for (i=0; i<maxiters; i++,publicport+=2,subport+=2)
+    int32_t i,pullsock,bindflag=(IAMLP != 0),pubsock,arg; struct LP_pubkey_info *pubp; char pushaddr[128],subaddr[128]; cJSON *retjson = 0;
+    pullsock = pubsock = -1;
+    *pullsockp = *pubsockp = -1;
+    nanomsg_transportname(bindflag,pushaddr,ipaddr,publicport);
+    nanomsg_transportname(bindflag,subaddr,ipaddr,subport);
+    if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (cmdchannel != 0 ||(pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PAIR)) >= 0) )
+    {
+        if ( nn_bind(pullsock,pushaddr) >= 0 && (cmdchannel != 0 || nn_bind(pubsock,subaddr) >= 0) )
+        {
+            arg = 100;
+            nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&arg,sizeof(arg));
+            if ( pubsock >= 0 )
+                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&arg,sizeof(arg));
+            arg = 1;
+            nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&arg,sizeof(arg));
+            if ( pubsock >= 0 )
+                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_RCVTIMEO,&arg,sizeof(arg));
+            arg = 2;
+            nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_MAXTTL,&arg,sizeof(arg));
+            if ( pubsock >= 0 )
+                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_MAXTTL,&arg,sizeof(arg));
+            nanomsg_transportname(0,pushaddr,ipaddr,publicport);
+            nanomsg_transportname(0,subaddr,ipaddr,subport);
+            LP_psockadd(ispaired,pullsock,publicport,pubsock,subport,subaddr,pushaddr,cmdchannel);
+            if ( IAMLP != 0 && bits256_nonz(pubkey) != 0 )
+            {
+                char str[65];
+                if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
+                {
+                    if ( pubp->pairsock > 0 )
+                    {
+                        printf("warning %s already has pairsock.%d, mark for purge\n",bits256_str(str,pubkey),pubp->pairsock);
+                        for (i=0; i<Numpsocks; i++)
+                            if ( PSOCKS[i].publicsock == pubp->pairsock )
+                            {
+                                PSOCKS[i].lasttime = (uint32_t)time(NULL) - PSOCK_KEEPALIVE - 1;
+                                break;
+                            }
+                    }
+                    printf("pairsock for %s <- %d\n",bits256_str(str,pubkey),pullsock);
+                    pubp->pairsock = pullsock;
+                }
+            }
+            retjson = cJSON_CreateObject();
+            jaddstr(retjson,"result","success");
+            jaddstr(retjson,"LPipaddr",ipaddr);
+            jaddstr(retjson,"connectaddr",subaddr);
+            jaddnum(retjson,"connectport",subport);
+            jaddnum(retjson,"ispaired",ispaired);
+            jaddnum(retjson,"cmdchannel",cmdchannel);
+            jaddstr(retjson,"publicaddr",pushaddr);
+            jaddnum(retjson,"publicport",publicport);
+            //printf("cmd.%d publicaddr.(%s) for subaddr.(%s), pullsock.%d pubsock.%d\n",cmdchannel,pushaddr,subaddr,pullsock,pubsock);
+            *pullsockp = pullsock;
+            *pubsockp = pubsock;
+            return(jprint(retjson,1));
+        } else printf("bind error on %s or %s\n",pushaddr,subaddr);
+        if ( pullsock >= 0 )
+            nn_close(pullsock);
+        if ( pubsock >= 0 )
+            nn_close(pubsock);
+    }
+    return(0);
+}
+        
+char *LP_psock(int32_t *pullsockp,char *ipaddr,int32_t ispaired,int32_t cmdchannel,bits256 pubkey)
+{
+    char *retstr=0; uint16_t i,publicport,subport,maxport; int32_t pubsock=-1;
+    *pullsockp = -1;
+    //printf("LP_psock ipaddr.%s ispaird.%d cmdchannel.%d\n",ipaddr,ispaired,cmdchannel);
+    if ( cmdchannel == 0 )
+    {
+        maxport = MAX_PSOCK_PORT;
+        publicport = Psockport++;
+        subport = Psockport++;
+    }
+    else
+    {
+        if ( cmdchannel != 0 && bits256_nonz(pubkey) == 0 )
+            return(clonestr("{\"error\",\"cant do pairsock for null pubkey\"}"));
+        maxport = 65534;
+        publicport = subport = Pcmdport++;
+    }
+    for (i=0; i<maxport; i++)
     {
         if ( publicport < MIN_PSOCK_PORT )
             publicport = MIN_PSOCK_PORT+1;
-        if ( subport <= publicport )
+        if ( cmdchannel == 0 && subport <= publicport )
             subport = publicport +  1;
-        pullsock = pubsock = -1;
-        nanomsg_transportname(1,pushaddr,myipaddr,publicport);
-        nanomsg_transportname(1,subaddr,myipaddr,subport);
-        if ( (pullsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,ispaired!=0?NN_PAIR:NN_PAIR)) >= 0 )
+        if ( (retstr= _LP_psock_create(pullsockp,&pubsock,ipaddr,publicport,subport,ispaired,cmdchannel,pubkey)) != 0 )
         {
-            if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
-            {
-                timeout = 100;
-                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-                if ( ispaired != 0 )
-                {
-                    //maxsize = 1024 * 1024;
-                    //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
-                }
-                //if ( ispaired != 0 )
-                {
-                    nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                    nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-                }
-                timeout = 10;
-                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
-                nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
-                nanomsg_transportname(0,pushaddr,myipaddr,publicport);
-                nanomsg_transportname(0,subaddr,myipaddr,subport);
-                LP_psockadd(ispaired,pullsock,publicport,pubsock,subport,subaddr,pushaddr);
-                jaddstr(retjson,"result","success");
-                jaddstr(retjson,"LPipaddr",myipaddr);
-                jaddstr(retjson,"connectaddr",subaddr);
-                jaddnum(retjson,"connectport",subport);
-                jaddnum(retjson,"ispaired",ispaired);
-                jaddstr(retjson,"publicaddr",pushaddr);
-                jaddnum(retjson,"publicport",publicport);
-                printf("i.%d publicaddr.(%s) for subaddr.(%s), pullsock.%d pubsock.%d\n",i,pushaddr,subaddr,pullsock,pubsock);
-                break;
-            } else printf("bind error on %s or %s\n",pushaddr,subaddr);
-            if ( pullsock >= 0 )
-                nn_close(pullsock);
-            if ( pubsock >= 0 )
-                nn_close(pubsock);
+            //printf("LP_psock returns.(%s)\n",retstr);
+            return(retstr);
         }
+        if ( cmdchannel == 0 )
+            publicport+=2, subport+=2;
+        else publicport++, subport++;
     }
-    if ( Psockport > MAX_PSOCK_PORT )
+    if ( Psockport >= MAX_PSOCK_PORT )
         Psockport = MIN_PSOCK_PORT;
-    if ( i == maxiters )
-        jaddstr(retjson,"error","cant find psock ports");
-    return(jprint(retjson,1));
+    if ( Pcmdport >= 65534 )
+        Pcmdport = MAX_PSOCK_PORT;
+    return(clonestr("{\"error\",\"cant find psock ports\"}"));
 }
 
 /*
@@ -681,23 +756,26 @@ char *LP_psock(char *myipaddr,int32_t ispaired)
 
 */
 
-char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired)
+char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmdchannel)
 {
-    char url[512],*retstr;
-    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d",destip,destport-1,ispaired);
+    char str[65],url[512],*retstr;
+    sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d&pubkey=%s",destip,destport-1,ispaired,cmdchannel,bits256_str(str,G.LP_mypub25519));
     //return(LP_issue_curl("psock",destip,destport,url));
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
-    printf("issue_LP_psock got (%s) from %s\n",retstr,destip);
+    //printf("issue_LP_psock got (%s) from %s\n",retstr,url); // this is needed?!
     return(retstr);
 }
 
-uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
+uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired,int32_t cmdchannel,char *ipaddr)
 {
     uint16_t publicport = 0; char *retstr,*addr; cJSON *retjson; struct LP_peerinfo *peer,*tmp;
+    connectaddr[0] = publicaddr[0] = 0;
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
+        if ( ipaddr != 0 && strcmp(ipaddr,peer->ipaddr) != 0 )
+            continue;
         connectaddr[0] = publicaddr[0] = 0;
-        if ( peer->errors < LP_MAXPEER_ERRORS && (retstr= issue_LP_psock(peer->ipaddr,peer->port,ispaired)) != 0 )
+        if ( peer->errors < LP_MAXPEER_ERRORS && (retstr= issue_LP_psock(peer->ipaddr,peer->port,ispaired,cmdchannel)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
@@ -706,26 +784,22 @@ uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired)
                     safecopy(publicaddr,addr,128);
                 if ( (addr= jstr(retjson,"connectaddr")) != 0 )
                     safecopy(connectaddr,addr,128);
-                //if ( (addr= jstr(retjson,"connectaddr2")) != 0 )
-                //    safecopy(connectaddr2,addr,128);
                 if ( publicaddr[0] != 0 && connectaddr[0] != 0 )
                     publicport = juint(retjson,"publicport");
                 free_json(retjson);
             }
-            printf("got.(%s) connect.%s public.%s\n",retstr,connectaddr,publicaddr);
+            //printf("got.(%s) connect.%s public.%s publicport.%u\n",retstr,connectaddr,publicaddr,publicport);
             free(retstr);
+            return(publicport);
         } else printf("error psock from %s:%u\n",peer->ipaddr,peer->port);
-        if ( publicport != 0 )
-            break;
     }
-    return(publicport);
+    return(0);
 }
 
 int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char *myipaddr,uint16_t mypullport,int32_t ispaired)
 {
     int32_t nntype,pullsock,timeout; char bindaddr[128],connectaddr[128];
     *mypullportp = mypullport;
-    //connectaddr2[0] = 0;
     if ( ispaired == 0 )
     {
         if ( LP_canbind != 0 )
@@ -736,7 +810,6 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
     {
         nanomsg_transportname(0,publicaddr,myipaddr,mypullport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypullport);
-        //nanomsg_transportname2(1,bindaddr2,myipaddr,mypullport);
     }
     else
     {
@@ -748,7 +821,7 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
         }
         while ( *mypullportp == 0 )
         {
-            if ( (*mypullportp= LP_psock_get(connectaddr,publicaddr,ispaired)) != 0 )
+            if ( (*mypullportp= LP_psock_get(connectaddr,publicaddr,ispaired,0,0)) != 0 )
                 break;
             sleep(10);
             printf("try to get publicaddr again\n");
@@ -767,8 +840,6 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                 }
                 else
                 {
-                    //if ( connectaddr2[0] != 0 && nn_connect(pullsock,connectaddr2) > 0 )
-                    //    printf("%s ",connectaddr2);
                     printf("nntype.%d NN_PAIR.%d connect to %s connectsock.%d\n",nntype,NN_PAIR,connectaddr,pullsock);
                 }
             }
@@ -779,14 +850,10 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                     printf("bind to %s error for %s: %s\n",bindaddr,publicaddr,nn_strerror(nn_errno()));
                     exit(-1);
                 }
-                //if ( nn_bind(pullsock,bindaddr2) >= 0 )
-                //    printf("bound to %s\n",bindaddr2);
             }
             timeout = 100;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            //maxsize = 2 * 1024 * 1024;
-            //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
             if ( nntype == NN_SUB )
                 nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
         }

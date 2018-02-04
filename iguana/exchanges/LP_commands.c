@@ -752,16 +752,21 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         {
             if ( strcmp(method,"psock") == 0 )
             {
-                 if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
-                 {
-                     if ( LP_mypeer != 0 )
-                         myipaddr = LP_mypeer->ipaddr;
-                     else printf("LP_psock dont have actual ipaddr?\n");
-                 }
-                 if ( jint(argjson,"ispaired") != 0 )
-                     return(LP_psock(myipaddr,jint(argjson,"ispaired")));
-                 else return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
-             }
+                int32_t psock;
+                if ( myipaddr == 0 || myipaddr[0] == 0 || strcmp(myipaddr,"127.0.0.1") == 0 )
+                {
+                    if ( LP_mypeer != 0 )
+                        myipaddr = LP_mypeer->ipaddr;
+                    else printf("LP_psock dont have actual ipaddr?\n");
+                }
+                if ( jint(argjson,"ispaired") != 0 )
+                {
+                    retstr = LP_psock(&psock,myipaddr,1,jint(argjson,"cmdchannel"),jbits256(argjson,"pubkey"));
+                    //printf("LP_commands.(%s)\n",retstr);
+                    return(retstr);
+                }
+                else return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
+            }
         }
         else
         {
