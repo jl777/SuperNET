@@ -70,9 +70,9 @@ void LP_cmdchannel(struct LP_peerinfo *peer)
                 printf("error connecting cmdchannel with %s\n",connectaddr);
             else
             {
+                peer->pairsock = pairsock;
                 sentbytes = nn_send(peer->pairsock,hellostr,(int32_t)strlen(hellostr)+1,0);
                 printf("cmdchannel %d created %s sent.%d\n",peer->pairsock,retstr,sentbytes);
-                peer->pairsock = pairsock;
             }
             free(retstr);
         }
