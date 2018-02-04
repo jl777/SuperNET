@@ -59,22 +59,21 @@ char *LP_peers()
 void LP_cmdchannel(struct LP_peerinfo *peer)
 {
     char *hellostr = "{\"method\":\"hello\"}";
-    char connectaddr[128],publicaddr[128],*retstr; int32_t i,pubsock,sentbytes=-2; uint16_t cmdport;
+    char connectaddr[128],publicaddr[128],*retstr; int32_t pairsock=-1,pubsock,sentbytes=-2; uint16_t cmdport;
     if ( bits256_nonz(G.LP_mypub25519) == 0 || strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
         return;
     if ( (cmdport= LP_psock_get(connectaddr,publicaddr,1,1,peer->ipaddr)) != 0 )
     {
-        if ( (retstr= _LP_psock_create(&peer->pairsock,&pubsock,peer->ipaddr,cmdport,cmdport,1,1,G.LP_mypub25519)) != 0 )
+        if ( (retstr= _LP_psock_create(&pairsock,&pubsock,peer->ipaddr,cmdport,cmdport,1,1,G.LP_mypub25519)) != 0 )
         {
-            for (i=0; i<30; i++)
+            if ( nn_connect(pairsock,connectaddr) < 0 )
+                printf("error connecting cmdchannel with %s\n",connectaddr);
+            else
             {
                 sentbytes = nn_send(peer->pairsock,hellostr,(int32_t)strlen(hellostr)+1,0);
-                if ( sentbytes > 0 )
-                    break;
-                printf("sentbytes.%d %s\n",sentbytes,nn_strerror(nn_errno()));
-                sleep(1);
+                printf("cmdchannel %d created %s sent.%d\n",peer->pairsock,retstr,sentbytes);
+                peer->pairsock = pairsock;
             }
-            printf("cmdchannel %d created %s sent.%d\n",peer->pairsock,retstr,sentbytes);
             free(retstr);
         }
     } else printf("error getting cmdchannel with %s\n",peer->ipaddr);

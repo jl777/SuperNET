@@ -460,7 +460,7 @@ void LP_psockloop(void *_ptr)
                     if ( iter == 0 )
                     {
                         pfds[n].fd = ptr->publicsock;
-                        printf("check sock.%d\n",ptr->publicsock);
+                        //printf("check sock.%d\n",ptr->publicsock);
                         pfds[n].events = POLLIN;
                     }
                     else
@@ -787,7 +787,6 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
 {
     int32_t nntype,pullsock,timeout; char bindaddr[128],connectaddr[128];
     *mypullportp = mypullport;
-    //connectaddr2[0] = 0;
     if ( ispaired == 0 )
     {
         if ( LP_canbind != 0 )
@@ -798,7 +797,6 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
     {
         nanomsg_transportname(0,publicaddr,myipaddr,mypullport);
         nanomsg_transportname(1,bindaddr,myipaddr,mypullport);
-        //nanomsg_transportname2(1,bindaddr2,myipaddr,mypullport);
     }
     else
     {
@@ -829,8 +827,6 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                 }
                 else
                 {
-                    //if ( connectaddr2[0] != 0 && nn_connect(pullsock,connectaddr2) > 0 )
-                    //    printf("%s ",connectaddr2);
                     printf("nntype.%d NN_PAIR.%d connect to %s connectsock.%d\n",nntype,NN_PAIR,connectaddr,pullsock);
                 }
             }
@@ -841,14 +837,10 @@ int32_t LP_initpublicaddr(void *ctx,uint16_t *mypullportp,char *publicaddr,char 
                     printf("bind to %s error for %s: %s\n",bindaddr,publicaddr,nn_strerror(nn_errno()));
                     exit(-1);
                 }
-                //if ( nn_bind(pullsock,bindaddr2) >= 0 )
-                //    printf("bound to %s\n",bindaddr2);
             }
             timeout = 100;
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            //maxsize = 2 * 1024 * 1024;
-            //nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
             if ( nntype == NN_SUB )
                 nn_setsockopt(pullsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
         }
