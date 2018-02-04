@@ -479,7 +479,7 @@ void LP_psockloop(void *_ptr)
                                 else
                                 {
                                     char *retstr; cJSON *argjson;
-                                    printf("nn_recv.(%s)\n",(char *)buf);
+                                    //printf("nn_recv.(%s)\n",(char *)buf);
                                     if ( (argjson= cJSON_Parse((char *)buf)) != 0 )
                                     {
                                         if ( (retstr= LP_command_process(ctx,"127.0.0.0",ptr->publicsock,argjson,buf,size)) != 0 )
@@ -550,7 +550,7 @@ void LP_psockloop(void *_ptr)
                         //if ( retval != 0 )
                         //    printf("nn_poll retval.%d\n",retval);
                         break;
-                    } else printf("num pfds.%d retval.%d\n",n,retval);
+                    } // else printf("num pfds.%d retval.%d\n",n,retval);
                 }
             }
             if ( sendsock >= 0 )

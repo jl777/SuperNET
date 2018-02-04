@@ -1035,7 +1035,13 @@ void LP_tradesloop(void *ctx)
                     }
                     nonz++;
                     tp->firstprocessed = tp->lastprocessed = (uint32_t)time(NULL);
-                    printf("iambob.%d funcid.%d vs %d\n",tp->iambob,funcid,LP_REQUEST);
+                    if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all done
+                    {
+                        flag = 1;
+                        tp->negotiationdone = now;
+                        printf("bob sets negotiationdone.%u\n",now);
+                        LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
+                    }
                 }
                 continue;
             }
@@ -1109,9 +1115,9 @@ void LP_tradesloop(void *ctx)
                         }
                         else if ( now < tp->firstprocessed+timeout && ((tp->firstprocessed - now) % 10) == 9 )
                         {
-                            LP_Alicemaxprice = tp->bestprice;
-                            LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
-                            printf("repeat LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
+                            //LP_Alicemaxprice = tp->bestprice;
+                            //LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
+                            printf("mark slow LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
                             if ( (pubp= LP_pubkeyfind(tp->Qs[LP_CONNECT].srchash)) != 0 )
                                 pubp->slowresponse++;
                         }
