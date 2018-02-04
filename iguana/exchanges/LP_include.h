@@ -431,7 +431,7 @@ struct LP_pubkey_info
     struct LP_pubswap *bobswaps,*aliceswaps;
     int64_t dynamictrust,unconfcredits;
     uint32_t timestamp,numerrors,lasttime,slowresponse;
-    int32_t istrusted;
+    int32_t istrusted,pairsock;
     uint8_t rmd160[20],sig[65],pubsecp[33],siglen;
 };
 
@@ -486,7 +486,7 @@ int32_t LP_iseligible(uint64_t *valp,uint64_t *val2p,int32_t iambob,char *symbol
 int32_t LP_pullsock_check(void *ctx,char **retstrp,char *myipaddr,int32_t pubsock,int32_t pullsock);
 int64_t LP_listunspent_parseitem(struct iguana_info *coin,bits256 *txidp,int32_t *voutp,int32_t *heightp,cJSON *item);
 void LP_unspents_cache(char *symbol,char *addr,char *arraystr,int32_t updatedflag);
-uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired);
+uint16_t LP_psock_get(char *connectaddr,char *publicaddr,int32_t ispaired,int32_t cmdchannel,char *ipaddr);
 //void LP_utxo_clientpublish(struct LP_utxoinfo *utxo);
 //int32_t LP_coinbus(uint16_t coin_busport);
 int32_t LP_nanomsg_recvs(void *ctx);
@@ -546,7 +546,7 @@ void LP_tradebot_pauseall();
 void LP_portfolio_reset();
 uint32_t LP_atomic_locktime(char *base,char *rel);
 struct LP_pubkey_info *LP_pubkeyfind(bits256 pubkey);
-char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired);
+char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmdchannel);
 char *LP_unspents_filestr(char *symbol,char *addr);
 cJSON *bitcoin_data2json(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,bits256 *txidp,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,uint8_t *serialized,int32_t len,cJSON *vins,int32_t suppress_pubkeys,int32_t zcash);
 //int32_t LP_butxo_findeither(bits256 txid,int32_t vout);

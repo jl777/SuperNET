@@ -303,7 +303,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
-                if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"broadcast") == 0 )
+                if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"psock") != 0 && strcmp(method,"broadcast") == 0 )
                 {
                     bits256 zero; cJSON *reqjson; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
                     if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
@@ -1138,9 +1138,28 @@ void LP_reserved_msgs(void *ignore)
 
 int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg)
 {
-    int32_t n = 0;
+    struct LP_pubkey_info *pubp; int32_t sentbytes,n = 0;
     if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
         return(-1);
+    if ( priority > 0 && bits256_nonz(pubkey) != 0 )
+    {
+        if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
+        {
+            if ( pubp->pairsock > 0 )
+            {
+                if ( (sentbytes= nn_send(pubp->pairsock,msg,(int32_t)strlen(msg)+1,0)) < 0 )
+                {
+                    pubp->pairsock = -1;
+                    printf("mark cmdchannel closed\n");
+                }
+                else
+                {
+                    printf("sent %d bytes to cmdchannel.%d\n",sentbytes,pubp->pairsock);
+                    return(sentbytes);
+                }
+            }
+        }
+    }
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs[priority] < sizeof(Reserved_msgs[priority])/sizeof(*Reserved_msgs[priority]) )
     {
@@ -1312,7 +1331,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport,pushaddr);
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
-    if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_psockloop for (%s)\n",myipaddr);
         exit(-1);

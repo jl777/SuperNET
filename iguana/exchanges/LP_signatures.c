@@ -547,7 +547,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
         } else printf("no LPipaddr\n");
     }
     jaddnum(reqjson,"session",G.LP_sessionid);
-    LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+    LP_reserved_msg(1,"","",zero,jprint(reqjson,1));
 }
 
 char *LP_notify_recv(cJSON *argjson)
@@ -675,12 +675,11 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     //if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )
     {
         memset(&zero,0,sizeof(zero));
-        LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
         if ( strcmp(method,"connect") == 0 )
+            LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
+        else
         {
-            sleep(1);
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
-            sleep(1);
             LP_reserved_msg(0,qp->srccoin,qp->destcoin,zero,clonestr(msg));
         }
         free(msg);

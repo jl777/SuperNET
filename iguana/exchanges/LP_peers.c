@@ -86,7 +86,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             if ( peer->sessionid == 0 )
                 peer->sessionid = sessionid;*/
         }
-        else if ( IAMLP != 0 || LP_numactive_LP < 3 )
+        else if ( IAMLP != 0 || LP_numactive_LP < 10 )
         {
             //printf("addpeer (%s:%u) pushport.%u subport.%u\n",ipaddr,port,pushport,subport);
             peer = calloc(1,sizeof(*peer));
@@ -163,6 +163,18 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                 {
                     mypeer->numpeers++;
                     printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d other.(%d)\n",ipaddr,mypeer->numpeers,mypubsock,isLP);
+                    if ( IAMLP == 0 )
+                    {
+                        char connectaddr[64],publicaddr[64],*retstr; int32_t pullsock,pubsock; uint16_t cmdport;
+                        if ( (cmdport= LP_psock_get(connectaddr,publicaddr,1,1,peer->ipaddr)) != 0 )
+                        {
+                            if ( (retstr= _LP_psock_create(&pullsock,&pubsock,peer->ipaddr,cmdport,cmdport,1,1)) != 0 )
+                            {
+                                printf("cmdchannel! %s\n",retstr);
+                                free(retstr);
+                            }
+                        } else printf("error getting cmdchannel with %s\n",peer->ipaddr);
+                    }
                 } else peer->numpeers = 1; // will become mypeer
                 portable_mutex_unlock(&LP_peermutex);
                 /*if ( IAMLP != 0 && mypubsock >= 0 )
