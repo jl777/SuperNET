@@ -447,9 +447,10 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
 {
     struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,m,vout,height; cJSON *array,*item,*txobj; bits256 zero; int64_t value; bits256 txid; uint32_t now;
     LP_address(coin,coin->smartaddr);
-    //printf("call listunspent issue %s (%s)\n",coin->symbol,coin->smartaddr);
+    printf("call listunspent issue %s (%s)\n",coin->symbol,coin->smartaddr);
     memset(zero.bytes,0,sizeof(zero));
     LP_listunspent_issue(coin->symbol,coin->smartaddr,2,zero,zero);
+    printf("back from listunspent\n");
     if ( (ap= LP_addressfind(coin,coin->smartaddr)) == 0 )
     {
         printf("LP_address_utxo_reset: cant find address data\n");
@@ -457,6 +458,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     }
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
+        printf("clear ap->utxos\n");
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
         {
             portable_mutex_lock(&coin->addrmutex);
@@ -467,6 +469,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
             DL_APPEND(LP_garbage_collector2,up);
             portable_mutex_unlock(&LP_gcmutex);
         }
+        printf("done clearing ap->utxos\n");
         now = (uint32_t)time(NULL);
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -487,10 +490,10 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 else
                 {
                     m++;
-                    //printf("%.8f ",dstr(value));
+                    printf("%.8f ",dstr(value));
                 }
             }
-            //printf("added %d from listunspents\n",m);
+            printf("added %d from listunspents\n",m);
         }
         free_json(array);
     }
