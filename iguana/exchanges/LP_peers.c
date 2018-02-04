@@ -92,6 +92,22 @@ void LP_cmdchannels()
     }
 }
 
+void LP_peer_pairsock(bits256 pubkey)
+{
+    struct LP_peerinfo *peer,*tmp;
+    if ( IAMLP == 0 )
+    {
+        HASH_ITER(hh,LP_peerinfos,peer,tmp)
+        {
+            if ( bits256_cmp(pubkey,peer->pubkey) == 0 )
+            {
+                LP_cmdchannel(peer);
+                break;
+            }
+        }
+    }
+}
+
 struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t isLP,uint32_t sessionid,uint16_t netid)
 {
     uint32_t ipbits; int32_t valid,pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
