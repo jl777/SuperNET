@@ -1150,7 +1150,7 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
                 if ( (sentbytes= nn_send(pubp->pairsock,msg,(int32_t)strlen(msg)+1,0)) < 0 )
                 {
                     pubp->pairsock = -1;
-                    printf("mark cmdchannel closed\n");
+                    printf("mark cmdchannel %d closed sentbytes.%d\n",pubp->pairsock,sentbytes);
                 }
                 else
                 {
