@@ -478,7 +478,9 @@ void LP_psockloop(void *_ptr)
                             if ( (size= nn_recv(ptr->publicsock,&buf,NN_MSG,0)) > 0 )
                             {
                                 ptr->lasttime = now;
-                                sendsock = ptr->sendsock;
+                                if ( ptr->cmdchannel != 0 )
+                                    sendsock = ptr->sendsock;
+                                else sendsock = ptr->publicsock;
                                 nexti = i+1;
                                 break;
                             }
