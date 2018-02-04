@@ -1111,51 +1111,48 @@ printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp
             tp->Q = qtp->Q;
             if ( qtp->iambob == tp->iambob && qtp->pairstr[0] != 0 )
                 safecopy(tp->pairstr,qtp->pairstr,sizeof(tp->pairstr));
-printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob);
+printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d/%d done.%u\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob,tp->iambob,tp->negotiationdone);
             free(qtp);
             if ( tp->negotiationdone != 0 )
                 continue;
             flag = 0;
-            if ( qtp->iambob == tp->iambob )
+            if ( tp->iambob == 0 )
             {
-                if ( tp->iambob == 0 )
+                if ( funcid == LP_RESERVED )
                 {
-                    if ( funcid == LP_RESERVED )
+                    if ( tp->connectsent == 0 )
+                        flag = LP_trades_bestpricecheck(ctx,tp);
+                }
+                else if ( funcid == LP_CONNECTED && tp->negotiationdone == 0 ) // alice all done  tp->connectsent != 0 &&
+                {
+                    flag = 1;
+                    tp->negotiationdone = now;
+                    LP_trades_gotconnected(ctx,&tp->Q,&tp->Qs[LP_CONNECTED],tp->pairstr);
+                }
+            }
+            else
+            {
+                if ( funcid == LP_REQUEST ) // bob maybe sends LP_RESERVED
+                {
+                    if ( (qp= LP_trades_gotrequest(ctx,&Q,&tp->Qs[LP_REQUEST],tp->pairstr)) != 0 )
                     {
-                        if ( tp->connectsent == 0 )
-                            flag = LP_trades_bestpricecheck(ctx,tp);
-                    }
-                    else if ( funcid == LP_CONNECTED && tp->negotiationdone == 0 ) // alice all done  tp->connectsent != 0 &&
-                    {
+                        tp->Qs[LP_RESERVED] = Q;
                         flag = 1;
-                        tp->negotiationdone = now;
-                        LP_trades_gotconnected(ctx,&tp->Q,&tp->Qs[LP_CONNECTED],tp->pairstr);
                     }
                 }
-                else
+                else if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all done
                 {
-                    if ( funcid == LP_REQUEST ) // bob maybe sends LP_RESERVED
-                    {
-                        if ( (qp= LP_trades_gotrequest(ctx,&Q,&tp->Qs[LP_REQUEST],tp->pairstr)) != 0 )
-                        {
-                            tp->Qs[LP_RESERVED] = Q;
-                            flag = 1;
-                        }
-                    }
-                    else if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all done
-                    {
-                        flag = 1;
-                        tp->negotiationdone = now;
-                        //printf("bob sets negotiationdone.%u\n",now);
-                        LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
-                    }
+                    flag = 1;
+                    tp->negotiationdone = now;
+                    //printf("bob sets negotiationdone.%u\n",now);
+                    LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
                 }
-                if ( flag != 0 )
-                {
-                    tp->lastprocessed = (uint32_t)time(NULL);
-                    nonz++;
-                }
-            } else printf("qtp->iambob.%d vs tp->iambob.%d\n",qtp->iambob,tp->iambob);
+            }
+            if ( flag != 0 )
+            {
+                tp->lastprocessed = (uint32_t)time(NULL);
+                nonz++;
+            }
         }
         if ( nonz == 0 )
             sleep(1);
