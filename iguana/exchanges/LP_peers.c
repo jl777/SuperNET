@@ -59,7 +59,7 @@ char *LP_peers()
 void LP_cmdchannel(struct LP_peerinfo *peer)
 {
     char connectaddr[128],publicaddr[128],*retstr; int32_t pubsock; uint16_t cmdport;
-    if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
+    if ( bits256_nonz(G.LP_mypub25519) == 0 || strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
         return;
     if ( (cmdport= LP_psock_get(connectaddr,publicaddr,1,1,peer->ipaddr)) != 0 )
     {
