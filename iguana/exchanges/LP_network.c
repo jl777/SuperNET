@@ -726,7 +726,7 @@ char *issue_LP_psock(char *destip,uint16_t destport,int32_t ispaired,int32_t cmd
     sprintf(url,"http://%s:%u/api/stats/psock?ispaired=%d&cmdchannel=%d",destip,destport-1,ispaired,cmdchannel);
     //return(LP_issue_curl("psock",destip,destport,url));
     retstr = issue_curlt(url,LP_HTTP_TIMEOUT*3);
-    //printf("issue_LP_psock got (%s) from %s\n",retstr,url);
+    printf("issue_LP_psock got (%s) from %s\n",retstr,url);
     return(retstr);
 }
 
