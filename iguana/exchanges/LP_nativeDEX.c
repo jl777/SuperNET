@@ -303,7 +303,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
-                if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"psock") != 0 && strcmp(method,"broadcast") == 0 )
+                if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"gettradestatus") != 0 && strcmp(method,"psock") != 0 && strcmp(method,"broadcast") == 0 )
                 {
                     bits256 zero; cJSON *reqjson; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
                     if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )

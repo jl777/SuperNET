@@ -754,14 +754,14 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
         else
         {
             LP_RTcount++;
-            if ( now > sp->lasttime+rval )
+            /*if ( now > sp->lasttime+rval )
             {
                 reqjson = cJSON_CreateObject();
                 jaddstr(reqjson,"method","gettradestatus");
                 jadd64bits(reqjson,"aliceid",sp->aliceid);
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
-            }
+            }*/
         }
     }
     HASH_ITER(hh,LP_swapstats,sp,tmp)
