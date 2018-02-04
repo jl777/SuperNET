@@ -705,7 +705,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
     else if ( strcmp(method,"tradestatus") == 0 )
     {
         LP_tradecommand_log(argjson);
-        printf("%-4d tradestatus | aliceid.%llu RT.%d %d\n",(uint32_t)time(NULL) % 3600,(long long)j64bits(argjson,"aliceid"),LP_RTcount,LP_swapscount);
+        //printf("%-4d tradestatus | aliceid.%llu RT.%d %d\n",(uint32_t)time(NULL) % 3600,(long long)j64bits(argjson,"aliceid"),LP_RTcount,LP_swapscount);
         retstr = clonestr("{\"result\":\"success\"}");
     }
     else if ( strcmp(method,"wantnotify") == 0 )
