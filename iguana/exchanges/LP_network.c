@@ -490,41 +490,44 @@ void LP_psockloop(void *_ptr)
                         }
                     }
                     n++;
-                    if ( iter == 0 )
+                    if ( ptr->sendsock > 0 )
                     {
-                        pfds[n].fd = ptr->sendsock;
-                        pfds[n].events = POLLIN;
-                    }
-                    else
-                    {
-                        if ( pfds[n].fd != ptr->sendsock )
+                        if ( iter == 0 )
                         {
-                            printf("unexpected fd.%d mismatched sendsock.%d\n",pfds[n].fd,ptr->sendsock);
-                            nexti = i+1;
-                            break;
+                            pfds[n].fd = ptr->sendsock;
+                            pfds[n].events = POLLIN;
                         }
-                        else if ( (pfds[n].revents & POLLIN) != 0 )
+                        else
                         {
-                            if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
+                            if ( pfds[n].fd != ptr->sendsock )
                             {
-                                //printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
-                                ptr->lasttime = now;
-                                if ( ptr->ispaired != 0 )
+                                printf("unexpected fd.%d mismatched sendsock.%d\n",pfds[n].fd,ptr->sendsock);
+                                nexti = i+1;
+                                break;
+                            }
+                            else if ( (pfds[n].revents & POLLIN) != 0 )
+                            {
+                                if ( (size= nn_recv(ptr->sendsock,&buf,NN_MSG,0)) > 0 )
                                 {
-                                    sendsock = ptr->publicsock;
-                                    nexti = i+1;
-                                    break;
+                                    //printf("%s paired has pollin (%s)\n",ptr->sendaddr,(char *)buf);
+                                    ptr->lasttime = now;
+                                    if ( ptr->ispaired != 0 )
+                                    {
+                                        sendsock = ptr->publicsock;
+                                        nexti = i+1;
+                                        break;
+                                    }
+                                }
+                                if ( buf != 0 )
+                                {
+                                    nn_freemsg(buf);
+                                    buf = 0;
+                                    size = 0;
                                 }
                             }
-                            if ( buf != 0 )
-                            {
-                                nn_freemsg(buf);
-                                buf = 0;
-                                size = 0;
-                            }
                         }
+                        n++;
                     }
-                    n++;
                 }
                 if ( iter == 0 )
                 {
@@ -677,9 +680,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             jaddnum(retjson,"publicport",publicport);
             //printf("cmd.%d publicaddr.(%s) for subaddr.(%s), pullsock.%d pubsock.%d\n",cmdchannel,pushaddr,subaddr,pullsock,pubsock);
             *pullsockp = pullsock;
-            if ( cmdchannel == 0 )
-                *pubsockp = pubsock;
-            else *pubsockp = pullsock;
+            *pubsockp = pubsock;
             return(jprint(retjson,1));
         } else printf("bind error on %s or %s\n",pushaddr,subaddr);
         if ( pullsock >= 0 )
@@ -690,10 +691,10 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
     return(0);
 }
         
-char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchannel,bits256 pubkey)
+char *LP_psock(int32_t *pullsockp,char *ipaddr,int32_t ispaired,int32_t cmdchannel,bits256 pubkey)
 {
-    char *retstr=0; uint16_t i,publicport,subport,maxport; int32_t pullsock=-1;
-    *pubsockp = -1;
+    char *retstr=0; uint16_t i,publicport,subport,maxport; int32_t pubsock=-1;
+    *pullsockp = -1;
     //printf("LP_psock ipaddr.%s ispaird.%d cmdchannel.%d\n",ipaddr,ispaired,cmdchannel);
     if ( cmdchannel == 0 )
     {
@@ -714,7 +715,7 @@ char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchanne
             publicport = MIN_PSOCK_PORT+1;
         if ( cmdchannel == 0 && subport <= publicport )
             subport = publicport +  1;
-        if ( (retstr= _LP_psock_create(&pullsock,pubsockp,ipaddr,publicport,subport,ispaired,cmdchannel,pubkey)) != 0 )
+        if ( (retstr= _LP_psock_create(pullsockp,&pubsock,ipaddr,publicport,subport,ispaired,cmdchannel,pubkey)) != 0 )
         {
             //printf("LP_psock returns.(%s)\n",retstr);
             return(retstr);
