@@ -1029,7 +1029,6 @@ void LP_tradesloop(void *ctx)
                     {
                         if ( tp->connectsent == 0 )
                         {
-                            tp->negotiationdone = (uint32_t)time(NULL);
                             LP_Alicemaxprice = tp->bestprice;
                             LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
                             tp->connectsent = now;
@@ -1094,6 +1093,7 @@ printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp
                     else if ( tp->iambob == 0 && funcid == LP_CONNECTED )
                     {
                         tp->negotiationdone = now;
+                        printf("alice sets negotiationdone.%u\n",now);
                         LP_trades_gotconnected(ctx,&tp->Q,&tp->Qs[LP_CONNECTED],tp->pairstr);
                     }
                     nonz++;
@@ -1101,7 +1101,7 @@ printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp
                     if ( funcid == LP_CONNECT && tp->negotiationdone == 0 ) // bob all done
                     {
                         tp->negotiationdone = now;
-                        //printf("bob sets negotiationdone.%u\n",now);
+                        printf("bob sets negotiationdone.%u\n",now);
                         LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
                     }
                 }
@@ -1144,7 +1144,7 @@ printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d/%d done.%u\n",qtp,f
                 {
                     flag = 1;
                     tp->negotiationdone = now;
-                    //printf("bob sets negotiationdone.%u\n",now);
+                    printf("bob sets negotiationdone.%u\n",now);
                     LP_trades_gotconnect(ctx,&tp->Q,&tp->Qs[LP_CONNECT],tp->pairstr);
                 }
             }
