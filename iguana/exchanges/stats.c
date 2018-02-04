@@ -224,7 +224,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                 return(-1);
             }
         }
-        if ( listen(sock,4096) != 0 )
+        if ( listen(sock,512) != 0 )
         {
             printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
             if ( sock >= 0 )
@@ -801,7 +801,7 @@ extern int32_t IAMLP,LP_STOP_RECEIVED;
 
 void stats_rpcloop(void *args)
 {
-    uint16_t port; int32_t retval,sock=-1,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
+    uint16_t port; int32_t retval,sock=-1,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     printf("Start stats_rpcloop.%u\n",port);
@@ -856,15 +856,12 @@ void stats_rpcloop(void *args)
         req->sock = sock;
         req->ipbits = ipbits;
         req->port = port;
-        LP_rpc_processreq(req);
-continue;
         // this leads to cant open file errors
         if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
-            closesocket(sock);
-            sock = -1;
-            portable_mutex_lock(&LP_gcmutex);
+            LP_rpc_processreq(req);
+            /*portable_mutex_lock(&LP_gcmutex);
             DL_FOREACH_SAFE(LP_garbage_collector,req2,rtmp)
             {
                 DL_DELETE(LP_garbage_collector,req2);
@@ -875,7 +872,7 @@ continue;
             {
                 printf("error2 launching rpc handler on port %d, retval.%d\n",port,retval);
                 LP_rpc_processreq(req);
-            }
+            }*/
        }
     }
     printf("i got killed\n");
