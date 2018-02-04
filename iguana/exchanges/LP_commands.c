@@ -760,7 +760,11 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     else printf("LP_psock dont have actual ipaddr?\n");
                 }
                 if ( jint(argjson,"ispaired") != 0 )
-                    return(LP_psock(&psock,myipaddr,1,jint(argjson,"cmdchannel")));
+                {
+                    retstr = LP_psock(&psock,myipaddr,1,jint(argjson,"cmdchannel"));
+                    printf("LP_commands.(%s)\n",retstr);
+                    return(retstr);
+                }
                 else return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));
             }
         }
