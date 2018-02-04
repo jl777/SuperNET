@@ -244,7 +244,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
                     //nn_setsockopt(pairsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     //printf("nanobind %s to %d\n",pairstr,pairsock);
                     return(pairsock);
-                } else printf("error binding to %s for %s\n",bindaddr,pairstr);
+                } // else printf("error binding to %s for %s\n",bindaddr,pairstr);
                 if ( LP_fixed_pairport != 0 )
                     break;
             }
@@ -945,7 +945,6 @@ struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,stru
         return(0);
     if ( LP_reservation_check(qp->txid,qp->vout,qp->desthash) == 0 && LP_reservation_check(qp->txid2,qp->vout2,qp->desthash) == 0  )
     {
-        printf("start bob\n");
         LP_connectstartbob(ctx,LP_mypubsock,qp->srccoin,qp->destcoin,qprice,qp);
         return(qp);
     } else printf("connect message from non-reserved (%llu)\n",(long long)qp->aliceid);
