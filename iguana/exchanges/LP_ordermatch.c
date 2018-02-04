@@ -1113,8 +1113,6 @@ printf("dequeue %p funcid.%d aliceid.%llu iambob.%d\n",qtp,funcid,(long long)qtp
                 safecopy(tp->pairstr,qtp->pairstr,sizeof(tp->pairstr));
 printf("finished dequeue %p funcid.%d aliceid.%llu iambob.%d/%d done.%u\n",qtp,funcid,(long long)qtp->aliceid,qtp->iambob,tp->iambob,tp->negotiationdone);
             free(qtp);
-            if ( tp->negotiationdone != 0 )
-                continue;
             flag = 0;
             if ( tp->iambob == 0 )
             {
