@@ -457,7 +457,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     if ( IAMLP != 0 && time(NULL) < coin->lastresetutxo+30 )
         return(ap);
     coin->lastresetutxo = (uint32_t)time(NULL);
-    if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
+    if ( coin->electrum != 0 && (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
         //printf("clear ap->utxos\n");
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
