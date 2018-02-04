@@ -513,6 +513,7 @@ char *LP_trade(void *ctx,char *myipaddr,int32_t mypubsock,struct LP_quoteinfo *q
     qp->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
     if ( (qp->tradeid= tradeid) == 0 )
         qp->tradeid = LP_rand();
+    qp->srchash = destpubkey;
     LP_query(ctx,myipaddr,mypubsock,"request",qp);
     LP_Alicequery = *qp, LP_Alicemaxprice = maxprice, Alice_expiration = qp->timestamp + timeout, LP_Alicedestpubkey = destpubkey;
     char str[65]; printf("LP_trade %s/%s %.8f vol %.8f dest.(%s) maxprice %.8f\n",qp->srccoin,qp->destcoin,dstr(qp->satoshis),dstr(qp->destsatoshis),bits256_str(str,LP_Alicedestpubkey),maxprice);
@@ -1163,8 +1164,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         printf("%-4d (%-10u %10u) %12s id.%-20llu %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,LP_RTcount,LP_swapscount,G.netid);
         if ( Q.timestamp > 0 && time(NULL) > Q.timestamp + LP_AUTOTRADE_TIMEOUT*20 ) // eat expired packets, some old timestamps floating about?
         {
-            //printf("aliceid.%llu is expired by %d\n",(long long)Q.aliceid,(uint32_t)time(NULL) - (Q.timestamp + LP_AUTOTRADE_TIMEOUT*20));
-            //return(1);
+            printf("aliceid.%llu is expired by %d\n",(long long)Q.aliceid,(uint32_t)time(NULL) - (Q.timestamp + LP_AUTOTRADE_TIMEOUT*20));
+            return(1);
         }
         //LP_autoprices_update(method,Q.srccoin,dstr(Q.satoshis),Q.destcoin,dstr(Q.destsatoshis));
         retval = 1;
@@ -1174,7 +1175,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         {
             bestprice = LP_bob_competition(&counter,aliceid,qprice,1);
             //printf("%s lag %ld: aliceid.%llu price %.8f -> bestprice %.8f Alice max %.8f\n",jprint(argjson,0),Q.quotetime - (time(NULL)-20),(long long)aliceid,qprice,bestprice,LP_Alicemaxprice);
-            if ( 0 )
+            if ( 1 )
             {
                 if ( LP_Alicemaxprice == 0. )
                     return(retval);
@@ -1187,7 +1188,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                     } else printf("got reserved response from destpubkey %s\n",bits256_str(str,Q.srchash));
                 }
             }
-            if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
+            if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 ) // alice
             {
                 if ( Qtrades == 0 )
                 {
@@ -1203,7 +1204,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         else if ( strcmp(method,"connected") == 0 )
         {
             bestprice = LP_bob_competition(&counter,aliceid,qprice,1000);
-            if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 )
+            if ( bits256_cmp(G.LP_mypub25519,Q.desthash) == 0 && bits256_cmp(G.LP_mypub25519,Q.srchash) != 0 ) // alice
             {
                 static uint64_t rqs[1024];
                 for (i=0; i<sizeof(rqs)/sizeof(*rqs); i++)
@@ -1239,19 +1240,17 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             printf("{\"error\":\"GAME can only be alice coin\"}\n");
             return(retval);
         }
-        if ( strcmp(method,"request") == 0 )
+        if ( strcmp(method,"request") == 0 ) // bob
         {
             bestprice = LP_bob_competition(&counter,aliceid,qprice,-1);
-            //if ( strcmp(Q.srccoin,"GRS") == 0 || strcmp(Q.destcoin,"GRS") == 0 )
-            //    printf("%s lag %ld: aliceid.%llu price %.8f -> bestprice %.8f\n",jprint(argjson,0),Q.quotetime - (time(NULL)-20),(long long)aliceid,qprice,bestprice);
-            if ( Qtrades == 0 )
+            if ( Qtrades == 0 || (bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0) )
                 LP_trades_gotrequest(ctx,&Q,&Q2,jstr(argjson,"pair"));
             else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_REQUEST);
         }
         else if ( strcmp(method,"connect") == 0 )
         {
             LP_bob_competition(&counter,aliceid,qprice,1000);
-            if ( bits256_cmp(G.LP_mypub25519,Q.srchash) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0 )
+            if ( bits256_cmp(G.LP_mypub25519,Q.srchash) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0 ) // bob
             {
                 static uint64_t rqs[1024];
                 for (i=0; i<sizeof(rqs)/sizeof(*rqs); i++)
@@ -1266,7 +1265,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
                 printf("CONNECT.(%s)\n",jprint(argjson,0));
                 if ( (proof= jarray(&num,argjson,"proof")) != 0 && num > 0 )
                     Q.othercredits = LP_instantdex_proofcheck(Q.destcoin,Q.destaddr,proof,num);
-                if ( 1 || Qtrades == 0 )
+                if ( Qtrades == 0 )
                     LP_trades_gotconnect(ctx,&Q,&Q2,jstr(argjson,"pair"));
                 else LP_tradecommandQ(&Q,jstr(argjson,"pair"),LP_CONNECT);
             }

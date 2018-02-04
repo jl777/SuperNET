@@ -675,7 +675,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     //if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )
     {
         memset(&zero,0,sizeof(zero));
-        if ( strcmp(method,"connect") == 0 )
+        if ( bits256_nonz(qp->srchash) != 0 )
             LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
         else
         {
