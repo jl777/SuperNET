@@ -905,7 +905,10 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         jaddnum(reqjson,"quotetime",qp->quotetime);
         jaddnum(reqjson,"pending",qp->timestamp + LP_RESERVETIME);
         jaddstr(reqjson,"method","reserved");
-        LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+        //LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+        bits256 zero;
+        memset(zero.bytes,0,sizeof(zero));
+        LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
         free_json(reqjson);
         //printf("Send RESERVED id.%llu\n",(long long)qp->aliceid);
         return(qp);
