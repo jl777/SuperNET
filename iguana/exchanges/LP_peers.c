@@ -131,7 +131,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
                 if ( (peer->isLP= isLP) != 0 )
                     LP_numactive_LP++;
             }
-            if ( IAMLP == 0 && peer->pairsock == 0 )
+            if ( IAMLP == 0 && peer->pairsock <= 0 )
                 LP_cmdchannel(peer);
             /*if ( numpeers > peer->numpeers )
                 peer->numpeers = numpeers;
