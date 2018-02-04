@@ -171,7 +171,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         rel = "";
     if ( (coin= jstr(argjson,"coin")) == 0 )
         coin = "";
-    if ( G.USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 ) // protected localhost
+    if ( G.USERPASS[0] != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 && port != 0 && strcmp(method,"psock") != 0 ) // protected localhost
     {
         if ( G.USERPASS_COUNTER == 0 )
         {
