@@ -674,6 +674,7 @@ char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchanne
 {
     char *retstr=0; uint16_t i,publicport,subport,maxport; int32_t pullsock=-1;
     *pubsockp = -1;
+    printf("LP_psock ipaddr.%s ispaird.%d cmdchannel.%d\n",ipaddr,ispaired,cmdchannel);
     if ( cmdchannel == 0 )
     {
         maxport = MAX_PSOCK_PORT;
@@ -689,10 +690,13 @@ char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchanne
     {
         if ( publicport < MIN_PSOCK_PORT )
             publicport = MIN_PSOCK_PORT+1;
-        if ( subport <= publicport )
+        if ( cmdchannel == 0 && subport <= publicport )
             subport = publicport +  1;
         if ( (retstr= _LP_psock_create(&pullsock,pubsockp,ipaddr,publicport,subport,ispaired,cmdchannel)) != 0 )
+        {
+            printf("LP_psock returns.(%s)\n",retstr);
             return(retstr);
+        }
         if ( cmdchannel == 0 )
             publicport+=2, subport+=2;
         else publicport++, subport++;
