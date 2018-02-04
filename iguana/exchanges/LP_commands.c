@@ -762,7 +762,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 if ( jint(argjson,"ispaired") != 0 )
                 {
                     retstr = LP_psock(&psock,myipaddr,1,jint(argjson,"cmdchannel"));
-                    printf("LP_commands.(%s)\n",retstr);
+                    //printf("LP_commands.(%s)\n",retstr);
                     return(retstr);
                 }
                 else return(clonestr("{\"error\":\"you are running an obsolete version, update\"}"));

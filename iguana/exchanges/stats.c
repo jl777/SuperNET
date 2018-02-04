@@ -568,7 +568,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
         free_json(json);
         if ( tmpjson != 0 )
             free(tmpjson);
-        printf("stats_JSON rpc return.(%s)\n",retstr);
+        //printf("stats_JSON rpc return.(%s)\n",retstr);
         return(retstr);
     }
     free_json(argjson);

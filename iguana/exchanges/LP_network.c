@@ -647,6 +647,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             nanomsg_transportname(0,pushaddr,ipaddr,publicport);
             nanomsg_transportname(0,subaddr,ipaddr,subport);
             LP_psockadd(ispaired,pullsock,publicport,pubsock,subport,subaddr,pushaddr,cmdchannel);
+            retjson = cJSON_CreateObject();
             jaddstr(retjson,"result","success");
             jaddstr(retjson,"LPipaddr",ipaddr);
             jaddstr(retjson,"connectaddr",subaddr);
@@ -674,7 +675,7 @@ char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchanne
 {
     char *retstr=0; uint16_t i,publicport,subport,maxport; int32_t pullsock=-1;
     *pubsockp = -1;
-    printf("LP_psock ipaddr.%s ispaird.%d cmdchannel.%d\n",ipaddr,ispaired,cmdchannel);
+    //printf("LP_psock ipaddr.%s ispaird.%d cmdchannel.%d\n",ipaddr,ispaired,cmdchannel);
     if ( cmdchannel == 0 )
     {
         maxport = MAX_PSOCK_PORT;
@@ -694,7 +695,7 @@ char *LP_psock(int32_t *pubsockp,char *ipaddr,int32_t ispaired,int32_t cmdchanne
             subport = publicport +  1;
         if ( (retstr= _LP_psock_create(&pullsock,pubsockp,ipaddr,publicport,subport,ispaired,cmdchannel)) != 0 )
         {
-            printf("LP_psock returns.(%s)\n",retstr);
+            //printf("LP_psock returns.(%s)\n",retstr);
             return(retstr);
         }
         if ( cmdchannel == 0 )
