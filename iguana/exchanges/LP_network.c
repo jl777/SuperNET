@@ -452,7 +452,7 @@ void LP_commandQ_loop(void *ctx)
             free(ptr);
         }
         if ( nonz == 0 )
-            sleep (1);
+            usleep(50000);
     }
 }
     
