@@ -25,6 +25,8 @@
 #define LP_TECHSUPPORT 0
 #endif
 
+#define LP_DONT_CMDCHANNEL
+
 #ifdef FROMGUI
 #define printf dontprintf
 
