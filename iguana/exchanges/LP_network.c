@@ -622,7 +622,7 @@ void LP_psockloop(void *_ptr)
                     if ( i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
-                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE/10 )
+                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->publicport,ptr->sendport,now - ptr->lasttime);
                             if ( ptr->sendsock != ptr->publicsock && ptr->sendsock >= 0 )
