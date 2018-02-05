@@ -293,6 +293,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         nxtaddr = conv_NXTpassword(tmpkey.bytes,pubkeyp->bytes,0,0);
         RS_encode(G.LP_NXTaddr,nxtaddr);
     }
+    bitcoin_priv2pub(ctx,coin->symbol,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     OS_randombytes(tmpkey.bytes,sizeof(tmpkey));
     if ( bits256_nonz(privkey) == 0 || (siglen= bitcoin_sign(ctx,coin->symbol,sig,tmpkey,privkey,0)) <= 0 )
     {
@@ -304,7 +305,6 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         printf("signature for %s by %s didnt verify\n",bits256_str(str,tmpkey),bits256_str(str2,privkey));
         exit(0);
     }
-    bitcoin_priv2pub(ctx,coin->symbol,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     if ( coin->counter == 0 )
     {
         coin->counter++;
