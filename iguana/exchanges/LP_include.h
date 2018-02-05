@@ -298,7 +298,7 @@ struct LP_transaction
 struct iguana_info
 {
     UT_hash_handle hh;
-    portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
+    portable_mutex_t txmutex,addrmutex,addressutxo_mutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
     int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport;
     uint32_t txversion,dPoWtime,lastresetutxo,loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;

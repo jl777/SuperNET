@@ -411,7 +411,7 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
         }
         if ( flag == 0 && value != 0 )
         {
-            if ( 0 && coin->electrum == 0 )
+            if ( coin->electrum == 0 )
             {
                 if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) == 0 )
                 {
@@ -457,6 +457,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     //if ( IAMLP != 0 && time(NULL) < coin->lastresetutxo+60 )
     //    return(ap);
     coin->lastresetutxo = (uint32_t)time(NULL);
+    portable_mutex_lock(&coin->addressutxo_mutex);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
         printf("clear %s ap->utxos\n",coin->symbol);
@@ -480,7 +481,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 //{"tx_hash":"38d1b7c73015e1b1d6cb7fc314cae402a635b7d7ea294970ab857df8777a66f4","tx_pos":0,"height":577975,"value":238700}
                 item = jitem(array,i);
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
-                if ( 0 )
+                if ( 1 )
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,txid,vout)) == 0 )
                         continue;
@@ -489,7 +490,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                         continue;
                 }
                 LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
-                if ( 0 && (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
+                if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
                 else
                 {
@@ -501,6 +502,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         }
         free_json(array);
     }
+    portable_mutex_unlock(&coin->addressutxo_mutex);
     return(ap);
 }
 
@@ -552,7 +554,6 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                     }
                     if ( up->spendheight <= 0 && up->U.value != 0 )
                     {
-                        char str[65];
                         if ( LP_allocated(up->U.txid,up->U.vout) != 0 )
                         {
                             //printf("%s %s/v%d allocated\n",coin->symbol,bits256_str(str,up->U.txid),up->U.vout);
