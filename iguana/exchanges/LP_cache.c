@@ -57,7 +57,7 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
             tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
             LP_destaddr(tx->outpoints[i].coinaddr,vout);
             //printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
-            LP_address_utxoadd((uint32_t)time(NULL),"LP_create_transaction",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
+            LP_address_utxoadd(0,(uint32_t)time(NULL),"LP_create_transaction",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
         }
         for (i=0; i<numvins; i++)
         {
@@ -75,7 +75,7 @@ struct LP_transaction *LP_create_transaction(struct iguana_info *coin,bits256 tx
                         tx->outpoints[spentvout].spendtxid = txid;
                         tx->outpoints[spentvout].spendvini = i;
                         tx->outpoints[spentvout].spendheight = height > 0 ? height : 1;
-                        LP_address_utxoadd((uint32_t)time(NULL),"LP_transactioninit iter1",coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
+                        LP_address_utxoadd(0,(uint32_t)time(NULL),"LP_transactioninit iter1",coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
                         if ( 0 && strcmp(coin->symbol,"REVS") == 0 )
                             printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
                     }

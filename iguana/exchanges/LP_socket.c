@@ -303,7 +303,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                 else
                 {
                     //printf("external unspent has no gettxout\n");
-                    flag += LP_address_utxoadd((uint32_t)time(NULL),"electrum process",coin,coinaddr,txid,v,value,0,1);
+                    flag += LP_address_utxoadd(0,(uint32_t)time(NULL),"electrum process",coin,coinaddr,txid,v,value,0,1);
                 }
             }
             else
@@ -348,7 +348,7 @@ int32_t electrum_process_array(struct iguana_info *coin,struct electrum_info *ep
                 if ( tx->height > 0 )
                 {
                     //printf("from electrum_process_array\n");
-                    flag += LP_address_utxoadd((uint32_t)time(NULL),"electrum process2",coin,coinaddr,txid,v,value,tx->height,-1);
+                    flag += LP_address_utxoadd(0,(uint32_t)time(NULL),"electrum process2",coin,coinaddr,txid,v,value,tx->height,-1);
                 }
                 //printf("v.%d numvouts.%d %.8f (%s)\n",v,tx->numvouts,dstr(tx->outpoints[jint(item,"tx_pos")].value),jprint(item,0));
             } //else printf("cant find tx\n");
@@ -551,7 +551,7 @@ cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON *
                         if ( tx->height > 0 && tx->height != height )
                             printf("update %s height.%d <- %d\n",bits256_str(str,txid),tx->height,height);
                         tx->height = height;
-                        LP_address_utxoadd((uint32_t)time(NULL),"electrum history",coin,addr,txid,0,0,height,-1);
+                        LP_address_utxoadd(0,(uint32_t)time(NULL),"electrum history",coin,addr,txid,0,0,height,-1);
                     }
                 }
             }

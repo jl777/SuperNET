@@ -535,7 +535,7 @@ int32_t LP_numpeers();
 double LP_CMCbtcprice(double *price_usdp,char *symbol);
 char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid,int32_t forceflag);
 int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance);
-int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
+int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 void LP_smartutxos_push(struct iguana_info *coin);
 void LP_cacheptrs_init(struct iguana_info *coin);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);

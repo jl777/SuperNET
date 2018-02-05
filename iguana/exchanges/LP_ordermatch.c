@@ -704,7 +704,7 @@ int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
                 if ( vout < tx->numvouts && tx->height > 0 )
                 {
                     printf("added missing utxo for SPV checking\n");
-                    LP_address_utxoadd((uint32_t)time(NULL),"LP_validSPV",coin,coinaddr,txid,vout,tx->outpoints[vout].value,tx->height,-1);
+                    LP_address_utxoadd(0,(uint32_t)time(NULL),"LP_validSPV",coin,coinaddr,txid,vout,tx->outpoints[vout].value,tx->height,-1);
                 }
             }
         }

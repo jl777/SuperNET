@@ -381,7 +381,7 @@ void LP_mark_spent(char *symbol,bits256 txid,int32_t vout)
     }
 }
 
-int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
+int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
     struct LP_address *ap; cJSON *txobj; struct LP_transaction *tx; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; //char str[65];
     if ( coin == 0 )
@@ -393,20 +393,23 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
     if ( ap != 0 )
     {
         flag = 0;
-        DL_FOREACH_SAFE(ap->utxos,up,tmp)
+        if ( skipsearch == 0 )
         {
-            if ( vout == up->U.vout && bits256_cmp(up->U.txid,txid) == 0 )
+            DL_FOREACH_SAFE(ap->utxos,up,tmp)
             {
-                flag = 1;
-                if ( height > 0 && up->U.height != height )
-                    up->U.height = height, flag |= 2;
-                if ( spendheight > 0 && up->spendheight != spendheight )
-                    up->spendheight = spendheight, flag |= 4;
-                if ( value != 0 && up->U.value == 0 && up->U.value != value )
-                    up->U.value = value, flag |= 8;
-                //up->timestamp = timestamp;
-                //char str[65]; printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
-                break;
+                if ( vout == up->U.vout && bits256_cmp(up->U.txid,txid) == 0 )
+                {
+                    flag = 1;
+                    if ( height > 0 && up->U.height != height )
+                        up->U.height = height, flag |= 2;
+                    if ( spendheight > 0 && up->spendheight != spendheight )
+                        up->spendheight = spendheight, flag |= 4;
+                    if ( value != 0 && up->U.value == 0 && up->U.value != value )
+                        up->U.value = value, flag |= 8;
+                    //up->timestamp = timestamp;
+                    //char str[65]; printf("found >>>>>>>>>> %s %s %s/v%d ht.%d %.8f\n",coin->symbol,coinaddr,bits256_str(str,txid),vout,height,dstr(value));
+                    break;
+                }
             }
         }
         if ( flag == 0 && value != 0 )
@@ -454,8 +457,8 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         printf("LP_address_utxo_reset: cant find address data\n");
         return(0);
     }
-    //if ( IAMLP != 0 && time(NULL) < coin->lastresetutxo+60 )
-    //    return(ap);
+    if ( IAMLP != 0 && time(NULL) < coin->lastresetutxo+10 )
+        return(ap);
     coin->lastresetutxo = (uint32_t)time(NULL);
     portable_mutex_lock(&coin->addressutxo_mutex);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
@@ -489,7 +492,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                     if ( LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0) <= 0 )
                         continue;
                 }
-                LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
+                LP_address_utxoadd(1,now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
                 else
@@ -738,7 +741,7 @@ int32_t LP_unspents_array(struct iguana_info *coin,char *coinaddr,cJSON *array)
         if ( errs == 0 )
         {
             //printf("from LP_unspents_array\n");
-            LP_address_utxoadd((uint32_t)time(NULL),"LP_unspents_array",coin,coinaddr,txid,v,val,height,-1);
+            LP_address_utxoadd(0,(uint32_t)time(NULL),"LP_unspents_array",coin,coinaddr,txid,v,val,height,-1);
             count++;
         }
     }
@@ -802,7 +805,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                 tx->outpoints[i].interest = SATOSHIDEN * jdouble(vout,"interest");
                 LP_destaddr(tx->outpoints[i].coinaddr,vout);
                 //printf("from transaction init %s %s %s/v%d <- %.8f\n",coin->symbol,tx->outpoints[i].coinaddr,bits256_str(str,txid),i,dstr(tx->outpoints[i].value));
-                LP_address_utxoadd((uint32_t)time(NULL),"LP_transactioninit iter0",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
+                LP_address_utxoadd(0,(uint32_t)time(NULL),"LP_transactioninit iter0",coin,tx->outpoints[i].coinaddr,txid,i,tx->outpoints[i].value,height,-1);
             }
             //printf("numvouts.%d\n",numvouts);
         }
@@ -824,7 +827,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
                             tx->outpoints[spentvout].spendtxid = txid;
                             tx->outpoints[spentvout].spendvini = i;
                             tx->outpoints[spentvout].spendheight = height > 0 ? height : 1;
-                            LP_address_utxoadd((uint32_t)time(NULL),"LP_transactioninit iter1",coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
+                            LP_address_utxoadd(0,(uint32_t)time(NULL),"LP_transactioninit iter1",coin,tx->outpoints[spentvout].coinaddr,spenttxid,spentvout,tx->outpoints[spentvout].value,-1,height>0?height:1);
                             if ( 0 && strcmp(coin->symbol,"REVS") == 0 )
                                 printf("spend %s %s/v%d at ht.%d\n",coin->symbol,bits256_str(str,tx->txid),spentvout,height);
                         }
