@@ -425,7 +425,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
             {
                 sig = vp->signers[j].sig;
                 siglen = vp->signers[j].siglen;
-                if ( signtx != 0 && bits256_nonz(vp->signers[j].privkey) != 0 )
+                if ( signtx != 0 )//&& bits256_nonz(vp->signers[j].privkey) != 0 )
                 {
                     siglen = bitcoin_sign(ctx,symbol,sig,sigtxid,vp->signers[j].privkey,0);
                     //if ( (plen= bitcoin_pubkeylen(vp->signers[j].pubkey)) <= 0 )
