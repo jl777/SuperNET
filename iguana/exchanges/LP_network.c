@@ -622,7 +622,7 @@ void LP_psockloop(void *_ptr)
                     if ( i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
-                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE )
+                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE/10 )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->publicport,ptr->sendport,now - ptr->lasttime);
                             if ( ptr->sendsock != ptr->publicsock && ptr->sendsock >= 0 )
@@ -630,13 +630,6 @@ void LP_psockloop(void *_ptr)
                             if ( ptr->publicsock >= 0 )
                                 mynn_close(ptr->publicsock), ptr->publicsock = -1;
                             nonz++;
-                            //portable_mutex_lock(&LP_psockmutex);
-                            if ( Numpsocks > 1 )
-                            {
-                                PSOCKS[i] = PSOCKS[--Numpsocks];
-                                memset(&PSOCKS[Numpsocks],0,sizeof(*ptr));
-                            } else Numpsocks = 0;
-                            //portable_mutex_unlock(&LP_psockmutex);
                         }
                     }
                 }
