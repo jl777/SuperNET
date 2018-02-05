@@ -56,7 +56,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 #define LP_MAXVINS 64
 #define LP_HTTP_TIMEOUT 3 // 1 is too small due to edge cases of time(NULL)
-#define LP_AUTOTRADE_TIMEOUT 60
+#define LP_AUTOTRADE_TIMEOUT 180
 #define LP_RESERVETIME 600  //(LP_AUTOTRADE_TIMEOUT * 2)
 #define ELECTRUM_TIMEOUT 13
 #define LP_ELECTRUM_KEEPALIVE 60
@@ -298,9 +298,9 @@ struct LP_transaction
 struct iguana_info
 {
     UT_hash_handle hh;
-    portable_mutex_t txmutex,addrmutex; struct LP_transaction *transactions; struct LP_address *addresses;
+    portable_mutex_t txmutex,addrmutex,addressutxo_mutex; struct LP_transaction *transactions; struct LP_address *addresses;
     uint64_t txfee;
-    int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport;
+    int32_t numutxos,notarized,longestchain,firstrefht,firstscanht,lastscanht,height; uint16_t busport,did_addrutxo_reset;
     uint32_t txversion,dPoWtime,lastresetutxo,loadedcache,electrumlist,lastunspent,importedprivkey,lastpushtime,lastutxosync,addr_listunspent_requested,lastutxos,updaterate,counter,inactive,lastmempool,lastgetinfo,ratetime,heighttime,lastmonitor,obooktime;
     uint8_t pubtype,p2shtype,isPoS,wiftype,wiftaddr,taddr,noimportprivkey_flag,userconfirms,isassetchain,maxconfirms;
     char symbol[128],smartaddr[64],userpass[1024],serverport[128],instantdex_address[64];
@@ -535,7 +535,7 @@ int32_t LP_numpeers();
 double LP_CMCbtcprice(double *price_usdp,char *symbol);
 char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid,int32_t forceflag);
 int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance);
-int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
+int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 void LP_smartutxos_push(struct iguana_info *coin);
 void LP_cacheptrs_init(struct iguana_info *coin);
 cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrumret);

@@ -317,7 +317,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             printf("userpass.(%s)\n",bits256_str(G.USERPASS,userpub));
         }
     }
-    if ( coin->importedprivkey == 0 && coin->electrum == 0 && coin->userpass[0] != 0 && LP_getheight(&notarized,coin) > 0 )
+    if ( strcmp(coin->smartaddr,"RPZVpjptzfZnFZZoLnuSbfLexjtkhe6uvn") != 0 && coin->importedprivkey == 0 && coin->electrum == 0 && coin->userpass[0] != 0 && LP_getheight(&notarized,coin) > 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
         LP_listunspent_issue(coin->symbol,coin->smartaddr,0,zero,zero);
@@ -417,7 +417,7 @@ int32_t LP_passphrase_init(char *passphrase,char *gui,uint16_t netid,char *seedn
     LP_priceinfos_clear();
     G.USERPASS_COUNTER = counter;
     G.initializing = 0;
-    LP_cmdchannels();
+    //LP_cmdchannels();
     return(0);
 }
 

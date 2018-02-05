@@ -1077,7 +1077,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         if ( up == 0 )
         {
             value = LP_txvalue(0,coin->symbol,utxotxid,utxovout);
-            LP_address_utxoadd((uint32_t)time(NULL),"withdraw",coin,coin->smartaddr,utxotxid,utxovout,value,1,-1);
+            LP_address_utxoadd(0,(uint32_t)time(NULL),"withdraw",coin,coin->smartaddr,utxotxid,utxovout,value,1,-1);
             //printf("added after not finding\n");
         }
         if ( (up= LP_address_utxofind(coin,coin->smartaddr,utxotxid,utxovout)) != 0 )
@@ -1085,6 +1085,12 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         else
         {
             printf("couldnt add address_utxo after not finding\n");
+            sleep(1);
+            value = LP_txvalue(0,coin->symbol,utxotxid,utxovout);
+            LP_address_utxoadd(0,(uint32_t)time(NULL),"withdraw",coin,coin->smartaddr,utxotxid,utxovout,value,1,-1);
+            if ( (up= LP_address_utxofind(coin,coin->smartaddr,utxotxid,utxovout)) != 0 )
+                preselected[numpre++] = up;
+            else printf("second couldnt add address_utxo after not finding\n");
             //return(0);
         }
     }
@@ -1458,7 +1464,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
                 rawtx->I.completed = 1;
                 rawtx->I.signedtxid = jbits256(retjson,"txid");
                 retval = 0;
-            } else printf("rawtx withdraw error? (%s)\n",retstr);
+            } else printf("rawtx withdraw error? (%s)\n",jprint(argjson,0));
             free_json(retjson);
         }
         free(retstr);

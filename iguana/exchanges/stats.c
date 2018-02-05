@@ -858,7 +858,7 @@ void stats_rpcloop(void *args)
         req->port = port;
         LP_rpc_processreq(req);
         continue;
-        // this leads to cant open file errors
+        // this might lead to "cant open file errors"
         if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);

@@ -554,6 +554,11 @@ void LP_coinsloop(void *_coins)
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
+            if ( coin->did_addrutxo_reset == 0 )
+            {
+                LP_address_utxo_reset(coin);
+                coin->did_addrutxo_reset = 1;
+            }
             if ( coin->longestchain == 1 ) // special init value
                 coin->longestchain = LP_getheight(&notarized,coin);
             if ( (ep= coin->electrum) != 0 )
@@ -1166,13 +1171,13 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
             {
                 if ( (sentbytes= nn_send(pubp->pairsock,msg,(int32_t)strlen(msg)+1,0)) < 0 )
                 {
-                    pubp->pairsock = -1;
-                    LP_peer_pairsock(pubkey);
+                    //pubp->pairsock = -1;
+                    //LP_peer_pairsock(pubkey);
                     //printf("mark cmdchannel %d closed sentbytes.%d\n",pubp->pairsock,sentbytes);
                 }
                 else
                 {
-                    //printf("sent %d bytes to cmdchannel.%d\n",sentbytes,pubp->pairsock);
+                    printf("sent %d bytes to cmdchannel.%d\n",sentbytes,pubp->pairsock);
                     return(sentbytes);
                 }
             }

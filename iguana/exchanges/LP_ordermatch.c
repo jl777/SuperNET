@@ -230,7 +230,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
             printf("error creating utxo->pair\n");
         else
         {
-            for (i=0; i<10; i++)
+            for (i=0; i<1000; i++)
             {
                 r = (10000 + (LP_rand() % 50000)) & 0xffff;
                 if ( LP_fixed_pairport != 0 )
@@ -704,7 +704,7 @@ int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout)
                 if ( vout < tx->numvouts && tx->height > 0 )
                 {
                     printf("added missing utxo for SPV checking\n");
-                    LP_address_utxoadd((uint32_t)time(NULL),"LP_validSPV",coin,coinaddr,txid,vout,tx->outpoints[vout].value,tx->height,-1);
+                    LP_address_utxoadd(0,(uint32_t)time(NULL),"LP_validSPV",coin,coinaddr,txid,vout,tx->outpoints[vout].value,tx->height,-1);
                 }
             }
         }
@@ -873,7 +873,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         return(0);
     }
     //printf("LP_address_utxo_reset.%s\n",coin->symbol);
-    LP_address_utxo_reset(coin);
+    //LP_address_utxo_reset(coin);
     //printf("done LP_address_utxo_reset.%s\n",coin->symbol);
     if ( (butxo= LP_address_myutxopair(butxo,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
     {
@@ -1041,7 +1041,7 @@ void LP_tradesloop(void *ctx)
                         {
                             //LP_Alicemaxprice = tp->bestprice;
                             //LP_reserved(ctx,LP_myipaddr,LP_mypubsock,&tp->Qs[LP_CONNECT]); // send LP_CONNECT
-                            printf("mark slow LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
+                            //printf("mark slow LP_connect aliceid.%llu %.8f\n",(long long)tp->aliceid,tp->bestprice);
                             if ( (pubp= LP_pubkeyfind(tp->Qs[LP_CONNECT].srchash)) != 0 )
                                 pubp->slowresponse++;
                         }
