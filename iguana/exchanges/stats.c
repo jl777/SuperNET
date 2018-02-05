@@ -29,6 +29,7 @@
 #define STATS_DEST "/var/www/html/DEXstats.json"
 #include "DEXstats.h"
 char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
+void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly);
 extern uint32_t DOCKERFLAG;
 
 char *stats_validmethods[] =
@@ -223,7 +224,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                 return(-1);
             }
         }
-        if ( listen(sock,4096) != 0 )
+        if ( listen(sock,512) != 0 )
         {
             printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
             if ( sock >= 0 )
@@ -333,7 +334,7 @@ extern void *bitcoin_ctx();
 char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
     static void *ctx;
-    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char *myipaddr="127.0.0.1",symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr=0,*filestr,*token = 0; int32_t i,j,n,num=0;
+    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr=0,*filestr,*token = 0; int32_t i,j,n,num=0;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
@@ -523,7 +524,12 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
 #ifdef FROM_MARKETMAKER
                     if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(argjson) > 0 )
                     {
-                        if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
+                        //buf = jprint(argjson,0);
+                        //LP_queuecommand(&retstr,buf,-1,1);
+                        //free(buf);
+                        //while ( retstr == 0 )
+                        //    usleep(10000);
+                        if ( (retstr= stats_JSON(ctx,"127.0.0.1",-1,argjson,remoteaddr,port)) != 0 )
                         {
                             if ( (retitem= cJSON_Parse(retstr)) != 0 )
                                 jaddi(retarray,retitem);
@@ -531,6 +537,11 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                         }
                     } else retstr = clonestr("{\"error\":\"invalid remote method\"}");
 #else
+                    //buf = jprint(argjson,0);
+                    //LP_queuecommand(&retstr,buf,-1,1);
+                    //free(buf);
+                    //while ( retstr == 0 )
+                    //    usleep(10000);
                     if ( (retstr= stats_JSON(ctx,myipaddr,-1,argjson,remoteaddr,port)) != 0 )
                     {
                         if ( (retitem= cJSON_Parse(retstr)) != 0 )
@@ -545,7 +556,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             }
             else
             {
-                cJSON *arg;
+                cJSON *arg; //char *buf;
                 if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
                 {
                     arg = jobj(argjson,"params");
@@ -557,9 +568,20 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     jaddstr(arg,"userpass",userpass);
 #ifdef FROM_MARKETMAKER
                 if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(arg) > 0 )
-                    retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
-                else retstr = clonestr("{\"error\":\"invalid remote method\"}");
+                {
+                    //buf = jprint(arg,0);
+                    //LP_queuecommand(&retstr,buf,-1,1);
+                    //free(buf);
+                    //while ( retstr == 0 )
+                    //    usleep(10000);
+                    retstr = stats_JSON(ctx,"127.0.0.1",-1,arg,remoteaddr,port);
+                } else retstr = clonestr("{\"error\":\"invalid remote method\"}");
 #else
+                //buf = jprint(arg,0);
+                //LP_queuecommand(&retstr,buf,-1,1);
+                //free(buf);
+                //while ( retstr == 0 )
+                 //   usleep(10000);
                 retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
 #endif
             }
@@ -568,6 +590,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
         free_json(json);
         if ( tmpjson != 0 )
             free(tmpjson);
+//printf("stats_JSON rpc return.(%s)\n",retstr);
         return(retstr);
     }
     free_json(argjson);
@@ -778,7 +801,7 @@ extern int32_t IAMLP,LP_STOP_RECEIVED;
 
 void stats_rpcloop(void *args)
 {
-    uint16_t port; int32_t retval,sock=-1,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req,*req2,*rtmp;
+    uint16_t port; int32_t retval,sock=-1,bindsock=-1; socklen_t clilen; struct sockaddr_in cli_addr; uint32_t ipbits,localhostbits; struct rpcrequest_info *req;
     if ( (port= *(uint16_t *)args) == 0 )
         port = 7779;
     printf("Start stats_rpcloop.%u\n",port);
@@ -834,14 +857,13 @@ void stats_rpcloop(void *args)
         req->ipbits = ipbits;
         req->port = port;
         LP_rpc_processreq(req);
-continue;
-        // this leads to cant open file errors
+        continue;
+        // this might lead to "cant open file errors"
         if ( (retval= OS_thread_create(&req->T,NULL,(void *)LP_rpc_processreq,req)) != 0 )
         {
             printf("error launching rpc handler on port %d, retval.%d\n",port,retval);
-            closesocket(sock);
-            sock = -1;
-            portable_mutex_lock(&LP_gcmutex);
+            LP_rpc_processreq(req);
+            /*portable_mutex_lock(&LP_gcmutex);
             DL_FOREACH_SAFE(LP_garbage_collector,req2,rtmp)
             {
                 DL_DELETE(LP_garbage_collector,req2);
@@ -852,7 +874,7 @@ continue;
             {
                 printf("error2 launching rpc handler on port %d, retval.%d\n",port,retval);
                 LP_rpc_processreq(req);
-            }
+            }*/
        }
     }
     printf("i got killed\n");

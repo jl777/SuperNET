@@ -471,7 +471,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                         flag = 1;
                         break;
                     }
-                    if ( counter++ < 10 )
+                    if ( counter++ < 1 )
                         printf("error after delayed match\n");
                 }
             }
@@ -727,7 +727,7 @@ int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttim
 cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey,char *refbase,char *refrel)
 {
     static int32_t rval;
-    cJSON *retjson,*array,*item,*reqjson; struct LP_pubkey_info *pubp,*ptmp; bits256 zero; uint32_t now; struct LP_swapstats *sp,*tmp; int32_t i,n,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    cJSON *retjson,*array,*item; struct LP_pubkey_info *pubp,*ptmp; uint32_t now; struct LP_swapstats *sp,*tmp; int32_t i,n,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     if ( rval == 0 )
         rval = (LP_rand() % 300) + 60;
     if ( starttime > endtime )
@@ -754,14 +754,14 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
         else
         {
             LP_RTcount++;
-            if ( now > sp->lasttime+rval )
+            /*if ( now > sp->lasttime+rval )
             {
                 reqjson = cJSON_CreateObject();
                 jaddstr(reqjson,"method","gettradestatus");
                 jadd64bits(reqjson,"aliceid",sp->aliceid);
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
-            }
+            }*/
         }
     }
     HASH_ITER(hh,LP_swapstats,sp,tmp)

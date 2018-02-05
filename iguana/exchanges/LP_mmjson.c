@@ -516,7 +516,9 @@ int32_t MMJSON_encodeval(uint8_t *linebuf,int32_t k,int32_t ind,char *v,uint32_t
             }
             if ( v[j] == 0 )
             {
-                printf("unexpected missing string value.(%s)\n",v);
+                static uint32_t counter;
+                if ( counter++ < 3 )
+                    printf("unexpected missing string value.(%s)\n",v);
                 //ind = mmadd(v);
                 //printf("%s.<%s>.%d ",s,v,ind);
                 //linebuf[k++] = ind;
