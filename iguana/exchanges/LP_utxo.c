@@ -459,18 +459,18 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     coin->lastresetutxo = (uint32_t)time(NULL);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
-        //printf("clear ap->utxos\n");
+        printf("clear ap->utxos\n");
+        portable_mutex_lock(&coin->addrmutex);
+        portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
         {
-            portable_mutex_lock(&coin->addrmutex);
             DL_DELETE(ap->utxos,up);
-            portable_mutex_unlock(&coin->addrmutex);
-            portable_mutex_lock(&LP_gcmutex);
             up->spendheight = (int32_t)time(NULL);
             DL_APPEND(LP_garbage_collector2,up);
-            portable_mutex_unlock(&LP_gcmutex);
         }
-        //printf("done clearing ap->utxos\n");
+        portable_mutex_unlock(&coin->addrmutex);
+        portable_mutex_unlock(&LP_gcmutex);
+        printf("done clearing ap->utxos\n");
         now = (uint32_t)time(NULL);
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -480,11 +480,14 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 //{"tx_hash":"38d1b7c73015e1b1d6cb7fc314cae402a635b7d7ea294970ab857df8777a66f4","tx_pos":0,"height":577975,"value":238700}
                 item = jitem(array,i);
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
-                if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,txid,vout)) == 0 )
-                    continue;
-                else free_json(txobj);
-                if ( LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0) <= 0 )
-                    continue;
+                if ( 0 )
+                {
+                    if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,txid,vout)) == 0 )
+                        continue;
+                    else free_json(txobj);
+                    if ( LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0) <= 0 )
+                        continue;
+                }
                 LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
@@ -494,7 +497,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                     //printf("%.8f ",dstr(value));
                 }
             }
-            //printf("added %d from listunspents\n",m);
+            printf("added %d from listunspents\n",m);
         }
         free_json(array);
     }
