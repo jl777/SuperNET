@@ -230,7 +230,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
             printf("error creating utxo->pair\n");
         else
         {
-            for (i=0; i<10; i++)
+            for (i=0; i<1000; i++)
             {
                 r = (10000 + (LP_rand() % 50000)) & 0xffff;
                 if ( LP_fixed_pairport != 0 )
