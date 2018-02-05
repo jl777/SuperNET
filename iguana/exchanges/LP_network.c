@@ -596,7 +596,7 @@ void LP_psockloop(void *_ptr)
                     } // else printf("num pfds.%d retval.%d\n",n,retval);
                 }
             }
-            if ( sendsock >= 0 )
+            if ( 0 && sendsock >= 0 )
                 printf("sendsock.%d Numpsocks.%d\n",sendsock,Numpsocks);
             if ( sendsock < 0 )
             {

@@ -463,7 +463,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     portable_mutex_lock(&coin->addressutxo_mutex);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
-        printf("clear %s ap->utxos\n",coin->symbol);
+        printf("reset %s ap->utxos\n",coin->symbol);
         portable_mutex_lock(&coin->addrmutex);
         portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -474,7 +474,6 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         }
         portable_mutex_unlock(&coin->addrmutex);
         portable_mutex_unlock(&LP_gcmutex);
-        printf("done %s ap->utxos\n",coin->symbol);
         now = (uint32_t)time(NULL);
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
