@@ -554,6 +554,11 @@ void LP_coinsloop(void *_coins)
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
+            if ( coin->did_addrutxo_reset == 0 )
+            {
+                LP_address_utxo_reset(coin);
+                coin->did_addrutxo_reset = 1;
+            }
             if ( coin->longestchain == 1 ) // special init value
                 coin->longestchain = LP_getheight(&notarized,coin);
             if ( (ep= coin->electrum) != 0 )
