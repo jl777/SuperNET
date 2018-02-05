@@ -190,6 +190,75 @@ int main(int argc, const char * argv[])
         printf("done vanitygen.(%s) done %u elapsed %d\n",argv[2],(uint32_t)time(NULL),(uint32_t)time(NULL) - timestamp);
         exit(0);
     }
+    else if ( argv[1] != 0 && strcmp(argv[1],"airdropH") == 0 && argv[2] != 0 )
+    {
+        FILE *fp; double val,total = 0.; uint8_t checktype,addrtype,rmd160[21],checkrmd160[21]; char buf[256],checkaddr[64],coinaddr[64],manystrs[64][128],cmd[64*128]; int32_t n,i,num; char *flag;
+        if ( (fp= fopen(argv[2],"rb")) != 0 )
+        {
+            num = 0;
+            while ( fgets(buf,sizeof(buf),fp) > 0 )
+            {
+                if ( (n= (int32_t)strlen(buf)) > 0 )
+                    buf[--n] = 0;
+                flag = 0;
+                for (i=0; i<n; i++)
+                {
+                    if ( buf[i] == ',' )
+                    {
+                        buf[i] = 0;
+                        flag = &buf[i+1];
+                        break;
+                    }
+                }
+                if ( flag != 0 )
+                {
+                    bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
+                    bitcoin_address("KMD",coinaddr,0,addrtype == 184 ? 60 : 85,rmd160,20);
+                    bitcoin_addr2rmd160("KMD",0,&checktype,checkrmd160,coinaddr);
+                    bitcoin_address("HUSH",checkaddr,28,checktype == 60 ? 184 : 189,checkrmd160,20);
+                    if ( memcmp(rmd160,checkrmd160,20) != 0 || strcmp(buf,checkaddr) != 0 )
+                    {
+                        for (i=0; i<20; i++)
+                            printf("%02x",rmd160[i]);
+                        printf(" vs. ");
+                        for (i=0; i<20; i++)
+                            printf("%02x",checkrmd160[i]);
+                        printf(" address calc error (%s).%d -> (%s).%d -> (%s) %.8f?\n",buf,addrtype,coinaddr,checktype,checkaddr,atof(flag));
+                    }
+                    else
+                    {
+                        val = atof(flag);
+                        sprintf(manystrs[num++],"\\\"%s\\\":%0.8f",coinaddr,val);
+                        if ( num >= sizeof(manystrs)/sizeof(*manystrs) )
+                        {
+                            sprintf(cmd,"fiat/btch sendmany \\\"\\\" \"{");
+                            for (i=0; i<num; i++)
+                                sprintf(cmd + strlen(cmd),"%s%s",manystrs[i],i<num-1?",":"");
+                            strcat(cmd,"}\" 0");
+                            printf("%s\n",cmd);
+                            num = 0;
+                            memset(manystrs,0,sizeof(manystrs));
+                        }
+                        total += val;
+                        //printf("(%s).%d (%s) <- %.8f total %.8f\n",buf,addrtype,coinaddr,val,total);
+                    }
+                } else printf("parse error for (%s)\n",buf);
+            }
+            if ( num > 0 )
+            {
+                sprintf(cmd,"fiat/btch sendmany \\\"\\\" \"{");
+                for (i=0; i<num; i++)
+                    sprintf(cmd + strlen(cmd),"%s%s",manystrs[i],i<num-1?",":"");
+                strcat(cmd,"}\" 0");
+                printf("%s\n",cmd);
+                num = 0;
+                memset(manystrs,0,sizeof(manystrs));
+            }
+            printf("close (%s) total %.8f\n",argv[2],total);
+            fclose(fp);
+        } else printf("couldnt open (%s)\n",argv[2]);
+        exit(0);
+    }
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
