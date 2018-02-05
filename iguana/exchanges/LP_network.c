@@ -694,13 +694,25 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             if ( pubp->pairsock >= 0 )
             {
                 printf("warning %s already has pairsock.%d\n",bits256_str(str,pubkey),pubp->pairsock);
-                /*for (i=0; i<Numpsocks; i++)
+                for (i=0; i<Numpsocks; i++)
                     if ( PSOCKS[i].publicsock == pubp->pairsock )
                     {
-                        PSOCKS[i].lasttime = (uint32_t)time(NULL) - PSOCK_KEEPALIVE - 1;
-                        break;
-                    }*/
-                return(clonestr("{\"error\":\"need to regen json\"}"));
+                        //PSOCKS[i].lasttime = (uint32_t)time(NULL) - PSOCK_KEEPALIVE - 1;
+                        retjson = cJSON_CreateObject();
+                        jaddstr(retjson,"result","success");
+                        jaddstr(retjson,"LPipaddr",ipaddr);
+                        jaddstr(retjson,"connectaddr",PSOCKS[i].sendaddr);
+                        jaddnum(retjson,"connectport",PSOCKS[i].sendport);
+                        jaddnum(retjson,"ispaired",PSOCKS[i].ispaired);
+                        jaddnum(retjson,"cmdchannel",PSOCKS[i].cmdchannel);
+                        jaddstr(retjson,"publicaddr",PSOCKS[i].publicaddr);
+                        jaddnum(retjson,"publicport",PSOCKS[i].publicport);
+                        //printf("cmd.%d publicaddr.(%s) for subaddr.(%s), pullsock.%d pubsock.%d\n",cmdchannel,pushaddr,subaddr,pullsock,pubsock);
+                        *pullsockp = pullsock;
+                        *pubsockp = pubsock;
+                        return(jprint(retjson,1));
+                    }
+                LP_psockadd(ispaired,pullsock,publicport,pubsock,subport,subaddr,pushaddr,cmdchannel);
             }
             //printf("pairsock for %s <- %d\n",bits256_str(str,pubkey),pullsock);
             //pubp->pairsock = pullsock;
