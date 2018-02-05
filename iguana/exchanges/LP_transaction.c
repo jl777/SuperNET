@@ -1458,7 +1458,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
                 rawtx->I.completed = 1;
                 rawtx->I.signedtxid = jbits256(retjson,"txid");
                 retval = 0;
-            } else printf("rawtx withdraw error? (%s)\n",retstr);
+            } else printf("rawtx withdraw error? (%s)\n",jprint(argjson,0));
             free_json(retjson);
         }
         free(retstr);
