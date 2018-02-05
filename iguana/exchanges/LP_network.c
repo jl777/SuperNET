@@ -693,7 +693,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
         {
             if ( pubp->pairsock >= 0 )
             {
-                printf("warning %s already has pairsock.%d\n",bits256_str(str,pubkey),pubp->pairsock);
+                printf("%s already has pairsock.%d\n",bits256_str(str,pubkey),pubp->pairsock);
                 for (i=0; i<Numpsocks; i++)
                     if ( PSOCKS[i].publicsock == pubp->pairsock )
                     {
