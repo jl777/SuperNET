@@ -486,7 +486,7 @@ void mynn_close(int32_t sock)
             printf("cant send to nn_close(%d)\n",sock);
             sleep(1);
         }
-        nn_close(sock);
+        //nn_close(sock); // dont know why but it crashes...
     }
 }
         
@@ -622,7 +622,7 @@ void LP_psockloop(void *_ptr)
                     if ( i < Numpsocks )
                     {
                         ptr = &PSOCKS[i];
-                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE )
+                        if ( now > ptr->lasttime+PSOCK_KEEPALIVE/10 )
                         {
                             printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,Numpsocks,ptr->publicport,ptr->sendport,now - ptr->lasttime);
                             if ( ptr->sendsock != ptr->publicsock && ptr->sendsock >= 0 )
