@@ -551,7 +551,9 @@ cJSON *LP_address_utxos(struct iguana_info *coin,char *coinaddr,int32_t electrum
                     {
                         char str[65];
                         if ( LP_allocated(up->U.txid,up->U.vout) != 0 )
-                            printf("%s %s/v%d allocated\n",coin->symbol,bits256_str(str,up->U.txid),up->U.vout);
+                        {
+                            //printf("%s %s/v%d allocated\n",coin->symbol,bits256_str(str,up->U.txid),up->U.vout);
+                        }
                         else if ( coin->electrum == 0 || up->SPV > 0 )
                         {
                             jaddi(array,LP_address_item(coin,up,electrumret));
