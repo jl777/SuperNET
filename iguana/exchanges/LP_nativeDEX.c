@@ -85,7 +85,7 @@ void LP_millistats_update(struct LP_millistats *mp)
 }
 
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex,LP_statslogmutex,LP_tradesmutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex,LP_statslogmutex,LP_tradesmutex,LP_commandQmutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[2][1000];
 int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
@@ -192,21 +192,21 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_messages.c"
 #include "LP_commands.c"
 
-char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen)
+char *LP_command_process(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,int32_t stats_JSONonly)
 {
     char *retstr=0; cJSON *retjson; bits256 zero;
     if ( jobj(argjson,"result") != 0 || jobj(argjson,"error") != 0 )
         return(0);
-    if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
+    if ( stats_JSONonly != 0 || LP_tradecommand(ctx,myipaddr,pubsock,argjson,data,datalen) <= 0 )
     {
-        if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,"127.0.0.1",0)) != 0 )
+        if ( (retstr= stats_JSON(ctx,myipaddr,pubsock,argjson,"127.0.0.1",stats_JSONonly)) != 0 )
         {
             //printf("%s PULL.[%d]-> (%s)\n",myipaddr != 0 ? myipaddr : "127.0.0.1",datalen,retstr);
             //if ( pubsock >= 0 ) //strncmp("{\"error\":",retstr,strlen("{\"error\":")) != 0 &&
                 //LP_send(pubsock,retstr,(int32_t)strlen(retstr)+1,0);
         }
     }
-    else if ( LP_statslog_parse() > 0 )
+    else if ( LP_statslog_parse() > 0 && 0 )
     {
         memset(zero.bytes,0,sizeof(zero));
         if ( (retjson= LP_statslog_disp(2000000000,2000000000,"",zero,0,0))) // pending swaps
@@ -303,7 +303,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
             if ( jsonstr != 0 && argjson != 0 )
             {
                 len = (int32_t)strlen(jsonstr) + 1;
-                if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"broadcast") == 0 )
+                if ( (method= jstr(argjson,"method")) != 0 && strcmp(method,"gettradestatus") != 0 && strcmp(method,"psock") != 0 && strcmp(method,"broadcast") == 0 )
                 {
                     bits256 zero; cJSON *reqjson; char *cipherstr; int32_t cipherlen; uint8_t cipher[LP_ENCRYPTED_MAXSIZE];
                     if ( (reqjson= LP_dereference(argjson,"broadcast")) != 0 )
@@ -331,9 +331,10 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 }
                 else
                 {
-                    if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
-                    {
-                    }
+                    LP_queuecommand(0,jsonstr,pubsock,0);
+                    //if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
+                    //{
+                    //}
                 }
             }
             if ( argjson != 0 )
@@ -349,7 +350,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
 int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int32_t sock,char *remoteaddr,int32_t maxdepth)
 {
     static char *line;
-    int32_t recvlen=1,msglen,nonz = 0; cJSON *argjson,*recvjson; void *ptr,*msg; char methodstr[64],*decodestr,*retstr,*str; struct nn_pollfd pfd;
+    int32_t recvlen=1,msglen,nonz = 0; cJSON *recvjson; void *ptr,*msg; char methodstr[64],*decodestr,*retstr,*str; struct nn_pollfd pfd;
     if ( line == 0 )
         line = calloc(1,1024*1024);
     if ( sock >= 0 )
@@ -407,12 +408,14 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                     {
                         if ( (retstr= LP_process_message(ctx,typestr,myipaddr,pubsock,msg,msglen,sock)) != 0 )
                             free(retstr);
+                        
                         if ( Broadcaststr != 0 )
                         {
                             //printf("self broadcast.(%s)\n",Broadcaststr);
                             str = Broadcaststr;
                             Broadcaststr = 0;
-                            if ( (argjson= cJSON_Parse(str)) != 0 )
+                            LP_queuecommand(0,str,pubsock,0);
+                            /*if ( (argjson= cJSON_Parse(str)) != 0 )
                             {
                                 //portable_mutex_lock(&LP_commandmutex);
                                 if ( LP_tradecommand(ctx,myipaddr,pubsock,argjson,0,0) <= 0 )
@@ -422,7 +425,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                                 }
                                 //portable_mutex_unlock(&LP_commandmutex);
                                 free_json(argjson);
-                            }
+                            }*/
                             free(str);
                         }
                     }
@@ -551,6 +554,11 @@ void LP_coinsloop(void *_coins)
             memset(&zero,0,sizeof(zero));
             if ( coin->inactive != 0 )
                 continue;
+            if ( coin->did_addrutxo_reset == 0 )
+            {
+                LP_address_utxo_reset(coin);
+                coin->did_addrutxo_reset = 1;
+            }
             if ( coin->longestchain == 1 ) // special init value
                 coin->longestchain = LP_getheight(&notarized,coin);
             if ( (ep= coin->electrum) != 0 )
@@ -891,7 +899,8 @@ void LP_initpeers(int32_t pubsock,struct LP_peerinfo *mypeer,char *myipaddr,uint
         {
             printf("default seed nodes for netid.%d\n",netid);
             OS_randombytes((void *)&r,sizeof(r));
-            for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes)&&j<5; j++)
+            r = 0;
+            for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
             {
                 i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
                 LP_addpeer(mypeer,pubsock,default_LPnodes[i],myport,pushport,subport,0,G.LP_sessionid,netid);
@@ -1093,11 +1102,24 @@ void LP_reserved_msgs(void *ignore)
     {
         nonz = 0;
         LP_millistats_update(&LP_reserved_msgs_stats);
-        if ( num_Reserved_msgs[0] > 0 || num_Reserved_msgs[1] > 0 )
+        if ( num_Reserved_msgs[1] > 0 )
+        {
+            nonz++;
+            portable_mutex_lock(&LP_reservedmutex);
+            if ( num_Reserved_msgs[1] > 0 )
+            {
+                num_Reserved_msgs[1]--;
+                //printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
+                LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[1][num_Reserved_msgs[1]]);
+                Reserved_msgs[1][num_Reserved_msgs[1]] = 0;
+            }
+            portable_mutex_unlock(&LP_reservedmutex);
+        }
+        else if ( num_Reserved_msgs[0] > 0 )
         {
             nonz++;
             flag = 0;
-            if ( LP_mypubsock >= 0 )
+            if ( flag == 0 && LP_mypubsock >= 0 )
             {
                 memset(&pfd,0,sizeof(pfd));
                 pfd.fd = LP_mypubsock;
@@ -1108,36 +1130,59 @@ void LP_reserved_msgs(void *ignore)
             if ( flag == 1 )
             {
                 portable_mutex_lock(&LP_reservedmutex);
-                if ( num_Reserved_msgs[1] > 0 )
-                {
-                    num_Reserved_msgs[1]--;
-//printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
-                    LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[1][num_Reserved_msgs[1]]);
-                    Reserved_msgs[1][num_Reserved_msgs[1]] = 0;
-                }
-                else if ( num_Reserved_msgs[0] > 0 )
-                {
-                    num_Reserved_msgs[0]--;
-//printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
-                    LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
-                    Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
-                }
+                num_Reserved_msgs[0]--;
+                //printf("BROADCAST.(%s)\n",Reserved_msgs[0][num_Reserved_msgs[0]]);
+                LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[0][num_Reserved_msgs[0]]);
+                Reserved_msgs[0][num_Reserved_msgs[0]] = 0;
                 portable_mutex_unlock(&LP_reservedmutex);
             }
         }
         if ( ignore == 0 )
             break;
-        if ( nonz != 0 )
-            usleep(1000);
-        else usleep(5000);
+        if ( nonz == 0 )
+            usleep(5000);
     }
 }
 
 int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,char *msg)
 {
-    int32_t n = 0;
+    struct LP_pubkey_info *pubp; uint32_t timestamp; char *method; cJSON *argjson; int32_t skip,sentbytes,n = 0;
+    skip = 0;
+    if ( (argjson= cJSON_Parse(msg)) != 0 )
+    {
+        if ( (method= jstr(argjson,"method")) != 0 )
+        {
+            if ( strcmp(method,"gettradestatus") == 0 || strcmp(method,"wantnotify") == 0 || strcmp(method,"getdPoW") == 0 )
+                skip = 1;
+        }
+        if ( (timestamp= juint(argjson,"timestamp")) != 0 && time(NULL) > timestamp+60 )
+            skip = 1;
+        free_json(argjson);
+    }
+    if ( skip != 0 )
+        return(-1);
     if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
         return(-1);
+    if ( priority > 0 && bits256_nonz(pubkey) != 0 )
+    {
+        if ( (pubp= LP_pubkeyfind(pubkey)) != 0 )
+        {
+            if ( pubp->pairsock >= 0 )
+            {
+                if ( (sentbytes= nn_send(pubp->pairsock,msg,(int32_t)strlen(msg)+1,0)) < 0 )
+                {
+                    //pubp->pairsock = -1;
+                    //LP_peer_pairsock(pubkey);
+                    //printf("mark cmdchannel %d closed sentbytes.%d\n",pubp->pairsock,sentbytes);
+                }
+                else
+                {
+                    printf("sent %d bytes to cmdchannel.%d\n",sentbytes,pubp->pairsock);
+                    return(sentbytes);
+                }
+            }
+        }
+    }
     portable_mutex_lock(&LP_reservedmutex);
     if ( num_Reserved_msgs[priority] < sizeof(Reserved_msgs[priority])/sizeof(*Reserved_msgs[priority]) )
     {
@@ -1147,7 +1192,7 @@ int32_t LP_reserved_msg(int32_t priority,char *base,char *rel,bits256 pubkey,cha
     if ( num_Reserved_msgs[priority] > max_Reserved_msgs[priority] )
     {
         max_Reserved_msgs[priority] = num_Reserved_msgs[priority];
-        if ( (max_Reserved_msgs[priority] % 100) == 0 )
+        //if ( (max_Reserved_msgs[priority] % 100) == 0 )
             printf("New priority.%d max_Reserved_msgs.%d\n",priority,max_Reserved_msgs[priority]);
     }
     portable_mutex_unlock(&LP_reservedmutex);
@@ -1234,6 +1279,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_logmutex);
     portable_mutex_init(&LP_statslogmutex);
     portable_mutex_init(&LP_tradesmutex);
+    portable_mutex_init(&LP_commandQmutex);
     myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
 #ifndef FROM_JS
@@ -1267,8 +1313,10 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
                 valid++;
             if ( valid > 0 )
             {
-                timeout = 1;
+                timeout = 100;
                 nn_setsockopt(LP_mypubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                //timeout = 10;
+                //nn_setsockopt(LP_mypubsock,NN_SOL_SOCKET,NN_MAXTTL,&timeout,sizeof(timeout));
             }
             else
             {
@@ -1307,7 +1355,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport,pushaddr);
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
-    if ( IAMLP != 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_psockloop for (%s)\n",myipaddr);
         exit(-1);
@@ -1370,6 +1418,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,ctx) != 0 )
     {
         printf("error launching LP_swapsloop for ctx.%p\n",ctx);
+        exit(-1);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_commandQ_loop,ctx) != 0 )
+    {
+        printf("error launching LP_commandQ_loop for ctx.%p\n",ctx);
         exit(-1);
     }
     int32_t nonz,didremote=0;
@@ -1439,7 +1492,10 @@ char *barterDEX(char *argstr)
     printf("barterDEX.(%s)\n",argstr);
     if ( (argjson= cJSON_Parse(argstr)) != 0 )
     {
-        retstr = LP_command_process(ctx,LP_myipaddr,LP_mypubsock,argjson,(uint8_t *)argstr,(int32_t)strlen(argstr));
+        LP_queuecommand(&retstr,argstr,LP_mypubsock);
+        //retstr = LP_command_process(ctx,LP_myipaddr,LP_mypubsock,argjson,(uint8_t *)argstr,(int32_t)strlen(argstr));
+        while ( retstr == 0 )
+            usleep(50000);
         free_json(argjson);
     } else retstr = clonestr("{\"error\":\"couldnt parse request\"}");
     return(retstr);

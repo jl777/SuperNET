@@ -597,11 +597,14 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
         }
         if ( flag != 0 )
         {
-            reqjson = cJSON_CreateObject();
-            jaddstr(reqjson,"method","gettradestatus");
-            jadd64bits(reqjson,"aliceid",sp->aliceid);
-            memset(zero.bytes,0,sizeof(zero));
-            LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+            if ( 0 )
+            {
+                reqjson = cJSON_CreateObject();
+                jaddstr(reqjson,"method","gettradestatus");
+                jadd64bits(reqjson,"aliceid",sp->aliceid);
+                memset(zero.bytes,0,sizeof(zero));
+                LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+            }
             if ( (swapstr= basilisk_swapentry(sp->Q.R.requestid,sp->Q.R.quoteid,0)) != 0 )
             {
                 if ( (swapjson= cJSON_Parse(swapstr)) != 0 )
