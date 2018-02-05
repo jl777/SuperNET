@@ -448,7 +448,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
     int32_t n=0,nonz = 0; char *origipaddr; struct LP_peerinfo *peer,*tmp;
     if ( (origipaddr= LP_myipaddr) == 0 )
         origipaddr = "127.0.0.1";
-    //portable_mutex_lock(&LP_nanorecvsmutex);
+    portable_mutex_lock(&LP_nanorecvsmutex);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( n++ > 0 && peer->errors >= LP_MAXPEER_ERRORS )
@@ -474,7 +474,7 @@ int32_t LP_nanomsg_recvs(void *ctx)
     {
         nonz += LP_sock_check("PULL",ctx,origipaddr,-1,LP_mypullsock,"127.0.0.1",1);
     }
-    //portable_mutex_unlock(&LP_nanorecvsmutex);
+    portable_mutex_unlock(&LP_nanorecvsmutex);
     return(nonz);
 }
 
