@@ -486,7 +486,8 @@ void mynn_close(int32_t sock)
             printf("cant send to nn_close(%d)\n",sock);
             sleep(1);
         }
-        //nn_close(sock); // dont know why but it crashes...
+        if ( IAMLP != 0 )
+            nn_close(sock);
     }
 }
         
