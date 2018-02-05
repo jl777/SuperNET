@@ -411,7 +411,7 @@ int32_t LP_address_utxoadd(uint32_t timestamp,char *debug,struct iguana_info *co
         }
         if ( flag == 0 && value != 0 )
         {
-            if ( coin->electrum == 0 )
+            if ( 0 && coin->electrum == 0 )
             {
                 if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) == 0 )
                 {
@@ -459,7 +459,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     coin->lastresetutxo = (uint32_t)time(NULL);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
-        printf("clear ap->utxos\n");
+        printf("clear %s ap->utxos\n",coin->symbol);
         portable_mutex_lock(&coin->addrmutex);
         portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -470,7 +470,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
         }
         portable_mutex_unlock(&coin->addrmutex);
         portable_mutex_unlock(&LP_gcmutex);
-        printf("done clearing ap->utxos\n");
+        printf("done %s ap->utxos\n",coin->symbol);
         now = (uint32_t)time(NULL);
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -489,7 +489,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                         continue;
                 }
                 LP_address_utxoadd(now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
-                if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
+                if ( 0 && (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
                     printf("couldnt find just added %s/%d ht.%d %.8f\n",bits256_str(str,txid),vout,height,dstr(value));
                 else
                 {
@@ -497,7 +497,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                     //printf("%.8f ",dstr(value));
                 }
             }
-            printf("added %d from listunspents\n",m);
+            printf("added %d from %s listunspents\n",m,coin->symbol);
         }
         free_json(array);
     }
