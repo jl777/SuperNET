@@ -300,9 +300,9 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         printf("illegal privkey %s\n",bits256_str(str,privkey));
         exit(0);
     }
-    if ( bitcoin_verify(ctx,sig,siglen-1,tmpkey,coin->pubkey33,33) != 0 )
+    if ( bitcoin_verify(ctx,sig,siglen,tmpkey,coin->pubkey33,33) != 0 )
     {
-        printf("signature for %s by %s didnt verify\n",bits256_str(str,tmpkey),bits256_str(str2,privkey));
+        printf("signature.[%d] for %s by %s didnt verify\n",siglen,bits256_str(str,tmpkey),bits256_str(str2,privkey));
         exit(0);
     }
     if ( coin->counter == 0 )
