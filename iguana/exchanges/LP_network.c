@@ -694,6 +694,11 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
     int32_t i,pullsock,bindflag=(IAMLP != 0),pubsock,arg; struct LP_pubkey_info *pubp; char pushaddr[128],subaddr[128]; cJSON *retjson = 0;
     pullsock = pubsock = -1;
     *pullsockp = *pubsockp = -1;
+    if ( cmdchannel != 0 && bits256_nonz(pubkey) == 0 )
+    {
+        printf("ignore cmdchannel request without pubkey\n");
+        return(clonestr("{\"error\":\"cmdchannel needs pubkey\"}"));
+    }
     if ( IAMLP != 0 && bits256_nonz(pubkey) != 0 )
     {
         char str[65];
@@ -758,7 +763,7 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             jaddnum(retjson,"cmdchannel",cmdchannel);
             jaddstr(retjson,"publicaddr",pushaddr);
             jaddnum(retjson,"publicport",publicport);
-            printf("PSOCK cmd.%d publicaddr.(%s) for subaddr.(%s), pullsock.%d pubsock.%d\n",cmdchannel,pushaddr,subaddr,pullsock,pubsock);
+            char str[65]; printf("PSOCK %s cmd.%d publicaddr.(%s) for subaddr.(%s), pullsock.%d pubsock.%d\n",bits256_str(str,pubkey),cmdchannel,pushaddr,subaddr,pullsock,pubsock);
             *pullsockp = pullsock;
             *pubsockp = pubsock;
             return(jprint(retjson,1));
