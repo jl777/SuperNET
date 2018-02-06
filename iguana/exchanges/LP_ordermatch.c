@@ -230,7 +230,7 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
             printf("error creating utxo->pair\n");
         else
         {
-            for (i=0; i<1000; i++)
+            for (i=0; i<10000; i++)
             {
                 r = (10000 + (LP_rand() % 50000)) & 0xffff;
                 if ( LP_fixed_pairport != 0 )
@@ -248,6 +248,9 @@ int32_t LP_nanobind(void *ctx,char *pairstr)
                 if ( LP_fixed_pairport != 0 )
                     break;
             }
+            printf("%d ports all used\n",i);
+            nn_close(pairsock);
+            pairsock = -1;
         }
     } else pairsock = LP_initpublicaddr(ctx,&mypullport,pairstr,"127.0.0.1",0,1);
     return(pairsock);
