@@ -254,7 +254,7 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     //static uint32_t counter;
-    bits256 privkey,userpub,zero,userpass,checkkey,tmpkey; char tmpstr[128]; cJSON *retjson; uint8_t tmptype; int32_t notarized; uint64_t nxtaddr;
+    bits256 privkey,userpub,zero,userpass,checkkey,tmpkey; char str[65],str2[65],tmpstr[128]; cJSON *retjson; uint8_t tmptype,sig[128]; int32_t notarized,siglen; uint64_t nxtaddr;
     if ( (wifstr == 0 || wifstr[0] == 0) && LP_wifstr_valid(coin->symbol,passphrase) > 0 )
     {
         wifstr = passphrase;
@@ -294,6 +294,17 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         RS_encode(G.LP_NXTaddr,nxtaddr);
     }
     bitcoin_priv2pub(ctx,coin->symbol,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
+    OS_randombytes(tmpkey.bytes,sizeof(tmpkey));
+    if ( bits256_nonz(privkey) == 0 || (siglen= bitcoin_sign(ctx,coin->symbol,sig,tmpkey,privkey,0)) <= 0 )
+    {
+        printf("illegal privkey %s\n",bits256_str(str,privkey));
+        exit(0);
+    }
+    if ( bitcoin_verify(ctx,sig,siglen,tmpkey,coin->pubkey33,33) != 0 )
+    {
+        printf("signature.[%d] for %s by %s didnt verify\n",siglen,bits256_str(str,tmpkey),bits256_str(str2,privkey));
+        exit(0);
+    }
     if ( coin->counter == 0 )
     {
         coin->counter++;
