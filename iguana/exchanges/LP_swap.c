@@ -570,7 +570,9 @@ struct basilisk_rawtx *LP_swapdata_rawtx(struct basilisk_swap *swap,uint8_t *dat
 
 int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys)
 {
-    bits256 otherhash,myhash,txid; int64_t txfee,val; int32_t i,offset=0,datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr,redeemaddr[64],checkaddr[64]; uint32_t quoteid,msgbits; struct iguana_info *coin;
+    bits256 otherhash,myhash,txid; int64_t txfee,val; int32_t i,offset=0,datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr,bobstr[65],alicestr[65],redeemaddr[64],checkaddr[64]; uint32_t quoteid,msgbits; struct iguana_info *coin;
+    LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
+    LP_etomicsymbol(alicestr,swap->I.alicetomic,swap->I.alicestr);
     if ( (coin= LP_coinfind(rawtx->symbol)) == 0 )
     {
         printf("LP_rawtx_spendscript couldnt find coin.(%s)\n",rawtx->symbol);
@@ -769,9 +771,11 @@ int32_t LP_swapwait(struct basilisk_swap *swap,uint32_t requestid,uint32_t quote
 
 void LP_bobloop(void *_swap)
 {
-    uint8_t *data; int32_t maxlen,m,n; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    uint8_t *data; char bobstr[65],alicestr[65]; int32_t maxlen,m,n; uint32_t expiration; struct basilisk_swap *swap = _swap;
     G.LP_pendingswaps++;
     printf("start swap iambob\n");
+    LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
+    LP_etomicsymbol(alicestr,swap->I.alicetomic,swap->I.alicestr);
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
@@ -838,8 +842,10 @@ void LP_bobloop(void *_swap)
 
 void LP_aliceloop(void *_swap)
 {
-    uint8_t *data; int32_t maxlen,n,m; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    uint8_t *data; char bobstr[65],alicestr[65]; int32_t maxlen,n,m; uint32_t expiration; struct basilisk_swap *swap = _swap;
     G.LP_pendingswaps++;
+    LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
+    LP_etomicsymbol(alicestr,swap->I.alicetomic,swap->I.alicestr);
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + LP_SWAPSTEP_TIMEOUT;
