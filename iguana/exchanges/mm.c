@@ -125,7 +125,7 @@ void ETH_test()
         .bobHash = "0xd66ca5295806fb95ead3f2be1d193a206a376371"
     };
     ethSignedTx = bobSendsEthDeposit(input, txData);
-    printf("%s\n", ethSignedTx);
+    printf("ETH_test (%s)\n", ethSignedTx);
     free(ethSignedTx);
 }
 
