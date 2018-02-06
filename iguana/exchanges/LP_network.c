@@ -763,6 +763,8 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
             jaddnum(retjson,"cmdchannel",cmdchannel);
             jaddstr(retjson,"publicaddr",pushaddr);
             jaddnum(retjson,"publicport",publicport);
+            if ( bits256_nonz(pubkey) != 0 && (pubp= LP_pubkeyadd(pubkey)) != 0 )
+                pubp->pairsock = pullsock;
             char str[65]; printf("PSOCK %s cmd.%d publicaddr.(%s) for subaddr.(%s), pullsock.%d pubsock.%d\n",bits256_str(str,pubkey),cmdchannel,pushaddr,subaddr,pullsock,pubsock);
             *pullsockp = pullsock;
             *pubsockp = pubsock;
