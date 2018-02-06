@@ -294,6 +294,18 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         RS_encode(G.LP_NXTaddr,nxtaddr);
     }
     bitcoin_priv2pub(ctx,coin->symbol,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
+    {
+        uint8_t check33[33]; char checkaddr[64];
+        if ( LP_etomic_priv2pub(check33,privkey) > 0 )
+        {
+            if ( memcmp(check33,coin->pubkey33) == 0 )
+            {
+                printf("pubkey33 matches!\n");
+                if ( LP_etomic_pub2addr(checkaddr,check33) > 0 )
+                    printf("addr is (%s)\n",checkaddr);
+            } else printf("pubkey 33 mismatch\n");
+        }
+    }
     if ( coin->counter == 0 )
     {
         coin->counter++;

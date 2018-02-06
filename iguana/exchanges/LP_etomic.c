@@ -58,3 +58,46 @@ char *LP_etomicalice_start(struct basilisk_swap *swap)
     }
     return(0);
 }
+
+int32_t LP_etomic_priv2addr(char *coinaddr,bits256 privkey)
+{
+    char str[65],*addrstr;
+    bits256_str(str,privkey);
+    if ( (addrstr= privKey2Addr(str)) != 0 )
+    {
+        strcpy(coinaddr,addrstr);
+        free(addrstr);
+        return(0);
+    }
+    return(-1);
+}
+
+int32_t LP_etomic_priv2pub(uint8_t *pub33,bits256 privkey)
+{
+    char *pubstr,str[65]; int32_t retval = -1;
+    bits256_str(str,privkey);
+    if ( (pubstr= getPubKeyFromPriv(str)) != 0 )
+    {
+        if ( strlen(pubstr) == 35 && pubstr[0] == '0' && pubstr[1] == 'x' )
+        {
+            decode_hex(pub33,33,pubstr+2);
+            retval = 33;
+        }
+        free(pubstr);
+    }
+    return(retval);
+}
+
+int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub33[33])
+{
+    char pubkeystr[72],*addrstr;
+    strcpy(pubkeystr,"0x");
+    init_hexbytes_noT(pubkeystr+2,pub33,33);
+    if ( (addrstr= pubKey2Addr(pubkeystr+2)) != 0 )
+    {
+        strcpy(coinaddr,addrstr);
+        free(addrstr);
+        return((int32_t)strlen(coinaddr));
+    }
+    return(-1);
+}
