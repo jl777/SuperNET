@@ -27,12 +27,17 @@
 #define ETOMIC_BOBCONTRACT "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2"
 #define ETOMIC_SATOSHICAT "0000000000"
 
-int32_t LP_etomicsymbol(char *etomic,char *symbol)
+int32_t LP_etomicsymbol(char *activesymbol,char *etomic,char *symbol)
 {
     struct iguana_info *coin;
-    etomic[0] = 0;
+    etomic[0] = activesymbol[0] = 0;
     if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
         strcpy(etomic,coin->etomic);
+        if ( etomic[0] != 0 )
+            strcpy(activesymbol,"ETOMIC");
+        else strcpy(activesymbol,symbol);
+    }
     return(etomic[0] != 0);
 }
 

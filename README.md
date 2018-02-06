@@ -258,14 +258,13 @@ The iguana binary and its linked libraries are in ```$HOME/tmp/iguana```.
 
 # Cmake build of marketmaker with linked etomic lib for ETH/ERC20 atomic swaps:
 1. `cd ~/SuperNET`
-2. `mkdir build`
-3. `git checkout etomic`
-4. `git clone https://github.com/artemii235/cpp-ethereum`
-5. `cd cpp-ethereum`
-6. `git submodule update --init --recursive`
-7. `cd ~/SuperNET/build`
-8. `cmake ..`
-9. `cmake --build . --target marketmaker`
-10. `cd build/iguana/exchanges`
-11. `export BOB_PK=YOUR_PRIVATE_KEY`  #export BOB_PK=59a03784447e3b24d2deb7231236d549502e4e806550aca4ab6a5532b003da25
-12. `./marketmaker`
+2. `git checkout etomic`
+3. `git submodule add https://github.com/artemii235/cpp-ethereum`
+4. `git submodule update --init --recursive`
+5. `mkdir build`
+6. `cd build`
+7. `cmake ..`
+8. `cmake --build . --target marketmaker`
+9. `cd build/iguana/exchanges`
+10. `export BOB_PK=YOUR_PRIVATE_KEY`  #export BOB_PK=59a03784447e3b24d2deb7231236d549502e4e806550aca4ab6a5532b003da25
+11. `./marketmaker`
