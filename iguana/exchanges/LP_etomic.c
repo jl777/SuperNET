@@ -75,8 +75,7 @@ int32_t LP_etomic_priv2addr(char *coinaddr,bits256 privkey)
 int32_t LP_etomic_priv2pub(uint8_t *pub33,bits256 privkey)
 {
     char *pubstr,str[72]; int32_t retval = -1;
-    strcpy(str,"0x");
-    bits256_str(str+2,privkey);
+    bits256_str(str,privkey);
     if ( (pubstr= getPubKeyFromPriv(str)) != 0 )
     {
         if ( strlen(pubstr) == 35 && pubstr[0] == '0' && pubstr[1] == 'x' )
