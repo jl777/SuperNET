@@ -426,7 +426,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-                    if ( ptr->userpass[0] == 0 )
+                    if ( ptr->userpass[0] == 0 && strcmp(ptr->symbol,"ETH") != 0 )
                     {
                         cJSON *retjson = cJSON_CreateObject();
                         jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG0);
