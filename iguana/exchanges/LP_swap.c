@@ -479,7 +479,7 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
             } // else printf("error nn_recv\n");
         }
     }
-    printf("waitfor timedout\n");
+    printf("waitfor timedout aliceid.%llu requestid.%u quoteid.%u\n",(long long)swap->aliceid,swap->I.req.requestid,swap->I.req.quoteid);
     return(retval);
 }
 
@@ -625,7 +625,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     if ( recvlen != datalen+rawtx->I.redeemlen+75 )
         printf("RECVLEN %d != %d + %d\n",recvlen,datalen,rawtx->I.redeemlen);
     txid = bits256_calctxid(coin->symbol,data,datalen);
-    char str[65]; printf("rawtx.%s txid %s\n",rawtx->name,bits256_str(str,txid));
+    //char str[65]; printf("rawtx.%s txid %s\n",rawtx->name,bits256_str(str,txid));
     if ( bits256_cmp(txid,rawtx->I.actualtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
         rawtx->I.actualtxid = txid;
     if ( (txobj= bitcoin_data2json(coin->symbol,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,height,&rawtx->I.signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys,coin->zcash)) != 0 )
@@ -659,9 +659,8 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
                     retval = 0;
                     if ( rawtx == &swap->otherfee )
                     {
-                        char str[65];
                         LP_swap_coinaddr(coin,rawtx->p2shaddr,0,data,datalen,0);
-                        printf("got %s txid.%s (%s) -> %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0),rawtx->p2shaddr);
+                        //printf("got %s txid.%s (%s) -> %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0),rawtx->p2shaddr);
                     } else bitcoin_address(coin->symbol,rawtx->p2shaddr,coin->taddr,coin->p2shtype,rawtx->spendscript,hexlen);
                 }
             } else printf("%s satoshis %.8f ERROR.(%s) txfees.[%.8f %.8f: %.8f] amount.%.8f -> %.8f\n",rawtx->name,dstr(j64bits(vout,"satoshis")),jprint(txobj,0),dstr(swap->I.Atxfee),dstr(swap->I.Btxfee),dstr(txfee),dstr(rawtx->I.amount),dstr(rawtx->I.amount)-dstr(txfee));
@@ -1002,8 +1001,8 @@ int32_t instantdex_pubkeyargs(struct basilisk_swap *swap,int32_t numpubs,bits256
         }
         n++;
     }
-    if ( n > 2 || m > 2 )
-        printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->I.numpubs);
+    //if ( n > 2 || m > 2 )
+    //    printf("n.%d m.%d len.%d numpubs.%d\n",n,m,len,swap->I.numpubs);
     return(n);
 }
 
@@ -1013,7 +1012,7 @@ void basilisk_rawtx_setparms(char *name,uint32_t quoteid,struct basilisk_rawtx *
     numconfirms = 0;
 #endif
     strcpy(rawtx->name,name);
-    printf("set coin.%s %s -> %s\n",coin->symbol,coin->smartaddr,name);
+    //printf("set coin.%s %s -> %s\n",coin->symbol,coin->smartaddr,name);
     strcpy(rawtx->symbol,coin->symbol);
     rawtx->I.numconfirms = numconfirms;
     if ( (rawtx->I.amount= satoshis) < LP_MIN_TXFEE )
@@ -1036,8 +1035,8 @@ void basilisk_rawtx_setparms(char *name,uint32_t quoteid,struct basilisk_rawtx *
     if ( rawtx->I.vouttype <= 1 && rawtx->I.destaddr[0] != 0 )
     {
         rawtx->I.spendlen = bitcoin_standardspend(rawtx->spendscript,0,rawtx->I.rmd160);
-        printf("%s spendlen.%d %s <- %.8f\n",name,rawtx->I.spendlen,rawtx->I.destaddr,dstr(rawtx->I.amount));
-    } else printf("%s vouttype.%d destaddr.(%s)\n",name,rawtx->I.vouttype,rawtx->I.destaddr);
+        //printf("%s spendlen.%d %s <- %.8f\n",name,rawtx->I.spendlen,rawtx->I.destaddr,dstr(rawtx->I.amount));
+    } //else printf("%s vouttype.%d destaddr.(%s)\n",name,rawtx->I.vouttype,rawtx->I.destaddr);
 }
 
 struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits,struct LP_quoteinfo *qp,int32_t dynamictrust)
@@ -1199,7 +1198,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->myfee.utxotxid = qp->feetxid, swap->myfee.utxovout = qp->feevout;
         LP_mark_spent(swap->I.alicestr,qp->feetxid,qp->feevout);
     }
-    char str[65],str2[65],str3[65]; printf("IAMBOB.%d %s %s %s [%s %s]\n",swap->I.iambob,bits256_str(str,qp->txid),bits256_str(str2,qp->txid2),bits256_str(str3,qp->feetxid),swap->I.bobstr,swap->I.alicestr);
+    //char str[65],str2[65],str3[65]; printf("IAMBOB.%d %s %s %s [%s %s]\n",swap->I.iambob,bits256_str(str,qp->txid),bits256_str(str2,qp->txid2),bits256_str(str3,qp->feetxid),swap->I.bobstr,swap->I.alicestr);
     return(swap);
 }
 

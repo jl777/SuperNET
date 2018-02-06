@@ -214,7 +214,7 @@ uint16_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot,
 
 cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 {
-    struct electrum_info *ep; bits256 zero; int32_t notarized; uint64_t balance; char wifstr[128],ipaddr[64]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
+    struct electrum_info *ep; bits256 zero; int32_t notarized; uint64_t balance; char wifstr[128],ipaddr[72]; uint8_t tmptype; bits256 checkkey; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"coin",coin->symbol);
     if ( showwif != 0 )
     {
@@ -342,6 +342,7 @@ struct iguana_info *LP_coinadd(struct iguana_info *cdata)
     *coin = *cdata;
     portable_mutex_init(&coin->txmutex);
     portable_mutex_init(&coin->addrmutex);
+    portable_mutex_init(&coin->addressutxo_mutex);
     portable_mutex_lock(&LP_coinmutex);
     HASH_ADD_KEYPTR(hh,LP_coins,coin->symbol,strlen(coin->symbol),coin);
     portable_mutex_unlock(&LP_coinmutex);

@@ -567,7 +567,7 @@ void LP_notify_pubkeys(void *ctx,int32_t pubsock)
         } else printf("no LPipaddr\n");
     }
     jaddnum(reqjson,"session",G.LP_sessionid);
-    LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
+    LP_reserved_msg(1,"","",zero,jprint(reqjson,1));
 }
 
 char *LP_notify_recv(cJSON *argjson)
@@ -581,7 +581,7 @@ char *LP_notify_recv(cJSON *argjson)
         if ( (ipaddr= jstr(argjson,"isLP")) != 0 )
         {
             //printf("notify got isLP %s %d\n",ipaddr,jint(argjson,"ismine"));
-            LP_peer_recv(ipaddr,jint(argjson,"ismine"));
+            LP_peer_recv(ipaddr,jint(argjson,"ismine"),pubp);
             if ( IAMLP != 0 && G.LP_IAMLP == 0 && strcmp(ipaddr,LP_myipaddr) == 0 )
             {
                 if ( bits256_cmp(pub,G.LP_mypub25519) != 0 )
@@ -646,7 +646,7 @@ printf("LP_uitem_recv deprecated\n");
     {
         //char str[65]; printf("uitem %s %s %s/v%d %.8f ht.%d\n",symbol,coinaddr,bits256_str(str,txid),vout,dstr(value),height);
         if ( strcmp(coin->smartaddr,coinaddr) != 0 )
-            LP_address_utxoadd((uint32_t)time(NULL),"LP_uitem_recv",coin,coinaddr,txid,vout,value,height,-1);
+            LP_address_utxoadd(0,(uint32_t)time(NULL),"LP_uitem_recv",coin,coinaddr,txid,vout,value,height,-1);
         //else printf("ignore external uitem %s %s\n",symbol,coin->smartaddr);
     }
     return(clonestr("{\"result\":\"success\"}"));
@@ -691,19 +691,13 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
             jadd(reqjson,"proof",LP_instantdex_txids(0,coin->smartaddr));
     }
     msg = jprint(reqjson,1);
-    printf("QUERY.(%s)\n",msg);
+    //printf("QUERY.(%s)\n",msg);
     //if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )
     {
         memset(&zero,0,sizeof(zero));
+        if ( bits256_nonz(qp->srchash) != 0 )
+            LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
-        //if ( strcmp(method,"request") == 0 )
-        if ( 0 )
-        {
-            sleep(1);
-            LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
-            sleep(1);
-            LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
-        }
         free(msg);
         /*portable_mutex_lock(&LP_reservedmutex);
         if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )
