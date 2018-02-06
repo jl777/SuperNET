@@ -303,8 +303,9 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
                 printf("pubkey33 matches!\n");
                 if ( LP_etomic_pub2addr(checkaddr,check33) > 0 )
                     printf("addr is (%s)\n",checkaddr);
+                else printf("error getting addr\n");
             } else printf("pubkey 33 mismatch\n");
-        }
+        } else print("error creating pubkey\n");
     }
     if ( coin->counter == 0 )
     {
