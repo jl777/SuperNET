@@ -41,16 +41,16 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
 
 cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 {
-    double price; char etomic[64]; cJSON *retjson = cJSON_CreateObject();
+    double price; char etomic[64],activesymbol[65]; cJSON *retjson = cJSON_CreateObject();
     if ( jobj(retjson,"gui") == 0 )
         jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jadd64bits(retjson,"aliceid",qp->aliceid);
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
-    if ( LP_etomicsymbol(etomic,qp->srccoin) != 0 )
+    if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
         jaddstr(retjson,"esrc",etomic);
     jaddstr(retjson,"rel",qp->destcoin);
-    if ( LP_etomicsymbol(etomic,qp->destcoin) != 0 )
+    if ( LP_etomicsymbol(activesymbol,etomic,qp->destcoin) != 0 )
         jaddstr(retjson,"edest",etomic);
     if ( qp->coinaddr[0] != 0 )
         jaddstr(retjson,"address",qp->coinaddr);
@@ -108,11 +108,11 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 {
-    uint32_t rid,qid; char etomic[64],*etomicstr;
+    uint32_t rid,qid; char etomic[64],activesymbol[65],*etomicstr;
     memset(qp,0,sizeof(*qp));
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
-    if ( LP_etomicsymbol(etomic,qp->srccoin) != 0 )
+    if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
     {
         if ( (etomicstr= jstr(argjson,"esrc")) == 0 || strcmp(etomicstr,etomic) != 0 )
         {
@@ -122,7 +122,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     }
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
-    if ( LP_etomicsymbol(etomic,qp->destcoin) != 0 )
+    if ( LP_etomicsymbol(activesymbol,etomic,qp->destcoin) != 0 )
     {
         if ( (etomicstr= jstr(argjson,"edest")) == 0 || strcmp(etomicstr,etomic) != 0 )
         {
