@@ -94,7 +94,7 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
         funcp = secp256k1_nonce_function_rfc6979;
         if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) == 0 )
         {
-            //printf("bitcoin_sign illegal privkey\n");
+            printf("bitcoin_sign illegal privkey\n");
             return(-1);
         }
         if ( strcmp(symbol,"BCH") == 0 || strcmp(symbol,"BTG") == 0 )
