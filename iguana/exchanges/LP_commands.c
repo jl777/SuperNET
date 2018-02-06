@@ -428,7 +428,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-                    if ( ptr->userpass[0] == 0 )
+                    if ( ptr->userpass[0] == 0 && ptr->etomic[0] == 0 )
                     {
                         cJSON *retjson = cJSON_CreateObject();
                         jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG0);
@@ -439,7 +439,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     {
                         ptr->inactive = 0;
                         cJSON *array; int32_t notarized;
-                        if ( LP_getheight(&notarized,ptr) <= 0 )
+                        if ( ptr->etomic[0] == 0 && LP_getheight(&notarized,ptr) <= 0 )
                         {
                             ptr->inactive = (uint32_t)time(NULL);
                             return(clonestr("{\"error\":\"coin cant be activated till synced\"}"));

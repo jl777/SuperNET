@@ -257,6 +257,7 @@ Execute the OSX deploy script:
 The iguana binary and its linked libraries are in ```$HOME/tmp/iguana```.
 
 # Cmake build of marketmaker with linked etomic lib for ETH/ERC20 atomic swaps:
+0. `make sure g++-7 ln to /usr/bin/g++`
 1. `cd ~/SuperNET`
 2. `git checkout etomic`
 3. `git submodule add https://github.com/artemii235/cpp-ethereum`
