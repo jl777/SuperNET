@@ -701,12 +701,11 @@ char *_LP_psock_create(int32_t *pullsockp,int32_t *pubsockp,char *ipaddr,uint16_
     }
     if ( IAMLP != 0 && bits256_nonz(pubkey) != 0 )
     {
-        char str[65];
         if ( (pubp= LP_pubkeyadd(pubkey)) != 0 )
         {
             if ( pubp->pairsock >= 0 )
             {
-                printf("%s already has pairsock.%d\n",bits256_str(str,pubkey),pubp->pairsock);
+                //printf("%s already has pairsock.%d\n",bits256_str(str,pubkey),pubp->pairsock);
                 portable_mutex_lock(&LP_psockmutex);
                 for (i=0; i<Numpsocks; i++)
                     if ( PSOCKS[i].publicsock == pubp->pairsock )
