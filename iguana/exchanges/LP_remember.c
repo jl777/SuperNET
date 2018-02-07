@@ -941,6 +941,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 cJSON *retjson = cJSON_CreateObject();
                 jaddstr(retjson,"error","need to scan coin first");
                 jaddstr(retjson,"coin",alice->symbol);
+                jaddnum(retjson,"scanned",alice->lastscanht);
+                jaddnum(retjson,"longest",alice->longestchain);
                 jaddnum(retjson,"requestid",requestid);
                 jaddnum(retjson,"quoteid",quoteid);
                 return(retjson);
@@ -975,6 +977,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 cJSON *retjson = cJSON_CreateObject();
                 jaddstr(retjson,"error","need to scan coin first");
                 jaddstr(retjson,"coin",bob->symbol);
+                jaddnum(retjson,"scanned",bob->lastscanht);
+                jaddnum(retjson,"longest",bob->longestchain);
                 jaddnum(retjson,"requestid",requestid);
                 jaddnum(retjson,"quoteid",quoteid);
                 return(retjson);
