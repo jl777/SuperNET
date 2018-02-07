@@ -546,7 +546,7 @@ void LP_coinsloop(void *_coins)
                         continue;
                 }
             }
-            if ( strcmp(coin->symbol,"BEER") == 0 )
+            if ( 0 && strcmp(coin->symbol,"BEER") == 0 )
                 continue;
             if ( coin->smartaddr[0] == 0 )
             {
