@@ -546,6 +546,7 @@ void LP_postutxos(char *symbol,char *coinaddr);
 int32_t LP_listunspent_both(char *symbol,char *coinaddr,int32_t fullflag);
 uint16_t LP_randpeer(char *destip);
 void LP_tradebot_pauseall();
+int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub64[64]);
 void LP_portfolio_reset();
 struct LP_pubkey_info *LP_pubkeyadd(bits256 pubkey);
 uint32_t LP_atomic_locktime(char *base,char *rel);

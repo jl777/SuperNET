@@ -2113,7 +2113,36 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
 
 char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,int32_t len)
 {
-    int32_t offset,i,len5; char prefixed[64]; uint8_t data[64],data5[64]; bits256 hash;
+    static void *ctx;
+    int32_t offset,i,len5; char prefixed[64]; uint8_t data[64],data5[64],bigpubkey[65]; bits256 hash; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(symbol)) != 0 && coin->etomic[0] != 0 )
+    {
+        if ( len == 20 )
+        {
+            strcpy(coinaddr,"0x");
+            init_hexbytes_noT(coinaddr+2,pubkey_or_rmd160,20);
+            return(coinaddr);
+        }
+        else if ( len == 33 || len == 65 )
+        {
+            strcpy(coinaddr,"0x");
+            if ( len == 33 )
+            {
+                if ( ctx == 0 )
+                    ctx = bitcoin_ctx();
+                bitcoin_expandcompressed(ctx,bigpubkey,pubkey_or_rmd160);
+                LP_etomic_pub2addr(coinaddr+2,bigpubkey+1);
+                for (i=0; i<33; i++)
+                    printf("%02x",pubkey_or_rmd160[i]);
+                printf(" compressed -> ");
+                for (i=0; i<65; i++)
+                    printf("%02x",bigpubkey[i]);
+                printf(" -> %s\n",coinaddr);
+            }
+            else LP_etomic_pub2addr(coinaddr+2,pubkey_or_rmd160+1);
+            return(coinaddr);
+        }
+    }
     coinaddr[0] = 0;
     offset = 1 + (taddr != 0);
     if ( len != 20 )
