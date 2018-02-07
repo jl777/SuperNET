@@ -648,6 +648,7 @@ void LP_coinsloop(void *_coins)
                     if ( LP_blockinit(coin,coin->lastscanht) < 0 )
                     {
                         printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
+                        sleep(10);
                         break;
                     }
                     coin->lastscanht++;
