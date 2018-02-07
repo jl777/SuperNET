@@ -260,12 +260,10 @@ The iguana binary and its linked libraries are in ```$HOME/tmp/iguana```.
 0. `make sure g++-7 ln to /usr/bin/g++`
 1. `cd ~/SuperNET`
 2. `git checkout etomic`
-3. `git submodule add https://github.com/artemii235/cpp-ethereum`
-4. `git submodule update --init --recursive`
-5. `mkdir build`
-6. `cd build`
-7. `cmake ..`
-8. `cmake --build . --target marketmaker`
-9. `cd build/iguana/exchanges`
-10. `export BOB_PK=YOUR_PRIVATE_KEY`  #export BOB_PK=59a03784447e3b24d2deb7231236d549502e4e806550aca4ab6a5532b003da25
-11. `./marketmaker`
+3. `git submodule update --init --recursive`
+4. `mkdir build`
+5. `cd build`
+6. `cmake ..`
+7. `cmake --build . --target marketmaker`
+8. `cd build/iguana/exchanges`
+9. `./marketmaker`
