@@ -1448,6 +1448,11 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
     struct iguana_info *coin; int32_t len,retval=-1; char *retstr,*hexstr; cJSON *argjson,*outputs,*item,*retjson,*obj;
     if ( (coin= LP_coinfind(rawtx->symbol)) == 0 )
         return(-1);
+    if ( coin->etomic[0] != 0 )
+    {
+        if ( (coin= LP_coinfind("ETOMIC")) == 0 )
+            return(-1);
+    }
     if ( strcmp(coin->smartaddr,vinaddr) != 0 )
     {
         printf("???????????????????????? basilisk_rawtx_gen mismatched %s %s vinaddr.%s != (%s)\n",rawtx->symbol,coin->symbol,vinaddr,coin->smartaddr);
