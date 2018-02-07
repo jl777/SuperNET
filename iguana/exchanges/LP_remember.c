@@ -904,7 +904,7 @@ int32_t LP_spends_set(struct LP_swap_remember *rswap)
 cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requestid,uint32_t quoteid,int32_t forceflag,int32_t pendingonly)
 {
     static void *ctx;
-    struct LP_swap_remember rswap; int32_t i,j,flag,numspent,len,secretstart,redeemlen; char str[65],*srcAdest,*srcBdest,*destAdest,*destBdest,otheraddr[64],bobstr[65],bobtomic[128],alicestr[65],alicetomic[128]; cJSON *item,*txoutobj; bits256 rev,signedtxid,zero,deadtxid; uint32_t claimtime; struct iguana_info *bob=0,*alice=0; uint8_t redeemscript[1024],userdata[1024];
+    struct LP_swap_remember rswap; int32_t i,j,flag,numspent,len,secretstart,redeemlen; char str[65],*srcAdest,*srcBdest,*destAdest,*destBdest,otheraddr[64],etomicsrc[65],etomicdest[65],bobstr[65],bobtomic[128],alicestr[65],alicetomic[128]; cJSON *item,*txoutobj; bits256 rev,signedtxid,zero,deadtxid; uint32_t claimtime; struct iguana_info *coin,*bob=0,*alice=0; uint8_t redeemscript[1024],userdata[1024];
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     if ( requestid == 0 || quoteid == 0 )
@@ -917,8 +917,26 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     otheraddr[0] = 0;
     claimtime = (uint32_t)time(NULL) - 777;
     srcAdest = srcBdest = destAdest = destBdest = 0;
+    alice = LP_coinfind(rswap.alicecoin);
+    bob = LP_coinfind(rswap.bobcoin);
+    if ( alice != 0 )
+        strcpy(etomicdest,alice->smartaddr);
+    else etomicdest[0] = 0;
+    if ( bob != 0 )
+        strcpy(etomicsrc,bob->smartaddr);
+    else etomicsrc[0] = 0;
     LP_etomicsymbol(bobstr,bobtomic,rswap.src);
+    if ( bobtomic[0] != 0 )
+    {
+        if ( (coin= LP_coinfind(rswap.src)) != 0 )
+            strcpy(etomicsrc,coin->smartaddr);
+    }
     LP_etomicsymbol(alicestr,alicetomic,rswap.dest);
+    if ( alicetomic[0] != 0 )
+    {
+        if ( (coin= LP_coinfind(rswap.dest)) != 0 )
+            strcpy(etomicdest,coin->smartaddr);
+    }
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,bobstr) != 0 || strcmp(rswap.alicecoin,alicestr) != 0 )
     {
         //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
@@ -933,8 +951,6 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         return(retjson);
         //return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
     }
-    alice = LP_coinfind(rswap.alicecoin);
-    bob = LP_coinfind(rswap.bobcoin);
     rswap.Atxfee = LP_txfeecalc(alice,rswap.Atxfee,0);
     rswap.Btxfee = LP_txfeecalc(bob,rswap.Btxfee,0);
     if ( rswap.iambob == 0 )
@@ -944,7 +960,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             bitcoin_address(alice->symbol,otheraddr,alice->taddr,alice->pubtype,rswap.other33,33);
             destBdest = otheraddr;
             destAdest = rswap.Adestaddr;
-            if ( LP_TECHSUPPORT == 0 && alice->etomic[0] == 0 && strcmp(alice->smartaddr,rswap.Adestaddr) != 0 )
+            if ( LP_TECHSUPPORT == 0 && strcmp(etomicdest,rswap.Adestaddr) != 0 )
             {
                 printf("this isnt my swap! alice.(%s vs %s)\n",alice->smartaddr,rswap.Adestaddr);
                 cJSON *retjson = cJSON_CreateObject();
@@ -971,7 +987,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             bitcoin_address(bob->symbol,otheraddr,bob->taddr,bob->pubtype,rswap.other33,33);
             srcAdest = otheraddr;
             srcBdest = rswap.destaddr;
-            if ( LP_TECHSUPPORT == 0 && bob->etomic[0] == 0 && strcmp(bob->smartaddr,rswap.destaddr) != 0 )
+            if ( LP_TECHSUPPORT == 0 && strcmp(etomicsrc,rswap.destaddr) != 0 )
             {
                 printf("this isnt my swap! bob.(%s vs %s)\n",bob->smartaddr,rswap.destaddr);
                 cJSON *retjson = cJSON_CreateObject();
