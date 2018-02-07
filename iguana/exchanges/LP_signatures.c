@@ -444,7 +444,6 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
             jaddnum(reqjson,"max",dstr(maxsize));
         }
         LP_price_sigadd(reqjson,timestamp,G.LP_privkey,G.LP_pubsecp,G.LP_mypub25519,base,rel,price64);
-        printf("priceping.(%s)\n",jprint(reqjson,0));
         LP_reserved_msg(0,base,rel,zero,jprint(reqjson,1));
         return(clonestr("{\"result\":\"success\"}"));
     } else return(clonestr("{\"error\":\"electrum node cant post bob asks\"}"));

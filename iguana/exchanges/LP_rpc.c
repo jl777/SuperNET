@@ -316,7 +316,7 @@ cJSON *LP_validateaddress(char *symbol,char *address)
             strcat(script,"88ac");
             jaddstr(retjson,"scriptPubKey",script);
         }
-        bitcoin_address(symbol,coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,20);
+        bitcoin_address(symbol,coinaddr,coin->taddr,coin->pubtype,G.LP_pubsecp,33);
         jadd(retjson,"ismine",strcmp(coinaddr,coin->smartaddr) == 0 ? cJSON_CreateTrue() : cJSON_CreateFalse());
         jadd(retjson,"iswatchonly",cJSON_CreateTrue());
         jadd(retjson,"isscript",addrtype == coin->p2shtype ? cJSON_CreateTrue() : cJSON_CreateFalse());
