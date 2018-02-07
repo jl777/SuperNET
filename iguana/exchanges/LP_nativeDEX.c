@@ -533,7 +533,7 @@ void LP_coinsloop(void *_coins)
         nonz = 0;
         HASH_ITER(hh,LP_coins,coin,ctmp) // firstrefht,firstscanht,lastscanht
         {
-            if ( 0 && coins != 0 )
+            if ( coins != 0 )
             {
                 if ( coins[0] != 0 )
                 {
