@@ -563,22 +563,10 @@ void LP_coinsloop(void *_coins)
                 coin->longestchain = LP_getheight(&notarized,coin);
             if ( (ep= coin->electrum) != 0 )
             {
-                /*if ( strcmp("KMD",coin->symbol) == 0 && coin->electrumzeroconf == 0 )
-                {
-                    LP_zeroconf_deposits(coin);
-                    coin->electrumzeroconf = (uint32_t)time(NULL);
-                }*/
                 if ( (backupep= ep->prev) == 0 )
                     backupep = ep;
                 if ( (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,coin->smartaddr,1,zero,zero)) != 0 )
                     free_json(retjson);
-                HASH_ITER(hh,coin->addresses,ap,atmp)
-                {
-                    break;
-                    //printf("call unspent %s\n",ap->coinaddr);
-                    if ( strcmp(coin->smartaddr,ap->coinaddr) != 0 && (retjson= electrum_address_listunspent(coin->symbol,ep,&retjson,ap->coinaddr,1,zero,zero)) != 0 )
-                        free_json(retjson);
-                }
                 if ( (ap= LP_addressfind(coin,coin->smartaddr)) != 0 )
                 {
                     DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -661,7 +649,10 @@ void LP_coinsloop(void *_coins)
                     {
                         static uint32_t counter;
                         if ( counter++ < 3 )
+                        {
                             printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
+                            sleep(1);
+                        }
                         break;
                     }
                     coin->lastscanht++;
