@@ -942,7 +942,6 @@ void LP_swapsloop(void *ctx)
         if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") != 0 )
         {
             LP_millistats_update(&LP_swapsloop_stats);
-            printf("calling basilisk_swapentry\n");
             if ( (retstr= basilisk_swapentry(0,0,0)) != 0 )
                 free(retstr);
             sleep(600);
@@ -1391,7 +1390,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching prices_loop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)"") != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)"") != 0 )
     {
         printf("error launching LP_coinsloop for (%s)\n","");
         exit(-1);
