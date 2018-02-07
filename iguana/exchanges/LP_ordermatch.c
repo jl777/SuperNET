@@ -103,27 +103,29 @@ int32_t LP_quote_checkmempool(struct LP_quoteinfo *qp,struct LP_utxoinfo *autxo,
 
 double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,struct LP_quoteinfo *qp,int32_t iambob)
 {
-    double qprice=0.; char str[65]; cJSON *txout; uint64_t txfee,desttxfee,srcvalue=0,srcvalue2=0,destvalue=0,destvalue2=0;
-    //printf(">>>>>>> quote satoshis.(%.8f %.8f) %s %.8f -> %s %.8f\n",dstr(qp->satoshis),dstr(qp->destsatoshis),qp->srccoin,dstr(qp->satoshis),qp->destcoin,dstr(qp->destsatoshis));
+    double qprice=0.; char str[65],srccoin[65],destcoin[65],bobtomic[64],alicetomic[64]; cJSON *txout; uint64_t txfee,desttxfee,srcvalue=0,srcvalue2=0,destvalue=0,destvalue2=0;
+    LP_etomicsymbol(srccoin,bobtomic,qp->srccoin);
+    LP_etomicsymbol(destcoin,alicetomic,qp->destcoin);
+  //printf(">>>>>>> quote satoshis.(%.8f %.8f) %s %.8f -> %s %.8f\n",dstr(qp->satoshis),dstr(qp->destsatoshis),qp->srccoin,dstr(qp->satoshis),qp->destcoin,dstr(qp->destsatoshis));
     if ( butxo != 0 )
     {
-        if ( LP_iseligible(&srcvalue,&srcvalue2,1,qp->srccoin,qp->txid,qp->vout,qp->satoshis,qp->txid2,qp->vout2) == 0 )
+        if ( LP_iseligible(&srcvalue,&srcvalue2,1,srccoin,qp->txid,qp->vout,qp->satoshis,qp->txid2,qp->vout2) == 0 )
         {
             //printf("bob not eligible %s (%.8f %.8f)\n",jprint(LP_quotejson(qp),1),dstr(srcvalue),dstr(srcvalue2));
             return(-2);
         }
-        if ( (txout= LP_gettxout(qp->srccoin,qp->coinaddr,qp->txid,qp->vout)) != 0 )
+        if ( (txout= LP_gettxout(srccoin,qp->coinaddr,qp->txid,qp->vout)) != 0 )
             free_json(txout);
         else
         {
-            printf("%s %s payment %s/v%d is spent\n",qp->srccoin,qp->coinaddr,bits256_str(str,qp->txid),qp->vout);
+            printf("%s %s payment %s/v%d is spent\n",srccoin,qp->coinaddr,bits256_str(str,qp->txid),qp->vout);
             return(-21);
         }
-        if ( (txout= LP_gettxout(qp->srccoin,qp->coinaddr,qp->txid2,qp->vout2)) != 0 )
+        if ( (txout= LP_gettxout(srccoin,qp->coinaddr,qp->txid2,qp->vout2)) != 0 )
             free_json(txout);
         else
         {
-            printf("%s %s deposit %s/v%d is spent\n",qp->srccoin,qp->coinaddr,bits256_str(str,qp->txid2),qp->vout2);
+            printf("%s %s deposit %s/v%d is spent\n",srccoin,qp->coinaddr,bits256_str(str,qp->txid2),qp->vout2);
             return(-22);
         }
         if ( bits256_cmp(butxo->deposit.txid,qp->txid2) != 0 || butxo->deposit.vout != qp->vout2 )
@@ -139,24 +141,24 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
     }
     if ( autxo != 0 )
     {
-        if ( LP_iseligible(&destvalue,&destvalue2,0,qp->destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) == 0 )
+        if ( LP_iseligible(&destvalue,&destvalue2,0,destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) == 0 )
         {
             //alice not eligible 0.36893923 -> dest 0.55020000 1.49130251 (0.61732249 0.00104324) 14b8b74808d2d34a70e5eddd1cad47d855858f8b23cac802576d4d37b5f8af8f/v1 abec6e76169bcb738235ca67fab02cc55390f39e422aa71f1badf8747c290cc4/v1
             //char str[65],str2[65]; printf("alice not eligible %.8f -> dest %.8f %.8f (%.8f %.8f) %s/v%d %s/v%d\n",dstr(qp->satoshis),dstr(qp->destsatoshis),(double)qp->destsatoshis/qp->satoshis,dstr(destvalue),dstr(destvalue2),bits256_str(str,qp->desttxid),qp->destvout,bits256_str(str2,qp->feetxid),qp->feevout);
             return(-3);
         }
-        if ( (txout= LP_gettxout(qp->destcoin,qp->destaddr,qp->desttxid,qp->destvout)) != 0 )
+        if ( (txout= LP_gettxout(destcoin,qp->destaddr,qp->desttxid,qp->destvout)) != 0 )
             free_json(txout);
         else
         {
-            printf("%s %s Apayment %s/v%d is spent\n",qp->destcoin,qp->destaddr,bits256_str(str,qp->desttxid),qp->destvout);
+            printf("%s %s Apayment %s/v%d is spent\n",destcoin,qp->destaddr,bits256_str(str,qp->desttxid),qp->destvout);
             return(-23);
         }
-        if ( (txout= LP_gettxout(qp->destcoin,qp->destaddr,qp->feetxid,qp->feevout)) != 0 )
+        if ( (txout= LP_gettxout(destcoin,qp->destaddr,qp->feetxid,qp->feevout)) != 0 )
             free_json(txout);
         else
         {
-            printf("%s %s dexfee %s/v%d is spent\n",qp->destcoin,qp->destaddr,bits256_str(str,qp->feetxid),qp->feevout);
+            printf("%s %s dexfee %s/v%d is spent\n",destcoin,qp->destaddr,bits256_str(str,qp->feetxid),qp->feevout);
             return(-24);
         }
     }
@@ -859,8 +861,15 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     {
         qprice = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
         strcpy(qp->gui,G.gui);
+        if ( coin->etomic[0] != 0 )
+        {
+            struct iguana_info *ecoin;
+            if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
+                strcpy(qp->coinaddr,ecoin->smartaddr);
+            else return(0);
+        }
         strcpy(qp->coinaddr,coin->smartaddr);
-        strcpy(butxo->coinaddr,coin->smartaddr);
+        strcpy(butxo->coinaddr,qp->coinaddr);
         qp->srchash = G.LP_mypub25519;
         memset(&qp->txid,0,sizeof(qp->txid));
         memset(&qp->txid2,0,sizeof(qp->txid2));
@@ -885,10 +894,17 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     //printf("LP_address_utxo_reset.%s\n",coin->symbol);
     //LP_address_utxo_reset(coin);
     //printf("done LP_address_utxo_reset.%s\n",coin->symbol);
+    if ( coin->etomic[0] != 0 )
+    {
+        struct iguana_info *ecoin;
+        if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
+            strcpy(qp->coinaddr,ecoin->smartaddr);
+        else return(0);
+    }
     if ( (butxo= LP_address_myutxopair(butxo,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
     {
         strcpy(qp->gui,G.gui);
-        strcpy(qp->coinaddr,coin->smartaddr);
+        //strcpy(qp->coinaddr,coin->smartaddr);
         qp->srchash = G.LP_mypub25519;
         qp->txid = butxo->payment.txid;
         qp->vout = butxo->payment.vout;
@@ -1397,6 +1413,13 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,G.LP_mypub25519,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
+    if ( relcoin->etomic[0] != 0 )
+    {
+        struct iguana_info *coin;
+        if ( (coin= LP_coinfind("ETOMIC")) != 0 )
+            strcpy(Q.destaddr,coin->smartaddr);
+        else return(clonestr("{\"error\":\"cant find ETOMIC\"}"));
+    }
     int32_t changed;
     LP_mypriceset(&changed,autxo->coin,base,1. / maxprice);
     LP_mypriceset(&changed,base,autxo->coin,0.);
