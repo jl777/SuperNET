@@ -381,7 +381,10 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
 {
     struct LP_address *ap; uint64_t fee,targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2; double ratio;
     if ( coin->etomic[0] != 0 )
-        coin = LP_coinfind("ETOMIC");
+    {
+        if ( (coin= LP_coinfind("ETOMIC")) != 0 )
+            coinaddr = coin->smartaddr;
+    }
     if ( coin == 0 )
         return(0);
     memset(butxo,0,sizeof(*butxo));
@@ -403,7 +406,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
     {
         if ( (m= LP_address_utxo_ptrs(coin,iambob,utxos,max,ap,coinaddr)) > 1 )
         {
-            if ( 1 )
+            if ( 0 )
             {
                 int32_t i;
                 for (i=0; i<m; i++)
@@ -422,7 +425,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                     if ( (double)up->U.value/targetval < ratio-1 )
                         
                     {
-                        if ( 1 )
+                        if ( 0 )
                         {
                             int32_t i;
                             for (i=0; i<m; i++)
@@ -444,7 +447,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                 if ( targetval == 0 || mini < 0 )
                     break;
             }
-        } else printf("no %s utxos pass LP_address_utxo_ptrs filter targets %.8f %.8f\n",coinaddr,dstr(targetval),dstr(targetval2));
+        } else printf("no %s %s utxos pass LP_address_utxo_ptrs filter targets %.8f %.8f\n",coin->symbol,coinaddr,dstr(targetval),dstr(targetval2));
     } else printf("address_myutxopair couldnt find %s %s\n",coin->symbol,coinaddr);
     return(0);
 }
