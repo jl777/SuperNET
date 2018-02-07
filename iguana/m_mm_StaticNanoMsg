@@ -2,8 +2,6 @@
 # author: fadedreamz@SuperNet.org
 # date: Aug, 2017
 
-./build_static_nanomsg.sh
-
 LIB_ARCH=$(uname -m)
 
 .PHONY: clean all
