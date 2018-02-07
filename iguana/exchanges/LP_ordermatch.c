@@ -380,6 +380,10 @@ uint64_t LP_basesatoshis(double relvolume,double price,uint64_t txfee,uint64_t d
 struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iambob,struct LP_address_utxo **utxos,int32_t max,struct iguana_info *coin,char *coinaddr,uint64_t txfee,double relvolume,double price,uint64_t desttxfee)
 {
     struct LP_address *ap; uint64_t fee,targetval,targetval2; int32_t m,mini; struct LP_address_utxo *up,*up2; double ratio;
+    if ( coin->etomic[0] != 0 )
+        coin = LP_coinfind("ETOMIC");
+    if ( coin == 0 )
+        return(0);
     memset(butxo,0,sizeof(*butxo));
     if ( iambob != 0 )
     {

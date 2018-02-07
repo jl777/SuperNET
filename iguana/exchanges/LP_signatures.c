@@ -452,7 +452,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 char *LP_postprice_recv(cJSON *argjson)
 {
     bits256 pubkey; double price; char *base,*rel;
-    printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
+    //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
     if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
     {
         pubkey = jbits256(argjson,"pubkey");
