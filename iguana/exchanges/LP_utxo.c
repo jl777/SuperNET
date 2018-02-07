@@ -117,8 +117,10 @@ int32_t LP_reservation_check(bits256 txid,int32_t vout,bits256 pubkey)
         portable_mutex_lock(&LP_inusemutex);
         if ( (lp= _LP_inuse_find(txid,vout)) != 0 )
         {
+            char str[65],str2[65];
             if ( bits256_cmp(lp->otherpub,pubkey) == 0 )
                 retval = 0;
+            else printf("otherpub.%s != %s\n",bits256_str(str,lp->otherpub),bits256_str(str2,pubkey));
         }
         portable_mutex_unlock(&LP_inusemutex);
     }
