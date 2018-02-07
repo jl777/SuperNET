@@ -262,12 +262,17 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     }
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
-        calc_NXTaddr(G.LP_NXTaddr,userpub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-        conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-        privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
-        //vcalc_sha256(0,checkkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-        //printf("SHA256.(%s) ",bits256_str(pstr,checkkey));
-        //printf("privkey.(%s)\n",bits256_str(pstr,privkey));
+        if ( strlen(passphrase) == 130 && passphrase[0] == '0' && passphrase[1] == 'x' && is_hexstr(passhrase+2,0) == 128 )
+        {
+            decode_hex(privkey.bytes,64,passphrase+2);
+            printf("ETH style privkey.(%s)\n",passphrase);
+        }
+        else
+        {
+            calc_NXTaddr(G.LP_NXTaddr,userpub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+            conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+            privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
+        }
         bitcoin_priv2wif(coin->symbol,coin->wiftaddr,tmpstr,privkey,coin->wiftype);
         bitcoin_wif2priv(coin->symbol,coin->wiftaddr,&tmptype,&checkkey,tmpstr);
         if ( bits256_cmp(privkey,checkkey) != 0 )
