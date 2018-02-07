@@ -915,9 +915,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     srcAdest = srcBdest = destAdest = destBdest = 0;
     LP_etomicsymbol(bobstr,bobtomic,rswap.src);
     LP_etomicsymbol(alicestr,alicetomic,rswap.dest);
-    if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,rswap.src) != 0 || strcmp(rswap.alicecoin,rswap.dest) != 0 )
+    if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,bobstr) != 0 || strcmp(rswap.alicecoin,alicestr) != 0 )
     {
-        printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
+        //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
         cJSON *retjson = cJSON_CreateObject();
         jaddstr(retjson,"error","swap never started");
         jaddstr(retjson,"bob",rswap.bobcoin);
