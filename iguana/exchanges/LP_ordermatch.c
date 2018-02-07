@@ -965,10 +965,13 @@ struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,stru
     qp = newqp;
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
        return(0);
+    printf("check myprice\n");
     if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
         return(0);
+    printf("validate myprice\n");
     if ( (qprice= LP_trades_pricevalidate(qp,coin,myprice)) < 0. )
         return(0);
+    printf("check reservation\n");
     if ( LP_reservation_check(qp->txid,qp->vout,qp->desthash) == 0 && LP_reservation_check(qp->txid2,qp->vout2,qp->desthash) == 0  )
     {
         LP_connectstartbob(ctx,LP_mypubsock,qp->srccoin,qp->destcoin,qprice,qp);
