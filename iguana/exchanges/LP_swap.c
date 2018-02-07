@@ -1093,7 +1093,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.iambob = 0;
         swap->I.otherhash = swap->I.req.desthash;
         swap->I.aliceistrusted = 1;
-        if ( dynamictrust == 0 && LP_pubkey_istrusted(swap->I.req.srchash) != 0 )
+        if ( strcmp("BAY",swap->I.req.src) != 0 && dynamictrust == 0 && LP_pubkey_istrusted(swap->I.req.srchash) != 0 )
             dynamictrust = 1;
         swap->I.otheristrusted = swap->I.bobistrusted = dynamictrust;
     }
@@ -1102,7 +1102,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.iambob = 1;
         swap->I.otherhash = swap->I.req.srchash;
         swap->I.bobistrusted = 1;
-        if ( dynamictrust == 0 && LP_pubkey_istrusted(swap->I.req.desthash) != 0 )
+        if ( strcmp("BAY",swap->I.req.dest) != 0 && dynamictrust == 0 && LP_pubkey_istrusted(swap->I.req.desthash) != 0 )
             dynamictrust = 1;
         swap->I.otheristrusted = swap->I.aliceistrusted = dynamictrust;
     }
