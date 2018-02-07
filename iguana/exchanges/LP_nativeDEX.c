@@ -1441,7 +1441,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         }
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,LP_mypubsock) != 0 )
             nonz++;
-        if ( didremote == 0 && LP_cmdcount > 0 )
+        if ( IAMLP != 0 && didremote == 0 && LP_cmdcount > 0 )
         {
             didremote = 1;
             uint16_t myport2 = RPC_port-1;
