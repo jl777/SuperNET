@@ -661,7 +661,7 @@ void LP_coinsloop(void *_coins)
         }
         if ( coins == 0 )
             return;
-        if ( nonz == 0 )
+        //if ( nonz == 0 )
             usleep(100000);
     }
 }
