@@ -505,7 +505,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 retval = 0;
             } else printf("error launching swaploop\n");
         } else printf("couldnt bind to any port %s\n",pairstr);
-    }
+    } else printf("cant find privkey for %s\n",coin->smartaddr);
     if ( retval < 0 )
     {
         if ( pair >= 0 )
