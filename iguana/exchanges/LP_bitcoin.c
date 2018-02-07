@@ -2052,11 +2052,14 @@ bits256 bits256_calcaddrhash(char *symbol,uint8_t *serialized,int32_t  len)
 int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
 {
     bits256 hash; uint8_t *buf,_buf[26],data5[128],rmd21[21]; char prefixaddr[64],hrp[64]; int32_t len,len5,offset;
+    *addrtypep = 0;
+    memset(rmd160,0,20);
     if ( coinaddr == 0 || coinaddr[0] == 0 )
-    {
-        *addrtypep = 0;
-        memset(rmd160,0,20);
         return(0);
+    if ( coinaddr[0] == '0' && coinaddr[1] == 'x' && is_hexstr(coinaddr+2,0) == 40 )
+    {
+        decode_hex(rmd160,20,coinaddr+2); // not rmd160 hash but hopefully close enough;
+        return(20);
     }
     if ( strcmp(symbol,"BCH") == 0 )//&& strlen(coinaddr) == 42 )
     {
