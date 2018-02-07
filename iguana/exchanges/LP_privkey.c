@@ -262,7 +262,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     }
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
-        if ( strlen(passphrase) == 130 && passphrase[0] == '0' && passphrase[1] == 'x' && is_hexstr(passhrase+2,0) == 128 )
+        if ( strlen(passphrase) == 130 && passphrase[0] == '0' && passphrase[1] == 'x' && is_hexstr(passphrase+2,0) == 128 )
         {
             decode_hex(privkey.bytes,64,passphrase+2);
             printf("ETH style privkey.(%s)\n",passphrase);
