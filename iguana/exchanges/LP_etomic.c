@@ -65,6 +65,7 @@ int32_t LP_etomic_priv2addr(char *coinaddr,bits256 privkey)
     bits256_str(str,privkey);
     if ( (addrstr= privKey2Addr(str)) != 0 )
     {
+        printf("priv2addr got %s\n",addrstr);
         strcpy(coinaddr,addrstr);
         free(addrstr);
         return(0);
@@ -78,7 +79,6 @@ int32_t LP_etomic_priv2pub(uint8_t *pub64,bits256 privkey)
     bits256_str(str,privkey);
     if ( (pubstr= getPubKeyFromPriv(str)) != 0 )
     {
-        printf("priv2pub got %s\n",pubstr);
         if ( strlen(pubstr) == 130 && pubstr[0] == '0' && pubstr[1] == 'x' )
         {
             decode_hex(pub64,64,pubstr+2);
@@ -91,10 +91,10 @@ int32_t LP_etomic_priv2pub(uint8_t *pub64,bits256 privkey)
 
 int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub64[64])
 {
-    char pubkeystr[72],*addrstr;
+    char pubkeystr[131],*addrstr;
     strcpy(pubkeystr,"0x");
     init_hexbytes_noT(pubkeystr+2,pub64,64);
-    if ( (addrstr= pubKey2Addr(pubkeystr+2)) != 0 )
+    if ( (addrstr= pubKey2Addr(pubkeystr)) != 0 )
     {
         strcpy(coinaddr,addrstr);
         free(addrstr);
