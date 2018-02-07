@@ -819,7 +819,7 @@ double LP_trades_pricevalidate(struct LP_quoteinfo *qp,struct iguana_info *coin,
     memset(autxo,0,sizeof(*autxo));
     memset(butxo,0,sizeof(*butxo));
     LP_abutxo_set(autxo,butxo,qp);
-    if ( strcmp(qp->coinaddr,coin->smartaddr) != 0 )
+    if ( coin->etomic[0] == 0 && strcmp(qp->coinaddr,coin->smartaddr) != 0 )
     {
         printf("bob is patching qp->coinaddr %s mismatch != %s\n",qp->coinaddr,coin->smartaddr);
         strcpy(qp->coinaddr,coin->smartaddr);

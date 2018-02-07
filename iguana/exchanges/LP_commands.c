@@ -761,7 +761,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                         myipaddr = LP_mypeer->ipaddr;
                     else printf("LP_psock dont have actual ipaddr?\n");
                 }
-                if ( jint(argjson,"ispaired") != 0 )
+                if ( jint(argjson,"ispaired") != 0 && jobj(argjson,"netid") != 0 && juint(argjson,"netid") == G.netid )
                 {
                     retstr = LP_psock(&psock,myipaddr,1,jint(argjson,"cmdchannel"),jbits256(argjson,"pubkey"));
                     //printf("LP_commands.(%s)\n",retstr);
