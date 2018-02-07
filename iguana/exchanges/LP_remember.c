@@ -66,7 +66,11 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
         fprintf(fp,",\"expiration\":%u",swap->I.expiration);
         fprintf(fp,",\"iambob\":%d",swap->I.iambob);
         fprintf(fp,",\"bobcoin\":\"%s\"",swap->I.bobstr);
+        if ( swap->I.bobtomic[0] != 0 )
+            fprintf(fp,",\"bobtomic\":\"%s\"",swap->I.bobtomic);
         fprintf(fp,",\"alicecoin\":\"%s\"",swap->I.alicestr);
+        if ( swap->I.alicetomic[0] != 0 )
+            fprintf(fp,",\"alicetomic\":\"%s\"",swap->I.alicetomic);
         fprintf(fp,",\"lock\":%u",locktime);
         fprintf(fp,",\"amount\":%.8f",dstr(rawtx->I.amount));
         if ( bits256_nonz(triggertxid) != 0 )
@@ -502,9 +506,13 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jaddstr(item,"Agui",rswap->Agui);
     jaddstr(item,"gui",rswap->gui);
     jaddstr(item,"bob",rswap->src);
+    if ( rswap->bobtomic[0] != 0 )
+        jaddstr(item,"bobtomic",rswap->bobtomic);
     jaddnum(item,"srcamount",dstr(rswap->srcamount));
     jaddnum(item,"bobtxfee",dstr(rswap->Btxfee));
     jaddstr(item,"alice",rswap->dest);
+    if ( rswap->alicetomic[0] != 0 )
+        jaddstr(item,"alicetomic",rswap->alicetomic);
     jaddnum(item,"destamount",dstr(rswap->destamount));
     jaddnum(item,"alicetxfee",dstr(rswap->Atxfee));
     jadd64bits(item,"aliceid",rswap->aliceid);
@@ -552,6 +560,8 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
             safecopy(rswap->Bgui,jstr(item,"Bgui"),sizeof(rswap->Bgui));
             safecopy(rswap->Agui,jstr(item,"Agui"),sizeof(rswap->Agui));
             safecopy(rswap->gui,jstr(item,"gui"),sizeof(rswap->gui));
+            safecopy(rswap->bobtomic,jstr(item,"bobtomic"),sizeof(rswap->bobtomic));
+            safecopy(rswap->alicetomic,jstr(item,"alicetomic"),sizeof(rswap->alicetomic));
             rswap->tradeid = juint(item,"tradeid");
             rswap->aliceid = j64bits(item,"aliceid");
             if ( (secretstr= jstr(item,"secretAm")) != 0 && strlen(secretstr) == 40 )

@@ -1867,8 +1867,9 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,b
 int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay)
 {
     static bits256 zero;
-    uint8_t userdata[512]; int32_t retval,len = 0; struct iguana_info *coin;
-    if ( (coin= LP_coinfind(swap->I.bobstr)) != 0 )
+    uint8_t userdata[512]; char bobstr[65],bobtomic[128]; int32_t retval,len = 0; struct iguana_info *coin;
+    LP_etomicsymbol(bobstr,bobtomic,bobstr);
+    if ( (coin= LP_coinfind(bobstr)) != 0 )
     {
         //printf("basilisk_bobpayment_reclaim\n");
         len = basilisk_swapuserdata(userdata,zero,1,swap->I.myprivs[1],swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
@@ -1882,14 +1883,15 @@ int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay)
             //basilisk_txlog(swap,&swap->bobreclaim,delay);
             return(retval);
         }
-    } else printf("basilisk_bobpayment_reclaim cant find (%s)\n",swap->I.bobstr);
+    } else printf("basilisk_bobpayment_reclaim cant find (%s)\n",bobstr);
     return(-1);
 }
 
 int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay)
 {
-    uint8_t userdata[512]; int32_t i,retval,len = 0; char str[65]; struct iguana_info *coin;
-    if ( (coin= LP_coinfind(swap->I.bobstr)) != 0 )
+    uint8_t userdata[512]; int32_t i,retval,len = 0; char str[65],bobstr[65],bobtomic[128]; struct iguana_info *coin;
+    LP_etomicsymbol(bobstr,bobtomic,swap->I.bobstr);
+    if ( (coin= LP_coinfind(bobstr)) != 0 )
     {
         len = basilisk_swapuserdata(userdata,swap->I.privBn,0,swap->I.myprivs[0],swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
         memcpy(swap->I.userdata_bobrefund,userdata,len);
@@ -1902,7 +1904,7 @@ int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay)
             //basilisk_txlog(swap,&swap->bobrefund,delay);
             return(retval);
         }
-    } else printf("basilisk_bobdeposit_refund cant find (%s)\n",swap->I.bobstr);
+    } else printf("basilisk_bobdeposit_refund cant find (%s)\n",bobstr);
     
     return(-1);
 }
@@ -1928,8 +1930,9 @@ void LP_swap_coinaddr(struct iguana_info *coin,char *coinaddr,uint64_t *valuep,u
 
 int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,int32_t genflag)
 {
-    char coinaddr[64],checkaddr[64]; struct iguana_info *coin;
-    if ( (coin= LP_coinfind(swap->I.bobstr)) != 0 )
+    char coinaddr[64],checkaddr[64],bobstr[65],bobtomic[128]; struct iguana_info *coin;
+    LP_etomicsymbol(bobstr,bobtomic,swap->I.bobstr);
+    if ( (coin= LP_coinfind(bobstr)) != 0 )
     {
         bitcoin_address(coin->symbol,coinaddr,coin->taddr,coin->pubtype,swap->changermd160,20);
         if ( genflag != 0 && swap->I.iambob == 0 )
@@ -2005,7 +2008,7 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
                 }
             }
         }
-    } else printf("bobscripts set cant find (%s)\n",swap->I.bobstr);
+    } else printf("bobscripts set cant find (%s)\n",bobstr);
     return(0);
 }
 
@@ -2053,8 +2056,9 @@ void basilisk_alicepayment(struct basilisk_swap *swap,struct iguana_info *coin,s
 
 int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    char coinaddr[64]; int32_t retval = -1; struct iguana_info *coin;
-    if ( (coin= LP_coinfind(swap->I.alicestr)) != 0 )
+    char coinaddr[64],alicestr[65],alicetomic[128]; int32_t retval = -1; struct iguana_info *coin;
+    LP_etomicsymbol(alicestr,alicetomic,swap->I.alicestr);
+    if ( (coin= LP_coinfind(alicestr)) != 0 )
     {
         if ( swap->alicepayment.I.datalen == 0 )
             basilisk_alicepayment(swap,coin,&swap->alicepayment,swap->I.pubAm,swap->I.pubBn);
@@ -2099,14 +2103,16 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
             //printf("fee sent\n");
             return(0);
         }
-    } else printf("basilisk alicetx cant find (%s)\n",swap->I.alicestr);
+    } else printf("basilisk alicetx cant find (%s)\n",alicestr);
     return(-1);
 }
 
 int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    int32_t diff; struct iguana_info *coin;
-    if ( (coin= LP_coinfind(swap->I.iambob != 0 ? swap->I.alicestr : swap->I.bobstr)) != 0 )
+    int32_t diff; char bobstr[65],bobtomic[128],alicestr[65],alicetomic[128]; struct iguana_info *coin;
+    LP_etomicsymbol(bobstr,bobtomic,swap->I.bobstr);
+    LP_etomicsymbol(alicestr,alicetomic,swap->I.alicestr);
+    if ( (coin= LP_coinfind(swap->I.iambob != 0 ? alicestr : bobstr)) != 0 )
     {
         if ( LP_rawtx_spendscript(swap,coin->longestchain,&swap->otherfee,0,data,datalen,0) == 0 )
         {
@@ -2130,8 +2136,9 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
 
 int32_t LP_verify_alicespend(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    struct iguana_info *coin;
-    if ( (coin= LP_coinfind(swap->I.alicestr)) != 0 )
+    struct iguana_info *coin; char alicestr[65],alicetomic[128];
+    LP_etomicsymbol(alicestr,alicetomic,swap->I.alicestr);
+    if ( (coin= LP_coinfind(alicestr)) != 0 )
     {
         if ( LP_rawtx_spendscript(swap,coin->longestchain,&swap->alicespend,0,data,datalen,0) == 0 )
         {
@@ -2142,7 +2149,7 @@ int32_t LP_verify_alicespend(struct basilisk_swap *swap,uint8_t *data,int32_t da
                 return(0);
             }
         }
-    } else printf("verify alicespend cant find (%s)\n",swap->I.alicestr);
+    } else printf("verify alicespend cant find (%s)\n",alicestr);
     return(-1);
 }
 
@@ -2156,8 +2163,9 @@ int32_t LP_verify_alicespend(struct basilisk_swap *swap,uint8_t *data,int32_t da
 int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     static bits256 zero;
-    uint8_t userdata[512]; int32_t retval=-1,len = 0; struct iguana_info *coin;
-    if ( (coin= LP_coinfind(swap->I.bobstr)) != 0 )
+    uint8_t userdata[512]; char bobstr[65],bobtomic[128]; int32_t retval=-1,len = 0; struct iguana_info *coin;
+    LP_etomicsymbol(bobstr,bobtomic,swap->I.bobstr);
+    if ( (coin= LP_coinfind(bobstr)) != 0 )
     {
         if ( LP_rawtx_spendscript(swap,coin->longestchain,&swap->bobdeposit,0,data,datalen,0) == 0 )
         {
@@ -2196,15 +2204,16 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
                 return(LP_waitmempool(coin->symbol,swap->bobdeposit.I.destaddr,swap->bobdeposit.I.signedtxid,0,60));
             } else printf("error signing aliceclaim suppress.%d vin.(%s)\n",swap->aliceclaim.I.suppress_pubkeys,swap->bobdeposit.I.destaddr);
         }
-    } else printf("verify bob depositcant find bob coin (%s)\n",swap->I.bobstr);
+    } else printf("verify bob depositcant find bob coin (%s)\n",bobstr);
     printf("error with bobdeposit\n");
     return(retval);
 }
 
 int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    struct iguana_info *coin;
-    if ( (coin= LP_coinfind(swap->I.alicestr)) != 0 )
+    struct iguana_info *coin; char alicestr[65],alicetomic[128];
+    LP_etomicsymbol(alicestr,alicetomic,swap->I.alicestr);
+    if ( (coin= LP_coinfind(alicestr)) != 0 )
     {
         if ( LP_rawtx_spendscript(swap,coin->longestchain,&swap->alicepayment,0,data,datalen,0) == 0 )
         {
@@ -2220,15 +2229,16 @@ int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t 
             //LP_importaddress(coin->symbol,swap->alicepayment.p2shaddr);
             return(0);
         }
-    } else printf("verify alicepayment couldnt find coin.(%s)\n",swap->I.alicestr);
+    } else printf("verify alicepayment couldnt find coin.(%s)\n",alicestr);
     printf("error validating alicepayment\n");
     return(-1);
 }
 
 int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    uint8_t userdata[512]; int32_t i,retval=-1,len = 0; bits256 revAm; struct iguana_info *coin;
-    if ( (coin= LP_coinfind(swap->I.bobstr)) != 0 )
+    uint8_t userdata[512]; char bobstr[65],bobtomic[128]; int32_t i,retval=-1,len = 0; bits256 revAm; struct iguana_info *coin;
+    LP_etomicsymbol(bobstr,bobtomic,swap->I.bobstr);
+    if ( (coin= LP_coinfind(bobstr)) != 0 )
     {
         memset(revAm.bytes,0,sizeof(revAm));
         if ( LP_rawtx_spendscript(swap,coin->longestchain,&swap->bobpayment,0,data,datalen,0) == 0 )
@@ -2268,7 +2278,7 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
                 return(LP_waitmempool(coin->symbol,swap->bobpayment.I.destaddr,swap->bobpayment.I.signedtxid,0,60));
             } else printf("error signing aliceclaim suppress.%d vin.(%s)\n",swap->alicespend.I.suppress_pubkeys,swap->bobpayment.I.destaddr);
         }
-    } else printf("verify bobpayment cant find (%s)\n",swap->I.bobstr);
+    } else printf("verify bobpayment cant find (%s)\n",bobstr);
     printf("error validating bobpayment\n");
     return(-1);
 }
