@@ -546,7 +546,7 @@ void LP_coinsloop(void *_coins)
                         continue;
                 }
             }
-            if ( 0 && strcmp(coin->symbol,"BEER") == 0 )
+            if ( strcmp(coin->symbol,"BEER") == 0 )
                 continue;
             if ( coin->smartaddr[0] == 0 )
             {
@@ -1357,12 +1357,12 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport,pushaddr);
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_psockloop for (%s)\n",myipaddr);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_reserved_msgs,(void *)myipaddr) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_reserved_msgs,(void *)myipaddr) != 0 )
     {
         printf("error launching LP_reserved_msgs for (%s)\n",myipaddr);
         exit(-1);
@@ -1372,22 +1372,22 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,ctx) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,ctx) != 0 )
     {
         printf("error launching command_rpcloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)queue_loop,ctx) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)queue_loop,ctx) != 0 )
     {
         printf("error launching queue_loop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)gc_loop,ctx) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)gc_loop,ctx) != 0 )
     {
         printf("error launching gc_loop for port.%p\n",ctx);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,ctx) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)prices_loop,ctx) != 0 )
     {
         printf("error launching prices_loop for ctx.%p\n",ctx);
         exit(-1);
@@ -1397,7 +1397,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching LP_coinsloop for (%s)\n","");
         exit(-1);
     }
-    /*if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)"BTC") != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_coinsloop,(void *)"BTC") != 0 )
     {
         printf("error launching LP_coinsloop for (%s)\n","BTC");
         exit(-1);
@@ -1406,23 +1406,23 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     {
         printf("error launching LP_coinsloop for (%s)\n","KMD");
         exit(-1);
-    }*/
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_pubkeysloop,ctx) != 0 )
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_pubkeysloop,ctx) != 0 )
     {
         printf("error launching LP_pubkeysloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradesloop,ctx) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_tradesloop,ctx) != 0 )
     {
         printf("error launching LP_tradessloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,ctx) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_swapsloop,ctx) != 0 )
     {
         printf("error launching LP_swapsloop for ctx.%p\n",ctx);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_commandQ_loop,ctx) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_commandQ_loop,ctx) != 0 )
     {
         printf("error launching LP_commandQ_loop for ctx.%p\n",ctx);
         exit(-1);
