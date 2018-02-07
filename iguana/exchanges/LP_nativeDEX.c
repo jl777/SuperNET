@@ -1370,7 +1370,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,ctx) != 0 )
+    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,ctx) != 0 )
     {
         printf("error launching command_rpcloop for ctx.%p\n",ctx);
         exit(-1);
