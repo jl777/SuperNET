@@ -870,7 +870,10 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         {
             struct iguana_info *ecoin;
             if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
+            {
+                strcpy(qp->etomicsrc,qp->coinaddr);
                 strcpy(qp->coinaddr,ecoin->smartaddr);
+            }
             else return(0);
         }
         strcpy(qp->coinaddr,coin->smartaddr);
@@ -903,7 +906,10 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     {
         struct iguana_info *ecoin;
         if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
+        {
+            strcpy(qp->etomicsrc,qp->coinaddr);
             strcpy(qp->coinaddr,ecoin->smartaddr);
+        }
         else return(0);
     }
     if ( (butxo= LP_address_myutxopair(butxo,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
@@ -1423,7 +1429,10 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     {
         struct iguana_info *coin;
         if ( (coin= LP_coinfind("ETOMIC")) != 0 )
+        {
+            strcpy(Q.etomicdest,Q.destaddr);
             strcpy(Q.destaddr,coin->smartaddr);
+        }
         else return(clonestr("{\"error\":\"cant find ETOMIC\"}"));
     }
     int32_t changed;

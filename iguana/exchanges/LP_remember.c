@@ -68,9 +68,13 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
         fprintf(fp,",\"bobcoin\":\"%s\"",swap->I.bobstr);
         if ( swap->I.bobtomic[0] != 0 )
             fprintf(fp,",\"bobtomic\":\"%s\"",swap->I.bobtomic);
+        if ( swap->I.etomicsrc[0] != 0 )
+            fprintf(fp,",\"etomicsrc\":\"%s\"",swap->I.etomicsrc);
         fprintf(fp,",\"alicecoin\":\"%s\"",swap->I.alicestr);
         if ( swap->I.alicetomic[0] != 0 )
             fprintf(fp,",\"alicetomic\":\"%s\"",swap->I.alicetomic);
+        if ( swap->I.etomicdest[0] != 0 )
+            fprintf(fp,",\"etomicdest\":\"%s\"",swap->I.etomicdest);
         fprintf(fp,",\"lock\":%u",locktime);
         fprintf(fp,",\"amount\":%.8f",dstr(rawtx->I.amount));
         if ( bits256_nonz(triggertxid) != 0 )
@@ -945,6 +949,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 printf("this isnt my swap! alice.(%s vs %s)\n",alice->smartaddr,rswap.Adestaddr);
                 cJSON *retjson = cJSON_CreateObject();
                 jaddstr(retjson,"error","swap for different account");
+                jaddstr(retjson,"alice",alice->symbol);
+                jaddstr(retjson,"aliceaddr",alice->smartaddr);
+                jaddstr(retjson,"dest",rswap.dest);
                 jaddnum(retjson,"requestid",requestid);
                 jaddnum(retjson,"quoteid",quoteid);
                 return(retjson);
@@ -969,6 +976,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 printf("this isnt my swap! bob.(%s vs %s)\n",bob->smartaddr,rswap.destaddr);
                 cJSON *retjson = cJSON_CreateObject();
                 jaddstr(retjson,"error","swap for different account");
+                jaddstr(retjson,"bob",bob->symbol);
+                jaddstr(retjson,"bobaddr",bob->smartaddr);
+                jaddstr(retjson,"src",rswap.src);
                 jaddnum(retjson,"requestid",requestid);
                 jaddnum(retjson,"quoteid",quoteid);
                 return(retjson);
