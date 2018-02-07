@@ -935,6 +935,16 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 jaddnum(retjson,"quoteid",quoteid);
                 return(retjson);
             }
+            if ( alice->lastscanht < alice->longestchain+1 )
+            {
+                printf("need to scan %s first\n",alice->symbol);
+                cJSON *retjson = cJSON_CreateObject();
+                jaddstr(retjson,"error","need to scan coin first");
+                jaddstr(retjson,"coin",alice->symbol);
+                jaddnum(retjson,"requestid",requestid);
+                jaddnum(retjson,"quoteid",quoteid);
+                return(retjson);
+            }
         }
         if ( (bob= LP_coinfind(rswap.bobcoin)) != 0 )
         {
@@ -955,6 +965,16 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 printf("this isnt my swap! bob.(%s vs %s)\n",bob->smartaddr,rswap.destaddr);
                 cJSON *retjson = cJSON_CreateObject();
                 jaddstr(retjson,"error","swap for different account");
+                jaddnum(retjson,"requestid",requestid);
+                jaddnum(retjson,"quoteid",quoteid);
+                return(retjson);
+            }
+            if ( bob->lastscanht < bob->longestchain+1 )
+            {
+                printf("need to scan %s first\n",bob->symbol);
+                cJSON *retjson = cJSON_CreateObject();
+                jaddstr(retjson,"error","need to scan coin first");
+                jaddstr(retjson,"coin",bob->symbol);
                 jaddnum(retjson,"requestid",requestid);
                 jaddnum(retjson,"quoteid",quoteid);
                 return(retjson);
