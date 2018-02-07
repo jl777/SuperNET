@@ -296,7 +296,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     bitcoin_priv2pub(ctx,coin->symbol,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     {
         uint8_t check64[64]; char checkaddr[64];
-        if ( LP_etomic_priv2pub(check33,privkey) > 0 )
+        if ( LP_etomic_priv2pub(check64,privkey) > 0 )
         {
             if ( memcmp(check64,coin->pubkey33+1,32) == 0 )
             {
