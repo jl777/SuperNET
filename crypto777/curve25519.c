@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -16,11 +16,11 @@
 
 #include "../includes/curve25519.h"
 
-#undef force_inline
-#define force_inline __attribute__((always_inline))
+//#undef force_inline
+//#define force_inline  __attribute__((always_inline))
 
 // Sum two numbers: output += in
-static inline bits320 force_inline fsum(bits320 output,bits320 in)
+static inline bits320 fsum(bits320 output,bits320 in)
 {
     int32_t i;
     for (i=0; i<5; i++)
@@ -28,7 +28,7 @@ static inline bits320 force_inline fsum(bits320 output,bits320 in)
     return(output);
 }
 
-static inline void force_inline fdifference_backwards(uint64_t *out,const uint64_t *in)
+static inline void fdifference_backwards(uint64_t *out,const uint64_t *in)
 {
     static const uint64_t two54m152 = (((uint64_t)1) << 54) - 152;  // 152 is 19 << 3
     static const uint64_t two54m8 = (((uint64_t)1) << 54) - 8;
@@ -38,14 +38,14 @@ static inline void force_inline fdifference_backwards(uint64_t *out,const uint64
         out[i] = in[i] + two54m8 - out[i];
 }
 
-inline void force_inline store_limb(uint8_t *out,uint64_t in)
+void store_limb(uint8_t *out,uint64_t in)
 {
     int32_t i;
     for (i=0; i<8; i++,in>>=8)
         out[i] = (in & 0xff);
 }
 
-static inline uint64_t force_inline load_limb(uint8_t *in)
+static inline uint64_t load_limb(uint8_t *in)
 {
     return
     ((uint64_t)in[0]) |
@@ -75,7 +75,7 @@ bits320 fexpand(bits256 basepoint)
 typedef unsigned uint128_t __attribute__((mode(TI)));
 
 // Multiply a number by a scalar: output = in * scalar
-static inline bits320 force_inline fscalar_product(const bits320 in,const uint64_t scalar)
+static inline bits320 fscalar_product(const bits320 in,const uint64_t scalar)
 {
     int32_t i; uint128_t a = 0; bits320 output;
     a = ((uint128_t)in.ulongs[0]) * scalar;
@@ -119,7 +119,7 @@ bits320 fmul(const bits320 in2,const bits320 in)
     return(out);
 }
 
-inline bits320 force_inline fsquare_times(const bits320 in,uint64_t count)
+bits320 fsquare_times(const bits320 in,uint64_t count)
 {
     uint128_t t[5]; uint64_t r0,r1,r2,r3,r4,c,d0,d1,d2,d4,d419; bits320 out;
     r0 = in.ulongs[0], r1 = in.ulongs[1], r2 = in.ulongs[2], r3 = in.ulongs[3], r4 = in.ulongs[4];
@@ -149,7 +149,7 @@ inline bits320 force_inline fsquare_times(const bits320 in,uint64_t count)
     return(out);
 }
 
-static inline void force_inline fcontract_iter(uint128_t t[5],int32_t flag)
+static inline void fcontract_iter(uint128_t t[5],int32_t flag)
 {
     int32_t i; uint64_t mask = 0x7ffffffffffffLL;
     for (i=0; i<4; i++)
@@ -711,7 +711,7 @@ bits320 bits320_limbs(limb limbs[10])
     return(output);
 }
 
-static inline bits320 force_inline fscalar_product(const bits320 in,const uint64_t scalar)
+static inline bits320 fscalar_product(const bits320 in,const uint64_t scalar)
 {
     limb output[10],input[10]; int32_t i;
     for (i=0; i<10; i++)
@@ -720,7 +720,7 @@ static inline bits320 force_inline fscalar_product(const bits320 in,const uint64
     return(bits320_limbs(output));
 }
 
-static inline bits320 force_inline fsquare_times(const bits320 in,uint64_t count)
+static inline bits320 fsquare_times(const bits320 in,uint64_t count)
 {
     limb output[10],input[10]; int32_t i;
     for (i=0; i<10; i++)
@@ -776,7 +776,7 @@ bits256 curve25519(bits256 mysecret,bits256 theirpublic)
 // x2 z2: long form && x3 z3: long form
 // x z: short form, destroyed && xprime zprime: short form, destroyed
 // qmqp: short form, preserved
-static inline void force_inline
+static inline void
 fmonty(bits320 *x2, bits320 *z2, // output 2Q
        bits320 *x3, bits320 *z3, // output Q + Q'
        bits320 *x, bits320 *z,   // input Q
@@ -804,7 +804,7 @@ fmonty(bits320 *x2, bits320 *z2, // output 2Q
 // long. Perform the swap iff @swap is non-zero.
 // This function performs the swap without leaking any side-channel information.
 // -----------------------------------------------------------------------------
-static inline void force_inline swap_conditional(bits320 *a,bits320 *b,uint64_t iswap)
+static inline void swap_conditional(bits320 *a,bits320 *b,uint64_t iswap)
 {
     int32_t i; const uint64_t swap = -iswap;
     for (i=0; i<5; ++i)
@@ -846,7 +846,7 @@ void cmult(bits320 *resultx,bits320 *resultz,bits256 secret,const bits320 q)
 }
 
 // Shamelessly copied from donna's code that copied djb's code, changed a little
-inline bits320 force_inline crecip(const bits320 z)
+inline bits320 crecip(const bits320 z)
 {
     bits320 a,t0,b,c;
     /* 2 */ a = fsquare_times(z, 1); // a = 2
@@ -1792,7 +1792,7 @@ void acct777_rwsig(int32_t rwflag,uint8_t *serialized,struct acct777_sig *sig)
 int32_t acct777_sigcheck(struct acct777_sig *sig)
 {
 #define IGUANA_GENESIS 1453075200
-#define IGUANA_MAXPACKETSIZE (1024 * 1024 * 2)
+#define IGUANA_MAXPACKETSIZE (1024 * 1024 * 4)
 #define TEN_YEARS (10 * 365 * 24 * 3600)
    if ( sig->allocsize < sizeof(*sig) || sig->allocsize > IGUANA_MAXPACKETSIZE )
     {
@@ -1839,7 +1839,11 @@ uint64_t acct777_validate(struct acct777_sig *sig,bits256 privkey,bits256 pubkey
     struct acct777_sig checksig; uint64_t signerbits; int32_t datalen; uint8_t *serialized;
     datalen = (int32_t)(sig->allocsize - sizeof(*sig));
     checksig = *sig;
+#if defined(_M_X64)
+	serialized = (uint8_t *)((unsigned char *)sig + sizeof(*sig));
+#else
     serialized = (uint8_t *)((long)sig + sizeof(*sig));
+#endif
     //{ int32_t i; for (i=0; i<datalen; i++) printf("%02x",serialized[i]); printf(" VALIDATE.%d?\n",datalen); }
     acct777_sign(&checksig,privkey,pubkey,sig->timestamp,serialized,datalen);
     if ( memcmp(checksig.sigbits.bytes,sig->sigbits.bytes,sizeof(checksig.sigbits)) != 0 )
@@ -1888,4 +1892,4 @@ uint8_t *_SuperNET_decipher(uint8_t nonce[crypto_box_NONCEBYTES],uint8_t *cipher
     return(0);
 }
 
-#undef force_inline
+//#undef force_inline

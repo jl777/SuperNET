@@ -1,0 +1,3 @@
+#!/bin/bash
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getrawtransaction\",\"coin\":\"KMD\",\"txid\":\"107a2683abbfa9188f78e17d3bcba66ece5bd7cbe105ab5bbaae79364159e84d\"}"

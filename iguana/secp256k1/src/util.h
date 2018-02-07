@@ -36,8 +36,12 @@ static SECP256K1_INLINE void secp256k1_callback_call(const secp256k1_callback * 
 } while(0)
 #endif
 
+#ifndef WIN32
 #ifdef HAVE_BUILTIN_EXPECT
 #define EXPECT(x,c) __builtin_expect((x),(c))
+#else
+#define EXPECT(x,c) (x)
+#endif
 #else
 #define EXPECT(x,c) (x)
 #endif
@@ -90,12 +94,16 @@ SECP256K1_INLINE static int secp256k1_clz64_var(uint64_t x) {
     if (!x) {
         return 64;
     }
+#ifndef WIN32
 # if defined(HAVE_BUILTIN_CLZLL)
     ret = __builtin_clzll(x);
 # else
     /*FIXME: debruijn fallback. */
     for (ret = 0; ((x & (1ULL << 63)) == 0); x <<= 1, ret++);
 # endif
+#else
+    for (ret = 0; ((x & (1ULL << 63)) == 0); x <<= 1, ret++);
+#endif
     return ret;
 
 }

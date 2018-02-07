@@ -1,0 +1,18 @@
+#!/bin/bash
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"REVS\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"CHIPS\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"KMD\",\"rel\":\"BTC\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"SUPERNET\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"CRYPTO\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"DEX\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"BOTS\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"MGW\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"BET\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"PANGEA\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"HODL\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"MSHARK\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"JUMBLR\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"HUSH\",\"rel\":\"KMD\"}"
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"getmyprice\",\"base\":\"BTCH\",\"rel\":\"KMD\"}"
+

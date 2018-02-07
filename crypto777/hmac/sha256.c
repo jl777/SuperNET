@@ -17,24 +17,6 @@
 
 //#ifdef LTC_SHA256
 
-const struct ltc_hash_descriptor sha256_desc =
-{
-    "sha256",
-    0,
-    32,
-    64,
-
-    /* OID */
-   { 2, 16, 840, 1, 101, 3, 4, 2, 1,  },
-   9,
-    
-    &sha256_init,
-    &sha256_process,
-    &sha256_done,
-    &sha256_test,
-    NULL
-};
-
 #ifdef LTC_SMALL_CODE
 /* the K array */
 static const ulong32 K[64] = {
@@ -203,7 +185,7 @@ static int sha256_compress(hash_state * md, unsigned char *buf)
    @param md   The hash state you wish to initialize
    @return CRYPT_OK if successful
 */
-int sha256_init(hash_state * md)
+int sha256i_init(hash_state * md)
 {
     LTC_ARGCHK(md != NULL);
 
@@ -227,7 +209,7 @@ int sha256_init(hash_state * md)
    @param inlen  The length of the data (octets)
    @return CRYPT_OK if successful
 */
-HASH_PROCESS(sha256_process, sha256_compress, sha256, 64)
+HASH_PROCESS(sha256i_process, sha256_compress, sha256, 64)
 
 /**
    Terminate the hash to get the digest
@@ -235,7 +217,7 @@ HASH_PROCESS(sha256_process, sha256_compress, sha256, 64)
    @param out [out] The destination of the hash (32 bytes)
    @return CRYPT_OK if successful
 */
-int sha256_done(hash_state * md, unsigned char *out)
+int sha256i_done(hash_state * md, unsigned char *out)
 {
     int i;
 
@@ -287,9 +269,9 @@ int sha256_done(hash_state * md, unsigned char *out)
 void calc_sha256(char hashstr[(256 >> 3) * 2 + 1],uint8_t hash[256 >> 3],uint8_t *src,int32_t len)
 {
     hash_state md;
-    sha256_init(&md);
-    sha256_process(&md,src,len);
-    sha256_done(&md,hash);
+    sha256i_init(&md);
+    sha256i_process(&md,src,len);
+    sha256i_done(&md,hash);
     if ( hashstr != 0 )
     {
         int32_t init_hexbytes_noT(char *hexbytes,uint8_t *message,long len);
@@ -300,11 +282,11 @@ void calc_sha256(char hashstr[(256 >> 3) * 2 + 1],uint8_t hash[256 >> 3],uint8_t
 void calc_sha256cat(uint8_t hash[256 >> 3],uint8_t *src,int32_t len,uint8_t *src2,int32_t len2)
 {
     hash_state md;
-    sha256_init(&md);
-    sha256_process(&md,src,len);
+    sha256i_init(&md);
+    sha256i_process(&md,src,len);
     if ( src2 != 0 )
-        sha256_process(&md,src2,len2);
-    sha256_done(&md,hash);
+        sha256i_process(&md,src2,len2);
+    sha256i_done(&md,hash);
 }
 
 void update_sha256(uint8_t hash[256 >> 3],struct sha256_state *state,uint8_t *src,int32_t len)
@@ -312,14 +294,14 @@ void update_sha256(uint8_t hash[256 >> 3],struct sha256_state *state,uint8_t *sr
     hash_state md;
     memset(&md,0,sizeof(md));
     if ( src == 0 )
-        sha256_init(&md);
+        sha256i_init(&md);
     else
     {
         md.sha256 = *state;
-        sha256_process(&md,src,len);
+        sha256i_process(&md,src,len);
     }
     *state = md.sha256;
-    sha256_done(&md,hash);
+    sha256i_done(&md,hash);
 }
 
 /*void calc_OP_HASH160(char hexstr[41],uint8_t hash160[20],char *pubkey)
@@ -334,9 +316,9 @@ void update_sha256(uint8_t hash[256 >> 3],struct sha256_state *state,uint8_t *sr
         return;
     }
     decode_hex(buf,len,pubkey);
-    sha256_init(&md);
-    sha256_process(&md,buf,len);
-    sha256_done(&md,sha256);
+    sha256i_init(&md);
+    sha256i_process(&md,buf,len);
+    sha256i_done(&md,sha256);
     
     rmd160_init(&md);
     rmd160_process(&md,sha256,256 >> 3);
@@ -389,9 +371,9 @@ int  sha256_test(void)
     char *str;
 
   for (i = 0; i < (int)(sizeof(tests) / sizeof(tests[0])); i++) {
-      sha256_init(&md);
-      sha256_process(&md, (unsigned char*)tests[i].msg, (unsigned long)strlen(tests[i].msg));
-      sha256_done(&md, tmp);
+      sha256i_init(&md);
+      sha256i_process(&md, (unsigned char*)tests[i].msg, (unsigned long)strlen(tests[i].msg));
+      sha256i_done(&md, tmp);
       if (XMEMCMP(tmp, tests[i].hash, 32) != 0) {
           for (j=0; j<32; j++)
               printf("%02x",tmp[j]);
@@ -400,16 +382,16 @@ int  sha256_test(void)
           strcpy(str,(char*)tests[i].msg);
           reverse_hexstr(str);
           printf("reversed.(%s)\n",str);
-          sha256_init(&md);
-          sha256_process(&md, (unsigned char*)str, (unsigned long)strlen(str));
-          sha256_done(&md, tmp);
+          sha256i_init(&md);
+          sha256i_process(&md, (unsigned char*)str, (unsigned long)strlen(str));
+          sha256i_done(&md, tmp);
           for (j=0; j<32; j++)
               printf("%02x",tmp[j]);
           printf(" <- sha256(%s)\n",str);
           decode_hex(buf,(int)strlen(tests[i].msg),tests[i].msg);
-          sha256_init(&md);
-          sha256_process(&md, (unsigned char*)buf, (unsigned long)strlen(tests[i].msg)/2);
-          sha256_done(&md, tmp);
+          sha256i_init(&md);
+          sha256i_process(&md, (unsigned char*)buf, (unsigned long)strlen(tests[i].msg)/2);
+          sha256i_done(&md, tmp);
           for (j=0; j<32; j++)
               printf("%02x",tmp[j]);
           printf(" <- sha256(binary %s)\n",tests[i].msg);
@@ -435,6 +417,24 @@ int  sha256_test(void)
 #undef Ch
 #undef Maj
 
+
+const struct ltc_hash_descriptor sha256_desc =
+{
+    "sha256",
+    0,
+    32,
+    64,
+    
+    /* OID */
+    { 2, 16, 840, 1, 101, 3, 4, 2, 1,  },
+    9,
+    
+    &sha256i_init,
+    &sha256i_process,
+    &sha256i_done,
+    &sha256_test,
+    NULL
+};
 
 
 /* $Source: /cvs/libtom/libtomcrypt/src/hashes/sha2/sha256.c,v $ */

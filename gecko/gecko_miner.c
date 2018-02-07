@@ -62,7 +62,7 @@ int32_t gecko_blocknonce_verify(struct iguana_info *virt,uint8_t *serialized,int
 
 uint32_t gecko_nBits(struct iguana_info *virt,uint32_t *prevtimestampp,struct iguana_block *block,int32_t n)
 {
-    uint32_t nBits = GECKO_DEFAULTDIFF,starttime,endtime,est; struct iguana_block *prev=0; int32_t i,diff; bits256 targetval;
+    uint32_t nBits = GECKO_DEFAULTDIFF,starttime=0,endtime=0,est; struct iguana_block *prev=0; int32_t i,diff; bits256 targetval;
     *prevtimestampp = 0;
     if ( virt->chain->estblocktime == 0 )
         return(GECKO_EASIESTDIFF);
@@ -215,20 +215,20 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
         threshold = bits256_from_compact(newblock->RO.bits);
         if ( (newblock->RO.nonce= *noncep) == 0 )
         {
-            struct iguana_msgblock msg;
-            memset(&msg,0,sizeof(msg));
-            msg.H.version = newblock->RO.version;
-            msg.H.prev_block = newblock->RO.prev_block;
-            msg.H.merkle_root = newblock->RO.merkle_root;
-            msg.H.timestamp = newblock->RO.timestamp;
-            msg.H.bits = newblock->RO.bits;
+            struct iguana_msgzblock zmsg; struct iguana_msgblock *msg = (void *)&zmsg;
+            memset(&zmsg,0,sizeof(zmsg));
+            msg->H.version = newblock->RO.version;
+            msg->H.prev_block = newblock->RO.prev_block;
+            msg->H.merkle_root = newblock->RO.merkle_root;
+            msg->H.timestamp = newblock->RO.timestamp;
+            msg->H.bits = newblock->RO.bits;
             for (i=0; i<GECKO_MAXMINERITERS; i++)
             {
                 OS_randombytes((void *)noncep,sizeof(*noncep));
-                msg.H.nonce = *noncep;
+                msg->H.nonce = *noncep;
                 //n = iguana_serialize_block(virt->chain,&hash2,serialized,newblock);
                 //char str[65]; printf("nonce.%08x %s\n",newblock->RO.nonce,bits256_str(str,newblock->RO.hash2));
-                len = iguana_rwblockhdr(1,virt->chain->zcash,serialized,&msg);
+                len = iguana_rwblockhdr(1,virt->chain->zcash,serialized,&zmsg);
                 hash2 = iguana_calcblockhash(virt->symbol,virt->chain->hashalgo,serialized,len);
                 if ( bits256_cmp(threshold,hash2) > 0 )
                 {
@@ -247,7 +247,7 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
             }
         }
         newblock->RO.nonce = *noncep;
-        n = iguana_serialize_block(virt->chain,&newblock->RO.hash2,serialized,newblock);
+        n = iguana_serialize_block(myinfo,virt->chain,&newblock->RO.hash2,serialized,newblock);
         while ( 1 && time(NULL) <= newblock->RO.timestamp + GECKO_MAXFUTUREBLOCK )
         {
             //printf("wait for block to be close enough to now: lag %ld\n",time(NULL) - newblock->RO.timestamp);
@@ -302,7 +302,7 @@ cJSON *gecko_paymentsobj(struct supernet_info *myinfo,cJSON *txjson,cJSON *valso
     if ( (txversion= juint(valsobj,"txversion")) == 0 )
         txversion = (locktime == 0) ? IGUANA_NORMAL_TXVERSION : IGUANA_LOCKTIME_TXVERSION;
     if ( txjson == 0 )
-        txjson = bitcoin_txcreate(1,locktime,txversion);
+        txjson = bitcoin_txcreate("gecko",1,locktime,txversion,juint(valsobj,"timestamp"));
     if ( (array= jarray(&n,valsobj,"payments")) != 0 && n > 0 )
     {
         for (i=0; i<n; i++)
@@ -360,26 +360,26 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     struct iguana_zblock newblock; uint32_t prevtimestamp,nBits; int64_t reward = 0; int32_t txn_count; char *blockstr,*space[256]; struct gecko_memtx **txptrs; void *ptr; //struct iguana_bundle *bp;
 #ifndef __APPLE__
     int32_t i,gap;
-    if ( virt->virtualchain == 0 || RELAYID < 0 || NUMRELAYS < 1 )
+    if ( virt->virtualchain == 0 || myinfo->NOTARY.RELAYID < 0 || myinfo->NOTARY.NUMRELAYS < 1 )
     {
         //printf("skip non-virtual chain.%s\n",virt->symbol);
         return;
     }
     if ( virt->blocks.hwmchain.height < virt->longestchain-1 )
         return;
-    if ( (virt->blocks.hwmchain.height % NUMRELAYS) != RELAYID )
+    if ( myinfo->IAMNOTARY != 0 && (virt->blocks.hwmchain.height % myinfo->NOTARY.NUMRELAYS) != myinfo->NOTARY.RELAYID )
     {
         //if ( NUMRELAYS < 3 )
         //    return;
         gap = (int32_t)(time(NULL) - virt->blocks.hwmchain.RO.timestamp) / 60;//virt->chain->estblocktime;
         for (i=0; i<gap; i++)
         {
-            if ( ((virt->blocks.hwmchain.height+i) % NUMRELAYS) == RELAYID )
+            if ( myinfo->IAMNOTARY != 0 && ((virt->blocks.hwmchain.height+i) % myinfo->NOTARY.NUMRELAYS) == myinfo->NOTARY.RELAYID )
                 break;
         }
         if ( i == gap )
             return;
-        printf("backup block generator RELAYID.%d gap.%d ht.%d i.%d num.%d\n",RELAYID,gap,virt->blocks.hwmchain.height,i,NUMRELAYS);
+        printf("backup block generator RELAYID.%d gap.%d ht.%d i.%d num.%d\n",myinfo->NOTARY.RELAYID,gap,virt->blocks.hwmchain.height,i,myinfo->NOTARY.NUMRELAYS);
     }
 #endif
     /*if ( virt->newblockstr != 0 )

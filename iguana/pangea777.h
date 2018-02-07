@@ -123,12 +123,12 @@ int32_t init_sharenrs(unsigned char sharenrs[255],unsigned char *orig,int32_t m,
 struct pangea_msghdr
 {
     // sig { bits256 sigbits,pubkey; uint64_t signer64bits; uint32_t timestamp,allocsize; };
-    struct acct777_sig sig __attribute__((packed));
+    struct acct777_sig sig PACKED;
     bits256 tablehash;
     char cmd[8];
     int8_t turni,cardi,destplayer,myind; // ALL DATA MUST BE SERIALIZED!!!
     uint8_t serialized[];
-} __attribute__((packed));
+};// PACKED;
 
 #define PANGEA_ARGS struct supernet_info *myinfo,struct table_info *tp,cJSON *json
 #define PANGEA_CALLARGS myinfo,tp,json

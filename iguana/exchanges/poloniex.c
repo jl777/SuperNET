@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -72,20 +72,29 @@ int32_t SUPPORTS(struct exchange_info *exchange,char *base,char *rel,cJSON *argj
 {
     //char *baserels[][2] = { {"btc","usd"} };
     //return(baserel_polarity(baserels,(int32_t)(sizeof(baserels)/sizeof(*baserels)),base,rel));
-    if ( strlen(base) > 5 || strlen(rel) > 5 || strcmp(rel,"CNY") == 0 || strcmp(base,"CNY") == 0 || strcmp(rel,"USD") == 0 || strcmp(base,"USD") == 0 )
+    if ( strlen(base) > 5 || strlen(rel) > 5 || strcmp(rel,"CNY") == 0 || strcmp(base,"CNY") == 0 )
         return(0);
-    if ( strcmp(rel,"BTC") == 0 )
+    if ( strcmp(base,"BTC") == 0 && strcmp(rel,"USD") == 0 )
+        return(1);
+    else if ( strcmp(rel,"BTC") == 0 && strcmp(base,"USD") == 0 )
+        return(-1);
+    else if ( strcmp(rel,"BTC") == 0 )
         return(1);
     else if ( strcmp(base,"BTC") == 0 )
         return(-1);
     else return(0);
 }
 
-double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
+double UPDATE(struct exchange_info *exchange,char *_base,char *_rel,struct exchange_quote *quotes,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert)
 {
-    char market[128],url[1024];
-    sprintf(market,"%s_%s",rel,base);
+    char market[128],url[1024],base[16],rel[16];
+    strcpy(base,_base), touppercase(base);
+    strcpy(rel,_rel), touppercase(rel);
+    if ( strcmp(rel,"USD") == 0 )
+        sprintf(market,"USDT_%s",base);
+    else sprintf(market,"%s_%s",rel,base);
     sprintf(url,"https://poloniex.com/public?command=returnOrderBook&currencyPair=%s&depth=%d",market,maxdepth);
+    //printf("URL.(%s)\n",url);
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0,invert));
 }
 
@@ -157,9 +166,11 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
         typestr = (dir > 0) ? "marginBuy":"marginSell";
     else typestr = (dir > 0) ? "buy":"sell";
     sprintf(payload,"command=%s&nonce=%lld&currencyPair=%s&rate=%.8f&amount=%.8f",typestr,(long long)nonce,pairstr,price,volume);
-    if ( CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume,argjson) == 0 && (json= SIGNPOST(&exchange->cHandle,dotrade,retstrp,exchange,EXCHANGE_AUTHURL,payload)) != 0 )
+    if ( //CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume,argjson) == 0 &&
+        (json= SIGNPOST(&exchange->cHandle,dotrade,retstrp,exchange,EXCHANGE_AUTHURL,payload)) != 0 )
     {
         txid = (get_API_nxt64bits(cJSON_GetObjectItem(json,"orderNumber")) << 32) | get_API_nxt64bits(cJSON_GetObjectItem(json,"tradeID"));
+        printf("poloniex.%llu (%s) %s\n",(long long)txid,jprint(json,0),*retstrp!=0?*retstrp:"");
         free_json(json);
     }
     return(txid);

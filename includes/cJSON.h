@@ -26,12 +26,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <unistd.h>
 #include <math.h>
 #include <ctype.h>
 #include <float.h>
 #include <memory.h>
-#include <sys/time.h>
 
 #include "../crypto777/OS_portable.h"
 
@@ -75,6 +73,7 @@ extern "C"
         double valuedouble;			/* The item's number, if type==cJSON_Number */
         
         char *string;				/* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
+        uint32_t cjsonid;
     } cJSON;
     
     typedef struct cJSON_Hooks {
@@ -213,13 +212,15 @@ extern "C"
     char *get_cJSON_fieldname(cJSON *obj);
     void ensure_jsonitem(cJSON *json,char *field,char *value);
     int32_t in_jsonarray(cJSON *array,char *value);
-    char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params);
+    char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout);
     uint64_t calc_nxt64bits(const char *str);
     int32_t expand_nxt64bits(char *str,uint64_t nxt64bits);
     char *nxt64str(uint64_t nxt64bits);
     char *nxt64str2(uint64_t nxt64bits);
     cJSON *addrs_jsonarray(uint64_t *addrs,int32_t num);
     int32_t myatoi(char *str,int32_t range);
+    void cJSON_register(cJSON *item);
+    void cJSON_unregister(cJSON *item);
 
     char *stringifyM(char *str);
 #define replace_backslashquotes unstringify

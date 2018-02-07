@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -37,7 +37,11 @@ int32_t bitcoin_pubkeylen(const uint8_t *pubkey)
         return(33);
     else if ( pubkey[0] == 4 )
         return(65);
-    else return(-1);
+    else
+    {
+        //printf("illegal pubkey.[%02x] %llx\n",pubkey[0],*(long long *)pubkey);
+        return(-1);
+    }
 }
 
 bits256 bitcoin_randkey(secp256k1_context *ctx)
@@ -68,7 +72,7 @@ bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
     {
         if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) == 0 )
         {
-            printf("bitcoin_sign illegal privkey\n");
+            //printf("bitcoin_sign illegal privkey\n");
             return(pubkey);
         }
         if ( secp256k1_ec_pubkey_create(ctx,&secppub,privkey.bytes) != 0 )
@@ -108,7 +112,7 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
     {
         if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) == 0 )
         {
-            printf("bitcoin_sign illegal privkey\n");
+            //printf("bitcoin_sign illegal privkey\n");
             return(-1);
         }
         if ( secp256k1_context_randomize(ctx,seed.bytes) != 0 )
@@ -127,10 +131,15 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
                             {
                                 sig[0] = 27 + recid + (fCompressed != 0 ? 4 : 0);
                                 retval = 64 + 1;
-                            }
-                            else printf("secpub mismatch\n");
+                                //size_t i,plen = 33; uint8_t pubkey[33];
+                                //secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&CHECKPUB,SECP256K1_EC_COMPRESSED);
+                                //for (i=0; i<33; i++)
+                                //    printf("%02x",pubkey[i]);
+                                //printf(" bitcoin_sign's pubkey\n");
+
+                            } //else printf("secpub mismatch\n");
                         } else printf("pubkey create error\n");
-                    } else printf("recover error\n");
+                    } //else printf("recover error\n");
                 } else printf("secp256k1_ecdsa_sign_recoverable error\n");
             }
             else
@@ -147,18 +156,23 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
     return(retval);
 }
 
-int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig65,bits256 messagehash2,uint8_t *pubkey)
+int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig,bits256 messagehash2,uint8_t *pubkey,size_t plen)
 {
-    int32_t retval = -1; size_t plen; secp256k1_pubkey PUB; secp256k1_ecdsa_signature SIG; secp256k1_ecdsa_recoverable_signature rSIG;
+    int32_t retval = -1; secp256k1_pubkey PUB; secp256k1_ecdsa_signature SIG; secp256k1_ecdsa_recoverable_signature rSIG;
     pubkey[0] = 0;
     SECP_ENSURE_CTX
     {
-        plen = (sig65[0] <= 31) ? 65 : 33;
-        secp256k1_ecdsa_recoverable_signature_parse_compact(ctx,&rSIG,sig65 + 1,0);
+        if ( plen == 0 )
+        {
+            plen = (sig[0] <= 31) ? 65 : 33;
+            sig++;
+        }
+        secp256k1_ecdsa_recoverable_signature_parse_compact(ctx,&rSIG,sig,0);
         secp256k1_ecdsa_recoverable_signature_convert(ctx,&SIG,&rSIG);
         if ( secp256k1_ecdsa_recover(ctx,&PUB,&rSIG,messagehash2.bytes) != 0 )
         {
             plen = 33;
+            memset(pubkey,0,33);
             secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&PUB,SECP256K1_EC_COMPRESSED);//plen == 65 ? SECP256K1_EC_UNCOMPRESSED : SECP256K1_EC_COMPRESSED);
             if ( secp256k1_ecdsa_verify(ctx,&SIG,messagehash2.bytes,&PUB) != 0 )
             {
@@ -167,8 +181,7 @@ int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig65,bits256 mess
                     pubkey[0] = 2;
                 else if ( pubkey[0] != 2 )
                     pubkey[0] = 3;*/
-            }
-            else printf("secp256k1_ecdsa_verify error\n");
+            } else printf("secp256k1_ecdsa_verify error\n");
         } else printf("secp256k1_ecdsa_recover error\n");
         ENDSECP_ENSURE_CTX
     }
@@ -438,95 +451,6 @@ int32_t bitcoin_rangeproof(void *ctx,uint8_t *proof,uint8_t *commit,bits256 blin
     return(retval);
 }
 
-/*
- * The intended procedure for creating a multiparty signature is:
- * - Each signer S[i] with private key x[i] and public key Q[i] runs
- *   secp256k1_schnorr_generate_nonce_pair to produce a pair (k[i],R[i]) of private/public nonces.
- * - All signers communicate their public nonces to each other (revealing your
- *   private nonce can lead to discovery of your private key, so it should be considered secret).
- * - All signers combine all the public nonces they received (excluding their
- *   own) using secp256k1_ec_pubkey_combine to obtain an Rall[i] = sum(R[0..i-1,i+1..n]).
- * - All signers produce a partial signature using
- *   secp256k1_schnorr_partial_sign, passing in their own private key x[i],
- *   their own private nonce k[i], and the sum of the others' public nonces Rall[i].
- * - All signers communicate their partial signatures to each other.
- * - Someone combines all partial signatures using secp256k1_schnorr_partial_combine, to obtain a full signature.
- * - The resulting signature is validatable using secp256k1_schnorr_verify, with
- *   public key equal to the result of secp256k1_ec_pubkey_combine of the signers' public keys (sum(Q[0..n])).
- *
- *  Note that secp256k1_schnorr_partial_combine and secp256k1_ec_pubkey_combine
- *  function take their arguments in any order, and it is possible to
- *  pre-combine several inputs already with one call, and add more inputs later
- *  by calling the function again (they are commutative and associative).
- */
-
-#ifdef test_schnorr
-#include "secp256k1/src/util.h"
-#include "secp256k1/src/hash_impl.h"
-#include "secp256k1/src/testrand_impl.h"
-
-void test_schnorr_threshold(void *ctx) {
-    unsigned char msg[32];
-    unsigned char sec[5][32];
-    secp256k1_pubkey pub[5];
-    unsigned char nonce[5][32];
-    secp256k1_pubkey pubnonce[5];
-    unsigned char sig[5][64];
-    const unsigned char* sigs[5];
-    unsigned char allsig[64];
-    const secp256k1_pubkey* pubs[5];
-    secp256k1_pubkey allpub;
-    int n, i;
-    int damage;
-    int ret = 0;
-    
-    damage = secp256k1_rand_bits(1) ? (1 + secp256k1_rand_int(4)) : 0;
-    secp256k1_rand256_test(msg);
-    n = 2 + secp256k1_rand_int(4);
-    for (i = 0; i < n; i++) {
-        do {
-            secp256k1_rand256_test(sec[i]);
-        } while (!secp256k1_ec_seckey_verify(ctx, sec[i]));
-        CHECK(secp256k1_ec_pubkey_create(ctx, &pub[i], sec[i]));
-        CHECK(secp256k1_schnorr_generate_nonce_pair(ctx, &pubnonce[i], nonce[i], msg, sec[i], NULL, NULL));
-        pubs[i] = &pub[i];
-    }
-    if (damage == 1) {
-        nonce[secp256k1_rand_int(n)][secp256k1_rand_int(32)] ^= 1 + secp256k1_rand_int(255);
-    } else if (damage == 2) {
-        sec[secp256k1_rand_int(n)][secp256k1_rand_int(32)] ^= 1 + secp256k1_rand_int(255);
-    }
-    for (i = 0; i < n; i++) {
-        secp256k1_pubkey allpubnonce;
-        const secp256k1_pubkey *pubnonces[4];
-        int j;
-        for (j = 0; j < i; j++) {
-            pubnonces[j] = &pubnonce[j];
-        }
-        for (j = i + 1; j < n; j++) {
-            pubnonces[j - 1] = &pubnonce[j];
-        }
-        CHECK(secp256k1_ec_pubkey_combine(ctx, &allpubnonce, pubnonces, n - 1));
-        ret |= (secp256k1_schnorr_partial_sign(ctx, sig[i], msg, sec[i], &allpubnonce, nonce[i]) != 1) * 1;
-        sigs[i] = sig[i];
-    }
-    if (damage == 3) {
-        sig[secp256k1_rand_int(n)][secp256k1_rand_bits(6)] ^= 1 + secp256k1_rand_int(255);
-    }
-    ret |= (secp256k1_ec_pubkey_combine(ctx, &allpub, pubs, n) != 1) * 2;
-    if ((ret & 1) == 0) {
-        ret |= (secp256k1_schnorr_partial_combine(ctx, allsig, sigs, n) != 1) * 4;
-    }
-    if (damage == 4) {
-        allsig[secp256k1_rand_int(32)] ^= 1 + secp256k1_rand_int(255);
-    }
-    if ((ret & 7) == 0) {
-        ret |= (secp256k1_schnorr_verify(ctx, allsig, msg, &allpub) != 1) * 8;
-    }
-    CHECK((ret == 0) == (damage == 0));
-}
-#endif
-
 int32_t iguana_pederson_test(void *ctx)
 {
     uint8_t commits[100][33],*commitptrs[100],proofs[100][5138]; uint16_t vouts[100]; int64_t min_value,values[100],totalpos,totalneg; bits256 txids[100],nonces[100],blinds[100],*blindptrs[100],blindsum; int32_t prooflens[100],i,r,pos,neg,numpos,exponent,min_bits,n,N = 100;
@@ -642,9 +566,9 @@ int32_t iguana_schnorr_test(void *ctx)
         {
             sigs[i] = sig64[i];
             continue;
-            for (j=0; j<64; j++)
-                printf("%02x",sig64[i][j]);
-            printf(" sig[%d]\n",i);
+            //for (j=0; j<64; j++)
+            //    printf("%02x",sig64[i][j]);
+            //printf(" sig[%d]\n",i);
         }
         for (i=0; i<N; i++)
         {

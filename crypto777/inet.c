@@ -24,7 +24,9 @@
 #ifdef _WIN32
 #define in6_addr sockaddr
 #define in_addr_t struct sockaddr_storage
+#ifndef NATIVE_WINDOWS
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
+#endif
 
 struct sockaddr_in6 {
     short   sin6_family;
@@ -371,7 +373,7 @@ uint64_t _calc_ipbits(char *ip_port)
     port = parse_ipaddr(ipaddr,ip_port);
     memset(&addr,0,sizeof(addr));
     portable_pton(ip_port[0] == '[' ? AF_INET6 : AF_INET,ipaddr,&addr);
-    if ( 0 )
+    if ( (0) )
     {
         int i;
         for (i=0; i<16; i++)
@@ -470,7 +472,7 @@ uint32_t conv_domainname(char *ipaddr,char *domain)
     int32_t ipv4only = 1;
     uint32_t ipbits;
     struct sockaddr_in ss;
-    if ( 0 && conv_domain((struct sockaddr_storage *)&ss,(const char *)domain,ipv4only) == 0 )
+    if ( (0) && conv_domain((struct sockaddr_storage *)&ss,(const char *)domain,ipv4only) == 0 )
     {
         ipbits = *(uint32_t *)&ss.sin_addr;
         expand_ipbits(ipaddr,ipbits);
@@ -603,7 +605,10 @@ uint16_t parse_endpoint(int32_t *ip6flagp,char *transport,char *ipbuf,char *retb
                     ipbits = calc_ipbits(ipaddr);
                     expand_ipbits(tmp,ipbits);
                     if ( strcmp(tmp,ipaddr) != 0 )
-                        ipaddr = 0, sprintf(retbuf,"{\"result\":\"illegal ipaddr\",\"endpoint\":\"%s\",\"ipaddr\":\"%s\",\"checkaddr\":\"%s\"}",endpoint,ipaddr,tmp);
+                    {
+                        sprintf(retbuf,"{\"result\":\"illegal ipaddr\",\"endpoint\":\"%s\",\"ipaddr\":\"%s\",\"checkaddr\":\"%s\"}",endpoint,ipaddr,tmp);
+                        ipaddr = 0;
+                    }
                 }
                 if ( inet != 0 && ipaddr != 0 && port != 0 )
                 {

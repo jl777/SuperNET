@@ -1,1 +1,2 @@
-curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTCD\",\"method\":\"listtransactions\",\"params\":[1, 9999999, [\"RUXwXF37SMA63vL4bUPnytP3KUwp69PCVv\"]]}"
+#!/bin/bash
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTCD\",\"method\":\"listtransactions\",\"params\":[1, 9999999, []]}"

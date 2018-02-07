@@ -1,3 +1,4 @@
+#!/bin/bash
 cd ..
 pkill iguana
 ./m_LP

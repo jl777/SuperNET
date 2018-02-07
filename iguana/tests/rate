@@ -1,1 +1,2 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"rate\",\"base\":\"BTCD\",\"rel\":\"BTC\"}"
+#!/bin/bash
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"rate\",\"base\":\"BTC\",\"rel\":\"USD\"}"

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -38,7 +38,7 @@ struct tradebot_info
 
 cJSON *tradebot_json(struct supernet_info *myinfo,struct exchange_info *exchange,struct tradebot_info *bot)
 {
-    char str[64]; int32_t i,numpending; double pendsum,pendvolume,vol; cJSON *json,*array,*item;
+    char str[65]; int32_t i,numpending; double pendsum,pendvolume,vol; cJSON *json,*array,*item;
     json = cJSON_CreateObject();
     jaddstr(json,"exchange",exchange->name);
     jaddstr(json,"started",utc_str(str,bot->started));
@@ -220,6 +220,8 @@ char *tradebot_control(struct supernet_info *myinfo,char *exchangestr,char *boti
 }
 
 #include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
 
 HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin)
 {
@@ -227,9 +229,11 @@ HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin)
     return(clonestr("{\"result\":\"targetcoin updated\"}"));
 }
 
-ZERO_ARGS(tradebot,amlp)
+STRING_ARG(tradebot,amlp,blocktrail)
 {
     myinfo->IAMLP = 1;
+    if ( blocktrail != 0 )
+        safecopy(myinfo->blocktrail_apikey,blocktrail,sizeof(myinfo->blocktrail_apikey));
     return(clonestr("{\"result\":\"liquidity provider active\"}"));
 }
 

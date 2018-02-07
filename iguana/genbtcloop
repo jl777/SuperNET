@@ -2,5 +2,6 @@ while true
 do
 ../agents/iguana coins/genbtc.json
 sleep 3
+rm -rf tmp
 done
 

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -13,312 +13,425 @@
  *                                                                            *
  ******************************************************************************/
 
+// deprecated
 #include "iguana777.h"
-#include "../includes/iguana_apidefs.h"
 
-STRING_ARG(iguana,initfastfind,activecoin)
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
+
+
+STRING_ARG(iguana,peers,activecoin)
 {
-    if ( (coin= iguana_coinfind(activecoin)) != 0 )
-    {
-        iguana_fastfindcreate(coin);
-        return(clonestr("{\"result\":\"fast find initialized\"}"));
-    } else return(clonestr("{\"error\":\"no coin to initialize\"}"));
+    if ( coin != 0 )
+        return(jprint(iguana_peersjson(coin,0),1));
+    else return(clonestr("{\"error\":\"peers needs coin\"}"));
 }
 
-TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,minconfd)
+STRING_ARG(iguana,getconnectioncount,activecoin)
 {
-    int32_t lastheight,minconf,maxconf=SATOSHIDEN; uint64_t total=0; uint8_t rmd160[20],pubkey33[33],addrtype; struct iguana_pkhash *P; cJSON *array,*retjson = cJSON_CreateObject();
-    if ( activecoin != 0 && activecoin[0] != 0 )
+    int32_t i,num = 0; char buf[512];
+    if ( coin != 0 && coin->peers != 0 )
+    {
+        for (i=0; i<sizeof(coin->peers->active)/sizeof(*coin->peers->active); i++)
+            if ( coin->peers->active[i].usock >= 0 )
+                num++;
+        sprintf(buf,"{\"result\":\"%d\"}",num);
+        return(clonestr(buf));
+    } else return(clonestr("{\"error\":\"getconnectioncount needs coin\"}"));
+}
+
+ZERO_ARGS(bitcoinrpc,getdifficulty)
+{
+    char buf[512];
+    if ( coin != 0 )
+    {
+        sprintf(buf,"{\"result\":\"success\",\"proof-of-work\":\"%.8f\",\"search-interval\": 0}",PoW_from_compact(coin->blocks.hwmchain.RO.bits,coin->chain->unitval));
+        return(clonestr(buf));
+    } else return(clonestr("{\"error\":\"getdifficulty needs coin\"}"));
+}
+
+STRING_ARG(iguana,addcoin,newcoin)
+{
+    char *symbol,*seedip; int32_t retval;
+    if ( (symbol= newcoin) == 0 && coin != 0 )
+        symbol = coin->symbol;
+    if ( symbol != 0 )
+    {
+        if ( (seedip= jstr(json,"seedipaddr")) != 0 )
+            safecopy(myinfo->seedipaddr,seedip,sizeof(myinfo->seedipaddr));
+        printf(">> addcoin.%s seedipaddr.%s\n",symbol,myinfo->seedipaddr);
+#ifdef __PNACL__
+        //        if ( strcmp(symbol,"BTC") == 0 )
+        //            return(clonestr("{\"result\":\"BTC for chrome app is not yet\"}"));
+#endif
+        if ( (retval= iguana_launchcoin(myinfo,symbol,json,0)) > 0 )
+        {
+            if ( myinfo->rpcsymbol[0] == 0 )
+                safecopy(myinfo->rpcsymbol,symbol,sizeof(myinfo->rpcsymbol));
+            return(clonestr("{\"result\":\"coin added\"}"));
+        }
+        else if ( retval == 0 )
+            return(clonestr("{\"result\":\"coin already there\"}"));
+        else return(clonestr("{\"error\":\"error adding coin\"}"));
+    } else return(clonestr("{\"error\":\"addcoin needs newcoin\"}"));
+}
+
+STRING_ARG(iguana,startcoin,activecoin)
+{
+    if ( coin != 0 )
+    {
+        coin->active = 1;
+        return(clonestr("{\"result\":\"coin started\"}"));
+    } else return(clonestr("{\"error\":\"startcoin needs coin\"}"));
+}
+
+STRING_ARG(iguana,stopcoin,activecoin)
+{
+    if ( activecoin[0] != 0 )
         coin = iguana_coinfind(activecoin);
     if ( coin != 0 )
     {
-        if ( (minconf= minconfd) <= 0 )
-            minconf = 1;
-        lastheight = lastheightd;
-        jaddstr(retjson,"address",address);
-        if ( bitcoin_validaddress(coin,address) < 0 )
-        {
-            jaddstr(retjson,"error","illegal address");
-            return(jprint(retjson,1));
-        }
-        jadd64bits(retjson,"RTbalance",iguana_RTbalance(coin,address));
-        if ( bitcoin_addr2rmd160(&addrtype,rmd160,address) < 0 )
-        {
-            jaddstr(retjson,"error","cant convert address");
-            return(jprint(retjson,1));
-        }
-        memset(pubkey33,0,sizeof(pubkey33));
-        P = calloc(coin->bundlescount,sizeof(*P));
-        array = cJSON_CreateArray();
-        //printf("Start %s balance.(%s) height.%d\n",coin->symbol,address,lastheight);
-        if ( lastheight == 0 )
-            lastheight = IGUANA_MAXHEIGHT;
-        iguana_RTpkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,lastheight,0,0,0,remoteaddr,1);
-        free(P);
-        jadd(retjson,"unspents",array);
-        jaddnum(retjson,"balance",dstr(total));
-        if ( lastheight > 0 )
-            jaddnum(retjson,"RTheight",coin->RTheight);
-    }
-    return(jprint(retjson,1));
+        coin->active = 0;
+        //iguana_coinpurge(coin);
+        return(clonestr("{\"result\":\"coin stopped\"}"));
+    } else return(clonestr("{\"error\":\"stopcoin needs coin\"}"));
 }
 
-STRING_ARG(iguana,validate,activecoin)
+STRING_ARG(iguana,pausecoin,activecoin)
 {
-    int32_t i,total,validated; struct iguana_bundle *bp; cJSON *retjson;
-    if ( (coin= iguana_coinfind(activecoin)) != 0 )
-    {
-        for (i=total=validated=0; i<coin->bundlescount; i++)
-            if ( (bp= coin->bundles[i]) != 0 )
-            {
-                validated += iguana_bundlevalidate(coin,bp,1);
-                total += bp->n;
-            }
-        retjson = cJSON_CreateObject();
-        jaddstr(retjson,"result","validation run");
-        jaddstr(retjson,"coin",coin->symbol);
-        jaddnum(retjson,"validated",validated);
-        jaddnum(retjson,"total",total);
-        jaddnum(retjson,"bundles",coin->bundlescount);
-        jaddnum(retjson,"accuracy",(double)validated/total);
-        return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"no active coin\"}"));
-}
-
-STRING_ARG(iguana,removecoin,activecoin)
-{
-    struct iguana_bundle *bp; int32_t i,height; char fname[1024];
-    if ( (coin= iguana_coinfind(activecoin)) != 0 )
+    if ( coin != 0 )
     {
         coin->active = 0;
-        coin->started = 0;
-        if ( 0 )
-        {
-            for (i=0; i<IGUANA_MAXPEERS; i++)
-            {
-                sprintf(fname,"%s/%s/vouts/%04d.vouts",GLOBAL_DBDIR,coin->symbol,i), OS_removefile(fname,0);
-                sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,i), OS_removefile(fname,0);
-            }
-            sprintf(fname,"%s/%s/vouts/*",GLOBAL_DBDIR,coin->symbol), OS_removefile(fname,0);
-            sprintf(fname,"%s/%s/*",coin->VALIDATEDIR,coin->symbol), OS_removefile(fname,0);
-            for (i=0; i<coin->bundlescount; i++)
-            {
-                sprintf(fname,"%s/%s/balancecrc.%d",GLOBAL_DBDIR,coin->symbol,i), OS_removefile(fname,0);
-                if ( (bp= coin->bundles[i]) != 0 )
-                {
-                    iguana_bundlepurgefiles(coin,bp);
-                    iguana_bundleremove(coin,bp->hdrsi,1);
-                }
-            }
-            for (height=0; height<coin->longestchain; height+=IGUANA_SUBDIRDIVISOR)
-            {
-                sprintf(fname,"%s/%s/%d",GLOBAL_DBDIR,coin->symbol,height/IGUANA_SUBDIRDIVISOR);
-                OS_remove_directory(fname);
-            }
-            sprintf(fname,"%s/%s/*",GLOBAL_DBDIR,coin->symbol), OS_remove_directory(fname);
-        }
-        return(clonestr("{\"result\":\"success\"}"));
-    }
-    return(clonestr("{\"error\":\"no active coin\"}"));
+        return(clonestr("{\"result\":\"coin paused\"}"));
+    } else return(clonestr("{\"error\":\"pausecoin needs coin\"}"));
 }
 
-INT_ARG(bitcoinrpc,getblockhash,height)
+TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
+{
+    struct iguana_peer *addr; int32_t i,n;
+    if ( coin == 0 )
+        coin = iguana_coinfind(activecoin);
+    if ( coin != 0 && strcmp(coin->symbol,"RELAY") == 0 )
+        basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(ipaddr),GENESIS_PUBKEY);
+    printf("coin.%p.[%s] addnode.%s -> %s\n",coin,coin!=0?coin->symbol:"",activecoin,ipaddr);
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 && is_ipaddr(ipaddr) != 0 )
+    {
+        //iguana_possible_peer(coin,ipaddr);
+        if ( (addr= iguana_peerslot(coin,(uint32_t)calc_ipbits(ipaddr),1)) != 0 )
+        {
+            addr->supernet = 1;
+            if ( addr->usock >= 0 )
+            {
+                if ( (n= coin->peers->numranked) != 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        if ( addr == coin->peers->ranked[i] )
+                            break;
+                    }
+                    if ( i == n )
+                    {
+                        if ( i == IGUANA_MAXPEERS )
+                            i--;
+                        else coin->peers->numranked = n+1;
+                        coin->peers->ranked[i] = addr;
+                        addr->recvblocks = coin->peers->ranked[0]->recvblocks + 100;
+                        addr->recvtotal = coin->peers->ranked[0]->recvtotal*1.1 + 100;
+                        printf("set (%s) -> slot.%d numranked.%d\n",ipaddr,i,coin->peers->numranked);
+                    } else printf("(%s) is already peer.%d\n",ipaddr,i);
+                }
+                return(clonestr("{\"result\":\"peer was already connected\"}"));
+            }
+            if ( addr->pending == 0 )
+            {
+                addr->pending = (uint32_t)time(NULL);
+                iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+                return(clonestr("{\"result\":\"addnode submitted\"}"));
+            } else return(clonestr("{\"result\":\"addnode connection was already pending\"}"));
+        } else return(clonestr("{\"result\":\"addnode cant find peer slot\"}"));
+    }
+    else if ( coin == 0 )
+        return(clonestr("{\"error\":\"addnode needs active coin, do an addcoin first\"}"));
+    else return(clonestr("{\"error\":\"addnode needs ipaddr\"}"));
+}
+
+TWO_STRINGS(iguana,persistent,activecoin,ipaddr)
+{
+    int32_t i;
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 )
+    {
+        for (i=0; i<IGUANA_MAXPEERS; i++)
+        {
+            if ( strcmp(coin->peers->active[i].ipaddr,ipaddr) == 0 )
+            {
+                coin->peers->active[i].persistent_peer = juint(json,"interval")+3;
+                return(clonestr("{\"result\":\"node marked as persistent\"}"));
+            }
+        }
+        return(clonestr("{\"result\":\"node wasnt active\"}"));
+    } else return(clonestr("{\"error\":\"persistent needs coin and ipaddr\"}"));
+}
+
+TWO_STRINGS(iguana,removenode,activecoin,ipaddr)
+{
+    int32_t i;
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 )
+    {
+        for (i=0; i<IGUANA_MAXPEERS; i++)
+        {
+            if ( strcmp(coin->peers->active[i].ipaddr,ipaddr) == 0 )
+            {
+                coin->peers->active[i].rank = 0;
+                coin->peers->active[i].dead = (uint32_t)time(NULL);
+                return(clonestr("{\"result\":\"node marked as dead\"}"));
+            }
+        }
+        return(clonestr("{\"result\":\"node wasnt active\"}"));
+    } else return(clonestr("{\"error\":\"removenode needs coin and ipaddr\"}"));
+}
+
+TWO_STRINGS(iguana,oneshot,activecoin,ipaddr)
+{
+    if ( coin != 0 && ipaddr != 0 )
+    {
+        iguana_possible_peer(coin,ipaddr);
+        return(clonestr("{\"result\":\"addnode submitted\"}"));
+    } else return(clonestr("{\"error\":\"addnode needs coin and ipaddr\"}"));
+}
+
+cJSON *iguana_peerjson(struct iguana_info *coin,struct iguana_peer *addr)
+{
+    cJSON *array,*json = cJSON_CreateObject();
+    jaddstr(json,"ipaddr",addr->ipaddr);
+    if ( addr->supernet != 0 )
+        jaddstr(json,"ipaddr",addr->ipaddr);
+    jaddstr(json,"supernet","yes");
+    jaddnum(json,"protover",addr->protover);
+    jaddnum(json,"relay",addr->relayflag);
+    jaddnum(json,"height",addr->height);
+    jaddnum(json,"rank",addr->rank);
+    jaddnum(json,"usock",addr->usock);
+    if ( addr->dead != 0 )
+        jaddnum(json,"dead",addr->dead);
+    jaddnum(json,"ready",addr->ready);
+    jaddnum(json,"recvblocks",addr->recvblocks);
+    jaddnum(json,"recvtotal",addr->recvtotal);
+    jaddnum(json,"lastcontact",addr->lastcontact);
+    if ( addr->numpings > 0 )
+        jaddnum(json,"aveping",addr->pingsum/addr->numpings);
+    array = cJSON_CreateObject();
+    jaddnum(array,"version",addr->msgcounts.version);
+    jaddnum(array,"verack",addr->msgcounts.verack);
+    jaddnum(array,"getaddr",addr->msgcounts.getaddr);
+    jaddnum(array,"addr",addr->msgcounts.addr);
+    jaddnum(array,"inv",addr->msgcounts.inv);
+    jaddnum(array,"getdata",addr->msgcounts.getdata);
+    jaddnum(array,"notfound",addr->msgcounts.notfound);
+    jaddnum(array,"getblocks",addr->msgcounts.getblocks);
+    jaddnum(array,"getheaders",addr->msgcounts.getheaders);
+    jaddnum(array,"headers",addr->msgcounts.headers);
+    jaddnum(array,"tx",addr->msgcounts.tx);
+    jaddnum(array,"block",addr->msgcounts.block);
+    jaddnum(array,"mempool",addr->msgcounts.mempool);
+    jaddnum(array,"ping",addr->msgcounts.ping);
+    jaddnum(array,"pong",addr->msgcounts.pong);
+    jaddnum(array,"reject",addr->msgcounts.reject);
+    jaddnum(array,"filterload",addr->msgcounts.filterload);
+    jaddnum(array,"filteradd",addr->msgcounts.filteradd);
+    jaddnum(array,"filterclear",addr->msgcounts.filterclear);
+    jaddnum(array,"merkleblock",addr->msgcounts.merkleblock);
+    jaddnum(array,"alert",addr->msgcounts.alert);
+    jadd(json,"msgcounts",array);
+    return(json);
+}
+
+cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly)
+{
+    cJSON *retjson,*array; int32_t i; struct iguana_peer *addr;
+    if ( coin == 0 || coin->peers == 0 )
+        return(0);
+    array = cJSON_CreateArray();
+    for (i=0; i<coin->MAXPEERS; i++)
+    {
+        addr = &coin->peers->active[i];
+        if ( addr->usock >= 0 && addr->ipbits != 0 && addr->ipaddr[0] != 0 )
+        {
+            if ( addronly != 0 )
+                jaddistr(array,addr->ipaddr);
+            else jaddi(array,iguana_peerjson(coin,addr));
+        }
+    }
+    if ( addronly == 0 )
+    {
+        retjson = cJSON_CreateObject();
+        jadd(retjson,"peers",array);
+        jaddnum(retjson,"maxpeers",coin->MAXPEERS);
+        jaddstr(retjson,"coin",coin->symbol);
+        return(retjson);
+    }
+    else return(array);
+}
+
+TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr)
+{
+    int32_t i; struct iguana_peer *addr;
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 )
+    {
+        for (i=0; i<coin->MAXPEERS; i++)
+        {
+            addr = &coin->peers->active[i];
+            if ( strcmp(addr->ipaddr,ipaddr) == 0 )
+                return(jprint(iguana_peerjson(coin,addr),1));
+        }
+        return(clonestr("{\"result\":\"nodestatus couldnt find ipaddr\"}"));
+    } else return(clonestr("{\"error\":\"nodestatus needs ipaddr\"}"));
+}
+
+STRING_AND_INT(iguana,maxpeers,activecoin,max)
+{
+    cJSON *retjson; int32_t i; struct iguana_peer *addr;
+    if ( coin != 0 && coin->peers != 0 )
+    {
+        retjson = cJSON_CreateObject();
+        if ( max > IGUANA_MAXPEERS )
+            max = IGUANA_MAXPEERS;
+        if ( max > coin->MAXPEERS )
+        {
+            for (i=max; i<coin->MAXPEERS; i++)
+                if ( (addr= coin->peers->ranked[i]) != 0 )
+                    addr->dead = 1;
+        }
+        coin->MAXPEERS = max;
+        jaddnum(retjson,"maxpeers",coin->MAXPEERS);
+        jaddstr(retjson,"coin",coin->symbol);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"maxpeers needs coin\"}"));
+}
+
+char *hmac_dispatch(char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char *message),char *name,char *message,char *password)
+{
+    char hexstr[1025]; cJSON *json;
+    if ( message != 0 && password != 0 && message[0] != 0 && password[0] != 0 )
+    {
+        memset(hexstr,0,sizeof(hexstr));
+        (*hmacfunc)(hexstr,password,password==0?0:(int32_t)strlen(password),message);
+        json = cJSON_CreateObject();
+        jaddstr(json,"result","hmac calculated");
+        jaddstr(json,"message",message);
+        jaddstr(json,name,hexstr);
+        return(jprint(json,1));
+    } else return(clonestr("{\"error\":\"hmac needs message and passphrase\"}"));
+}
+
+char *hash_dispatch(void (*hashfunc)(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len),char *name,char *message)
+{
+    char hexstr[65537]; uint8_t databuf[32768]; cJSON *json;
+    if ( message != 0 && message[0] != 0 )
+    {
+        memset(hexstr,0,sizeof(hexstr));
+        (*hashfunc)(hexstr,databuf,(uint8_t *)message,(int32_t)strlen(message));
+        json = cJSON_CreateObject();
+        jaddstr(json,"result","hash calculated");
+        jaddstr(json,"message",message);
+        jaddstr(json,name,hexstr);
+        return(jprint(json,1));
+    } else return(clonestr("{\"error\":\"hash needs message\"}"));
+}
+
+TWO_HASHES(hash,curve25519_pair,element,scalar)
 {
     cJSON *retjson = cJSON_CreateObject();
-    jaddbits256(retjson,"result",iguana_blockhash(coin,height));
+    jaddbits256(retjson,"result",curve25519(element,scalar));
     return(jprint(retjson,1));
 }
 
-HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly)
+STRING_ARG(hash,NXT,passphrase) { return(hash_dispatch(calc_NXTaddr,"NXT",passphrase)); }
+STRING_ARG(hash,curve25519,pubkey) { return(hash_dispatch(calc_curve25519_str,"curve25519",pubkey)); }
+STRING_ARG(hash,crc32,message) { return(hash_dispatch(calc_crc32str,"crc32",message)); }
+STRING_ARG(hash,base64_encode,message) { return(hash_dispatch(calc_base64_encodestr,"base64_encode",message)); }
+STRING_ARG(hash,base64_decode,message) { return(hash_dispatch(calc_base64_decodestr,"base64_decode",message)); }
+STRING_ARG(hash,rmd160_sha256,message) { return(hash_dispatch(rmd160ofsha256,"rmd160_sha256",message)); }
+STRING_ARG(hash,sha256_sha256,message) { return(hash_dispatch(sha256_sha256,"sha256_sha256",message)); }
+STRING_ARG(hash,hex,message) { return(hash_dispatch(calc_hexstr,"hex",message)); }
+STRING_ARG(hash,unhex,message) { return(hash_dispatch(calc_unhexstr,"unhex",message)); }
+
+STRING_ARG(hash,sha224,message) { return(hash_dispatch(calc_sha224,"sha224",message)); }
+STRING_ARG(hash,sha256,message) { return(hash_dispatch(vcalc_sha256,"sha256",message)); }
+STRING_ARG(hash,sha384,message) { return(hash_dispatch(calc_sha384,"sha384",message)); }
+STRING_ARG(hash,sha512,message) { return(hash_dispatch(calc_sha512,"sha512",message)); }
+STRING_ARG(hash,rmd128,message) { return(hash_dispatch(calc_rmd128,"rmd128",message)); }
+STRING_ARG(hash,rmd160,message) { return(hash_dispatch(calc_rmd160,"rmd160",message)); }
+STRING_ARG(hash,rmd256,message) { return(hash_dispatch(calc_rmd256,"rmd256",message)); }
+STRING_ARG(hash,rmd320,message) { return(hash_dispatch(calc_rmd320,"rmd320",message)); }
+STRING_ARG(hash,sha1,message) { return(hash_dispatch(calc_sha1,"sha1",message)); }
+STRING_ARG(hash,md2,message) { return(hash_dispatch(calc_md2str,"md2",message)); }
+STRING_ARG(hash,md4,message) { return(hash_dispatch(calc_md4str,"md4",message)); }
+STRING_ARG(hash,md5,message) { return(hash_dispatch(calc_md5str,"md5",message)); }
+STRING_ARG(hash,tiger192_3,message) { return(hash_dispatch(calc_tiger,"tiger",message)); }
+STRING_ARG(hash,whirlpool,message) { return(hash_dispatch(calc_whirlpool,"whirlpool",message)); }
+TWO_STRINGS(hmac,sha224,message,passphrase) { return(hmac_dispatch(hmac_sha224_str,"sha224",message,passphrase)); }
+TWO_STRINGS(hmac,sha256,message,passphrase) { return(hmac_dispatch(hmac_sha256_str,"sha256",message,passphrase)); }
+TWO_STRINGS(hmac,sha384,message,passphrase) { return(hmac_dispatch(hmac_sha384_str,"sha384",message,passphrase)); }
+TWO_STRINGS(hmac,sha512,message,passphrase) { return(hmac_dispatch(hmac_sha512_str,"sha512",message,passphrase)); }
+TWO_STRINGS(hmac,rmd128,message,passphrase) { return(hmac_dispatch(hmac_rmd128_str,"rmd128",message,passphrase)); }
+TWO_STRINGS(hmac,rmd160,message,passphrase) { return(hmac_dispatch(hmac_rmd160_str,"rmd160",message,passphrase)); }
+TWO_STRINGS(hmac,rmd256,message,passphrase) { return(hmac_dispatch(hmac_rmd256_str,"rmd256",message,passphrase)); }
+TWO_STRINGS(hmac,rmd320,message,passphrase) { return(hmac_dispatch(hmac_rmd320_str,"rmd320",message,passphrase)); }
+TWO_STRINGS(hmac,sha1,message,passphrase) { return(hmac_dispatch(hmac_sha1_str,"sha1",message,passphrase)); }
+TWO_STRINGS(hmac,md2,message,passphrase) { return(hmac_dispatch(hmac_md2_str,"md2",message,passphrase)); }
+TWO_STRINGS(hmac,md4,message,passphrase) { return(hmac_dispatch(hmac_md4_str,"md4",message,passphrase)); }
+TWO_STRINGS(hmac,md5,message,passphrase) { return(hmac_dispatch(hmac_md5_str,"md5",message,passphrase)); }
+TWO_STRINGS(hmac,tiger192_3,message,passphrase) { return(hmac_dispatch(hmac_tiger_str,"tiger",message,passphrase)); }
+TWO_STRINGS(hmac,whirlpool,message,passphrase) { return(hmac_dispatch(hmac_whirlpool_str,"whirlpool",message,passphrase)); }
+
+STRING_ARG(SuperNET,bitcoinrpc,setcoin)
 {
-    char *blockstr,*datastr; struct iguana_msgblock msg; struct iguana_block *block; cJSON *retjson; bits256 txid; int32_t len;
-    retjson = cJSON_CreateObject();
-    memset(&msg,0,sizeof(msg));
-    if ( remoteonly == 0 && (block= iguana_blockfind("getblockRPC",coin,blockhash)) != 0 )
+    char buf[1024];
+    if ( setcoin != 0 && setcoin[0] != 0 )
     {
-        if ( verbose != 0 )
-            return(jprint(iguana_blockjson(coin,block,1),1));
+        strcpy(myinfo->rpcsymbol,setcoin);
+        touppercase(myinfo->rpcsymbol);
+        printf("bitcoinrpc.%s\n",myinfo->rpcsymbol);
+        if ( iguana_launchcoin(myinfo,myinfo->rpcsymbol,json,0) < 0 )
+            return(clonestr("{\"error\":\"error creating coin\"}"));
         else
         {
-            if ( (len= iguana_peerblockrequest(coin,coin->blockspace,coin->blockspacesize,0,blockhash,0)) > 0 )
-            {
-                datastr = malloc(len*2 + 1);
-                init_hexbytes_noT(datastr,coin->blockspace,len);
-                jaddstr(retjson,"result",datastr);
-                free(datastr);
-                return(jprint(retjson,1));
-            }
-            jaddstr(retjson,"error","error getting rawblock");
+            sprintf(buf,"{\"result\":\"success\",\"setcoin\":\"%s\"}",setcoin);
+            return(clonestr(buf));
         }
-    }
-    else if ( coin->APIblockstr != 0 )
-        jaddstr(retjson,"error","already have pending request");
-    else
+    } else return(clonestr("{\"error\":\"bitcoinrpc needs setcoin value\"}"));
+}
+
+ZERO_ARGS(SuperNET,help)
+{
+    cJSON *helpjson,*retjson;
+    if ( (helpjson= SuperNET_helpjson()) != 0 )
     {
-        memset(txid.bytes,0,sizeof(txid));
-        if ( (blockstr= iguana_APIrequest(coin,blockhash,txid,5)) != 0 )
-        {
-            jaddstr(retjson,"result",blockstr);
-            free(blockstr);
-        } else jaddstr(retjson,"error","cant find blockhash");
-    }
-    return(jprint(retjson,1));
+        retjson = cJSON_CreateObject();
+        jadd(retjson,"result",helpjson);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"cant get helpjson\"}"));
 }
 
-ZERO_ARGS(bitcoinrpc,getbestblockhash)
+TWO_STRINGS(SuperNET,html,agentform,htmlfile)
 {
-    cJSON *retjson = cJSON_CreateObject();
-    char str[65]; jaddstr(retjson,"result",bits256_str(str,coin->blocks.hwmchain.RO.hash2));
-    return(jprint(retjson,1));
-}
-
-ZERO_ARGS(bitcoinrpc,getblockcount)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    //printf("result %d\n",coin->blocks.hwmchain.height);
-    jaddnum(retjson,"result",coin->blocks.hwmchain.height);
-    return(jprint(retjson,1));
-}
-
-STRING_AND_INT(iguana,bundleaddresses,activecoin,height)
-{
-    struct iguana_info *ptr;
-    if ( (ptr= iguana_coinfind(activecoin)) != 0 )
-        return(iguana_bundleaddrs(ptr,height / coin->chain->bundlesize));
-    else return(clonestr("{\"error\":\"activecoin is not active\"}"));
-}
-
-STRING_AND_INT(iguana,PoSweights,activecoin,height)
-{
-    struct iguana_info *ptr; int32_t num,nonz,errs,bundleheight; struct iguana_pkhash *refP; int64_t *weights,supply; cJSON *retjson;
-    if ( (ptr= iguana_coinfind(activecoin)) != 0 )
-    {
-        //for (bundleheight=coin->chain->bundlesize; bundleheight<height; bundleheight+=coin->chain->bundlesize)
-        {
-            bundleheight = (height / ptr->chain->bundlesize) * ptr->chain->bundlesize;
-            if ( (weights= iguana_PoS_weights(myinfo,ptr,&refP,&supply,&num,&nonz,&errs,bundleheight)) != 0 )
-            {
-                retjson = cJSON_CreateObject();
-                jaddstr(retjson,"result",errs == 0 ? "success" : "error");
-                jaddnum(retjson,"bundleheight",bundleheight);
-                jaddnum(retjson,"numaddresses",num);
-                jaddnum(retjson,"nonzero",nonz);
-                jaddnum(retjson,"errors",errs);
-                jaddnum(retjson,"supply",dstr(supply));
-                free(weights);
-                return(jprint(retjson,1));
-            } else return(clonestr("{\"error\":\"iguana_PoS_weights returned null\"}"));
-        }
-    }
-    return(clonestr("{\"error\":\"activecoin is not active\"}"));
-}
-
-STRING_ARG(iguana,stakers,activecoin)
-{
-    struct iguana_info *ptr; int32_t i,datalen,pkind,hdrsi; bits256 hash2; struct iguana_bundle *bp; cJSON *retjson,*array; struct iguana_pkhash *refP; struct iguana_ramchaindata *rdata; char coinaddr[64]; uint8_t refrmd160[20]; bits256 *sortbuf;
-    if ( (ptr= iguana_coinfind(activecoin)) != 0 && ptr->RTheight > ptr->chain->bundlesize )
-    {
-        hdrsi = (ptr->RTheight / ptr->chain->bundlesize) - 1;
-        if ( (bp= ptr->bundles[hdrsi]) != 0 && bp->weights != 0 && (rdata= bp->ramchain.H.data) != 0 && bp->weights != 0 )
-        {
-            sortbuf = calloc(bp->numweights,2 * sizeof(*sortbuf));
-            for (i=datalen=0; i<bp->numweights; i++)
-                datalen += iguana_rwnum(1,&((uint8_t *)sortbuf)[datalen],sizeof(bp->weights[i]),(void *)&bp->weights[i]);
-            hash2 = bits256_doublesha256(0,(uint8_t *)sortbuf,datalen);
-            refP = RAMCHAIN_PTR(rdata,Poffset);
-            retjson = cJSON_CreateObject();
-            array = cJSON_CreateArray();
-            memset(refrmd160,0,sizeof(refrmd160));
-            for (i=0; i<ptr->chain->bundlesize; i++)
-            {
-                if ( (pkind= iguana_staker_sort(ptr,&hash2,refrmd160,refP,bp->weights,bp->numweights,sortbuf)) > 0 )
-                {
-                    bitcoin_address(coinaddr,ptr->chain->pubtype,refP[pkind].rmd160,sizeof(refP[pkind].rmd160));
-                    jaddistr(array,coinaddr);
-                } else jaddistr(array,"error");
-            }
-            jaddstr(retjson,"result","success");
-            jadd(retjson,"stakers",array);
-            return(jprint(retjson,1));
-        } else return(clonestr("{\"error\":\"iguana_stakers needs PoSweights and weights\"}"));
-    }
-    return(clonestr("{\"error\":\"activecoin is not active\"}"));
-}
-
-STRING_AND_INT(iguana,bundlehashes,activecoin,height)
-{
-    struct iguana_info *ptr; struct iguana_bundle *bp; int32_t i,hdrsi; cJSON *retjson,*array; struct iguana_ramchaindata *rdata;
-    if ( (ptr= iguana_coinfind(activecoin)) != 0 )
-    {
-        hdrsi = height / coin->chain->bundlesize;
-        if ( hdrsi < coin->bundlescount && hdrsi >= 0 && (bp= coin->bundles[hdrsi]) != 0 )
-        {
-            if ( (rdata= bp->ramchain.H.data) != 0 )
-            {
-                array = cJSON_CreateArray();
-                for (i=0; i<IGUANA_NUMLHASHES; i++)
-                    jaddinum(array,rdata->lhashes[i].txid);
-                retjson = cJSON_CreateObject();
-                jaddstr(retjson,"result","success");
-                jaddbits256(retjson,"sha256",rdata->sha256);
-                jadd(retjson,"bundlehashes",array);
-                return(jprint(retjson,1));
-            } else return(clonestr("{\"error\":\"ramchain not there\"}"));
-        } else return(clonestr("{\"error\":\"height is too big\"}"));
-    } else return(clonestr("{\"error\":\"activecoin is not active\"}"));
-}
-
-// low priority RPC
-
-HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag)
-{
-    /*"transactions" : [
-     {
-     "account" : "doc test",
-     "address" : "mmXgiR6KAhZCyQ8ndr2BCfEq1wNG2UnyG6",
-     "category" : "receive",
-     "amount" : 0.10000000,
-     "vout" : 0,
-     "confirmations" : 76478,
-     "blockhash" : "000000000017c84015f254498c62a7c884a51ccd75d4dd6dbdcb6434aa3bd44d",
-     "blockindex" : 1,
-     "blocktime" : 1399294967,
-     "txid" : "85a98fdf1529f7d5156483ad020a51b7f3340e47448cf932f470b72ff01a6821",
-     "walletconflicts" : [
-     ],
-     "time" : 1399294967,
-     "timereceived" : 1418924714
-     },*/
-    cJSON *retjson = cJSON_CreateObject();
-    jaddstr(retjson,"error","low priority RPC not implemented");
-    return(jprint(retjson,1));
-}
-
-ZERO_ARGS(bitcoinrpc,gettxoutsetinfo)
-{
-    cJSON *retjson = cJSON_CreateObject();
-    jaddstr(retjson,"error","low priority RPC not implemented");
-    return(jprint(retjson,1));
-}
-
-ZERO_ARGS(bitcoinrpc,listaddressgroupings)
-{
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    return(clonestr("{\"error\":\"low priority RPC not implemented\"}"));
-}
-
-SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment)
-{
-    cJSON *retjson;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    if ( myinfo->expiration == 0 )
-        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    char *htmlstr; cJSON *retjson; int32_t max = 4*1024*1024;
+    if ( htmlfile == 0 || htmlfile[0] == 0 )
+        htmlfile = "forms.html";
+    //if ( (fp= fopen(htmlfile,"w")) == 0 )
+    //    printf("error opening htmlfile.(%s)\n",htmlfile);
+    htmlstr = malloc(max);
+    htmlstr = SuperNET_htmlstr(htmlfile,htmlstr,max,agentform);
     retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result",htmlstr);
+    free(htmlstr);
+    //if ( fp != 0 )
+    //    fclose(fp);
     return(jprint(retjson,1));
 }
 
 #undef IGUANA_ARGS
+#undef _IGUANA_APIDEC_H_
 #include "../includes/iguana_apiundefs.h"
 

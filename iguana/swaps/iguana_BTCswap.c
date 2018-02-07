@@ -90,7 +90,7 @@ int32_t instantdex_bobscript(uint8_t *script,int32_t n,uint32_t *locktimep,int32
     script[n++] = SCRIPT_OP_ELSE;
     if ( secretstartp != 0 )
         *secretstartp = n + 2;
-    n = bitcoin_revealsecret160(script,n,secret160);
+    n = bitcoin_secret160verify(script,n,secret160);
     n = bitcoin_pubkeyspend(script,n,pubkeyB);
     script[n++] = SCRIPT_OP_ENDIF;
     return(n);
@@ -164,7 +164,7 @@ void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON
                 break;
             pubkeyptrs[j] = spend->inputs[i].pubkeys[j];
         }
-        bitcoin_txinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen,j>0?pubkeyptrs:0,j);
+        bitcoin_txinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen,j>0?pubkeyptrs:0,j,0,0);
     }
 }
 
@@ -1227,7 +1227,7 @@ char *instantdex_bailintx(struct iguana_info *coin,bits256 *txidp,struct bitcoin
     bitcoin_txoutput(coin,txobj,scriptv0,scriptv0len,spend->satoshis);
     if ( isbob != 0 )
     {
-        scriptv1len = bitcoin_revealsecret160(scriptv1,0,x);
+        scriptv1len = bitcoin_secret160verify(scriptv1,0,x);
         scriptv1len = bitcoin_pubkeyspend(scriptv1,scriptv1len,pubkey);
     } else scriptv1len = bitcoin_p2shspend(scriptv1,0,x);
     bitcoin_txoutput(coin,txobj,scriptv1,scriptv1len,spend->txfee);
@@ -1235,7 +1235,7 @@ char *instantdex_bailintx(struct iguana_info *coin,bits256 *txidp,struct bitcoin
         bitcoin_txoutput(coin,txobj,changescript,scriptv2len,change);
     for (i=0; i<spend->numinputs; i++)
         bitcoin_txinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,0xffffffff);
-    rawtxstr = bitcoin_json2hex(coin,&txid,txobj,0);
+    rawtxstr = bitcoin_json2hex(coin,&txid,txobj,0,0,0);
     char str[65]; printf("%s_bailin.%s (%s)\n",isbob!=0?"bob":"alice",bits256_str(str,txid),rawtxstr);
     V = calloc(spend->numinputs,sizeof(*V));
     for (i=0; i<spend->numinputs; i++)
@@ -1296,8 +1296,8 @@ char *instantdex_payouttx(struct iguana_info *coin,char *sigstr,int32_t *siglenp
 {
     struct vin_info V; cJSON *txobj;
     txobj = instantdex_bailinspend(coin,sharedprivs[1],amount);
-    bitcoin_txinput(coin,txobj,bailintxid,0,0xffffffff);
-    bitcoin_txinput(coin,txobj,bailintxid,1,0xffffffff);
+    bitcoin_txinput(coin,txobj,bailintxid,0,0xffffffff,0,0);
+    bitcoin_txinput(coin,txobj,bailintxid,1,0xffffffff,0,0);
     memset(&V,0,sizeof(V));
     if ( othersigstr != 0 )
     {
@@ -1323,7 +1323,7 @@ char *instantdex_refundtx(struct iguana_info *coin,bits256 *txidp,bits256 bailin
 {
     char sigstr[256]; int32_t siglen; struct vin_info V; cJSON *txobj;
     txobj = instantdex_bailinspend(coin,priv2,amount - txfee);
-    bitcoin_txinput(coin,txobj,bailintxid,0,0xffffffff);
+    bitcoin_txinput(coin,txobj,bailintxid,0,0xffffffff,0,0);
     return(instantdex_bailinsign(coin,bailinpriv,sigstr,&siglen,txidp,&V,txobj,isbob));
 }
 

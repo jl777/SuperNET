@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -46,7 +46,7 @@ struct SaM_info {  bits384 bits; TRIT trits[SAM_STATE_SIZE],hash[SAM_HASH_SIZE];
 struct SaMhdr { bits384 sig; uint32_t timestamp,nonce; uint8_t numrounds,leverage; };
 
 void SaM_Initialize(struct SaM_info *state);
-int32_t SaM_Absorb(struct SaM_info *state,const uint8_t *input,const uint32_t inputSize,const uint8_t *input2,const uint32_t inputSize2);
+int32_t SaM_Absorb(struct SaM_info *state,const uint8_t *input,uint32_t inputSize,const uint8_t *input2,uint32_t inputSize2);
 bits384 SaM_emit(struct SaM_info *state);
 bits384 SaM_encrypt(uint8_t *dest,uint8_t *src,int32_t len,bits384 password,uint32_t timestamp);
 uint64_t SaM_threshold(int32_t leverage);
@@ -285,7 +285,7 @@ int32_t SaM_test()
         memset(histo,0,sizeof(histo));
         for (i=0; i<5; i++)
         {
-            if ( 0 && (i % 100) == 99 )
+            if ( (0) && (i % 100) == 99 )
             {
                 for (j=0; j<32; j++)
                     seed.bytes[j] = rand() >> 8;
@@ -340,6 +340,7 @@ bits384 SaM_encrypt(uint8_t *dest,uint8_t *src,int32_t len,bits384 password,uint
 {
     bits384 xorpad; int32_t i;  struct SaM_info XORpad;
     SaM_Initialize(&XORpad), SaM_Absorb(&XORpad,password.bytes,sizeof(password),(void *)&timestamp,sizeof(timestamp));
+    memset(xorpad.bytes,0,sizeof(xorpad));
     while ( len >= 0 )
     {
         SaM_emit(&XORpad);

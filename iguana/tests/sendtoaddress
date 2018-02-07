@@ -1,2 +1,3 @@
-curl --url "http://127.0.0.1:7778" --data "{\"method\":\"sendtoaddress\",\"params\":[\"RKk3hmkHr3khf2aQRZW51oxnzFVHsQe4hf\", 0.001, \"testcomment\", \"sendcomment\"]}"
+#!/bin/bash
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTC\",\"method\":\"sendtoaddress\",\"params\":[\"1HEQifAU8mcMsTtM4ougjfZemVYfdT1TcJ\", 0.005]}"
 

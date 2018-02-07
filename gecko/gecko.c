@@ -1,6 +1,6 @@
 
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -52,7 +52,7 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
         //iguana_update_balances(virt);
         //iguana_realtime_update(myinfo,virt);
     }
-    if ( 0 && hwmhdrsi <= longesthdrsi )//&& virt->blocks.hwmchain.height < virt->longestchain-1 )
+    if ( (0) && hwmhdrsi <= longesthdrsi )//&& virt->blocks.hwmchain.height < virt->longestchain-1 )
     {
         if ( time(NULL) > virt->hdrstime+3 )
         {
@@ -62,7 +62,7 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
             virt->hdrstime = (uint32_t)time(NULL);
         }
     }
-    if ( 0 && btcd->FULLNODE != 0 )//&& virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
+    if ( (0) && btcd->FULLNODE != 0 )//&& virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
     {
         bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
         //fprintf(stderr,"mine.%s %s\n",virt->symbol,mineraddr);
@@ -179,9 +179,11 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
         virt->chain = calloc(1,sizeof(*virt->chain));
         virt->enableCACHE = 1;
         serialized = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
-        iguana_chaininit(virt->chain,1,valsobj);
+        iguana_chaininit(myinfo,virt->chain,1,valsobj);
+        //if ( virt->FULLNODE >= 0 )
+        //    virt->chain->userpass[0] = 0;
         virt->chain->isPoS = 1;
-        hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
+        hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgzblockhdr) : sizeof(struct iguana_msgblockhdr);
         if ( gecko_blocknonce_verify(virt,serialized,hdrsize,virt->chain->nBits,0,0) > 0 )
         {
             virt->chain->genesishash2 = iguana_calcblockhash(symbol,virt->chain->hashalgo,serialized,hdrsize);
@@ -212,7 +214,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
             if ( virt->blocks.hwmchain.height == 0 )
             {
                 memset(&txdata,0,sizeof(txdata));
-                if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,serialized,datalen) == datalen) || n == datalen-1 )
+                if ( (n= iguana_gentxarray(myinfo,virt,&virt->TXMEM,&txdata,&len,serialized,datalen) == datalen) || n == datalen-1 )
                 {
                     txdata.zblock.height = 0;
                     txdata.zblock.RO.allocsize = iguana_ROallocsize(virt);
@@ -271,9 +273,6 @@ char *basilisk_respond_geckoget(struct supernet_info *myinfo,char *CMD,void *add
     } else return(clonestr("{\"error\":\"invalid geckoget type, mustbe (HDR or BLK or GTX)\"}"));
 }
 
-#include "../includes/iguana_apidefs.h"
-#include "../includes/iguana_apideclares.h"
-
 char *gecko_sendrawtransaction(struct supernet_info *myinfo,char *symbol,uint8_t *data,int32_t datalen,bits256 txid,cJSON *vals,char *signedtx)
 {
     char *retstr = 0; struct iguana_info *virt,*btcd = iguana_coinfind("BTCD");
@@ -288,48 +287,5 @@ char *gecko_sendrawtransaction(struct supernet_info *myinfo,char *symbol,uint8_t
     return(retstr);
 }
 
-HASH_ARRAY_STRING(basilisk,geckotx,hash,vals,hexstr)
-{
-    struct iguana_info *btcd; char *retstr=0,*symbol; uint8_t *data,*allocptr,space[4096]; int32_t datalen; bits256 txid;
-    if ( (btcd= iguana_coinfind("BTCD")) != 0 && (symbol= jstr(vals,"symbol")) != 0 )
-    {
-        if ( (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr)) != 0 )
-        {
-            txid = bits256_doublesha256(0,data,datalen);
-            retstr = gecko_sendrawtransaction(myinfo,symbol,data,datalen,txid,vals,hexstr);
-        } else retstr = clonestr("{\"error\":\"no tx submitted\"}");
-        if ( allocptr != 0 )
-            free(allocptr);
-        if ( retstr == 0 )
-            retstr = clonestr("{\"error\":\"couldnt create geckotx\"}");
-        return(retstr);
-    } return(clonestr("{\"error\":\"need symbol and chain and BTCD to create new gecko tx\"}"));
-}
-
-HASH_ARRAY_STRING(basilisk,geckoblock,hash,vals,hexstr)
-{
-    return(clonestr("{\"error\":\"geckoblock is an internal reporting function\"}"));
-}
-
-HASH_ARRAY_STRING(basilisk,geckoheaders,hash,vals,hexstr)
-{
-    return(clonestr("{\"error\":\"geckoheaders is an internal reporting function\"}"));
-}
-
-HASH_ARRAY_STRING(basilisk,geckoget,hash,vals,hexstr)
-{
-    struct iguana_info *btcd,*virt; char *symbol;
-    if ( (btcd= iguana_coinfind("BTCD")) != 0 && (symbol= jstr(vals,"symbol")) != 0 )
-    {
-        if ( (virt= iguana_coinfind(symbol)) != 0 )
-        {
-            basilisk_wait(myinfo,virt);
-            return(basilisk_respond_geckoget(myinfo,"GET",&coin->internaladdr,remoteaddr,0,vals,0,0,hash,0));
-        } else return(clonestr("{\"error\":\"geckoget needs virtualchain\"}"));
-    }
-    return(clonestr("{\"error\":\"geckoget needs BTCD\"}"));
-}
-
-#include "../includes/iguana_apiundefs.h"
 
 

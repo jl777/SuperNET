@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -14,7 +14,7 @@
  ******************************************************************************/
 
 #define DEFAULT_NXT_DEADLINE 720
-#define issue_NXTPOST(cmdstr) bitcoind_RPC(0,"curl",myinfo->NXTAPIURL,0,0,cmdstr)
+#define issue_NXTPOST(cmdstr) bitcoind_RPC(0,"curl",myinfo->NXTAPIURL,0,0,cmdstr,0)
 #define NXT_MSTYPE 5
 #define NXT_ASSETTYPE 2
 #define NXT_GENESISTIME 1385294400

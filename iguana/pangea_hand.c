@@ -24,11 +24,11 @@ struct pangea_queueitem *pangea_queuefind(struct table_info *tp,int32_t waiteven
     int32_t iter; struct pangea_queueitem *ptr;
     for (iter=0; iter<2; iter++)
     {
-        while ( (ptr= queue_dequeue(&tp->stateQ[iter],0)) != 0 )
+        while ( (ptr= queue_dequeue(&tp->stateQ[iter])) != 0 )
         {
             if ( ptr->waitevent == waitevent )
                 return(ptr);
-            queue_enqueue("stateQ",&tp->stateQ[iter ^ 1],&ptr->DL,0);
+            queue_enqueue("stateQ",&tp->stateQ[iter ^ 1],&ptr->DL);
         }
     }
     return(0);
@@ -42,7 +42,7 @@ void pangea_queuestate(struct table_info *tp,int32_t currentstate,int32_t waitev
     ptr->last = ptr->start = tai_now();
     ptr->waitevent = waitevent;
     char str[65]; printf("table.%s current.%d -> wait.%d\n",bits256_str(str,tp->G.tablehash),currentstate,waitevent);
-    queue_enqueue("stateQ",&tp->stateQ[0],&ptr->DL,0);
+    queue_enqueue("stateQ",&tp->stateQ[0],&ptr->DL);
 }
 
 int32_t pangea_slotA(struct table_info *tp) { return(0); }
@@ -383,7 +383,7 @@ int32_t pangea_queueprocess(struct supernet_info *myinfo,struct table_info *tp)
     //char str[65]; printf("queueprocess.(%s)\n",bits256_str(str,tp->G.tablehash));
     for (iter=0; iter<2; iter++)
     {
-        while ( (ptr= queue_dequeue(&tp->stateQ[iter],0)) != 0 )
+        while ( (ptr= queue_dequeue(&tp->stateQ[iter])) != 0 )
         {
             retval = 0;
             diff = tai_diff(ptr->last,tai_now());
@@ -409,7 +409,7 @@ int32_t pangea_queueprocess(struct supernet_info *myinfo,struct table_info *tp)
             else
             {
                 ptr->last = tai_now();
-                queue_enqueue("stateQ",&tp->stateQ[iter ^ 1],&ptr->DL,0);
+                queue_enqueue("stateQ",&tp->stateQ[iter ^ 1],&ptr->DL);
             }
         }
     }
@@ -811,7 +811,7 @@ int32_t pangea_lastman(struct supernet_info *myinfo,struct table_info *tp)
             printf("DUPLICATE LASTMAN!\n");
             return(1);
         }
-        if ( 0 && tp->priv.myind == activej && tp->priv.automuck == 0 )
+        if ( (0) && tp->priv.myind == activej && tp->priv.automuck == 0 )
         {
             pangea_sendcmd(myinfo,tp,"faceup",-1,tp->priv.holecards[0].bytes,sizeof(tp->priv.holecards[0]),tp->priv.cardis[0],tp->priv.cardis[0] != 0xff);
             pangea_sendcmd(myinfo,tp,"faceup",-1,tp->priv.holecards[1].bytes,sizeof(tp->priv.holecards[1]),tp->priv.cardis[1],tp->priv.cardis[1] != 0xff);

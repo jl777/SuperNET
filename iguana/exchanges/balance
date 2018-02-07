@@ -1,0 +1,3 @@
+#!/bin/bash
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"balance\",\"coin\":\"KMD\",\"address\":\"RHV2As4rox97BuE3LK96vMeNY8VsGRTmBj\"}"

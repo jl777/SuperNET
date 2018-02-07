@@ -1213,7 +1213,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 
     nn_random_generate (rand_key, sizeof (rand_key));
 
-    rc = nn_base64_encode (rand_key, sizeof (rand_key),
+    rc = _nn_base64_encode (rand_key, sizeof (rand_key),
         encoded_key, sizeof (encoded_key));
 
     encoded_key_len = strlen (encoded_key);
@@ -1355,7 +1355,7 @@ static int nn_ws_handshake_hash_key (const char *key, size_t key_len,
     for (i = 0; i < strlen (NN_WS_HANDSHAKE_MAGIC_GUID); i++)
         nn_sha1_hashbyte (&hash, NN_WS_HANDSHAKE_MAGIC_GUID [i]);
 
-    rc = nn_base64_encode (nn_sha1_result (&hash),
+    rc = _nn_base64_encode (nn_sha1_result (&hash),
         sizeof (hash.state), hashed, hashed_len);
 
     return rc;

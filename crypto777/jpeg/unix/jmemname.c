@@ -11,7 +11,9 @@
  * Also, the problem of determining the amount of memory available
  * is shoved onto the user.
  */
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 #define JPEG_INTERNALS
 #include "../jinclude.h"
@@ -68,7 +70,11 @@ extern void free JPP((void *ptr));
  */
 
 #ifndef TEMP_DIRECTORY		/* can override from jconfig.h or Makefile */
-#define TEMP_DIRECTORY  "/usr/tmp/" /* recommended setting for Unix */
+#ifdef _WIN32
+#define TEMP_DIRECTORY  "" /* recommended setting for Unix */
+#else
+#define TEMP_DIRECTORY  "/tmp/" /* recommended setting for Unix */
+#endif
 #endif
 
 static int next_file_num;	/* to distinguish among several temp files */

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -44,9 +44,9 @@
 #define INSTANTDEX_OFFERDURATION 600
 //#define INSTANTDEX_LOCKTIME 3600
 
-#define EXCHANGES777_MINPOLLGAP 1
+#define EXCHANGES777_MINPOLLGAP 3
 #define EXCHANGES777_MAXDEPTH 200
-#define EXCHANGES777_DEFAULT_TIMEOUT 30
+#define EXCHANGES777_DEFAULT_TIMEOUT 60
 typedef void CURL;
 struct exchange_info;
 struct exchange_quote;
@@ -83,10 +83,10 @@ struct exchange_info
 
 struct instantdex_msghdr
 {
-    struct acct777_sig sig __attribute__((packed));
+    struct acct777_sig sig; // __attribute__((packed))
     char cmd[8];
     uint8_t serialized[];
-} __attribute__((packed));
+}; // __attribute__((packed))
 
 #define NXT_ASSETID ('N' + ((uint64_t)'X'<<8) + ((uint64_t)'T'<<16))    // 5527630
 #define INSTANTDEX_ACCT "4383817337783094122"
@@ -179,7 +179,7 @@ char *exchanges777_Qtrade(struct exchange_info *exchange,char *base,char *rel,in
 struct exchange_request *exchanges777_baserelfind(struct exchange_info *exchange,char *base,char *rel,int32_t func);
 struct exchange_info *exchanges777_find(char *exchangestr);
 
-void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth);
+void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t numbids,int32_t numasks);
 
 double truefx_price(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert);
 double fxcm_price(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert);
@@ -195,5 +195,6 @@ struct instantdex_stateinfo *BTC_initFSM(int32_t *n);
 struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A,struct bitcoin_swapinfo *swap,struct iguana_info *coin);
 void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap);
 void instantdex_historyadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap);
+void dpow_price(char *exchange,char *name,double bid,double ask);
 
 #endif

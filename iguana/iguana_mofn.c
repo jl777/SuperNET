@@ -238,6 +238,22 @@ int32_t gfshare_test(struct supernet_info *myinfo,int32_t M,int32_t N,int32_t da
     return ok!=1;
 }
 
+void *bitcoin_ctx()
+{
+    void *ptr;
+    ptr = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+    secp256k1_pedersen_context_initialize(ptr);
+    secp256k1_rangeproof_context_initialize(ptr);
+    return(ptr);
+}
+
+void iguana_fixsecp(struct supernet_info *myinfo)
+{
+    myinfo->ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+    secp256k1_pedersen_context_initialize(myinfo->ctx);
+    secp256k1_rangeproof_context_initialize(myinfo->ctx);
+}
+
 void libgfshare_init(struct supernet_info *myinfo,uint8_t _logs[256],uint8_t _exps[510])
 {
     uint32_t i,x = 1;
@@ -255,7 +271,7 @@ void libgfshare_init(struct supernet_info *myinfo,uint8_t _logs[256],uint8_t _ex
     for (i=255; i<510; i++)
         _exps[i] = _exps[i % 255];
     _logs[0] = 0; // can't log(0) so just set it neatly to 0
-    if ( 0 )
+    if ( (0) )
     {
         void test_mofn(struct supernet_info *myinfo);
         gfshare_test(myinfo,6,11,32);
@@ -309,7 +325,7 @@ int maingen(int argc,char **argv)
 }
 
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -563,10 +579,17 @@ int32_t test_mofn256(struct supernet_info *myinfo,int32_t M,int32_t N)
         if ( m >= M )
             printf("%s %s error m.%d vs M.%d N.%d\n",bits256_str(str,secret),bits256_str(str2,recover),m,mofn->M,mofn->N);
     }
+#if defined(_M_X64)
+	if (((uint64_t)mofn - (uint64_t)space) >= sizeof(space) || ((uint64_t)mofn - (uint64_t)space) < 0)
+		free(mofn);
+	if (((uint64_t)cmp - (uint64_t)space) >= sizeof(space) || ((uint64_t)cmp - (uint64_t)space) < 0)
+		free(cmp);
+#else
     if ( ((long)mofn - (long)space) >= sizeof(space) || ((long)mofn - (long)space) < 0 )
         free(mofn);
     if ( ((long)cmp - (long)space) >= sizeof(space) || ((long)cmp - (long)space) < 0 )
         free(cmp);
+#endif
     return(retval);
 }
 
@@ -588,7 +611,7 @@ void test_mofn(struct supernet_info *myinfo)
         {
             if ( memcmp(secret.bytes,recover.bytes,sizeof(secret)) != 0 )
                 printf("FAILED m.%d M.%d N.%d\n",m,M,N);
-            else if ( 0 )
+            else if ( (0) )
             {
                 char str[65];
                 printf("%s PASSED m.%d M.%d N.%d\n",bits256_str(str,recover),m,M,N);
@@ -644,6 +667,7 @@ int32_t iguana_schnorr_peersign(void *ctx,uint8_t *allpub33,uint8_t *partialsig6
 bits256 iguana_schnorr_noncepair(void *ctx,bits256 *pubkey,uint8_t odd_even,bits256 msg256,bits256 privkey,int32_t maxj)
 {
     bits256 privnonce; int32_t j; uint8_t pubkey33[33];
+    memset(privnonce.bytes,0,sizeof(privnonce));
     for (j=0; j<maxj; j++)
     {
         privnonce = bitcoin_schnorr_noncepair(ctx,pubkey33,msg256,privkey);
@@ -656,7 +680,7 @@ bits256 iguana_schnorr_noncepair(void *ctx,bits256 *pubkey,uint8_t odd_even,bits
     if ( j == maxj )
     {
         printf("couldnt generate even noncepair\n");
-        exit(-1);
+        iguana_exit(0,0);
     }
     return(privnonce);
 }
@@ -766,7 +790,7 @@ void iguana_schnorr(struct supernet_info *myinfo)
             printf("error combining k.%d sig64 iter.%d\n",k,iter);
         else if ( bitcoin_schnorr_verify(myinfo->ctx,sig64,msg256,allpub2,33) < 0 )
             printf("allpub2 error verifying combined sig k.%d\n",k);
-        else if ( 0 ) // doesnt replicate with subsets
+        else if ( (0) ) // doesnt replicate with subsets
         {
             if ( bitcoin_pubkey_combine(myinfo->ctx,allpub,0,pubkeys,n,0,0) == 0 )
             {

@@ -28,7 +28,7 @@ int32_t basilisk_respond_geckogetheaders(struct supernet_info *myinfo,struct igu
             {
                 if ( block != 0 )
                 {
-                    if ( (n= iguana_headerget(virt,&serialized[len],maxsize-len,block)) > 0 )
+                    if ( (n= iguana_headerget(myinfo,virt,&serialized[len],maxsize-len,block)) > 0 )
                         len += n;
                 }
                 hash2 = iguana_blockhash(virt,height+i+1);
@@ -53,7 +53,7 @@ void gecko_blockhashupdate(struct iguana_info *virt,bits256 hash2,int32_t height
 
 char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 firsthash2)
 {
-    bits256 hash2,prevhash2; struct iguana_block *block; int32_t height,firstheight,i,len=0,n,num; struct iguana_msgblock msgB; char str[65],str2[65];
+    bits256 hash2,prevhash2; struct iguana_block *block; int32_t height=0,firstheight,i,len=0,n,num; struct iguana_msgzblock zmsgB; char str[65],str2[65];
     num = (int32_t)(datalen / 84);
     printf("headers.%s arrived.%d from %s\n",virt->symbol,num,bits256_str(str,firsthash2));
     if ( (block= iguana_blockfind("geckohdrs",virt,firsthash2)) != 0 && (firstheight= block->height) >= 0 )
@@ -62,14 +62,14 @@ char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt
         prevhash2 = firsthash2;
         for (i=0; i<num; i++)
         {
-            if ( (n= iguana_rwblock(virt->symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&hash2,&data[len],&msgB,datalen-len)) > 0 )
+            if ( (n= iguana_rwblock(myinfo,virt->symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&hash2,&data[len],&zmsgB,datalen-len)) > 0 )
             {
-                if ( bits256_cmp(msgB.H.prev_block,prevhash2) == 0 )
+                if ( bits256_cmp(zmsgB.zH.prev_block,prevhash2) == 0 )
                 {
                     height = (firstheight + i + 1);
                     gecko_blockhashupdate(virt,hash2,height);
-                    printf("ht.%d %s %08x t.%u\n",height,bits256_str(str,hash2),msgB.H.bits,msgB.H.timestamp);
-                } else printf("ht.%d non prevhash i.%d %s %s\n",height,i,bits256_str(str,prevhash2),bits256_str(str2,msgB.H.prev_block));
+                    printf("ht.%d %s\n",height,bits256_str(str,hash2));
+                } else printf("ht.%d non prevhash i.%d %s %s\n",height,i,bits256_str(str,prevhash2),bits256_str(str2,zmsgB.zH.prev_block));
                 len += n;
                 prevhash2 = hash2;
             }

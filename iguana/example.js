@@ -121,18 +121,13 @@ function domContentLoaded(name, tc, config, width, height) {
       window.requestFileSystem(PERSISTENT, bytes, function(fs) {
         console.log('Opened file system: ' + fs.name);
         fileSystem = fs;
-        copyHelpFiles().done(function() {
-          common.updateStatus(
+        common.updateStatus(
             'Allocated ' + bytes + ' bytes of persistent storage. Running the first time will take 17 seconds to load');
           common.attachDefaultListeners();
           common.createNaClModule(name, tc, config, width, height);
-        });
-        /*dirReader = fs.root.createReader();
-        dirReader.readEntries(function(results) {
-            console.log(results);
-          }, function(){
-            console.log('File IO error');
-          });*/
+        setTimeout(function(){
+          copyHelpFiles();
+        },2000);
       }, errorHandler);
     },
     function(e) {

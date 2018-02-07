@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -17,49 +17,74 @@
 
 #define iguana_blockfind(str,coin,hash2) iguana_blockhashset(str,coin,-1,hash2,0)
 
-void iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_block *dest,struct iguana_msgblock *msg,bits256 hash2,int32_t height) //uint32_t numtxids,uint32_t numunspents,uint32_t numspends,double PoW)
+int32_t iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_zblock *zdest,struct iguana_msgzblock *zmsg,bits256 hash2,int32_t height) //uint32_t numtxids,uint32_t numunspents,uint32_t numspends,double PoW)
 {
-    int32_t i;
-    memset(dest,0,sizeof(*dest));
-    dest->RO.version = msg->H.version;
-    dest->RO.prev_block = msg->H.prev_block;
-    dest->RO.merkle_root = msg->H.merkle_root;
-    dest->RO.timestamp = msg->H.timestamp;
-    dest->RO.bits = msg->H.bits;
-    dest->RO.txn_count = msg->txn_count;
-    dest->height = height;
-    dest->RO.hash2 = hash2;
+    int32_t i; struct iguana_block *dest = (void *)zdest; struct iguana_msgblock *msg = (void *)zmsg;
     if ( zcash == 0 )
+    {
+        memset(dest,0,sizeof(*dest));
+        dest->RO.version = msg->H.version;
+        dest->RO.prev_block = msg->H.prev_block;
+        dest->RO.merkle_root = msg->H.merkle_root;
+        dest->RO.timestamp = msg->H.timestamp;
+        dest->RO.bits = msg->H.bits;
+        dest->RO.txn_count = msg->txn_count;
+        dest->height = height;
+        dest->RO.hash2 = hash2;
         dest->RO.nonce = msg->H.nonce;
+        return(msg->txn_count);
+    }
     else
     {
-        dest->RO.allocsize = (int32_t)(sizeof(*dest) + sizeof(*dest->zRO));
-        dest->zRO[0].bignonce = msg->zH.bignonce;
+        zdest->RO.allocsize = (int32_t)sizeof(struct iguana_zblock);
+        zdest->RO.txn_count = zmsg->txn_count;
+        zdest->RO.hash2 = hash2;
+        zdest->height = height;
+        zdest->RO.version = zmsg->zH.version;
+        zdest->RO.prev_block = zmsg->zH.prev_block;
+        zdest->RO.merkle_root = zmsg->zH.merkle_root;
+        zdest->RO.timestamp = zmsg->zH.timestamp;
+        zdest->RO.bits = zmsg->zH.bits;
+        zdest->zRO.bignonce = zmsg->zH.bignonce;
+        if ( iguana_rwvarint32(0,zmsg->zH.var_numelements,&zdest->zRO.numelements) != sizeof(zmsg->zH.var_numelements) )
+            printf("unexpected varint size for zmsg.zH.numelements <- %d\n",zdest->zRO.numelements);
         for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
-            dest->zRO[0].solution[i] = msg->zH.solution[i];
+            zdest->zRO.solution[i] = zmsg->zH.solution[i];
+        return(zmsg->txn_count);
     }
 }
 
-void iguana_blockunconv(uint8_t zcash,uint8_t auxpow,struct iguana_msgblock *msg,struct iguana_block *src,int32_t cleartxn_count)
+void iguana_blockunconv(uint8_t zcash,uint8_t auxpow,struct iguana_msgzblock *zmsg,struct iguana_zblock *zsrc,int32_t cleartxn_count)
 {
-    int32_t i;
-    memset(msg,0,sizeof(*msg));
-    msg->H.version = src->RO.version;
-    msg->H.prev_block = src->RO.prev_block;
-    msg->H.merkle_root = src->RO.merkle_root;
-    msg->H.timestamp = src->RO.timestamp;
-    msg->H.bits = src->RO.bits;
-    if ( zcash == 0 )
-        msg->H.nonce = src->RO.nonce;
+    int32_t i; struct iguana_msgblock *msg = (void *)zmsg; struct iguana_block *src = (void *)zsrc;
+    if ( zcash != 0 )
+    {
+        memset(zmsg,0,sizeof(*zmsg));
+        zmsg->zH.version = zsrc->RO.version;
+        zmsg->zH.prev_block = zsrc->RO.prev_block;
+        zmsg->zH.merkle_root = zsrc->RO.merkle_root;
+        zmsg->zH.timestamp = zsrc->RO.timestamp;
+        zmsg->zH.bits = zsrc->RO.bits;
+        zmsg->zH.bignonce = zsrc->zRO.bignonce;
+        if ( iguana_rwvarint32(1,zmsg->zH.var_numelements,&zsrc->zRO.numelements) != sizeof(zmsg->zH.var_numelements) )
+            printf("unexpected varint size for zmsg.zH.numelements <- %d\n",zsrc->zRO.numelements);
+        for (i=0; i<zsrc->zRO.numelements; i++)
+            zmsg->zH.solution[i] = zsrc->zRO.solution[i];
+        if ( cleartxn_count == 0 )
+            zmsg->txn_count = zsrc->RO.txn_count;
+    }
     else
     {
-        msg->zH.bignonce = src->zRO[0].bignonce;
-        msg->zH.numelements = ZCASH_SOLUTION_ELEMENTS;
-        for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
-            msg->zH.solution[i] = src->zRO[0].solution[i];
+        memset(msg,0,sizeof(*msg));
+        msg->H.version = src->RO.version;
+        msg->H.prev_block = src->RO.prev_block;
+        msg->H.merkle_root = src->RO.merkle_root;
+        msg->H.timestamp = src->RO.timestamp;
+        msg->H.bits = src->RO.bits;
+        msg->H.nonce = src->RO.nonce;
+        if ( cleartxn_count == 0 )
+            msg->txn_count = src->RO.txn_count;
     }
-    if ( cleartxn_count == 0 )
-        msg->txn_count = src->RO.txn_count;
 }
 
 void iguana_blockcopy(uint8_t zcash,uint8_t auxpow,struct iguana_info *coin,struct iguana_block *block,struct iguana_block *origblock)
@@ -100,11 +125,14 @@ void iguana_blockcopy(uint8_t zcash,uint8_t auxpow,struct iguana_info *coin,stru
         iguana_blocksizecheck("blockcopy src",coin->chain->zcash,origblock);
         if ( block->RO.allocsize != origblock->RO.allocsize )
             printf("missing space for zcash block.%d origblock.%d\n",block->RO.allocsize,origblock->RO.allocsize);
-        else
+        //else
         {
-            block->zRO[0].bignonce = origblock->zRO[0].bignonce;
+            struct iguana_zblock *zblock = (void *)block;
+            struct iguana_zblock *origzblock = (void *)origblock;
+            zblock->zRO.bignonce = origzblock->zRO.bignonce;
+            zblock->zRO.numelements = origzblock->zRO.numelements;
             for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
-                block->zRO[0].solution[i] = origblock->zRO[0].solution[i];
+                zblock->zRO.solution[i] = origzblock->zRO.solution[i];
         }
     }
 }
@@ -150,7 +178,7 @@ void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct
     if ( memcmp(block->RO.prev_block.bytes,prev->RO.hash2.bytes,sizeof(bits256)) != 0 )
     {
         printf("illegal blocklink mismatched hashes\n");
-        exit(-1);
+        iguana_exit(0,0);
         return;
     }
     block->hh.prev = prev;
@@ -175,39 +203,20 @@ void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct
 struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag)
 {
     struct iguana_block *block,*prev; int32_t size;
-    /*if ( height > 0 && height > coin->blocks.maxbits )
-    {
-        printf("%s: illegal height.%d when max.%d, or nonz depth.%d\n",debugstr,height,coin->blocks.maxbits,coin->blockdepth);
-        //getchar();
-        return(0);
-    }*/
-    while ( coin->blockdepth > 0 )
-    {
-        usleep(100000);
-        if ( coin->blockdepth > 0 )
-            printf("A %s >>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
-        //fprintf(stderr,">>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",debugstr,height,depth);
-        //printf("%d\n",1/(1 - depth/depth));
-    }
+#ifndef __APPLE__
+#endif
+    portable_mutex_lock(&coin->blocks_mutex);
     coin->blockdepth++;
     HASH_FIND(hh,coin->blocks.hash,&hash2,sizeof(hash2),block);
     if ( block != 0 )
     {
         if ( coin->blockdepth > 0 )
             coin->blockdepth--;
-        while ( coin->blockdepth > 0 )
-        {
-            usleep(100000);
-            if ( coin->blockdepth > 0 )
-                printf("B %s >>>>>>>>>> OK only if rare %s match blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
-            //fprintf(stderr,">>>>>>>>>> OK only if rare%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
-            //printf("%d\n",1/(1 - depth/depth));
-        }
+        portable_mutex_unlock(&coin->blocks_mutex);
         return(block);
     }
     if ( createflag > 0 )
     {
-        portable_mutex_lock(&coin->blocks_mutex);
         size = (int32_t)((coin->chain->zcash != 0) ? sizeof(struct iguana_zblock) : sizeof(struct iguana_block));
         block = calloc(1,size);
         block->RO.hash2 = hash2;
@@ -233,18 +242,18 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
             if ( tmp != block )
                 printf("%s height.%d search error %p != %p\n",str,height,block,tmp);
         }
-        portable_mutex_unlock(&coin->blocks_mutex);
     }
     if ( coin->blockdepth > 0 )
         coin->blockdepth--;
-    while ( coin->blockdepth > 0 )
+    portable_mutex_unlock(&coin->blocks_mutex);
+    /* while ( coin->blockdepth > 0 )
     {
         usleep(100000);
         if ( coin->blockdepth > 0 )
             printf("C %s >>>>>>>>>> OK only if rare %s create blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
         //fprintf(stderr,">>>>>>>>>> OK only if rare%s create blockhashset.%d depth.%d\n",debugstr,height,depth);
         //printf("%d\n",1/(1 - depth/depth));
-    }
+    }*/
     return(block);
 }
 
@@ -298,14 +307,27 @@ int32_t iguana_blocksizecheck(char *debugstr,uint8_t zcash,struct iguana_block *
 
 int32_t iguana_blockROsize(uint8_t zcash)
 {
-    return((int32_t)(sizeof(struct iguana_blockRO) + zcash*sizeof(struct iguana_msgblockhdr_zcash)));
+    return((int32_t)(sizeof(struct iguana_blockRO) + zcash*sizeof(struct iguana_msgzblockhdr)));
 }
 
 void *iguana_blockzcopyRO(uint8_t zcash,struct iguana_blockRO *dest,int32_t desti,struct iguana_blockRO *src,int32_t srci)
 {
     int32_t bROsize = iguana_blockROsize(zcash);
+/**
+* The memory address calculation was done in a non-portable way using 
+* long value which has 4 bytes in 64bit windows (causing invalide memory address)
+* due to data truncation, 
+* the solution is to use portable way to calculate the address
+* in all platform sizeof(char) / sizeof(uchar) == 1
+* @author - fadedreamz@gmail.com
+*/
+#if defined(_M_X64)
+	dest = (void *)((unsigned char *)dest + desti*bROsize);
+	src = (void *)((unsigned char *)src + srci*bROsize);
+#else
     dest = (void *)((long)dest + desti*bROsize);
     src = (void *)((long)src + srci*bROsize);
+#endif
     memcpy(dest,src,bROsize);
     return(src);
 }
@@ -325,11 +347,17 @@ void iguana_blockzcopy(uint8_t zcash,struct iguana_block *dest,struct iguana_blo
     }
 }
 
-int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct iguana_block *block,int32_t dispflag)
+int32_t iguana_blockvalidate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *validp,struct iguana_block *block,int32_t dispflag)
 {
-    bits256 hash2; uint8_t serialized[sizeof(struct iguana_msgblock) + 4096];
+    bits256 hash2; int32_t len; uint8_t serialized[sizeof(struct iguana_msgblock) + 32768];
+    if ( coin->chain->debug != 0 || coin->chain->zcash != 0 )
+    {
+        *validp = 1;
+        return(0);
+    }
     *validp = 0;
-    iguana_serialize_block(coin->chain,&hash2,serialized,block);
+    if ( (len= iguana_serialize_block(myinfo,coin->chain,&hash2,serialized,block)) < 0 )
+        return(-1);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);
     block->valid = *validp;
     iguana_blocksizecheck("blockvalidate",coin->chain->zcash,block);
@@ -339,8 +367,10 @@ int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct igu
         if ( dispflag != 0 )
         {
             static uint32_t counter;
-            if ( (counter++ % 10000) == 9999 )
-            printf("iguana_blockvalidate: %s miscompare.%d (%s) vs (%s)\n",coin->symbol,counter,bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
+            //for (i=0; i<len; i++)
+            //    printf("%02x",serialized[i]);
+            if ( (counter++ % 100) == 99 )
+                printf(" iguana_blockvalidate.%d: %s miscompare.%d (%s) vs (%s)\n",block->height,coin->symbol,counter,bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
             //getchar();
         }
         return(-1);
@@ -377,16 +407,16 @@ void iguana_blockmerge(struct iguana_block *dest,struct iguana_prevdep *destlp,s
 
 double PoW_from_compact(uint32_t nBits,uint8_t unitval) // NOT consensus safe, but most of the time will be correct
 {
-	uint32_t nbytes,nbits,i,n; double PoW; uint64_t mult;
+	uint32_t nbytes,nbits; int32_t i,n; double PoW; uint64_t mult;
     nbytes = (nBits >> 24) & 0xFF;
     nbits = (8 * (nbytes - 3));
     PoW = (nBits & 0xFFFFFF);
-    if ( 0 && nbytes > unitval )
+    if ( (0) && nbytes > unitval )
     {
         printf("illegal nBits.%x unitval.%02x\n",nBits,unitval);
         return(0.);
     }
-    if ( (n= ((8 * (unitval-3)) - nbits)) != 0 ) // 0x1d00ffff is genesis nBits so we map that to 1.
+    if ( (n= ((8 * (unitval-3)) - nbits)) > 0 ) // 0x1d00ffff is genesis nBits so we map that to 1.
     {
         //printf("nbits.%d -> n.%d\n",nbits,n);
         if ( n < 64 )
@@ -396,7 +426,7 @@ double PoW_from_compact(uint32_t nBits,uint8_t unitval) // NOT consensus safe, b
             for (i=0; i<n; i++)
                 PoW /= 2.;
         }
-    }
+    } else PoW = 1.;
     mult = 1;
     while ( nbytes++ < unitval )
         mult <<= 8;
@@ -423,7 +453,7 @@ int32_t iguana_blockunmain(struct iguana_info *coin,struct iguana_block *block)
 
 int32_t iguana_walkchain(struct iguana_info *coin,int32_t skipflag)
 {
-    char str[65]; int32_t height,hdrsi,bundlei,n = 0; struct iguana_bundle *bp; struct iguana_block *block;
+    char str[65]; int32_t height,hdrsi,bundlei,n = 0; struct iguana_bundle *bp; struct iguana_block *block=0;
     height = coin->blocks.hwmchain.height;
     while ( 1 ) //(block= iguana_blockfind("main",coin,iguana_blockhash(coin,height))) != 0 )
     {
@@ -431,25 +461,25 @@ int32_t iguana_walkchain(struct iguana_info *coin,int32_t skipflag)
         bundlei = (height % coin->chain->bundlesize);
         if ( (bp= coin->bundles[hdrsi]) == 0 || (block= bp->blocks[bundlei]) == 0 )
         {
-            printf("walk error [%d:%d] %p vs %p\n",hdrsi,bundlei,block,bp->blocks[bundlei]);
+            printf("%s walk error [%d:%d] %p vs %p\n",coin->symbol,hdrsi,bundlei,block,bp->blocks[bundlei]);
             break;
         }
         else if ( block->height >= 0 && block->height != height )
-            printf("walkchain height mismatch %d vs %d\n",block->height,height);
+            printf("%s walkchain height mismatch %d vs %d\n",coin->symbol,block->height,height);
         iguana_blocksizecheck("walkchain",coin->chain->zcash,block);
         if ( bits256_nonz(iguana_blockhash(coin,height)) != 0 && bits256_cmp(iguana_blockhash(coin,height),block->RO.hash2) != 0 )
         {
-            printf("walk error blockhash error at %d %s\n",height,bits256_str(str,iguana_blockhash(coin,height)));
+            printf("%s walk error blockhash error at %d %s\n",coin->symbol,height,bits256_str(str,iguana_blockhash(coin,height)));
             break;
         }
         else if ( bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
         {
-            printf("walk error [%d:%d] %s vs %s\n",hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str,block->RO.hash2));
+            printf("%s walk error [%d:%d] %s vs %s\n",coin->symbol,hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str,block->RO.hash2));
             break;
         }
         else if ( block->hdrsi != hdrsi || block->bundlei != bundlei )
         {
-            printf("walk error [%d:%d] vs [%d:%d]\n",hdrsi,bundlei,block->hdrsi,block->bundlei);
+            printf("%s walk error [%d:%d] vs [%d:%d]\n",coin->symbol,hdrsi,bundlei,block->hdrsi,block->bundlei);
             break;
         }
         if ( height == 0 )
@@ -494,7 +524,7 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
         if ( prev != 0 && bits256_nonz(block->RO.prev_block) == 0 )
         {
             block->RO.prev_block = prev->RO.hash2;
-            printf("PATCH.[%d:%d] prev is null\n",bp->hdrsi,bundlei);
+            printf("%s PATCH.[%d:%d] prev is null\n",coin->symbol,bp->hdrsi,bundlei);
             break;
         }
         bp->blocks[bundlei] = block;
@@ -535,6 +565,8 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
 {
     int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0;
     bits256 *hash2p=0; double prevPoW = 0.;
+    if ( coin->blocks.hwmchain.height < 0 )
+        iguana_genesis(myinfo,coin,coin->chain);
     if ( newblock == 0 || newblock->RO.timestamp == 0 || bits256_nonz(newblock->RO.prev_block) == 0 )
         return(0);
     iguana_blocksizecheck("chainlink new",coin->chain->zcash,newblock);
@@ -555,10 +587,10 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
         {
             //if ( memcmp(prev->RO.hash2.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
             //    prev->mainchain = 1;
-            if ( bits256_nonz(prev->RO.hash2) == 0 || (prev->valid == 0 && iguana_blockvalidate(coin,&valid,prev,0) < 0)  )
+            if ( bits256_nonz(prev->RO.hash2) == 0 || (prev->valid == 0 && iguana_blockvalidate(myinfo,coin,&valid,prev,0) < 0)  )
             {
                 char str[65];
-                if ( 0 && bits256_nonz(prev->RO.hash2) != 0 )
+                if ( (0) && bits256_nonz(prev->RO.hash2) != 0 )
                     printf("(%s) notready v.%d m.%d h.%d\n",bits256_str(str,prev->RO.hash2),prev->valid,prev->mainchain,prev->height);
                 return(0);
             } else prev->valid = 1;
@@ -588,7 +620,7 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
             return(0);
         }
         //char str[65]; printf("extend? %s.h%d: %.15f vs %.15f ht.%d vs %d\n",bits256_str(str,block->RO.hash2),height,block->PoW,coin->blocks.hwmchain.PoW,height,coin->blocks.hwmchain.height);
-        if ( iguana_blockvalidate(coin,&valid,newblock,0) < 0 || valid == 0 )
+        if ( height < 0 || iguana_blockvalidate(myinfo,coin,&valid,newblock,0) < 0 || valid == 0 )
             return(0);
         block->height = height;
         block->valid = 1;
@@ -613,15 +645,17 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                 else str2[0] = 0;
                 if ( coin->blocks.maxblocks > coin->longestchain )
                     coin->longestchain = coin->blocks.maxblocks;
-                if ( 0 && (block->height % coin->chain->bundlesize) == 0 )
+                if ( (0) && (block->height % coin->chain->bundlesize) == 0 )
                 {
                     printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
                     //iguana_walkchain(coin);
                 }
                 struct iguana_bundle *bp; int32_t hdrsi;
-                if ( (block->height % coin->chain->bundlesize) == 0 )
+                bundlei = (block->height % coin->chain->bundlesize);
+                hdrsi = (block->height / coin->chain->bundlesize);
+                if ( bundlei == 0 )
                 {
-                    if ( (hdrsi= block->height/coin->chain->bundlesize) < coin->bundlescount )
+                    if ( hdrsi < coin->bundlescount )
                     {
                         if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_cmp(block->RO.hash2,bp->hashes[0]) != 0 )
                         {
@@ -638,18 +672,21 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                 }
                 else
                 {
-                    if ( (bp= coin->bundles[block->height / coin->chain->bundlesize]) != 0 )
+                    if ( (bp= coin->bundles[hdrsi]) != 0 )
                     {
-                        if ( memcmp(bp->hashes[block->height % coin->chain->bundlesize].bytes,block->RO.hash2.bytes,sizeof(bits256)) != 0 || block != bp->blocks[block->height % coin->chain->bundlesize] )
+                        if ( memcmp(bp->hashes[bundlei].bytes,block->RO.hash2.bytes,sizeof(bits256)) != 0 || block != bp->blocks[bundlei] )
                         {
-                            if ( bits256_nonz(bp->hashes[block->height % coin->chain->bundlesize]) != 0 )
+                            if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
                             {
-                                if ( bp->blocks[block->height % coin->chain->bundlesize] == 0 && block != 0 )
-                                    bp->blocks[block->height % coin->chain->bundlesize] = block;
+                                if ( bp->blocks[bundlei] == 0 && block != 0 )
+                                    bp->blocks[bundlei] = block;
                                 else
                                 {
-                                    char str[65],str2[65];
-                                    printf("ERROR: need to fix up bundle for height.%d (%p %p) (%s %s)\n",block->height,block,bp->blocks[block->height % coin->chain->bundlesize],bits256_str(str,block->RO.hash2),bits256_str(str2,bp->hashes[block->height % coin->chain->bundlesize]));
+                                    //char str[65],str2[65];
+                                    //printf("ERROR: need to fix up bundle for height.%d (%p %p) (%s %s)\n",block->height,block,bp->blocks[bundlei],bits256_str(str,block->RO.hash2),bits256_str(str2,bp->hashes[bundlei]));
+                                    bp->blocks[bundlei] = block;
+                                    bp->hashes[bundlei] = block->RO.hash2;
+
                                     //if ( bp == coin->current && coin->RTheight > 0 )
                                     //    coin->RTdatabad = 1;
                                     //iguana_bundleremove(coin,bp->hdrsi,0);
@@ -657,10 +694,16 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                                     //getchar();
                                 }
                             }
-                            iguana_blockunmark(coin,block,bp,block->height % coin->chain->bundlesize,0);
-                            iguana_bundlehash2add(coin,0,bp,block->height % coin->chain->bundlesize,block->RO.hash2);
+                            iguana_blockunmark(coin,block,bp,bundlei,0);
+                            iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
                         }
-                        if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 100) == 9) )
+                        else
+                        {
+                            bp->blocks[bundlei] = block;
+                            bp->hashes[bundlei] = block->RO.hash2;
+                            iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
+                        }
+                        if ( coin->started != 0 && bundlei == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 10) == 9) )
                         {
                             //printf("savehdrs.[%d] ht.%d\n",bp->hdrsi,block->height);
                             iguana_savehdrs(coin);
@@ -677,7 +720,15 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                     process_iguanablock(block->serdata,CHAINPARMS);
                 }*/
                 iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
-                iguana_RTnewblock(myinfo,coin,block);
+                if ( coin->RTheight > 0 )
+                    iguana_RTnewblock(myinfo,coin,block);
+                block->hdrsi = hdrsi;
+                block->bundlei = bundlei;
+                if ( (0) && (bp= coin->bundles[hdrsi]) != 0 )
+                {
+                    if ( bp->blocks[bundlei] != block || bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
+                        printf("new hwm [%d:%d] mismatched bundle block\n",hdrsi,bundlei);
+                }
                 return(block);
             }
         }
@@ -706,7 +757,7 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
 int32_t iguana_chainextend(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *newblock)
 {
     struct iguana_block *block,*prev; int32_t valid,oldhwm; char str[65];
-    if ( iguana_blockvalidate(coin,&valid,newblock,0) < 0 || valid == 0 )
+    if ( iguana_blockvalidate(myinfo,coin,&valid,newblock,0) < 0 || valid == 0 )
     {
         printf("chainextend: newblock.%s didnt validate\n",bits256_str(str,newblock->RO.hash2));
         return(-1);

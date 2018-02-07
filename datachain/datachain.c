@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -20,7 +20,7 @@ uint32_t datachain_checkpoint(struct supernet_info *myinfo,struct iguana_info *c
 {
     char str[65],str2[65]; struct iguana_info *btc = iguana_coinfind("BTC");
     printf("datachain_checkpoint.%s for %s.%u to %u lastheight.%d %s\n",bits256_str(str,merkle),coin->symbol,lastcheckpoint,timestamp,lastheight,bits256_str(str2,lasthash2));
-    if ( (lastheight % NUMRELAYS) == RELAYID )
+    if ( myinfo->IAMNOTARY != 0 && (lastheight % myinfo->NOTARY.NUMRELAYS) == myinfo->NOTARY.RELAYID )
     {
         // if designated relay, submit checkpoint -> add ip/relayid to opreturn
         //
@@ -320,15 +320,19 @@ void datachain_update_spend(struct supernet_info *myinfo,int32_t ordered,struct 
 
 int64_t datachain_update(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,uint8_t rmd160[20],int64_t crypto777_payment,uint8_t type,int32_t height,uint64_t hdrsi_unspentind,int64_t value,uint32_t fileid,uint64_t scriptpos,int32_t scriptlen,bits256 txid,int32_t vout)
 {
-    if ( memcmp(rmd160,CRYPTO777_RMD160,20) == 0 )
+    if ( (0) )
     {
-        crypto777_payment += value;
-        printf("datachain_update crypto777 %.8f += %.8f\n",dstr(crypto777_payment),dstr(value));
+        if ( memcmp(rmd160,CRYPTO777_RMD160,20) == 0 )
+        {
+            crypto777_payment += value;
+            //printf("datachain_update crypto777 %.8f += %.8f\n",dstr(crypto777_payment),dstr(value));
+        }
+        else if ( crypto777_payment != 0 && (type == IGUANA_SCRIPT_OPRETURN || type == IGUANA_SCRIPT_3of3 || type == IGUANA_SCRIPT_2of2 || type == IGUANA_SCRIPT_1of1) )
+        {
+            //printf("datachain_update opreturn\n");
+            iguana_opreturn(myinfo,ordered,coin,timestamp,bp,crypto777_payment,height,hdrsi_unspentind,value,fileid,scriptpos,scriptlen);
+        } else datachain_update_spend(myinfo,ordered,coin,timestamp,bp,height,txid,vout,rmd160,value);
+        return(crypto777_payment);
     }
-    else if ( crypto777_payment != 0 && (type == IGUANA_SCRIPT_OPRETURN || type == IGUANA_SCRIPT_3of3 || type == IGUANA_SCRIPT_2of2 || type == IGUANA_SCRIPT_1of1) )
-    {
-        printf("datachain_update opreturn\n");
-        iguana_opreturn(myinfo,ordered,coin,timestamp,bp,crypto777_payment,height,hdrsi_unspentind,value,fileid,scriptpos,scriptlen);
-    } else datachain_update_spend(myinfo,ordered,coin,timestamp,bp,height,txid,vout,rmd160,value);
-    return(crypto777_payment);
+    return(0);
 }

@@ -20,6 +20,7 @@
 
 /* Define "boolean" as unsigned char, not int, on Windows systems. */
 #ifdef _WIN32
+#define USE_MSDOS_MEMMGR
 #ifndef __RPCNDR_H__		/* don't conflict if rpcndr.h already read */
 typedef unsigned char boolean;
 #endif
@@ -29,7 +30,11 @@ typedef unsigned char boolean;
 #ifdef JPEG_INTERNALS
 
 /* #undef RIGHT_SHIFT_IS_UNSIGNED */
+#ifdef WIN32
+#define INLINE
+#else
 #define INLINE __inline__
+#endif
 /* These are for configuring the JPEG memory manager. */
 /* #undef DEFAULT_MAX_MEM */
 /* #undef NO_MKTEMP */

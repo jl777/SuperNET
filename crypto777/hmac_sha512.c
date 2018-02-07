@@ -506,7 +506,7 @@ char *hmac_sha512_str(char *dest,char *key,int32_t key_size,char *message)
     hmac_memory(&sha512_desc,(void *)key,key_size,(void *)message,strlen(message),checkbuf,&size);
     init_hexbytes_noT(dest,mac,SHA512_DIGEST_SIZE);
     init_hexbytes_noT(dest2,checkbuf,SHA512_DIGEST_SIZE);
-    //if ( memcmp(checkbuf,mac,SHA512_DIGEST_SIZE) != 0 )
+    if ( memcmp(checkbuf,mac,SHA512_DIGEST_SIZE) != 0 )
         printf("hmac_512 : %s vs %s\n",dest,dest2);
 	return(dest);
 }
@@ -619,6 +619,30 @@ char *hmac_whirlpool_str(char *dest,char *key,int32_t key_size,char *message)
     hmac_memory(&whirlpool_desc,(void *)key,key_size,(void *)message,strlen(message),mac,&size);
     init_hexbytes_noT(dest,mac,(int32_t)size);
  	return(dest);
+}
+
+void calc_md2str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
+{
+    bits128 x;
+    calc_md2(hexstr,buf,msg,len);
+    decode_hex(buf,sizeof(x),hexstr);
+    //memcpy(buf,x.bytes,sizeof(x));
+}
+
+void calc_md4str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
+{
+    bits128 x;
+    calc_md4(hexstr,buf,msg,len);
+    decode_hex(buf,sizeof(x),hexstr);
+    //memcpy(buf,x.bytes,sizeof(x));
+}
+
+void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
+{
+    bits128 x;
+    calc_md5(hexstr,msg,len);
+    decode_hex(buf,sizeof(x),hexstr);
+    //memcpy(buf,x.bytes,sizeof(x));
 }
 
 

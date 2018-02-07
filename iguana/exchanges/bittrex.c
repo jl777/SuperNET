@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -77,7 +77,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
 {
     cJSON *json,*obj; char *jsonstr,market[128],url[1024]; double hbla = 0.;
     sprintf(market,"%s-%s",rel,base);
-    sprintf(url,"https://bittrex.com/api/v1.1/public/getorderbook?market=%s&type=both&depth=%d",market,maxdepth);
+    sprintf(url,"http://bittrex.com/api/v1.1/public/getorderbook?market=%s&type=both&depth=%d",market,maxdepth);
     jsonstr = issue_curl(url);
     if ( jsonstr != 0 )
     {
@@ -166,8 +166,11 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
         return(0);
     }
     sprintf(payload,"https://bittrex.com/api/v1.1/market/%slimit?apikey=%s&nonce=%llu&market=%s&rate=%.8f&quantity=%.8f",dir>0?"buy":"sell",exchange->apikey,(long long)exchange_nonce(exchange),pairstr,price,volume);
-    if ( CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume,argjson) == 0 && (json= SIGNPOST(&exchange->cHandle,dotrade,retstrp,exchange,payload,payload)) != 0 )
+    if ( //CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume,argjson) == 0 &&
+        (json= SIGNPOST(&exchange->cHandle,dotrade,retstrp,exchange,payload,payload)) != 0 )
     {
+        if ( 0 && *retstrp != 0 )
+            printf("SIGNPOST returned.(%s) %s\n",*retstrp,jprint(json,0));
         if ( is_cJSON_True(cJSON_GetObjectItem(json,"success")) != 0 && (resultobj= cJSON_GetObjectItem(json,"result")) != 0 )
         {
             copy_cJSON(&uuidstr,cJSON_GetObjectItem(resultobj,"uuid"));
@@ -176,13 +179,13 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
                     uuidstr.buf[j++] = uuidstr.buf[i];
             uuidstr.buf[j] = 0;
             n = (int32_t)strlen(uuidstr.buf);
-            printf("-> uuidstr.(%s).%d\n",uuidstr.buf,n);
+            //printf("-> uuidstr.(%s).%d\n",uuidstr.buf,n);
             decode_hex(databuf,n/2,uuidstr.buf);
             if ( n >= 16 )
                 for (i=0; i<8; i++)
                     databuf[i] ^= databuf[8 + i];
             memcpy(&txid,databuf,8);
-            printf("-> %llx\n",(long long)txid);
+            //printf("-> %llx\n",(long long)txid);
         }
         free_json(json);
     }
@@ -191,8 +194,13 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
 
 char *ORDERSTATUS(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
 {
-    char payload[1024],*retstr = 0; cJSON *json;
-    sprintf(payload,"https://bittrex.com/api/v1.1/account/getorder?apikey=%s&nonce=%llu&uuid=%llu",exchange->apikey,(long long)exchange_nonce(exchange),(long long)quoteid);
+    char payload[1024],*orderstr=0,orderbuf[512],*retstr = 0; cJSON *json;
+    if ( argjson != 0 )
+        orderstr = jstr(argjson,"uuid");//, printf("status.(%s)\n",jprint(argjson,0));
+    if ( orderstr == 0 )
+        sprintf(orderbuf,"%llu",(long long)quoteid);
+    else strcpy(orderbuf,jstr(argjson,"uuid"));
+    sprintf(payload,"https://bittrex.com/api/v1.1/account/getorder?apikey=%s&nonce=%llu&uuid=%s",exchange->apikey,(long long)exchange_nonce(exchange),orderbuf);
     if ( (json= SIGNPOST(&exchange->cHandle,1,&retstr,exchange,payload,payload)) != 0 )
     {
         free_json(json);
@@ -202,8 +210,13 @@ char *ORDERSTATUS(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson
 
 char *CANCELORDER(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
 {
-    char payload[1024],*retstr = 0; cJSON *json;
-    sprintf(payload,"https://bittrex.com/api/v1.1/market/cancel?apikey=%s&nonce=%llu&uuid=%llu",exchange->apikey,(long long)exchange_nonce(exchange),(long long)quoteid);
+    char payload[1024],*orderstr=0,orderbuf[512],*retstr = 0; cJSON *json;
+    if ( argjson != 0 )
+        orderstr = jstr(argjson,"uuid");//, printf("cancel.(%s)\n",jprint(argjson,0));
+    if ( orderstr == 0 )
+        sprintf(orderbuf,"%llu",(long long)quoteid);
+    else strcpy(orderbuf,jstr(argjson,"uuid"));
+    sprintf(payload,"https://bittrex.com/api/v1.1/market/cancel?apikey=%s&nonce=%llu&uuid=%s",exchange->apikey,(long long)exchange_nonce(exchange),orderbuf);
     if ( (json= SIGNPOST(&exchange->cHandle,1,&retstr,exchange,payload,payload)) != 0 )
     {
         free_json(json);

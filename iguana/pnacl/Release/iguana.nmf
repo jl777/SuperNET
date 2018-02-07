@@ -1,0 +1,12 @@
+{
+  "program": {
+    "portable": {
+      "pnacl-translate": {
+        "url": "iguana.pexe"
+      },
+      "pnacl-debug": {
+        "url": "iguana_unstripped.bc"
+      }
+    }
+  }
+}

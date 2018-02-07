@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -13,33 +13,61 @@
  *                                                                            *
  ******************************************************************************/
 
-#ifdef INCLUDE_PAX
-ZERO_ARGS(pax,start);
+#ifdef _IGUANA_APIDEC_H_
+emit compiler error if recursively being included
 #endif
-HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin);
-ZERO_ARGS(tradebot,amlp);
-ZERO_ARGS(tradebot,notlp);
+#ifndef _IGUANA_APIDEC_H_
+#define _IGUANA_APIDEC_H_
 
-INT_AND_ARRAY(iguana,rates,unused,quotes);
-TWO_STRINGS(iguana,rate,base,rel);
-THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end);
+STRING_ARG(dpow,pending,fiat);
+ZERO_ARGS(dpow,notarychains);
+STRING_ARG(dpow,active,maskhex);
+TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
+ZERO_ARGS(dpow,cancelratify);
+STRING_ARG(dpow,bindaddr,ipaddr);
+STRING_AND_INT(dpow,fundnotaries,symbol,numblocks);
 
-ZERO_ARGS(InstantDEX,allcoins);
-STRING_ARG(InstantDEX,available,source);
-HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr);
+ZERO_ARGS(pax,start);
+INT_ARG(passthru,paxfiats,mask);
+TWO_STRINGS(zcash,passthru,function,hex);
+TWO_STRINGS(komodo,passthru,function,hex);
+TWO_STRINGS(dex,kvsearch,symbol,key);
+THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb);
 
-INT_ARG(InstantDEX,incoming,requestid);
-INT_ARG(InstantDEX,automatched,requestid);
-
-TWO_INTS(InstantDEX,accept,requestid,quoteid);
-//TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
+TWO_STRINGS(dex,send,hex,handler);
+HASH_AND_STRING(dex,gettransaction,txid,symbol);
+STRING_ARG(dex,getinfo,symbol);
+STRING_ARG(dex,getnotaries,symbol);
+STRING_ARG(dex,alladdresses,symbol);
+STRING_ARG(dex,getbestblockhash,symbol);
+STRING_AND_INT(dex,getblockhash,symbol,height);
+HASH_AND_STRING(dex,getblock,hash,symbol);
+TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx);
+HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout);
+TWO_STRINGS(dex,importaddress,symbol,address);
+TWO_STRINGS(dex,validateaddress,symbol,address);
+TWO_STRINGS(dex,checkaddress,symbol,address);
+TWO_STRINGS(dex,listunspent,symbol,address);
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip);
+TWO_STRINGS(dex,listunspent2,symbol,address);
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions2,symbol,address,count,skip);
+HASH_AND_STRING_AND_INT(dex,gettxin,txid,symbol,vout);
+TWO_STRINGS(dex,listspent,symbol,address);
+TWO_STRINGS(dex,getbalance,symbol,address);
+STRING_ARG(dex,explorer,symbol);
+STRING_ARG(dex,getmessage,argstr);
+STRING_ARG(dex,psock,argstr);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
-
+INT_ARG(basilisk,paxfiats,mask);
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
-//HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
+TWO_STRINGS(basilisk,refresh,symbol,address);
+ZERO_ARGS(basilisk,cancelrefresh);
+STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore);
+HASH_ARRAY_STRING(basilisk,utxocombine,ignore,vals,symbol);
 
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr);
@@ -56,12 +84,14 @@ HASH_ARRAY_STRING(basilisk,subscribe,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,forward,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,mailbox,hash,vals,hexstr);
 
-HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr);
+/*HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNjoin,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNmessage,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNbroadcast,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNreceive,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr);
+
+HASH_ARRAY_STRING(basilisk,vote,hash,vals,hexstr);*/
 
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getblockcount);
@@ -81,7 +111,6 @@ STRING_AND_INT(bitcoinrpc,decoderawtransaction,rawtx,suppress);
 STRING_AND_INT(bitcoinrpc,validaterawtransaction,rawtx,suppress);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 
-ZERO_ARGS(iguana,makekeypair);
 STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
 STRING_ARG(bitcoinrpc,validateaddress,address);
 
@@ -94,6 +123,7 @@ STRING_ARG(bitcoinrpc,backupwallet,filename);
 STRING_ARG(bitcoinrpc,importwallet,filename);
 STRING_ARG(bitcoinrpc,getnewaddress,account);
 TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan);
+TWOSTRINGS_AND_INT(bitcoinrpc,importaddress,address,account,rescan);
 STRING_ARG(bitcoinrpc,dumpprivkey,address);
 
 STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly);
@@ -134,7 +164,16 @@ ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
 
+THREE_INTS(iguana,splitfunds,satoshis,duplicates,sendflag);
+ZERO_ARGS(iguana,makekeypair);
+INT_AND_ARRAY(iguana,rates,unused,quotes);
+TWO_STRINGS(iguana,rate,base,rel);
+THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end);
+STRING_AND_INT(iguana,snapshot,symbol,height);
+INT_ARRAY_STRING(iguana,dividends,height,vals,symbol);
+THREE_STRINGS(iguana,passthru,asset,function,hex);
 STRING_ARG(iguana,initfastfind,activecoin);
+TWO_STRINGS(iguana,dpow,symbol,pubkey);
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);
 STRING_ARG(iguana,getconnectioncount,activecoin);
@@ -145,6 +184,7 @@ STRING_ARG(iguana,startcoin,activecoin);
 STRING_ARG(iguana,pausecoin,activecoin);
 STRING_ARG(iguana,stopcoin,activecoin);
 TWO_STRINGS(iguana,addnode,activecoin,ipaddr);
+STRING_ARG(iguana,addnotary,ipaddr);
 TWO_STRINGS(iguana,persistent,activecoin,ipaddr);
 TWO_STRINGS(iguana,removenode,activecoin,ipaddr);
 TWO_STRINGS(iguana,oneshot,activecoin,ipaddr);
@@ -156,6 +196,18 @@ STRING_AND_INT(iguana,bundlehashes,activecoin,height);
 STRING_AND_INT(iguana,PoSweights,activecoin,height);
 STRING_ARG(iguana,stakers,activecoin);
 
+STRING_ARG(jumblr,setpassphrase,passphrase);
+ZERO_ARGS(jumblr,status);
+ZERO_ARGS(jumblr,runsilent);
+ZERO_ARGS(jumblr,totransparent);
+
+ZERO_ARGS(InstantDEX,allcoins);
+STRING_ARG(InstantDEX,available,source);
+HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr);
+INT_ARG(InstantDEX,incoming,requestid);
+INT_ARG(InstantDEX,automatched,requestid);
+TWO_INTS(InstantDEX,accept,requestid,quoteid);
+//TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
 //TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
 //TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,dotrade);
@@ -168,13 +220,17 @@ TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid);
 TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid);
 STRING_ARG(InstantDEX,openorders,exchange);
 STRING_ARG(InstantDEX,tradehistory,exchange);
-
 THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore);
 STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
 //TWO_STRINGS(InstantDEX,events,base,rel);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
 THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
+ZERO_ARGS(InstantDEX,init);
+ZERO_ARGS(InstantDEX,getswaplist);
+ZERO_ARGS(InstantDEX,smartaddresses);
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,smartaddress,type,symbol,maxbid,minask);
+DOUBLE_ARG(InstantDEX,DEXratio,ratio);
 
 //THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
 //THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
@@ -183,6 +239,11 @@ THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight);
 
+HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin);
+STRING_ARG(tradebot,amlp,blocktrail);
+ZERO_ARGS(tradebot,notlp);
+TWO_STRINGS(tradebot,gensvm,base,rel);
+ZERO_ARGS(tradebot,openliquidity);
 THREE_STRINGS_AND_DOUBLE(tradebot,aveprice,comment,base,rel,basevolume);
 THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission);
 STRING_AND_DOUBLE(tradebot,monitorall,exchange,commission);
@@ -194,8 +255,13 @@ TWO_STRINGS(tradebot,status,exchange,botid);
 TWO_STRINGS(tradebot,pause,exchange,botid);
 TWO_STRINGS(tradebot,stop,exchange,botid);
 TWO_STRINGS(tradebot,resume,exchange,botid);
+ZERO_ARGS(tradebot,allbalances);
+ZERO_ARGS(tradebot,anchor);
+ZERO_ARGS(tradebot,portfolio);
+ARRAY_OBJ_INT(tradebot,goals,currencies,vals,targettime);
 
-HASH_ARG(pangea,call,tablehash);
+#ifndef WIN32
+/*HASH_ARG(pangea,call,tablehash);
 HASH_AND_INT(pangea,raise,tablehash,numchips);
 HASH_AND_INT(pangea,bet,tablehash,numchips);
 HASH_ARG(pangea,check,tablehash);
@@ -209,7 +275,8 @@ INT_AND_ARRAY(pangea,host,minplayers,params);
 ZERO_ARGS(pangea,lobby);
 HASH_AND_STRING(pangea,join,tablehash,handle);
 HASH_AND_INT(pangea,buyin,tablehash,numchips);
-HASH_ARG(pangea,start,tablehash);
+HASH_ARG(pangea,start,tablehash);*/
+#endif
 
 ZERO_ARGS(SuperNET,help);
 STRING_ARG(SuperNET,utime2utc,utime);
@@ -237,7 +304,7 @@ THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);
 HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype);
 STRING_ARG(SuperNET,wif2priv,wif);
-STRING_ARG(SuperNET,priv2wif,priv);
+STRING_AND_INT(SuperNET,priv2wif,priv,wiftype);
 STRING_ARG(SuperNET,addr2rmd160,address);
 STRING_ARG(SuperNET,rmd160conv,rmd160);
 
@@ -275,6 +342,8 @@ STRING_ARG(hash,base64_decode,message);
 STRING_ARG(hash,rmd160_sha256,message);
 STRING_ARG(hash,sha256_sha256,message);
 
+#ifndef WIN32
+
 STRING_ARG(hash,sha224,message);
 STRING_ARG(hash,sha256,message);
 STRING_ARG(hash,sha384,message);
@@ -304,3 +373,7 @@ TWO_STRINGS(hmac,md4,message,passphrase);
 TWO_STRINGS(hmac,md5,message,passphrase);
 TWO_STRINGS(hmac,tiger192_3,message,passphrase);
 TWO_STRINGS(hmac,whirlpool,message,passphrase);
+
+#endif
+
+#endif

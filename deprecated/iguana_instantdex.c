@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -225,7 +225,7 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
         for (i=0; i<numstates; i++)
             printf("%s[%d] ",states[i].name,i);
         printf("cant add event (%s -> %s) without existing state and nextstate\n",statename,nextstatename);
-        exit(-1);
+        iguana_exit(0);
         return(0);
     }
 }
@@ -877,7 +877,7 @@ struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,stru
 
 struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *quotes,int32_t n)
 {
-    int32_t i,len,state,m = 0; uint8_t serialized[10000]; struct instantdex_accept *ap; struct exchange_info *exchange;
+    int32_t i,len,state,m = 0; uint8_t serialized[16384]; struct instantdex_accept *ap; struct exchange_info *exchange;
     exchange = exchanges777_find("bitcoin");
     if ( req->addr == 0 )
         return(0);
@@ -1468,7 +1468,8 @@ void instantdex_update(struct supernet_info *myinfo)
 }
 
 /*
-#include "../includes/iguana_apidefs.h"
+ #include "../includes/iguana_apidefs.h"
+ #include "../includes/iguana_apideclares.h"
 
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume)
 {

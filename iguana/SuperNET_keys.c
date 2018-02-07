@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -21,7 +21,6 @@
 #include "../includes/uthash.h"
 #include "../includes/curve25519.h"
 #include "../includes/cJSON.h"
-
 
 /*
 if ( 0 )
@@ -84,7 +83,6 @@ bits256 SuperNET_wallet2priv(char *wallet2fname,bits256 wallethash)
             wallet2str[i] ^= wallethash.bytes[(i + r) % 32];
         vcalc_sha256(0,wallet2priv.bytes,(void *)wallet2str,(int32_t)allocsize);
         free(wallet2str);
-        //char str[65]; printf("wallet2priv.(%s) from.(%s) crc.%u and passphrase r.%d len.%ld\n",bits256_str(str,wallet2priv),wallet2fname,crc,r,allocsize);
     } else if ( wallet2fname[0] != 0 )
         printf("SuperNET_wallet2priv cant open (%s)\n",wallet2fname);
     return(wallet2priv);
@@ -179,7 +177,7 @@ int32_t SuperNET_savejsonfile(struct supernet_info *myinfo,char *finalfname,bits
     {
         if ( (ciphered= SuperNET_cipher(0,0,json,0,privkey,destpubkey,confstr)) != 0 )
         {
-            printf("ciphered.save (%s) <- (%s)\n",destfname,confstr);
+            //printf("ciphered.save (%s) <- (%s)\n",destfname,confstr);
             if ( (fp= fopen(destfname,"wb")) != 0 )
             {
                 if ( fwrite(ciphered,1,strlen(ciphered)+1,fp) == strlen(ciphered)+1 )
@@ -204,7 +202,9 @@ int32_t SuperNET_savejsonfile(struct supernet_info *myinfo,char *finalfname,bits
     {
         char oldfname[1024]; int64_t fsize,dsize;
         if ( (fsize= OS_filesize(finalfname)) > (dsize= OS_filesize(destfname)) )
-            printf("skip replacing (%s) since new one is smaller %lld vs %lld\n",finalfname,(long long)fsize,(long long)dsize);
+        {
+            //printf("skip replacing (%s) since new one is smaller %lld vs %lld\n",finalfname,(long long)fsize,(long long)dsize);
+        }
         else
         {
             strcpy(oldfname,finalfname), strcat(oldfname,".old");
@@ -219,7 +219,7 @@ int32_t SuperNET_savejsonfile(struct supernet_info *myinfo,char *finalfname,bits
 int32_t SuperNET_userkeys(char *passphrase,int32_t passsize,char *fname2fa,int32_t fnamesize)
 {
     return(0);
-#ifndef __PNACL
+/*#ifndef __PNACL
     //if ( (bits256_nonz(*wallethashp) == 0 || bits256_cmp(*wallethashp,GENESIS_PRIVKEY) == 0) && (bits256_nonz(*wallet2privp) == 0 || bits256_cmp(*wallet2privp,GENESIS_PRIVKEY) == 0) )
     {
         sleep(1);
@@ -231,7 +231,7 @@ int32_t SuperNET_userkeys(char *passphrase,int32_t passsize,char *fname2fa,int32
         return(0);
     }
 #endif
-    return(-1);
+    return(-1);*/
 }
 
 cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,bits256 wallethash,char *fname2fa,int32_t fnamesize,bits256 wallet2priv)
@@ -248,7 +248,6 @@ cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,
         wallethash = SuperNET_linehash(passphrase);
         SuperNET_linehash(fname2fa); // maps special chars
         wallet2priv = SuperNET_wallet2priv(fname2fa,wallethash);
-        //char str[65],str2[65]; printf("(%s + %s) -> wallethash.%s 2.(%s)\n",passphrase,fname2fa,bits256_str(str,wallethash),bits256_str(str2,wallet2priv));
     }
     first = (bits256_nonz(wallethash) != 0 && bits256_cmp(wallethash,GENESIS_PRIVKEY) != 0);
     second = (bits256_nonz(wallet2priv) != 0 && bits256_cmp(wallet2priv,GENESIS_PRIVKEY) != 0);
@@ -259,7 +258,6 @@ cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,
         wallet2shared = SuperNET_wallet2shared(wallethash,wallet2priv);
         wallet2pub = curve25519(wallet2shared,curve25519_basepoint9());
         sprintf(destfname,"%s/%s",GLOBAL_CONFSDIR,bits256_str(str,wallet2pub));
-        //printf("fname.(%s) wallet2pub.%s < [%s, %s]\n",destfname,bits256_str(str,wallet2pub),passphrase,fname2fa);
         if ( (confstr= OS_filestr(&allocsize,destfname)) != 0 )
         {
             if ( (filejson= cJSON_Parse(confstr)) != 0 )
@@ -305,12 +303,9 @@ int32_t _SuperNET_encryptjson(struct supernet_info *myinfo,char *destfname,char 
     wallethash = SuperNET_linehash(passphrase);
     SuperNET_linehash(fname2fa); // maps special chars
     wallet2priv = SuperNET_wallet2priv(fname2fa,wallethash);
-    //char str2[65]; printf("ENCRYPT.[%s %s] (%s) 2.%s\n",passphrase,fname2fa,bits256_str(str,wallethash),bits256_str(str2,wallet2priv));
     wallet2shared = SuperNET_wallet2shared(wallethash,wallet2priv);
     wallet2pub = curve25519(wallet2shared,curve25519_basepoint9());
     sprintf(destfname,"%s/%s",GLOBAL_CONFSDIR,bits256_str(str,wallet2pub));
-    printf("SAVE ARGJSON.(%s) [%s, %s] -> destfname.(%s)\n",jprint(argjson,0),passphrase,fname2fa,destfname);
-    //printf("shared.%llx -> pub.%s\n",(long long)wallet2shared.txid,bits256_str(str,wallet2pub));
     SuperNET_savejsonfile(myinfo,destfname,wallethash,wallet2pub,argjson);
     return(0);
 }
@@ -375,7 +370,6 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
     passphrase[0] = fname2fa[0] = 0;
     wallethash = wallet2priv = GENESIS_PRIVKEY;
     coinargs = SuperNET_parsemainargs(myinfo,&wallethash,&wallet2priv,argjsonstr);
-    //printf("wallethash.%s 2.(%s)\n",bits256_str(str,wallethash),bits256_str(str2,wallet2priv));
     if ( (msgjson= SuperNET_decryptedjson(destfname,passphrase,sizeof(passphrase),wallethash,fname2fa,sizeof(fname2fa),wallet2priv)) != 0 )
     {
         SuperNET_parsemyinfo(myinfo,msgjson);
@@ -395,9 +389,7 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
         jaddbits256(json,"persistent_pub",myinfo->myaddr.persistent);
         OS_randombytes((void *)&r,sizeof(r));
         jadd64bits(json,"rand",r);
-        //printf("call SuperNET_encryptjson\n");
         _SuperNET_encryptjson(myinfo,destfname,passphrase,sizeof(passphrase),fname2fa,sizeof(fname2fa),json);
-        //printf("save.(%s)\n",jprint(json,0));
         free_json(json);
     }
     if ( myinfo->ipaddr[0] == 0 )
@@ -427,51 +419,5 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
     printf("(%s) %s %llu session(%s %s) persistent.%llx %llx\n",myinfo->ipaddr,myinfo->myaddr.NXTADDR,(long long)myinfo->myaddr.nxt64bits,bits256_str(str,myinfo->privkey),bits256_str(str2,myinfo->myaddr.pubkey),(long long)myinfo->persistent_priv.txid,(long long)myinfo->myaddr.persistent.txid);
     return(coinargs);
 }
-
-#include "../includes/iguana_apidefs.h"
-#include "../includes/iguana_apideclares.h"
-
-TWO_STRINGS(SuperNET,decryptjson,password,permanentfile)
-{
-    char pass[8192],fname2[1023],destfname[1024]; cJSON *retjson; bits256 wallethash,wallet2priv;
-    safecopy(pass,password,sizeof(pass));
-    safecopy(fname2,permanentfile,sizeof(fname2));
-    wallethash = wallet2priv = GENESIS_PRIVKEY;
-    if ( strlen(pass) == sizeof(wallethash)*2 && is_hexstr(pass,(int32_t)sizeof(bits256)*2) > 0 )
-        wallethash = bits256_conv(pass);
-    if ( strlen(fname2) == sizeof(wallet2priv)*2 && is_hexstr(fname2,(int32_t)sizeof(bits256)*2) > 0 )
-        wallet2priv = bits256_conv(fname2);
-    if ( (retjson= SuperNET_decryptedjson(destfname,pass,sizeof(pass),wallethash,fname2,sizeof(fname2),wallet2priv)) != 0 )
-    {
-        //printf("decrypt pass.(%s) fname2.(%s) -> destfname.(%s)\n",pass,fname2,destfname);
-        //obj = jduplicate(jobj(retjson,"payload"));
-        //jdelete(retjson,"payload");
-        //jadd(retjson,"result",obj);
-        return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"couldnt decrypt json file\"}"));
-}
-
-THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,payload)
-{
-    char destfname[4096],pass[8192],fname2[1023]; cJSON *argjson,*retjson = cJSON_CreateObject();
-    safecopy(pass,password,sizeof(pass));
-    safecopy(fname2,permanentfile,sizeof(fname2));
-    argjson = jduplicate(json);
-    //printf("argjson.(%s)\n",jprint(argjson,0));
-    jdelete(argjson,"agent");
-    jdelete(argjson,"method");
-    jdelete(argjson,"password");
-    jdelete(argjson,"permanentfile");
-    jdelete(argjson,"timestamp");
-    jdelete(argjson,"tag");
-    if ( _SuperNET_encryptjson(myinfo,destfname,pass,sizeof(pass),fname2,sizeof(fname2),argjson) == 0 )
-    {
-        jaddstr(retjson,"result","success");
-        jaddstr(retjson,"filename",destfname);
-    } else jaddstr(retjson,"error","couldnt encrypt json file");
-    free_json(argjson);
-    return(jprint(retjson,1));
-}
-#include "../includes/iguana_apiundefs.h"
 
 

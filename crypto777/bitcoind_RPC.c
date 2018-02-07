@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -13,20 +13,28 @@
  *                                                                            *
  ******************************************************************************/
 
-#include "OS_portable.h"
 
-#ifdef __APPLE__
+
+#ifndef FROM_JS
+#include "OS_portable.h"
 #define LIQUIDITY_PROVIDER 1
-#endif
+
+/*#define malloc(n) LP_alloc(n)
+#define realloc(ptr,n) LP_realloc(ptr,n)
+#define calloc(a,b) LP_alloc((uint64_t)(a) * (b))
+#define free(ptr) LP_free(ptr)
+#define clonestr(str) LP_clonestr(str)
+
+void *LP_realloc(void *ptr,uint64_t len);
+void *LP_alloc(uint64_t len);
+void LP_free(void *ptr);
+char *LP_clonestr(char *str);*/
+
+int32_t bitcoind_RPC_inittime;
 
 #if LIQUIDITY_PROVIDER
-#ifdef _WIN32
-#include <curl.h>
-#include <easy.h>
-#else
 #include <curl/curl.h>
 #include <curl/easy.h>
-#endif
 
 // return data from the server
 #define CURL_GLOBAL_ALL (CURL_GLOBAL_SSL|CURL_GLOBAL_WIN32)
@@ -38,8 +46,11 @@ struct return_string {
     size_t len;
 };
 
+struct MemoryStruct { char *memory; size_t size,allocsize; };
+
 size_t accumulate(void *ptr, size_t size, size_t nmemb, struct return_string *s);
 void init_string(struct return_string *s);
+static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data);
 
 
 /************************************************************************
@@ -62,16 +73,20 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     long i,j,len;
     char *retstr = 0;
     cJSON *json,*result,*error;
+#ifdef FROM_MARKETMAKER
+    //usleep(500);
+#endif
     //printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
     {
-        printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
+        if ( strcmp(command,"signrawtransaction") != 0 && strcmp(command,"getrawtransaction") != 0 )
+            printf("<<<<<<<<<<< A bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,params);
         return(rpcstr);
     }
     json = cJSON_Parse(rpcstr);
     if ( json == 0 )
     {
-        printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s can't parse.(%s) params.(%s)\n",debugstr,command,rpcstr,params);
+        printf("<<<<<<<<<<< B bitcoind_RPC: %s post_process_bitcoind_RPC.%s can't parse.(%s) params.(%s)\n",debugstr,command,rpcstr,params);
         free(rpcstr);
         return(0);
     }
@@ -81,7 +96,8 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     {
         if ( (error->type&0xff) == cJSON_NULL && (result->type&0xff) != cJSON_NULL )
         {
-            retstr = cJSON_Print(result);
+            retstr = jprint(result,0);
+            //printf("%s %s rpc retstr.%p\n",command,params,retstr);
             len = strlen(retstr);
             if ( retstr[0] == '"' && retstr[len-1] == '"' )
             {
@@ -91,8 +107,17 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
             }
         }
         else if ( (error->type&0xff) != cJSON_NULL || (result->type&0xff) != cJSON_NULL )
-            printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC (%s) error.%s\n",debugstr,command,rpcstr);
-        free(rpcstr);
+        {
+            if ( strcmp(command,"getrawtransaction") != 0 && strcmp(command,"signrawtransaction") != 0 && strcmp(command,"sendrawtransaction") != 0 )
+                printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC (%s) error.%s\n",debugstr,command,rpcstr);
+            retstr = rpcstr;
+            rpcstr = 0;
+        }
+        if ( rpcstr != 0 )
+        {
+            //printf("free rpcstr.%p\n",rpcstr);
+            free(rpcstr);
+        }
     } else retstr = rpcstr;
     free_json(json);
     //fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: postprocess returns.(%s)\n",retstr);
@@ -106,6 +131,8 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
  *
  ************************************************************************/
 
+static int32_t USE_JAY;
+
 char *Jay_NXTrequest(char *command,char *params)
 {
     char *retstr = 0;
@@ -114,17 +141,18 @@ char *Jay_NXTrequest(char *command,char *params)
     return(retstr);
 }
 
-char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params)
+char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *command,char *params,int32_t timeout)
 {
     static int didinit,count,count2; static double elapsedsum,elapsedsum2; extern int32_t USE_JAY;
+    struct MemoryStruct chunk;
     struct curl_slist *headers = NULL; struct return_string s; CURLcode res; CURL *curl_handle;
-    char *bracket0,*bracket1,*databuf = 0; long len; int32_t specialcase,numretries; double starttime;
+    char *bracket0,*bracket1,*retstr,*databuf = 0; long len; int32_t specialcase,numretries; double starttime;
     if ( didinit == 0 )
     {
         didinit = 1;
         curl_global_init(CURL_GLOBAL_ALL); //init the curl session
     }
-    if ( USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0) )
+    if ( (0) && (USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0)) )
     {
         if ( (databuf= Jay_NXTrequest(command,params)) != 0 )
             return(databuf);
@@ -134,24 +162,45 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
         specialcase = 1;
     else specialcase = 0;
     if ( url[0] == 0 )
-        strcpy(url,"http://127.0.0.1:7876/nxt");
-    if ( specialcase != 0 && 0 )
-        printf("<<<<<<<<<<< bitcoind_RPC: debug.(%s) url.(%s) command.(%s) params.(%s)\n",debugstr,url,command,params);
+        strcpy(url,"http://127.0.0.1:7776");
+    if ( specialcase != 0 && (0) )
+        printf("<<<<<<<<<<< bitcoind_RPC: userpass.(%s) url.(%s) command.(%s) params.(%s)\n",userpass,url,command,params);
 try_again:
     if ( retstrp != 0 )
         *retstrp = 0;
     starttime = OS_milliseconds();
     curl_handle = curl_easy_init();
-    init_string(&s);
     headers = curl_slist_append(0,"Expect:");
     
   	curl_easy_setopt(curl_handle,CURLOPT_USERAGENT,"mozilla/4.0");//"Mozilla/4.0 (compatible; )");
     curl_easy_setopt(curl_handle,CURLOPT_HTTPHEADER,	headers);
     curl_easy_setopt(curl_handle,CURLOPT_URL,		url);
-    curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)accumulate); 		// send all data to this function
-    curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,		&s); 			// we pass our 's' struct to the callback
+    if ( (0) )
+    {
+        init_string(&s);
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,	(void *)accumulate); 		// send all data to this function
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,		&s); 			// we pass our 's' struct to the callback
+    }
+    else
+    {
+        memset(&chunk,0,sizeof(chunk));
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEFUNCTION,WriteMemoryCallback);
+        curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,(void *)&chunk);
+
+    }
     curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
 	curl_easy_setopt(curl_handle,CURLOPT_NOPROGRESS,	1L);			// no progress callback
+    if ( timeout > 0 )
+    {
+        if ( bitcoind_RPC_inittime != 0 )
+        {
+#ifndef _WIN32
+            curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,1);
+#else
+            curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT_MS, timeout*100);
+#endif
+        } else curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,timeout); // causes problems with iguana timeouts
+    }
     if ( strncmp(url,"https",5) == 0 )
     {
         curl_easy_setopt(curl_handle,CURLOPT_SSL_VERIFYPEER,0);
@@ -173,9 +222,12 @@ try_again:
                 bracket0 = (char *)"[";
                 bracket1 = (char *)"]";
             }
-            
+            char agentstr[64];
             databuf = (char *)malloc(256 + strlen(command) + strlen(params));
-            sprintf(databuf,"{\"id\":\"jl777\",\"method\":\"%s\",\"params\":%s%s%s}",command,bracket0,params,bracket1);
+            if ( debugstr[0] != 0 )
+                sprintf(agentstr,"\"agent\":\"%s\",",debugstr);
+            else agentstr[0] = 0;
+            sprintf(databuf,"{\"id\":\"jl777\",%s\"method\":\"%s\",\"params\":%s%s%s}",agentstr,command,bracket0,params,bracket1);
             //printf("url.(%s) userpass.(%s) databuf.(%s)\n",url,userpass,databuf);
             //
         } //else if ( specialcase != 0 ) fprintf(stderr,"databuf.(%s)\n",params);
@@ -193,23 +245,24 @@ try_again:
         free(databuf);
         databuf = 0;
     }
+    retstr = chunk.memory; // retstr = s.ptr;
     if ( res != CURLE_OK )
     {
         numretries++;
-        if ( specialcase != 0 )
+        if ( specialcase != 0 || timeout != 0 )
         {
-            printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,s.ptr,res);
-            free(s.ptr);
+            //printf("<<<<<<<<<<< bitcoind_RPC.(%s): BTCD.%s timeout params.(%s) s.ptr.(%s) err.%d\n",url,command,params,retstr,res);
+            free(retstr);
             return(0);
         }
-        else if ( numretries >= 5 )
+        else if ( numretries >= 4 )
         {
-            printf("Maximum number of retries exceeded!\n");
-            free(s.ptr);
+            printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
+            //printf("Maximum number of retries exceeded!\n");
+            free(retstr);
             return(0);
         }
-        printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
-        free(s.ptr);
+        free(retstr);
         sleep((1<<numretries));
         goto try_again;
         
@@ -220,29 +273,27 @@ try_again:
         {
             count++;
             elapsedsum += (OS_milliseconds() - starttime);
-            if ( (count % 10000) == 0)
+            if ( (count % 100000) == 0)
                 printf("%d: ave %9.6f | elapsed %.3f millis | bitcoind_RPC.(%s) url.(%s)\n",count,elapsedsum/count,(OS_milliseconds() - starttime),command,url);
             if ( retstrp != 0 )
             {
-                *retstrp = s.ptr;
-                return(s.ptr);
+                *retstrp = retstr;
+                return(retstr);
             }
-            return(post_process_bitcoind_RPC(debugstr,command,s.ptr,params));
+//printf("%s <- %s\n",url,command);
+            return(post_process_bitcoind_RPC(debugstr,command,retstr,params));
         }
         else
         {
-            if ( 0 && specialcase != 0 )
-                fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: BTCD.(%s) -> (%s)\n",params,s.ptr);
+            if ( (0) && specialcase != 0 )
+                fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: BTCD.(%s) -> (%s)\n",params,retstr);
             count2++;
             elapsedsum2 += (OS_milliseconds() - starttime);
             if ( (count2 % 10000) == 0)
                 printf("%d: ave %9.6f | elapsed %.3f millis | NXT calls.(%s) cmd.(%s)\n",count2,elapsedsum2/count2,(double)(OS_milliseconds() - starttime),url,command);
-            return(s.ptr);
+            return(retstr);
         }
     }
-    printf("bitcoind_RPC: impossible case\n");
-    free(s.ptr);
-    return(0);
 }
 
 /************************************************************************
@@ -284,13 +335,24 @@ size_t accumulate(void *ptr,size_t size,size_t nmemb,struct return_string *s)
     return(size * nmemb);
 }
 
-struct MemoryStruct { char *memory; size_t size; };
-
 static size_t WriteMemoryCallback(void *ptr,size_t size,size_t nmemb,void *data)
 {
-    size_t realsize = (size * nmemb);
+    size_t needed,realsize = (size * nmemb);
     struct MemoryStruct *mem = (struct MemoryStruct *)data;
-    mem->memory = (ptr != 0) ? realloc(mem->memory,mem->size + realsize + 1) : malloc(mem->size + realsize + 1);
+    needed = mem->size + realsize + 1;
+    if ( ptr == 0 && needed < 256 )
+    {
+        mem->allocsize = 256;
+        mem->memory = malloc(mem->allocsize);
+    }
+    if ( mem->allocsize < needed )
+    {
+        //printf("curl needs %d more\n",(int32_t)realsize);
+        mem->memory = (ptr != 0) ? realloc(mem->memory,needed) : malloc(needed);
+        //printf("mem->memory.%p len.%d\n",mem->memory,(int32_t)needed);
+        mem->allocsize = needed;
+    }
+    //mem->memory = (ptr != 0) ? realloc(mem->memory,mem->size + realsize + 1) : malloc(mem->size + realsize + 1);
     if ( mem->memory != 0 )
     {
         if ( ptr != 0 )
@@ -364,4 +426,5 @@ void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *
 {
     return(clonestr("{\"error\":\"curl is disabled\"}"));
 }
+#endif
 #endif

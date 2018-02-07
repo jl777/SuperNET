@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -30,7 +30,7 @@ void OS_portable_init()
 void OS_portable_randombytes(unsigned char *x,long xlen)
 {
 #ifdef _WIN32
-    return(OS_nonportable_randombytes(x,xlen));
+    OS_nonportable_randombytes(x,xlen);
 #else
     static int fd = -1;
     int32_t i;
@@ -48,7 +48,7 @@ void OS_portable_randombytes(unsigned char *x,long xlen)
             sleep(1);
             continue;
         }
-        if ( 0 )
+        if ( (0) )
         {
             int32_t j;
             for (j=0; j<i; j++)
@@ -94,16 +94,21 @@ char *OS_portable_path(char *str)
 #endif
 }
 
+FILE *OS_appendfile(char *origfname)
+{
+    char fname[1024]; FILE *fp;
+    strcpy(fname,origfname);
+    OS_portable_path(fname);
+    if ( (fp= fopen(fname,"rb+")) == 0 )
+        fp = fopen(fname,"wb");
+    else fseek(fp,0,SEEK_END);
+    return(fp);
+}
+
 int32_t OS_portable_renamefile(char *fname,char *newfname)
 {
 #ifdef _WIN32
-    char cmdstr[1024],tmp[512];
-    strcpy(tmp,fname);
-    OS_portable_path(tmp);
-    sprintf(cmdstr,"del %s",tmp);
-    if ( system(cmdstr) != 0 )
-        printf("error deleting file.(%s)\n",cmdstr);
-    else return(1);
+	return(OS_nonportable_renamefile(fname,newfname));
 #else
     return(rename(fname,newfname));
 #endif
@@ -112,13 +117,7 @@ int32_t OS_portable_renamefile(char *fname,char *newfname)
 int32_t OS_portable_removefile(char *fname)
 {
 #ifdef _WIN32
-    char cmdstr[1024],tmp[512];
-    strcpy(tmp,fname);
-    OS_portable_path(tmp);
-    sprintf(cmdstr,"del %s",tmp);
-    if ( system(cmdstr) != 0 )
-        printf("error deleting file.(%s)\n",cmdstr);
-    else return(1);
+    return(OS_nonportable_removefile(fname));
 #else
     return(remove(fname));
 #endif
@@ -131,7 +130,7 @@ int32_t OS_portable_rmdir(char *dirname,int32_t diralso)
     strcpy(tmp,dirname);
     OS_portable_path(tmp);
 #ifdef _WIN32
-    sprintf(cmdstr,"del %s\*.*",tmp);
+    sprintf(cmdstr,"rmdir %s",tmp);
     if ( system(cmdstr) != 0 )
         printf("error deleting dir.(%s)\n",cmdstr);
     else return(1);
@@ -169,7 +168,7 @@ void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite)
     return(OS_nonportable_mapfile(fname,filesizep,enablewrite));
 #else
 	int32_t fd,rwflags,flags = MAP_FILE|MAP_SHARED;
-	uint64_t filesize;
+	long filesize;
     void *ptr = 0;
 	*filesizep = 0;
 	if ( enablewrite != 0 )
@@ -181,7 +180,7 @@ void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite)
         return(0);
 	}
     if ( *filesizep == 0 )
-        filesize = (uint64_t)lseek(fd,0,SEEK_END);
+        filesize = (long)lseek(fd,0,SEEK_END);
     else filesize = *filesizep;
 	rwflags = PROT_READ;
 	if ( enablewrite != 0 )
@@ -250,13 +249,13 @@ void *OS_portable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long
         if ( mem->totalsize > origsize )
             size = mem->totalsize;
         else size = origsize;
-        fprintf(stderr,"filealloc.(%s) -> ",fname);
+        printf("filealloc.(%s) -> ",fname);
         if ( OS_filealloc(&mem->M,fname,mem,size) == 0 )
         {
             printf("couldnt map tmpfile %s\n",fname);
             return(0);
         }
-        fprintf(stderr,"created\n");
+        printf("created\n");
     }
     ptr = iguana_memalloc(mem,origsize,1);
     if ( mem->threadsafe != 0 )

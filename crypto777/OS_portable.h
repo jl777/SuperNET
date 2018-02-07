@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -17,11 +17,21 @@
 
 // iguana_OS has functions that invoke system calls. Whenever possible stdio and similar functions are use and most functions are fully portable and in this file. For things that require OS specific, the call is routed to iguana_OS_portable_*  Usually, all but one OS can be handled with the same code, so iguana_OS_portable.c has most of this shared logic and an #ifdef iguana_OS_nonportable.c
 
+#ifdef __APPLE__
+//#define LIQUIDITY_PROVIDER 1
+#endif
+
+#ifdef NATIVE_WINDOWS
+//#define uint64_t unsigned __int64
+#define PACKED
+#else
+#define PACKED __attribute__((packed))
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #define HAVE_STRUCT_TIMESPEC
-#include <unistd.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <math.h>
@@ -30,28 +40,30 @@
 #include <sys/types.h>
 #include <time.h>
 
-#ifdef __MINGW
+#ifdef _WIN32
 #define sleep(x) Sleep(1000*(x))
 #include "../OSlibs/win/mingw.h"
 #include "../OSlibs/win/mman.h"
+#define PTW32_STATIC_LIB
 #include "../OSlibs/win/pthread.h"
 
+#ifndef NATIVE_WINDOWS
 #define EADDRINUSE WSAEADDRINUSE
+#endif
 
 #else
-//#include <sys/poll.h>
+#include <sys/time.h>
 #include <time.h>
 #include <poll.h>
 #include <netdb.h>
 #define HAVE_STRUCT_TIMESPEC
 #include <pthread.h>
-//#include <netinet/in.h>
-//#include "in.h"
 #include <sys/mman.h>
 #include <sys/socket.h>
-//#include <winsock2.h>
+#include <unistd.h>
 #define closesocket close
 #endif
+
 #ifndef MIN
 #define MIN(x, y) ( ((x)<(y))?(x):(y) )
 #endif
@@ -117,16 +129,28 @@ int32_t hseek(HUFF *hp,int32_t offset,int32_t mode);
 #define portable_mutex_unlock pthread_mutex_unlock
 #define OS_thread_create pthread_create
 
-#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
+#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0,0)
+#define issue_curlt(cmdstr,timeout) bitcoind_RPC(0,"curl",cmdstr,0,0,0,timeout)
 
-struct allocitem { uint32_t allocsize,type; } __attribute__((packed));
-struct queueitem { struct queueitem *next,*prev; uint32_t allocsize,type;  } __attribute__((packed));
+struct allocitem { uint32_t allocsize,type; } PACKED;
+struct queueitem { struct queueitem *next,*prev; uint32_t allocsize,type;  } PACKED;
+struct stritem { struct queueitem DL; void **retptrp; uint32_t expiration; char str[]; };
+
 typedef struct queue
 {
 	struct queueitem *list;
 	portable_mutex_t mutex;
     char name[64],initflag;
 } queue_t;
+
+struct rpcrequest_info
+{
+    struct rpcrequest_info *next,*prev;
+    pthread_t T;
+    int32_t sock;
+    uint32_t ipbits;
+    uint16_t port,pad;
+};
 
 struct OS_mappedptr
 {
@@ -183,6 +207,8 @@ int32_t OS_nonportable_init();
 
 void OS_portable_init();
 void OS_init();
+int32_t sortds(double *buf,uint32_t num,int32_t size);
+int32_t revsortds(double *buf,uint32_t num,int32_t size);
 
 double OS_portable_milliseconds();
 void OS_portable_randombytes(uint8_t *x,long xlen);
@@ -192,8 +218,8 @@ void OS_remove_directory(char *dirname);
 int32_t OS_portable_renamefile(char *fname,char *newfname);
 int32_t OS_portable_removefile(char *fname);
 void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite);
-int32_t OS_portable_syncmap(struct OS_mappedptr *mp,long len);
-void *OS_portable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
+//int32_t OS_portable_syncmap(struct OS_mappedptr *mp,long len);
+//void *OS_portable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
 
 int32_t is_DST(int32_t datenum);
 int32_t extract_datenum(int32_t *yearp,int32_t *monthp,int32_t *dayp,int32_t datenum);
@@ -203,47 +229,54 @@ int32_t ecb_decrdate(int32_t *yearp,int32_t *monthp,int32_t *dayp,char *date,int
 int32_t conv_date(int32_t *secondsp,char *buf);
 uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second);
 int32_t OS_conv_unixtime(struct tai *t,int32_t *secondsp,time_t timestamp);
-double OS_milliseconds();
 
-void OS_randombytes(uint8_t *x,long xlen);
-
-int32_t OS_truncate(char *fname,long filesize);
 char *OS_compatible_path(char *str);
-int32_t OS_renamefile(char *fname,char *newfname);
-int32_t OS_removefile(char *fname,int32_t scrubflag);
-void OS_ensure_directory(char *dirname);
-int64_t OS_filesize(char *fname);
+FILE *OS_appendfile(char *origfname);
+
 int32_t OS_compare_files(char *fname,char *fname2);
 int64_t OS_copyfile(char *src,char *dest,int32_t cmpflag);
-int32_t OS_releasemap(void *ptr,uint64_t filesize);
 void _OS_closemap(struct OS_mappedptr *mp);
-void OS_closemap(struct OS_mappedptr *mp);
-long OS_ensurefilesize(char *fname,long filesize,int32_t truncateflag);
-int32_t OS_openmap(struct OS_mappedptr *mp);
-void *OS_mappedptr(void **ptrp,struct OS_mappedptr *mp,uint64_t allocsize,int32_t rwflag,char *fname);
-void *OS_filealloc(struct OS_mappedptr *M,char *fname,struct OS_memspace *mem,long size);
-void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite);
 void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep);
 void *OS_filestr(long *allocsizep,char *fname);
+void OS_closemap(struct OS_mappedptr *mp);
+int32_t OS_openmap(struct OS_mappedptr *mp);
+void *OS_mappedptr(void **ptrp,struct OS_mappedptr *mp,unsigned long allocsize,int32_t rwflag,char *fname);
+void *OS_filealloc(struct OS_mappedptr *M,char *fname,struct OS_memspace *mem,long size);
+void *OS_nonportable_mapfile(char *fname,long *filesizep,int32_t enablewrite);
+int32_t OS_nonportable_removefile(char *fname);
 
-int32_t OS_syncmap(struct OS_mappedptr *mp,long len);
-void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
+unsigned long OS_filesize(char *fname);
+void OS_ensure_directory(char *dirname);
+long OS_ensurefilesize(char *fname,long filesize,int32_t truncateflag);
+int32_t OS_truncate(char *fname,long filesize);
+int32_t OS_renamefile(char *fname,char *newfname);
+int32_t OS_removefile(char *fname,int32_t scrubflag);
+
+void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite);
+int32_t OS_releasemap(void *ptr,unsigned long filesize);
+
+double OS_milliseconds();
+void OS_randombytes(uint8_t *x,long xlen);
+
+//int32_t OS_syncmap(struct OS_mappedptr *mp,long len);
+//void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
 
 long myallocated(uint8_t type,long change);
 void *mycalloc(uint8_t type,int32_t n,long itemsize);
 void myfree(void *_ptr,long allocsize);
-void free_queueitem(void *itemdata);
+//void free_queueitem(void *itemdata);
 void *myrealloc(uint8_t type,void *oldptr,long oldsize,long newsize);
 void *myaligned_alloc(uint64_t allocsize);
 int32_t myaligned_free(void *ptr,long size);
 
-void *queueitem(char *str);
-void queue_enqueue(char *name,queue_t *queue,struct queueitem *origitem,int32_t offsetflag);
-void *queue_dequeue(queue_t *queue,int32_t offsetflag);
+struct queueitem *queueitem(char *str);
+void queue_enqueue(char *name,queue_t *queue,struct queueitem *origitem);//,int32_t offsetflag);
+void *queue_dequeue(queue_t *queue);//,int32_t offsetflag);
 void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_t freeitem);
 void *queue_free(queue_t *queue);
 void *queue_clone(queue_t *clone,queue_t *queue,int32_t size);
 int32_t queue_size(queue_t *queue);
+char *mbstr(char *str,double n);
 
 void iguana_memreset(struct OS_memspace *mem);
 void iguana_mempurge(struct OS_memspace *mem);
@@ -293,6 +326,7 @@ int32_t btc_convaddr(char *hexaddr,char *addr58);
 
 uint64_t RS_decode(char *rs);
 int32_t RS_encode(char *rsaddr,uint64_t id);
+char *cmc_ticker(char *base);
 
 void calc_sha1(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_md2(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
@@ -327,7 +361,7 @@ char *hmac_tiger_str(char *dest,char *key,int32_t key_size,char *message);
 char *hmac_whirlpool_str(char *dest,char *key,int32_t key_size,char *message);
 int nn_base64_encode(const uint8_t *in,size_t in_len,char *out,size_t out_len);
 int nn_base64_decode(const char *in,size_t in_len,uint8_t *out,size_t out_len);
-
+void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen);
 void sha256_sha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void rmd160ofsha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
@@ -338,6 +372,8 @@ void calc_base64_encodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_base64_decodestr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_hexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
 void calc_unhexstr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len);
+int32_t safecopy(char *dest,char *src,long len);
+double dxblend(double *destp,double val,double decay);
 
 uint64_t calc_ipbits(char *ip_port);
 void expand_ipbits(char *ipaddr,uint64_t ipbits);
@@ -345,9 +381,13 @@ void escape_code(char *escaped,char *str);
 void SaM_PrepareIndices();
 
 // iguana_serdes.c
-#define IGUANA_LOG2PACKETSIZE 21
+#ifndef IGUANA_LOG2PACKETSIZE
+#define IGUANA_LOG2PACKETSIZE 22
+#endif
+#ifndef IGUANA_MAXPACKETSIZE
 #define IGUANA_MAXPACKETSIZE (1 << IGUANA_LOG2PACKETSIZE)
-struct iguana_msghdr { uint8_t netmagic[4]; char command[12]; uint8_t serdatalen[4],hash[4]; } __attribute__((packed));
+#endif
+struct iguana_msghdr { uint8_t netmagic[4]; char command[12]; uint8_t serdatalen[4],hash[4]; } PACKED;
 
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
 int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H);
@@ -360,6 +400,7 @@ int32_t iguana_rwvarint(int32_t rwflag,uint8_t *serialized,uint64_t *varint64p);
 int32_t iguana_rwvarint32(int32_t rwflag,uint8_t *serialized,uint32_t *int32p);
 int32_t iguana_rwvarstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
 int32_t iguana_rwmem(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
+#define bits256_nonz(a) (((a).ulongs[0] | (a).ulongs[1] | (a).ulongs[2] | (a).ulongs[3]) != 0)
 
 bits256 bits256_ave(bits256 a,bits256 b);
 bits256 bits256_doublesha256(char *hashstr,uint8_t *data,int32_t datalen);
@@ -380,6 +421,7 @@ int32_t revsort32(uint32_t *buf,uint32_t num,int32_t size);
 bits256 bits256_sha256(bits256 data);
 void bits256_rmd160(uint8_t rmd160[20],bits256 data);
 void bits256_rmd160_sha256(uint8_t rmd160[20],bits256 data);
+double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,double *CMC_averagep,double changes[3],char *name,char *base,char *rel,double *USD_averagep);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -30,7 +30,7 @@
 
 char *OS_mvstr()
 {
-#ifdef __WIN32
+#ifdef _WIN32
     return("rename");
 #else
     return("mv");
@@ -41,7 +41,7 @@ void OS_randombytes(unsigned char *x,long xlen)
 {
     OS_portable_randombytes(x,xlen);
 }
-           
+
 static double _kb(double n) { return(n / 1024.); }
 static double _mb(double n) { return(n / (1024.*1024.)); }
 static double _gb(double n) { return(n / (1024.*1024.*1024.)); }
@@ -94,6 +94,7 @@ long myallocated(uint8_t type,long change)
 
 void *mycalloc(uint8_t type,int32_t n,long itemsize)
 {
+#ifdef USE_MYCALLOC
     //static portable_mutex_t MEMmutex;
     struct allocitem *item; int64_t allocsize = ((uint64_t)n * itemsize);
     if ( type == 0 && n == 0 && itemsize == 0 )
@@ -107,38 +108,47 @@ void *mycalloc(uint8_t type,int32_t n,long itemsize)
     while ( (item= calloc(1,sizeof(struct allocitem) + allocsize + 16)) == 0 )
     {
         char str[65];
-        printf("mycalloc: need to wait for memory.(%d,%ld) %s to be available\n",n,itemsize,mbstr(str,allocsize));
+        printf("mycalloc.%c: need to wait for memory.(%d,%ld) %s to be available\n",type,n,itemsize,mbstr(str,allocsize));
         sleep(1);
     }
     //printf("calloc origptr.%p retptr.%p size.%ld\n",item,(void *)(long)item + sizeof(*item),allocsize);
     item->allocsize = (uint32_t)allocsize;
     item->type = type;
     //portable_mutex_unlock(&MEMmutex);
-    return((void *)(long)item + sizeof(*item));
+    return((void *)((long)item + sizeof(*item)));
+#else
+    return(calloc(n,itemsize));
+#endif
 }
 
-void *queueitem(char *str)
+struct queueitem *queueitem(char *str)
 {
-    struct queueitem *item; int32_t n,allocsize; char *data; uint8_t type = 'y';
-    //portable_mutex_lock(&MEMmutex);
-    n = (uint32_t)strlen(str) + 1;
-    allocsize = (uint32_t)(sizeof(struct queueitem) + n);
-    myallocated(type,allocsize);
-    while ( (item= calloc(1,allocsize)) == 0 )
-    {
-        char str[65];
-        printf("queueitem: need to wait for memory.(%d,%ld) %s to be available\n",n,(long)sizeof(*item),mbstr(str,allocsize));
-        sleep(1);
-    }
-    item->allocsize = (uint32_t)allocsize;
-    item->type = type;
-    data = (void *)(long)((long)item + sizeof(*item));
-    memcpy(data,str,n);
-    //printf("(%c) queueitem.%p itemdata.%p n.%d allocsize.%d\n",type,item,data,n,allocsize);
-    //portable_mutex_unlock(&MEMmutex);
-    return(data);
+    /*struct queueitem *item; int32_t n,allocsize; char *data; uint8_t type = 'y';
+     //portable_mutex_lock(&MEMmutex);
+     n = (uint32_t)strlen(str) + 1;
+     allocsize = (uint32_t)(sizeof(struct queueitem) + n);
+     myallocated(type,allocsize);
+     while ( (item= calloc(1,allocsize)) == 0 )
+     {
+     char str[65];
+     printf("queueitem: need to wait for memory.(%d,%ld) %s to be available\n",n,(long)sizeof(*item),mbstr(str,allocsize));
+     sleep(1);
+     }
+     item->allocsize = (uint32_t)allocsize;
+     item->type = type;
+     data = (void *)(long)((long)item + sizeof(*item));
+     memcpy(data,str,n);
+     //printf("(%c) queueitem.%p itemdata.%p n.%d allocsize.%d\n",type,item,data,n,allocsize);
+     //portable_mutex_unlock(&MEMmutex);
+     return(data);*/
+    struct stritem *sitem; int32_t len;
+    len = (int32_t)strlen(str);
+    sitem = calloc(1,sizeof(*sitem) + len + 16);
+    memcpy(sitem->str,str,len);
+    return(&sitem->DL);
 }
 
+#ifdef USE_MYCALLOC
 void _myfree(uint8_t type,int32_t origallocsize,void *origptr,int32_t allocsize)
 {
     //portable_mutex_lock(&MEMmutex);
@@ -171,12 +181,12 @@ void myfree(void *_ptr,long allocsize)
     _myfree(item->type,item->allocsize,item,(uint32_t)allocsize);
 }
 
-void free_queueitem(void *itemdata)
-{
-    struct queueitem *item = (void *)((long)itemdata - sizeof(struct queueitem));
-    //printf("freeq item.%p itemdata.%p size.%d\n",item,itemdata,item->allocsize);
-    _myfree(item->type,item->allocsize,item,item->allocsize);
-}
+/*void free_queueitem(void *itemdata)
+ {
+ struct queueitem *item = (void *)((long)itemdata - sizeof(struct queueitem));
+ //printf("freeq item.%p itemdata.%p size.%d\n",item,itemdata,item->allocsize);
+ _myfree(item->type,item->allocsize,item,item->allocsize);
+ }*/
 
 void *myrealloc(uint8_t type,void *oldptr,long oldsize,long newsize)
 {
@@ -190,16 +200,35 @@ void *myrealloc(uint8_t type,void *oldptr,long oldsize,long newsize)
     }
     return(newptr);
 }
+#else
+void myfree(void *_ptr,long allocsize)
+{
+    free(_ptr);
+}
+
+void *myrealloc(uint8_t type,void *oldptr,long oldsize,long newsize)
+{
+    return(realloc(oldptr,newsize));
+}
+#endif
 
 static uint64_t _align16(uint64_t ptrval) { if ( (ptrval & 15) != 0 ) ptrval += 16 - (ptrval & 15); return(ptrval); }
 
 void *myaligned_alloc(uint64_t allocsize)
 {
     void *ptr,*realptr; uint64_t tmp;
+#if defined(_M_X64)
+	realptr = mycalloc('A', 1, (uint64_t)(allocsize + 16 + sizeof(realptr)));
+#else
     realptr = mycalloc('A',1,(long)(allocsize + 16 + sizeof(realptr)));
+#endif
     tmp = _align16((long)realptr + sizeof(ptr));
     memcpy(&ptr,&tmp,sizeof(ptr));
+#if defined(_M_X64)
+	memcpy((void *)((unsigned char *)ptr - sizeof(realptr)), &realptr, sizeof(realptr));
+#else
     memcpy((void *)((long)ptr - sizeof(realptr)),&realptr,sizeof(realptr));
+#endif
     //printf("aligned_alloc(%llu) realptr.%p -> ptr.%p, diff.%ld\n",(long long)allocsize,realptr,ptr,((long)ptr - (long)realptr));
     return(ptr);
 }
@@ -235,25 +264,20 @@ void lock_queue(queue_t *queue)
 	portable_mutex_lock(&queue->mutex);
 }
 
-void queue_enqueue(char *name,queue_t *queue,struct queueitem *origitem,int32_t offsetflag)
+void queue_enqueue(char *name,queue_t *queue,struct queueitem *item)//,int32_t offsetflag)
 {
-    struct queueitem *item;
+    //struct queueitem *item;
     if ( queue->name[0] == 0 && name != 0 && name[0] != 0 )
         strcpy(queue->name,name);//,sizeof(queue->name));
-    if ( origitem == 0 )
-    {
-        printf("FATAL type error: queueing empty value\n");//, getchar();
-        return;
-    }
-    //fprintf(stderr,"enqueue.(%s) %p offset.%d\n",queue->name,origitem,offsetflag);
+    //fprintf(stderr,"enqueue.(%s) %p\n",queue->name,item);
     lock_queue(queue);
-    item = (struct queueitem *)((long)origitem - offsetflag*sizeof(struct queueitem));
+    //item = (struct queueitem *)((long)origitem - offsetflag*sizeof(struct queueitem));
     DL_APPEND(queue->list,item);
     portable_mutex_unlock(&queue->mutex);
     //printf("queue_enqueue name.(%s) origitem.%p append.%p list.%p\n",name,origitem,item,queue->list);
 }
 
-void *queue_dequeue(queue_t *queue,int32_t offsetflag)
+void *queue_dequeue(queue_t *queue)//,int32_t offsetflag)
 {
     struct queueitem *item = 0;
     lock_queue(queue);
@@ -264,19 +288,20 @@ void *queue_dequeue(queue_t *queue,int32_t offsetflag)
         DL_DELETE(queue->list,item);
     }
 	portable_mutex_unlock(&queue->mutex);
-    if ( item != 0 && offsetflag != 0 )
-        return((void *)((long)item + sizeof(struct queueitem)));
-    else return(item);
+    //if ( item != 0 && offsetflag != 0 )
+    //    return((void *)((long)item + sizeof(struct queueitem)));
+    //else
+    return(item);
 }
 
 void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_t freeitem)
 {
     struct allocitem *ptr;
-    struct queueitem *item = 0;
+    struct queueitem *tmp,*item = 0;
     lock_queue(queue);
     if ( queue->list != 0 )
     {
-        DL_FOREACH(queue->list,item)
+        DL_FOREACH_SAFE(queue->list,item,tmp)
         {
             ptr = (void *)((long)item - sizeof(struct allocitem));
             if ( item == copy || (ptr->allocsize == copysize && memcmp((void *)((long)item + sizeof(struct queueitem)),(void *)((long)item + sizeof(struct queueitem)),copysize) == 0) )
@@ -284,8 +309,8 @@ void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_
                 DL_DELETE(queue->list,item);
                 portable_mutex_unlock(&queue->mutex);
                 //printf("name.(%s) deleted item.%p list.%p\n",queue->name,item,queue->list);
-                if ( freeitem != 0 )
-                    myfree(item,copysize);
+                //if ( freeitem != 0 )
+                //    myfree(item,copysize);
                 return(item);
             }
         }
@@ -296,11 +321,11 @@ void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_
 
 void *queue_free(queue_t *queue)
 {
-    struct queueitem *item = 0;
+    struct queueitem *tmp,*item = 0;
     lock_queue(queue);
     if ( queue->list != 0 )
     {
-        DL_FOREACH(queue->list,item)
+        DL_FOREACH_SAFE(queue->list,item,tmp)
         {
             DL_DELETE(queue->list,item);
             myfree(item,sizeof(struct queueitem));
@@ -313,15 +338,15 @@ void *queue_free(queue_t *queue)
 
 void *queue_clone(queue_t *clone,queue_t *queue,int32_t size)
 {
-    struct queueitem *ptr,*item = 0;
+    struct queueitem *ptr,*tmp,*item = 0;
     lock_queue(queue);
     if ( queue->list != 0 )
     {
-        DL_FOREACH(queue->list,item)
+        DL_FOREACH_SAFE(queue->list,item,tmp)
         {
             ptr = mycalloc('c',1,sizeof(*ptr));
             memcpy(ptr,item,size);
-            queue_enqueue(queue->name,clone,ptr,0);
+            queue_enqueue(queue->name,clone,ptr);
         }
         //printf("name.(%s) dequeue.%p list.%p\n",queue->name,item,queue->list);
     }
@@ -354,8 +379,11 @@ void iguana_memreset(struct OS_memspace *mem)
 
 void iguana_mempurge(struct OS_memspace *mem)
 {
-    if ( mem->allocated > 0 && mem->ptr != 0 && mem->totalsize > 0 )
+    if ( mem->allocated != 0 && mem->ptr != 0 )//&& mem->totalsize > 0 )
+    {
+        //printf("mempurge.(%s) %ld\n",mem->name,(long)mem->totalsize);
         myfree(mem->ptr,mem->totalsize), mem->ptr = 0;
+    }
     iguana_memreset(mem);
     mem->totalsize = 0;
 }
@@ -375,7 +403,7 @@ void *iguana_meminit(struct OS_memspace *mem,char *name,void *ptr,int64_t totals
         {
             //static long alloc;
             //alloc += totalsize;
-            //char str[65]; printf("iguana_meminit alloc %s\n",mbstr(str,alloc));
+            //char str[65]; printf("iguana_meminit.(%s) alloc %s\n",name,mbstr(str,totalsize));
             if ( (mem->ptr= mycalloc('d',1,totalsize)) == 0 )
             {
                 printf("iguana_meminit: cant get %d bytes\n",(int32_t)totalsize);
@@ -394,6 +422,7 @@ void *iguana_meminit(struct OS_memspace *mem,char *name,void *ptr,int64_t totals
         mem->totalsize = totalsize;
     }
     mem->threadsafe = threadsafe;
+    mem->alignflag = 4;
     iguana_memreset(mem);
     if ( mem->totalsize == 0 )
         printf("meminit.%s ILLEGAL STATE null size\n",mem->name), getchar();
@@ -426,7 +455,16 @@ void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag)
 #endif
     if ( (mem->used + size) <= mem->totalsize )
     {
-        ptr = (void *)(long)((long)(mem->ptr + mem->used));
+		/* 
+		* solution to calculate memory address in a portable way
+		* in all platform sizeof(char) / sizeof(uchar) == 1
+		* @author - fadedreamz@gmail.com
+		*/
+#if defined(_M_X64)
+		ptr = (void *)((unsigned char *)mem->ptr + mem->used);
+#else
+        ptr = (void *)(long)(((long)mem->ptr + mem->used));
+#endif
         mem->used += size;
         if ( size*clearflag != 0 )
             memset(ptr,0,size);
@@ -536,10 +574,12 @@ void OS_remove_directory(char *dirname)
     FILE *fp; char buf[1024];
     sprintf(buf,"%s/.tmpmarker",dirname);
     if ( (fp= fopen(OS_compatible_path(buf),"rb")) != 0 )
+    {
         OS_removefile(buf,0);
-    else fclose(fp);
-//printf("skip rmdir.(%s)\n",dirname);
-return;
+        fclose(fp);
+    }
+    //printf("skip rmdir.(%s)\n",dirname);
+    return;
     sprintf(buf,"rmdir %s",dirname);
     if ( system(buf) != 0 )
     {
@@ -549,16 +589,13 @@ return;
         {
             //printf("error doing (%s)\n",buf);
         }
-        //sprintf(buf,"rmdir %s",dirname);
-        //if ( system(buf) != 0 )
-        //    printf("second error doing (%s)\n",buf);
     }
 }
 
 void OS_ensure_directory(char *dirname)
 {
     FILE *fp; int32_t retval; char fname[512];
-    if ( 0 && OS_removefile(dirname,0) < 0 )
+    if ( (0) && OS_removefile(dirname,0) < 0 )
     {
         sprintf(fname,"tmp/%d",rand());
         OS_renamefile(dirname,fname);
@@ -581,9 +618,9 @@ void OS_ensure_directory(char *dirname)
     } else fclose(fp);//, printf("%s exists\n",fname);
 }
 
-int64_t OS_filesize(char *fname)
+unsigned long OS_filesize(char *fname)
 {
-    FILE *fp; uint64_t fsize = 0;
+    FILE *fp; unsigned long fsize = 0;
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
         fseek(fp,0,SEEK_END);
@@ -622,7 +659,11 @@ int64_t OS_copyfile(char *src,char *dest,int32_t cmpflag)
     {
         if ( (destfp= fopen(OS_compatible_path(dest),"wb")) != 0 )
         {
+#ifdef _WIN32
+			allocsize = 1024 * 1024 * 8L;
+#else
             allocsize = 1024 * 1024 * 128L;
+#endif
             buf = mycalloc('F',1,allocsize);
             while ( (len= fread(buf,1,allocsize,srcfp)) > 0 )
                 if ( (long)fwrite(buf,1,len,destfp) != len )
@@ -638,7 +679,7 @@ int64_t OS_copyfile(char *src,char *dest,int32_t cmpflag)
     return(len);
 }
 
-int32_t OS_releasemap(void *ptr,uint64_t filesize)
+int32_t OS_releasemap(void *ptr,unsigned long filesize)
 {
 	int32_t retval;
     if ( ptr == 0 )
@@ -725,7 +766,7 @@ long OS_ensurefilesize(char *fname,long filesize,int32_t truncateflag)
 
 int32_t OS_openmap(struct OS_mappedptr *mp)
 {
-	uint64_t allocsize = mp->allocsize;
+	unsigned long allocsize = mp->allocsize;
     if ( mp->actually_allocated != 0 )
 	{
 		if ( mp->fileptr == 0 )
@@ -754,9 +795,9 @@ int32_t OS_openmap(struct OS_mappedptr *mp)
 	return(0);
 }
 
-void *OS_mappedptr(void **ptrp,struct OS_mappedptr *mp,uint64_t allocsize,int32_t rwflag,char *fname)
+void *OS_mappedptr(void **ptrp,struct OS_mappedptr *mp,unsigned long allocsize,int32_t rwflag,char *fname)
 {
-	uint64_t filesize;
+	unsigned long filesize;
 	mp->actually_allocated = 0;//!os_supports_mappedfiles();
     if ( fname != 0 )
 	{
@@ -836,7 +877,7 @@ void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep)
         {
             fclose(fp);
             *lenp = 0;
-            printf("OS_loadfile null size.(%s)\n",fname);
+            //printf("OS_loadfile null size.(%s)\n",fname);
             return(0);
         }
         if ( filesize > buflen-1 )
@@ -860,11 +901,15 @@ void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep)
     return(buf);
 }
 
-void *OS_filestr(long *allocsizep,char *fname)
+void *OS_filestr(long *allocsizep,char *_fname)
 {
-    long filesize = 0; char *buf = 0;
+    long filesize = 0; char *fname,*buf = 0; void *retptr;
     *allocsizep = 0;
-    return(OS_loadfile(fname,&buf,&filesize,allocsizep));
+    fname = malloc(strlen(_fname)+1);
+    strcpy(fname,_fname);
+    retptr = OS_loadfile(fname,&buf,&filesize,allocsizep);
+    free(fname);
+    return(retptr);
 }
 
 // following functions cant be fully implemented in one or more OS
@@ -873,15 +918,15 @@ void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite) // win and pna
 	return(OS_portable_mapfile(fname,filesizep,enablewrite));
 }
 
-int32_t OS_syncmap(struct OS_mappedptr *mp,long len) // pnacl doesnt implement sync
-{
-    return(OS_portable_syncmap(mp,len));
-}
-
-void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize) // no syncmap no tmpalloc
-{
-    return(OS_portable_tmpalloc(dirname,name,mem,origsize));
-}
+/*int32_t OS_syncmap(struct OS_mappedptr *mp,long len) // pnacl doesnt implement sync
+ {
+ return(OS_portable_syncmap(mp,len));
+ }
+ 
+ void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize) // no syncmap no tmpalloc
+ {
+ return(OS_portable_tmpalloc(dirname,name,mem,origsize));
+ }*/
 
 void OS_init()
 {
@@ -890,7 +935,7 @@ void OS_init()
     decode_hex(GENESIS_PUBKEY.bytes,sizeof(GENESIS_PUBKEY),GENESIS_PUBKEYSTR);
     decode_hex(GENESIS_PRIVKEY.bytes,sizeof(GENESIS_PRIVKEY),GENESIS_PRIVKEYSTR);
     SaM_PrepareIndices();
-    return(OS_portable_init());
+    OS_portable_init();
 }
 
 int32_t OS_getline(int32_t waitflag,char *line,int32_t max,char *dispstr)
@@ -927,4 +972,109 @@ int32_t OS_getline(int32_t waitflag,char *line,int32_t max,char *dispstr)
     if ( fgets(line,max,stdin) != 0 )
         line[strlen(line)-1] = 0;
     return((int32_t)strlen(line));
+}
+
+
+//////////// test suite for:
+/*
+ int64_t OS_filesize(char *fname);
+ void OS_ensure_directory(char *dirname);
+ long OS_ensurefilesize(char *fname,long filesize,int32_t truncateflag);
+ int32_t OS_truncate(char *fname,long filesize);
+ int32_t OS_renamefile(char *fname,char *newfname);
+ int32_t OS_removefile(char *fname,int32_t scrubflag);
+ 
+ void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite);
+ int32_t OS_releasemap(void *ptr,uint64_t filesize);
+ 
+ double OS_milliseconds();
+ void OS_randombytes(uint8_t *x,long xlen);
+ */
+
+int32_t iguana_OStests()
+{
+    static uint16_t pairs[0x100][0x100],mappairs[0x100][0x100];
+    uint8_t buf[4096],*bufptr; int32_t val,min,minij,maxij,max,i,j,histo[0x100],retval = 0,n=0; double startmilli,endmilli; FILE *fp; char *name,*name2,*dirname; long filesize; void *fileptr;
+    startmilli = OS_milliseconds();
+    printf("\n>>>>>>>>>> starting tests. Please count the seconds (or use stopwatch)\n");
+    name = "OStests";
+    name2 = "OStests2";
+    dirname = "tmp";
+    fp = fopen(name,"wb");
+    memset(histo,0,sizeof(histo));
+    memset(pairs,0,sizeof(pairs));
+    memset(mappairs,0,sizeof(mappairs));
+    for (i=0; i<4096; i++)
+    {
+        OS_randombytes(buf,sizeof(buf));
+        for (j=0; j<sizeof(buf); j++)
+        {
+            if ( (n++ % 100000) == 0 )
+                printf("%02x ",buf[j]);
+            if ( fp != 0 )
+                fputc(buf[j],fp);
+            histo[buf[j]]++;
+            if ( j > 0 )
+                pairs[buf[j-1]][buf[j]]++;
+        }
+    }
+    fclose(fp);
+    printf("\nend of random bytes\n\n");
+    if ( OS_filesize(name) != n )
+        printf("FAIL OS_filesize %lld != %d error and if OS_filesize doesnt work, nothing else will work\n",(long long)OS_filesize(name),n), retval--;
+    else
+    {
+        printf("PASS OS_filesize.(%s) matches %d\n",name,n);
+        OS_renamefile(name,name2);
+        if ( OS_filesize(name2) != n )
+            printf("FAIL OS_renamefile returns filesize %lld != %d\n",(long long)OS_filesize(name2),n), retval--;
+        else printf("PASS OS_renamefile (%s) -> (%s) worked\n",name,name2);
+        if ( (fileptr= OS_mapfile(name2,&filesize,0)) == 0 )
+            printf("FAIL OS_mapfile.(%s) returns null\n",name2), retval--;
+        else if ( filesize != n )
+            printf("FAIL OS_mapfile.(%s) returns %ld != %d\n",name2,filesize,n), retval--;
+        else
+        {
+            bufptr = fileptr;
+            for (i=0; i<4096; i++)
+            {
+                memcpy(buf,bufptr,sizeof(buf));
+                bufptr += sizeof(buf);
+                for (j=1; j<sizeof(buf); j++)
+                    mappairs[buf[j-1]][buf[j]]++;
+            }
+            if ( memcmp(pairs,mappairs,sizeof(pairs)) != 0 )
+                printf("FAIL OS_mapfile.(%s) %ld data error pairs[][] != mappairs[][]\n",name2,filesize), retval--;
+            else printf("PASS OS_mapfile.(%s) %ld regenerated identical pairs[][]\n",name2,filesize);
+            if ( OS_releasemap(fileptr,filesize) != 0 )
+                printf("FAIL OS_releasemap.(%s) %ld returns error\n",name2,filesize), retval--;
+            else printf("PASS OS_releasemap.(%s) %ld returns success\n",name2,filesize);
+        }
+        
+        OS_removefile(name2,0);
+        if ( OS_filesize(name2) == n )
+            printf("FAIL OS_removefile.(%s) didnt work\n",name2), retval--;
+        else if ( (fp= fopen(name2,"rb")) != 0 )
+            printf("FAIL OS_removefile.(%s) didnt work fopen fp.%p\n",name2,fp), fclose(fp), retval--;
+        else printf("PASS OS_removefile.(%s) worked\n",name2);
+    }
+    minij = min = (1 << 30);
+    maxij = max = -1;
+    for (i=0; i<0x100; i++)
+    {
+        if ( (val= histo[i]) > max )
+            max = val;
+        else if ( val < min )
+            min = val;
+        for (j=0; j<0x100; j++)
+        {
+            if ( (val= pairs[i][j]) > maxij )
+                maxij = val;
+            else if ( val < minij )
+                minij = val;
+        }
+    }
+    endmilli = OS_milliseconds();
+    printf("\n\nDid that take %.3f seconds? If not, there is a problem with OS_milliseconds\n\nMake sure above numbers look random and the min/max are within specified range:\n<3%% %.2f%% min %d max %d | <75%% %.3f%% minij %d maxij %d\n",(endmilli - startmilli)/1000.,100*(double)max/min - 100.,min,max,100*(double)maxij/minij - 100.,minij,maxij);
+    return(retval);
 }

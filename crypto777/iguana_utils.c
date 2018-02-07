@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -182,7 +182,7 @@ void calc_OP_HASH160(char hexstr[41],uint8_t rmd160[20],char *pubkey)
     }
     decode_hex(buf,len,pubkey);
     calc_rmd160_sha256(rmd160,buf,len);
-    if ( 0 )
+    if ( (0) )
     {
         int i;
         for (i=0; i<20; i++)
@@ -191,6 +191,14 @@ void calc_OP_HASH160(char hexstr[41],uint8_t rmd160[20],char *pubkey)
     }
     if ( hexstr != 0 )
         init_hexbytes_noT(hexstr,rmd160,20);
+}
+
+double _xblend(float *destp,double val,double decay)
+{
+    double oldval;
+	if ( (oldval = *destp) != 0. )
+		return((oldval * decay) + ((1. - decay) * val));
+	else return(val);
 }
 
 double _dxblend(double *destp,double val,double decay)
@@ -263,12 +271,12 @@ int32_t iguana_numthreads(struct iguana_info *coin,int32_t mask)
 
 void iguana_launcher(void *ptr)
 {
-    struct iguana_thread *t = ptr; struct iguana_info *coin;
-    coin = t->coin;
+    struct iguana_thread *t = ptr; //struct iguana_info *coin;
+    //coin = t->coin;
     t->funcp(t->arg);
-    if ( coin != 0 )
-        coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
-    queue_enqueue("TerminateQ",&TerminateQ,&t->DL,0);
+    //if ( coin != 0 )
+    //    coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
+    queue_enqueue("TerminateQ",&TerminateQ,&t->DL);
 }
 
 void iguana_terminate(struct iguana_thread *t)
@@ -295,8 +303,8 @@ struct iguana_thread *iguana_launch(struct iguana_info *coin,char *name,iguana_f
         coin->Launched[t->type]++;
     retval = OS_thread_create(&t->handle,NULL,(void *)iguana_launcher,(void *)t);
     if ( retval != 0 )
-        printf("error launching %s\n",t->name);
-    while ( (t= queue_dequeue(&TerminateQ,0)) != 0 )
+        printf("error launching %s retval.%d errno.%d\n",t->name,retval,errno);
+    while ( (t= queue_dequeue(&TerminateQ)) != 0 )
     {
         if ( (rand() % 100000) == 0 && coin != 0 )
             printf("terminated.%d launched.%d terminate.%p\n",coin->Terminated[t->type],coin->Launched[t->type],t);
@@ -359,11 +367,15 @@ int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex)
 {
     int32_t adjust,i = 0;
     //printf("decode.(%s)\n",hex);
-    if ( is_hexstr(hex,n) == 0 )
+    if ( is_hexstr(hex,n) <= 0 )
     {
         memset(bytes,0,n);
         return(n);
     }
+    if ( hex[n-1] == '\n' || hex[n-1] == '\r' )
+        hex[--n] = 0;
+    if ( hex[n-1] == '\n' || hex[n-1] == '\r' )
+        hex[--n] = 0;
     if ( n == 0 || (hex[n*2+1] == 0 && hex[n*2] != 0) )
     {
         if ( n > 0 )
@@ -424,16 +436,15 @@ char *clonestr(char *str)
     if ( str == 0 || str[0] == 0 )
     {
         printf("warning cloning nullstr.%p\n",str);
-#ifdef __APPLE__
-        while ( 1 ) sleep(1);
-#endif
+//#ifdef __APPLE__
+//        while ( 1 ) sleep(1);
+//#endif
         str = (char *)"<nullstr>";
     }
     clone = (char *)malloc(strlen(str)+16);
     strcpy(clone,str);
     return(clone);
 }
-
 
 int32_t safecopy(char *dest,char *src,long len)
 {
@@ -447,6 +458,7 @@ int32_t safecopy(char *dest,char *src,long len)
         if ( i == len )
         {
             printf("safecopy: %s too long %ld\n",src,len);
+            //printf("divide by zero! %d\n",1/zeroval());
 #ifdef __APPLE__
             //getchar();
 #endif
@@ -510,11 +522,24 @@ static int _increasing_double(const void *a,const void *b)
 {
 #define double_a (*(double *)a)
 #define double_b (*(double *)b)
-	if ( double_b > double_a )
-		return(-1);
-	else if ( double_b < double_a )
-		return(1);
-	return(0);
+    if ( double_b > double_a )
+        return(-1);
+    else if ( double_b < double_a )
+        return(1);
+    return(0);
+#undef double_a
+#undef double_b
+}
+
+static int _decreasing_double(const void *a,const void *b)
+{
+#define double_a (*(double *)a)
+#define double_b (*(double *)b)
+    if ( double_b > double_a )
+        return(1);
+    else if ( double_b < double_a )
+        return(-1);
+    return(0);
 #undef double_a
 #undef double_b
 }
@@ -560,8 +585,14 @@ static int _decreasing_uint32(const void *a,const void *b)
 
 int32_t sortds(double *buf,uint32_t num,int32_t size)
 {
-	qsort(buf,num,size,_increasing_double);
-	return(0);
+    qsort(buf,num,size,_increasing_double);
+    return(0);
+}
+
+int32_t revsortds(double *buf,uint32_t num,int32_t size)
+{
+    qsort(buf,num,size,_decreasing_double);
+    return(0);
 }
 
 int32_t sort64s(uint64_t *buf,uint32_t num,int32_t size)
@@ -961,6 +992,7 @@ int32_t RS_encode(char *rsaddr,uint64_t id)
             rsaddr[j++] = '-';
     }
     rsaddr[j] = 0;
+    //printf("%llu -> NXT RS (%s)\n",(long long)id,rsaddr);
     return(0);
 }
 
@@ -1074,30 +1106,6 @@ void rmd160ofsha256(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
     calc_rmd160(hexstr,buf,sha256,sizeof(sha256));
 }
 
-void calc_md2str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
-{
-    bits128 x;
-    calc_md2(hexstr,buf,msg,len);
-    decode_hex(buf,sizeof(x),hexstr);
-    memcpy(buf,x.bytes,sizeof(x));
-}
-
-void calc_md4str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
-{
-    bits128 x;
-    calc_md4(hexstr,buf,msg,len);
-    decode_hex(buf,sizeof(x),hexstr);
-    memcpy(buf,x.bytes,sizeof(x));
-}
-
-void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
-{
-    bits128 x;
-    calc_md5(hexstr,msg,len);
-    decode_hex(buf,sizeof(x),hexstr);
-    memcpy(buf,x.bytes,sizeof(x));
-}
-
 void calc_crc32str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
     uint32_t crc; uint8_t serialized[sizeof(crc)];
@@ -1115,6 +1123,7 @@ void calc_NXTaddr(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
 {
     uint8_t mysecret[32]; uint64_t nxt64bits;
     nxt64bits = conv_NXTpassword(mysecret,buf,msg,len);
+    //printf("call RSencode with %llu\n",(long long)nxt64bits);
     RS_encode(hexstr,nxt64bits);
 }
 
@@ -1134,3 +1143,145 @@ void calc_rmd160_sha256(uint8_t rmd160[20],uint8_t *data,int32_t datalen)
     vcalc_sha256(0,hash.bytes,data,datalen);
     calc_rmd160(0,rmd160,hash.bytes,sizeof(hash));
 }
+
+char *cmc_ticker(char *base)
+{
+    char url[512];
+    sprintf(url,"https://api.coinmarketcap.com/v1/ticker/%s/",base);
+    return(issue_curl(url));
+}
+
+char *bittrex_orderbook(char *base,char *rel,int32_t maxdepth)
+{
+    char market[64],url[512];
+    sprintf(market,"%s-%s",rel,base);
+    sprintf(url,"http://bittrex.com/api/v1.1/public/getorderbook?market=%s&type=both&depth=%d",market,maxdepth);
+    return(issue_curl(url));
+}
+
+double calc_theoretical(double weighted,double CMC_average,double changes[3])
+{
+    double theoretical = 0.; //adjusted = 0.,
+    if ( weighted > SMALLVAL && CMC_average > SMALLVAL )
+    {
+        theoretical = (weighted + CMC_average) * 0.5;
+        /*if ( changes[0] > SMALLVAL && changes[1] > SMALLVAL && changes[2] > SMALLVAL )
+        {
+            if ( changes[0] > changes[1] && changes[1] > changes[2] ) // breakout
+            {
+                adjusted = theoretical * (1. - (changes[0] + changes[1]) * .005);
+            }
+        }
+        else if ( changes[0] < -SMALLVAL && changes[1] < -SMALLVAL && changes[2] < -SMALLVAL ) //
+        {
+            if ( changes[0] < changes[1] && changes[1] < changes[2] ) // waterfall
+            {
+                adjusted = theoretical * (1. - (changes[0] + changes[1]) * .005);
+            }
+        }
+        if ( adjusted != 0. && theoretical != 0. )
+            theoretical = (theoretical + adjusted) * 0.5;*/
+    }
+    //printf("adjusted %.8f theoretical %.8f (%.8f + wt %.8f)\n",adjusted,theoretical,CMC_average,weighted);
+    return(theoretical);
+}
+
+double calc_weighted(double *avebidp,double *aveaskp,double *bids,double *bidvols,int32_t numbids,double *asks,double *askvols,int32_t numasks,double limit)
+{
+    int32_t i; double weighted = 0.,bidsum = 0., asksum = 0.,totalbids = 0.,totalasks = 0.;
+    bidsum = bids[0] * bidvols[0], totalbids = bidvols[0];
+    asksum = asks[0] * askvols[0], totalasks = askvols[0];
+    for (i=1; i<numbids; i++)
+    {
+        if ( totalbids > limit )
+            break;
+        bidsum += bids[i] * bidvols[i];
+        totalbids += bidvols[i];
+    }
+    for (i=1; i<numasks; i++)
+    {
+        if ( totalasks > limit )
+            break;
+        asksum += asks[i] * askvols[i];
+        totalasks += askvols[i];
+    }
+    if ( totalbids != 0. && totalasks != 0. )
+    {
+        *avebidp = (bidsum / totalbids);
+        *aveaskp = (asksum / totalasks);
+        weighted = (*avebidp + *aveaskp) * 0.5;
+    }
+    //printf("weighted %f\n",weighted);
+    return(weighted);
+}
+
+double weighted_orderbook(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,char *orderbookstr,double limit)
+{
+    cJSON *bookjson,*bid,*ask,*resobj,*item; int32_t i,numbids,numasks; double bidvols[50],bids[50],askvols[50],asks[50],weighted = 0.;
+    if ( orderbookstr != 0 )
+    {
+        if ( (bookjson= cJSON_Parse(orderbookstr)) != 0 )
+        {
+            if ( (resobj= jobj(bookjson,"result")) != 0 )
+            {
+                bid = jarray(&numbids,resobj,"buy");
+                if ( numbids > sizeof(bids)/sizeof(*bids) )
+                    numbids = (int32_t)(sizeof(bids)/sizeof(*bids));
+                ask = jarray(&numasks,resobj,"sell");
+                if ( numasks > sizeof(asks)/sizeof(*asks) )
+                    numasks = (int32_t)(sizeof(asks)/sizeof(*asks));
+                if ( bid != 0 && ask != 0 )
+                {
+                    for (i=0; i<numbids; i++)
+                    {
+                        item = jitem(bid,i);
+                        bidvols[i] = jdouble(item,"Quantity");
+                        bids[i] = jdouble(item,"Rate");
+                    }
+                    for (i=0; i<numasks; i++)
+                    {
+                        item = jitem(ask,i);
+                        askvols[i] = jdouble(item,"Quantity");
+                        asks[i] = jdouble(item,"Rate");
+                    }
+                    *highbidp = bids[0];
+                    *lowaskp = asks[0];
+                    weighted = calc_weighted(avebidp,aveaskp,bids,bidvols,numbids,asks,askvols,numasks,limit);
+                    //printf("weighted %.8f (%.8f %.8f)\n",weighted,*highbidp,*lowaskp);
+                }
+            }
+            free_json(bookjson);
+        }
+    }
+    return(weighted);
+}
+
+double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,double *CMC_averagep,double changes[3],char *name,char *base,char *rel,double *USD_averagep)
+{
+    static int32_t counter;
+    char *cmcstr; cJSON *cmcjson,*item; double weighted,theoretical = 0.;
+    *avebidp = *aveaskp = *highbidp = *lowaskp = *CMC_averagep = 0.;
+    if ( (cmcstr= cmc_ticker(name)) != 0 )
+    {
+        if ( (cmcjson= cJSON_Parse(cmcstr)) != 0 )
+        {
+            if ( is_cJSON_Array(cmcjson) == 0 )
+                item = cmcjson;
+            else item = jitem(cmcjson,0);
+            *CMC_averagep = jdouble(item,"price_btc");
+            *USD_averagep = jdouble(item,"price_usd");
+            changes[0] = jdouble(item,"percent_change_1h");
+            changes[1] = jdouble(item,"percent_change_24h");
+            changes[2] = jdouble(item,"percent_change_7d");
+            weighted = weighted_orderbook(avebidp,aveaskp,highbidp,lowaskp,bittrex_orderbook(base,rel,25),1./(*CMC_averagep));
+            if ( *CMC_averagep > SMALLVAL && weighted > SMALLVAL )
+                theoretical = calc_theoretical(weighted,*CMC_averagep,changes);
+            if ( (0) && counter++ < 100 )
+                printf("HBLA.[%.8f %.8f] AVE.[%.8f %.8f] (%s) CMC %f %f %f %f\n",*highbidp,*lowaskp,*avebidp,*aveaskp,jprint(item,0),*CMC_averagep,changes[0],changes[1],changes[2]);
+            free_json(cmcjson);
+        }
+        free(cmcstr);
+    }
+    return(theoretical);
+}
+

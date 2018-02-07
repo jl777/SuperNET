@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -54,19 +54,19 @@ int32_t IGUANA_NUMHELPERS = 1;
 
 
 // ALL globals must be here!
-CONDEXTERN struct basilisk_relay RELAYS[BASILISK_MAXRELAYS];
-CONDEXTERN int32_t NUMRELAYS,RELAYID;
+//CONDEXTERN struct basilisk_relay RELAYS[BASILISK_MAXRELAYS];
+//CONDEXTERN int32_t NUMRELAYS,RELAYID;
 
 CONDEXTERN char *COMMANDLINE_ARGFILE;
 CONDEXTERN char *Iguana_validcommands[];
 CONDEXTERN int32_t Showmode,Autofold,PANGEA_MAXTHREADS,QUEUEITEMS;
 
 CONDEXTERN struct gecko_chain *Categories;
-CONDEXTERN struct iguana_info *Allcoins;
+//CONDEXTERN struct iguana_info *Allcoins;
 CONDEXTERN char Userhome[512];
-CONDEXTERN int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,IGUANA_BIGENDIAN;
+CONDEXTERN int32_t FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,IGUANA_BIGENDIAN;
 CONDEXTERN uint32_t prices777_NXTBLOCK;
-CONDEXTERN queue_t helperQ,jsonQ,finishedQ,bundlesQ,emitQ;
+CONDEXTERN queue_t helperQ,JSON_Q,FINISHED_Q,bundlesQ,emitQ;
 CONDEXTERN struct supernet_info MYINFO,**MYINFOS;
 CONDEXTERN int32_t MAIN_initflag,MAX_DEPTH;
 CONDEXTERN int32_t HDRnet,netBLOCKS;
@@ -83,7 +83,7 @@ CONDEXTERN int32_t IGUANA_NUMHELPERS;
 #define CRYPTO777_PUBSECPSTR "020e46e79a2a8d12b9b5d12c7a91adb4e454edfae43c0a0cb805427d2ac7613fd9"
 #define CRYPTO777_RMD160STR "f1dce4182fce875748c4986b240ff7d7bc3fffb0"
 #define CRYPTO777_BTCADDR "1P3rU1Nk1pmc2BiWC8dEy9bZa1ZbMp5jfg"
-#define CRYPTO777_BTCDADDR "RXL3YXG2ceaB6C5hfJcN4fvmLH2C34knhA"
+#define CRYPTO777_KMDADDR "RXL3YXG2ceaB6C5hfJcN4fvmLH2C34knhA"
 
 CONDEXTERN uint8_t CRYPTO777_RMD160[20],CRYPTO777_PUBSECP33[33];
 

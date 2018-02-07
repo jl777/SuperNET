@@ -406,7 +406,7 @@ SECP256K1_INLINE static void secp256k1_rangeproof_ch32xor(unsigned char *x, cons
 SECP256K1_INLINE static int secp256k1_rangeproof_rewind_inner(secp256k1_scalar *blind,uint64_t *v,
  unsigned char *message,int *mlen,secp256k1_scalar *ev,secp256k1_scalar *s,int *rsizes,int rings, const unsigned char *nonce,const unsigned char *commit,const unsigned char *proof,int len)
 {
-    unsigned char prep[4096]; unsigned char tmp[32]; uint64_t value; int offset,i,j,b,skip1,skip2,npub;
+    unsigned char prep[4096]; unsigned char tmp[32]; uint64_t value=0; int offset,i,j,b,skip1,skip2,npub;
     secp256k1_scalar s_orig[128]; secp256k1_scalar sec[32]; secp256k1_scalar stmp;
     npub = ((rings - 1) << 2) + rsizes[rings-1];
     VERIFY_CHECK(npub <= 128);

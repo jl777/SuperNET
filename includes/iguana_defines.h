@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -25,9 +25,9 @@
 #ifdef __PNACL__
 #define IGUANA_MAXITERATIONS 77
 #else
-#define IGUANA_MAXITERATIONS 7777
+#define IGUANA_MAXITERATIONS 777
 #endif
-#define IGUANA_DEFAULTLAG 30
+#define IGUANA_DEFAULTLAG 7
 
 #define IGUANA_MAXHEIGHT (1 << 30)
 #define IGUANA_MAXCOINS 64
@@ -44,11 +44,12 @@
 #define IGUANA_HEADPERCENTAGE 0.
 #define IGUANA_TAILPERCENTAGE 1.0
 #define IGUANA_MAXPENDHDRS 1
-#define IGUANA_MAXPENDINGREQUESTS 8
-#define IGUANA_PENDINGREQUESTS 500
+#define IGUANA_BTCPENDINGREQUESTS 3
+#define IGUANA_PENDINGREQUESTS 64
 #define IGUANA_MINPENDBUNDLES 4
 #define IGUANA_MAXPENDBUNDLES 64
 #define IGUANA_RPCPORT 7778
+#define IGUANA_NOTARYPORT 7776
 #define IGUANA_MAXRAMCHAINSIZE ((uint64_t)1024L * 1024L * 1024L * 16)
 
 #define IGUANA_MAPHASHTABLES 1
@@ -57,16 +58,14 @@
 #define IGUANA_MAXBUNDLES (50000000 / 500)
 
 #define IGUANA_MINPEERS 64
-#define IGUANA_LOG2MAXPEERS 11
-#define IGUANA_LOG2PEERFILESIZE 23
+
+#define IGUANA_LOG2MAXPEERS 11 // cant exceed 13 bits as ramchain unspents has bitfield
 
 #define IGUANA_MAXPEERS (1 << IGUANA_LOG2MAXPEERS)
-#define IGUANA_LOG2PACKETSIZE 21
+#ifndef IGUANA_MAXPACKETSIZE
 #define IGUANA_MAXPACKETSIZE (1 << IGUANA_LOG2PACKETSIZE)
-#define IGUANA_PEERFILESIZE (1 << IGUANA_LOG2PEERFILESIZE)
-struct iguana_txdatabits { uint64_t addrind:IGUANA_LOG2MAXPEERS,filecount:10,fpos:IGUANA_LOG2PEERFILESIZE,datalen:IGUANA_LOG2PACKETSIZE,isdir:1; };
-
-#define IGUANA_MAXFILEITEMS 8192
+#endif
+//#define IGUANA_MAXFILEITEMS 8192
 #define IGUANA_RECENTPEER (3600 * 24 * 7)
 
 #define IGUANA_PERMTHREAD 0
@@ -112,11 +111,11 @@ extern int32_t IGUANA_NUMHELPERS;
 #define PNACL_message printf
 #endif
 
+#ifndef WIN32
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL	0x4000	// Do not generate SIGPIPE
 #endif
-
-#if defined(_WIN32) || defined(_WIN64)
+#else
 #define MSG_NOSIGNAL	0
 #endif
 
@@ -124,7 +123,7 @@ extern int32_t IGUANA_NUMHELPERS;
 #define CADDR_TIME_VERSION 31402
 #define MIN_PROTO_VERSION 209
 #define MAX_BLOCK_SIZE 1000000
-#define COINBASE_MATURITY 100
+//#define COINBASE_MATURITY 100
 
 #define _IGUANA_HDRSCOUNT 2000
 #define _IGUANA_BLOCKHASHES 500

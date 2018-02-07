@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -99,7 +99,7 @@ int32_t fxcm_setcontracts()
     {
         if ( (json= cJSON_Parse(xmlstr)) != 0 )
         {
-            /*<Rate Symbol="USDJPY">
+            /* <Rate Symbol="USDJPY">
              <Bid>123.763</Bid>
              <Ask>123.786</Ask>
              <High>123.956</High>
@@ -131,6 +131,7 @@ int32_t fxcm_setcontracts()
                         if ( strcmp(name,"USDCNH") == 0 )
                             strcpy(name,"USDCNY");
                         FXCM_contracts[num++] = clonestr(name);
+                        printf("FXCM[%d] = %s\n",num-1,name);
                     }
                 }
             }
@@ -152,6 +153,7 @@ int32_t fxcm_ensure()
 char *ALLPAIRS(struct exchange_info *exchange,cJSON *argjson)
 {
     int32_t i,c,n; char base[32],rel[32]; cJSON *json,*item,*array = cJSON_CreateArray();
+    n = 0;
     if ( fxcm_ensure() == 0 )
     {
         for (i=0; i<num_FXCM; i++)
@@ -235,6 +237,7 @@ void prices777_fxcm(double bids[64],double asks[64],double highs[64],double lows
                         {
                             bids[c] = bid, asks[c] = ask, highs[c] = high, lows[c] = low;
                             //printf("c.%d (%s) %f %f\n",c,name,bid,ask);
+                            dpow_price("fxcm",name,bid,ask);
                             flag = 1;
                         } else printf("cant find.%s\n",name);//, getchar();
                     }
@@ -261,7 +264,10 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
             bid = exchange_setquote(bidasks,&numbids,&numasks,0,invert,bids[c],1,commission,0,(uint32_t)time(NULL),0);
             ask = exchange_setquote(bidasks,&numbids,&numasks,1,invert,asks[c],1,commission,0,(uint32_t)time(NULL),0);
             if ( bid > SMALLVAL && ask > SMALLVAL )
+            {
+                //printf("%d.{%.6f %.6f}.%s ",c,bid,ask,name);
                 return((bid + ask) * .5);
+            }
         }
     }
     return(0);

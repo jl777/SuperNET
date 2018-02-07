@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -116,6 +116,7 @@ void gen_ppmfile(char *fname,int32_t binaryflag,uint8_t *bitmap,int32_t width,in
 
 void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int32_t height)
 {
+#ifdef later
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
     FILE * outfile;		/* target file */
@@ -126,7 +127,7 @@ void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int3
     if ( (outfile= fopen(fname,"wb")) == NULL)
     {
         fprintf(stderr, "can't open %s\n", fname);
-        exit(1);
+        iguana_exit(0,0);
     }
     jpeg_stdio_dest(&cinfo, outfile);
     cinfo.image_width = width; 	/* image width and height, in pixels */
@@ -145,6 +146,7 @@ void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int3
     jpeg_finish_compress(&cinfo);
     fclose(outfile);
     jpeg_destroy_compress(&cinfo);
+#endif
 }
 
 /*
@@ -399,8 +401,8 @@ void disp_yval(register int32_t color,register float yval,register uint32_t *bit
 	//if ( pixelwt(color) > pixelwt(bitmap[y*rowwidth + x]) )
 	bitmap[y*rowwidth + x] = pixel_blend(bitmap[y*rowwidth + x],color);
 	return;
-	if ( is_primary_color(color) != 0 || (is_primary_color(bitmap[y*rowwidth+x]) == 0 && pixelwt(color) > pixelwt(bitmap[y*rowwidth + x])) )
-		bitmap[y*rowwidth + x] = color;
+	//if ( is_primary_color(color) != 0 || (is_primary_color(bitmap[y*rowwidth+x]) == 0 && pixelwt(color) > pixelwt(bitmap[y*rowwidth + x])) )
+	//	bitmap[y*rowwidth + x] = color;
 }
 
 void disp_yvalsum(register int32_t color,register float yval,register uint32_t *bitmap,register int32_t x,register int32_t rowwidth,register int32_t height)
@@ -507,7 +509,7 @@ void output_line(int32_t calclogflag,double ave,float *buf,int32_t n,int32_t col
     double src[1024],dest[1024]; int32_t i;
     memset(src,0,sizeof(src));
     memset(dest,0,sizeof(dest));
-    if ( 1 )
+    if ( (1) )
     {
         for (i=0; i<1024; i++)
             src[1023-i] = dest[1023-i] = buf[i];
@@ -1083,7 +1085,7 @@ void iguana_bitmapbundle(struct iguana_info *coin,uint8_t *rect,int32_t rowwidth
 
 struct iguana_bitmap *iguana_bitmapfind(char *name)
 {
-    struct iguana_info *coin; int32_t width,height,n,hdrsi,x,y;
+    struct iguana_info *coin; int32_t width=1,height=1,n,hdrsi,x,y;
     if ( ((coin= iguana_coinfind(name)) != 0 || (coin= iguana_coinfind("BTCD")) != 0) && coin->screen != 0 )
     {
         strcpy(coin->screen->name,coin->symbol);
@@ -1160,42 +1162,3 @@ void iguana_bitmap(char *space,int32_t max,char *name)
     }
 }
 
-#include "../includes/iguana_apidefs.h"
-#include "../includes/iguana_apideclares.h"
-
-STRING_AND_TWOINTS(mouse,change,name,x,y)
-{
-    printf("mouse (%s) x.%d y.%d\n",name,x,y);
-    return(clonestr("{\"result\":\"changed\"}"));
-}
-
-STRING_ARG(mouse,leave,name)
-{
-    printf("mouse (%s) leave\n",name);
-    return(clonestr("{\"result\":\"left\"}"));
-}
-
-STRING_AND_TWOINTS(mouse,click,name,x,y)
-{
-    printf("mouse (%s) x.%d y.%d click\n",name,x,y);
-    return(clonestr("{\"result\":\"click\"}"));
-}
-
-STRING_AND_INT(keyboard,key,name,c)
-{
-    printf(" KEY.(%s) c.%d (%c)\n",name,c,c);
-    return(clonestr("{\"result\":\"key\"}"));
-}
-
-STRING_AND_TWOINTS(mouse,image,name,x,y)
-{
-    printf("mouse CREATE (%s) x.%d y.%d\n",name,x,y);
-    return(clonestr("{\"result\":\"opened\"}"));
-}
-
-STRING_ARG(mouse,close,name)
-{
-    printf("mouse CLOSE (%s)\n",name);
-    return(clonestr("{\"result\":\"closed\"}"));
-}
-#include "../includes/iguana_apiundefs.h"

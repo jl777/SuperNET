@@ -6,13 +6,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <unistd.h>
 #ifdef _WIN32
 #include "OSlibs/win/pthread.h"
 #include <windows.h>
 //static inline void sleep(unsigned ms) { Sleep(ms*1000); }
 
 #else
+#include <unistd.h>
 #include <pthread.h>
 #endif
 
@@ -622,14 +622,14 @@ static int GetParamString(struct PP_Var params,
 
 int CHROMEAPP_HANDLER(struct PP_Var params,struct PP_Var *output,const char **out_error)
 {
-    char *CHROMEAPP_JSON(char *,uint16_t port);
+    char *CHROMEAPP_JSON(void *_myinfo,void *_coin,char *,uint16_t port);
     char *retstr;
     PNACL_message("inside Handle_%s\n",CHROMEAPP_STR);
     CHECK_PARAM_COUNT(CHROMEAPP_STR, 1);
     PARAM_STRING(0,jsonstr);
     if ( jsonstr == 0 )
         retstr = clonestr("{\"error\":\"illegal null jsonstr received\"}");
-    else if ( (retstr= CHROMEAPP_JSON(jsonstr,7778)) == 0 )
+    else if ( (retstr= CHROMEAPP_JSON(0,0,jsonstr,7778)) == 0 )
         retstr = clonestr("{\"error\":\"null return\"}");
     CREATE_RESPONSE(CHROMEAPP_STR);
     RESPONSE_STRING(retstr);
