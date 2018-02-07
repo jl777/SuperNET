@@ -903,7 +903,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     otheraddr[0] = 0;
     claimtime = (uint32_t)time(NULL) - 777;
     srcAdest = srcBdest = destAdest = destBdest = 0;
-    printf("request.%u quoteid.%u\n",requestid,quoteid);
+    //printf("request.%u quoteid.%u\n",requestid,quoteid);
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,rswap.src) != 0 || strcmp(rswap.alicecoin,rswap.dest) != 0 )
     {
         //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
