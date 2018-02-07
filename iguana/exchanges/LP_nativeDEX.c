@@ -943,7 +943,7 @@ void LP_swapsloop(void *ctx)
         {
             LP_millistats_update(&LP_swapsloop_stats);
             printf("calling basilisk_swapentry\n");
-            if ( (retstr= basilisk_swapentry(0,0,0)) != 0 )
+            if ( 0 && (retstr= basilisk_swapentry(0,0,0)) != 0 )
                 free(retstr);
             sleep(600);
         } else sleep(10);
