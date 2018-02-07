@@ -78,6 +78,7 @@ int32_t LP_etomic_priv2pub(uint8_t *pub64,bits256 privkey)
     bits256_str(str,privkey);
     if ( (pubstr= getPubKeyFromPriv(str)) != 0 )
     {
+        printf("priv2pub got %s\n",pubstr);
         if ( strlen(pubstr) == 128 && pubstr[0] == '0' && pubstr[1] == 'x' )
         {
             decode_hex(pub33,64,pubstr+2);
