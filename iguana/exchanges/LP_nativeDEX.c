@@ -643,7 +643,7 @@ void LP_coinsloop(void *_coins)
                 nonz++;
                 if ( strcmp("BTC",coins) == 0 )//&& coin->lastscanht < coin->longestchain-3 )
                     printf("[%s]: %s ref.%d scan.%d to %d, longest.%d\n",coins,coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
-                for (j=0; j<100; j++)
+                for (j=0; j<10; j++)
                 {
                     if ( LP_blockinit(coin,coin->lastscanht) < 0 )
                     {
