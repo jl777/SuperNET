@@ -21,7 +21,7 @@
 //
 // Created by artem on 24.01.18.
 //
-#include <cpp-ethereum/etomicswap/etomiclib.h>
+#include "etomicswap/etomiclib.h"
 
 #define ETOMIC_ALICECONTRACT "0xe1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c"
 #define ETOMIC_BOBCONTRACT "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2"
