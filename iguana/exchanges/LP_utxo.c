@@ -112,6 +112,7 @@ struct LP_inuse_info *_LP_inuse_add(uint32_t expiration,bits256 otherpub,bits256
 int32_t LP_reservation_check(bits256 txid,int32_t vout,bits256 pubkey)
 {
     struct LP_inuse_info *lp; int32_t retval = -1;
+    printf("LP_reservation check\n");
     if ( bits256_nonz(pubkey) != 0 )
     {
         char str[65],str2[65];

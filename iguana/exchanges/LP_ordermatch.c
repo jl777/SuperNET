@@ -974,6 +974,7 @@ struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,stru
     printf("check reservation\n");
     if ( LP_reservation_check(qp->txid,qp->vout,qp->desthash) == 0 && LP_reservation_check(qp->txid2,qp->vout2,qp->desthash) == 0  )
     {
+        printf("CONNECT STARTBOB!\n");
         LP_connectstartbob(ctx,LP_mypubsock,qp->srccoin,qp->destcoin,qprice,qp);
         return(qp);
     } else printf("connect message from non-reserved (%llu)\n",(long long)qp->aliceid);
