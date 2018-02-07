@@ -1165,8 +1165,11 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobconfirms = swap->I.bobmaxconfirms;
     if ( swap->I.aliceconfirms > swap->I.alicemaxconfirms )
         swap->I.aliceconfirms = swap->I.alicemaxconfirms;
-    swap->I.bobconfirms *= !swap->I.bobistrusted;
-    swap->I.aliceconfirms *= !swap->I.aliceistrusted;
+    if ( strcmp("BAY",swap->I.req.src) != 0 && strcmp("BAY",swap->I.req.dest) != 0 )
+    {
+        swap->I.bobconfirms *= !swap->I.bobistrusted;
+        swap->I.aliceconfirms *= !swap->I.aliceistrusted;
+    }
     printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< r.%u q.%u, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,swap->I.req.requestid,swap->I.req.quoteid,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,bobcoin->taddr,alicecoin->taddr);
     if ( swap->I.iambob != 0 )
     {

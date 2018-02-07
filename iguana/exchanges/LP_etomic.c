@@ -72,32 +72,32 @@ int32_t LP_etomic_priv2addr(char *coinaddr,bits256 privkey)
     return(-1);
 }
 
-int32_t LP_etomic_priv2pub(uint8_t *pub33,bits256 privkey)
+int32_t LP_etomic_priv2pub(uint8_t *pub64,bits256 privkey)
 {
     char *pubstr,str[72]; int32_t retval = -1;
     bits256_str(str,privkey);
     if ( (pubstr= getPubKeyFromPriv(str)) != 0 )
     {
-        if ( strlen(pubstr) == 35 && pubstr[0] == '0' && pubstr[1] == 'x' )
+        if ( strlen(pubstr) == 130 && pubstr[0] == '0' && pubstr[1] == 'x' )
         {
-            decode_hex(pub33,33,pubstr+2);
-            retval = 33;
+            decode_hex(pub64,64,pubstr+2);
+            retval = 0;
         }
         free(pubstr);
     }
     return(retval);
 }
 
-int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub33[33])
+int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub64[64])
 {
-    char pubkeystr[72],*addrstr;
+    char pubkeystr[131],*addrstr;
     strcpy(pubkeystr,"0x");
-    init_hexbytes_noT(pubkeystr+2,pub33,33);
-    if ( (addrstr= pubKey2Addr(pubkeystr+2)) != 0 )
+    init_hexbytes_noT(pubkeystr+2,pub64,64);
+    if ( (addrstr= pubKey2Addr(pubkeystr)) != 0 )
     {
         strcpy(coinaddr,addrstr);
         free(addrstr);
-        return((int32_t)strlen(coinaddr));
+        return(0);
     }
     return(-1);
 }
