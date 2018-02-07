@@ -312,8 +312,8 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
                     strcpy(coin->smartaddr,checkaddr);
                     decode_hex(checkrmd160,20,checkaddr+2);
                     bitcoin_addr2rmd160(coin->symbol,coin->taddr,&checktype,rmd160,checkaddr);
-                    if ( memcmp(rmd160,checkrmd160,20) == 0 )
-                        printf("rmd160 matches\n");
+                    if ( memcmp(rmd160,checkrmd160,20) != 0 )
+                        printf("rmd160 doesnt match\n");
                 } else printf("error getting addr (%s) != (%s)\n",checkaddr,checkaddr2);
             } else printf("pubkey 64 mismatch\n");
         } else printf("error creating pubkey\n");

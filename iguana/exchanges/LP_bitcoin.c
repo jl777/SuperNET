@@ -2125,21 +2125,19 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
         }
         else if ( len == 33 || len == 65 )
         {
-            strcpy(coinaddr,"0x");
             if ( len == 33 )
             {
                 if ( ctx == 0 )
                     ctx = bitcoin_ctx();
                 bitcoin_expandcompressed(ctx,bigpubkey,pubkey_or_rmd160);
                 LP_etomic_pub2addr(coinaddr+2,bigpubkey+1);
-                for (i=0; i<33; i++)
+                /*for (i=0; i<33; i++)
                     printf("%02x",pubkey_or_rmd160[i]);
                 printf(" compressed -> ");
                 for (i=0; i<65; i++)
                     printf("%02x",bigpubkey[i]);
-                printf(" -> %s\n",coinaddr);
-            }
-            else LP_etomic_pub2addr(coinaddr+2,pubkey_or_rmd160+1);
+                printf(" -> %s\n",coinaddr);*/
+            } else LP_etomic_pub2addr(coinaddr,pubkey_or_rmd160+1);
             return(coinaddr);
         }
     }
