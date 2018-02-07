@@ -1093,7 +1093,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.iambob = 0;
         swap->I.otherhash = swap->I.req.desthash;
         swap->I.aliceistrusted = 1;
-        if ( strcmp("BAY",swap->I.req.src) != 0 && dynamictrust == 0 && LP_pubkey_istrusted(swap->I.req.srchash) != 0 )
+        if ( dynamictrust == 0 && LP_pubkey_istrusted(swap->I.req.srchash) != 0 )
             dynamictrust = 1;
         swap->I.otheristrusted = swap->I.bobistrusted = dynamictrust;
     }
@@ -1102,7 +1102,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.iambob = 1;
         swap->I.otherhash = swap->I.req.srchash;
         swap->I.bobistrusted = 1;
-        if ( strcmp("BAY",swap->I.req.dest) != 0 && dynamictrust == 0 && LP_pubkey_istrusted(swap->I.req.desthash) != 0 )
+        if ( dynamictrust == 0 && LP_pubkey_istrusted(swap->I.req.desthash) != 0 )
             dynamictrust = 1;
         swap->I.otheristrusted = swap->I.aliceistrusted = dynamictrust;
     }
@@ -1142,8 +1142,11 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobconfirms = swap->I.bobmaxconfirms;
     if ( swap->I.aliceconfirms > swap->I.alicemaxconfirms )
         swap->I.aliceconfirms = swap->I.alicemaxconfirms;
-    swap->I.bobconfirms *= !swap->I.bobistrusted;
-    swap->I.aliceconfirms *= !swap->I.aliceistrusted;
+    if ( strcmp("BAY",swap->I.req.src) != 0 && strcmp("BAY",swap->I.req.dest) != 0 )
+    {
+        swap->I.bobconfirms *= !swap->I.bobistrusted;
+        swap->I.aliceconfirms *= !swap->I.aliceistrusted;
+    }
     printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< r.%u q.%u, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,swap->I.req.requestid,swap->I.req.quoteid,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,bobcoin->taddr,alicecoin->taddr);
     if ( swap->I.iambob != 0 )
     {
