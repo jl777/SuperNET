@@ -262,14 +262,13 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     }
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
-        if ( strlen(passphrase) == 130 && passphrase[0] == '0' && passphrase[1] == 'x' && is_hexstr(passphrase+2,0) == 128 )
+        if ( strlen(passphrase) == 66 && passphrase[0] == '0' && passphrase[1] == 'x' && is_hexstr(passphrase+2,0) == 64 )
         {
-            decode_hex(privkey.bytes,64,passphrase+2);
+            decode_hex(privkey.bytes,32,passphrase+2);
             printf("ETH style privkey.(%s)\n",passphrase);
         }
         else
         {
-            printf("strlen %ld (%s)\n",strlen(passphrase),passphrase);
             calc_NXTaddr(G.LP_NXTaddr,userpub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
             conv_NXTpassword(privkey.bytes,pubkeyp->bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
             privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
