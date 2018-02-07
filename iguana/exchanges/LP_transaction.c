@@ -1868,7 +1868,7 @@ int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay)
 {
     static bits256 zero;
     uint8_t userdata[512]; char bobstr[65],bobtomic[128]; int32_t retval,len = 0; struct iguana_info *coin;
-    LP_etomicsymbol(bobstr,bobtomic,bobstr);
+    LP_etomicsymbol(bobstr,bobtomic,swap->I.bobstr);
     if ( (coin= LP_coinfind(bobstr)) != 0 )
     {
         //printf("basilisk_bobpayment_reclaim\n");
