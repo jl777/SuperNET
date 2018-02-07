@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <curl/curl.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include "etomiclib.h"
-#include <cjson/cJSON.h>
 
 char* bobContractAddress = "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2";
 char* aliceAddress = "0x485d2cc2d13a9e12E4b53D606DB1c8adc884fB8a";
@@ -23,9 +23,11 @@ int main(int argc, char** argv)
         BOB_ERC20_PAYMENT,
         BOB_CLAIMS_PAYMENT,
         ALICE_CLAIMS_PAYMENT,
-        BOB_APPROVES_ERC20
+        BOB_APPROVES_ERC20,
+        BOB_ETH_BALANCE,
+        BOB_ERC20_BALANCE,
     };
-    if (argc < 3) {
+    if (argc < 2) {
         return 1;
     }
     int action = atoi(argv[1]);
@@ -46,6 +48,8 @@ int main(int argc, char** argv)
             };
 
             result = bobSendsEthDeposit(input, txData);
+            printf("%s\n", result);
+            free(result);
             break;
         case BOB_ERC20_DEPOSIT:
             txData.amount = "0";
@@ -62,6 +66,8 @@ int main(int argc, char** argv)
             };
 
             result = bobSendsErc20Deposit(input1, txData);
+            printf("%s\n", result);
+            free(result);
             break;
         case BOB_CLAIMS_DEPOSIT:
             txData.amount = "0";
@@ -79,6 +85,8 @@ int main(int argc, char** argv)
             };
 
             result = bobRefundsDeposit(input2, txData);
+            printf("%s\n", result);
+            free(result);
             break;
         case ALICE_CLAIMS_DEPOSIT:
             txData.amount = "0";
@@ -96,6 +104,8 @@ int main(int argc, char** argv)
             };
 
             result = aliceClaimsBobDeposit(input3, txData);
+            printf("%s\n", result);
+            free(result);
             break;
         case BOB_ETH_PAYMENT:
             txData.amount = "1000000000000000000";
@@ -110,6 +120,8 @@ int main(int argc, char** argv)
             };
 
             result = bobSendsEthPayment(input4, txData);
+            printf("%s\n", result);
+            free(result);
             break;
         case BOB_ERC20_PAYMENT:
             txData.amount = "0";
@@ -126,6 +138,8 @@ int main(int argc, char** argv)
             };
 
             result = bobSendsErc20Payment(input5, txData);
+            printf("%s\n", result);
+            free(result);
             break;
         case BOB_CLAIMS_PAYMENT:
             txData.amount = "0";
@@ -143,6 +157,8 @@ int main(int argc, char** argv)
             };
 
             result = bobReclaimsBobPayment(input6, txData);
+            printf("%s\n", result);
+            free(result);
             break;
         case ALICE_CLAIMS_PAYMENT:
             txData.amount = "0";
@@ -160,18 +176,27 @@ int main(int argc, char** argv)
             };
 
             result = aliceSpendsBobPayment(input7, txData);
+            printf("%s\n", result);
+            free(result);
             break;
         case BOB_APPROVES_ERC20:
             result = approveErc20(
                     "10000000000000000000",
                     "0xA7EF3f65714AE266414C9E58bB4bAa4E6FB82B41",
                     getenv("BOB_PK")
+
             );
+            printf("%s\n", result);
+            free(result);
+            break;
+        case BOB_ETH_BALANCE:
+            printf("%" PRIu64 "\n", getEthBalance(bobAddress));
+            break;
+        case BOB_ERC20_BALANCE:
+            printf("%" PRIu64 "\n", getErc20Balance(bobAddress, tokenAddress));
             break;
         default:
             return 1;
     }
-    printf("%s\n", result);
-    free(result);
     return 0;
 }

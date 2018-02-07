@@ -1,6 +1,8 @@
 //
 // Created by artem on 24.01.18.
 //
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -125,6 +127,8 @@ char* aliceSpendsBobPayment(AliceSpendsBobPaymentInput input, BasicTxData txData
 char* privKey2Addr(char* privKey);
 char* pubKey2Addr(char* pubKey);
 char* getPubKeyFromPriv(char* privKey);
+uint64_t getEthBalance(char* address);
+uint64_t getErc20Balance(char* address, char* tokenAddress);
 // Your prototype or Definition
 #ifdef __cplusplus
 }

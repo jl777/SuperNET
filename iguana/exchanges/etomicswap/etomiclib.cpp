@@ -332,3 +332,26 @@ char* getPubKeyFromPriv(char* privKey)
     ss << "0x" << publicKey;
     return stringStreamToChar(ss);
 }
+
+uint64_t getEthBalance(char* address)
+{
+    char* hexBalance = getEthBalanceRequest(address);
+    // convert wei to satoshi
+    u256 balance = jsToU256(hexBalance) / exp10<10>();
+    free(hexBalance);
+    return static_cast<uint64_t>(balance);
+}
+
+uint64_t getErc20Balance(char* address, char* tokenAddress)
+{
+    std::stringstream ss;
+    ss << "0x70a08231"
+       << "000000000000000000000000"
+       << toHex(jsToAddress(address));
+    std::stringstream& resultStream = *(new std::stringstream);
+    char* hexBalance = ethCall(tokenAddress, ss.str().c_str());
+    // convert wei to satoshi
+    u256 balance = jsToU256(hexBalance) / exp10<10>();
+    free(hexBalance);
+    return static_cast<uint64_t>(balance);
+}

@@ -86,6 +86,7 @@ char* sendRawTx(char* rawTx)
     char* tmp = cJSON_GetObjectItem(json, "result")->valuestring;
     char* txId = (char*)malloc(strlen(tmp) + 1);
     strcpy(txId, tmp);
+    cJSON_Delete(json);
     free(requestResult);
     return txId;
 }
@@ -109,4 +110,53 @@ int getNonce(char* address)
     cJSON_Delete(json);
     free(requestResult);
     return nonce;
+}
+
+char* getEthBalanceRequest(char* address)
+{
+    char* string;
+    cJSON *request = cJSON_CreateObject();
+    cJSON *params = cJSON_CreateArray();
+    cJSON_AddItemToObject(request, "jsonrpc", cJSON_CreateString("2.0"));
+    cJSON_AddItemToObject(request, "method", cJSON_CreateString("eth_getBalance"));
+    cJSON_AddItemToArray(params, cJSON_CreateString(address));
+    cJSON_AddItemToArray(params, cJSON_CreateString("latest"));
+    cJSON_AddItemToObject(request, "params", params);
+    cJSON_AddItemToObject(request, "id", cJSON_CreateNumber(2));
+    string = cJSON_PrintUnformatted(request);
+    char* requestResult = sendRequest(string);
+    cJSON_Delete(request);
+    cJSON *json = cJSON_Parse(requestResult);
+    char* tmp = cJSON_GetObjectItem(json, "result")->valuestring;
+    char* balance = (char*)malloc(strlen(tmp) + 1);
+    strcpy(balance, tmp);
+    cJSON_Delete(json);
+    free(requestResult);
+    return balance;
+}
+
+char* ethCall(char* to, const char* data)
+{
+    char* string;
+    cJSON *request = cJSON_CreateObject();
+    cJSON *params = cJSON_CreateArray();
+    cJSON *txObject = cJSON_CreateObject();
+    cJSON_AddItemToObject(request, "jsonrpc", cJSON_CreateString("2.0"));
+    cJSON_AddItemToObject(request, "method", cJSON_CreateString("eth_call"));
+    cJSON_AddStringToObject(txObject, "to", to);
+    cJSON_AddStringToObject(txObject, "data", data);
+    cJSON_AddItemToArray(params, txObject);
+    cJSON_AddItemToArray(params, cJSON_CreateString("latest"));
+    cJSON_AddItemToObject(request, "params", params);
+    cJSON_AddItemToObject(request, "id", cJSON_CreateNumber(2));
+    string = cJSON_PrintUnformatted(request);
+    char* requestResult = sendRequest(string);
+    cJSON_Delete(request);
+    cJSON *json = cJSON_Parse(requestResult);
+    char* tmp = cJSON_GetObjectItem(json, "result")->valuestring;
+    char* balance = (char*)malloc(strlen(tmp) + 1);
+    strcpy(balance, tmp);
+    cJSON_Delete(json);
+    free(requestResult);
+    return balance;
 }
