@@ -546,6 +546,8 @@ void LP_coinsloop(void *_coins)
                         continue;
                 }
             }
+            if ( strcmp(coin->symbol,"BEER") == 0 )
+                continue;
             if ( coin->smartaddr[0] == 0 )
             {
                 printf("%s has no smartaddress??\n",coin->symbol);
@@ -1370,7 +1372,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
-    if ( 0 && OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,ctx) != 0 )
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)command_rpcloop,ctx) != 0 )
     {
         printf("error launching command_rpcloop for ctx.%p\n",ctx);
         exit(-1);
