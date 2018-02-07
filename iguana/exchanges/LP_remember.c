@@ -930,7 +930,11 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         //return(cJSON_Parse("{\"error\":\"mismatched bob/alice vs src/dest coins??\"}"));
     }
     alice = LP_coinfind(rswap.alicecoin);
+    if ( alice->etomic[0] != 0 )
+        alice = LP_coinfind("ETOMIC");
     bob = LP_coinfind(rswap.bobcoin);
+    if ( bob->etomic[0] != 0 )
+        bob = LP_coinfind("ETOMIC");
     rswap.Atxfee = LP_txfeecalc(alice,rswap.Atxfee,0);
     rswap.Btxfee = LP_txfeecalc(bob,rswap.Btxfee,0);
     if ( rswap.iambob == 0 )
