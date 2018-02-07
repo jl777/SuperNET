@@ -648,15 +648,13 @@ void LP_coinsloop(void *_coins)
                     if ( LP_blockinit(coin,coin->lastscanht) < 0 )
                     {
                         printf("blockinit.%s %d error\n",coin->symbol,coin->lastscanht);
-                        sleep(1);
-                        j--;
-                        continue;
+                        break;
                     }
                     coin->lastscanht++;
                     if ( coin->lastscanht == coin->longestchain+1 || strcmp("BTC",coins) == 0 )
                         break;
                 }
-                if ( strcmp("BTC",coins) == 0 )
+                //if ( strcmp("BTC",coins) == 0 )
                     printf("done [%s]: %s ref.%d scan.%d to %d, longest.%d\n",coins,coin->symbol,coin->firstrefht,coin->firstscanht,coin->lastscanht,coin->longestchain);
             }
         }
