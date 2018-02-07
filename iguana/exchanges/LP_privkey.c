@@ -318,7 +318,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             } else printf("pubkey 64 mismatch\n");
         } else printf("error creating pubkey\n");
     }
-    if ( coin->counter == 0 )
+    if ( coin->counter == 0 && coin->etomic[0] == 0 )
     {
         coin->counter++;
         memcpy(G.LP_pubsecp,coin->pubkey33,33);
