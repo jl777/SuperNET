@@ -296,15 +296,14 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     bitcoin_priv2pub(ctx,coin->symbol,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
     {
         uint8_t check64[64]; char checkaddr[64],checkaddr2[64];
-        if ( LP_etomic_priv2pub(check64,privkey) > 0 )
+        if ( LP_etomic_priv2pub(check64,privkey) == 0 )
         {
             if ( memcmp(check64,coin->pubkey33+1,32) == 0 )
             {
-                if ( LP_etomic_priv2addr(checkaddr2,privkey) > 0 && LP_etomic_pub2addr(checkaddr,check64) > 0 && strcmp(checkaddr2,checkaddr) == 0 )
+                if ( LP_etomic_priv2addr(checkaddr,privkey) == 0 && LP_etomic_pub2addr(checkaddr2,check64) == 0 && strcmp(checkaddr,checkaddr2) == 0 )
                 {
                     printf("addr is (%s)\n",checkaddr);
-                }
-                else printf("error getting addr\n");
+                } else printf("error getting addr (%s) != (%s)\n",checkaddr,checkaddr2);
             } else printf("pubkey 64 mismatch\n");
         } else printf("error creating pubkey\n");
     }
