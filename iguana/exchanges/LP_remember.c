@@ -935,7 +935,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 jaddnum(retjson,"quoteid",quoteid);
                 return(retjson);
             }
-            if ( alice->electrum == 0 && alice->lastscanht < alice->longestchain+1 )
+            if ( 0 && alice->electrum == 0 && alice->lastscanht < alice->longestchain+1 )
             {
                 printf("need to scan %s first\n",alice->symbol);
                 cJSON *retjson = cJSON_CreateObject();
@@ -971,7 +971,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 jaddnum(retjson,"quoteid",quoteid);
                 return(retjson);
             }
-            if ( bob->electrum == 0 && bob->lastscanht < bob->longestchain+1 )
+            if ( 0 && bob->electrum == 0 && bob->lastscanht < bob->longestchain+1 )
             {
                 printf("need to scan %s first\n",bob->symbol);
                 cJSON *retjson = cJSON_CreateObject();
