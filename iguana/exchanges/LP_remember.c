@@ -393,7 +393,7 @@ int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflag
                 return(1);
             else if ( sentflags[BASILISK_BOBSPEND] != 0 ) // without ALICECLAIM this is loss due to inactivity
                 return(1);
-            else if ( sentflags[BASILISK_ALICECLAIM] != 0 ) //got deposit! happy alice
+            else if ( bits256_nonz(txids[BASILISK_ALICECLAIM]) != 0 || sentflags[BASILISK_ALICECLAIM] != 0 ) //got deposit! happy alice
                 return(1);
         }
     }
