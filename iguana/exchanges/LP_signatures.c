@@ -48,16 +48,12 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
     if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
-    {
         jaddstr(retjson,"bobetomic",etomic);
-        jaddstr(retjson,"etomicsrc",qp->etomicsrc);
-    }
+    jaddstr(retjson,"etomicsrc",qp->etomicsrc);
     jaddstr(retjson,"rel",qp->destcoin);
     if ( LP_etomicsymbol(activesymbol,etomic,qp->destcoin) != 0 )
-    {
         jaddstr(retjson,"alicetomic",etomic);
-        jaddstr(retjson,"etomicdest",qp->etomicdest);
-    }
+    jaddstr(retjson,"etomicdest",qp->etomicdest);
     if ( qp->coinaddr[0] != 0 )
         jaddstr(retjson,"address",qp->coinaddr);
     if ( qp->timestamp != 0 )
@@ -699,7 +695,7 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
             jadd(reqjson,"proof",LP_instantdex_txids(0,coin->smartaddr));
     }
     msg = jprint(reqjson,1);
-    //printf("QUERY.(%s)\n",msg);
+    //printf("etomicdest.(%s) QUERY.(%s)\n",qp->etomicdest,msg);
     //if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )
     {
         memset(&zero,0,sizeof(zero));

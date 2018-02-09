@@ -1048,6 +1048,8 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
 {
     //FILE *fp; char fname[512];
     uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag=-2,x = -1; struct iguana_info *bobcoin,*alicecoin; char bobstr[65],alicestr[65];
+    strcpy(swap->I.etomicsrc,qp->etomicsrc);
+    strcpy(swap->I.etomicdest,qp->etomicdest);
     strcpy(swap->I.bobstr,swap->I.req.src);
     strcpy(swap->I.alicestr,swap->I.req.dest);
     LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
