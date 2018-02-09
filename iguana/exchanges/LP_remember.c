@@ -256,7 +256,7 @@ bits256 basilisk_swap_privBn_extract(bits256 *bobrefundp,char *bobcoin,bits256 b
 
 bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,int32_t *sentflags,bits256 *txids,int32_t utxoind,int32_t alicespent,int32_t bobspent,int32_t utxovout,char *aliceaddr,char *bobaddr,char *Adest,char *dest)
 {
-    bits256 spendtxid,txid; char destaddr[64],str[65]; int32_t i,n; struct iguana_info *coin; cJSON *array,*txobj;
+    bits256 spendtxid,txid; char destaddr[64],str[65]; int32_t i,n,j,numvins,numvouts; struct iguana_info *coin; cJSON *array,*txobj,*vins,*vin,*vouts;
     memset(&spendtxid,0,sizeof(spendtxid));
     destaddr[0] = 0;
     if ( (coin= LP_coinfind(symbol)) == 0 )
@@ -275,8 +275,41 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                         printf("i.%d of %d: %s\n",i,n,bits256_str(str,txid));
                     if ( bits256_cmp(txid,txids[utxoind]) != 0 )
                     {
-                        if ( (txobj= LP_gettx(symbol,txid,1)) != 0 ) // good side effects
+                        if ( (txobj= LP_gettx(symbol,txid,1)) != 0 )
+                        {
+                            if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
+                            {
+                                for (j=0; j<numvins; j++)
+                                {
+                                    vin = jitem(vins,j);
+                                    if ( utxoind == BASILISK_BOBPAYMENT )
+                                        printf("vini.%d %s\n",j,jprint(vin,0));
+                                    if ( utxovout == jint(vin,"vout") && bits256_cmp(txids[utxoind],jbits256(vin,"txid")) == 0 )
+                                    {
+                                        if ( (vouts= jarray(&numvouts,txobj,"vout")) != 0 )
+                                            LP_destaddr(destaddr,jitem(vouts,0));
+                                        free_json(txobj);
+                                        if ( iambob == 0 )
+                                        {
+                                            sentflags[bobspent] = 1;
+                                            sentflags[alicespent] = 0;
+                                            txids[bobspent] = spendtxid;
+                                        }
+                                        else
+                                        {
+                                            sentflags[alicespent] = 1;
+                                            sentflags[bobspent] = 0;
+                                            txids[alicespent] = spendtxid;
+                                        }
+                                        sentflags[utxoind] = 1;
+                                        if ( utxoind == BASILISK_BOBPAYMENT )
+                                            printf("found match\n");
+                                        return(txid);
+                                    }
+                                }
+                            }
                             free_json(txobj);
+                        }
                     }
                 }
             }
