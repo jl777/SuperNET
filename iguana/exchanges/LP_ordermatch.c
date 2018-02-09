@@ -862,22 +862,20 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     memset(autxo,0,sizeof(*autxo));
     memset(butxo,0,sizeof(*butxo));
     LP_abutxo_set(autxo,butxo,qp);
+    strcpy(qp->coinaddr,coin->smartaddr);
     if ( bits256_nonz(qp->srchash) == 0 || bits256_cmp(qp->srchash,G.LP_mypub25519) == 0 )
     {
         qprice = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
         strcpy(qp->gui,G.gui);
         if ( coin->etomic[0] != 0 )
-            strcpy(qp->coinaddr,coin->smartaddr);
+            strcpy(qp->etomicsrc,coin->smartaddr);
         else if ( othercoin->etomic[0] != 0 )
-            strcpy(qp->coinaddr,othercoin->smartaddr);
+            strcpy(qp->etomicsrc,othercoin->smartaddr);
         if ( coin->etomic[0] != 0 || othercoin->etomic[0] != 0 )
         {
             struct iguana_info *ecoin;
             if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
-            {
-                strcpy(qp->etomicsrc,qp->coinaddr);
                 strcpy(qp->coinaddr,ecoin->smartaddr);
-            }
             else return(0);
         }
         strcpy(butxo->coinaddr,qp->coinaddr);
@@ -906,17 +904,14 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     //LP_address_utxo_reset(coin);
     //printf("done LP_address_utxo_reset.%s\n",coin->symbol);
     if ( coin->etomic[0] != 0 )
-        strcpy(qp->coinaddr,coin->smartaddr);
+        strcpy(qp->etomicsrc,coin->smartaddr);
     else if ( othercoin->etomic[0] != 0 )
-        strcpy(qp->coinaddr,othercoin->smartaddr);
+        strcpy(qp->etomicsrc,othercoin->smartaddr);
     if ( coin->etomic[0] != 0 || othercoin->etomic[0] != 0 )
     {
         struct iguana_info *ecoin;
         if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
-        {
-            strcpy(qp->etomicsrc,qp->coinaddr);
             strcpy(qp->coinaddr,ecoin->smartaddr);
-        }
         else return(0);
     }
     if ( (butxo= LP_address_myutxopair(butxo,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
@@ -1432,14 +1427,15 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         return(clonestr("{\"error\":\"cant set ordermatch quote\"}"));
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,G.LP_mypub25519,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
-    if ( relcoin->etomic[0] != 0 )
+    if ( relcoin->etomic[0] != 0 || basecoin->etomic[0] != 0 )
     {
         struct iguana_info *coin;
-        if ( (coin= LP_coinfind("ETOMIC")) != 0 )
-        {
-            strcpy(Q.etomicdest,Q.destaddr);
+        if ( relcoin->etomic[0] != 0 )
+            strcpy(Q.etomicdest,relcoin->smartaddr);
+        else if (basecoin->etomic[0] != 0 )
+           strcpy(Q.etomicdest,basecoin->smartaddr);
+        if ( relcoin->etomic[0] != 0 && (coin= LP_coinfind("ETOMIC")) != 0 )
             strcpy(Q.destaddr,coin->smartaddr);
-        }
         else return(clonestr("{\"error\":\"cant find ETOMIC\"}"));
     }
     int32_t changed;
