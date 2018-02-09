@@ -1434,9 +1434,12 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
             strcpy(Q.etomicdest,relcoin->smartaddr);
         else if (basecoin->etomic[0] != 0 )
            strcpy(Q.etomicdest,basecoin->smartaddr);
-        if ( relcoin->etomic[0] != 0 && (coin= LP_coinfind("ETOMIC")) != 0 )
-            strcpy(Q.destaddr,coin->smartaddr);
-        else return(clonestr("{\"error\":\"cant find ETOMIC\"}"));
+        if ( relcoin->etomic[0] != 0 )
+        {
+            if ((coin= LP_coinfind("ETOMIC")) != 0 )
+                strcpy(Q.destaddr,coin->smartaddr);
+            else return(clonestr("{\"error\":\"cant find ETOMIC\"}"));
+        }
     }
     int32_t changed;
     LP_mypriceset(&changed,autxo->coin,base,1. / maxprice);
