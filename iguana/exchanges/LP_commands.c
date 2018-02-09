@@ -426,7 +426,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-                    if ( ptr->userpass[0] == 0 )
+                    if ( ptr->userpass[0] == 0 && strcmp(ptr->symbol,"ETH") != 0 )
                     {
                         cJSON *retjson = cJSON_CreateObject();
                         jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG0);
@@ -437,7 +437,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     {
                         ptr->inactive = 0;
                         cJSON *array; int32_t notarized;
-                        if ( LP_getheight(&notarized,ptr) <= 0 )
+                        if ( strcmp(ptr->symbol,"ETH") != 0 && LP_getheight(&notarized,ptr) <= 0 )
                         {
                             ptr->inactive = (uint32_t)time(NULL);
                             return(clonestr("{\"error\":\"coin cant be activated till synced\"}"));
@@ -450,8 +450,6 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                             if ( strcmp(ptr->symbol,"KMD") == 0 )
                                 LP_importaddress("KMD",BOTS_BONDADDRESS);
                         }
-                        if ( 0 && strcmp(coin,"BCH") == 0 )
-                            test_validate(ptr,"010000000110b365ea6b8a9f2d56dc12de868e382dc787b2e29355f9b357dcf764c5e29cb1010000006b483045022100c605b993f1db5f31046ebb9065bea0a047f478342bbad8fcfc6af81d05236bd502206e9993a737a8814b935b5e522e750c915e7d37e3bd8367f087d4510f66acac47412102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ffffffff014bc22900000000001976a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac00000000");
                         array = cJSON_CreateArray();
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));
