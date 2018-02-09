@@ -852,11 +852,12 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     double price,qprice,myprice,bestprice,range,bid,ask; struct iguana_info *coin,*othercoin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65]; struct LP_address_utxo *utxos[1000]; int32_t r,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
     *newqp = *qp;
     qp = newqp;
-    //printf("bob %s received REQUEST.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
+    printf("bob %s received REQUEST.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 || (othercoin= LP_coinfind(qp->destcoin)) != 0 )
         return(0);
     if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
         return(0);
+    printf("myprice %.8f\n",myprice);
     autxo = &A;
     butxo = &B;
     memset(autxo,0,sizeof(*autxo));
@@ -876,7 +877,11 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
             struct iguana_info *ecoin;
             if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
                 strcpy(qp->coinaddr,ecoin->smartaddr);
-            else return(0);
+            else
+            {
+                printf("ETOMIC coin not found\n");
+                return(0);
+            }
         }
         strcpy(butxo->coinaddr,qp->coinaddr);
         qp->srchash = G.LP_mypub25519;
@@ -884,6 +889,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         memset(&qp->txid2,0,sizeof(qp->txid2));
         qp->vout = qp->vout2 = -1;
     } else return(0);
+    printf("qprice %.8f vs myprice %.8f\n",qprice,myprice);
     if ( qprice > myprice )
     {
         r = (LP_rand() % 100);
@@ -912,7 +918,11 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         struct iguana_info *ecoin;
         if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
             strcpy(qp->coinaddr,ecoin->smartaddr);
-        else return(0);
+        else
+        {
+            printf("ETOMIC coin not found\n");
+            return(0);
+        }
     }
     if ( (butxo= LP_address_myutxopair(butxo,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
     {
@@ -928,7 +938,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     }
     else
     {
-        //printf("cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f\n",(long long)qp->aliceid,qp->srccoin,qp->destcoin,dstr(LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee)),dstr(qp->destsatoshis));
+        printf("cant find utxopair aliceid.%llu %s/%s %.8f -> relvol %.8f\n",(long long)qp->aliceid,qp->srccoin,qp->destcoin,dstr(LP_basesatoshis(dstr(qp->destsatoshis),price,qp->txfee,qp->desttxfee)),dstr(qp->destsatoshis));
         return(0);
     }
     if ( (qprice= LP_trades_pricevalidate(qp,coin,myprice)) < 0. )
