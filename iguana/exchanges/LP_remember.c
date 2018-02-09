@@ -282,28 +282,29 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                                 for (j=0; j<numvins; j++)
                                 {
                                     vin = jitem(vins,j);
-                                    if ( utxoind == BASILISK_BOBPAYMENT )
+                                    if ( 0 && utxoind == BASILISK_BOBPAYMENT )
                                         printf("vini.%d %s\n",j,jprint(vin,0));
                                     if ( utxovout == jint(vin,"vout") && bits256_cmp(txids[utxoind],jbits256(vin,"txid")) == 0 )
                                     {
                                         if ( (vouts= jarray(&numvouts,txobj,"vout")) != 0 )
                                             LP_destaddr(destaddr,jitem(vouts,0));
                                         free_json(txobj);
-                                        if ( iambob == 0 )
+                                        if ( bobaddr != 0 && (strcmp(destaddr,bobaddr) == 0 || strcmp(dest,destaddr) == 0) )
                                         {
                                             sentflags[bobspent] = 1;
                                             sentflags[alicespent] = 0;
                                             txids[bobspent] = spendtxid;
                                         }
-                                        else
+                                        else if ( aliceaddr != 0 && (strcmp(destaddr,aliceaddr) == 0 || strcmp(Adest,destaddr) == 0) )
                                         {
                                             sentflags[alicespent] = 1;
                                             sentflags[bobspent] = 0;
                                             txids[alicespent] = spendtxid;
                                         }
+                                        else printf("unknown spender\n");
                                         sentflags[utxoind] = 1;
                                         if ( utxoind == BASILISK_BOBPAYMENT )
-                                            printf("found match\n");
+                                            printf("found match destaddr.(%s)\n",destaddr);
                                         return(txid);
                                     }
                                 }
