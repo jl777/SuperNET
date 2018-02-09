@@ -709,9 +709,9 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
             rswap->txids[BASILISK_MYFEE] = jbits256(item,"myfee");
             rswap->txids[BASILISK_OTHERFEE] = jbits256(item,"otherfee");
             free_json(item);
-        }
+        } else printf("couldnt parse.(%s)\n",fstr);
         free(fstr);
-    }
+    } else printf("cant open.(%s)\n",fname);
     sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {
