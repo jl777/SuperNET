@@ -353,9 +353,9 @@ int32_t basilisk_isbobcoin(int32_t iambob,int32_t ind)
     }
 }
 
-int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
+int32_t basilisk_swap_isfinished(uint32_t expiration,int32_t iambob,bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
 {
-    int32_t i,n = 0;
+    int32_t i,n = 0; uint32_t now = (uint32_t)time(NULL);
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
         if ( i != BASILISK_OTHERFEE && i != BASILISK_MYFEE && sentflags[i] != 0 )
             n++;
@@ -366,39 +366,51 @@ int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflag
     }
     if ( iambob != 0 )
     {
-        if ( bits256_nonz(txids[BASILISK_BOBDEPOSIT]) == 0 && sentflags[BASILISK_BOBDEPOSIT] == 0 )
+        if ( sentflags[BASILISK_BOBSPEND] != 0 && sentflags[BASILISK_BOBREFUND] != 0 )
             return(1);
-        else if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 || sentflags[BASILISK_BOBPAYMENT] == 0 )
+        else if ( (bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 || sentflags[BASILISK_BOBPAYMENT] == 0) && sentflags[BASILISK_BOBREFUND] != 0 )
+            return(1);
+        else if ( now > expiration )
         {
-            if ( bits256_nonz(depositspent) != 0 )//&& ((bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 && sentflags[BASILISK_ALICEPAYMENT] == 0) || bits256_nonz(Apaymentspent) != 0) )
-            {
-                if ( bits256_nonz(Apaymentspent) == 0 && sentflags[BASILISK_BOBREFUND] == 0 )
-                    printf("bob was too late in claiming bobrefund\n");
+            if ( bits256_nonz(txids[BASILISK_BOBDEPOSIT]) == 0 && sentflags[BASILISK_BOBDEPOSIT] == 0 )
                 return(1);
+            else if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 || sentflags[BASILISK_BOBPAYMENT] == 0 )
+            {
+                if ( bits256_nonz(depositspent) != 0 )//&& ((bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 && sentflags[BASILISK_ALICEPAYMENT] == 0) || bits256_nonz(Apaymentspent) != 0) )
+                {
+                    if ( bits256_nonz(Apaymentspent) == 0 && sentflags[BASILISK_BOBREFUND] == 0 )
+                        printf("bob was too late in claiming bobrefund\n");
+                    return(1);
+                }
             }
+            //else if ( bits256_nonz(Apaymentspent) != 0 )
+            //    return(1);
+            else if ( bits256_nonz(Apaymentspent) != 0 && bits256_nonz(paymentspent) != 0 && bits256_nonz(depositspent) != 0 )
+                return(1);
         }
-        //else if ( bits256_nonz(Apaymentspent) != 0 )
-        //    return(1);
-        else if ( bits256_nonz(Apaymentspent) != 0 && bits256_nonz(paymentspent) != 0 && bits256_nonz(depositspent) != 0 )
-            return(1);
     }
     else
     {
-        if ( sentflags[BASILISK_ALICEPAYMENT] == 0 )
+        if ( sentflags[BASILISK_ALICESPEND] != 0 || sentflags[BASILISK_ALICERECLAIM] != 0 || sentflags[BASILISK_ALICECLAIM] != 0 )
+            return(1);
+        else if ( now > expiration )
         {
-            if ( bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 )
-                return(1);
-            else if ( sentflags[BASILISK_BOBREFUND] != 0 ) //sentflags[BASILISK_BOBPAYMENT] != 0
-                return(1);
-        }
-        else
-        {
-            if ( sentflags[BASILISK_ALICESPEND] != 0 )
-                return(1);
-            else if ( sentflags[BASILISK_ALICERECLAIM] != 0 )
-                return(1);
-            else if ( sentflags[BASILISK_ALICECLAIM] != 0 ) //got deposit! happy alice
-                return(1);
+            if ( sentflags[BASILISK_ALICEPAYMENT] == 0 )
+            {
+                if ( bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 )
+                    return(1);
+                else if ( sentflags[BASILISK_BOBREFUND] != 0 ) //sentflags[BASILISK_BOBPAYMENT] != 0
+                    return(1);
+            }
+            else
+            {
+                if ( sentflags[BASILISK_ALICESPEND] != 0 )
+                    return(1);
+                else if ( sentflags[BASILISK_ALICERECLAIM] != 0 )
+                    return(1);
+                else if ( sentflags[BASILISK_ALICECLAIM] != 0 ) //got deposit! happy alice
+                    return(1);
+            }
         }
     }
     return(0);
@@ -676,7 +688,7 @@ int32_t LP_rswap_init(struct LP_swap_remember *rswap,uint32_t requestid,uint32_t
             }
             free_json(txobj);
         }
-        rswap->origfinishedflag = basilisk_swap_isfinished(rswap->iambob,rswap->txids,rswap->sentflags,rswap->paymentspent,rswap->Apaymentspent,rswap->depositspent);
+        rswap->origfinishedflag = basilisk_swap_isfinished(rswap->expiration,rswap->iambob,rswap->txids,rswap->sentflags,rswap->paymentspent,rswap->Apaymentspent,rswap->depositspent);
         rswap->finishedflag = rswap->origfinishedflag;
         if ( forceflag != 0 )
             rswap->finishedflag = rswap->origfinishedflag = 0;
@@ -1031,7 +1043,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         rswap.paymentspent = basilisk_swap_spendupdate(rswap.iambob,rswap.bobcoin,rswap.bobpaymentaddr,rswap.sentflags,rswap.txids,BASILISK_BOBPAYMENT,BASILISK_ALICESPEND,BASILISK_BOBRECLAIM,0,srcAdest,srcBdest,rswap.Adestaddr,rswap.destaddr);
         rswap.Apaymentspent = basilisk_swap_spendupdate(rswap.iambob,rswap.alicecoin,rswap.alicepaymentaddr,rswap.sentflags,rswap.txids,BASILISK_ALICEPAYMENT,BASILISK_ALICERECLAIM,BASILISK_BOBSPEND,0,destAdest,destBdest,rswap.Adestaddr,rswap.destaddr);
         rswap.depositspent = basilisk_swap_spendupdate(rswap.iambob,rswap.bobcoin,rswap.bobdepositaddr,rswap.sentflags,rswap.txids,BASILISK_BOBDEPOSIT,BASILISK_ALICECLAIM,BASILISK_BOBREFUND,0,srcAdest,srcBdest,rswap.Adestaddr,rswap.destaddr);
-        rswap.finishedflag = basilisk_swap_isfinished(rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
+        rswap.finishedflag = basilisk_swap_isfinished(rswap.expiration,rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
         LP_spends_set(&rswap);
         if ( rswap.iambob == 0 )
         {
@@ -1236,7 +1248,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     LP_totals_update(rswap.iambob,rswap.alicecoin,rswap.bobcoin,KMDtotals,BTCtotals,rswap.sentflags,rswap.values);
     if ( (numspent= LP_spends_set(&rswap)) == 3 )
         rswap.finishedflag = 1;
-    else rswap.finishedflag = basilisk_swap_isfinished(rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
+    else rswap.finishedflag = basilisk_swap_isfinished(rswap.expiration,rswap.iambob,rswap.txids,rswap.sentflags,rswap.paymentspent,rswap.Apaymentspent,rswap.depositspent);
     if ( rswap.origfinishedflag == 0 && rswap.finishedflag != 0 )
     {
         char fname[1024],*itemstr; FILE *fp;
