@@ -294,7 +294,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                                             sentflags[bobspent] = 1;
                                             sentflags[alicespent] = 0;
                                             txids[bobspent] = spendtxid;
-                                            printf("bobspent.[%d] <- 1\n",bobspent);
+                                            //printf("bobspent.[%d] <- 1\n",bobspent);
                                         }
                                         else if ( aliceaddr != 0 && (strcmp(destaddr,aliceaddr) == 0 || strcmp(Adest,destaddr) == 0) )
                                         {
@@ -302,9 +302,9 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                                             sentflags[bobspent] = 0;
                                             txids[alicespent] = spendtxid;
                                         }
-                                        else printf("unknown spender\n");
+                                        //else printf("unknown spender\n");
                                         sentflags[utxoind] = 1;
-                                        if ( utxoind == BASILISK_BOBPAYMENT )
+                                        if ( 0 && utxoind == BASILISK_BOBPAYMENT )
                                             printf("found match destaddr.(%s)\n",destaddr);
                                         return(txid);
                                     }
@@ -1266,10 +1266,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         free_json(txoutobj), flag = 0;
                     else flag = -1, rswap.depositspent = deadtxid;
                 }
-                if ( flag == 0 &&
-                    (bits256_nonz(rswap.paymentspent) != 0 ||
-                     bits256_nonz(rswap.Apaymentspent) != 0 ||
-                     time(NULL) > rswap.plocktime+777+120) )
+                if ( flag == 0 && bits256_nonz(rswap.paymentspent) != 0 ) // || time(NULL) > rswap.plocktime+777+120) )
                 {
                     //printf("do the refund! paymentspent.%s now.%u vs expiration.%u\n",bits256_str(str,rswap.paymentspent),(uint32_t)time(NULL),rswap.expiration);
                     //if ( txbytes[BASILISK_BOBREFUND] == 0 )
