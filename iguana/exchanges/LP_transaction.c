@@ -124,8 +124,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
                             totalretries++;
                             i--;
                         }
-                    }
-                    else printf("broadcast error.(%s)\n",retstr);
+                    } else printf("broadcast error.(%s)\n",retstr);
                 }
                 free_json(retjson);
             }
