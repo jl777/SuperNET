@@ -271,7 +271,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                 for (i=0; i<n; i++)
                 {
                     txid = jbits256(jitem(array,i),"tx_hash");
-                    //printf("i.%d of %d: %s\n",i,n,bits256_str(str,txid));
+                    printf("i.%d of %d: %s\n",i,n,bits256_str(str,txid));
                     if ( bits256_cmp(txid,txids[utxoind]) != 0 )
                     {
                         if ( (txobj= LP_gettx(symbol,txid,1)) != 0 ) // good side effects
@@ -299,14 +299,14 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
             //printf("utxoind.%d Alice.(%s %s) Bob.(%s %s) vs destaddr.(%s)\n",utxoind,aliceaddr,Adest,bobaddr,dest,destaddr);
             if ( aliceaddr != 0 && (strcmp(destaddr,aliceaddr) == 0 || strcmp(Adest,destaddr) == 0) )
             {
-                //printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[alicespent] = 1;
                 sentflags[bobspent] = 0;
                 txids[alicespent] = spendtxid;
             }
             else if ( bobaddr != 0 && (strcmp(destaddr,bobaddr) == 0 || strcmp(dest,destaddr) == 0) )
             {
-                //printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[bobspent] = 1;
                 sentflags[alicespent] = 0;
                 txids[bobspent] = spendtxid;
@@ -327,7 +327,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                     txids[alicespent] = spendtxid;
                 }
             }
-        } //else printf("no spend of %s/v%d detected\n",bits256_str(str,txid),vout);
+        } else printf("no spend of %s/v%d detected\n",bits256_str(str,txid),vout);
     } //else printf("utxoind.%d null txid\n",utxoind);
     return(spendtxid);
 }
@@ -384,16 +384,16 @@ int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflag
         {
             if ( bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 )
                 return(1);
-            else if ( sentflags[BASILISK_BOBPAYMENT] != 0 && sentflags[BASILISK_BOBREFUND] != 0 )
+            else if ( sentflags[BASILISK_BOBREFUND] != 0 ) //sentflags[BASILISK_BOBPAYMENT] != 0
                 return(1);
         }
         else
         {
-            if ( sentflags[BASILISK_ALICERECLAIM] != 0 || sentflags[BASILISK_ALICESPEND] != 0 )
+            if ( sentflags[BASILISK_ALICESPEND] != 0 )
                 return(1);
-            else if ( sentflags[BASILISK_BOBSPEND] != 0 ) // without ALICECLAIM this is loss due to inactivity
+            else if ( sentflags[BASILISK_ALICERECLAIM] != 0 )
                 return(1);
-            else if ( bits256_nonz(txids[BASILISK_ALICECLAIM]) != 0 || sentflags[BASILISK_ALICECLAIM] != 0 ) //got deposit! happy alice
+            else if ( sentflags[BASILISK_ALICECLAIM] != 0 ) //got deposit! happy alice
                 return(1);
         }
     }
@@ -1099,7 +1099,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                 } else printf("now %u before expiration %u\n",(uint32_t)time(NULL),rswap.expiration);
             }
-            if ( rswap.sentflags[BASILISK_ALICEPAYMENT] != 0 && bits256_nonz(rswap.Apaymentspent) == 0 && rswap.sentflags[BASILISK_ALICECLAIM] == 0 )
+            if ( rswap.sentflags[BASILISK_ALICEPAYMENT] != 0 && bits256_nonz(rswap.Apaymentspent) == 0 && rswap.sentflags[BASILISK_ALICERECLAIM] == 0 )
             {
                 flag = 0;
                 if ( alice->electrum == 0 )
