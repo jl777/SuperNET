@@ -512,11 +512,15 @@ cJSON *LP_swap_json(struct LP_swap_remember *rswap)
     jaddstr(item,"bob",rswap->src);
     if ( rswap->bobtomic[0] != 0 )
         jaddstr(item,"bobtomic",rswap->bobtomic);
+    if ( rswap->etomicsrc[0] != 0 )
+        jaddstr(item,"etomicsrc",rswap->etomicsrc);
     jaddnum(item,"srcamount",dstr(rswap->srcamount));
     jaddnum(item,"bobtxfee",dstr(rswap->Btxfee));
     jaddstr(item,"alice",rswap->dest);
     if ( rswap->alicetomic[0] != 0 )
         jaddstr(item,"alicetomic",rswap->alicetomic);
+    if ( rswap->etomicdest[0] != 0 )
+        jaddstr(item,"etomicdest",rswap->etomicdest);
     jaddnum(item,"destamount",dstr(rswap->destamount));
     jaddnum(item,"alicetxfee",dstr(rswap->Atxfee));
     jadd64bits(item,"aliceid",rswap->aliceid);
