@@ -1208,6 +1208,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             free_json(txoutobj), flag = 0;
                         else flag = -1, rswap.Apaymentspent = deadtxid;
                     }
+                    printf("flag.%d apayment.%s\n",flag,bits256_str(str,rswap.txids[BASILISK_ALICESPEND]));
                     if ( flag == 0 )
                     {
                         if ( bits256_nonz(rswap.privAm) == 0 )
