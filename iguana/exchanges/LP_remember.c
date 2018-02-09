@@ -366,6 +366,11 @@ int32_t basilisk_swap_isfinished(uint32_t expiration,int32_t iambob,bits256 *txi
     }
     if ( bits256_nonz(paymentspent) != 0 && bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
         return(1);
+    else if ( sentflags[BASILISK_BOBPAYMENT] != 0 && sentflags[BASILISK_ALICEPAYMENT] != 0 && sentflags[BASILISK_BOBDEPOSIT] != 0 && sentflags[BASILISK_BOBRECLAIM] != 0 && sentflags[BASILISK_ALICECLAIM] != 0 )
+    {
+        printf("edge case unspendable alicepayment\n");
+        return(1);
+    }
     if ( iambob != 0 )
     {
         if ( sentflags[BASILISK_BOBSPEND] != 0 && sentflags[BASILISK_BOBREFUND] != 0 )
