@@ -1260,6 +1260,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             }
             if ( rswap.sentflags[BASILISK_BOBREFUND] == 0 && rswap.sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(rswap.depositspent) == 0 )
             {
+                printf("bobdeposit.%d depositspent.%d paymentspent.%d\n",rswap.sentflags[BASILISK_BOBDEPOSIT],bits256_nonz(rswap.depositspent),bits256_nonz(rswap.paymentspent));
                 flag = 0;
                 if ( bob->electrum == 0 )
                 {
