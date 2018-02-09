@@ -408,14 +408,19 @@ int32_t basilisk_swap_isfinished(uint32_t expiration,int32_t iambob,bits256 *txi
     }
     if ( bits256_nonz(paymentspent) != 0 && bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
         return(1);
-    else if ( sentflags[BASILISK_BOBPAYMENT] != 0 && sentflags[BASILISK_ALICEPAYMENT] != 0 && sentflags[BASILISK_BOBDEPOSIT] != 0 && sentflags[BASILISK_BOBRECLAIM] != 0 && sentflags[BASILISK_ALICECLAIM] != 0 )
+    else if ( sentflags[BASILISK_BOBPAYMENT] != 0 && sentflags[BASILISK_ALICEPAYMENT] != 0 && sentflags[BASILISK_BOBDEPOSIT] != 0 && sentflags[BASILISK_BOBRECLAIM] != 0 )
     {
-        printf("edge case unspendable alicepayment\n");
-        return(1);
+        if ( sentflags[BASILISK_ALICECLAIM] != 0 )
+        {
+            printf("edge case unspendable alicepayment\n");
+            return(1);
+        }
+        else if ( iambob != 0 && sentflags[BASILISK_ALICECLAIM] != 0 )
+            return(1);
     }
     if ( iambob != 0 )
     {
-        if ( sentflags[BASILISK_BOBSPEND] != 0 && sentflags[BASILISK_BOBREFUND] != 0 )
+        if ( (sentflags[BASILISK_BOBSPEND] != 0 || sentflags[BASILISK_BOBRECLAIM] != 0) && sentflags[BASILISK_BOBREFUND] != 0 )
             return(1);
         else if ( (bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 || sentflags[BASILISK_BOBPAYMENT] == 0) && sentflags[BASILISK_BOBREFUND] != 0 )
             return(1);
@@ -1295,7 +1300,6 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
         if ( bits256_nonz(rswap.txids[i]) != 0 && rswap.values[i] == 0 )
             rswap.values[i] = basilisk_txvalue(basilisk_isbobcoin(rswap.iambob,i) ? rswap.bobcoin : rswap.alicecoin,rswap.txids[i],0);
-    printf("bobreclaimed.%d\n",rswap.sentflags[BASILISK_BOBRECLAIM]);
     if ( 0 && rswap.origfinishedflag == 0 )
     {
         printf("iambob.%d Apaymentspent.(%s) alice.%d bob.%d %s %.8f\n",rswap.iambob,bits256_str(str,rswap.Apaymentspent),rswap.sentflags[BASILISK_ALICERECLAIM],rswap.sentflags[BASILISK_BOBSPEND],rswap.alicecoin,dstr(rswap.values[BASILISK_ALICEPAYMENT]));
