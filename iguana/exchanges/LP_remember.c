@@ -1199,7 +1199,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             if ( rswap.sentflags[BASILISK_BOBSPEND] == 0 && bits256_nonz(rswap.Apaymentspent) == 0 )
             {
                 printf("try to bobspend aspend.%s have privAm.%d aspent.%d\n",bits256_str(str,rswap.txids[BASILISK_ALICESPEND]),bits256_nonz(rswap.privAm),rswap.sentflags[BASILISK_ALICESPEND]);
-                if ( rswap.sentflags[BASILISK_ALICESPEND] != 0 || bits256_nonz(rswap.txids[BASILISK_ALICESPEND]) != 0 || bits256_nonz(rswap.privAm) != 0 )
+                if ( rswap.sentflags[BASILISK_ALICESPEND] != 0 || bits256_nonz(rswap.paymentspent) != 0 || bits256_nonz(rswap.privAm) != 0 )
                 {
                     flag = 0;
                     if ( alice->electrum == 0 )
@@ -1208,13 +1208,13 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             free_json(txoutobj), flag = 0;
                         else flag = -1, rswap.Apaymentspent = deadtxid;
                     }
-                    printf("flag.%d apayment.%s\n",flag,bits256_str(str,rswap.txids[BASILISK_ALICESPEND]));
+                    printf("flag.%d apayment.%s\n",flag,bits256_str(str,rswap.paymentspent));
                     if ( flag == 0 )
                     {
                         if ( bits256_nonz(rswap.privAm) == 0 )
                         {
-                            rswap.privAm = basilisk_swap_privbob_extract(rswap.bobcoin,rswap.txids[BASILISK_ALICESPEND],0,1);
-                            printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,rswap.txids[BASILISK_ALICESPEND]),bits256_nonz(rswap.privAm));
+                            rswap.privAm = basilisk_swap_privbob_extract(rswap.bobcoin,rswap.paymentspent,0,1);
+                            printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,rswap.paymentspent),bits256_nonz(rswap.privAm));
                         }
                         if ( bits256_nonz(rswap.privAm) != 0 && bits256_nonz(rswap.privBn) != 0 )
                         {
