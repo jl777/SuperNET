@@ -271,7 +271,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                 for (i=0; i<n; i++)
                 {
                     txid = jbits256(jitem(array,i),"tx_hash");
-                    if ( utxoind == BASILISK_BOBPAYMENT )
+                    if ( 0 && utxoind == BASILISK_BOBPAYMENT )
                         printf("i.%d of %d: %s\n",i,n,bits256_str(str,txid));
                     if ( bits256_cmp(txid,txids[utxoind]) != 0 )
                     {
@@ -294,6 +294,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                                             sentflags[bobspent] = 1;
                                             sentflags[alicespent] = 0;
                                             txids[bobspent] = spendtxid;
+                                            printf("bobspent.[%d] <- 1\n",bobspent);
                                         }
                                         else if ( aliceaddr != 0 && (strcmp(destaddr,aliceaddr) == 0 || strcmp(Adest,destaddr) == 0) )
                                         {
@@ -331,11 +332,11 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
         if ( bits256_nonz(spendtxid) != 0 )
         {
             sentflags[utxoind] = 1;
-            if ( utxoind == BASILISK_BOBPAYMENT )
+            if ( 0 && utxoind == BASILISK_BOBPAYMENT )
                 printf("utxoind.%d Alice.(%s %s) Bob.(%s %s) vs destaddr.(%s)\n",utxoind,aliceaddr,Adest,bobaddr,dest,destaddr);
             if ( aliceaddr != 0 && (strcmp(destaddr,aliceaddr) == 0 || strcmp(Adest,destaddr) == 0) )
             {
-                if ( utxoind == BASILISK_BOBPAYMENT )
+                if ( 0 && utxoind == BASILISK_BOBPAYMENT )
                     printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[alicespent] = 1;
                 sentflags[bobspent] = 0;
@@ -343,7 +344,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
             }
             else if ( bobaddr != 0 && (strcmp(destaddr,bobaddr) == 0 || strcmp(dest,destaddr) == 0) )
             {
-                if ( utxoind == BASILISK_BOBPAYMENT )
+                if ( 0 && utxoind == BASILISK_BOBPAYMENT )
                     printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[bobspent] = 1;
                 sentflags[alicespent] = 0;
@@ -351,7 +352,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
             }
             else
             {
-                if ( utxoind == BASILISK_BOBPAYMENT )
+                if ( 0 && utxoind == BASILISK_BOBPAYMENT )
                     printf("OTHER dest spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 if ( iambob == 0 )
                 {
@@ -367,7 +368,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                 }
             }
         }
-        else if ( utxoind == BASILISK_BOBPAYMENT )
+        else if ( 0 && utxoind == BASILISK_BOBPAYMENT )
             printf("no spend of %s/v%d detected\n",bits256_str(str,txid),utxovout);
     } //else printf("utxoind.%d null txid\n",utxoind);
     return(spendtxid);
@@ -1294,6 +1295,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
         if ( bits256_nonz(rswap.txids[i]) != 0 && rswap.values[i] == 0 )
             rswap.values[i] = basilisk_txvalue(basilisk_isbobcoin(rswap.iambob,i) ? rswap.bobcoin : rswap.alicecoin,rswap.txids[i],0);
+    printf("bobreclaimed.%d\n",rswap.sentflags[BASILISK_BOBRECLAIM]);
     if ( 0 && rswap.origfinishedflag == 0 )
     {
         printf("iambob.%d Apaymentspent.(%s) alice.%d bob.%d %s %.8f\n",rswap.iambob,bits256_str(str,rswap.Apaymentspent),rswap.sentflags[BASILISK_ALICERECLAIM],rswap.sentflags[BASILISK_BOBSPEND],rswap.alicecoin,dstr(rswap.values[BASILISK_ALICEPAYMENT]));
