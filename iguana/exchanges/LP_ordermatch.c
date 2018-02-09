@@ -856,7 +856,10 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 || (othercoin= LP_coinfind(qp->destcoin)) != 0 )
         return(0);
     if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
+    {
+        printf("myprice %.8f bid %.8f ask %.8f\n",myprice,bid,ask);
         return(0);
+    }
     printf("myprice %.8f\n",myprice);
     autxo = &A;
     butxo = &B;
@@ -1443,7 +1446,10 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         if ( relcoin->etomic[0] != 0 )
             strcpy(Q.etomicdest,relcoin->smartaddr);
         else if (basecoin->etomic[0] != 0 )
-           strcpy(Q.etomicdest,basecoin->smartaddr);
+        {
+            strcpy(Q.etomicdest,basecoin->smartaddr);
+            printf("Q.etomicdest (%s)\n",Q.etomicdest);
+        }
         if ( relcoin->etomic[0] != 0 )
         {
             if ((coin= LP_coinfind("ETOMIC")) != 0 )
