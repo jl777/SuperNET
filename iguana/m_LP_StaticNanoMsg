@@ -2,6 +2,7 @@
 #./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
 rm -f ../agents/iguana *.o
 git pull
+./build_static_nanomsg.sh
 cd secp256k1; ./m_unix; cd ..
 cd ../crypto777; make -f m_LP_StaticNanoMsg all; make -f m_LP_StaticNanoMsg clean; cd ../iguana
 
