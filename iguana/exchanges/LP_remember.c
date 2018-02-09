@@ -370,8 +370,12 @@ int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflag
             return(1);
         else if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 || sentflags[BASILISK_BOBPAYMENT] == 0 )
         {
-            if ( bits256_nonz(depositspent) != 0 && ((bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 && sentflags[BASILISK_ALICEPAYMENT] == 0) || bits256_nonz(Apaymentspent) != 0) )
+            if ( bits256_nonz(depositspent) != 0 )//&& ((bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 && sentflags[BASILISK_ALICEPAYMENT] == 0) || bits256_nonz(Apaymentspent) != 0) )
+            {
+                if ( bits256_nonz(Apaymentspent) == 0 && sentflags[BASILISK_BOBREFUND] == 0 )
+                    printf("bob was too late in claiming bobrefund\n");
                 return(1);
+            }
         }
         //else if ( bits256_nonz(Apaymentspent) != 0 )
         //    return(1);
@@ -1161,14 +1165,14 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         free_json(txoutobj), flag = 0;
                     else flag = -1, rswap.paymentspent = deadtxid;
                 }
-                if ( flag == 0 && time(NULL) > rswap.expiration+777 )
+                if ( flag == 0 && time(NULL) > rswap.expiration+777+120 )
                 {
                     // bobreclaim
                     redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,rswap.plocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,zero,rswap.privBn,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
                     if ( redeemlen > 0 )
                     {
                         len = basilisk_swapuserdata(userdata,zero,1,rswap.myprivs[1],redeemscript,redeemlen);
-                        if ( (rswap.txbytes[BASILISK_BOBRECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"bobrefund",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[1],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBPAYMENT],0,0,rswap.pubkey33,0,claimtime,&rswap.values[BASILISK_BOBRECLAIM],0,0,rswap.bobpaymentaddr,1,bob->zcash)) != 0 )
+                        if ( (rswap.txbytes[BASILISK_BOBRECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"bobreclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[1],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBPAYMENT],0,0,rswap.pubkey33,0,claimtime,&rswap.values[BASILISK_BOBRECLAIM],0,0,rswap.bobpaymentaddr,1,bob->zcash)) != 0 )
                         {
                             //int32_t z;
                             //for (z=0; z<20; z++)
