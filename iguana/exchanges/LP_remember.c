@@ -398,14 +398,6 @@ int32_t basilisk_isbobcoin(int32_t iambob,int32_t ind)
 int32_t basilisk_swap_isfinished(uint32_t expiration,int32_t iambob,bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
 {
     int32_t i,n = 0; uint32_t now = (uint32_t)time(NULL);
-    for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
-        if ( i != BASILISK_OTHERFEE && i != BASILISK_MYFEE && sentflags[i] != 0 )
-            n++;
-    if ( n == 0 )
-    {
-        //printf("if nothing sent, it is finished\n");
-        return(1);
-    }
     if ( bits256_nonz(paymentspent) != 0 && bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
         return(1);
     else if ( sentflags[BASILISK_BOBPAYMENT] != 0 && sentflags[BASILISK_ALICEPAYMENT] != 0 && sentflags[BASILISK_BOBDEPOSIT] != 0 && sentflags[BASILISK_BOBRECLAIM] != 0 )
@@ -417,6 +409,28 @@ int32_t basilisk_swap_isfinished(uint32_t expiration,int32_t iambob,bits256 *txi
         }
         else if ( iambob != 0 && sentflags[BASILISK_ALICECLAIM] != 0 )
             return(1);
+    }
+    if ( now > expiration - INSTANTDEX_LOCKTIME )
+    {
+        if ( bits256_nonz(paymentspent) != 0 )
+            n++;
+        if ( bits256_nonz(Apaymentspent) != 0 )
+            n++;
+        if ( bits256_nonz(depositspent) != 0 )
+            n++;
+        for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+        {
+            if ( i != BASILISK_OTHERFEE && i != BASILISK_MYFEE && sentflags[i] != 0 )
+            {
+                if ( bits256_nonz(txids[i]) != 0 )
+                    n++;
+            }
+        }
+        if ( n == 0 )
+        {
+            //printf("if nothing sent, it is finished\n");
+            return(1);
+        }
     }
     if ( iambob != 0 )
     {
