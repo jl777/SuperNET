@@ -1174,7 +1174,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                 }
             }
-            if ( rswap.sentflags[BASILISK_BOBRECLAIM] == 0 && rswap.sentflags[BASILISK_BOBPAYMENT] != 0 && bits256_nonz(rswap.txids[BASILISK_BOBPAYMENT]) != 0 && bits256_nonz(rswap.paymentspent) == 0 )
+            if ( rswap.sentflags[BASILISK_BOBRECLAIM] == 0 && rswap.sentflags[BASILISK_BOBPAYMENT] != 0 && bits256_nonz(rswap.paymentspent) == 0 )
             {
                 flag = 0;
                 if ( bob->electrum == 0 )
@@ -1183,7 +1183,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         free_json(txoutobj), flag = 0;
                     else flag = -1, rswap.paymentspent = deadtxid;
                 }
-                if ( flag == 0 && time(NULL) > rswap.expiration+777+120 )
+                if ( flag == 0 && time(NULL) > rswap.expiration+777 )
                 {
                     // bobreclaim
                     redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,rswap.plocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,zero,rswap.privBn,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
@@ -1205,7 +1205,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     //printf("bobpayment: now.%u < expiration %u\n",(uint32_t)time(NULL),rswap.expiration);
                 }
             }
-            if ( rswap.sentflags[BASILISK_BOBREFUND] == 0 && rswap.sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(rswap.txids[BASILISK_BOBDEPOSIT]) != 0 && bits256_nonz(rswap.depositspent) == 0 )
+            if ( rswap.sentflags[BASILISK_BOBREFUND] == 0 && rswap.sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(rswap.depositspent) == 0 )
             {
                 flag = 0;
                 if ( bob->electrum == 0 )
@@ -1214,7 +1214,10 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         free_json(txoutobj), flag = 0;
                     else flag = -1, rswap.depositspent = deadtxid;
                 }
-                if ( flag == 0 && (bits256_nonz(rswap.Apaymentspent) != 0 || time(NULL) > rswap.expiration+777) )
+                if ( flag == 0 &&
+                    (bits256_nonz(rswap.paymentspent) != 0 ||
+                     bits256_nonz(rswap.Apaymentspent) != 0 ||
+                     time(NULL) > rswap.plocktime+777+120) )
                 {
                     //printf("do the refund! paymentspent.%s now.%u vs expiration.%u\n",bits256_str(str,rswap.paymentspent),(uint32_t)time(NULL),rswap.expiration);
                     //if ( txbytes[BASILISK_BOBREFUND] == 0 )
