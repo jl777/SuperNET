@@ -866,17 +866,17 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     {
         qprice = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
         strcpy(qp->gui,G.gui);
+        strcpy(qp->coinaddr,coin->smartaddr);
         if ( coin->etomic[0] != 0 )
         {
             struct iguana_info *ecoin;
             if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
             {
-                strcpy(qp->etomicsrc,qp->coinaddr);
+                strcpy(qp->etomicsrc,coin->smartaddr);
                 strcpy(qp->coinaddr,ecoin->smartaddr);
             }
             else return(0);
         }
-        strcpy(qp->coinaddr,coin->smartaddr);
         strcpy(butxo->coinaddr,qp->coinaddr);
         qp->srchash = G.LP_mypub25519;
         memset(&qp->txid,0,sizeof(qp->txid));
@@ -907,7 +907,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         struct iguana_info *ecoin;
         if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
         {
-            strcpy(qp->etomicsrc,qp->coinaddr);
+            strcpy(qp->etomicsrc,coin->smartaddr);
             strcpy(qp->coinaddr,ecoin->smartaddr);
         }
         else return(0);
