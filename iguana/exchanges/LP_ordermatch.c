@@ -849,11 +849,11 @@ double LP_trades_pricevalidate(struct LP_quoteinfo *qp,struct iguana_info *coin,
 
 struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr)
 {
-    double price,qprice,myprice,bestprice,range,bid,ask; struct iguana_info *coin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65]; struct LP_address_utxo *utxos[1000]; int32_t r,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
+    double price,qprice,myprice,bestprice,range,bid,ask; struct iguana_info *coin,*othercoin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65]; struct LP_address_utxo *utxos[1000]; int32_t r,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
     *newqp = *qp;
     qp = newqp;
     //printf("bob %s received REQUEST.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
-    if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
+    if ( (coin= LP_coinfind(qp->srccoin)) == 0 || (othercoin= LP_coinfind(qp->destcoin)) != 0 )
         return(0);
     if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
         return(0);
@@ -866,13 +866,16 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     {
         qprice = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
         strcpy(qp->gui,G.gui);
-        strcpy(qp->coinaddr,coin->smartaddr);
         if ( coin->etomic[0] != 0 )
+            strcpy(qp->coinaddr,coin->smartaddr);
+        else if ( othercoin->etomic[0] != 0 )
+            strcpy(qp->coinaddr,othercoin->smartaddr);
+        if ( coin->etomic[0] != 0 || othercoin->etomic[0] != 0 )
         {
             struct iguana_info *ecoin;
             if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
             {
-                strcpy(qp->etomicsrc,coin->smartaddr);
+                strcpy(qp->etomicsrc,qp->coinaddr);
                 strcpy(qp->coinaddr,ecoin->smartaddr);
             }
             else return(0);
@@ -903,11 +906,15 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     //LP_address_utxo_reset(coin);
     //printf("done LP_address_utxo_reset.%s\n",coin->symbol);
     if ( coin->etomic[0] != 0 )
+        strcpy(qp->coinaddr,coin->smartaddr);
+    else if ( othercoin->etomic[0] != 0 )
+        strcpy(qp->coinaddr,othercoin->smartaddr);
+    if ( coin->etomic[0] != 0 || othercoin->etomic[0] != 0 )
     {
         struct iguana_info *ecoin;
         if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
         {
-            strcpy(qp->etomicsrc,coin->smartaddr);
+            strcpy(qp->etomicsrc,qp->coinaddr);
             strcpy(qp->coinaddr,ecoin->smartaddr);
         }
         else return(0);
