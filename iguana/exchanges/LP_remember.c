@@ -364,6 +364,8 @@ int32_t basilisk_swap_isfinished(uint32_t expiration,int32_t iambob,bits256 *txi
         //printf("if nothing sent, it is finished\n");
         return(1);
     }
+    if ( bits256_nonz(paymentspent) != 0 && bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
+        return(1);
     if ( iambob != 0 )
     {
         if ( sentflags[BASILISK_BOBSPEND] != 0 && sentflags[BASILISK_BOBREFUND] != 0 )
@@ -376,7 +378,7 @@ int32_t basilisk_swap_isfinished(uint32_t expiration,int32_t iambob,bits256 *txi
                 return(1);
             else if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 || sentflags[BASILISK_BOBPAYMENT] == 0 )
             {
-                if ( bits256_nonz(depositspent) != 0 )//&& ((bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 && sentflags[BASILISK_ALICEPAYMENT] == 0) || bits256_nonz(Apaymentspent) != 0) )
+                if ( bits256_nonz(depositspent) != 0 )
                 {
                     if ( bits256_nonz(Apaymentspent) == 0 && sentflags[BASILISK_BOBREFUND] == 0 )
                         printf("bob was too late in claiming bobrefund\n");
