@@ -22,6 +22,7 @@
 int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
 {
     int32_t i,iter,numtx,checkht=-1; cJSON *blockobj,*txs,*txobj; bits256 txid; struct LP_transaction *tx;
+    portable_mutex_lock(&LP_blockinit_mutex);
     if ( (blockobj= LP_blockjson(&checkht,coin->symbol,0,height)) != 0 && checkht == height )
     {
         if ( (txs= jarray(&numtx,blockobj,"tx")) != 0 )
@@ -52,6 +53,7 @@ int32_t LP_blockinit(struct iguana_info *coin,int32_t height)
         }
         free_json(blockobj);
     }
+    portable_mutex_unlock(&LP_blockinit_mutex);
     if ( checkht == height )
         return(0);
     else return(-1);

@@ -74,7 +74,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     char *retstr = 0;
     cJSON *json,*result,*error;
 #ifdef FROM_MARKETMAKER
-    //usleep(500);
+    //usleep(1000);
 #endif
     //printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )

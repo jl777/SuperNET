@@ -3,6 +3,11 @@ x64
 agents/iguana.exe
 Debug/*
 
+iguana/nanomsglib
+iguana/nanomsgsrc
+OSlibs/linux
+OSlibs/osx
+
 iguana/pnacl/Release/iguana_unstripped.pexe
 
 iguana/pnacl/Release/iguana.pexe

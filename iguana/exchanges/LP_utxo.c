@@ -483,6 +483,8 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 //{"tx_hash":"38d1b7c73015e1b1d6cb7fc314cae402a635b7d7ea294970ab857df8777a66f4","tx_pos":0,"height":577975,"value":238700}
                 item = jitem(array,i);
                 value = LP_listunspent_parseitem(coin,&txid,&vout,&height,item);
+                if ( bits256_nonz(txid) == 0 )
+                    continue;
                 if ( 1 )
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,txid,vout)) == 0 )
