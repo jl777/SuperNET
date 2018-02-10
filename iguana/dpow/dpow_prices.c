@@ -1839,7 +1839,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
 {
     static double lastupdate,lastdayupdate; static uint32_t didinit; static char *userhome; int32_t idlegap = 10;
     FILE *fp; long filesize; char fname[512]; double splineval; uint32_t pvals[128],timestamp; int32_t i,datenum,seconds,c; struct tai t; struct PAX_data *dp; uint8_t data[512];
-    if ( Currencymasks[0] == 0 )
+    if ( 1 || Currencymasks[0] == 0 ) // disable pax price gatherings
         return(0);
     if ( time(NULL) > didinit+12*3600 )
     {
