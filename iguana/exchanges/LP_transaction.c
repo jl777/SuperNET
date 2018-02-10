@@ -124,8 +124,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
                             totalretries++;
                             i--;
                         }
-                    }
-                    else printf("broadcast error.(%s)\n",retstr);
+                    } else printf("broadcast error.(%s)\n",retstr);
                 }
                 free_json(retjson);
             }
@@ -444,7 +443,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t taddr,uint8_t pubtype,
                 if ( sig == 0 || siglen == 0 )
                 {
                     memset(vp->signers[j].pubkey,0,sizeof(vp->signers[j].pubkey));
-                    printf("no sig.%p or siglen.%d zero\n",sig,siglen);
+                    char str[65]; printf("no sig.%p or siglen.%d zero priv.(%s)\n",sig,siglen,bits256_str(str,vp->signers[j].privkey));
                     continue;
                 }
                 if ( bitcoin_verify(ctx,sig,siglen-1,sigtxid,vp->signers[j].pubkey,bitcoin_pubkeylen(vp->signers[j].pubkey)) < 0 )

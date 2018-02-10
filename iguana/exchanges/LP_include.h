@@ -22,7 +22,7 @@
 #define LP_INCLUDE_H
 
 #ifndef LP_TECHSUPPORT
-#define LP_TECHSUPPORT 0
+#define LP_TECHSUPPORT 1
 #endif
 
 #define LP_DONT_CMDCHANNEL
@@ -35,7 +35,7 @@ voind dontprintf(char *formatstr,...) {}
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "17763"
+#define LP_BUILD_NUMBER "17769"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -548,6 +548,7 @@ uint16_t LP_randpeer(char *destip);
 void LP_tradebot_pauseall();
 int32_t LP_etomic_pub2addr(char *coinaddr,uint8_t pub64[64]);
 void LP_portfolio_reset();
+int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 struct LP_pubkey_info *LP_pubkeyadd(bits256 pubkey);
 uint32_t LP_atomic_locktime(char *base,char *rel);
 struct LP_pubkey_info *LP_pubkeyfind(bits256 pubkey);

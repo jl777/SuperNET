@@ -500,7 +500,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         satoshis = j64bits(lineobj,"satoshis");
         if ( base == 0 || rel == 0 || satoshis == 0 )
         {
-            printf("quoteparse_error.(%s)\n",jprint(lineobj,0));
+            //printf("quoteparse_error.(%s)\n",jprint(lineobj,0));
             LP_parse_errors++;
             return(-1);
         }
