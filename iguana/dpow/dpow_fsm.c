@@ -359,7 +359,6 @@ void dpow_statemachinestart(void *ptr)
         if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr) < 0 )
         {
             printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
-            free(ptr);
             dp->ratifying -= bp->isratify;
             free(ptr);
             return;
@@ -367,7 +366,6 @@ void dpow_statemachinestart(void *ptr)
         if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr) < 0 )
         {
             printf("dont have %s %s utxo, please send funds\n",dp->symbol,srcaddr);
-            free(ptr);
             dp->ratifying -= bp->isratify;
             free(ptr);
             return;
