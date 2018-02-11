@@ -205,6 +205,7 @@ void dpow_statemachinestart(void *ptr)
                 {
                     fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
                     free(ptr);
+                    free_json(ratified);
                     return;
                 }
                 for (i=0; i<numratified; i++)
@@ -243,24 +244,14 @@ void dpow_statemachinestart(void *ptr)
                     bp->numratified = numratified;
                     bp->ratified = ratified;
                     printf("numratified.%d %s\n",numratified,jprint(ratified,0));
-                }
-                else
-                {
-                    printf("i.%d numratified.%d\n",i,numratified);
-                    free_json(ratified);
-                }
+                } else printf("i.%d numratified.%d\n",i,numratified);
             }
+            free_json(ratified);
         }
         bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
         bp->beacon = rand256(0);
         vcalc_sha256(0,bp->commit.bytes,bp->beacon.bytes,sizeof(bp->beacon));
-        /*if ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] != 0 )
-         {
-         printf("purge %s.%d\n",dp->dest,checkpoint.blockhash.height - DPOW_FIRSTRATIFY);
-         free(dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY]);
-         dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] = 0;
-         }*/
     }
     if ( bp->isratify != 0 && dp->ratifying != 0 )
     {
@@ -470,18 +461,6 @@ void dpow_statemachinestart(void *ptr)
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
     // dp->blocks[bp->height] = 0;
-    if ( bp->height > 100 )
-    {
-        for (i=bp->height-100; i>=0; i--)
-        {
-            if ( (tmp= dp->blocks[i]) != 0 )
-            {
-                dp->blocks[i] = 0;
-                free(tmp);
-                Numallocated--;
-            }
-        }
-    }
     free(ptr);
 }
 
