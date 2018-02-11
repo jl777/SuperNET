@@ -52,12 +52,29 @@ char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
         strcpy(input.bobAddress, swap->I.etomicsrc);
         uint8arrayToHex(input.bobHash, swap->I.secretBn, 20);
         uint8arrayToHex(input.aliceHash, swap->I.secretAm, 20);
-        uint8arrayToHex(input.dealId, swap->alicepayment.utxotxid.bytes, 32);
+        uint8arrayToHex(input.dealId, swap->alicepayment.I.actualtxid.bytes, 32);
 
         strcpy(txData.from, swap->I.etomicdest);
         strcpy(txData.to, ETOMIC_ALICECONTRACT);
         satoshisToWei(txData.amount, swap->I.alicesatoshis);
         uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
+
+        char aliceSecret[100];
+        uint8arrayToHex(aliceSecret, swap->I.privAm.bytes, 32);
+        printf("alice secret: %s\n", aliceSecret);
+
+        init_hexbytes_noT(aliceSecret, swap->I.privAm.bytes, 32);
+        printf("alice secret: %s\n", aliceSecret);
+
+        init_hexbytes_noT(aliceSecret, swap->alicepayment.I.actualtxid.bytes, 32);
+        printf("alice txid: %s\n", aliceSecret);
+
+        bits256 hash; int32_t i;
+        for (i=0; i<32; i++)
+            hash.bytes[i] = swap->I.privAm.bytes[31-i];
+        uint8arrayToHex(aliceSecret, hash.bytes, 32);
+        printf("alice secret: %s\n", aliceSecret);
+
         return(aliceSendsEthPayment(input,txData));
     }
     else
@@ -84,7 +101,7 @@ char *LP_etomicalice_reclaims_payment(struct basilisk_swap *swap)
     BasicTxData txData;
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
-    uint8arrayToHex(input.dealId, swap->alicepayment.utxotxid.bytes, 32);
+    uint8arrayToHex(input.dealId, swap->alicepayment.I.actualtxid.bytes, 32);
     satoshisToWei(input.amount, swap->I.alicesatoshis);
     strcpy(input.tokenAddress, swap->I.alicetomic);
     strcpy(input.bobAddress, swap->I.etomicdest);
@@ -114,8 +131,18 @@ char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
         strcpy(input.tokenAddress, "0x0000000000000000000000000000000000000000");
 
     strcpy(input.aliceAddress, swap->etomicdest);
-    uint8arrayToHex(input.aliceSecret, swap->secretAm256, 32);
+    bits256 hash; int32_t i;
+    for (i=0; i<32; i++)
+        hash.bytes[i] = swap->privAm.bytes[31-i];
+    uint8arrayToHex(input.aliceSecret, hash.bytes, 32);
     uint8arrayToHex(input.bobHash, swap->secretBn, 20);
+
+    char aliceSecret[100];
+    uint8arrayToHex(aliceSecret, swap->privAm.bytes, 32);
+    printf("alice secret: %s\n", aliceSecret);
+
+    uint8arrayToHex(aliceSecret, hash.bytes, 32);
+    printf("alice secret: %s\n", aliceSecret);
 
     strcpy(txData.from, swap->etomicsrc);
     strcpy(txData.to, ETOMIC_ALICECONTRACT);
