@@ -867,7 +867,7 @@ void LP_aliceloop(void *_swap)
             LP_swap_critical = (uint32_t)time(NULL);
             if ( swap->I.alicetomic[0] != 0 )
             {
-                LP_etomicalice_send_payment(swap);
+
             }
             if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
                 printf("error sending alicefee\n");
@@ -892,7 +892,7 @@ void LP_aliceloop(void *_swap)
                 {
                     if ( swap->I.alicetomic[0] != 0 )
                     {
-                        // artem: do stuff alice needs to do right before alicepayment goes out
+                        LP_etomicalice_send_payment(swap);
                     }
                     m = swap->I.aliceconfirms;
                     while ( (n= LP_numconfirms(alicestr,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m )
