@@ -70,6 +70,11 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"bobtomic\":\"%s\"",swap->I.bobtomic);
         if ( swap->I.etomicsrc[0] != 0 )
             fprintf(fp,",\"etomicsrc\":\"%s\"",swap->I.etomicsrc);
+
+        char persistentPrivKeyStr[100];
+        bits256_str(persistentPrivKeyStr,swap->persistent_privkey);
+        fprintf(fp,",\"persistentPrivKey\":\"%s\"",persistentPrivKeyStr);
+
         fprintf(fp,",\"alicecoin\":\"%s\"",swap->I.alicestr);
         if ( swap->I.alicetomic[0] != 0 )
             fprintf(fp,",\"alicetomic\":\"%s\"",swap->I.alicetomic);
@@ -128,6 +133,7 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             init_hexbytes_noT(secretBn256str,swap->I.secretBn256,32);
             fprintf(fp,",\"secretBn256\":\"%s\"",secretBn256str);
         }
+
         for (i=0; i<2; i++)
             if ( bits256_nonz(swap->I.myprivs[i]) != 0 )
                 fprintf(fp,",\"myprivs%d\":\"%s\"",i,bits256_str(str,swap->I.myprivs[i]));
@@ -845,6 +851,19 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                     free_json(txobj);
                     continue;
                 }
+
+                if (jstr(txobj,"etomicsrc") != 0)
+                {
+                    strcpy(rswap->etomicsrc,jstr(txobj,"etomicsrc"));
+                }
+
+                if (jstr(txobj,"etomicdest") != 0)
+                {
+                    strcpy(rswap->etomicdest,jstr(txobj,"etomicdest"));
+                }
+
+                rswap->persistentPrivKey = jbits256(txobj,"persistentPrivKey");
+
                 rswap->txids[i] = txid;
                 if ( jstr(txobj,"Apayment") != 0 )
                     safecopy(rswap->alicepaymentaddr,jstr(txobj,"Apayment"),sizeof(rswap->alicepaymentaddr));
@@ -1019,24 +1038,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     srcAdest = srcBdest = destAdest = destBdest = 0;
     alice = LP_coinfind(rswap.alicecoin);
     bob = LP_coinfind(rswap.bobcoin);
-    if ( alice != 0 )
-        strcpy(etomicdest,alice->smartaddr);
-    else etomicdest[0] = 0;
-    if ( bob != 0 )
-        strcpy(etomicsrc,bob->smartaddr);
-    else etomicsrc[0] = 0;
     LP_etomicsymbol(bobstr,bobtomic,rswap.src);
-    if ( bobtomic[0] != 0 )
-    {
-        if ( (coin= LP_coinfind(rswap.src)) != 0 )
-            strcpy(etomicsrc,coin->smartaddr);
-    }
     LP_etomicsymbol(alicestr,alicetomic,rswap.dest);
-    if ( alicetomic[0] != 0 )
-    {
-        if ( (coin= LP_coinfind(rswap.dest)) != 0 )
-            strcpy(etomicdest,coin->smartaddr);
-    }
     if ( rswap.bobcoin[0] == 0 || rswap.alicecoin[0] == 0 || strcmp(rswap.bobcoin,bobstr) != 0 || strcmp(rswap.alicecoin,alicestr) != 0 )
     {
         //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
@@ -1275,6 +1278,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             if ( (rswap.txbytes[BASILISK_BOBSPEND]= basilisk_swap_Aspend("bobspend",rswap.alicecoin,rswap.Atxfee,alice->wiftaddr,alice->taddr,alice->pubtype,alice->p2shtype,alice->isPoS,alice->wiftype,ctx,rswap.privAm,rswap.privBn,rswap.txids[BASILISK_ALICEPAYMENT],0,rswap.pubkey33,rswap.expiration,&rswap.values[BASILISK_BOBSPEND],rswap.alicepaymentaddr,alice->zcash)) != 0 )
                             {
                                 //printf("bobspend.(%s)\n",rswap.txbytes[BASILISK_BOBSPEND]);
+                                LP_etomicbob_spends_alice_payment(&rswap);
                             }
                         }
                         LP_txbytes_update("bobspend",rswap.alicecoin,rswap.txbytes[BASILISK_BOBSPEND],&rswap.txids[BASILISK_BOBSPEND],&rswap.Apaymentspent,&rswap.sentflags[BASILISK_BOBSPEND]);

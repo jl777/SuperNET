@@ -7,111 +7,111 @@
 extern "C" {
 #endif
 typedef struct {
-    char* from;
-    char* to;
-    char* amount;
-    char* secretKey;
+    char from[65];
+    char to[65];
+    char amount[100];
+    char secretKey[70];
 } BasicTxData;
 
 typedef struct {
-    char* dealId;
-    char* bobAddress;
-    char* aliceHash;
-    char* bobHash;
+    char dealId[70];
+    char bobAddress[65];
+    char aliceHash[65];
+    char bobHash[65];
 } AliceSendsEthPaymentInput;
 
 typedef struct {
-    char* dealId;
-    char* amount;
-    char* tokenAddress;
-    char* bobAddress;
-    char* aliceHash;
-    char* bobHash;
+    char dealId[70];
+    char amount[100];
+    char tokenAddress[65];
+    char bobAddress[65];
+    char aliceHash[65];
+    char bobHash[65];
 } AliceSendsErc20PaymentInput;
 
 typedef struct {
-    char* dealId;
-    char* amount;
-    char* tokenAddress;
-    char* bobAddress;
-    char* aliceHash;
-    char* bobSecret;
+    char dealId[70];
+    char amount[100];
+    char tokenAddress[65];
+    char bobAddress[65];
+    char aliceHash[65];
+    char bobSecret[70];
 } AliceReclaimsAlicePaymentInput;
 
 typedef struct {
-    char* dealId;
-    char* amount;
-    char* tokenAddress;
-    char* aliceAddress;
-    char* aliceSecret;
-    char* bobHash;
+    char dealId[70];
+    char amount[100];
+    char tokenAddress[65];
+    char aliceAddress[65];
+    char aliceSecret[70];
+    char bobHash[65];
 } BobSpendsAlicePaymentInput;
 
 typedef struct {
-    char* depositId;
-    char* aliceAddress;
-    char* bobHash;
+    char depositId[70];
+    char aliceAddress[65];
+    char bobHash[65];
 } BobSendsEthDepositInput;
 
 typedef struct {
-    char* depositId;
-    char* amount;
-    char* tokenAddress;
-    char* aliceAddress;
-    char* bobHash;
+    char depositId[70];
+    char amount[100];
+    char tokenAddress[65];
+    char aliceAddress[65];
+    char bobHash[65];
 } BobSendsErc20DepositInput;
 
 typedef struct {
-    char* depositId;
-    char* amount;
-    char* tokenAddress;
-    char* aliceAddress;
-    char* bobSecret;
-    char* aliceCanClaimAfter;
+    char depositId[70];
+    char amount[100];
+    char tokenAddress[65];
+    char aliceAddress[65];
+    char bobSecret[70];
+    char aliceCanClaimAfter[100];
 } BobRefundsDepositInput;
 
 typedef struct {
-    char* depositId;
-    char* amount;
-    char* tokenAddress;
-    char* bobAddress;
-    char* bobHash;
-    char* aliceCanClaimAfter;
+    char depositId[70];
+    char amount[100];
+    char tokenAddress[65];
+    char bobAddress[65];
+    char bobHash[65];
+    char aliceCanClaimAfter[100];
 } AliceClaimsBobDepositInput;
 
 typedef struct {
-    char* paymentId;
-    char* aliceAddress;
-    char* aliceHash;
+    char paymentId[70];
+    char aliceAddress[65];
+    char aliceHash[65];
 } BobSendsEthPaymentInput;
 
 typedef struct {
-    char* paymentId;
-    char* amount;
-    char* tokenAddress;
-    char* aliceAddress;
-    char* aliceHash;
+    char paymentId[70];
+    char amount[100];
+    char tokenAddress[65];
+    char aliceAddress[65];
+    char aliceHash[65];
 } BobSendsErc20PaymentInput;
 
 typedef struct {
-    char* paymentId;
-    char* amount;
-    char* tokenAddress;
-    char* aliceAddress;
-    char* aliceHash;
-    char* bobCanClaimAfter;
+    char paymentId[70];
+    char amount[100];
+    char tokenAddress[65];
+    char aliceAddress[65];
+    char aliceHash[65];
+    char bobCanClaimAfter[100];
 } BobReclaimsBobPaymentInput;
 
 typedef struct {
-    char* paymentId;
-    char* amount;
-    char* tokenAddress;
-    char* aliceSecret;
-    char* bobAddress;
-    char* bobCanClaimAfter;
+    char paymentId[70];
+    char amount[100];
+    char tokenAddress[65];
+    char aliceSecret[70];
+    char bobAddress[65];
+    char bobCanClaimAfter[100];
 } AliceSpendsBobPaymentInput;
 
-char* approveErc20(char* amount, char* from, char* secret);
+char* approveErc20(char amount[100], char* from, char* secret);
 char* aliceSendsEthPayment(AliceSendsEthPaymentInput input, BasicTxData txData);
 char* aliceSendsErc20Payment(AliceSendsErc20PaymentInput input, BasicTxData txData);
 char* aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input, BasicTxData txData);
@@ -128,7 +128,9 @@ char* privKey2Addr(char* privKey);
 char* pubKey2Addr(char* pubKey);
 char* getPubKeyFromPriv(char* privKey);
 uint64_t getEthBalance(char* address);
-uint64_t getErc20Balance(char* address, char* tokenAddress);
+uint64_t getErc20Balance(char* address, char tokenAddress[65]);
+void uint8arrayToHex(char *dest, uint8_t *input, int len);
+void satoshisToWei(char *dest, uint64_t input);
 // Your prototype or Definition
 #ifdef __cplusplus
 }

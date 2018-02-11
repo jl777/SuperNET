@@ -7,6 +7,8 @@
 #include <cpp-ethereum/libethcore/Common.h>
 #include <cpp-ethereum/libethcore/CommonJS.h>
 #include <cpp-ethereum/libethcore/TransactionBase.h>
+#include <inttypes.h>
+
 using namespace dev;
 using namespace dev::eth;
 
@@ -354,4 +356,20 @@ uint64_t getErc20Balance(char* address, char* tokenAddress)
     u256 balance = jsToU256(hexBalance) / exp10<10>();
     free(hexBalance);
     return static_cast<uint64_t>(balance);
+}
+
+void uint8arrayToHex(char *dest, uint8_t *input, int len)
+{
+    strcpy(dest, "0x");
+    for (int i = 0; i < len; i++)
+    {
+        sprintf(dest + (i + 1) * 2, "%02x", input[i]);
+    }
+    dest[(len + 1) * 2] = '\0';
+}
+
+void satoshisToWei(char *dest, uint64_t input)
+{
+    sprintf(dest, "%" PRIu64, input);
+    strcat(dest, "0000000000");
 }
