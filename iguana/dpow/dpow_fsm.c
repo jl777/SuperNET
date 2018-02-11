@@ -155,6 +155,8 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
     return(haveutxo);
 }
 
+uint32_t Numallocated;
+
 void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
@@ -187,6 +189,7 @@ void dpow_statemachinestart(void *ptr)
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
+        Numallocated++;
         bp->minsigs = minsigs;
         bp->duration = duration;
         bp->srccoin = src;
@@ -462,7 +465,7 @@ void dpow_statemachinestart(void *ptr)
             break;
         }
     }
-    printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
+    printf("[%d] END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",Numallocated,bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     bp->state = 0xffffffff;
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
@@ -475,6 +478,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 dp->blocks[i] = 0;
                 free(tmp);
+                Numallocated--;
             }
         }
     }
