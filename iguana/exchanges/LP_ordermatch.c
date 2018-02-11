@@ -440,7 +440,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                 if ( targetval == 0 || mini < 0 )
                     break;
             }
-        } else printf("no %s %s utxos pass LP_address_utxo_ptrs filter\n",coin->symbol,coinaddr);
+        } else printf("no %s %s utxos pass LP_address_utxo_ptrs filter %.8f %.8f\n",coin->symbol,coinaddr,dstr(targetval),dstr(targetval2));
     } else printf("address_myutxopair couldnt find %s %s\n",coin->symbol,coinaddr);
     return(0);
 }
