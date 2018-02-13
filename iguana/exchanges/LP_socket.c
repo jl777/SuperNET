@@ -637,16 +637,16 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
                 retstr = jprint(retjson,0);
                 LP_unspents_cache(coin->symbol,addr,retstr,1);
                 free(retstr);
-                if ( ap != 0 )
-                {
-                    ap->unspenttime = (uint32_t)time(NULL);
-                    ap->unspentheight = height;
-                }
             }
             else
             {
                 free_json(retjson);
                 retjson = 0;
+            }
+            if ( ap != 0 )
+            {
+                ap->unspenttime = (uint32_t)time(NULL);
+                ap->unspentheight = height;
             }
         }
     }
