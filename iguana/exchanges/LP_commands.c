@@ -307,6 +307,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
             {
                 conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+                privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
                 bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,0,60);
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"passphrase",passphrase);
