@@ -17,7 +17,6 @@
 //  LP_remember.c
 //  marketmaker
 //
-
 void basilisk_dontforget_userdata(char *userdataname,FILE *fp,uint8_t *script,int32_t scriptlen)
 {
     int32_t i; char scriptstr[513];
@@ -70,7 +69,12 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
             fprintf(fp,",\"bobtomic\":\"%s\"",swap->I.bobtomic);
         if ( swap->I.etomicsrc[0] != 0 )
             fprintf(fp,",\"etomicsrc\":\"%s\"",swap->I.etomicsrc);
-
+        if (swap->bobdeposit.I.ethTxid[0] != 0) {
+            fprintf(fp,",\"bobDepositEthTx\":\"%s\"", swap->bobdeposit.I.ethTxid);
+        }
+        if (swap->bobpayment.I.ethTxid[0] != 0) {
+            fprintf(fp,",\"bobPaymentEthTx\":\"%s\"", swap->bobpayment.I.ethTxid);
+        }
         char persistentPrivKeyStr[100];
         bits256_str(persistentPrivKeyStr,swap->persistent_privkey);
         fprintf(fp,",\"persistentPrivKey\":\"%s\"",persistentPrivKeyStr);
@@ -852,17 +856,23 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                     continue;
                 }
 
-                if (jstr(txobj,"etomicsrc") != 0)
-                {
+                if (jstr(txobj,"etomicsrc") != 0) {
                     strcpy(rswap->etomicsrc,jstr(txobj,"etomicsrc"));
                 }
 
-                if (jstr(txobj,"etomicdest") != 0)
-                {
+                if (jstr(txobj,"etomicdest") != 0) {
                     strcpy(rswap->etomicdest,jstr(txobj,"etomicdest"));
                 }
 
-                rswap->persistentPrivKey = jbits256(txobj,"persistentPrivKey");
+                if (jstr(txobj,"bobDepositEthTx") != 0) {
+                    strcpy(rswap->bobDepositEthTx, jstr(txobj,"bobDepositEthTx"));
+                }
+
+                if (jstr(txobj,"bobPaymentEthTx") != 0) {
+                    strcpy(rswap->bobPaymentEthTx, jstr(txobj,"bobPaymentEthTx"));
+                }
+
+                rswap->persistentPrivKey = jbits256(txobj, "persistentPrivKey");
 
                 rswap->txids[i] = txid;
                 if ( jstr(txobj,"Apayment") != 0 )
@@ -1337,6 +1347,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         len = basilisk_swapuserdata(userdata,rswap.privBn,0,rswap.myprivs[0],redeemscript,redeemlen);
                         if ( (rswap.txbytes[BASILISK_BOBREFUND]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"bobrefund",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,1,rswap.expiration,&rswap.values[BASILISK_BOBREFUND],0,0,rswap.bobdepositaddr,1,bob->zcash)) != 0 )
                         {
+                            LP_etomicbob_refunds_deposit(&rswap);
                             //printf("pubB1.(%s) bobrefund.(%s)\n",bits256_str(str,rswap.pubB1),rswap.txbytes[BASILISK_BOBREFUND]);
                         }
                     }

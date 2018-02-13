@@ -22,6 +22,8 @@
 // Created by artem on 24.01.18.
 //
 #include "etomicswap/etomiclib.h"
+#include "etomicswap/etomiccurl.h"
+#include <inttypes.h>
 
 #define ETOMIC_ALICECONTRACT "0xe1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c"
 #define ETOMIC_BOBCONTRACT "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2"
@@ -58,22 +60,6 @@ char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
         strcpy(txData.to, ETOMIC_ALICECONTRACT);
         satoshisToWei(txData.amount, swap->I.alicesatoshis);
         uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
-
-        char aliceSecret[100];
-        uint8arrayToHex(aliceSecret, swap->I.privAm.bytes, 32);
-        printf("alice secret: %s\n", aliceSecret);
-
-        init_hexbytes_noT(aliceSecret, swap->I.privAm.bytes, 32);
-        printf("alice secret: %s\n", aliceSecret);
-
-        init_hexbytes_noT(aliceSecret, swap->alicepayment.I.actualtxid.bytes, 32);
-        printf("alice txid: %s\n", aliceSecret);
-
-        bits256 hash; int32_t i;
-        for (i=0; i<32; i++)
-            hash.bytes[i] = swap->I.privAm.bytes[31-i];
-        uint8arrayToHex(aliceSecret, hash.bytes, 32);
-        printf("alice secret: %s\n", aliceSecret);
 
         return(aliceSendsEthPayment(input,txData));
     }
@@ -137,18 +123,111 @@ char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
     uint8arrayToHex(input.aliceSecret, hash.bytes, 32);
     uint8arrayToHex(input.bobHash, swap->secretBn, 20);
 
-    char aliceSecret[100];
-    uint8arrayToHex(aliceSecret, swap->privAm.bytes, 32);
-    printf("alice secret: %s\n", aliceSecret);
-
-    uint8arrayToHex(aliceSecret, hash.bytes, 32);
-    printf("alice secret: %s\n", aliceSecret);
-
     strcpy(txData.from, swap->etomicsrc);
     strcpy(txData.to, ETOMIC_ALICECONTRACT);
     strcpy(txData.amount, "0");
     uint8arrayToHex(txData.secretKey, swap->persistentPrivKey.bytes, 32);
     return bobSpendsAlicePayment(input, txData);
+}
+
+char *LP_etomicbob_sends_deposit(struct basilisk_swap *swap)
+{
+    BobSendsEthDepositInput input;
+    BasicTxData txData;
+    memset(&txData,0,sizeof(txData));
+    memset(&input,0,sizeof(input));
+
+    uint8arrayToHex(input.depositId, swap->bobdeposit.I.actualtxid.bytes, 32);
+    strcpy(input.aliceAddress, swap->I.etomicdest);
+    uint8arrayToHex(input.bobHash, swap->I.secretBn, 20);
+
+    strcpy(txData.from, swap->I.etomicsrc);
+    strcpy(txData.to, ETOMIC_BOBCONTRACT);
+    satoshisToWei(txData.amount, swap->bobdeposit.I.amount);
+    uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
+    return bobSendsEthDeposit(input, txData);
+}
+
+char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
+{
+    BobRefundsDepositInput input;
+    BasicTxData txData;
+    memset(&txData,0,sizeof(txData));
+    memset(&input,0,sizeof(input));
+
+    EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
+    uint8arrayToHex(input.depositId, swap->txids[BASILISK_BOBDEPOSIT].bytes, 32);
+    strcpy(input.aliceAddress, swap->etomicdest);
+    sprintf(input.aliceCanClaimAfter, "%" PRIu64, receipt.blockNumber + 960);
+
+    bits256 invertedSecret;
+    int32_t i;
+    for (i=0; i<32; i++) {
+        invertedSecret.bytes[i] = swap->privBn.bytes[31 - i];
+    }
+    uint8arrayToHex(input.bobSecret, invertedSecret.bytes, 32);
+
+    if (swap->bobtomic[0] != 0) {
+        strcpy(input.tokenAddress, swap->bobtomic);
+    } else {
+        strcpy(input.tokenAddress, "0x0000000000000000000000000000000000000000");
+    }
+    satoshisToWei(input.amount, swap->values[BASILISK_BOBDEPOSIT]);
+
+    strcpy(txData.from, swap->etomicsrc);
+    strcpy(txData.to, ETOMIC_BOBCONTRACT);
+    strcpy(txData.amount, "0");
+    uint8arrayToHex(txData.secretKey, swap->persistentPrivKey.bytes, 32);
+    return bobRefundsDeposit(input, txData);
+}
+
+char *LP_etomicbob_sends_payment(struct basilisk_swap *swap)
+{
+    BobSendsEthPaymentInput input;
+    BasicTxData txData;
+    memset(&txData,0,sizeof(txData));
+    memset(&input,0,sizeof(input));
+
+    uint8arrayToHex(input.paymentId, swap->bobpayment.I.actualtxid.bytes, 32);
+    strcpy(input.aliceAddress, swap->I.etomicdest);
+    uint8arrayToHex(input.aliceHash, swap->I.secretAm, 20);
+
+    strcpy(txData.from, swap->I.etomicsrc);
+    strcpy(txData.to, ETOMIC_BOBCONTRACT);
+    satoshisToWei(txData.amount, swap->bobpayment.I.amount);
+    uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
+    return bobSendsEthPayment(input, txData);
+}
+
+char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
+{
+    AliceSpendsBobPaymentInput input;
+    BasicTxData txData;
+
+    memset(&txData,0,sizeof(txData));
+    memset(&input,0,sizeof(input));
+
+    uint8arrayToHex(input.paymentId, swap->txids[BASILISK_BOBPAYMENT].bytes, 32);
+    satoshisToWei(input.amount, swap->values[BASILISK_BOBPAYMENT]);
+
+    if (swap->bobtomic[0] != 0) {
+        strcpy(input.tokenAddress, swap->bobtomic);
+    } else {
+        strcpy(input.tokenAddress, "0x0000000000000000000000000000000000000000");
+    }
+
+    strcpy(input.bobAddress, swap->etomicsrc);
+    bits256 hash; int32_t i;
+    for (i=0; i<32; i++) {
+        hash.bytes[i] = swap->privAm.bytes[31 - i];
+    }
+    uint8arrayToHex(input.aliceSecret, hash.bytes, 32);
+
+    strcpy(txData.from, swap->etomicdest);
+    strcpy(txData.to, ETOMIC_BOBCONTRACT);
+    strcpy(txData.amount, "0");
+    uint8arrayToHex(txData.secretKey, swap->persistentPrivKey.bytes, 32);
+    return aliceSpendsBobPayment(input, txData);
 }
 
 int32_t LP_etomic_priv2addr(char *coinaddr,bits256 privkey)

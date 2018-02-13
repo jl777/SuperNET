@@ -88,6 +88,7 @@ char* sendRawTx(char* rawTx)
     strcpy(txId, tmp);
     cJSON_Delete(json);
     free(requestResult);
+    free(string);
     return txId;
 }
 
@@ -109,6 +110,7 @@ int getNonce(char* address)
     int nonce = (int)strtol(cJSON_GetObjectItem(json, "result")->valuestring, NULL, 0);
     cJSON_Delete(json);
     free(requestResult);
+    free(string);
     return nonce;
 }
 
@@ -132,6 +134,7 @@ char* getEthBalanceRequest(char* address)
     strcpy(balance, tmp);
     cJSON_Delete(json);
     free(requestResult);
+    free(string);
     return balance;
 }
 
@@ -154,9 +157,35 @@ char* ethCall(char* to, const char* data)
     cJSON_Delete(request);
     cJSON *json = cJSON_Parse(requestResult);
     char* tmp = cJSON_GetObjectItem(json, "result")->valuestring;
-    char* balance = (char*)malloc(strlen(tmp) + 1);
-    strcpy(balance, tmp);
+    char* result = (char*)malloc(strlen(tmp) + 1);
+    strcpy(result, tmp);
     cJSON_Delete(json);
     free(requestResult);
-    return balance;
+    free(string);
+    return result;
+}
+
+EthTxReceipt getEthTxReceipt(char *txId)
+{
+    EthTxReceipt result;
+
+    char* string;
+    cJSON *request = cJSON_CreateObject();
+    cJSON *params = cJSON_CreateArray();
+    cJSON_AddItemToObject(request, "jsonrpc", cJSON_CreateString("2.0"));
+    cJSON_AddItemToObject(request, "method", cJSON_CreateString("eth_getTransactionReceipt"));
+    cJSON_AddItemToArray(params, cJSON_CreateString(txId));
+    cJSON_AddItemToObject(request, "params", params);
+    cJSON_AddItemToObject(request, "id", cJSON_CreateNumber(2));
+    string = cJSON_PrintUnformatted(request);
+    char *requestResult = sendRequest(string);
+    cJSON_Delete(request);
+    cJSON *json = cJSON_Parse(requestResult);
+    cJSON *tmp = cJSON_GetObjectItem(json, "result");
+    strcpy(result.blockHash, cJSON_GetObjectItem(tmp, "blockHash")->valuestring);
+    result.blockNumber = (uint64_t)strtol(cJSON_GetObjectItem(tmp, "blockNumber")->valuestring, NULL, 0);
+    cJSON_Delete(json);
+    free(requestResult);
+    free(string);
+    return result;
 }

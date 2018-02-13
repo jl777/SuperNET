@@ -792,6 +792,7 @@ void LP_bobloop(void *_swap)
             printf("error bobscripts deposit\n");
         else
         {
+            uint8_t error = 0;
             swap->bobrefund.utxovout = 0;
             swap->bobrefund.utxotxid = swap->bobdeposit.I.signedtxid;
             basilisk_bobdeposit_refund(swap,swap->I.putduration);
@@ -799,12 +800,36 @@ void LP_bobloop(void *_swap)
             LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
             if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_otherfee) < 0 )
+            {
+                error = 1;
                 printf("error waiting for alicefee\n");
-            else if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 )
-                printf("error sending bobdeposit\n");
-            else if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_alicepayment) < 0 )
+            }
+
+            if ( error == 0 )
+            {
+                if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) != 0 )
+                {
+                    if (swap->I.bobtomic[0] != 0)
+                    {
+                        char *depositTx = LP_etomicbob_sends_deposit(swap);
+                        strcpy(swap->bobdeposit.I.ethTxid, depositTx);
+                        free(depositTx);
+                    }
+                }
+                else
+                {
+                    error = 1;
+                    printf("error sending bobdeposit\n");
+                }
+            }
+
+            if ( error == 0 && LP_waitfor(swap->N.pair,swap,1800,LP_verify_alicepayment) < 0 )
+            {
+                error = 1;
                 printf("error waiting for alicepayment\n");
-            else
+            }
+
+            if (error == 0)
             {
                 LP_swap_critical = (uint32_t)time(NULL);
                 if ( basilisk_bobscripts_set(swap,0,1) < 0 )
@@ -819,8 +844,13 @@ void LP_bobloop(void *_swap)
                         sleep(10);
                     }
                     LP_swap_critical = (uint32_t)time(NULL);
-                    if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
+                    if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 ) {
                         printf("error sending bobpayment\n");
+                    } else if (swap->I.bobtomic[0] != 0) {
+                        char *paymentTx = LP_etomicbob_sends_payment(swap);
+                        strcpy(swap->bobpayment.I.ethTxid, paymentTx);
+                        free(paymentTx);
+                    }
                     //if ( LP_waitfor(swap->N.pair,swap,10,LP_verify_alicespend) < 0 )
                     //    printf("error waiting for alicespend\n");
                     //swap->sentflag = 1;

@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include "etomiclib.h"
+#include "etomiccurl.h"
 
 char* bobContractAddress = "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2";
 char* aliceAddress = "0x485d2cc2d13a9e12E4b53D606DB1c8adc884fB8a";
@@ -27,6 +28,7 @@ int main(int argc, char** argv)
         BOB_APPROVES_ERC20,
         BOB_ETH_BALANCE,
         BOB_ERC20_BALANCE,
+        TX_RECEIPT
     };
     if (argc < 2) {
         return 1;
@@ -194,18 +196,19 @@ int main(int argc, char** argv)
         case BOB_ERC20_BALANCE:
             printf("%" PRIu64 "\n", getErc20Balance(bobAddress, tokenAddress));
             break;
+        case TX_RECEIPT:
+            printf("getTxReceipt\n");
+            EthTxReceipt txReceipt;
+            txReceipt = getEthTxReceipt("0x9c3f31859dcba6d1032ed82074a0fe74a04b749d5e9feedc8a49bf78bf8f2b2c");
+            printf("%" PRIu64 "\n", txReceipt.blockNumber);
+            printf("%s\n", txReceipt.blockHash);
+            break;
         default:
             return 1;
     }
     char *pubkey = getPubKeyFromPriv(getenv("BOB_PK"));
     printf("pubkey: %s\n", pubkey);
     free(pubkey);
-    uint8_t test[2];
-    test[0] = 100;
-    test[1] = 100;
-    char buf[30];
-    uint8arrayToHex(buf, test, 2);
-    printf("hex: %s\n", buf);
 
     uint64_t satoshis = 100000000;
     char weiBuffer[100];
