@@ -530,7 +530,7 @@ cJSON *electrum_scripthash_cmd(char *symbol,uint8_t taddr,struct electrum_info *
     uint8_t addrtype,rmd160[20]; char scripthash[51],rmdstr[41],cmdbuf[128];
     bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,coinaddr);
     init_hexbytes_noT(rmdstr,rmd160,20);
-    sprintf(scripthash,"76a914%s88ac",rmdstr);
+    sprintf(scripthash,"%s",rmdstr);
     sprintf(cmdbuf,"blockchain.scripthash.%s",cmd);
     return(electrum_strarg(symbol,ep,retjsonp,cmdbuf,scripthash,ELECTRUM_TIMEOUT));
 }
