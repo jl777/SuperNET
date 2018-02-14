@@ -827,7 +827,7 @@ void LP_bobloop(void *_swap)
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
                     LP_swap_endcritical = (uint32_t)time(NULL);
-                    LP_swapwait(swap,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*2,swap->I.aliceconfirms == 0 ? 3 : 30);
+                    LP_swapwait(swap,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*10,swap->I.aliceconfirms == 0 ? 3 : 30);
                 }
             }
         }
@@ -910,7 +910,7 @@ void LP_aliceloop(void *_swap)
                         if ( swap->N.pair >= 0 )
                             nn_close(swap->N.pair), swap->N.pair = -1;
                         LP_swap_endcritical = (uint32_t)time(NULL);
-                        LP_swapwait(swap,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*2,swap->I.aliceconfirms == 0 ? 3 : 30);
+                        LP_swapwait(swap,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*10,swap->I.aliceconfirms == 0 ? 3 : 30);
                     }
                 }
             }

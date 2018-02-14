@@ -340,7 +340,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
             else if ( base[0] != 0 && rel[0] != 0 )
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
-            else return(basilisk_swaplist(0,0,0,jint(argjson,"pending")));
+            else return(basilisk_swaplist(0,0,1,jint(argjson,"pending")));
         }
         else if ( strcmp(method,"dynamictrust") == 0 )
         {

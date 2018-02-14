@@ -929,7 +929,7 @@ void LP_swapsloop(void *ctx)
         if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") != 0 )
         {
             LP_millistats_update(&LP_swapsloop_stats);
-            if ( (retstr= basilisk_swapentry(0,0,0)) != 0 )
+            if ( (retstr= basilisk_swapentry(0,0,1)) != 0 )
                 free(retstr);
             sleep(600);
         } else sleep(10);
