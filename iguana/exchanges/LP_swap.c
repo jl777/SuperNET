@@ -698,6 +698,9 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
             if ( bits256_nonz(rawtx->I.actualtxid) != 0 && msgbits != 0 )
             {
                 sendlen = 0;
+                sendbuf[sendlen++] = rawtx->I.datalen & 0xff;
+                sendbuf[sendlen++] = (rawtx->I.datalen >> 8) & 0xff;
+                sendbuf[sendlen++] = rawtx->I.redeemlen;
                 if (rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66) {
                     uint8_t *ethTxidBytes;
                     // ETH txid always starts with 0x
@@ -709,9 +712,6 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                     memset(&sendbuf[sendlen], 0, 32);
                 }
                 sendlen += 32;
-                sendbuf[sendlen++] = rawtx->I.datalen & 0xff;
-                sendbuf[sendlen++] = (rawtx->I.datalen >> 8) & 0xff;
-                sendbuf[sendlen++] = rawtx->I.redeemlen;
                 //int32_t z; for (z=0; z<rawtx->I.datalen; z++) printf("%02x",rawtx->txbytes[z]); printf(" >>>>>>> send.%d %s\n",rawtx->I.datalen,rawtx->name);
                 //printf("datalen.%d redeemlen.%d\n",rawtx->I.datalen,rawtx->I.redeemlen);
                 memcpy(&sendbuf[sendlen],rawtx->txbytes,rawtx->I.datalen), sendlen += rawtx->I.datalen;
