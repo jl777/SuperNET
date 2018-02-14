@@ -702,11 +702,10 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                 sendbuf[sendlen++] = (rawtx->I.datalen >> 8) & 0xff;
                 sendbuf[sendlen++] = rawtx->I.redeemlen;
                 if (rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66) {
-                    uint8_t *ethTxidBytes;
+                    uint8_t ethTxidBytes[32];
                     // ETH txid always starts with 0x
                     decode_hex(ethTxidBytes, 32, rawtx->I.ethTxid + 2);
                     memcpy(&sendbuf[sendlen], ethTxidBytes, 32);
-                    free(ethTxidBytes);
                 } else {
                     // fill with zero bytes to always have fixed message size
                     memset(&sendbuf[sendlen], 0, 32);
