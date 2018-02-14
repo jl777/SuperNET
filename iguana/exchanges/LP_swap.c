@@ -584,9 +584,6 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     for (i=0; i<32; i++)
         myhash.bytes[i] = recvbuf[offset++];
 
-    uint8arrayToHex(rawtx->I.ethTxid, &recvbuf[offset], 32);
-    offset += 32;
-    printf("ETH txid received: %s", rawtx->I.ethTxid);
     offset += iguana_rwnum(0,&recvbuf[offset],sizeof(quoteid),&quoteid);
     offset += iguana_rwnum(0,&recvbuf[offset],sizeof(msgbits),&msgbits);
     datalen = recvbuf[offset++];
@@ -597,6 +594,9 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
         return(-1);
     }
     rawtx->I.redeemlen = recvbuf[offset++];
+    uint8arrayToHex(rawtx->I.ethTxid, &recvbuf[offset], 32);
+    offset += 32;
+    printf("ETH txid received: %s", rawtx->I.ethTxid);
     data = &recvbuf[offset];
     if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
     {
@@ -825,14 +825,16 @@ void LP_bobloop(void *_swap)
 
             if ( error == 0 )
             {
+                if (swap->I.bobtomic[0] != 0)
+                {
+                    char *depositTx = LP_etomicbob_sends_deposit(swap);
+                    strcpy(swap->bobdeposit.I.ethTxid, depositTx);
+                    free(depositTx);
+                }
+
                 if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) != 0 )
                 {
-                    if (swap->I.bobtomic[0] != 0)
-                    {
-                        char *depositTx = LP_etomicbob_sends_deposit(swap);
-                        strcpy(swap->bobdeposit.I.ethTxid, depositTx);
-                        free(depositTx);
-                    }
+
                 }
                 else
                 {
