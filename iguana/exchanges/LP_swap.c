@@ -583,6 +583,10 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
         otherhash.bytes[i] = recvbuf[offset++];
     for (i=0; i<32; i++)
         myhash.bytes[i] = recvbuf[offset++];
+
+    uint8arrayToHex(rawtx->I.ethTxid, recvbuf[offset], 32);
+    offset += 32;
+    printf("ETH txid received: %s", rawtx->I.ethTxid);
     offset += iguana_rwnum(0,&recvbuf[offset],sizeof(quoteid),&quoteid);
     offset += iguana_rwnum(0,&recvbuf[offset],sizeof(msgbits),&msgbits);
     datalen = recvbuf[offset++];
@@ -625,6 +629,8 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
         printf("%s rawtx data compare error, len %d vs %d <<<<<<<<<< warning\n",rawtx->name,rawtx->I.datalen,datalen);
         return(-1);
     }
+
+
     if ( recvlen != datalen+rawtx->I.redeemlen+75 )
         printf("RECVLEN %d != %d + %d\n",recvlen,datalen,rawtx->I.redeemlen);
     txid = bits256_calctxid(coin->symbol,data,datalen);
@@ -692,6 +698,17 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
             if ( bits256_nonz(rawtx->I.actualtxid) != 0 && msgbits != 0 )
             {
                 sendlen = 0;
+                if (rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66) {
+                    bytes *ethTxidBytes;
+                    // ETH txid always starts with 0x
+                    decode_hex(ethTxidBytes, 32, rawtx->I.ethTxid + 2);
+                    memccpy(&sendbuf[sendlen], ethTxidBytes, 32);
+                    free(ethTxidBytes);
+                } else {
+                    // fill with zero bytes to always have fixed message size
+                    memset(&sendbuf[sendlen], 0, 32);
+                }
+                sendlen += 32;
                 sendbuf[sendlen++] = rawtx->I.datalen & 0xff;
                 sendbuf[sendlen++] = (rawtx->I.datalen >> 8) & 0xff;
                 sendbuf[sendlen++] = rawtx->I.redeemlen;
@@ -703,6 +720,7 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                     memcpy(&sendbuf[sendlen],rawtx->redeemscript,rawtx->I.redeemlen);
                     sendlen += rawtx->I.redeemlen;
                 }
+
                 basilisk_dontforget_update(swap,rawtx);
                 //printf("sendlen.%d datalen.%d redeemlen.%d\n",sendlen,rawtx->datalen,rawtx->redeemlen);
                 if ( suppress_swapsend == 0 )
@@ -916,14 +934,17 @@ void LP_aliceloop(void *_swap)
                     char str[65];printf("%d wait for bobdeposit %s numconfs.%d %s %s\n",n,swap->bobdeposit.I.destaddr,m,bobstr,bits256_str(str,swap->bobdeposit.I.signedtxid));
                     sleep(10);
                 }
+                if ( swap->I.alicetomic[0] != 0 ) {
+                    char *paymentEthTx = LP_etomicalice_send_payment(swap);
+                    if (paymentEthTx[0] != 0) {
+                        strcpy(swap->alicepayment.I.ethTxid, paymentEthTx);
+                    }
+                    free(paymentEthTx);
+                }
                 if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x1000,data,maxlen,&swap->alicepayment,0x800,0) == 0 )
                     printf("error sending alicepayment\n");
                 else
                 {
-                    if ( swap->I.alicetomic[0] != 0 )
-                    {
-                        LP_etomicalice_send_payment(swap);
-                    }
                     m = swap->I.aliceconfirms;
                     while ( (n= LP_numconfirms(alicestr,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m )
                     {
