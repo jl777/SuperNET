@@ -206,9 +206,11 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
 
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
+    EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
 
     uint8arrayToHex(input.paymentId, swap->txids[BASILISK_BOBPAYMENT].bytes, 32);
     satoshisToWei(input.amount, swap->values[BASILISK_BOBPAYMENT]);
+    sprintf(input.bobCanClaimAfter, "%" PRIu64, receipt.blockNumber + 480);
 
     if (swap->bobtomic[0] != 0) {
         strcpy(input.tokenAddress, swap->bobtomic);
@@ -228,6 +230,21 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
     strcpy(txData.amount, "0");
     uint8arrayToHex(txData.secretKey, swap->persistentPrivKey.bytes, 32);
     return aliceSpendsBobPayment(input, txData);
+}
+
+char *sendEthTx(struct basilisk_swap *swap, struct basilisk_rawtx *rawtx)
+{
+    if (rawtx == &swap->alicepayment && swap->I.alicetomic[0] != 0) {
+        return LP_etomicalice_send_payment(swap);
+    } else if (rawtx == &swap->bobdeposit && swap->I.bobtomic[0] != 0) {
+        return LP_etomicbob_sends_deposit(swap);
+    } else if (rawtx == &swap->bobpayment && swap->I.bobtomic[0] != 0) {
+        return LP_etomicbob_sends_payment(swap);
+    } else {
+        char *result = malloc(66);
+        strcpy(result, "0x0000000000000000000000000000000000000000000000000000000000000000");
+        return result;
+    }
 }
 
 int32_t LP_etomic_priv2addr(char *coinaddr,bits256 privkey)
