@@ -206,7 +206,7 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
 
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
-    EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
+    EthTxReceipt receipt = getEthTxReceipt(swap->bobPaymentEthTx);
 
     uint8arrayToHex(input.paymentId, swap->txids[BASILISK_BOBPAYMENT].bytes, 32);
     satoshisToWei(input.amount, swap->values[BASILISK_BOBPAYMENT]);

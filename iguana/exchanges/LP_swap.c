@@ -856,12 +856,6 @@ void LP_bobloop(void *_swap)
                     }
                     LP_swap_critical = (uint32_t)time(NULL);
 
-                    if (swap->I.bobtomic[0] != 0) {
-                        char *paymentTx = LP_etomicbob_sends_payment(swap);
-                        strcpy(swap->bobpayment.I.ethTxid, paymentTx);
-                        free(paymentTx);
-                    }
-
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 ) {
                         printf("error sending bobpayment\n");
                     }
