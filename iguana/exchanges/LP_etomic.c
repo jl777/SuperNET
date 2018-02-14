@@ -241,7 +241,7 @@ char *sendEthTx(struct basilisk_swap *swap, struct basilisk_rawtx *rawtx)
     } else if (rawtx == &swap->bobpayment && swap->I.bobtomic[0] != 0) {
         return LP_etomicbob_sends_payment(swap);
     } else {
-        char *result = malloc(66);
+        char *result = malloc(67);
         strcpy(result, "0x0000000000000000000000000000000000000000000000000000000000000000");
         return result;
     }
