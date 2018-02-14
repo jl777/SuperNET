@@ -584,7 +584,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     for (i=0; i<32; i++)
         myhash.bytes[i] = recvbuf[offset++];
 
-    uint8arrayToHex(rawtx->I.ethTxid, recvbuf[offset], 32);
+    uint8arrayToHex(rawtx->I.ethTxid, &recvbuf[offset], 32);
     offset += 32;
     printf("ETH txid received: %s", rawtx->I.ethTxid);
     offset += iguana_rwnum(0,&recvbuf[offset],sizeof(quoteid),&quoteid);
@@ -699,10 +699,10 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
             {
                 sendlen = 0;
                 if (rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66) {
-                    bytes *ethTxidBytes;
+                    uint8_t *ethTxidBytes;
                     // ETH txid always starts with 0x
                     decode_hex(ethTxidBytes, 32, rawtx->I.ethTxid + 2);
-                    memccpy(&sendbuf[sendlen], ethTxidBytes, 32);
+                    memcpy(&sendbuf[sendlen], ethTxidBytes, 32);
                     free(ethTxidBytes);
                 } else {
                     // fill with zero bytes to always have fixed message size
