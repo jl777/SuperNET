@@ -75,9 +75,6 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
         if (swap->bobpayment.I.ethTxid[0] != 0) {
             fprintf(fp,",\"bobPaymentEthTx\":\"%s\"", swap->bobpayment.I.ethTxid);
         }
-        char persistentPrivKeyStr[100];
-        bits256_str(persistentPrivKeyStr,swap->persistent_privkey);
-        fprintf(fp,",\"persistentPrivKey\":\"%s\"",persistentPrivKeyStr);
 
         fprintf(fp,",\"alicecoin\":\"%s\"",swap->I.alicestr);
         if ( swap->I.alicetomic[0] != 0 )
@@ -872,8 +869,6 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                     strcpy(rswap->bobPaymentEthTx, jstr(txobj,"bobPaymentEthTx"));
                 }
 
-                rswap->persistentPrivKey = jbits256(txobj, "persistentPrivKey");
-
                 rswap->txids[i] = txid;
                 if ( jstr(txobj,"Apayment") != 0 )
                     safecopy(rswap->alicepaymentaddr,jstr(txobj,"Apayment"),sizeof(rswap->alicepaymentaddr));
@@ -945,6 +940,21 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                         //printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
                     }
                 }
+
+                struct iguana_info *ecoin,*coin;
+                if (rswap->iambob == 1) {
+                    coin = LP_coinfind(rswap->bobcoin);
+                } else {
+                    coin = LP_coinfind(rswap->alicecoin);
+                }
+
+                bits256 privkey = LP_privkey(coin->symbol,coin->smartaddr,coin->taddr);
+                if (coin->etomic[0] != 0) {
+                    if ((ecoin= LP_coinfind("ETOMIC")) != 0) {
+                        privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
+                    }
+                }
+                rswap->persistentPrivKey = privkey;
                 free_json(txobj);
             } //else printf("no symbol\n");
             free(fstr);
@@ -1207,7 +1217,10 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                 rev.bytes[j] = rswap.myprivs[0].bytes[31 - j];
                             if ( (rswap.txbytes[BASILISK_ALICESPEND]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"alicespend",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBPAYMENT],0,0,rswap.pubkey33,1,rswap.expiration,&rswap.values[BASILISK_ALICESPEND],0,0,rswap.bobpaymentaddr,1,bob->zcash)) != 0 )
                             {
-                                LP_etomicalice_spends_bob_payment(&rswap);
+                                if (rswap.bobtomic[0] != 0) {
+                                    char *aliceSpendEthTxId = LP_etomicalice_spends_bob_payment(&rswap);
+                                    free(aliceSpendEthTxId);
+                                }
                             }
                         }
                         LP_txbytes_update("alicespend",rswap.bobcoin,rswap.txbytes[BASILISK_ALICESPEND],&rswap.txids[BASILISK_ALICESPEND],&rswap.paymentspent,&rswap.sentflags[BASILISK_ALICESPEND]);
@@ -1233,8 +1246,13 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         if ( redeemlen > 0 )
                         {
                             len = basilisk_swapuserdata(userdata,zero,1,rswap.myprivs[0],redeemscript,redeemlen);
-                            if ( (rswap.txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"aliceclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,0,claimtime,&rswap.values[BASILISK_ALICECLAIM],0,0,rswap.bobdepositaddr,1,bob->zcash)) != 0 )
-                                printf("claimtime.%u aliceclaim.(%s)\n",claimtime,rswap.txbytes[BASILISK_ALICECLAIM]);
+                            if ( (rswap.txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"aliceclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,0,claimtime,&rswap.values[BASILISK_ALICECLAIM],0,0,rswap.bobdepositaddr,1,bob->zcash)) != 0 ) {
+                                printf("claimtime.%u aliceclaim.(%s)\n", claimtime, rswap.txbytes[BASILISK_ALICECLAIM]);
+                                if (rswap.bobtomic[0] != 0) {
+                                    char *aliceClaimsEthTxId = LP_etomicalice_claims_bob_deposit(&rswap);
+                                    free(aliceClaimsEthTxId);
+                                }
+                            }
                         }
                         LP_txbytes_update("aliceclaim",rswap.bobcoin,rswap.txbytes[BASILISK_ALICECLAIM],&rswap.txids[BASILISK_ALICECLAIM],&rswap.depositspent,&rswap.sentflags[BASILISK_ALICECLAIM]);
                     }
@@ -1254,8 +1272,13 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     rswap.privBn = basilisk_swap_privBn_extract(&rswap.txids[BASILISK_BOBREFUND],rswap.bobcoin,rswap.txids[BASILISK_BOBDEPOSIT],rswap.privBn);
                     if ( bits256_nonz(rswap.txids[BASILISK_ALICEPAYMENT]) != 0 && bits256_nonz(rswap.privAm) != 0 && bits256_nonz(rswap.privBn) != 0 )
                     {
-                        if ( (rswap.txbytes[BASILISK_ALICERECLAIM]= basilisk_swap_Aspend("alicereclaim",rswap.alicecoin,rswap.Atxfee,alice->wiftaddr,alice->taddr,alice->pubtype,alice->p2shtype,alice->isPoS,alice->wiftype,ctx,rswap.privAm,rswap.privBn,rswap.txids[BASILISK_ALICEPAYMENT],0,rswap.pubkey33,rswap.expiration,&rswap.values[BASILISK_ALICERECLAIM],rswap.alicepaymentaddr,alice->zcash)) != 0 )
-                            printf("alicereclaim.(%s)\n",rswap.txbytes[BASILISK_ALICERECLAIM]);
+                        if ( (rswap.txbytes[BASILISK_ALICERECLAIM]= basilisk_swap_Aspend("alicereclaim",rswap.alicecoin,rswap.Atxfee,alice->wiftaddr,alice->taddr,alice->pubtype,alice->p2shtype,alice->isPoS,alice->wiftype,ctx,rswap.privAm,rswap.privBn,rswap.txids[BASILISK_ALICEPAYMENT],0,rswap.pubkey33,rswap.expiration,&rswap.values[BASILISK_ALICERECLAIM],rswap.alicepaymentaddr,alice->zcash)) != 0 ) {
+                            printf("alicereclaim.(%s)\n", rswap.txbytes[BASILISK_ALICERECLAIM]);
+                            if (rswap.alicetomic[0] != 0) {
+                                char *aliceReclaimEthTx = LP_etomicalice_reclaims_payment(&rswap);
+                                free(aliceReclaimEthTx);
+                            }
+                        }
                     }
                     LP_txbytes_update("alicereclaim",rswap.alicecoin,rswap.txbytes[BASILISK_ALICERECLAIM],&rswap.txids[BASILISK_ALICERECLAIM],&rswap.Apaymentspent,&rswap.sentflags[BASILISK_ALICERECLAIM]);
                 }
@@ -1288,7 +1311,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             if ( (rswap.txbytes[BASILISK_BOBSPEND]= basilisk_swap_Aspend("bobspend",rswap.alicecoin,rswap.Atxfee,alice->wiftaddr,alice->taddr,alice->pubtype,alice->p2shtype,alice->isPoS,alice->wiftype,ctx,rswap.privAm,rswap.privBn,rswap.txids[BASILISK_ALICEPAYMENT],0,rswap.pubkey33,rswap.expiration,&rswap.values[BASILISK_BOBSPEND],rswap.alicepaymentaddr,alice->zcash)) != 0 )
                             {
                                 //printf("bobspend.(%s)\n",rswap.txbytes[BASILISK_BOBSPEND]);
-                                LP_etomicbob_spends_alice_payment(&rswap);
+                                char *bobSpendEthTx = LP_etomicbob_spends_alice_payment(&rswap);
+                                free(bobSpendEthTx);
                             }
                         }
                         LP_txbytes_update("bobspend",rswap.alicecoin,rswap.txbytes[BASILISK_BOBSPEND],&rswap.txids[BASILISK_BOBSPEND],&rswap.Apaymentspent,&rswap.sentflags[BASILISK_BOBSPEND]);
@@ -1313,6 +1337,10 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         len = basilisk_swapuserdata(userdata,zero,1,rswap.myprivs[1],redeemscript,redeemlen);
                         if ( (rswap.txbytes[BASILISK_BOBRECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"bobreclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[1],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBPAYMENT],0,0,rswap.pubkey33,0,claimtime,&rswap.values[BASILISK_BOBRECLAIM],0,0,rswap.bobpaymentaddr,1,bob->zcash)) != 0 )
                         {
+                            if (rswap.bobtomic[0] != 0) {
+                                char *bobReclaimEthTx = LP_etomicbob_reclaims_payment(&rswap);
+                                free(bobReclaimEthTx);
+                            }
                             //int32_t z;
                             //for (z=0; z<20; z++)
                             //    printf("%02x",rswap.secretAm[z]);
@@ -1347,7 +1375,10 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         len = basilisk_swapuserdata(userdata,rswap.privBn,0,rswap.myprivs[0],redeemscript,redeemlen);
                         if ( (rswap.txbytes[BASILISK_BOBREFUND]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"bobrefund",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,1,rswap.expiration,&rswap.values[BASILISK_BOBREFUND],0,0,rswap.bobdepositaddr,1,bob->zcash)) != 0 )
                         {
-                            LP_etomicbob_refunds_deposit(&rswap);
+                            if (rswap.bobtomic[0] != 0) {
+                                char *bobRefundsEthTx = LP_etomicbob_refunds_deposit(&rswap);
+                                free(bobRefundsEthTx);
+                            }
                             //printf("pubB1.(%s) bobrefund.(%s)\n",bits256_str(str,rswap.pubB1),rswap.txbytes[BASILISK_BOBREFUND]);
                         }
                     }

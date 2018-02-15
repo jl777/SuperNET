@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "../../../includes/cJSON.h"
 
-static char* ethRpcUrl = "https://ropsten.infura.io/y07GHxUyTgeN2mdfOonu";
+static char *ethRpcUrl = "https://ropsten.infura.io/y07GHxUyTgeN2mdfOonu";
 
 struct string {
     char *ptr;
@@ -182,8 +182,13 @@ EthTxReceipt getEthTxReceipt(char *txId)
     cJSON_Delete(request);
     cJSON *json = cJSON_Parse(requestResult);
     cJSON *tmp = cJSON_GetObjectItem(json, "result");
-    strcpy(result.blockHash, cJSON_GetObjectItem(tmp, "blockHash")->valuestring);
-    result.blockNumber = (uint64_t)strtol(cJSON_GetObjectItem(tmp, "blockNumber")->valuestring, NULL, 0);
+    if (is_cJSON_Null(tmp)) {
+        strcpy(result.blockHash, "0x0000000000000000000000000000000000000000000000000000000000000000");
+        result.blockNumber = 0;
+    } else {
+        strcpy(result.blockHash, cJSON_GetObjectItem(tmp, "blockHash")->valuestring);
+        result.blockNumber = (uint64_t) strtol(cJSON_GetObjectItem(tmp, "blockNumber")->valuestring, NULL, 0);
+    }
     cJSON_Delete(json);
     free(requestResult);
     free(string);

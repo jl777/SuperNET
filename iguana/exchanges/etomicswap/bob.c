@@ -199,7 +199,7 @@ int main(int argc, char** argv)
         case TX_RECEIPT:
             printf("getTxReceipt\n");
             EthTxReceipt txReceipt;
-            txReceipt = getEthTxReceipt("0x9c3f31859dcba6d1032ed82074a0fe74a04b749d5e9feedc8a49bf78bf8f2b2c");
+            txReceipt = getEthTxReceipt("0x82afa1b00f8a63e1a91430162e5cb2d4ebe915831ffd56e6e3227814913e23e6");
             printf("%" PRIu64 "\n", txReceipt.blockNumber);
             printf("%s\n", txReceipt.blockHash);
             break;
