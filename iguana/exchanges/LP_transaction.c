@@ -1863,6 +1863,20 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,b
  OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
  OP_ENDIF*/
 
+int32_t LP_etomicsymbol(char *activesymbol,char *etomic,char *symbol)
+{
+    struct iguana_info *coin;
+    etomic[0] = activesymbol[0] = 0;
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        strcpy(etomic,coin->etomic);
+        if ( etomic[0] != 0 )
+            strcpy(activesymbol,"ETOMIC");
+        else strcpy(activesymbol,symbol);
+    }
+    return(etomic[0] != 0);
+}
+
 int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay)
 {
     static bits256 zero;

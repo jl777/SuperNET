@@ -115,10 +115,10 @@ void LP_main(void *ptr)
 void ETH_test()
 {
     BasicTxData txData; char* ethSignedTx;
-    txData.amount = "1000000000000000000";
-    txData.from = "0xA7EF3f65714AE266414C9E58bB4bAa4E6FB82B41";
-    txData.to = "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2";
-    txData.secretKey = getenv("BOB_PK");
+    strcpy(txData.amount, "1000000000000000000");
+    strcpy(txData.from, "0xA7EF3f65714AE266414C9E58bB4bAa4E6FB82B41");
+    strcpy(txData.to, "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2");
+    strcpy(txData.secretKey, getenv("BOB_PK"));
     BobSendsEthDepositInput input = {
         .aliceAddress = "0x485d2cc2d13a9e12E4b53D606DB1c8adc884fB8a",
         .depositId = "0x28c5a7c25911ef59a577ddf811d0e58edb827efb0646a8a38df6e921ba53f431",
