@@ -29,23 +29,10 @@
 #define ETOMIC_BOBCONTRACT "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2"
 #define ETOMIC_SATOSHICAT "0000000000"
 
-int32_t LP_etomicsymbol(char *activesymbol,char *etomic,char *symbol)
-{
-    struct iguana_info *coin;
-    etomic[0] = activesymbol[0] = 0;
-    if ( (coin= LP_coinfind(symbol)) != 0 )
-    {
-        strcpy(etomic,coin->etomic);
-        if ( etomic[0] != 0 )
-            strcpy(activesymbol,"ETOMIC");
-        else strcpy(activesymbol,symbol);
-    }
-    return(etomic[0] != 0);
-}
-
 char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
 {
     AliceSendsEthPaymentInput input; AliceSendsErc20PaymentInput input20; BasicTxData txData;
+
     // set input and txData fields from the swap data structure
     memset(&txData,0,sizeof(txData));
     if ( strcmp(swap->I.alicestr,"ETH") == 0 )
@@ -88,6 +75,11 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
 
+    struct iguana_info *ecoin;
+    bits256 privkey;
+    ecoin = LP_coinfind("ETOMIC");
+    privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
+
     uint8arrayToHex(input.dealId, swap->txids[BASILISK_ALICEPAYMENT].bytes, 32);
     satoshisToWei(input.amount, swap->values[BASILISK_ALICEPAYMENT]);
 
@@ -108,7 +100,7 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
     strcpy(txData.from, swap->etomicsrc);
     strcpy(txData.to, ETOMIC_ALICECONTRACT);
     strcpy(txData.amount, "0");
-    uint8arrayToHex(txData.secretKey, swap->persistentPrivKey.bytes, 32);
+    uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
     return aliceReclaimsAlicePayment(input, txData);
 }
 
@@ -119,6 +111,11 @@ char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
 
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
+
+    struct iguana_info *ecoin;
+    bits256 privkey;
+    ecoin = LP_coinfind("ETOMIC");
+    privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.dealId, swap->txids[BASILISK_ALICEPAYMENT].bytes, 32);
     satoshisToWei(input.amount, swap->destamount);
@@ -140,7 +137,7 @@ char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
     strcpy(txData.from, swap->etomicsrc);
     strcpy(txData.to, ETOMIC_ALICECONTRACT);
     strcpy(txData.amount, "0");
-    uint8arrayToHex(txData.secretKey, swap->persistentPrivKey.bytes, 32);
+    uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
     return bobSpendsAlicePayment(input, txData);
 }
 
@@ -169,6 +166,11 @@ char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
 
+    struct iguana_info *ecoin;
+    bits256 privkey;
+    ecoin = LP_coinfind("ETOMIC");
+    privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
+
     EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
     uint8arrayToHex(input.depositId, swap->txids[BASILISK_BOBDEPOSIT].bytes, 32);
     strcpy(input.aliceAddress, swap->etomicdest);
@@ -191,7 +193,7 @@ char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
     strcpy(txData.from, swap->etomicsrc);
     strcpy(txData.to, ETOMIC_BOBCONTRACT);
     strcpy(txData.amount, "0");
-    uint8arrayToHex(txData.secretKey, swap->persistentPrivKey.bytes, 32);
+    uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
     return bobRefundsDeposit(input, txData);
 }
 
@@ -220,6 +222,11 @@ char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
 
+    struct iguana_info *ecoin;
+    bits256 privkey;
+    ecoin = LP_coinfind("ETOMIC");
+    privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
+
     EthTxReceipt receipt = getEthTxReceipt(swap->bobPaymentEthTx);
     uint8arrayToHex(input.paymentId, swap->txids[BASILISK_BOBPAYMENT].bytes, 32);
     strcpy(input.aliceAddress, swap->etomicdest);
@@ -236,7 +243,7 @@ char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
     strcpy(txData.from, swap->etomicsrc);
     strcpy(txData.to, ETOMIC_BOBCONTRACT);
     strcpy(txData.amount, "0");
-    uint8arrayToHex(txData.secretKey, swap->persistentPrivKey.bytes, 32);
+    uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
     return bobReclaimsBobPayment(input, txData);
 }
 
@@ -248,6 +255,11 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
     EthTxReceipt receipt = getEthTxReceipt(swap->bobPaymentEthTx);
+
+    struct iguana_info *ecoin;
+    bits256 privkey;
+    ecoin = LP_coinfind("ETOMIC");
+    privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.paymentId, swap->txids[BASILISK_BOBPAYMENT].bytes, 32);
     satoshisToWei(input.amount, swap->values[BASILISK_BOBPAYMENT]);
@@ -270,7 +282,7 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
     strcpy(txData.from, swap->etomicdest);
     strcpy(txData.to, ETOMIC_BOBCONTRACT);
     strcpy(txData.amount, "0");
-    uint8arrayToHex(txData.secretKey, swap->persistentPrivKey.bytes, 32);
+    uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
     return aliceSpendsBobPayment(input, txData);
 }
 
@@ -282,6 +294,11 @@ char *LP_etomicalice_claims_bob_deposit(struct LP_swap_remember *swap)
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
     EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
+
+    struct iguana_info *ecoin;
+    bits256 privkey;
+    ecoin = LP_coinfind("ETOMIC");
+    privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.depositId, swap->txids[BASILISK_BOBDEPOSIT].bytes, 32);
     satoshisToWei(input.amount, swap->values[BASILISK_BOBDEPOSIT]);
@@ -299,7 +316,7 @@ char *LP_etomicalice_claims_bob_deposit(struct LP_swap_remember *swap)
     strcpy(txData.from, swap->etomicdest);
     strcpy(txData.to, ETOMIC_BOBCONTRACT);
     strcpy(txData.amount, "0");
-    uint8arrayToHex(txData.secretKey, swap->persistentPrivKey.bytes, 32);
+    uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
     return aliceClaimsBobDeposit(input, txData);
 }
 

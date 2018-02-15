@@ -869,6 +869,14 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                     strcpy(rswap->bobPaymentEthTx, jstr(txobj,"bobPaymentEthTx"));
                 }
 
+                if (jstr(txobj,"bobtomic") != 0) {
+                    strcpy(rswap->bobtomic, jstr(txobj,"bobtomic"));
+                }
+
+                if (jstr(txobj,"alicetomic") != 0) {
+                    strcpy(rswap->alicetomic, jstr(txobj,"alicetomic"));
+                }
+
                 rswap->txids[i] = txid;
                 if ( jstr(txobj,"Apayment") != 0 )
                     safecopy(rswap->alicepaymentaddr,jstr(txobj,"Apayment"),sizeof(rswap->alicepaymentaddr));
@@ -941,20 +949,6 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                     }
                 }
 
-                struct iguana_info *ecoin,*coin;
-                if (rswap->iambob == 1) {
-                    coin = LP_coinfind(rswap->bobcoin);
-                } else {
-                    coin = LP_coinfind(rswap->alicecoin);
-                }
-
-                bits256 privkey = LP_privkey(coin->symbol,coin->smartaddr,coin->taddr);
-                if (coin->etomic[0] != 0) {
-                    if ((ecoin= LP_coinfind("ETOMIC")) != 0) {
-                        privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
-                    }
-                }
-                rswap->persistentPrivKey = privkey;
                 free_json(txobj);
             } //else printf("no symbol\n");
             free(fstr);
