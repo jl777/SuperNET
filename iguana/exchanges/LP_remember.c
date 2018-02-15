@@ -1304,9 +1304,11 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         {
                             if ( (rswap.txbytes[BASILISK_BOBSPEND]= basilisk_swap_Aspend("bobspend",rswap.alicecoin,rswap.Atxfee,alice->wiftaddr,alice->taddr,alice->pubtype,alice->p2shtype,alice->isPoS,alice->wiftype,ctx,rswap.privAm,rswap.privBn,rswap.txids[BASILISK_ALICEPAYMENT],0,rswap.pubkey33,rswap.expiration,&rswap.values[BASILISK_BOBSPEND],rswap.alicepaymentaddr,alice->zcash)) != 0 )
                             {
+                                if (rswap.alicetomic[0] != 0) {
+                                    char *bobSpendEthTx = LP_etomicbob_spends_alice_payment(&rswap);
+                                    free(bobSpendEthTx);
+                                }
                                 //printf("bobspend.(%s)\n",rswap.txbytes[BASILISK_BOBSPEND]);
-                                char *bobSpendEthTx = LP_etomicbob_spends_alice_payment(&rswap);
-                                free(bobSpendEthTx);
                             }
                         }
                         LP_txbytes_update("bobspend",rswap.alicecoin,rswap.txbytes[BASILISK_BOBSPEND],&rswap.txids[BASILISK_BOBSPEND],&rswap.Apaymentspent,&rswap.sentflags[BASILISK_BOBSPEND]);

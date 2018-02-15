@@ -144,19 +144,34 @@ char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
 char *LP_etomicbob_sends_deposit(struct basilisk_swap *swap)
 {
     BobSendsEthDepositInput input;
+    BobSendsErc20DepositInput input20;
     BasicTxData txData;
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
+    memset(&input20,0,sizeof(input20));
+    if ( strcmp(swap->I.bobstr,"ETH") == 0 ) {
+        uint8arrayToHex(input.depositId, swap->bobdeposit.I.actualtxid.bytes, 32);
+        strcpy(input.aliceAddress, swap->I.etomicdest);
+        uint8arrayToHex(input.bobHash, swap->I.secretBn, 20);
 
-    uint8arrayToHex(input.depositId, swap->bobdeposit.I.actualtxid.bytes, 32);
-    strcpy(input.aliceAddress, swap->I.etomicdest);
-    uint8arrayToHex(input.bobHash, swap->I.secretBn, 20);
+        strcpy(txData.from, swap->I.etomicsrc);
+        strcpy(txData.to, ETOMIC_BOBCONTRACT);
+        satoshisToWei(txData.amount, swap->bobdeposit.I.amount);
+        uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
+        return bobSendsEthDeposit(input, txData);
+    } else {
+        uint8arrayToHex(input20.depositId, swap->bobdeposit.I.actualtxid.bytes, 32);
+        strcpy(input20.aliceAddress, swap->I.etomicdest);
+        uint8arrayToHex(input20.bobHash, swap->I.secretBn, 20);
+        satoshisToWei(input20.amount, swap->bobdeposit.I.amount);
+        strcpy(input20.tokenAddress, swap->I.bobtomic);
 
-    strcpy(txData.from, swap->I.etomicsrc);
-    strcpy(txData.to, ETOMIC_BOBCONTRACT);
-    satoshisToWei(txData.amount, swap->bobdeposit.I.amount);
-    uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
-    return bobSendsEthDeposit(input, txData);
+        strcpy(txData.from, swap->I.etomicsrc);
+        strcpy(txData.to, ETOMIC_BOBCONTRACT);
+        strcpy(txData.amount, "0");
+        uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
+        return bobSendsErc20Deposit(input20, txData);
+    }
 }
 
 char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
@@ -200,19 +215,35 @@ char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
 char *LP_etomicbob_sends_payment(struct basilisk_swap *swap)
 {
     BobSendsEthPaymentInput input;
+    BobSendsErc20PaymentInput input20;
     BasicTxData txData;
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
+    memset(&input20,0,sizeof(input20));
 
-    uint8arrayToHex(input.paymentId, swap->bobpayment.I.actualtxid.bytes, 32);
-    strcpy(input.aliceAddress, swap->I.etomicdest);
-    uint8arrayToHex(input.aliceHash, swap->I.secretAm, 20);
+    if ( strcmp(swap->I.bobstr,"ETH") == 0 ) {
+        uint8arrayToHex(input.paymentId, swap->bobpayment.I.actualtxid.bytes, 32);
+        strcpy(input.aliceAddress, swap->I.etomicdest);
+        uint8arrayToHex(input.aliceHash, swap->I.secretAm, 20);
 
-    strcpy(txData.from, swap->I.etomicsrc);
-    strcpy(txData.to, ETOMIC_BOBCONTRACT);
-    satoshisToWei(txData.amount, swap->bobpayment.I.amount);
-    uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
-    return bobSendsEthPayment(input, txData);
+        strcpy(txData.from, swap->I.etomicsrc);
+        strcpy(txData.to, ETOMIC_BOBCONTRACT);
+        satoshisToWei(txData.amount, swap->bobpayment.I.amount);
+        uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
+        return bobSendsEthPayment(input, txData);
+    } else {
+        uint8arrayToHex(input20.paymentId, swap->bobpayment.I.actualtxid.bytes, 32);
+        strcpy(input20.aliceAddress, swap->I.etomicdest);
+        uint8arrayToHex(input20.aliceHash, swap->I.secretAm, 20);
+        satoshisToWei(input20.amount, swap->bobpayment.I.amount);
+        strcpy(input20.tokenAddress, swap->I.bobtomic);
+
+        strcpy(txData.from, swap->I.etomicsrc);
+        strcpy(txData.to, ETOMIC_BOBCONTRACT);
+        strcpy(txData.amount, "0");
+        uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
+        return bobSendsErc20Payment(input20, txData);
+    }
 }
 
 char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
