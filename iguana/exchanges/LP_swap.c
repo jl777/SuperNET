@@ -631,7 +631,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     }
 
 
-    if ( recvlen != datalen+rawtx->I.redeemlen+75 )
+    if ( recvlen != datalen+rawtx->I.redeemlen + 107 )
         printf("RECVLEN %d != %d + %d\n",recvlen,datalen,rawtx->I.redeemlen);
     txid = bits256_calctxid(coin->symbol,data,datalen);
     //char str[65]; printf("rawtx.%s txid %s\n",rawtx->name,bits256_str(str,txid));
