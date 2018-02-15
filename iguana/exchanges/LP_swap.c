@@ -739,8 +739,6 @@ int32_t LP_swapwait(struct basilisk_swap *swap,uint32_t requestid,uint32_t quote
                 if ( jstr(retjson,"status") != 0 && strcmp(jstr(retjson,"status"),"finished") == 0 )
                 {
                     swap->I.finished = (uint32_t)time(NULL);
-                    free_json(retjson);
-                    free(retstr);
                     break;
                 }
                 else if ( time(NULL) > swap->I.expiration )
