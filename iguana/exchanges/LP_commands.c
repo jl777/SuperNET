@@ -178,14 +178,17 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         {
             char pub33str[67];
             G.USERPASS_COUNTER = 1;
-            retjson = cJSON_CreateObject();
-            jaddstr(retjson,"userpass",G.USERPASS);
-            jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
-            init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
-            jaddstr(retjson,"pubsecp",pub33str);
-            jadd(retjson,"coins",LP_coinsjson(LP_showwif));
-            LP_cmdcount++;
-            return(jprint(retjson,1));
+            if ( 0 )
+            {
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"userpass",G.USERPASS);
+                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+                init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
+                jaddstr(retjson,"pubsecp",pub33str);
+                jadd(retjson,"coins",LP_coinsjson(LP_showwif));
+                LP_cmdcount++;
+                return(jprint(retjson,1));
+            }
         }
         // if passphrase api and passphrase is right, ignore userpass, use hass of passphrase
         if ( strcmp(method,"passphrase") == 0 && (passphrase= jstr(argjson,"passphrase")) != 0 )
