@@ -212,7 +212,7 @@ int main(int argc, const char * argv[])
                 }
                 if ( flag != 0 )
                 {
-                    addrstr = flag, floatstr = addrstr;
+                    addrstr = flag, floatstr = buf;
                     //addrstr = buf, floatstr = flag;
                     //bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
                     bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160,addrstr);
