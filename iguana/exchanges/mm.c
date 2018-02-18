@@ -239,7 +239,7 @@ int main(int argc, const char * argv[])
                             for (i=0; i<num; i++)
                                 sprintf(cmd + strlen(cmd),"%s%s",manystrs[i],i<num-1?",":"");
                             strcat(cmd,"}\" 0");
-                            printf("%s\n",cmd);
+                            printf("%s\nsleep 3",cmd);
                             num = 0;
                             memset(manystrs,0,sizeof(manystrs));
                         }
