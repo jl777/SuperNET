@@ -159,6 +159,7 @@ bot_settings(botid, newprice, newvolume)\n\
 bot_status(botid)\n\
 bot_stop(botid)\n\
 bot_pause(botid)\n\
+calcaddress(passphrase)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
@@ -301,6 +302,20 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         else if ( strcmp(method,"portfolio") == 0 )
         {
             return(LP_portfolio());
+        }
+        else if ( strcmp(method,"calcaddress") == 0 )
+        {
+            bits256 privkey,pub; uint8_t pubkey33[33]; char *passphrase,coinaddr[64];
+            if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
+            {
+                conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+                bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,0,60);
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"passphrase",passphrase);
+                jaddstr(retjson,"coinaddr",coinaddr);
+                jaddbits256(retjson,"privkey",privkey);
+                return(jprint(retjson,1));
+            } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
         }
         else if ( strcmp(method,"statsdisp") == 0 )
         {
