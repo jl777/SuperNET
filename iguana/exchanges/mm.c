@@ -239,12 +239,12 @@ int main(int argc, const char * argv[])
                             for (i=0; i<num; i++)
                                 sprintf(cmd + strlen(cmd),"%s%s",manystrs[i],i<num-1?",":"");
                             strcat(cmd,"}\" 0");
-                            //printf("%s\n",cmd);
+                            printf("%s\n",cmd);
                             num = 0;
                             memset(manystrs,0,sizeof(manystrs));
                         }
                         total += val;
-                        printf("(%s).%d (%s) <- %.8f (%s) total %.8f\n",addrstr,addrtype,coinaddr,val,floatstr,total);
+                        //printf("(%s).%d (%s) <- %.8f (%s) total %.8f\n",addrstr,addrtype,coinaddr,val,floatstr,total);
                     }
                 } else printf("parse error for (%s)\n",buf);
             }
@@ -254,7 +254,7 @@ int main(int argc, const char * argv[])
                 for (i=0; i<num; i++)
                     sprintf(cmd + strlen(cmd),"%s%s",manystrs[i],i<num-1?",":"");
                 strcat(cmd,"}\" 0");
-                //printf("%s\n",cmd);
+                printf("%s\n",cmd);
                 num = 0;
                 memset(manystrs,0,sizeof(manystrs));
             }
