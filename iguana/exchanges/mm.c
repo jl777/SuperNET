@@ -192,7 +192,7 @@ int main(int argc, const char * argv[])
     }
     else if ( argv[1] != 0 && strcmp(argv[1],"airdropH") == 0 && argv[2] != 0 )
     {
-        FILE *fp; double val,total = 0.; uint8_t checktype,addrtype,rmd160[21],checkrmd160[21]; char buf[256],checkaddr[64],coinaddr[64],manystrs[64][128],cmd[64*128]; int32_t n,i,num; char *flag;
+        FILE *fp; double val,total = 0.; uint8_t checktype,addrtype,rmd160[21],checkrmd160[21]; char *floatstr,*addrstr,buf[256],checkaddr[64],coinaddr[64],manystrs[64][128],cmd[64*128]; int32_t n,i,num; char *flag;
         if ( (fp= fopen(argv[2],"rb")) != 0 )
         {
             num = 0;
@@ -212,24 +212,26 @@ int main(int argc, const char * argv[])
                 }
                 if ( flag != 0 )
                 {
+                    addrstr = flag, floatstr = addrstr;
+                    //addrstr = buf, floatstr = flag;
                     //bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
-                    bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160,buf);
+                    bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160,addrstr);
                     bitcoin_address("KMD",coinaddr,0,addrtype == 0 ? 60 : 85,rmd160,20);
                     bitcoin_addr2rmd160("KMD",0,&checktype,checkrmd160,coinaddr);
                     //bitcoin_address("HUSH",checkaddr,28,checktype == 60 ? 184 : 189,checkrmd160,20);
                     bitcoin_address("BTC",checkaddr,0,checktype == 60 ? 0 : 5,checkrmd160,20);
-                    if ( memcmp(rmd160,checkrmd160,20) != 0 || strcmp(buf,checkaddr) != 0 )
+                    if ( memcmp(rmd160,checkrmd160,20) != 0 || strcmp(addrstr,checkaddr) != 0 )
                     {
                         for (i=0; i<20; i++)
                             printf("%02x",rmd160[i]);
                         printf(" vs. ");
                         for (i=0; i<20; i++)
                             printf("%02x",checkrmd160[i]);
-                        printf(" address calc error (%s).%d -> (%s).%d -> (%s) %.8f?\n",buf,addrtype,coinaddr,checktype,checkaddr,atof(flag));
+                        printf(" address calc error (%s).%d -> (%s).%d -> (%s) %.8f?\n",addrstr,addrtype,coinaddr,checktype,checkaddr,atof(floatstr));
                     }
                     else
                     {
-                        val = atof(flag);
+                        val = atof(floatstr);
                         sprintf(manystrs[num++],"\\\"%s\\\":%0.8f",coinaddr,val);
                         if ( num >= sizeof(manystrs)/sizeof(*manystrs) )
                         {
