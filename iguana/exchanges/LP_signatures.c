@@ -48,7 +48,7 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
     if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
-        jaddstr(retjson,"bobetomic",etomic);
+        jaddstr(retjson,"bobtomic",etomic);
     jaddstr(retjson,"etomicsrc",qp->etomicsrc);
     jaddstr(retjson,"rel",qp->destcoin);
     if ( LP_etomicsymbol(activesymbol,etomic,qp->destcoin) != 0 )
@@ -116,7 +116,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
     if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
     {
-        if ( (etomicstr= jstr(argjson,"bobetomic")) == 0 || strcmp(etomicstr,etomic) != 0 )
+        if ( (etomicstr= jstr(argjson,"bobtomic")) == 0 || strcmp(etomicstr,etomic) != 0 )
         {
             printf("etomic src mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
             return(-1);

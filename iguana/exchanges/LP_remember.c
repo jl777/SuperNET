@@ -1027,7 +1027,7 @@ int32_t LP_spends_set(struct LP_swap_remember *rswap)
 cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requestid,uint32_t quoteid,int32_t forceflag,int32_t pendingonly)
 {
     static void *ctx;
-    struct LP_swap_remember rswap; int32_t i,j,flag,numspent,len,secretstart,redeemlen; char str[65],*srcAdest,*srcBdest,*destAdest,*destBdest,otheraddr[64],*fstr,fname[512],etomicsrc[128],etomicdest[128],bobtomic[128],alicetomic[128],bobstr[65],alicestr[65]; cJSON *item,*txoutobj,*retjson; bits256 rev,signedtxid,zero,deadtxid; uint32_t claimtime; struct iguana_info *bob=0,*alice=0,*coin; uint8_t redeemscript[1024],userdata[1024]; long fsize;
+    struct LP_swap_remember rswap; int32_t i,j,flag,numspent,len,secretstart,redeemlen; char str[65],*srcAdest,*srcBdest,*destAdest,*destBdest,otheraddr[64],*fstr,fname[512],etomicsrc[128],etomicdest[128],bobtomic[128],alicetomic[128],bobstr[65],alicestr[65]; cJSON *item,*txoutobj,*retjson; bits256 rev,signedtxid,zero,deadtxid; uint32_t claimtime; struct iguana_info *bob=0,*alice=0; uint8_t redeemscript[1024],userdata[1024]; long fsize;
     sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {

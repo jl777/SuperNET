@@ -231,10 +231,12 @@ int main(int argc, const char * argv[])
                 }
                 if ( flag != 0 )
                 {
-                    bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
+                    //bitcoin_addr2rmd160("HUSH",28,&addrtype,rmd160,buf);
+                    bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160,buf);
                     bitcoin_address("KMD",coinaddr,0,addrtype == 184 ? 60 : 85,rmd160,20);
                     bitcoin_addr2rmd160("KMD",0,&checktype,checkrmd160,coinaddr);
-                    bitcoin_address("HUSH",checkaddr,28,checktype == 60 ? 184 : 189,checkrmd160,20);
+                    //bitcoin_address("HUSH",checkaddr,28,checktype == 60 ? 184 : 189,checkrmd160,20);
+                    bitcoin_address("BTC",checkaddr,0,checktype == 60 ? 0 : 5,checkrmd160,20);
                     if ( memcmp(rmd160,checkrmd160,20) != 0 || strcmp(buf,checkaddr) != 0 )
                     {
                         for (i=0; i<20; i++)
