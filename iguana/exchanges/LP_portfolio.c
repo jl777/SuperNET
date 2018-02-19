@@ -542,12 +542,12 @@ void LP_autoprice_iter(void *ctx,struct LP_priceinfo *btcpp)
                         bidprice = (1. / price * (1. + buymargin));
                         if ( LP_autorefs[i].lastbid < SMALLVAL )
                             LP_autorefs[i].lastbid = bidprice;
-                        else LP_autorefs[i].lastbid = (LP_autorefs[i].lastbid * 0.99) + (0.01 * bidprice);
+                        else LP_autorefs[i].lastbid = (LP_autorefs[i].lastbid * 0.9) + (0.1 * bidprice);
                         bidprice = LP_autorefs[i].lastbid;
                         askprice = price * (1. + sellmargin);
                         if ( LP_autorefs[i].lastask < SMALLVAL )
                             LP_autorefs[i].lastask = askprice;
-                        else LP_autorefs[i].lastask = (LP_autorefs[i].lastask * 0.99) + (0.01 * askprice);
+                        else LP_autorefs[i].lastask = (LP_autorefs[i].lastask * 0.9) + (0.1 * askprice);
                         askprice = LP_autorefs[i].lastask;
                         LP_mypriceset(&changed,rel,base,bidprice);
                         LP_pricepings(ctx,LP_myipaddr,LP_mypubsock,rel,base,bidprice);
