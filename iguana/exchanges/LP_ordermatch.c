@@ -875,7 +875,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
             strcpy(qp->etomicsrc,coin->smartaddr);
         else if ( othercoin->etomic[0] != 0 )
             strcpy(qp->etomicsrc,othercoin->smartaddr);
-        if ( coin->etomic[0] != 0 || othercoin->etomic[0] != 0 )
+        if ( coin->etomic[0] != 0 )//|| othercoin->etomic[0] != 0 )
         {
             struct iguana_info *ecoin;
             if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
@@ -916,7 +916,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         strcpy(qp->etomicsrc,coin->smartaddr);
     else if ( othercoin->etomic[0] != 0 )
         strcpy(qp->etomicsrc,othercoin->smartaddr);
-    if ( coin->etomic[0] != 0 || othercoin->etomic[0] != 0 )
+    if ( coin->etomic[0] != 0 )//|| othercoin->etomic[0] != 0 )
     {
         struct iguana_info *ecoin;
         if ( (ecoin= LP_coinfind("ETOMIC")) != 0 )
