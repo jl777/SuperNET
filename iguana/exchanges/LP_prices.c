@@ -536,14 +536,14 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         }
         else if ( (minprice= basepp->minprices[relpp->ind]) > SMALLVAL && price < minprice )
         {
-            printf("%s/%s price %.8f less than minprice %.8f\n",base,rel,price,minprice);
+            //printf("%s/%s price %.8f less than minprice %.8f\n",base,rel,price,minprice);
             price = minprice * (1. - margin);
         }
         else if ( (maxprice= relpp->minprices[basepp->ind]) > SMALLVAL )
         {
             if ( price > (1. / maxprice) )
             {
-                printf("%s/%s price %.8f less than maxprice %.8f, more than %.8f\n",base,rel,price,maxprice,1./maxprice);
+                //printf("%s/%s price %.8f less than maxprice %.8f, more than %.8f\n",base,rel,price,maxprice,1./maxprice);
                 price = (1. / maxprice) * (1. + margin);
             }
         }
