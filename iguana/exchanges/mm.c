@@ -111,6 +111,49 @@ void LP_main(void *ptr)
     }
 }
 
+int32_t ensure_writable(char *dirname)
+{
+    char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
+    OS_randombytes(r.bytes,sizeof(r));
+    sprintf(fname,"%s/checkval",GLOBAL_DBDIR), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"wb")) == 0 )
+    {
+        printf("FATAL ERROR cant create %s\n",fname);
+        fprintf(stderr,"FATAL ERROR cant create %s\n",fname);
+        return(-1);
+    }
+    else if ( fwrite(r.bytes,1,sizeof(r),fp) != sizeof(r) )
+    {
+        printf("FATAL ERROR error writing %s\n",fname);
+        fprintf(stderr,"FATAL ERROR writing %s\n",fname);
+        return(-1);
+    }
+    else
+    {
+        fclose(fp);
+        if ( (fp= fopen(fname,"rb")) == 0 )
+        {
+            printf("FATAL ERROR cant open %s\n",fname);
+            fprintf(stderr,"FATAL ERROR cant open %s\n",fname);
+            return(-1);
+        }
+        else if ( fread(check.bytes,1,sizeof(check),fp) != sizeof(check) )
+        {
+            printf("FATAL ERROR error reading %s\n",fname);
+            fprintf(stderr,"FATAL ERROR reading %s\n",fname);
+            return(-1);
+        }
+        else if ( memcmp(check.bytes,r.bytes,sizeof(r)) != 0 )
+        {
+            printf("FATAL ERROR error comparint %s %s vs %s\n",fname,bits256_str(str,r),bits256_str(str2,check));
+            fprintf(stderr,"FATAL ERROR error comparint %s %s vs %s\n",fname,bits256_str(str,r),bits256_str(str2,check));
+            return(-1);
+        }
+        fclose(fp);
+    }
+    return(0);
+}
+
 int main(int argc, const char * argv[])
 {
     char dirname[512],*passphrase; double incr; cJSON *retjson;
@@ -264,9 +307,17 @@ int main(int argc, const char * argv[])
         exit(0);
     }
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    if ( ensure_writable(dirname) < 0 )
+        exit(0);
     sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    if ( ensure_writable(dirname) < 0 )
+        exit(0);
     sprintf(dirname,"%s/PRICES",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    if ( ensure_writable(dirname) < 0 )
+        exit(0);
     sprintf(dirname,"%s/UNSPENTS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    if ( ensure_writable(dirname) < 0 )
+        exit(0);
 #ifdef FROM_JS
     argc = 2;
     retjson = cJSON_Parse("{\"client\":1,\"passphrase\":\"test\"}");
