@@ -115,7 +115,7 @@ int32_t ensure_writable(char *dirname)
 {
     char fname[512],str[65],str2[65]; bits256 r,check; FILE *fp;
     OS_randombytes(r.bytes,sizeof(r));
-    sprintf(fname,"%s/checkval",GLOBAL_DBDIR), OS_compatible_path(fname);
+    sprintf(fname,"%s/checkval",dirname), OS_compatible_path(fname);
     if ( (fp= fopen(fname,"wb")) == 0 )
     {
         printf("FATAL ERROR cant create %s\n",fname);
