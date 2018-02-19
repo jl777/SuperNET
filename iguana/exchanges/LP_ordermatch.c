@@ -434,7 +434,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                                 return(butxo);
                             } else printf("cant find utxos[mini %d]\n",mini);
                         } //else printf("cant find targetval2 %.8f\n",dstr(targetval2));
-                    } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
+                    } //else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
                 } else if ( targetval != 0 && mini >= 0 )
                     printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
                 if ( targetval == 0 || mini < 0 )
