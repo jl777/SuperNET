@@ -548,7 +548,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
             price = (basepp->myprices[relpp->ind] * 0.9) + (0.1 * price);
         }*/
         basepp->myprices[relpp->ind] = price;          // ask
-        //printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
+        printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
         //relpp->myprices[basepp->ind] = (1. / price);   // bid
         if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
         {
