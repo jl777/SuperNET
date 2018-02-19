@@ -515,7 +515,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
     struct LP_priceinfo *basepp,*relpp; struct LP_pubkey_info *pubp; double minprice,maxprice;
     *changedp = 0;
     //if ( strcmp("DEX",base) == 0 || strcmp("DEX",rel) == 0 )
-    //    printf("%s/%s setprice %.8f\n",base,rel,price);
+        printf("%s/%s setprice %.8f\n",base,rel,price);
     if ( base != 0 && rel != 0 && (basepp= LP_priceinfofind(base)) != 0 && (relpp= LP_priceinfofind(rel)) != 0 )
     {
         

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "../../../includes/cJSON.h"
 
-static char *ethRpcUrl = "https://ropsten.infura.io/y07GHxUyTgeN2mdfOonu";
+static char *ethRpcUrl = ETOMIC_URL;
 
 struct string {
     char *ptr;

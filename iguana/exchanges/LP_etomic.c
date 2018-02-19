@@ -25,10 +25,6 @@
 #include "etomicswap/etomiccurl.h"
 #include <inttypes.h>
 
-#define ETOMIC_ALICECONTRACT "0xe1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c"
-#define ETOMIC_BOBCONTRACT "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2"
-#define ETOMIC_SATOSHICAT "0000000000"
-
 char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
 {
     AliceSendsEthPaymentInput input; AliceSendsErc20PaymentInput input20; BasicTxData txData;

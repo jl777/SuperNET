@@ -3,6 +3,14 @@
 #ifdef __cplusplus
 extern "C"{
 #endif
+    
+#define ETOMIC_TESTNET
+#ifdef ETOMIC_TESTNET
+#define ETOMIC_URL "https://ropsten.infura.io/y07GHxUyTgeN2mdfOonu"
+#else
+#define ETOMIC_URL "https://mainnet.infura.io/y07GHxUyTgeN2mdfOonu"
+#endif
+    
 typedef struct
 {
     uint64_t blockNumber;

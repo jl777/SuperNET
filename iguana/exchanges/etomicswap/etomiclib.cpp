@@ -27,7 +27,7 @@ TransactionSkeleton txDataToSkeleton(BasicTxData txData)
     tx.to = jsToAddress(txData.to);
     tx.value = jsToU256(txData.amount);
     tx.gas = 300000;
-    tx.gasPrice = 100 * exp10<9>();
+    tx.gasPrice = ETOMIC_GASMULT * exp10<9>();
     tx.nonce = getNonce(txData.from);
     return tx;
 }
@@ -50,7 +50,7 @@ char* approveErc20(char* amount, char* from, char* secret)
     tx.to = jsToAddress("0xc0eb7AeD740E1796992A08962c15661bDEB58003");
     tx.value = 0; // exp10<18>();
     tx.gas = 300000;
-    tx.gasPrice = 100 * exp10<9>();
+    tx.gasPrice = ETOMIC_GASMULT * exp10<9>();
     tx.nonce = getNonce(from);
     std::stringstream ss;
     ss << "0x095ea7b3"
