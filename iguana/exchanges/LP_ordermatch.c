@@ -1457,8 +1457,8 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         }
     }
     int32_t changed;
-    LP_mypriceset(&changed,autxo->coin,base,1. / maxprice);
-    LP_mypriceset(&changed,base,autxo->coin,0.);
+    LP_mypriceset(&changed,rel,base,1. / maxprice);
+    LP_mypriceset(&changed,base,rel,0.);
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid,destpubkey));
 }
 
