@@ -512,7 +512,7 @@ char *LP_myprices()
 
 int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
 {
-    struct LP_priceinfo *basepp,*relpp; struct LP_pubkey_info *pubp; double minprice,maxprice;
+    struct LP_priceinfo *basepp=0,*relpp=0; struct LP_pubkey_info *pubp; double minprice,maxprice;
     *changedp = 0;
     //if ( strcmp("DEX",base) == 0 || strcmp("DEX",rel) == 0 )
         printf("%s/%s setprice %.8f\n",base,rel,price);
@@ -559,7 +559,9 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
             //pubp->matrix[relpp->ind][basepp->ind] = (1. / price);
         }
         return(0);
-    } else return(-1);
+    }
+    printf("base.%s rel.%s %p %p price %.8f error case\n",base!=0?base:"",rel!=0?rel:"",basepp,relpp,price);
+    return(-1);
 }
 
 double LP_price(char *base,char *rel)
