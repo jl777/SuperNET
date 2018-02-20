@@ -14,7 +14,8 @@ rem marketmaker "{\"gui\":\"nogui\",\"client\":1, \"userhome\":\"%USERHOME%\", \
 rem echo "{\"gui\":\"nogui\",\"client\":1, \"userhome\":\"%USERHOME%\", \"passphrase\":\"%PASSPHRASE%\"}" 
 rem marketmaker "{\"gui\":\"nogui\",\"client\":1, \"userhome\":\"%USERHOME%\", \"passphrase\":\"%PASSPHRASE%\"}" 
 
-marketmaker "{\"gui\":\"nogui\",\"client\":1, \"userhome\":\"%USERHOME%\"}" 
+marketmaker "{\"gui\":\"nogui\",\"client\":1, \"userhome\":\"%USERHOME%\",\"passphrase\":\"default\"}" 
+
 
 
 
