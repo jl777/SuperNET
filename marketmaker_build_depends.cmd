@@ -39,6 +39,7 @@ echo Decker will automatically download and build all needed *.dll and *.lib for
 timeout /t 5 /nobreak
 
 mkdir marketmaker_depends
+mkdir x64\Release
 
 rem --- pthreads ---
 :compile_pthreads
