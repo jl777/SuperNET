@@ -647,6 +647,7 @@ again:
             if ( err == 1 && coin->electrum == 0 && strcmp("BTC",coin->symbol) == 0 )
             {
                 strcpy(coin->estimatefeestr,"estimatesmartfee");
+                err = 2;
                 goto again;
             }
         } else rate = coin->rate;
