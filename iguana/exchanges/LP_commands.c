@@ -159,6 +159,7 @@ bot_settings(botid, newprice, newvolume)\n\
 bot_status(botid)\n\
 bot_stop(botid)\n\
 bot_pause(botid)\n\
+calcaddress(passphrase)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
@@ -177,14 +178,17 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         {
             char pub33str[67];
             G.USERPASS_COUNTER = 1;
-            retjson = cJSON_CreateObject();
-            jaddstr(retjson,"userpass",G.USERPASS);
-            jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
-            init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
-            jaddstr(retjson,"pubsecp",pub33str);
-            jadd(retjson,"coins",LP_coinsjson(LP_showwif));
-            LP_cmdcount++;
-            return(jprint(retjson,1));
+            if ( 0 )
+            {
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"userpass",G.USERPASS);
+                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
+                init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
+                jaddstr(retjson,"pubsecp",pub33str);
+                jadd(retjson,"coins",LP_coinsjson(LP_showwif));
+                LP_cmdcount++;
+                return(jprint(retjson,1));
+            }
         }
         // if passphrase api and passphrase is right, ignore userpass, use hass of passphrase
         if ( strcmp(method,"passphrase") == 0 && (passphrase= jstr(argjson,"passphrase")) != 0 )
@@ -300,6 +304,21 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         {
             return(LP_portfolio());
         }
+        else if ( strcmp(method,"calcaddress") == 0 )
+        {
+            bits256 privkey,pub; uint8_t pubkey33[33]; char *passphrase,coinaddr[64];
+            if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
+            {
+                conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+                privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
+                bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,0,60);
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"passphrase",passphrase);
+                jaddstr(retjson,"coinaddr",coinaddr);
+                jaddbits256(retjson,"privkey",privkey);
+                return(jprint(retjson,1));
+            } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
+        }
         else if ( strcmp(method,"statsdisp") == 0 )
         {
             return(jprint(LP_statslog_disp(juint(argjson,"starttime"),juint(argjson,"endtime"),jstr(argjson,"gui"),jbits256(argjson,"pubkey"),jstr(argjson,"base"),jstr(argjson,"rel")),1));
@@ -324,7 +343,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
             else if ( base[0] != 0 && rel[0] != 0 )
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
-            else return(basilisk_swaplist(0,0,0,jint(argjson,"pending")));
+            else return(basilisk_swaplist(0,0,1,jint(argjson,"pending")));
         }
         else if ( strcmp(method,"dynamictrust") == 0 )
         {
@@ -426,7 +445,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-                    if ( ptr->userpass[0] == 0 )
+                    if ( ptr->userpass[0] == 0 && strcmp(ptr->symbol,"ETH") != 0 )
                     {
                         cJSON *retjson = cJSON_CreateObject();
                         jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG0);
@@ -437,7 +456,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     {
                         ptr->inactive = 0;
                         cJSON *array; int32_t notarized;
-                        if ( LP_getheight(&notarized,ptr) <= 0 )
+                        if ( strcmp(ptr->symbol,"ETH") != 0 && LP_getheight(&notarized,ptr) <= 0 )
                         {
                             ptr->inactive = (uint32_t)time(NULL);
                             return(clonestr("{\"error\":\"coin cant be activated till synced\"}"));
@@ -450,8 +469,6 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                             if ( strcmp(ptr->symbol,"KMD") == 0 )
                                 LP_importaddress("KMD",BOTS_BONDADDRESS);
                         }
-                        if ( 0 && strcmp(coin,"BCH") == 0 )
-                            test_validate(ptr,"010000000110b365ea6b8a9f2d56dc12de868e382dc787b2e29355f9b357dcf764c5e29cb1010000006b483045022100c605b993f1db5f31046ebb9065bea0a047f478342bbad8fcfc6af81d05236bd502206e9993a737a8814b935b5e522e750c915e7d37e3bd8367f087d4510f66acac47412102ebc786cb83de8dc3922ab83c21f3f8a2f3216940c3bf9da43ce39e2a3a882c92ffffffff014bc22900000000001976a91459fdba29ea85c65ad90f6d38f7a6646476b26b1688ac00000000");
                         array = cJSON_CreateArray();
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));

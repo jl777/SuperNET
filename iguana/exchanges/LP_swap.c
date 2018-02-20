@@ -730,8 +730,6 @@ int32_t LP_swapwait(struct basilisk_swap *swap,uint32_t requestid,uint32_t quote
     char *retstr; cJSON *retjson=0; uint32_t expiration = (uint32_t)(time(NULL) + duration);
     printf("wait %d:%d for SWAP.(r%u/q%u) to complete\n",duration,sleeptime,requestid,quoteid);
     sleep(sleeptime/3);
-    //if ( sleeptime < divisor*60 )
-    //    sleeptime = divisor * 60;
     while ( time(NULL) < expiration )
     {
         if ( (retstr= basilisk_swapentry(requestid,quoteid,1)) != 0 )
@@ -741,18 +739,17 @@ int32_t LP_swapwait(struct basilisk_swap *swap,uint32_t requestid,uint32_t quote
                 if ( jstr(retjson,"status") != 0 && strcmp(jstr(retjson,"status"),"finished") == 0 )
                 {
                     swap->I.finished = (uint32_t)time(NULL);
+                    free(retstr);
                     break;
                 }
-                //else printf("NOT FINISHED.(%s)\n",jprint(retjson,0));
+                else if ( time(NULL) > swap->I.expiration )
+                    printf("NOT FINISHED.(%s)\n",jprint(retjson,0));
                 free_json(retjson);
                 retjson = 0;
             }
             free(retstr);
         }
         sleep(sleeptime);
-        //sleep(sleeptime/divisor);
-        //if ( divisor > 1 )
-        //    divisor--;
     }
     if ( retjson != 0 )
     {
@@ -764,7 +761,12 @@ int32_t LP_swapwait(struct basilisk_swap *swap,uint32_t requestid,uint32_t quote
             free(retstr);
         }
         return(0);
-    } else return(-1);
+    }
+    else
+    {
+        printf("\nSWAP did not complete! %u-%u %s\n",requestid,quoteid,jprint(retjson,0));
+        return(-1);
+    }
 }
 
 void LP_bobloop(void *_swap)
@@ -826,16 +828,16 @@ void LP_bobloop(void *_swap)
                     basilisk_bobpayment_reclaim(swap,swap->I.callduration);
                     if ( swap->N.pair >= 0 )
                         nn_close(swap->N.pair), swap->N.pair = -1;
-                    LP_swap_endcritical = (uint32_t)time(NULL);
-                    LP_swapwait(swap,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*2,swap->I.aliceconfirms == 0 ? 3 : 30);
                 }
             }
         }
     } else printf("swap timed out\n");
-    G.LP_pendingswaps--;
+    LP_swap_endcritical = (uint32_t)time(NULL);
+    LP_swapwait(swap,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*4,swap->I.aliceconfirms == 0 ? 3 : 30);
     basilisk_swap_finished(swap);
     free(swap);
     free(data);
+    G.LP_pendingswaps--;
 }
 
 void LP_aliceloop(void *_swap)
@@ -909,16 +911,16 @@ void LP_aliceloop(void *_swap)
                          }*/
                         if ( swap->N.pair >= 0 )
                             nn_close(swap->N.pair), swap->N.pair = -1;
-                        LP_swap_endcritical = (uint32_t)time(NULL);
-                        LP_swapwait(swap,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*2,swap->I.aliceconfirms == 0 ? 3 : 30);
                     }
                 }
             }
         }
     }
-    free(data);
+    LP_swap_endcritical = (uint32_t)time(NULL);
+    LP_swapwait(swap,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*4,swap->I.aliceconfirms == 0 ? 3 : 30);
     basilisk_swap_finished(swap);
     free(swap);
+    free(data);
     G.LP_pendingswaps--;
 }
 

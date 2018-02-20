@@ -434,13 +434,13 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
                                 return(butxo);
                             } else printf("cant find utxos[mini %d]\n",mini);
                         } //else printf("cant find targetval2 %.8f\n",dstr(targetval2));
-                    } else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
+                    } //else printf("failed ratio test %.8f\n",(double)up->U.value/targetval);
                 } else if ( targetval != 0 && mini >= 0 )
                     printf("targetval %.8f mini.%d\n",dstr(targetval),mini);
                 if ( targetval == 0 || mini < 0 )
                     break;
             }
-        } else printf("no %s utxos pass LP_address_utxo_ptrs filter\n",coinaddr);
+        } else printf("no %s %s utxos pass LP_address_utxo_ptrs filter %.8f %.8f\n",coin->symbol,coinaddr,dstr(targetval),dstr(targetval2));
     } else printf("address_myutxopair couldnt find %s %s\n",coin->symbol,coinaddr);
     return(0);
 }
@@ -1201,6 +1201,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
             printf("aliceid.%llu is expired by %d\n",(long long)Q.aliceid,(uint32_t)time(NULL) - (Q.timestamp + LP_AUTOTRADE_TIMEOUT*20));
             return(1);
         }
+        //printf("%s\n",jprint(argjson,0));
         printf("%-4d (%-10u %10u) %12s id.%-20llu %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),(double)Q.destsatoshis/Q.satoshis,LP_RTcount,LP_swapscount,G.netid);
         retval = 1;
         aliceid = j64bits(argjson,"aliceid");
