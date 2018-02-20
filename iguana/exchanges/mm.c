@@ -156,7 +156,7 @@ int32_t ensure_writable(char *dirname)
 
 int main(int argc, const char * argv[])
 {
-    char dirname[512],*passphrase; double incr; cJSON *retjson;
+    char dirname[512]; double incr; cJSON *retjson;
     OS_init();
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
     {
