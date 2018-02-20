@@ -628,12 +628,23 @@ again:
                     rate = 0.;
                     err++;
                 }
+                if ( strcmp(coin->estimatefeestr,"estimatesmartfee") == 0 && (rate= jdouble(errjson,"feerate")) != 0 )
+                {
+                    printf("extracted feerate %.8f from estimatesmartfee\n",rate);
+                    rate /= 1024.;
+                }
                 free_json(errjson);
             }
             else if ( retstr[0] != '-' )
-            {
                 rate = atof(retstr) / 1024.;
-                if ( rate < 0.00000020 )
+            if ( rate != 0. )
+            {
+                if ( strcmp("BTC",coin->symbol) == 0 )
+                {
+                    if ( rate < 0.00000100 )
+                        rate = 0.00000100;
+                }
+                else if ( rate < 0.00000020 )
                     rate = 0.00000020;
                 rate *= 1.5;
                 if ( coin->electrum != 0 )
@@ -647,6 +658,7 @@ again:
             if ( err == 1 && coin->electrum == 0 && strcmp("BTC",coin->symbol) == 0 )
             {
                 strcpy(coin->estimatefeestr,"estimatesmartfee");
+                err = 2;
                 goto again;
             }
         } else rate = coin->rate;
