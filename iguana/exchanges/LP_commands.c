@@ -199,7 +199,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 authenticated = 1;
             else printf("passhash %s != G %s\n",bits256_str(str,passhash),bits256_str(str2,G.LP_passhash));
         }
-        if ( authenticated == 0 && ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) )
+        char passhashstr[65]; bits256_str(passhashstr,G.LP_passhash);
+        if ( authenticated == 0 && ((userpass= jstr(argjson,"userpass")) == 0 || (strcmp(userpass,G.USERPASS) != 0 && strcmp(userpass,passhashstr) != 0)) )
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         if ( jobj(argjson,"userpass") != 0 )
             jdelete(argjson,"userpass");

@@ -602,14 +602,17 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 
 double _LP_getestimatedrate(struct iguana_info *coin)
 {
-    char buf[512],*retstr=0; int32_t numblocks; cJSON *errjson,*retjson; double rate = 0.00000020;
+    char buf[512],*retstr=0; int32_t numblocks,err=0; cJSON *errjson,*retjson; double rate = 0.00000020;
     if ( coin->rate < 0. || time(NULL) > coin->ratetime+30 )
     {
+        if ( coin->estimatefeestr[0] == 0 )
+            strcpy(coin->estimatefeestr,"estimatefee");
         numblocks = strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
+again:
         if ( coin->electrum == 0 )
         {
             sprintf(buf,"[%d]",numblocks);
-            retstr = LP_apicall(coin,"estimatefee",buf);
+            retstr = LP_apicall(coin,coin->estimatefeestr,buf);
         }
         else
         {
@@ -621,7 +624,10 @@ double _LP_getestimatedrate(struct iguana_info *coin)
             if ( retstr[0] == '{' && (errjson= cJSON_Parse(retstr)) != 0 )
             {
                 if ( jobj(errjson,"error") != 0 )
+                {
                     rate = 0.;
+                    err++;
+                }
                 free_json(errjson);
             }
             else if ( retstr[0] != '-' )
@@ -638,6 +644,11 @@ double _LP_getestimatedrate(struct iguana_info *coin)
                 coin->ratetime = (uint32_t)time(NULL);
             }
             free(retstr);
+            if ( err == 1 && coin->electrum == 0 && strcmp("BTC",coin->symbol) == 0 )
+            {
+                strcpy(coin->estimatefeestr,"estimatesmartfee");
+                goto again;
+            }
         } else rate = coin->rate;
     } else rate = coin->rate;
     return(rate);
