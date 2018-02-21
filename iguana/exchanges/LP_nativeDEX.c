@@ -953,7 +953,6 @@ void LP_swapsloop(void *ctx)
         }
         free(retstr);
     }
-    sleep(50);
     while ( LP_STOP_RECEIVED == 0 )
     {
         LP_millistats_update(&LP_swapsloop_stats);
