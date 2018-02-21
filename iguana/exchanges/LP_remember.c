@@ -1007,6 +1007,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         //printf("legacy r%u-q%u DB SWAPS.(%u %u) %llu files BOB.(%s) Alice.(%s) src.(%s) dest.(%s)\n",requestid,quoteid,rswap.requestid,rswap.quoteid,(long long)rswap.aliceid,rswap.bobcoin,rswap.alicecoin,rswap.src,rswap.dest);
         cJSON *retjson = cJSON_CreateObject();
         jaddstr(retjson,"error","swap never started");
+        jaddstr(retjson,"status","finished");
         jaddstr(retjson,"bob",rswap.bobcoin);
         jaddstr(retjson,"src",rswap.src);
         jaddstr(retjson,"alice",rswap.alicecoin);
