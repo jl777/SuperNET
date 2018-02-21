@@ -983,6 +983,8 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         if ( (retjson= cJSON_Parse(fstr)) != 0 )
         {
             free(fstr);
+            if ( pendingonly != 0 )
+                free_json(retjson), retjson = 0;
             return(retjson);
         }
         free(fstr);

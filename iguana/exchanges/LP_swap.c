@@ -728,8 +728,11 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
 int32_t LP_swapwait(struct basilisk_swap *swap,uint32_t requestid,uint32_t quoteid,int32_t duration,int32_t sleeptime)
 {
     char *retstr; cJSON *retjson=0; uint32_t expiration = (uint32_t)(time(NULL) + duration);
-    printf("wait %d:%d for SWAP.(r%u/q%u) to complete\n",duration,sleeptime,requestid,quoteid);
-    sleep(sleeptime/3);
+    if ( sleeptime != 0 )
+    {
+        printf("wait %d:%d for SWAP.(r%u/q%u) to complete\n",duration,sleeptime,requestid,quoteid);
+        sleep(sleeptime/3);
+    }
     while ( time(NULL) < expiration )
     {
         if ( (retstr= basilisk_swapentry(requestid,quoteid,1)) != 0 )
@@ -749,22 +752,25 @@ int32_t LP_swapwait(struct basilisk_swap *swap,uint32_t requestid,uint32_t quote
             }
             free(retstr);
         }
-        sleep(sleeptime);
+        if ( sleeptime != 0 )
+            sleep(sleeptime);
+        if ( duration < 0 )
+            break;
     }
     if ( retjson != 0 )
     {
-        printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>\nSWAP completed! %u-%u %s\n",requestid,quoteid,jprint(retjson,0));
         free_json(retjson);
-        if ( 0 && (retstr= basilisk_swapentry(requestid,quoteid,1)) != 0 )
+        if ( (retstr= basilisk_swapentry(requestid,quoteid,1)) != 0 )
         {
-            printf("second call.(%s)\n",retstr);
+            printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>\nSWAP completed! %u-%u %s\n",requestid,quoteid,retstr);
             free(retstr);
         }
         return(0);
     }
     else
     {
-        printf("\nSWAP did not complete! %u-%u %s\n",requestid,quoteid,jprint(retjson,0));
+        if ( time(NULL) > swap->I.expiration )
+            printf("\nSWAP did not complete! %u-%u %s\n",requestid,quoteid,jprint(retjson,0));
         return(-1);
     }
 }
