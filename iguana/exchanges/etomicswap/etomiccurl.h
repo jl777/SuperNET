@@ -4,7 +4,7 @@
 extern "C"{
 #endif
     
-//#define ETOMIC_TESTNET
+#define ETOMIC_TESTNET
 #ifdef ETOMIC_TESTNET
 #define ETOMIC_URL "https://ropsten.infura.io/y07GHxUyTgeN2mdfOonu"
 #else
