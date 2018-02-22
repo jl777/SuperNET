@@ -276,7 +276,7 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 struct iguana_info *LP_conflicts_find(struct iguana_info *refcoin)
 {
     struct iguana_info *coin=0,*tmp;
-    if ( refcoin != 0 )
+    if ( refcoin != 0 && refcoin->port != 80 )
     {
         HASH_ITER(hh,LP_coins,coin,tmp)
         {
