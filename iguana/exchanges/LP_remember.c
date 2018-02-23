@@ -1201,9 +1201,12 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                 rev.bytes[j] = rswap.privAm.bytes[31 - j];
                             //revcalc_rmd160_sha256(secretAm,rev);//privAm);
                             //vcalc_sha256(0,secretAm256,rev.bytes,sizeof(rev));
-                            if ( rswap.Predeemlen != 0 )
-                                redeemlen = rswap.Predeemlen, memcpy(redeemscript,rswap.Predeemscript,rswap.Predeemlen);
-                            else redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,rswap.plocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rev,rswap.privBn,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
+                            //if ( rswap.Predeemlen != 0 )
+                            //    redeemlen = rswap.Predeemlen, memcpy(redeemscript,rswap.Predeemscript,rswap.Predeemlen);
+                            //else
+                                redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,rswap.plocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rev,rswap.privBn,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
+                            if ( rswap.Predeemlen != 0 && (rswap.Predeemlen != redeemlen || memcmp(redeemscript,rswap.Predeemscript,redeemlen) != 0) )
+                                printf("Predeemscript error len %d vs %d\n",rswap.Predeemlen,redeemlen);
                             len = basilisk_swapuserdata(userdata,rev,0,rswap.myprivs[0],redeemscript,redeemlen);
                             {
                                 char privaddr[64]; uint8_t privpub33[33];
@@ -1238,9 +1241,12 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     if ( flag == 0 )
                     {
-                        if ( rswap.Dredeemlen != 0 )
-                            redeemlen = rswap.Dredeemlen, memcpy(redeemscript,rswap.Dredeemscript,rswap.Dredeemlen);
-                        else redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,rswap.dlocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rswap.privAm,zero,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
+                        //if ( rswap.Dredeemlen != 0 )
+                        //    redeemlen = rswap.Dredeemlen, memcpy(redeemscript,rswap.Dredeemscript,rswap.Dredeemlen);
+                        //else
+                            redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,rswap.dlocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rswap.privAm,zero,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
+                        if ( rswap.Dredeemlen != 0 && (rswap.Dredeemlen != redeemlen || memcmp(redeemscript,rswap.Dredeemscript,redeemlen) != 0) )
+                            printf("Dredeemscript error len %d vs %d\n",rswap.Dredeemlen,redeemlen);
                         if ( redeemlen > 0 )
                         {
                             memset(revAm.bytes,0,sizeof(revAm));
