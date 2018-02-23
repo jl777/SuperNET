@@ -1774,9 +1774,9 @@ int32_t basilisk_swap_bobredeemscript(int32_t depositflag,int32_t *secretstartp,
     n = bitcoin_checklocktimeverify(redeemscript,n,locktime);
     if ( depositflag != 0 )
     {
-        for (i=0; i<20; i++)
-            printf("%02x",secretAm[i]);
-        printf(" <- secretAm depositflag.%d nonz.%d\n",depositflag,bits256_nonz(privkey));
+        //for (i=0; i<20; i++)
+        //    printf("%02x",secretAm[i]);
+        //printf(" <- secretAm depositflag.%d nonz.%d\n",depositflag,bits256_nonz(privkey));
         n = bitcoin_secret160verify(redeemscript,n,secretAm);
     }
     n = bitcoin_pubkeyspend(redeemscript,n,pubkeyA);
@@ -1817,9 +1817,9 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
     {
         calc_rmd160_sha256(rmd160,redeemscript,n);
         n = bitcoin_p2shspend(script,0,rmd160);
-        int32_t i; for (i=0; i<*redeemlenp; i++)
-            printf("%02x",redeemscript[i]);
-        printf(" <- redeem.%d bobtx dflag.%d spendscript.[%d]\n",*redeemlenp,depositflag,n);
+        //int32_t i; for (i=0; i<*redeemlenp; i++)
+        //    printf("%02x",redeemscript[i]);
+        //printf(" <- redeem.%d bobtx dflag.%d spendscript.[%d]\n",*redeemlenp,depositflag,n);
     }
     return(n);
 }

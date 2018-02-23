@@ -894,7 +894,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                 {
                     rswap->Predeemlen >>= 1;
                     decode_hex(rswap->Predeemscript,rswap->Predeemlen,rstr);
-                    printf("%p Predeemscript.(%s)\n",rswap->Predeemscript,rstr);
+                    //printf("%p Predeemscript.(%s)\n",rswap->Predeemscript,rstr);
                 }
                 else if ( strcmp(txnames[i],"bobdeposit") == 0 && (rstr= jstr(txobj,"redeem")) != 0 && (rswap->Dredeemlen= is_hexstr(rstr,0)) > 0 )
                 {
@@ -1205,7 +1205,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             {
                                 if ( rswap.Predeemlen != redeemlen || memcmp(redeemscript,rswap.Predeemscript,redeemlen) != 0 )
                                     printf("Predeemscript error len %d vs %d, cmp.%d\n",rswap.Predeemlen,redeemlen,memcmp(redeemscript,rswap.Predeemscript,redeemlen));
-                                else printf("Predeem matches\n");
+                                //else printf("Predeem matches\n");
                             } else printf("%p Predeemscript missing\n",rswap.Predeemscript);
                             len = basilisk_swapuserdata(userdata,rev,0,rswap.myprivs[0],redeemscript,redeemlen);
                             if ( 0 )
