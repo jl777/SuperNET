@@ -613,7 +613,9 @@ void LP_psockloop(void *_ptr)
                     } // else printf("num pfds.%d retval.%d\n",n,retval);
                 }
             }
-            if ( IAMLP != 0 && sendsock < 0 )
+            if ( sendsock < 0 )
+                usleep(10000);
+            if ( 0 && IAMLP != 0 && sendsock < 0 )
             {
                 usleep(30000);
                 for (i=nonz=0; i<Numpsocks; i++)

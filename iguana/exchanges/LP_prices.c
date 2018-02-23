@@ -512,7 +512,7 @@ char *LP_myprices()
 
 int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
 {
-    struct LP_priceinfo *basepp,*relpp; struct LP_pubkey_info *pubp; double minprice,maxprice;
+    struct LP_priceinfo *basepp,*relpp; struct LP_pubkey_info *pubp; double minprice,maxprice,margin,buymargin,sellmargin;
     *changedp = 0;
     //if ( strcmp("DEX",base) == 0 || strcmp("DEX",rel) == 0 )
     //    printf("%s/%s setprice %.8f\n",base,rel,price);
@@ -521,6 +521,9 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         
         if ( price == 0. || fabs(basepp->myprices[relpp->ind] - price)/price > 0.001 )
             *changedp = 1;
+        sellmargin = relpp->sellmargins[basepp->ind];
+        buymargin = relpp->buymargins[basepp->ind];
+        margin = (sellmargin + buymargin) * 0.5;
         if ( price == 0. )
         {
             relpp->minprices[basepp->ind] = 0.;
@@ -529,18 +532,19 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
             relpp->sellmargins[basepp->ind] = 0.;
             relpp->offsets[basepp->ind] = 0.;
             relpp->factors[basepp->ind] = 0.;
+            margin = 0.;
         }
         else if ( (minprice= basepp->minprices[relpp->ind]) > SMALLVAL && price < minprice )
         {
-            printf("%s/%s price %.8f less than minprice %.8f\n",base,rel,price,minprice);
-            price = minprice;
+            //printf("%s/%s price %.8f less than minprice %.8f\n",base,rel,price,minprice);
+            price = minprice * (1. - margin);
         }
         else if ( (maxprice= relpp->minprices[basepp->ind]) > SMALLVAL )
         {
             if ( price > (1. / maxprice) )
             {
-                printf("%s/%s price %.8f less than maxprice %.8f, more than %.8f\n",base,rel,price,maxprice,1./maxprice);
-                price = (1. / maxprice);
+                //printf("%s/%s price %.8f less than maxprice %.8f, more than %.8f\n",base,rel,price,maxprice,1./maxprice);
+                price = (1. / maxprice) * (1. + margin);
             }
         }
         /*else if ( basepp->myprices[relpp->ind] > SMALLVAL )
