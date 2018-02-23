@@ -527,12 +527,14 @@ cJSON *electrum_address_subscribe(char *symbol,struct electrum_info *ep,cJSON **
 
 cJSON *electrum_scripthash_cmd(char *symbol,uint8_t taddr,struct electrum_info *ep,cJSON **retjsonp,char *cmd,char *coinaddr)
 {
-    uint8_t addrtype,rmd160[20]; char scripthash[51],rmdstr[41],cmdbuf[128];
+    uint8_t addrtype,rmd160[20]; char btcaddr[64],cmdbuf[128]; //char scripthash[51],rmdstr[41],;
     bitcoin_addr2rmd160(symbol,taddr,&addrtype,rmd160,coinaddr);
-    init_hexbytes_noT(rmdstr,rmd160,20);
-    sprintf(scripthash,"%s",rmdstr);
-    sprintf(cmdbuf,"blockchain.scripthash.%s",cmd);
-    return(electrum_strarg(symbol,ep,retjsonp,cmdbuf,scripthash,ELECTRUM_TIMEOUT));
+    bitcoin_address("BTC",btcaddr,0,addrtype,rmd160,20);
+    //init_hexbytes_noT(rmdstr,rmd160,20);
+    //sprintf(scripthash,"%s",rmdstr);
+    //sprintf(cmdbuf,"blockchain.scripthash.%s",cmd);
+    sprintf(cmdbuf,"blockchain.address.%s",cmd);
+    return(electrum_strarg(symbol,ep,retjsonp,cmdbuf,btcaddr,ELECTRUM_TIMEOUT));
 }
 
 cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr,bits256 reftxid)
@@ -637,16 +639,16 @@ cJSON *electrum_address_listunspent(char *symbol,struct electrum_info *ep,cJSON 
                 retstr = jprint(retjson,0);
                 LP_unspents_cache(coin->symbol,addr,retstr,1);
                 free(retstr);
-                if ( ap != 0 )
-                {
-                    ap->unspenttime = (uint32_t)time(NULL);
-                    ap->unspentheight = height;
-                }
             }
             else
             {
                 free_json(retjson);
                 retjson = 0;
+            }
+            if ( ap != 0 )
+            {
+                ap->unspenttime = (uint32_t)time(NULL);
+                ap->unspentheight = height;
             }
         }
     }

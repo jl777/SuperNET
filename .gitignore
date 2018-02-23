@@ -53,7 +53,6 @@ iguana/help.json
 iguana/autoAPI.md
 
 iguana/basilisk.o-2ad8cb38
-=======
 *.pbxproj
 
 iguana/tmp/.tmpmarker
@@ -259,3 +258,4 @@ iguana/DB/instantdex_RQ4z6KrMZeEnCSCsChv1ZoR9ExQitHjbpg.json
 build
 
 .idea
+Release/*

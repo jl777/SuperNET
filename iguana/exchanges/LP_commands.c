@@ -176,18 +176,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
     {
         if ( G.USERPASS_COUNTER == 0 )
         {
-            char pub33str[67];
             G.USERPASS_COUNTER = 1;
-            retjson = cJSON_CreateObject();
-            jaddstr(retjson,"userpass",G.USERPASS);
-            jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
-            init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
-            jaddstr(retjson,"pubsecp",pub33str);
-            jadd(retjson,"coins",LP_coinsjson(LP_showwif));
             LP_cmdcount++;
-            free_json(retjson);
-            retjson = 0;
-            //return(jprint(retjson,1));
         }
         // if passphrase api and passphrase is right, ignore userpass, use hass of passphrase
         if ( strcmp(method,"passphrase") == 0 && (passphrase= jstr(argjson,"passphrase")) != 0 )
@@ -198,7 +188,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 authenticated = 1;
             else printf("passhash %s != G %s\n",bits256_str(str,passhash),bits256_str(str2,G.LP_passhash));
         }
-        if ( authenticated == 0 && ((userpass= jstr(argjson,"userpass")) == 0 || strcmp(userpass,G.USERPASS) != 0) )
+        char passhashstr[65]; bits256_str(passhashstr,G.LP_passhash);
+        if ( authenticated == 0 && ((userpass= jstr(argjson,"userpass")) == 0 || (strcmp(userpass,G.USERPASS) != 0 && strcmp(userpass,passhashstr) != 0)) )
             return(clonestr("{\"error\":\"authentication error you need to make sure userpass is set\"}"));
         if ( jobj(argjson,"userpass") != 0 )
             jdelete(argjson,"userpass");
@@ -309,6 +300,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
             {
                 conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+                privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
                 bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,0,60);
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"passphrase",passphrase);
@@ -341,7 +333,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
             else if ( base[0] != 0 && rel[0] != 0 )
                 return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
-            else return(basilisk_swaplist(0,0,0,jint(argjson,"pending")));
+            else return(basilisk_swaplist(0,0,1,jint(argjson,"pending")));
         }
         else if ( strcmp(method,"dynamictrust") == 0 )
         {

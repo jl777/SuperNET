@@ -100,7 +100,7 @@ void LP_instantdex_filescreate(char *coinaddr)
                 free_json(txobj);
             else
             {
-                char str[65]; printf("%s/v%d is already spent\n",bits256_str(str,txid),0);
+                //char str[65]; printf("%s/v%d is already spent\n",bits256_str(str,txid),0);
                 continue;
             }
             jaddibits256(newarray,txid);
