@@ -121,7 +121,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
     return(0);
 }
 
-int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr)
+int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin)
 {
     int32_t haveutxo,completed,minutxo,n; bits256 signedtxid; cJSON *addresses; char *rawtx,*sendtx;
     if ( strcmp("BTC",coin->symbol) == 0 )
@@ -134,7 +134,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         minutxo = 49;
         n = 10;
     }
-    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration && (bp->myind != 0 || dp->ratifying == 0) )
+    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr,srccoin)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration && (bp->myind != 0 || dp->ratifying == 0) )
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
@@ -350,14 +350,14 @@ void dpow_statemachinestart(void *ptr)
     }
     else
     {
-        if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr) < 0 )
+        if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) < 0 )
         {
             printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
             dp->ratifying -= bp->isratify;
             free(ptr);
             return;
         }
-        if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr) < 0 )
+        if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr,"") < 0 )
         {
             printf("dont have %s %s utxo, please send funds\n",dp->symbol,srcaddr);
             dp->ratifying -= bp->isratify;
