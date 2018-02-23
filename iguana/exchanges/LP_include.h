@@ -22,7 +22,7 @@
 #define LP_INCLUDE_H
 
 #ifndef LP_TECHSUPPORT
-#define LP_TECHSUPPORT 0
+#define LP_TECHSUPPORT 1
 #endif
 
 #define LP_DONT_CMDCHANNEL
