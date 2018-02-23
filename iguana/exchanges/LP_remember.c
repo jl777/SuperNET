@@ -1206,9 +1206,11 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             //    redeemlen = rswap.Predeemlen, memcpy(redeemscript,rswap.Predeemscript,rswap.Predeemlen);
                             //else
                                 redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,rswap.plocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rev,rswap.privBn,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
-                            if ( rswap.Predeemlen != 0 && (rswap.Predeemlen != redeemlen || memcmp(redeemscript,rswap.Predeemscript,redeemlen) != 0) )
-                                printf("Predeemscript error len %d vs %d\n",rswap.Predeemlen,redeemlen);
-                            else printf("%p Predeemscript missing\n",rswap.Predeemscript);
+                            if ( rswap.Predeemlen != 0 )
+                            {
+                                if ( rswap.Predeemlen != redeemlen || memcmp(redeemscript,rswap.Predeemscript,redeemlen) != 0 )
+                                    printf("Predeemscript error len %d vs %d, cmp.%d\n",rswap.Predeemlen,redeemlen,memcmp(redeemscript,rswap.Predeemscript,redeemlen));
+                            } else printf("%p Predeemscript missing\n",rswap.Predeemscript);
                             len = basilisk_swapuserdata(userdata,rev,0,rswap.myprivs[0],redeemscript,redeemlen);
                             {
                                 char privaddr[64]; uint8_t privpub33[33];
@@ -1247,9 +1249,11 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         //    redeemlen = rswap.Dredeemlen, memcpy(redeemscript,rswap.Dredeemscript,rswap.Dredeemlen);
                         //else
                             redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,rswap.dlocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rswap.privAm,zero,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
-                        if ( rswap.Dredeemlen != 0 && (rswap.Dredeemlen != redeemlen || memcmp(redeemscript,rswap.Dredeemscript,redeemlen) != 0) )
-                            printf("Dredeemscript error len %d vs %d\n",rswap.Dredeemlen,redeemlen);
-                        else printf("Dredeemscript missing\n");
+                        if ( rswap.Dredeemlen != 0 )
+                        {
+                            if ( rswap.Dredeemlen != redeemlen || memcmp(redeemscript,rswap.Dredeemscript,redeemlen) != 0 )
+                                printf("Dredeemscript error len %d vs %d, cmp.%d\n",rswap.Dredeemlen,redeemlen,memcmp(redeemscript,rswap.Dredeemscript,redeemlen));
+                        } else printf("%p Dredeemscript missing\n",rswap.Dredeemscript);
                         if ( redeemlen > 0 )
                         {
                             memset(revAm.bytes,0,sizeof(revAm));
