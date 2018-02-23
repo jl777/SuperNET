@@ -1200,12 +1200,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             memset(rev.bytes,0,sizeof(rev));
                             for (j=0; j<32; j++)
                                 rev.bytes[j] = rswap.privAm.bytes[31 - j];
-                            //revcalc_rmd160_sha256(secretAm,rev);//privAm);
-                            //vcalc_sha256(0,secretAm256,rev.bytes,sizeof(rev));
-                            //if ( rswap.Predeemlen != 0 )
-                            //    redeemlen = rswap.Predeemlen, memcpy(redeemscript,rswap.Predeemscript,rswap.Predeemlen);
-                            //else
-                                redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,rswap.plocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rev,rswap.privBn,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
+                            redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,rswap.plocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rev,rswap.privBn,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
                             if ( rswap.Predeemlen != 0 )
                             {
                                 if ( rswap.Predeemlen != redeemlen || memcmp(redeemscript,rswap.Predeemscript,redeemlen) != 0 )
@@ -1213,17 +1208,14 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                 else printf("Predeem matches\n");
                             } else printf("%p Predeemscript missing\n",rswap.Predeemscript);
                             len = basilisk_swapuserdata(userdata,rev,0,rswap.myprivs[0],redeemscript,redeemlen);
+                            if ( 0 )
                             {
-                                char privaddr[64]; uint8_t privpub33[33],secretAm[20];
-                                revcalc_rmd160_sha256(secretAm,rev);
+                                uint8_t secretAm[20];
+                                calc_rmd160_sha256(secretAm,rswap.privAm.bytes,sizeof(rswap.privAm));
                                 for (j=0; j<20; j++)
                                     printf("%02x",secretAm[j]);
-                                bitcoin_pubkey33(ctx,privpub33,rswap.myprivs[0]);
-                                bitcoin_address(rswap.bobcoin,privaddr,0,60,privpub33,33);
-                                printf(" alicespend len.%d redeemlen.%d priv0addr.(%s) priv0.(%s)\n",len,redeemlen,privaddr,bits256_str(str,rswap.myprivs[0]));
+                                printf(" secretAm, privAm %s alicespend len.%d redeemlen.%d\n",bits256_str(str,rswap.privAm),len,redeemlen);
                             }
-                            for (j=0; j<32; j++)
-                                rev.bytes[j] = rswap.myprivs[0].bytes[31 - j];
                             if ( (rswap.txbytes[BASILISK_ALICESPEND]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"alicespend",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBPAYMENT],0,0,rswap.pubkey33,1,rswap.expiration,&rswap.values[BASILISK_ALICESPEND],0,0,rswap.bobpaymentaddr,1,bob->zcash)) != 0 )
                             {
                                 printf("alicespend.(%s)\n",rswap.txbytes[BASILISK_ALICESPEND]);
