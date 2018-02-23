@@ -1913,6 +1913,7 @@ int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 int32_t bitcoin_secret160verify(uint8_t *script,int32_t n,uint8_t secret160[20])
 {
     script[n++] = IGUANA_OP_SIZE; // add SIZE 16 EQUALVERIFY
+    script[n++] = IGUANA_OP_PUSHDATA1;
     script[n++] = 32;
     script[n++] = SCRIPT_OP_EQUALVERIFY;
     script[n++] = SCRIPT_OP_HASH160;
