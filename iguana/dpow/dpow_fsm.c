@@ -155,11 +155,13 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
     return(haveutxo);
 }
 
+uint32_t Numallocated;
+
 void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp,*tmp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime,srctime;
+    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime,srctime;
     memset(&zero,0,sizeof(zero));
     srcprevtxid0 = destprevtxid0 = zero;
     srcprevvout0 = destprevvout0 = -1;
@@ -187,6 +189,7 @@ void dpow_statemachinestart(void *ptr)
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
+        Numallocated++;
         bp->minsigs = minsigs;
         bp->duration = duration;
         bp->srccoin = src;
@@ -202,6 +205,7 @@ void dpow_statemachinestart(void *ptr)
                 {
                     fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
                     free(ptr);
+                    free_json(ratified);
                     return;
                 }
                 for (i=0; i<numratified; i++)
@@ -240,24 +244,14 @@ void dpow_statemachinestart(void *ptr)
                     bp->numratified = numratified;
                     bp->ratified = ratified;
                     printf("numratified.%d %s\n",numratified,jprint(ratified,0));
-                }
-                else
-                {
-                    printf("i.%d numratified.%d\n",i,numratified);
-                    free_json(ratified);
-                }
+                } else printf("i.%d numratified.%d\n",i,numratified);
             }
+            free_json(ratified);
         }
         bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
         bp->beacon = rand256(0);
         vcalc_sha256(0,bp->commit.bytes,bp->beacon.bytes,sizeof(bp->beacon));
-        /*if ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] != 0 )
-         {
-         printf("purge %s.%d\n",dp->dest,checkpoint.blockhash.height - DPOW_FIRSTRATIFY);
-         free(dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY]);
-         dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] = 0;
-         }*/
     }
     if ( bp->isratify != 0 && dp->ratifying != 0 )
     {
@@ -462,22 +456,11 @@ void dpow_statemachinestart(void *ptr)
             break;
         }
     }
-    printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
+    printf("[%d] END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",Numallocated,bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     bp->state = 0xffffffff;
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
     // dp->blocks[bp->height] = 0;
-    if ( bp->height > 100 )
-    {
-        for (i=bp->height-100; i>=0; i--)
-        {
-            if ( (tmp= dp->blocks[i]) != 0 )
-            {
-                dp->blocks[i] = 0;
-                free(tmp);
-            }
-        }
-    }
     free(ptr);
 }
 
