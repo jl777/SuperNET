@@ -932,7 +932,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                     {
                         if ( (sentobj= LP_gettx(symbol,txid,1)) == 0 )
                         {
-                            char str2[65]; printf("%s %s ready to broadcast %s r%u q%u\n",symbol,bits256_str(str2,txid),txnames[i],rswap->requestid,rswap->quoteid);
+                            //char str2[65]; printf("%s %s ready to broadcast %s r%u q%u\n",symbol,bits256_str(str2,txid),txnames[i],rswap->requestid,rswap->quoteid);
                         }
                         else
                         {
