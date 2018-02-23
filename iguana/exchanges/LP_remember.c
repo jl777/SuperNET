@@ -894,6 +894,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                 {
                     rswap->Predeemlen >>= 1;
                     decode_hex(rswap->Predeemscript,rswap->Predeemlen,rstr);
+                    printf("Predeemscript.(%s)\n",rstr);
                 }
                 else if ( strcmp(txnames[i],"bobdeposit") == 0 && (rstr= jstr(txobj,"redeem")) != 0 && (rswap->Dredeemlen= is_hexstr(rstr,0)) > 0 )
                 {
