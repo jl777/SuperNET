@@ -419,11 +419,12 @@ int32_t basilisk_swap_isfinished(uint32_t requestid,uint32_t quoteid,uint32_t ex
     {
         if ( sentflags[BASILISK_ALICECLAIM] != 0 )
         {
-            printf("edge case unspendable alicepayment %u-%u\n",requestid,quoteid);
-            return(1);
+            if ( iambob != 0 )
+            {
+                printf("used to be edge case unspendable alicepayment %u-%u\n",requestid,quoteid);
+                return(0);
+            } else return(1);
         }
-        else if ( iambob != 0 && sentflags[BASILISK_ALICECLAIM] != 0 )
-            return(1);
     }
     if ( now > expiration - INSTANTDEX_LOCKTIME )
     {
@@ -462,8 +463,8 @@ int32_t basilisk_swap_isfinished(uint32_t requestid,uint32_t quoteid,uint32_t ex
                 if ( bits256_nonz(depositspent) != 0 )
                 {
                     if ( bits256_nonz(Apaymentspent) == 0 && sentflags[BASILISK_BOBREFUND] == 0 )
-                        printf("bob was too late in claiming bobrefund %u-%u\n",requestid,quoteid);
-                    return(1);
+                        printf("used to be bob was too late in claiming bobrefund %u-%u\n",requestid,quoteid);
+                    return(0);
                 }
             }
             //else if ( bits256_nonz(Apaymentspent) != 0 )
