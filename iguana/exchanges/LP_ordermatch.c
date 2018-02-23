@@ -967,6 +967,7 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
         if ( (retstr= LP_connectedalice(qp,pairstr)) != 0 )
             free(retstr);
         LP_mypriceset(&changed,qp->destcoin,qp->srccoin,0.);
+        LP_alicequery_clear();
         return(qp);
     }
     //printf("LP_trades_alicevalidate error\n");
