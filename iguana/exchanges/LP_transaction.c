@@ -1937,9 +1937,9 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
             bitcoin_address(coin->symbol,swap->bobpayment.p2shaddr,coin->taddr,coin->p2shtype,swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
             strcpy(swap->bobpayment.I.destaddr,swap->bobpayment.p2shaddr);
             //LP_importaddress(coin->symbol,swap->bobpayment.I.destaddr);
-            //int32_t i; for (i=0; i<swap->bobpayment.I.redeemlen; i++)
-            //    printf("%02x",swap->bobpayment.redeemscript[i]);
-            //printf(" <- bobpayment redeem %d %s\n",i,swap->bobpayment.I.destaddr);
+            int32_t i; for (i=0; i<swap->bobpayment.I.redeemlen; i++)
+                printf("%02x",swap->bobpayment.redeemscript[i]);
+            printf(" <- bobpayment redeem %d %s\n",i,swap->bobpayment.I.destaddr);
             if ( genflag != 0 && bits256_nonz(*(bits256 *)swap->I.secretBn256) != 0 && swap->bobpayment.I.datalen == 0 )
             {
                 basilisk_rawtx_gen(swap->ctx,"payment",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobpayment,swap->bobpayment.I.locktime,swap->bobpayment.spendscript,swap->bobpayment.I.spendlen,coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
