@@ -1210,19 +1210,25 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             {
                                 if ( rswap.Predeemlen != redeemlen || memcmp(redeemscript,rswap.Predeemscript,redeemlen) != 0 )
                                     printf("Predeemscript error len %d vs %d, cmp.%d\n",rswap.Predeemlen,redeemlen,memcmp(redeemscript,rswap.Predeemscript,redeemlen));
+                                else printf("Predeem matches\n");
                             } else printf("%p Predeemscript missing\n",rswap.Predeemscript);
                             len = basilisk_swapuserdata(userdata,rev,0,rswap.myprivs[0],redeemscript,redeemlen);
                             {
-                                char privaddr[64]; uint8_t privpub33[33];
+                                char privaddr[64]; uint8_t privpub33[33],secretAm[20];
+                                revcalc_rmd160_sha256(secretAm,rev);
+                                for (j=0; j<20; j++)
+                                    printf("%02x",secretAm[j]);
                                 bitcoin_pubkey33(ctx,privpub33,rswap.myprivs[0]);
                                 bitcoin_address(rswap.bobcoin,privaddr,0,60,privpub33,33);
-                                printf("alicespend len.%d redeemlen.%d priv0addr.(%s) priv0.(%s)\n",len,redeemlen,privaddr,bits256_str(str,rswap.myprivs[0]));
+                                printf(" alicespend len.%d redeemlen.%d priv0addr.(%s) priv0.(%s)\n",len,redeemlen,privaddr,bits256_str(str,rswap.myprivs[0]));
                             }
                             for (j=0; j<32; j++)
                                 rev.bytes[j] = rswap.myprivs[0].bytes[31 - j];
                             if ( (rswap.txbytes[BASILISK_ALICESPEND]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"alicespend",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBPAYMENT],0,0,rswap.pubkey33,1,rswap.expiration,&rswap.values[BASILISK_ALICESPEND],0,0,rswap.bobpaymentaddr,1,bob->zcash)) != 0 )
                             {
-                                if (rswap.bobtomic[0] != 0) {
+                                printf("alicespend.(%s)\n",rswap.txbytes[BASILISK_ALICESPEND]);
+                                if ( rswap.bobtomic[0] != 0 )
+                                {
                                     char *aliceSpendEthTxId = LP_etomicalice_spends_bob_payment(&rswap);
                                     free(aliceSpendEthTxId);
                                 }
