@@ -1817,8 +1817,8 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
     {
         calc_rmd160_sha256(rmd160,redeemscript,n);
         n = bitcoin_p2shspend(script,0,rmd160);
-        int32_t i; for (i=0; i<n; i++)
-            printf("%02x",script[i]);
+        int32_t i; for (i=0; i<*redeemlenp; i++)
+            printf("%02x",redeemscript[i]);
         printf(" <- redeem.%d bobtx dflag.%d spendscript.[%d]\n",*redeemlenp,depositflag,n);
     }
     return(n);
