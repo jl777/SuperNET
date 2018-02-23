@@ -1761,9 +1761,6 @@ int32_t basilisk_swap_bobredeemscript(int32_t depositflag,int32_t *secretstartp,
         memcpy(secret160,secretAm,20);
         memcpy(secret256,secretAm256,32);
     }
-    //for (i=0; i<32; i++)
-    //    printf("%02x",secret256[i]);
-    //printf(" <- secret256 depositflag.%d nonz.%d\n",depositflag,bits256_nonz(privkey));
     if ( bits256_nonz(cltvpub) == 0 || bits256_nonz(destpub) == 0 )
         return(-1);
     for (i=0; i<20; i++)
@@ -1775,48 +1772,37 @@ int32_t basilisk_swap_bobredeemscript(int32_t depositflag,int32_t *secretstartp,
     memcpy(pubkeyB+1,destpub.bytes,sizeof(destpub));
     redeemscript[n++] = SCRIPT_OP_IF;
     n = bitcoin_checklocktimeverify(redeemscript,n,locktime);
-#ifdef DISABLE_CHECKSIG
-    n = bitcoin_secret256spend(redeemscript,n,cltvpub);
-#else
+    if ( depositflag != 0 )
+    {
+        for (i=0; i<20; i++)
+            printf("%02x",secretAm[i]);
+        printf(" <- secretAm depositflag.%d nonz.%d\n",depositflag,bits256_nonz(privkey));
+        n = bitcoin_secret160verify(redeemscript,n,secretAm);
+    }
     n = bitcoin_pubkeyspend(redeemscript,n,pubkeyA);
-#endif
     redeemscript[n++] = SCRIPT_OP_ELSE;
     if ( secretstartp != 0 )
         *secretstartp = n + 2;
-    if ( 1 )
+    if ( bits256_nonz(privkey) != 0 )
     {
-        if ( 1 && bits256_nonz(privkey) != 0 )
-        {
-            uint8_t bufA[20],bufB[20];
-            revcalc_rmd160_sha256(bufA,privkey);
-            calc_rmd160_sha256(bufB,privkey.bytes,sizeof(privkey));
-            /*if ( memcmp(bufA,secret160,sizeof(bufA)) == 0 )
-             printf("MATCHES BUFA\n");
-             else if ( memcmp(bufB,secret160,sizeof(bufB)) == 0 )
-             printf("MATCHES BUFB\n");
-             else printf("secret160 matches neither\n");
-             for (i=0; i<20; i++)
-             printf("%02x",bufA[i]);
-             printf(" <- revcalc\n");
-             for (i=0; i<20; i++)
-             printf("%02x",bufB[i]);
-             printf(" <- calc\n");*/
-            memcpy(secret160,bufB,20);
-        }
-        n = bitcoin_secret160verify(redeemscript,n,secret160);
+        uint8_t bufA[20],bufB[20];
+        revcalc_rmd160_sha256(bufA,privkey);
+        calc_rmd160_sha256(bufB,privkey.bytes,sizeof(privkey));
+        /*if ( memcmp(bufA,secret160,sizeof(bufA)) == 0 )
+         printf("MATCHES BUFA\n");
+         else if ( memcmp(bufB,secret160,sizeof(bufB)) == 0 )
+         printf("MATCHES BUFB\n");
+         else printf("secret160 matches neither\n");
+         for (i=0; i<20; i++)
+         printf("%02x",bufA[i]);
+         printf(" <- revcalc\n");
+         for (i=0; i<20; i++)
+         printf("%02x",bufB[i]);
+         printf(" <- calc\n");*/
+        memcpy(secret160,bufB,20);
     }
-    else
-    {
-        redeemscript[n++] = 0xa8;//IGUANA_OP_SHA256;
-        redeemscript[n++] = 0x20;
-        memcpy(&redeemscript[n],secret256,0x20), n += 0x20;
-        redeemscript[n++] = 0x88; //SCRIPT_OP_EQUALVERIFY;
-    }
-#ifdef DISABLE_CHECKSIG
-    n = bitcoin_secret256spend(redeemscript,n,destpub);
-#else
+    n = bitcoin_secret160verify(redeemscript,n,secret160);
     n = bitcoin_pubkeyspend(redeemscript,n,pubkeyB);
-#endif
     redeemscript[n++] = SCRIPT_OP_ENDIF;
     return(n);
 }
@@ -1841,11 +1827,6 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
 int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,bits256 signpriv,uint8_t *redeemscript,int32_t redeemlen)
 {
     int32_t i,len = 0;
-#ifdef DISABLE_CHECKSIG
-    userdata[len++] = sizeof(signpriv);
-    for (i=0; i<sizeof(privkey); i++)
-        userdata[len++] = signpriv.bytes[i];
-#endif
     if ( bits256_nonz(privkey) != 0 )
     {
         userdata[len++] = sizeof(privkey);

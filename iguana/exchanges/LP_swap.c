@@ -34,8 +34,6 @@
  e) BEFORE Bob broadcasts deposit, Alice broadcasts BTC denominated fee in cltv so if trade isnt done fee is reclaimed
  */
 
-//#define DISABLE_CHECKSIG // unsolved MITM (evil peer)
-
 /*
  both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
  
@@ -43,8 +41,7 @@
  
  Bob deposit:
  OP_IF
- //<now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
- <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
+ <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
  OP_ELSE
  OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
  OP_ENDIF
@@ -64,6 +61,23 @@
  pubN and pubM are the corresponding pubkeys for these chosen privkeys
  
  Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
+ 
+ Based on https://gist.github.com/markblundeberg/7a932c98179de2190049f5823907c016 and to enable bob to spend alicepayment when alice does a claim for bob deposit, the scripts are changed to the following:
+ 
+ Bob deposit:
+ OP_IF
+ OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
+ OP_ELSE
+ OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
+ OP_ENDIF
+ 
+ Bob paytx:
+ OP_IF
+ <now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
+ OP_ELSE
+ OP_SIZE 32 OP_EQUALVERIFY OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
+ OP_ENDIF
+
  */
 
 /*
@@ -980,15 +994,7 @@ bits256 instantdex_derivekeypair(void *ctx,bits256 *newprivp,uint8_t pubkey[33],
 
 bits256 basilisk_revealkey(bits256 privkey,bits256 pubkey)
 {
-    bits256 reveal;
-#ifdef DISABLE_CHECKSIG
-    vcalc_sha256(0,reveal.bytes,privkey.bytes,sizeof(privkey));
-    //reveal = revcalc_sha256(privkey);
-    char str[65],str2[65]; printf("priv.(%s) -> reveal.(%s)\n",bits256_str(str,privkey),bits256_str(str2,reveal));
-#else
-    reveal = pubkey;
-#endif
-    return(reveal);
+    return(pubkey);
 }
 
 int32_t instantdex_pubkeyargs(struct basilisk_swap *swap,int32_t numpubs,bits256 privkey,bits256 hash,int32_t firstbyte)

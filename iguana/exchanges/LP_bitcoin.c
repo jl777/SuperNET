@@ -118,6 +118,7 @@ static struct bitcoin_opcode { UT_hash_handle hh; uint8_t opcode,flags,stackitem
 #define IGUANA_OP_SWAP 0x7c
 #define IGUANA_OP_TUCK 0x7d
 
+#define IGUANA_OP_SIZE 0x82
 #define IGUANA_OP_EQUAL 0x87
 #define IGUANA_OP_EQUALVERIFY 0x88
 
@@ -1911,6 +1912,9 @@ int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 
 int32_t bitcoin_secret160verify(uint8_t *script,int32_t n,uint8_t secret160[20])
 {
+    script[n++] = IGUANA_OP_SIZE; // add SIZE 16 EQUALVERIFY
+    script[n++] = 32;
+    script[n++] = SCRIPT_OP_EQUALVERIFY;
     script[n++] = SCRIPT_OP_HASH160;
     script[n++] = 0x14;
     memcpy(&script[n],secret160,0x14);
