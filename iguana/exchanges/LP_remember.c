@@ -1081,7 +1081,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             bitcoin_address(alice->symbol,otheraddr,alice->taddr,alice->pubtype,rswap.other33,33);
             destBdest = otheraddr;
             destAdest = rswap.Adestaddr;
-            if ( LP_TECHSUPPORT == 0 && strcmp(etomicdest,rswap.Adestaddr) != 0 )
+            if ( LP_TECHSUPPORT == 0 && strcmp(alice->smartaddr,rswap.Adestaddr) != 0 )
             {
                 printf("this isnt my swap! alice.(%s vs %s)\n",alice->smartaddr,rswap.Adestaddr);
                 cJSON *retjson = cJSON_CreateObject();
@@ -1120,7 +1120,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             bitcoin_address(bob->symbol,otheraddr,bob->taddr,bob->pubtype,rswap.other33,33);
             srcAdest = otheraddr;
             srcBdest = rswap.destaddr;
-            if ( LP_TECHSUPPORT == 0 && strcmp(etomicsrc,rswap.destaddr) != 0 )
+            if ( LP_TECHSUPPORT == 0 && strcmp(bob->smartaddr,rswap.destaddr) != 0 )
             {
                 printf("this isnt my swap! bob.(%s vs %s)\n",bob->smartaddr,rswap.destaddr);
                 cJSON *retjson = cJSON_CreateObject();
