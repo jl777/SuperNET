@@ -135,7 +135,7 @@ int32_t dpow_hasnotarization(struct supernet_info *myinfo,struct iguana_info *co
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs; //uint8_t pubkeys[64][33];
+    void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht; struct dpow_block *bp;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     if ( strcmp("BTC",dp->dest) == 0 )
@@ -203,8 +203,21 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         ptrs[4] = 0;
         memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
         dp->activehash = checkpoint.blockhash.hash;
+        ht = checkpoint.blockhash.height;
         if ( OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
         {
+        }
+        if ( ht > 100 )
+        {
+            for (i=ht-100; i>=0; i--)
+            {
+                if ( (bp= dp->blocks[i]) != 0 )
+                {
+                    dp->blocks[i] = 0;
+                    Numallocated--;
+                    free(bp);
+                }
+            }
         }
     }
 }
