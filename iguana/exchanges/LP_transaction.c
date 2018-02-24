@@ -1615,7 +1615,7 @@ int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vou
 int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,bits256 txid,int32_t vini)
 {
     cJSON *retjson,*vins,*item,*skey; int32_t n,scriptlen = 0; char *hexstr;
-    char str[65]; printf("getsigscript %s %s/v%d\n",symbol,bits256_str(str,txid),vini);
+    //char str[65]; printf("getsigscript %s %s/v%d\n",symbol,bits256_str(str,txid),vini);
     if ( bits256_nonz(txid) != 0 && (retjson= LP_gettx(symbol,txid,0)) != 0 )
     {
         //printf("gettx.(%s)\n",jprint(retjson,0));
@@ -1626,7 +1626,7 @@ int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,b
             {
                 scriptlen >>= 1;
                 decode_hex(script,scriptlen,hexstr);
-                char str[65]; printf("%s %s/v%d sigscript.(%s)\n",symbol,bits256_str(str,txid),vini,hexstr);
+                //char str[65]; printf("%s %s/v%d sigscript.(%s)\n",symbol,bits256_str(str,txid),vini,hexstr);
             }
         }
         free_json(retjson);

@@ -1332,7 +1332,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                     char *bobSpendEthTx = LP_etomicbob_spends_alice_payment(&rswap);
                                     free(bobSpendEthTx);
                                 }
-                                //printf("bobspend.(%s)\n",rswap.txbytes[BASILISK_BOBSPEND]);
+                                printf("bobspend.(%s)\n",rswap.txbytes[BASILISK_BOBSPEND]);
                             }
                         }
                         LP_txbytes_update("bobspend",rswap.alicecoin,rswap.txbytes[BASILISK_BOBSPEND],&rswap.txids[BASILISK_BOBSPEND],&rswap.Apaymentspent,&rswap.sentflags[BASILISK_BOBSPEND]);
