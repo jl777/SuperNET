@@ -415,6 +415,8 @@ int32_t basilisk_swap_isfinished(uint32_t requestid,uint32_t quoteid,uint32_t ex
     int32_t i,n = 0; uint32_t now = (uint32_t)time(NULL);
     if ( bits256_nonz(paymentspent) != 0 && bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
         return(1);
+    else if ( sentflags[BASILISK_BOBPAYMENT] == 0 && bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 && bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
+        return(1);
     else if ( sentflags[BASILISK_BOBPAYMENT] != 0 && sentflags[BASILISK_ALICEPAYMENT] != 0 && sentflags[BASILISK_BOBDEPOSIT] != 0 && sentflags[BASILISK_BOBRECLAIM] != 0 )
     {
         if ( sentflags[BASILISK_ALICECLAIM] != 0 )
