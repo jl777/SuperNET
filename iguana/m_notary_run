@@ -29,7 +29,6 @@ coins/dex_7776
 coins/bet_7776
 coins/bots_7776
 coins/hodl_7776
-coins/shark_7776
 coins/mshark_7776
 coins/jumblr_7776
 coins/crypto_7776
@@ -44,6 +43,7 @@ coins/mnz_7776
 coins/axo_7776
 coins/etomic_7776
 coins/btch_7776
+coins/vote_7776
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
