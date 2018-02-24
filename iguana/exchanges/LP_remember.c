@@ -1243,15 +1243,15 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     if ( flag == 0 )
                     {
-                        //if ( rswap.Dredeemlen != 0 )
-                        //    redeemlen = rswap.Dredeemlen, memcpy(redeemscript,rswap.Dredeemscript,rswap.Dredeemlen);
-                        //else
-                            redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,rswap.dlocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rswap.privAm,zero,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
                         if ( rswap.Dredeemlen != 0 )
+                            redeemlen = rswap.Dredeemlen, memcpy(redeemscript,rswap.Dredeemscript,rswap.Dredeemlen);
+                        else
+                            redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,rswap.dlocktime,rswap.pubA0,rswap.pubB0,rswap.pubB1,rswap.privAm,zero,rswap.secretAm,rswap.secretAm256,rswap.secretBn,rswap.secretBn256);
+                        /*if ( rswap.Dredeemlen != 0 )
                         {
                             if ( rswap.Dredeemlen != redeemlen || memcmp(redeemscript,rswap.Dredeemscript,redeemlen) != 0 )
                                 printf("Dredeemscript error len %d vs %d, cmp.%d\n",rswap.Dredeemlen,redeemlen,memcmp(redeemscript,rswap.Dredeemscript,redeemlen));
-                        } else printf("%p Dredeemscript missing\n",rswap.Dredeemscript);
+                        } else printf("%p Dredeemscript missing\n",rswap.Dredeemscript);*/
                         if ( redeemlen > 0 )
                         {
                             memset(revAm.bytes,0,sizeof(revAm));
