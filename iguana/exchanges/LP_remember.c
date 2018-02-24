@@ -1320,7 +1320,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             rswap.privAm = basilisk_swap_privbob_extract(rswap.bobcoin,rswap.paymentspent,0,1);
                             if ( bits256_nonz(rswap.privAm) == 0 && bits256_nonz(rswap.depositspent) != 0 )
                             {
-                                rswap.privAm = basilisk_swap_privbob_extract(rswap.alicecoin,rswap.depositspent,0,1);
+                                rswap.privAm = basilisk_swap_privbob_extract(rswap.bobcoin,rswap.depositspent,0,1);
                                 printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,rswap.depositspent),bits256_nonz(rswap.privAm));
                             }
                         }

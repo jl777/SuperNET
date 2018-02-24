@@ -1618,7 +1618,7 @@ int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,b
     char str[65]; printf("getsigscript %s %s/v%d\n",symbol,bits256_str(str,txid),vini);
     if ( bits256_nonz(txid) != 0 && (retjson= LP_gettx(symbol,txid,0)) != 0 )
     {
-        printf("gettx.(%s)\n",jprint(retjson,0));
+        //printf("gettx.(%s)\n",jprint(retjson,0));
         if ( (vins= jarray(&n,retjson,"vin")) != 0 && vini < n )
         {
             item = jitem(vins,vini);
