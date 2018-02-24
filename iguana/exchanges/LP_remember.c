@@ -1262,7 +1262,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             len = basilisk_swapuserdata(userdata,revAm,1,rswap.myprivs[0],redeemscript,redeemlen);
                             if ( (rswap.txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"aliceclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,0,rswap.dlocktime+777,&rswap.values[BASILISK_ALICECLAIM],0,0,rswap.bobdepositaddr,1,bob->zcash)) != 0 )
                             {
-                                printf("dlocktime.%u claimtime.%u aliceclaim.(%s)\n",rswap.dlocktime,claimtime,rswap.txbytes[BASILISK_ALICECLAIM]);
+                                //printf("dlocktime.%u claimtime.%u aliceclaim.(%s)\n",rswap.dlocktime,claimtime,rswap.txbytes[BASILISK_ALICECLAIM]);
                                 if ( rswap.bobtomic[0] != 0 )
                                 {
                                     char *aliceClaimsEthTxId = LP_etomicalice_claims_bob_deposit(&rswap);
@@ -1323,7 +1323,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             if ( bits256_nonz(rswap.privAm) == 0 && bits256_nonz(rswap.depositspent) != 0 )
                             {
                                 rswap.privAm = basilisk_swap_privbob_extract(rswap.bobcoin,rswap.depositspent,0,1);
-                                printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,rswap.depositspent),bits256_nonz(rswap.privAm));
+                                //printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,rswap.depositspent),bits256_nonz(rswap.privAm));
                             }
                         }
                         if ( bits256_nonz(rswap.privAm) != 0 && bits256_nonz(rswap.privBn) != 0 )
@@ -1334,7 +1334,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                     char *bobSpendEthTx = LP_etomicbob_spends_alice_payment(&rswap);
                                     free(bobSpendEthTx);
                                 }
-                                printf("bobspend.(%s)\n",rswap.txbytes[BASILISK_BOBSPEND]);
+                                //printf("bobspend.(%s)\n",rswap.txbytes[BASILISK_BOBSPEND]);
                             }
                         }
                         LP_txbytes_update("bobspend",rswap.alicecoin,rswap.txbytes[BASILISK_BOBSPEND],&rswap.txids[BASILISK_BOBSPEND],&rswap.Apaymentspent,&rswap.sentflags[BASILISK_BOBSPEND]);
