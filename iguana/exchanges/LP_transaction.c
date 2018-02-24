@@ -1615,6 +1615,7 @@ int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vou
 int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,bits256 txid,int32_t vini)
 {
     cJSON *retjson,*vins,*item,*skey; int32_t n,scriptlen = 0; char *hexstr;
+    char str[65]; printf("getsigscript %s %s/v%d\n",symbol,bits256_str(str,txid),vini);
     if ( (retjson= LP_gettx(symbol,txid,0)) != 0 )
     {
         if ( (vins= jarray(&n,retjson,"vin")) != 0 && vini < n )
