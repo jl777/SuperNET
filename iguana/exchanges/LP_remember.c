@@ -250,7 +250,7 @@ bits256 basilisk_swap_privbob_extract(char *symbol,bits256 spendtxid,int32_t vin
                 privkey.bytes[31 - i] = script[siglen+2+i];
             else privkey.bytes[i] = script[siglen+2+i];
         }
-        //char str[65]; printf("extracted privbob.(%s)\n",bits256_str(str,privkey));
+        char str[65]; printf("extracted privbob.(%s)\n",bits256_str(str,privkey));
     }
     return(privkey);
 }
@@ -1302,7 +1302,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         {
             if ( rswap.sentflags[BASILISK_BOBSPEND] == 0 && bits256_nonz(rswap.Apaymentspent) == 0 )
             {
-                printf("try to bobspend aspend.%s have privAm.%d aspent.%d\n",bits256_str(str,rswap.txids[BASILISK_ALICESPEND]),bits256_nonz(rswap.privAm),rswap.sentflags[BASILISK_ALICESPEND]);
+                //printf("try to bobspend aspend.%s have privAm.%d aspent.%d\n",bits256_str(str,rswap.txids[BASILISK_ALICESPEND]),bits256_nonz(rswap.privAm),rswap.sentflags[BASILISK_ALICESPEND]);
                 if ( rswap.sentflags[BASILISK_ALICESPEND] != 0 || bits256_nonz(rswap.paymentspent) != 0 || bits256_nonz(rswap.privAm) != 0 || bits256_nonz(rswap.depositspent) != 0 )
                 {
                     flag = 0;
@@ -1312,7 +1312,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                             free_json(txoutobj), flag = 0;
                         else flag = -1, rswap.Apaymentspent = deadtxid;
                     }
-                    printf("flag.%d apayment.%s\n",flag,bits256_str(str,rswap.paymentspent));
+                    //printf("flag.%d apayment.%s\n",flag,bits256_str(str,rswap.paymentspent));
                     if ( flag == 0 )
                     {
                         if ( bits256_nonz(rswap.privAm) == 0 )

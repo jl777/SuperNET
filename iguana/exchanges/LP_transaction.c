@@ -1624,7 +1624,7 @@ int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,b
             {
                 scriptlen >>= 1;
                 decode_hex(script,scriptlen,hexstr);
-                //char str[65]; printf("%s/v%d sigscript.(%s)\n",bits256_str(str,txid),vini,hexstr);
+                char str[65]; printf("%s %s/v%d sigscript.(%s)\n",symbol,bits256_str(str,txid),vini,hexstr);
             }
         }
         free_json(retjson);
