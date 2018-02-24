@@ -1232,7 +1232,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             }
             if ( rswap.sentflags[BASILISK_ALICECLAIM] == 0 && (rswap.sentflags[BASILISK_BOBDEPOSIT] != 0 || bits256_nonz(rswap.txids[BASILISK_BOBDEPOSIT]) != 0) && bits256_nonz(rswap.depositspent) == 0 )
             {
-                if ( time(NULL) > rswap.expiration+777 )
+                if ( time(NULL) > rswap.dlocktime+777 )
                 {
                     flag = 0;
                     if ( bob->electrum == 0 )
@@ -1254,11 +1254,12 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         } else printf("%p Dredeemscript missing\n",rswap.Dredeemscript);*/
                         if ( redeemlen > 0 )
                         {
-                            memset(revAm.bytes,0,sizeof(revAm));
-                            for (i=0; i<32; i++)
-                                revAm.bytes[i] = rswap.privAm.bytes[31-i];
-                            len = basilisk_swapuserdata(userdata,revAm,1,rswap.myprivs[0],redeemscript,redeemlen);
-                            if ( (rswap.txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"aliceclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,0,claimtime,&rswap.values[BASILISK_ALICECLAIM],0,0,rswap.bobdepositaddr,1,bob->zcash)) != 0 ) {
+                            //memset(revAm.bytes,0,sizeof(revAm));
+                            //for (i=0; i<32; i++)
+                            //    revAm.bytes[i] = rswap.privAm.bytes[31-i];
+                            len = basilisk_swapuserdata(userdata,rswap.privAm,1,rswap.myprivs[0],redeemscript,redeemlen);
+                            if ( (rswap.txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"aliceclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,0,claimtime,&rswap.values[BASILISK_ALICECLAIM],0,0,rswap.bobdepositaddr,1,bob->zcash)) != 0 )
+                            {
                                 printf("claimtime.%u aliceclaim.(%s)\n", claimtime, rswap.txbytes[BASILISK_ALICECLAIM]);
                                 if (rswap.bobtomic[0] != 0) {
                                     char *aliceClaimsEthTxId = LP_etomicalice_claims_bob_deposit(&rswap);
