@@ -52,7 +52,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
         //printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
         if ( coin->electrum != 0 && (strcmp(method,"getblock") == 0 || strcmp(method,"paxprice") == 0 || strcmp(method,"getrawmempool") == 0) )
             return(cJSON_Parse("{\"error\":\"illegal electrum call\"}"));
-        if ( coin->inactive == 0 || strcmp(method,"importprivkey") == 0  || strcmp(method,"validateaddress") == 0 || strcmp(method,"getrawtransaction") == 0 || strcmp(method,"getblock") == 0 || strcmp(method,"getinfo") == 0 )
+        if ( coin->inactive == 0 || strcmp(method,"importprivkey") == 0  || strcmp(method,"validateaddress") == 0 || strcmp(method,"getrawtransaction") == 0 || strcmp(method,"getblock") == 0 || strcmp(method,"getinfo") == 0 || strcmp(method,"getblockchaininfo") == 0 )
         {
             if ( coin->electrum == 0 )
             {
@@ -88,28 +88,44 @@ void LP_unspents_mark(char *symbol,cJSON *vins)
 
 int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
 {
-    cJSON *retjson; char *retstr,*method = "getinfo"; int32_t height;
+    cJSON *retjson; char *retstr; int32_t height;
     *notarizedp = 0;
     if ( coin == 0 )
         return(-1);
+    if ( coin->getinfostr[0] == 0 )
+        strcpy(coin->getinfostr,"getinfo");
     height = coin->height;
     if ( coin->electrum == 0 && time(NULL) > coin->heighttime+60 && coin->userpass[0] != 0 )
     {
-        if ( strcmp(coin->symbol,"BTC") == 0 )
-            method = "getblockchaininfo";
-        retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,"[]");
+        retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,coin->getinfostr,"[]");
         if ( retstr != 0 && retstr[0] != 0 )
         {
-            retjson = cJSON_Parse(retstr);
-            coin->height = height = jint(retjson,"blocks");
-            if ( (*notarizedp= jint(retjson,"notarized")) != 0 && *notarizedp != coin->notarized )
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                //printf("new notarized %s %d -> %d\n",coin->symbol,coin->notarized,*notarizedp);
-                coin->notarized = *notarizedp;
-                coin->notarizationtxid = jbits256(retjson,"notarizedtxid");
-                coin->notarizedhash = jbits256(retjson,"notarizedhash");
+                if ( jobj(retjson,"error") == 0 && strcmp("getinfo",coin->getinfostr) == 0 )
+                {
+                    strcpy(coin->getinfostr,"getblockchaininfo");
+                    free_json(retjson), retjson = 0;
+                    free(retstr);
+                    if ( (retstr= bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,coin->getinfostr,"[]")) != 0 )
+                    {
+                        retjson = cJSON_Parse(retstr);
+                        printf("getblockchaininfo autoissue.(%s)\n",retstr);
+                    }
+                }
+                if ( retjson != 0 )
+                {
+                    coin->height = height = jint(retjson,"blocks");
+                    if ( (*notarizedp= jint(retjson,"notarized")) != 0 && *notarizedp != coin->notarized )
+                    {
+                        //printf("new notarized %s %d -> %d\n",coin->symbol,coin->notarized,*notarizedp);
+                        coin->notarized = *notarizedp;
+                        coin->notarizationtxid = jbits256(retjson,"notarizedtxid");
+                        coin->notarizedhash = jbits256(retjson,"notarizedhash");
+                    }
+                    free_json(retjson);
+                }
             }
-            free_json(retjson);
             if ( coin->height > 0 )
                 coin->heighttime = (uint32_t)time(NULL);
             free(retstr);
@@ -620,7 +636,7 @@ again:
             {
                 retstr = jprint(retjson,1);
                 //free_json(retjson), retjson = 0; causes crash?
-                printf("estfee (%s)\n",retstr);
+                printf("estfee numblocks.%d (%s)\n",numblocks,retstr);
             }
         }
         if ( retstr != 0 )
