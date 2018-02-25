@@ -459,7 +459,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
                         ptr->inactive = 0;
-                        cJSON *array; int32_t notarized;
+                        cJSON *array; //int32_t notarized;
                         /*if ( strcmp(ptr->symbol,"ETH") != 0 && LP_getheight(&notarized,ptr) <= 0 )
                         {
                             ptr->inactive = (uint32_t)time(NULL);
