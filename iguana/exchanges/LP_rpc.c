@@ -644,7 +644,7 @@ again:
         else
         {
             // {"fastestFee":70,"halfHourFee":70,"hourFee":10}
-            if ( (retjson= LP_bitcoinfees()) != 0 )
+            if ( strcmp(coin->symbol,"BTC") == 0 && (retjson= LP_bitcoinfees()) != 0 )
             {
                 int32_t fastest,half,hour,best=0;
                 fastest = jint(retjson,"fastestFee");
