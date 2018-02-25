@@ -125,9 +125,12 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->feetxid = jbits256(argjson,"feetxid");
     qp->destvout = jint(argjson,"destvout");
     qp->desthash = jbits256(argjson,"desthash");
-    qp->satoshis = j64bits(argjson,"satoshis");
-    qp->destsatoshis = j64bits(argjson,"destsatoshis");
     qp->txfee = j64bits(argjson,"txfee");
+    if ( (qp->satoshis= j64bits(argjson,"satoshis")) > qp->txfee )
+    {
+        //qp->price = (double)qp->destsatoshis / (qp->satoshis = qp->txfee);
+    }
+    qp->destsatoshis = j64bits(argjson,"destsatoshis");
     qp->desttxfee = j64bits(argjson,"desttxfee");
     qp->R.requestid = juint(argjson,"requestid");
     qp->R.quoteid = juint(argjson,"quoteid");
