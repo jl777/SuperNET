@@ -634,7 +634,7 @@ double _LP_getestimatedrate(struct iguana_info *coin)
     {
         if ( coin->estimatefeestr[0] == 0 )
             strcpy(coin->estimatefeestr,"estimatefee");
-        numblocks = 2;//strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
+        numblocks = 3;//strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
 again:
         if ( coin->electrum == 0 )
         {
@@ -650,8 +650,8 @@ again:
                 fastest = jint(retjson,"fastestFee");
                 half = jint(retjson,"halfHourFee");
                 hour = jint(retjson,"hourFee");
-                if ( hour*2 > half )
-                    best = hour*2;
+                if ( hour*3 > half )
+                    best = hour*3;
                 else best = half;
                 if ( fastest < best )
                     best = fastest;
@@ -687,7 +687,7 @@ again:
                 rate = atof(retstr) / 1024.;
             if ( rate != 0. )
             {
-                rate *= 1.25;
+                //rate *= 1.25;
                 if ( rate < 0.00000005 )
                     rate = 0.00000005;
                 //if ( coin->electrum != 0 )
