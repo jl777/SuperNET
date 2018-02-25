@@ -607,7 +607,7 @@ double _LP_getestimatedrate(struct iguana_info *coin)
     {
         if ( coin->estimatefeestr[0] == 0 )
             strcpy(coin->estimatefeestr,"estimatefee");
-        numblocks = strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
+        numblocks = 2;//strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
 again:
         if ( coin->electrum == 0 )
         {
@@ -617,7 +617,11 @@ again:
         else
         {
             if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,numblocks)) != 0 )
+            {
                 retstr = jprint(retjson,1);
+                free_json(retjson), retjson = 0;
+                printf("estfee (%s)\n",retstr);
+            }
         }
         if ( retstr != 0 )
         {
