@@ -24,7 +24,7 @@
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen);
 uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
-int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr);
+int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin);
 
 #include "dpow/dpow_network.c"
 #include "dpow/dpow_rpc.c"
@@ -570,7 +570,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 }
 
 char NOTARY_CURRENCIES[][16] = {
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "CHAIN" }; // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "CHAIN" }; // "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
 
 void _iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
 {

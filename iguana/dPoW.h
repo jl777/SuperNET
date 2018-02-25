@@ -149,7 +149,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
 int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin);
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen);
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo);
-int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr);
+int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin);
 void komodo_assetcoins(int32_t fullnode,uint64_t mask);
 int32_t iguana_isnotarychain(char *symbol);
 
