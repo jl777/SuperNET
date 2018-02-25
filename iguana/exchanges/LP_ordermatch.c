@@ -869,7 +869,6 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         printf("myprice %.8f bid %.8f ask %.8f\n",myprice,bid,ask);
         return(0);
     }
-    printf("myprice %.8f\n",myprice);
     autxo = &A;
     butxo = &B;
     memset(autxo,0,sizeof(*autxo));
@@ -973,7 +972,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     printf("i.%d qprice %.8f myprice %.8f price %.8f [%.8f]\n",i,qprice,myprice,price,p);
     if ( LP_allocated(qp->txid,qp->vout) == 0 && LP_allocated(qp->txid2,qp->vout2) == 0 )
     {
-        printf("found unallocated txids\n");
+        //printf("found unallocated txids\n");
         reqjson = LP_quotejson(qp);
         LP_unavailableset(qp->txid,qp->vout,qp->timestamp + LP_RESERVETIME,qp->desthash);
         LP_unavailableset(qp->txid2,qp->vout2,qp->timestamp + LP_RESERVETIME,qp->desthash);
@@ -987,7 +986,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         memset(zero.bytes,0,sizeof(zero));
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
         free_json(reqjson);
-        printf("Send RESERVED id.%llu\n",(long long)qp->aliceid);
+        //printf("Send RESERVED id.%llu\n",(long long)qp->aliceid);
         return(qp);
     } else printf("request processing selected ineligible utxos?\n");
     return(0);

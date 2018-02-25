@@ -612,9 +612,9 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     rawtx->I.redeemlen = recvbuf[offset++];
 #ifndef NOTETOMIC
     uint8arrayToHex(rawtx->I.ethTxid, &recvbuf[offset], 32);
+    printf("ETH txid received: %s\n", rawtx->I.ethTxid);
 #endif
     offset += 32;
-    printf("ETH txid received: %s\n", rawtx->I.ethTxid);
     data = &recvbuf[offset];
     if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
     {
@@ -727,12 +727,15 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                 sendbuf[sendlen++] = rawtx->I.datalen & 0xff;
                 sendbuf[sendlen++] = (rawtx->I.datalen >> 8) & 0xff;
                 sendbuf[sendlen++] = rawtx->I.redeemlen;
-                if (rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66) {
+                if ( rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66 )
+                {
                     uint8_t ethTxidBytes[32];
                     // ETH txid always starts with 0x
                     decode_hex(ethTxidBytes, 32, rawtx->I.ethTxid + 2);
                     memcpy(&sendbuf[sendlen], ethTxidBytes, 32);
-                } else {
+                }
+                else
+                {
                     // fill with zero bytes to always have fixed message size
                     memset(&sendbuf[sendlen], 0, 32);
                 }
