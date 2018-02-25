@@ -2120,6 +2120,7 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
 {
     static void *ctx;
     int32_t offset,i,len5; char prefixed[64]; uint8_t data[64],data5[64],bigpubkey[65]; bits256 hash; struct iguana_info *coin;
+#ifndef NOTETOMIC
     if ( (coin= LP_coinfind(symbol)) != 0 && coin->etomic[0] != 0 )
     {
         if ( len == 20 )
@@ -2142,10 +2143,12 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
                 for (i=0; i<65; i++)
                     printf("%02x",bigpubkey[i]);
                 printf(" -> %s\n",coinaddr);*/
-            } else LP_etomic_pub2addr(coinaddr,pubkey_or_rmd160+1);
+            }
+            else LP_etomic_pub2addr(coinaddr,pubkey_or_rmd160+1);
             return(coinaddr);
         }
     }
+#endif
     coinaddr[0] = 0;
     offset = 1 + (taddr != 0);
     if ( len != 20 )

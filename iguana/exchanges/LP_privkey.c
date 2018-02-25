@@ -299,6 +299,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         RS_encode(G.LP_NXTaddr,nxtaddr);
     }
     bitcoin_priv2pub(ctx,coin->symbol,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
+#ifndef NOTETOMIC
     if ( coin->etomic[0] != 0 )
     {
         uint8_t check64[64],checktype,checkrmd160[20],rmd160[20]; char checkaddr[64],checkaddr2[64];
@@ -318,6 +319,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
             } else printf("pubkey 64 mismatch\n");
         } else printf("error creating pubkey\n");
     }
+#endif
     OS_randombytes(tmpkey.bytes,sizeof(tmpkey));
     if ( bits256_nonz(privkey) == 0 || (siglen= bitcoin_sign(ctx,coin->symbol,sig,tmpkey,privkey,0)) <= 0 )
     {
