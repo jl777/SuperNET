@@ -671,7 +671,7 @@ again:
                 printf("set rate %.8f t%u\n",rate,coin->ratetime);
             }
             free(retstr);
-            if ( err == 1 && coin->electrum == 0 && strcmp("BTC",coin->symbol) == 0 )
+            if ( err == 1 && coin->electrum == 0 && strcmp(coin->estimatefeestr,"estimatefee") == 0 )
             {
                 strcpy(coin->estimatefeestr,"estimatesmartfee");
                 err = 2;
