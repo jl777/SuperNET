@@ -73,7 +73,7 @@ uint64_t LP_txfeecalc(struct iguana_info *coin,uint64_t txfee,int32_t txlen)
             coin->rate = LP_getestimatedrate(coin);
             if ( (txfee= SATOSHIDEN * coin->rate * txlen) <= 10000 )
             {
-                coin->rate = -1.;
+                //coin->rate = -1.;
                 coin->rate = _LP_getestimatedrate(coin);
                 if ( (txfee= SATOSHIDEN * coin->rate * txlen) <= 10000 )
                     txfee = 10000;
