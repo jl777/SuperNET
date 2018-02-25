@@ -861,7 +861,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     double price=0.,p=0.,qprice,myprice,bestprice,range,bid,ask; struct iguana_info *coin,*othercoin; struct LP_utxoinfo A,B,*autxo,*butxo; cJSON *reqjson; char str[65]; struct LP_address_utxo *utxos[1000]; int32_t i,r,counter,max = (int32_t)(sizeof(utxos)/sizeof(*utxos));
     *newqp = *qp;
     qp = newqp;
-    printf("bob %s received REQUEST.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
+    //printf("bob %s received REQUEST.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 || (othercoin= LP_coinfind(qp->destcoin)) == 0 )
         return(0);
     if ( (myprice= LP_trades_bobprice(&bid,&ask,qp)) == 0. )
@@ -912,7 +912,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     }
     else
     {
-        printf("ignore as qprice %.8f vs myprice %.8f\n",qprice,myprice);
+        //printf("ignore as qprice %.8f vs myprice %.8f\n",qprice,myprice);
         return(0);
     }
     //LP_RTmetrics_update(qp->srccoin,qp->destcoin);
@@ -1000,7 +1000,7 @@ struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,str
     qp = newqp;
     if ( (qprice= LP_trades_alicevalidate(ctx,qp)) > 0. )
     {
-        printf("got qprice %.8f\n",qprice);
+        //printf("got qprice %.8f\n",qprice);
         LP_aliceid(qp->tradeid,qp->aliceid,"reserved",0,0);
         if ( (retstr= LP_quotereceived(qp)) != 0 )
             free(retstr);
