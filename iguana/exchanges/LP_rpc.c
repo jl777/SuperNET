@@ -616,6 +616,17 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
     } else return(cJSON_Parse("{\"result\":\"success\"}"));
 }
 
+cJSON *LP_bitcoinfees()
+{
+    char *retstr; cJSON *retjson = 0;
+    if ( (retstr= issue_curlt("https://bitcoinfees.earn.com/api/v1/fees/recommended",LP_HTTP_TIMEOUT)) != 0 )
+    {
+        retjson = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    return(retjson);
+}
+
 double _LP_getestimatedrate(struct iguana_info *coin)
 {
     char buf[512],*retstr=0; int32_t numblocks,err=0; cJSON *errjson,*retjson; double rate = 0.00000005;
@@ -623,7 +634,7 @@ double _LP_getestimatedrate(struct iguana_info *coin)
     {
         if ( coin->estimatefeestr[0] == 0 )
             strcpy(coin->estimatefeestr,"estimatefee");
-        numblocks = 4;//strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
+        numblocks = 2;//strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
 again:
         if ( coin->electrum == 0 )
         {
@@ -632,12 +643,29 @@ again:
         }
         else
         {
-            if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,numblocks)) != 0 )
+            // {"fastestFee":70,"halfHourFee":70,"hourFee":10}
+            if ( strcmp(coin->symbol,"BTC") == 0 && (retjson= LP_bitcoinfees()) != 0 )
+            {
+                int32_t fastest,half,hour,best=0;
+                fastest = jint(retjson,"fastestFee");
+                half = jint(retjson,"halfHourFee");
+                hour = jint(retjson,"hourFee");
+                if ( hour*2 > half )
+                    best = hour*2;
+                else best = half;
+                if ( fastest < best )
+                    best = fastest;
+                retstr = calloc(1,16);
+                sprintf(retstr,"%0.8f",((double)best * 1024)/SATOSHIDEN);
+                printf("LP_getestimatedrate (%s) -> %s\n",jprint(retjson,0),retstr);
+                free(retjson);
+            }
+            /*if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,numblocks)) != 0 )
             {
                 retstr = jprint(retjson,1);
                 //free_json(retjson), retjson = 0; causes crash?
                 printf("estfee numblocks.%d (%s)\n",numblocks,retstr);
-            }
+            }*/
         }
         if ( retstr != 0 )
         {
@@ -659,18 +687,19 @@ again:
                 rate = atof(retstr) / 1024.;
             if ( rate != 0. )
             {
-                rate *= 1.5;
+                rate *= 1.25;
                 if ( rate < 0.00000005 )
                     rate = 0.00000005;
-                if ( coin->electrum != 0 )
-                    rate *= 1.5;
+                //if ( coin->electrum != 0 )
+                //    rate *= 1.5;
                 if ( fabs(rate - coin->rate) > SMALLVAL )
-                    printf("t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",coin->ratetime,coin->symbol,retstr,rate,coin->rate);
+                    printf("%u t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",(uint32_t)time(NULL),coin->ratetime,coin->symbol,retstr,rate,coin->rate);
                 coin->rate = rate;
                 coin->ratetime = (uint32_t)time(NULL);
+                //printf("set rate %.8f t%u\n",rate,coin->ratetime);
             }
             free(retstr);
-            if ( err == 1 && coin->electrum == 0 && strcmp("BTC",coin->symbol) == 0 )
+            if ( err == 1 && coin->electrum == 0 && strcmp(coin->estimatefeestr,"estimatefee") == 0 )
             {
                 strcpy(coin->estimatefeestr,"estimatesmartfee");
                 err = 2;
@@ -678,12 +707,13 @@ again:
             }
         } else rate = coin->rate;
     } else rate = coin->rate;
+    coin->rate = rate;
     return(rate);
 }
 
 double LP_getestimatedrate(struct iguana_info *coin)
 {
-    double rate = 0.00000020;
+    double rate = 0.00000005;
     if ( coin == 0 )
         return(rate);
     if ( (rate= _LP_getestimatedrate(coin)) <= 0. )
