@@ -364,6 +364,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             return(clonestr("{\"error\":\"cant find address\"}"));
         }
+        else if ( strcmp(method,"inuse") == 0 )
+            return(jprint(LP_inuse_json(),1));
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
         if ( base[0] != 0 && rel[0] != 0 )
@@ -527,11 +529,6 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             else if ( strcmp(method,"sendrawtransaction") == 0 )
             {
                 return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx")));
-            }
-            else if ( strcmp(method,"inuse") == 0 )
-            {
-                printf("got inuse method\n");
-                return(jprint(LP_inuse_json(),1));
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
