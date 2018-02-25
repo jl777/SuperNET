@@ -446,7 +446,7 @@ char *LP_postprice_recv(cJSON *argjson)
             }
             else
             {
-                printf("sig failure\n");
+                printf("sig failure.(%s)\n",jprint(argjson,0));
                 return(clonestr("{\"error\":\"sig failure\"}"));
             }
         }

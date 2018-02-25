@@ -623,7 +623,7 @@ double _LP_getestimatedrate(struct iguana_info *coin)
     {
         if ( coin->estimatefeestr[0] == 0 )
             strcpy(coin->estimatefeestr,"estimatefee");
-        numblocks = 2;//strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
+        numblocks = 4;//strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
 again:
         if ( coin->electrum == 0 )
         {
