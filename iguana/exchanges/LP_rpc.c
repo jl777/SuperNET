@@ -678,6 +678,7 @@ again:
             }
         } else rate = coin->rate;
     } else rate = coin->rate;
+    coin->rate = rate;
     return(rate);
 }
 
