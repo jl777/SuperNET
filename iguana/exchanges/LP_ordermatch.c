@@ -451,7 +451,7 @@ struct LP_utxoinfo *LP_address_myutxopair(struct LP_utxoinfo *butxo,int32_t iamb
 
 int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double price,struct LP_quoteinfo *qp)
 {
-    char pairstr[512],otheraddr[64]; cJSON *reqjson; bits256 privkey; int32_t pair=-1,retval = -1,DEXselector = 0; int64_t dtrust; struct basilisk_swap *swap; struct iguana_info *coin,*kmdcoin;
+    char pairstr[512],otheraddr[64]; cJSON *reqjson; bits256 privkey; int32_t i,pair=-1,retval = -1,DEXselector = 0; int64_t dtrust; struct basilisk_swap *swap; struct iguana_info *coin,*kmdcoin;
     qp->quotetime = (uint32_t)time(NULL);
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
     {
@@ -486,12 +486,17 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 //char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
-                LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
-                LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
-                if ( 0 )
+                for (i=0; i<10; i++)
                 {
-                    LP_reserved_msg(1,base,rel,zero,jprint(reqjson,0));
-                    LP_reserved_msg(0,base,rel,zero,jprint(reqjson,0));
+                    LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
+                    sleep(3);
+                    if ( swap->received != 0 )
+                    {
+                        printf("swap %u-%u has started t%u\n",swap->I.req.requestid,swap->I.req.quoteid,swap->received);
+                        break;
+                    }
+                    printf("bob tries %u-%u again i.%d\n",swap->I.req.requestid,swap->I.req.quoteid,i);
+                    LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
                 }
                 free_json(reqjson);
                 LP_importaddress(qp->destcoin,qp->destaddr);
