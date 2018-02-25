@@ -1395,6 +1395,8 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     if ( LP_quotedestinfo(&Q,autxo->payment.txid,autxo->payment.vout,autxo->fee.txid,autxo->fee.vout,G.LP_mypub25519,autxo->coinaddr) < 0 )
         return(clonestr("{\"error\":\"cant set ordermatch quote info\"}"));
     int32_t changed;
+    if ( strcmp(base,"BTC") == 0 || strcmp("BTC",rel) == 0 )
+        printf("%s/%s maxprice %.8f qprice %.8f txfee %.8f desttxfee %.8f\n",base,rel,maxprice,(double)destsatoshis/bestsatoshis,dstr(txfee),dstr(desttxfee));
     LP_mypriceset(&changed,autxo->coin,base,1. / maxprice);
     LP_mypriceset(&changed,base,autxo->coin,0.);
     return(LP_trade(ctx,myipaddr,mypubsock,&Q,maxprice,timeout,duration,tradeid,destpubkey));
