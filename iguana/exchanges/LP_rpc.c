@@ -650,8 +650,8 @@ again:
                 fastest = jint(retjson,"fastestFee");
                 half = jint(retjson,"halfHourFee");
                 hour = jint(retjson,"hourFee");
-                if ( hour*2 > half )
-                    best = hour*2;
+                if ( hour*3 > half )
+                    best = hour*3;
                 else best = half;
                 if ( fastest < best )
                     best = fastest;
