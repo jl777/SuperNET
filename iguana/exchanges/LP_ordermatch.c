@@ -887,7 +887,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     //LP_address_utxo_reset(coin);
     //printf("done LP_address_utxo_reset.%s\n",coin->symbol);
     i = 0;
-    while ( i < 100 && price >= myprice )
+    while ( i < 33 && price >= myprice )
     {
         if ( (butxo= LP_address_myutxopair(butxo,1,utxos,max,LP_coinfind(qp->srccoin),qp->coinaddr,qp->txfee,dstr(qp->destsatoshis),price,qp->desttxfee)) != 0 )
         {
@@ -913,7 +913,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
             return(0);
         if ( p >= qprice )
             break;
-        price /= 0.995;
+        price /= 0.99;
         i++;
     }
     printf("i.%d qprice %.8f myprice %.8f price %.8f [%.8f]\n",i,qprice,myprice,price,p);
