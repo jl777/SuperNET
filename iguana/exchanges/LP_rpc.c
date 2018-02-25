@@ -668,7 +668,7 @@ again:
                     printf("%u t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",(uint32_t)time(NULL),coin->ratetime,coin->symbol,retstr,rate,coin->rate);
                 coin->rate = rate;
                 coin->ratetime = (uint32_t)time(NULL);
-                printf("set rate %.8f t%u\n",rate,coin->ratetime);
+                //printf("set rate %.8f t%u\n",rate,coin->ratetime);
             }
             free(retstr);
             if ( err == 1 && coin->electrum == 0 && strcmp(coin->estimatefeestr,"estimatefee") == 0 )
