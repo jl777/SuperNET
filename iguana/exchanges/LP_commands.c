@@ -140,6 +140,7 @@ balances(address)\n\
 fundvalue(address="", holdings=[], divisor=0)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
+inuse()\n\
 getmyprice(base, rel)\n\
 getprice(base, rel)\n\
 //sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
@@ -526,6 +527,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             else if ( strcmp(method,"sendrawtransaction") == 0 )
             {
                 return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx")));
+            }
+            else if ( strcmp(method,"inuse") == 0 )
+            {
+                return(jprint(LP_inuse_json(),1));
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
