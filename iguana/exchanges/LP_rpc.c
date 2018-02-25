@@ -102,7 +102,7 @@ int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( jobj(retjson,"error") == 0 && strcmp("getinfo",coin->getinfostr) == 0 )
+                if ( jobj(retjson,"error") != 0 && strcmp("getinfo",coin->getinfostr) == 0 )
                 {
                     strcpy(coin->getinfostr,"getblockchaininfo");
                     free_json(retjson), retjson = 0;
