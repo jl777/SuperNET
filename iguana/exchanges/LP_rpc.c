@@ -687,7 +687,7 @@ again:
                 rate = atof(retstr) / 1024.;
             if ( rate != 0. )
             {
-                rate *= 1.25;
+                //rate *= 1.25;
                 if ( rate < 0.00000005 )
                     rate = 0.00000005;
                 //if ( coin->electrum != 0 )
