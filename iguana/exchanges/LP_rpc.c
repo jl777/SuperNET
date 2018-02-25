@@ -687,11 +687,11 @@ again:
                 rate = atof(retstr) / 1024.;
             if ( rate != 0. )
             {
-                rate *= 1.5;
+                rate *= 1.25;
                 if ( rate < 0.00000005 )
                     rate = 0.00000005;
-                if ( coin->electrum != 0 )
-                    rate *= 1.5;
+                //if ( coin->electrum != 0 )
+                //    rate *= 1.5;
                 if ( fabs(rate - coin->rate) > SMALLVAL )
                     printf("%u t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",(uint32_t)time(NULL),coin->ratetime,coin->symbol,retstr,rate,coin->rate);
                 coin->rate = rate;
