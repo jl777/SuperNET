@@ -865,7 +865,7 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
     } else return(0);
     if ( qprice >= myprice )
     {
-        r = (LP_rand() % 100);
+        r = (LP_rand() % 90) + 10;
         range = (qprice - myprice);
         price = myprice + ((r * range) / 100.);
         bestprice = LP_bob_competition(&counter,qp->aliceid,price,0);
@@ -941,12 +941,13 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
 
 struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp)
 {
-    char *retstr;
-    //char str[65]; printf("alice %s received RESERVED.(%llu) %.8f\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid,(double)qp->destsatoshis/(qp->satoshis+1));
+    char *retstr; double qprice;
+    char str[65]; printf("alice %s received RESERVED.(%llu) %.8f\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid,(double)qp->destsatoshis/(qp->satoshis+1));
     *newqp = *qp;
     qp = newqp;
-    if ( LP_trades_alicevalidate(ctx,qp) > 0. )
+    if ( (qprice= LP_trades_alicevalidate(ctx,qp)) > 0. )
     {
+        printf("got qprice %.8f\n",qprice);
         LP_aliceid(qp->tradeid,qp->aliceid,"reserved",0,0);
         if ( (retstr= LP_quotereceived(qp)) != 0 )
             free(retstr);
