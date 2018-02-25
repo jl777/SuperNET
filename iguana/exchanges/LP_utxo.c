@@ -135,14 +135,16 @@ int32_t LP_reservation_check(bits256 txid,int32_t vout,bits256 pubkey)
     struct LP_inuse_info *lp; int32_t retval = -1;
     if ( bits256_nonz(pubkey) != 0 )
     {
+        char str[65],str2[65];
         portable_mutex_lock(&LP_inusemutex);
         if ( (lp= _LP_inuse_find(txid,vout)) != 0 )
         {
             if ( bits256_cmp(lp->otherpub,pubkey) == 0 )
                 retval = 0;
-        }
+            else printf("otherpub.%s != %s\n",bits256_str(str,lp->otherpub),bits256_str(str2,pubkey));
+        } else printf("couldnt find %s/v%d\n",bits256_str(str,txid),vout);
         portable_mutex_unlock(&LP_inusemutex);
-    }
+    } else printf("LP_reservation_check null pubkey\n");
     return(retval);
 }
 

@@ -178,6 +178,9 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_prices.c"
 #include "LP_scan.c"
 #include "LP_transaction.c"
+#ifndef NOTETOMIC
+#include "LP_etomic.c"
+#endif
 #include "LP_stats.c"
 #include "LP_remember.c"
 #include "LP_instantdex.c"
@@ -485,6 +488,11 @@ void command_rpcloop(void *ctx)
     command_rpcloop_stats.threshold = 2500.;
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         LP_millistats_update(&command_rpcloop_stats);
         nonz = LP_nanomsg_recvs(ctx);
         //if ( LP_mybussock >= 0 )
@@ -520,11 +528,11 @@ void LP_coinsloop(void *_coins)
     }
     while ( LP_STOP_RECEIVED == 0 )
     {
-        /*if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
+        if ( G.initializing != 0 )
         {
-            sleep(10);
+            sleep(1);
             continue;
-        }*/
+        }
         if ( strcmp("BTC",coins) == 0 )
             LP_millistats_update(&LP_coinsloopBTC_stats);
         else if ( strcmp("KMD",coins) == 0 )
@@ -790,7 +798,7 @@ void bech32_tests()
 
 void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
 {
-    int32_t i,n,notarized; cJSON *item; char *symbol; struct iguana_info *coin;
+    int32_t i,n,notarized; cJSON *item; char *symbol,*etomic; struct iguana_info *coin;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
     {
         printf("%s, ",activecoins[i]);
@@ -825,9 +833,14 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
                 LP_priceinfoadd(jstr(item,"coin"));
                 if ( (coin= LP_coinfind(symbol)) != 0 )
                 {
-                    if ( LP_getheight(&notarized,coin) <= 0 )
-                        coin->inactive = (uint32_t)time(NULL);
-                    else LP_unspents_load(coin->symbol,coin->smartaddr);
+                    if ( (etomic= jstr(item,"etomic")) != 0 )
+                        safecopy(coin->etomic,etomic,sizeof(coin->etomic));
+                    else
+                    {
+                        if ( LP_getheight(&notarized,coin) <= 0 )
+                            coin->inactive = (uint32_t)time(NULL);
+                        else LP_unspents_load(coin->symbol,coin->smartaddr);
+                    }
                     if ( coin->txfee == 0 && strcmp(coin->symbol,"BTC") != 0 )
                         coin->txfee = LP_MIN_TXFEE;
                     if ( 0 && strcmp(coin->symbol,"BCH") == 0 )
@@ -904,7 +917,11 @@ void LP_pubkeysloop(void *ctx)
     sleep(10);
     while ( LP_STOP_RECEIVED == 0 )
     {
-        //if ( strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") != 0 )
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         {
             LP_millistats_update(&LP_pubkeysloop_stats);
             if ( time(NULL) > lasttime+100 )
@@ -955,6 +972,11 @@ void LP_swapsloop(void *ctx)
     }
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         LP_millistats_update(&LP_swapsloop_stats);
         nonz = 0;
         DL_FOREACH_SAFE(LP_pendingswaps,sp,tmp)
@@ -979,6 +1001,11 @@ void gc_loop(void *ctx)
     LP_gcloop_stats.threshold = 11000.;
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         flag = 0;
         LP_millistats_update(&LP_gcloop_stats);
         portable_mutex_lock(&LP_gcmutex);
@@ -1014,6 +1041,11 @@ void queue_loop(void *ctx)
     queue_loop_stats.threshold = 1000.;
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         LP_millistats_update(&queue_loop_stats);
         //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = nonz = flag = 0;
@@ -1123,6 +1155,11 @@ void LP_reserved_msgs(void *ignore)
     LP_reserved_msgs_stats.threshold = 1000.;
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         nonz = 0;
         LP_millistats_update(&LP_reserved_msgs_stats);
         if ( num_Reserved_msgs[1] > 0 )
@@ -1461,6 +1498,11 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
         {
             //fprintf(stderr,".");
             sleep(3);
+        }
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
         }
         if ( LP_mainloop_iter(ctx,myipaddr,mypeer,LP_mypubsock) != 0 )
             nonz++;

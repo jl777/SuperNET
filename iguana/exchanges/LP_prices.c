@@ -512,7 +512,7 @@ char *LP_myprices()
 
 int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
 {
-    struct LP_priceinfo *basepp,*relpp; struct LP_pubkey_info *pubp; double minprice,maxprice,margin,buymargin,sellmargin;
+    struct LP_priceinfo *basepp=0,*relpp=0; struct LP_pubkey_info *pubp; double minprice,maxprice,margin,buymargin,sellmargin;
     *changedp = 0;
     //if ( strcmp("DEX",base) == 0 || strcmp("DEX",rel) == 0 )
     //    printf("%s/%s setprice %.8f\n",base,rel,price);
@@ -553,7 +553,7 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
         }*/
         basepp->myprices[relpp->ind] = price;          // ask
         //printf("LP_mypriceset base.%s rel.%s <- price %.8f\n",base,rel,price);
-        //relpp->myprices[basepp->ind] = (1. / price);   // bid
+        //relpp->myprices[basepp->ind] = (1. / price);   // bid, but best to do one dir at a time
         if ( (pubp= LP_pubkeyadd(G.LP_mypub25519)) != 0 )
         {
             pubp->timestamp = (uint32_t)time(NULL);
@@ -563,7 +563,9 @@ int32_t LP_mypriceset(int32_t *changedp,char *base,char *rel,double price)
             //pubp->matrix[relpp->ind][basepp->ind] = (1. / price);
         }
         return(0);
-    } else return(-1);
+    }
+    printf("base.%s rel.%s %p %p price %.8f error case\n",base!=0?base:"",rel!=0?rel:"",basepp,relpp,price);
+    return(-1);
 }
 
 double LP_price(char *base,char *rel)
@@ -815,7 +817,7 @@ int32_t LP_orderbook_utxoentries(uint32_t now,int32_t polarity,char *base,char *
         }
         if ( pubp->timestamp < oldest )
             continue;
-        bitcoin_address(base,coinaddr,basecoin->taddr,basecoin->pubtype,pubp->rmd160,sizeof(pubp->rmd160));
+        bitcoin_address(base,coinaddr,basecoin->taddr,basecoin->pubtype,pubp->pubsecp,33);
         avesatoshis = maxsatoshis = n = 0;
         ap = 0;
         if ( (price= LP_pubkey_price(&n,&avesatoshis,&maxsatoshis,pubp,baseid,relid)) > SMALLVAL ) //pubp->matrix[baseid][relid]) > SMALLVAL )//&& pubp->timestamps[baseid][relid] >= oldest )
