@@ -656,7 +656,7 @@ again:
                 if ( fastest < best )
                     best = fastest;
                 retstr = calloc(1,16);
-                sprintf(retstr,"%0.8f",(double)best * 1024);
+                sprintf(retstr,"%0.8f",((double)best * 1024)/SATOSHIDEN);
                 printf("LP_getestimatedrate (%s) -> %s\n",jprint(retjson,0),retstr);
                 free(retjson);
             }
