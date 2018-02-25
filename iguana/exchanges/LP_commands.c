@@ -530,6 +530,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             else if ( strcmp(method,"inuse") == 0 )
             {
+                printf("got inuse method\n");
                 return(jprint(LP_inuse_json(),1));
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
