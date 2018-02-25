@@ -52,7 +52,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
         //printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
         if ( coin->electrum != 0 && (strcmp(method,"getblock") == 0 || strcmp(method,"paxprice") == 0 || strcmp(method,"getrawmempool") == 0) )
             return(cJSON_Parse("{\"error\":\"illegal electrum call\"}"));
-        if ( coin->inactive == 0 || strcmp(method,"importprivkey") == 0  || strcmp(method,"validateaddress") == 0 || strcmp(method,"getrawtransaction") == 0 || strcmp(method,"getblock") == 0 || strcmp(method,"getinfo") == 0 )
+        if ( coin->inactive == 0 || strcmp(method,"importprivkey") == 0  || strcmp(method,"validateaddress") == 0 || strcmp(method,"getrawtransaction") == 0 || strcmp(method,"getblock") == 0 || strcmp(method,"getinfo") == 0 || strcmp(method,"getblockchaininfo") == 0 )
         {
             if ( coin->electrum == 0 )
             {
@@ -88,28 +88,44 @@ void LP_unspents_mark(char *symbol,cJSON *vins)
 
 int32_t LP_getheight(int32_t *notarizedp,struct iguana_info *coin)
 {
-    cJSON *retjson; char *retstr,*method = "getinfo"; int32_t height;
+    cJSON *retjson; char *retstr; int32_t height;
     *notarizedp = 0;
     if ( coin == 0 )
         return(-1);
+    if ( coin->getinfostr[0] == 0 )
+        strcpy(coin->getinfostr,"getinfo");
     height = coin->height;
     if ( coin->electrum == 0 && time(NULL) > coin->heighttime+60 && coin->userpass[0] != 0 )
     {
-        if ( strcmp(coin->symbol,"BTC") == 0 )
-            method = "getblockchaininfo";
-        retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,"[]");
+        retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,coin->getinfostr,"[]");
         if ( retstr != 0 && retstr[0] != 0 )
         {
-            retjson = cJSON_Parse(retstr);
-            coin->height = height = jint(retjson,"blocks");
-            if ( (*notarizedp= jint(retjson,"notarized")) != 0 && *notarizedp != coin->notarized )
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                //printf("new notarized %s %d -> %d\n",coin->symbol,coin->notarized,*notarizedp);
-                coin->notarized = *notarizedp;
-                coin->notarizationtxid = jbits256(retjson,"notarizedtxid");
-                coin->notarizedhash = jbits256(retjson,"notarizedhash");
+                if ( jobj(retjson,"error") != 0 && strcmp("getinfo",coin->getinfostr) == 0 )
+                {
+                    strcpy(coin->getinfostr,"getblockchaininfo");
+                    free_json(retjson), retjson = 0;
+                    free(retstr);
+                    if ( (retstr= bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,coin->getinfostr,"[]")) != 0 )
+                    {
+                        retjson = cJSON_Parse(retstr);
+                        printf("getblockchaininfo autoissue.(%s)\n",retstr);
+                    }
+                }
+                if ( retjson != 0 )
+                {
+                    coin->height = height = jint(retjson,"blocks");
+                    if ( (*notarizedp= jint(retjson,"notarized")) != 0 && *notarizedp != coin->notarized )
+                    {
+                        //printf("new notarized %s %d -> %d\n",coin->symbol,coin->notarized,*notarizedp);
+                        coin->notarized = *notarizedp;
+                        coin->notarizationtxid = jbits256(retjson,"notarizedtxid");
+                        coin->notarizedhash = jbits256(retjson,"notarizedhash");
+                    }
+                    free_json(retjson);
+                }
             }
-            free_json(retjson);
             if ( coin->height > 0 )
                 coin->heighttime = (uint32_t)time(NULL);
             free(retstr);
@@ -599,14 +615,25 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
     } else return(cJSON_Parse("{\"result\":\"success\"}"));
 }
 
+cJSON *LP_bitcoinfees()
+{
+    char *retstr; cJSON *retjson = 0;
+    if ( (retstr= issue_curlt("https://bitcoinfees.earn.com/api/v1/fees/recommended",LP_HTTP_TIMEOUT)) != 0 )
+    {
+        retjson = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    return(retjson);
+}
+
 double _LP_getestimatedrate(struct iguana_info *coin)
 {
-    char buf[512],*retstr=0; int32_t numblocks,err=0; cJSON *errjson,*retjson; double rate = 0.00000020;
+    char buf[512],*retstr=0; int32_t numblocks,err=0; cJSON *errjson,*retjson; double rate = 0.00000005;
     if ( coin->rate < 0. || time(NULL) > coin->ratetime+30 )
     {
         if ( coin->estimatefeestr[0] == 0 )
             strcpy(coin->estimatefeestr,"estimatefee");
-        numblocks = strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
+        numblocks = 3;//strcmp(coin->symbol,"BTC") == 0 ? 6 : 2;
 again:
         if ( coin->electrum == 0 )
         {
@@ -615,8 +642,29 @@ again:
         }
         else
         {
-            if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,numblocks)) != 0 )
+            // {"fastestFee":70,"halfHourFee":70,"hourFee":10}
+            if ( strcmp(coin->symbol,"BTC") == 0 && (retjson= LP_bitcoinfees()) != 0 )
+            {
+                int32_t fastest,half,hour,best=0;
+                fastest = jint(retjson,"fastestFee");
+                half = jint(retjson,"halfHourFee");
+                hour = jint(retjson,"hourFee");
+                if ( hour*3 > half )
+                    best = hour*3;
+                else best = half;
+                if ( fastest < best )
+                    best = fastest;
+                retstr = calloc(1,16);
+                sprintf(retstr,"%0.8f",((double)best * 1024)/SATOSHIDEN);
+                printf("LP_getestimatedrate (%s) -> %s\n",jprint(retjson,0),retstr);
+                free(retjson);
+            }
+            /*if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,numblocks)) != 0 )
+            {
                 retstr = jprint(retjson,1);
+                //free_json(retjson), retjson = 0; causes crash?
+                printf("estfee numblocks.%d (%s)\n",numblocks,retstr);
+            }*/
         }
         if ( retstr != 0 )
         {
@@ -638,23 +686,19 @@ again:
                 rate = atof(retstr) / 1024.;
             if ( rate != 0. )
             {
-                if ( strcmp("BTC",coin->symbol) == 0 )
-                {
-                    if ( rate < 0.00000100 )
-                        rate = 0.00000100;
-                }
-                else if ( rate < 0.00000020 )
-                    rate = 0.00000020;
-                rate *= 1.5;
-                if ( coin->electrum != 0 )
-                    rate *= 1.5;
+                //rate *= 1.25;
+                if ( rate < 0.00000005 )
+                    rate = 0.00000005;
+                //if ( coin->electrum != 0 )
+                //    rate *= 1.5;
                 if ( fabs(rate - coin->rate) > SMALLVAL )
-                    printf("t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",coin->ratetime,coin->symbol,retstr,rate,coin->rate);
+                    printf("%u t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",(uint32_t)time(NULL),coin->ratetime,coin->symbol,retstr,rate,coin->rate);
                 coin->rate = rate;
                 coin->ratetime = (uint32_t)time(NULL);
+                //printf("set rate %.8f t%u\n",rate,coin->ratetime);
             }
             free(retstr);
-            if ( err == 1 && coin->electrum == 0 && strcmp("BTC",coin->symbol) == 0 )
+            if ( err == 1 && coin->electrum == 0 && strcmp(coin->estimatefeestr,"estimatefee") == 0 )
             {
                 strcpy(coin->estimatefeestr,"estimatesmartfee");
                 err = 2;
@@ -662,12 +706,13 @@ again:
             }
         } else rate = coin->rate;
     } else rate = coin->rate;
+    coin->rate = rate;
     return(rate);
 }
 
 double LP_getestimatedrate(struct iguana_info *coin)
 {
-    double rate = 0.00000020;
+    double rate = 0.00000005;
     if ( coin == 0 )
         return(rate);
     if ( (rate= _LP_getestimatedrate(coin)) <= 0. )

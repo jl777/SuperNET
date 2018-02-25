@@ -489,6 +489,7 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
             {
                 //printf("wait for got.%d\n",datalen);
                 retval = (*verify)(swap,data,datalen);
+                swap->received = (uint32_t)time(NULL);
                 nn_freemsg(data);
                 //printf("retval.%d\n",retval);
                 return(retval);

@@ -140,6 +140,7 @@ balances(address)\n\
 fundvalue(address="", holdings=[], divisor=0)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
+inuse()\n\
 getmyprice(base, rel)\n\
 getprice(base, rel)\n\
 //sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
@@ -352,6 +353,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             return(clonestr("{\"error\":\"cant find address\"}"));
         }
+        else if ( strcmp(method,"inuse") == 0 )
+            return(jprint(LP_inuse_json(),1));
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
         if ( base[0] != 0 && rel[0] != 0 )
@@ -444,21 +447,13 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     }
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
+                        cJSON *array;
                         ptr->inactive = 0;
-                        cJSON *array; int32_t notarized;
-                        if ( ptr->etomic[0] == 0 && LP_getheight(&notarized,ptr) <= 0 )
-                        {
-                            ptr->inactive = (uint32_t)time(NULL);
-                            return(clonestr("{\"error\":\"coin cant be activated till synced\"}"));
-                        }
-                        else
-                        {
-                            if ( ptr->smartaddr[0] != 0 )
-                                LP_unspents_load(coin,ptr->smartaddr);
+                        if ( ptr->smartaddr[0] != 0 )
                             LP_unspents_load(coin,ptr->smartaddr);
-                            if ( strcmp(ptr->symbol,"KMD") == 0 )
-                                LP_importaddress("KMD",BOTS_BONDADDRESS);
-                        }
+                        LP_unspents_load(coin,ptr->smartaddr);
+                        if ( strcmp(ptr->symbol,"KMD") == 0 )
+                            LP_importaddress("KMD",BOTS_BONDADDRESS);
                         array = cJSON_CreateArray();
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));

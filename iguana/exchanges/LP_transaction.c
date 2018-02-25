@@ -1186,7 +1186,7 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
         vp->suppress_pubkeys = suppress_pubkeys;
         vp->ignore_cltverr = ignore_cltverr;
         jaddi(vins,LP_inputjson(up->U.txid,up->U.vout,spendscriptstr));
-        LP_unavailableset(up->U.txid,up->U.vout,(uint32_t)time(NULL)+LP_RESERVETIME,G.LP_mypub25519);
+        LP_unavailableset(up->U.txid,up->U.vout,(uint32_t)time(NULL)+LP_RESERVETIME*2,G.LP_mypub25519);
         if ( remains <= 0 && i >= numpre-1 )
             break;
         if ( numunspents < 0 || n >= LP_MAXVINS )
@@ -1486,42 +1486,6 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
     }
     free_json(argjson);
     return(retval);
-/*#ifdef old
-    int32_t retval=-1,iter; char *signedtx,*changeaddr = 0,_changeaddr[64]; struct iguana_info *coin; int64_t newtxfee=0,destamount;
-    char str2[65]; printf("%s rawtxgen.(%s/v%d)\n",rawtx->name,bits256_str(str2,rawtx->utxotxid),rawtx->utxovout);
-    if ( (coin= rawtx->coin) == 0 )
-        return(-1);
-    //return(_basilisk_rawtx_gen(str,swapstarted,pubkey33,iambob,lockinputs,rawtx,locktime,script,scriptlen,txfee,minconf,delay,privkey));
-    if ( changermd160 != 0 )
-    {
-        changeaddr = _changeaddr;
-        bitcoin_address(changeaddr,coin->taddr,coin->pubtype,changermd160,20);
-        //printf("changeaddr.(%s) vs destaddr.(%s)\n",changeaddr,rawtx->I.destaddr);
-    }
-    if ( strcmp(str,"myfee") == 0 && strcmp(coin->symbol,"BTC") == 0 )
-        txfee = LP_MIN_TXFEE;
-    for (iter=0; iter<2; iter++)
-    {
-        if ( (signedtx= basilisk_swap_bobtxspend(&rawtx->I.signedtxid,iter == 0 ? txfee : newtxfee,str,coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,privkey,0,0,0,0,0,rawtx->utxotxid,rawtx->utxovout,rawtx->I.destaddr,pubkey33,1,0,&destamount,rawtx->I.amount,changeaddr,vinaddr,rawtx->I.suppress_pubkeys,coin->zcash)) != 0 )
-        {
-            rawtx->I.datalen = (int32_t)strlen(signedtx) >> 1;
-            if ( rawtx->I.datalen <= sizeof(rawtx->txbytes) )
-            {
-                decode_hex(rawtx->txbytes,rawtx->I.datalen,signedtx);
-                rawtx->I.completed = 1;
-                retval = 0;
-            }
-            free(signedtx);
-            if ( strcmp(coin->symbol,"BTC") != 0 )
-                return(retval);
-            newtxfee = LP_txfeecalc(coin,0,rawtx->I.datalen);
-            printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
-        } else break;
-        if ( strcmp(str,"myfee") == 0 )
-            break;
-    }
-    return(retval);
-#endif*/
 }
 
 int32_t basilisk_rawtx_sign(char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen,int32_t ignore_cltverr,uint8_t *changermd160,char *vinaddr,int32_t zcash)

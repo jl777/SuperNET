@@ -1547,7 +1547,7 @@ void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
             if ( err != 0 )
             {
                 bitcoin_address(coinaddr,bp->destcoin->chain->pubtype,dp->minerkey33,33);
-                if ( dpow_haveutxo(myinfo,bp->destcoin,&bp->notaries[bp->myind].ratifydestutxo,&vout,coinaddr,bp->srccoin) > 0 )
+                if ( dpow_haveutxo(myinfo,bp->destcoin,&bp->notaries[bp->myind].ratifydestutxo,&vout,coinaddr,bp->srccoin->symbol) > 0 )
                 {
                     bp->notaries[bp->myind].ratifydestvout = vout;
                     np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
@@ -1733,7 +1733,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                         {
                             bitcoin_address(srcaddr,bp->srccoin->chain->pubtype,dp->minerkey33,33);
                             bitcoin_address(destaddr,bp->destcoin->chain->pubtype,dp->minerkey33,33);
-                            if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&bp->notaries[i].dest.prev_hash,&bp->notaries[i].dest.prev_vout,destaddr,bp->srccoin) < 0 )
+                            if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&bp->notaries[i].dest.prev_hash,&bp->notaries[i].dest.prev_vout,destaddr,bp->srccoin->symbol) < 0 )
                             {
                                 printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
                             }

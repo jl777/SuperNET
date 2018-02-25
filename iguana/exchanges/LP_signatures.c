@@ -149,9 +149,12 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->feetxid = jbits256(argjson,"feetxid");
     qp->destvout = jint(argjson,"destvout");
     qp->desthash = jbits256(argjson,"desthash");
-    qp->satoshis = j64bits(argjson,"satoshis");
-    qp->destsatoshis = j64bits(argjson,"destsatoshis");
     qp->txfee = j64bits(argjson,"txfee");
+    if ( (qp->satoshis= j64bits(argjson,"satoshis")) > qp->txfee )
+    {
+        //qp->price = (double)qp->destsatoshis / (qp->satoshis = qp->txfee);
+    }
+    qp->destsatoshis = j64bits(argjson,"destsatoshis");
     qp->desttxfee = j64bits(argjson,"desttxfee");
     qp->R.requestid = juint(argjson,"requestid");
     qp->R.quoteid = juint(argjson,"quoteid");
@@ -470,7 +473,7 @@ char *LP_postprice_recv(cJSON *argjson)
             }
             else
             {
-                printf("sig failure\n");
+                printf("sig failure.(%s)\n",jprint(argjson,0));
                 return(clonestr("{\"error\":\"sig failure\"}"));
             }
         }
@@ -696,19 +699,11 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
     }
     msg = jprint(reqjson,1);
     //printf("etomicdest.(%s) QUERY.(%s)\n",qp->etomicdest,msg);
-    //if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )
-    {
-        memset(&zero,0,sizeof(zero));
-        if ( bits256_nonz(qp->srchash) != 0 )
-            LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
-        LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
-        free(msg);
-        /*portable_mutex_lock(&LP_reservedmutex);
-        if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )
-            Reserved_msgs[1][num_Reserved_msgs[1]++] = msg;
-        if ( num_Reserved_msgs[0] < sizeof(Reserved_msgs[0])/sizeof(*Reserved_msgs[0])-2 )
-            Reserved_msgs[0][num_Reserved_msgs[0]++] = msg2;
-        portable_mutex_unlock(&LP_reservedmutex);*/
-    } //else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
+    memset(&zero,0,sizeof(zero));
+    if ( bits256_nonz(qp->srchash) != 0 )
+        LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
+    printf("QUERY.(%s)\n",msg);
+    LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
+    free(msg);
 }
 
