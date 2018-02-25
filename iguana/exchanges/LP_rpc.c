@@ -665,7 +665,7 @@ again:
                 if ( coin->electrum != 0 )
                     rate *= 1.5;
                 if ( fabs(rate - coin->rate) > SMALLVAL )
-                    printf("t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",coin->ratetime,coin->symbol,retstr,rate,coin->rate);
+                    printf("%u t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",(uint32_t)time(NULL),coin->ratetime,coin->symbol,retstr,rate,coin->rate);
                 coin->rate = rate;
                 coin->ratetime = (uint32_t)time(NULL);
             }
@@ -683,7 +683,7 @@ again:
 
 double LP_getestimatedrate(struct iguana_info *coin)
 {
-    double rate = 0.00000020;
+    double rate = 0.00000005;
     if ( coin == 0 )
         return(rate);
     if ( (rate= _LP_getestimatedrate(coin)) <= 0. )
