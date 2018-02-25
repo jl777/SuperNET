@@ -43,7 +43,7 @@ coins/mnz_7776
 coins/axo_7776
 coins/etomic_7776
 coins/btch_7776
-coins/vote_7776
+coins/vote2018_7776
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
