@@ -619,7 +619,7 @@ again:
             if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,numblocks)) != 0 )
             {
                 retstr = jprint(retjson,1);
-                free_json(retjson), retjson = 0;
+                //free_json(retjson), retjson = 0; causes crash?
                 printf("estfee (%s)\n",retstr);
             }
         }
