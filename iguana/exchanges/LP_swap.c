@@ -610,7 +610,9 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
         return(-1);
     }
     rawtx->I.redeemlen = recvbuf[offset++];
+#ifndef NOTETOMIC
     uint8arrayToHex(rawtx->I.ethTxid, &recvbuf[offset], 32);
+#endif
     offset += 32;
     printf("ETH txid received: %s\n", rawtx->I.ethTxid);
     data = &recvbuf[offset];
@@ -713,11 +715,14 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
             }
             if ( bits256_nonz(rawtx->I.actualtxid) != 0 && msgbits != 0 )
             {
-                if (swap->I.bobtomic[0] != 0 || swap->I.alicetomic[0] != 0) {
+#ifndef NOTETOMIC
+                if ( swap->I.bobtomic[0] != 0 || swap->I.alicetomic[0] != 0 )
+                {
                     char *ethTxId = sendEthTx(swap, rawtx);
                     strcpy(rawtx->I.ethTxid, ethTxId);
                     free(ethTxId);
                 }
+#endif
                 sendlen = 0;
                 sendbuf[sendlen++] = rawtx->I.datalen & 0xff;
                 sendbuf[sendlen++] = (rawtx->I.datalen >> 8) & 0xff;
