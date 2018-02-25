@@ -390,7 +390,7 @@ struct basilisk_swap
     struct LP_endpoint N;
     void (*balancingtrade)(struct basilisk_swap *swap,int32_t iambob);
     int32_t subsock,pushsock,connected,aliceunconf,depositunconf,paymentunconf;
-    uint32_t lasttime,aborted,tradeid;
+    uint32_t lasttime,aborted,tradeid,received;
     FILE *fp;
     bits256 persistent_privkey,persistent_pubkey;
     struct basilisk_swapinfo I;
