@@ -618,7 +618,7 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 
 double _LP_getestimatedrate(struct iguana_info *coin)
 {
-    char buf[512],*retstr=0; int32_t numblocks,err=0; cJSON *errjson,*retjson; double rate = 0.00000010;
+    char buf[512],*retstr=0; int32_t numblocks,err=0; cJSON *errjson,*retjson; double rate = 0.00000005;
     if ( coin->rate < 0. || time(NULL) > coin->ratetime+30 )
     {
         if ( coin->estimatefeestr[0] == 0 )
@@ -659,9 +659,9 @@ again:
                 rate = atof(retstr) / 1024.;
             if ( rate != 0. )
             {
-                if ( rate < 0.00000010 )
-                    rate = 0.00000010;
                 rate *= 1.5;
+                if ( rate < 0.00000005 )
+                    rate = 0.00000005;
                 if ( coin->electrum != 0 )
                     rate *= 1.5;
                 if ( fabs(rate - coin->rate) > SMALLVAL )
