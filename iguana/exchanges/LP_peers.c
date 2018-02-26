@@ -275,7 +275,7 @@ void LP_peer_recv(char *ipaddr,int32_t ismine,struct LP_pubkey_info *pubp)
     if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),RPC_port)) != 0 )
     {
         peer->numrecv++;
-        if ( ismine != 0 && bits256_cmp(G.LP_mypub25519,pubp->pubkey) != 0 && (bits256_nonz(peer->pubkey) == 0 || pubp->pairsock < 0) )
+        if ( ismine != 0 && bits256_cmp(G.LP_mypub25519,pubp->pubkey) != 0 && (bits256_cmp(peer->pubkey,pubp->pubkey) != 0 || pubp->pairsock != peer->pairsock) )
         {
             peer->pubkey = pubp->pubkey;
             pubp->pairsock = peer->pairsock;
