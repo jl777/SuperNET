@@ -1361,7 +1361,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 script[len++] = ((spendlen >> 8) & 0xff);
             }
             decode_hex(&script[len],spendlen,opretstr);
-            txobj = bitcoin_txoutput(txobj,len + script,scriptlen,change);
+            txobj = bitcoin_txoutput(txobj,script,len + scriptlen,change);
             printf("OP_RETURN.[%d, %d] script.(%s)\n",len,spendlen,opretstr);
         }
         else
