@@ -288,9 +288,9 @@ int64_t LP_claimtx(void *ctx,struct iguana_info *coin,bits256 *claimtxidp,bits25
 uint32_t LP_claimtime(struct iguana_info *coin,uint32_t expiration)
 {
     uint32_t heighttime,now = (uint32_t)time(NULL);
-    if ( coin->height > 0 )
+    if ( coin->height > 8 )
     {
-        heighttime = LP_heighttime(coin->symbol,coin->height-1);
+        heighttime = LP_heighttime(coin->symbol,coin->height-8);
         printf("claimtime: now %u height.%d heighttime.%u expiration.%u\n",now,coin->height,heighttime,expiration);
         if ( heighttime >= expiration )
             return(heighttime + 1);
