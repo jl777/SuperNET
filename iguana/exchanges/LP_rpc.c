@@ -656,7 +656,7 @@ again:
                     best = fastest;
                 retstr = calloc(1,16);
                 sprintf(retstr,"%0.8f",((double)best * 1024)/SATOSHIDEN);
-                printf("LP_getestimatedrate (%s) -> %s\n",jprint(retjson,0),retstr);
+                //printf("LP_getestimatedrate (%s) -> %s\n",jprint(retjson,0),retstr);
                 free(retjson);
             }
             /*if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,numblocks)) != 0 )

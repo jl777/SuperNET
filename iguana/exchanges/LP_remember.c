@@ -1811,7 +1811,7 @@ char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
                 if ( ridqid == 0 || j == count )
                 {
                     if ( basilisk_swap_addarray(pending,refbase,refrel) > 0 )
-                        jaddi(retarray,pending);
+                        jaddi(retarray,jduplicate(pending));
                     else free_json(pending);
                 } else free_json(pending);
             }
