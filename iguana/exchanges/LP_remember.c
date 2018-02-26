@@ -1162,6 +1162,12 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         printf("Bob.%p is null or Alice.%p is null\n",bob,alice);
         return(cJSON_Parse("{\"error\":\"null bob or alice coin\"}"));
     }
+    if ( alice->inactive != 0 || bob->inactive != 0 )
+    {
+        printf("Alice.%s inactive.%u or Bob.%s inactive.%u\n",rswap.alicecoin,alice->inactive,rswap.bobcoin,bob->inactive);
+        return(cJSON_Parse("{\"error\":\"inactive bob or alice coin\"}"));
+    }
+    portable_mutex_lock(&LP_swaplistmutex);
     //printf("src.(Adest %s, Bdest %s), dest.(Adest %s, Bdest %s)\n",srcAdest,srcBdest,destAdest,destBdest);
     //printf("iambob.%d finishedflag.%d %s %.8f txfee, %s %.8f txfee\n",rswap.iambob,rswap.finishedflag,rswap.alicecoin,dstr(rswap.Atxfee),rswap.bobcoin,dstr(rswap.Btxfee));
     //printf("privAm.(%s) %p/%p\n",bits256_str(str,rswap.privAm),Adest,AAdest);
@@ -1170,11 +1176,6 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
     {
         //printf("ALICE.(%s) 1st refht %s <- %d, scan %d %d\n",rswap.Adestaddr,alice->symbol,alice->firstrefht,alice->firstscanht,alice->lastscanht);
         //printf("BOB.(%s) 1st refht %s <- %d, scan %d %d\n",rswap.destaddr,bob->symbol,bob->firstrefht,bob->firstscanht,bob->lastscanht);
-        if ( alice->inactive != 0 || bob->inactive != 0 )
-        {
-            printf("Alice.%s inactive.%u or Bob.%s inactive.%u\n",rswap.alicecoin,alice->inactive,rswap.bobcoin,bob->inactive);
-            return(cJSON_Parse("{\"error\":\"inactive bob or alice coin\"}"));
-        }
         LP_rswap_checktx(&rswap,rswap.alicecoin,BASILISK_ALICEPAYMENT);
         LP_rswap_checktx(&rswap,rswap.bobcoin,BASILISK_BOBPAYMENT);
         LP_rswap_checktx(&rswap,rswap.bobcoin,BASILISK_BOBDEPOSIT);
@@ -1486,6 +1487,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
         free_json(item);
         item = 0;
     }
+    portable_mutex_unlock(&LP_swaplistmutex);
     return(item);
 }
 
@@ -1514,7 +1516,7 @@ void for_satinder()
 char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forceflag,int32_t pendingonly)
 {
     uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS],Btotal,Ktotal; int32_t i,j,count=0;
-    portable_mutex_lock(&LP_swaplistmutex);
+    //portable_mutex_lock(&LP_swaplistmutex);
     memset(ridqids,0,sizeof(ridqids));
     memset(KMDtotals,0,sizeof(KMDtotals));
     memset(BTCtotals,0,sizeof(BTCtotals));
@@ -1595,7 +1597,7 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forc
         else if ( Ktotal < 0 && Btotal > 0 )
             jaddnum(retjson,"avesell",(double)-Btotal/Ktotal);
     }
-    portable_mutex_unlock(&LP_swaplistmutex);
+    //portable_mutex_unlock(&LP_swaplistmutex);
     return(jprint(retjson,1));
 }
 
