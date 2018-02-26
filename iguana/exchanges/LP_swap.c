@@ -906,6 +906,7 @@ void LP_bobloop(void *_swap)
         }
     } else printf("swap timed out\n");
     LP_swap_endcritical = (uint32_t)time(NULL);
+    sleep(13);
     LP_pendswap_add(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid);
     //swap->I.finished = LP_swapwait(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*3,swap->I.aliceconfirms == 0 ? 3 : 30);
     basilisk_swap_finished(swap);
@@ -986,6 +987,7 @@ void LP_aliceloop(void *_swap)
         }
     }
     LP_swap_endcritical = (uint32_t)time(NULL);
+    sleep(13);
     LP_pendswap_add(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid);
     //swap->I.finished = LP_swapwait(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*3,swap->I.aliceconfirms == 0 ? 3 : 30);
     basilisk_swap_finished(swap);
