@@ -27,3 +27,4 @@ curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"BTCH\",\"agent\":\"iguana
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"ETOMIC\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"50000\",\"sendflag\":1,\"duplicates\":10}"
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"VOTE2018\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"50000\",\"sendflag\":1,\"duplicates\":10}"
 curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"CHIPS\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"50000\",\"sendflag\":1,\"duplicates\":10}"
+curl --url "http://127.0.0.1:7776" --data "{\"coin\":\"NINJA\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"50000\",\"sendflag\":1,\"duplicates\":10}"
