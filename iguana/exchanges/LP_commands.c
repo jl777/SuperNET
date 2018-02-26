@@ -163,6 +163,7 @@ bot_pause(botid)\n\
 calcaddress(passphrase)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
+timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
@@ -510,6 +511,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             else if ( strcmp(method,"sendrawtransaction") == 0 )
             {
                 return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx")));
+            }
+            else if ( strcmp(method,"timelock") == 0 )
+            {
+                return(LP_timelock(coin,juint(argjson,"duration"),jstr(argjson,"destaddr"),jdouble(argjson,"amount")*SATOSHIDEN));
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {

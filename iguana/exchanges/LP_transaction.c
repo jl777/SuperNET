@@ -1199,10 +1199,10 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     return(n);
 }
 
-char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,uint32_t locktime)
+char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,uint32_t locktime,char *opretstr)
 {
     static void *ctx;
-    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[64],spendscript[256]; char *coinaddr,*rawtxbytes; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS*256]; struct LP_address *ap;
+    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,len,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS*256]; struct LP_address *ap;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     *numvinsp = 0;
@@ -1297,15 +1297,32 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 free_json(txobj);
                 return(0);
             }
-            bitcoin_addr2rmd160(coin->symbol,coin->taddr,&addrtype,rmd160,coinaddr);
-            if ( addrtype == coin->pubtype )
-                spendlen = bitcoin_standardspend(spendscript,0,rmd160);
-            else spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
-            if ( i == numvouts-1 && strcmp(coinaddr,coin->smartaddr) == 0 && change != 0 )
+            if ( (scriptstr= jstr(item,"script")) != 0 )
             {
-                printf("combine last vout %.8f with change %.8f\n",dstr(value+adjust),dstr(change));
-                value += change;
-                change = 0;
+                spendlen = (int32_t)strlen(scriptstr) >> 1;
+                if ( spendlen < sizeof(script) )
+                {
+                    decode_hex(script,spendlen,scriptstr);
+                    printf("i.%d using external script.(%s)\n",i,scriptstr);
+                }
+                else
+                {
+                    printf("custom script.%d too long %d\n",i,spendlen);
+                    return(0);
+                }
+            }
+            else
+            {
+                bitcoin_addr2rmd160(coin->symbol,coin->taddr,&addrtype,rmd160,coinaddr);
+                if ( addrtype == coin->pubtype )
+                    spendlen = bitcoin_standardspend(spendscript,0,rmd160);
+                else spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
+                if ( i == numvouts-1 && strcmp(coinaddr,coin->smartaddr) == 0 && change != 0 )
+                {
+                    printf("combine last vout %.8f with change %.8f\n",dstr(value+adjust),dstr(change));
+                    value += change;
+                    change = 0;
+                }
             }
             txobj = bitcoin_txoutput(txobj,spendscript,spendlen,value + adjust);
         }
@@ -1323,6 +1340,36 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     }
     if ( change != 0 )
         txobj = bitcoin_txoutput(txobj,script,scriptlen,change);
+    if ( opretstr != 0 )
+    {
+        spendlen = (int32_t)strlen(opretstr) >> 1;
+        if ( spendlen < sizeof(script) )
+        {
+            len = 0;
+            script[len++] = SCRIPT_OP_RETURN;
+            if ( spendlen < 76 )
+                script[len++] = spendlen;
+            else if ( spendlen <= 0xff )
+            {
+                script[len++] = 0x4c;
+                script[len++] = spendlen;
+            }
+            else if ( spendlen <= 0xffff )
+            {
+                script[len++] = 0x4d;
+                script[len++] = (spendlen & 0xff);
+                script[len++] = ((spendlen >> 8) & 0xff);
+            }
+            decode_hex(&script[len],spendlen,opretstr);
+            txobj = bitcoin_txoutput(txobj,len + script,scriptlen,change);
+            printf("OP_RETURN.[%d, %d] script.(%s)\n",len,spendlen,opretstr);
+        }
+        else
+        {
+            printf("custom script.%d too long %d\n",i,spendlen);
+            return(0);
+        }
+    }
     if ( (rawtxbytes= bitcoin_json2hex(coin->symbol,coin->isPoS,&txid,txobj,V)) != 0 )
     {
     } else printf("error making rawtx suppress.%d\n",suppress_pubkeys);
@@ -1378,7 +1425,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
         numvins = 0;
-        if ( (rawtx= LP_createrawtransaction(&txobj,&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee,utxotxid,utxovout,locktime)) != 0 )
+        if ( (rawtx= LP_createrawtransaction(&txobj,&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee,utxotxid,utxovout,locktime,jstr(argjson,"opreturn"))) != 0 )
         {
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));

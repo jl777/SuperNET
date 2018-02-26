@@ -164,6 +164,35 @@ int32_t LP_deposit_addr(char *symbol,char *p2shaddr,uint8_t *script,uint8_t tadd
     return(n);
 }
 
+char *LP_timelock(char *symbol,uint32_t duration,char *destaddr,uint64_t satoshis)
+{
+    struct iguana_info *coin; uint32_t expiration; char *retstr,p2shaddr[64],redeemscript[256]; cJSON *argjson,*array,*item; int32_t n=0; uint8_t addrtype,rmd160[20],p2sh160[20],script[40];
+    if ( (coin= LP_coinfind(symbol)) != 0 )
+    {
+        expiration = (uint32_t)time(NULL) + duration;
+        if ( destaddr == 0 )
+            destaddr = coin->smartaddr;
+        bitcoin_addr2rmd160(symbol,coin->taddr,&addrtype,rmd160,destaddr);
+        n = bitcoin_timelockspend(script,0,rmd160,expiration);
+        init_hexbytes_noT(redeemscript,script,n);
+        calc_rmd160_sha256(p2sh160,script,n);
+        bitcoin_address(symbol,p2shaddr,coin->taddr,coin->p2shtype,p2sh160,20);
+        argjson = cJSON_CreateObject();
+        array = cJSON_CreateArray();
+        item = cJSON_CreateObject();
+        jaddnum(item,p2shaddr,dstr(satoshis));
+        jaddi(array,item);
+        jadd(argjson,"outputs",array);
+        jaddstr(argjson,"opreturn",redeemscript);
+        //printf("deposit.(%s)\n",jprint(argjson,0));
+        if ( (retstr= LP_withdraw(coin,argjson)) != 0 )
+        {
+            printf("timelock.(%s)\n",retstr);
+            return(retstr);
+        } else return(clonestr("{\"error\":\"null return from LP_withdraw\"}"));
+    } else return(clonestr("{\"error\":\"cant find coin\"}"));
+}
+
 char *LP_instantdex_deposit(struct iguana_info *coin,int32_t weeks,double amount,int32_t broadcast)
 {
     char p2shaddr[64],*retstr,*hexstr; uint8_t script[512]; int32_t weeki,scriptlen; cJSON *argjson,*retjson,*array,*item,*obj; uint32_t timestamp; bits256 txid,sendtxid; uint64_t amount64;

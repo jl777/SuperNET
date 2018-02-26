@@ -500,10 +500,10 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 //char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
-                for (i=0; i<10; i++)
+                for (i=0; i<3; i++)
                 {
                     LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
-                    sleep(3);
+                    sleep(10);
                     if ( swap->received != 0 )
                     {
                         printf("swap %u-%u has started t%u\n",swap->I.req.requestid,swap->I.req.quoteid,swap->received);
