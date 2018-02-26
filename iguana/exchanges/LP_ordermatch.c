@@ -498,12 +498,16 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                 if ( (kmdcoin= LP_coinfind("KMD")) != 0 )
                     jadd(reqjson,"proof",LP_instantdex_txids(0,kmdcoin->smartaddr));
                 //char str[65]; printf("BOB pubsock.%d binds to %d (%s)\n",pubsock,pair,bits256_str(str,qp->desthash));
+                LP_importaddress(qp->destcoin,qp->destaddr);
+                LP_otheraddress(qp->srccoin,otheraddr,qp->destcoin,qp->destaddr);
+                LP_importaddress(qp->srccoin,otheraddr);
                 bits256 zero;
                 memset(zero.bytes,0,sizeof(zero));
-                for (i=0; i<10; i++)
+                for (i=0; i<1; i++)
                 {
                     LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->desthash,jprint(reqjson,0));
-                    sleep(3);
+                    break;
+                    sleep(10);
                     if ( swap->received != 0 )
                     {
                         printf("swap %u-%u has started t%u\n",swap->I.req.requestid,swap->I.req.quoteid,swap->received);
@@ -513,9 +517,6 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                     LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
                 }
                 free_json(reqjson);
-                LP_importaddress(qp->destcoin,qp->destaddr);
-                LP_otheraddress(qp->srccoin,otheraddr,qp->destcoin,qp->destaddr);
-                LP_importaddress(qp->srccoin,otheraddr);
                 retval = 0;
             } else printf("error launching swaploop\n");
         } else printf("couldnt bind to any port %s\n",pairstr);
