@@ -27,6 +27,27 @@ struct LP_inuse_info
 } LP_inuse[1024];
 int32_t LP_numinuse;
 
+cJSON *LP_inuse_json()
+{
+    int32_t i; cJSON *item,*array; struct LP_inuse_info *lp;
+    array = cJSON_CreateArray();
+    for (i=0; i<LP_numinuse; i++)
+    {
+        lp = &LP_inuse[i];
+        if ( lp->expiration != 0 )
+        {
+            item = cJSON_CreateObject();
+            jaddnum(item,"expiration",lp->expiration);
+            jaddbits256(item,"txid",lp->txid);
+            jaddnum(item,"vout",lp->vout);
+            if ( bits256_nonz(lp->otherpub) != 0 )
+                jaddbits256(item,"otherpub",lp->otherpub);
+            jaddi(array,item);
+        }
+    }
+    return(array);
+}
+
 struct LP_inuse_info *_LP_inuse_find(bits256 txid,int32_t vout)
 {
     int32_t i;
@@ -114,14 +135,16 @@ int32_t LP_reservation_check(bits256 txid,int32_t vout,bits256 pubkey)
     struct LP_inuse_info *lp; int32_t retval = -1;
     if ( bits256_nonz(pubkey) != 0 )
     {
+        char str[65],str2[65];
         portable_mutex_lock(&LP_inusemutex);
         if ( (lp= _LP_inuse_find(txid,vout)) != 0 )
         {
             if ( bits256_cmp(lp->otherpub,pubkey) == 0 )
                 retval = 0;
-        }
+            else printf("otherpub.%s != %s\n",bits256_str(str,lp->otherpub),bits256_str(str2,pubkey));
+        } else printf("couldnt find %s/v%d\n",bits256_str(str,txid),vout);
         portable_mutex_unlock(&LP_inusemutex);
-    }
+    } else printf("LP_reservation_check null pubkey\n");
     return(retval);
 }
 

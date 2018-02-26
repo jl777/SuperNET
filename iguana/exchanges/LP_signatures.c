@@ -41,13 +41,19 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
 
 cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 {
-    double price; cJSON *retjson = cJSON_CreateObject();
+    double price; char etomic[64],activesymbol[65]; cJSON *retjson = cJSON_CreateObject();
     if ( jobj(retjson,"gui") == 0 )
         jaddstr(retjson,"gui",qp->gui[0] != 0 ? qp->gui : LP_gui);
     jadd64bits(retjson,"aliceid",qp->aliceid);
     jaddnum(retjson,"tradeid",qp->tradeid);
     jaddstr(retjson,"base",qp->srccoin);
+    if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
+        jaddstr(retjson,"bobtomic",etomic);
+    jaddstr(retjson,"etomicsrc",qp->etomicsrc);
     jaddstr(retjson,"rel",qp->destcoin);
+    if ( LP_etomicsymbol(activesymbol,etomic,qp->destcoin) != 0 )
+        jaddstr(retjson,"alicetomic",etomic);
+    jaddstr(retjson,"etomicdest",qp->etomicdest);
     if ( qp->coinaddr[0] != 0 )
         jaddstr(retjson,"address",qp->coinaddr);
     if ( qp->timestamp != 0 )
@@ -104,13 +110,31 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
 
 int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 {
-    uint32_t rid,qid;
+    uint32_t rid,qid; char etomic[64],activesymbol[65],*etomicstr;
     memset(qp,0,sizeof(*qp));
     safecopy(qp->gui,LP_gui,sizeof(qp->gui));
     safecopy(qp->srccoin,jstr(argjson,"base"),sizeof(qp->srccoin));
+    if ( LP_etomicsymbol(activesymbol,etomic,qp->srccoin) != 0 )
+    {
+        if ( (etomicstr= jstr(argjson,"bobtomic")) == 0 || strcmp(etomicstr,etomic) != 0 )
+        {
+            printf("etomic src mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
+            return(-1);
+        }
+    }
     safecopy(qp->coinaddr,jstr(argjson,"address"),sizeof(qp->coinaddr));
+    safecopy(qp->etomicsrc,jstr(argjson,"etomicsrc"),sizeof(qp->etomicsrc));
     safecopy(qp->destcoin,jstr(argjson,"rel"),sizeof(qp->destcoin));
+    if ( LP_etomicsymbol(activesymbol,etomic,qp->destcoin) != 0 )
+    {
+        if ( (etomicstr= jstr(argjson,"alicetomic")) == 0 || strcmp(etomicstr,etomic) != 0 )
+        {
+            printf("etomic dest mismatch (%s) vs (%s)\n",etomicstr!=0?etomicstr:"",etomic);
+            return(-1);
+        }
+    }
     safecopy(qp->destaddr,jstr(argjson,"destaddr"),sizeof(qp->destaddr));
+    safecopy(qp->etomicdest,jstr(argjson,"etomicdest"),sizeof(qp->etomicdest));
     qp->aliceid = j64bits(argjson,"aliceid");
     qp->tradeid = juint(argjson,"tradeid");
     qp->timestamp = juint(argjson,"timestamp");
@@ -125,9 +149,12 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->feetxid = jbits256(argjson,"feetxid");
     qp->destvout = jint(argjson,"destvout");
     qp->desthash = jbits256(argjson,"desthash");
-    qp->satoshis = j64bits(argjson,"satoshis");
-    qp->destsatoshis = j64bits(argjson,"destsatoshis");
     qp->txfee = j64bits(argjson,"txfee");
+    if ( (qp->satoshis= j64bits(argjson,"satoshis")) > qp->txfee )
+    {
+        //qp->price = (double)qp->destsatoshis / (qp->satoshis = qp->txfee);
+    }
+    qp->destsatoshis = j64bits(argjson,"destsatoshis");
     qp->desttxfee = j64bits(argjson,"desttxfee");
     qp->R.requestid = juint(argjson,"requestid");
     qp->R.quoteid = juint(argjson,"quoteid");
@@ -446,7 +473,7 @@ char *LP_postprice_recv(cJSON *argjson)
             }
             else
             {
-                printf("sig failure\n");
+                printf("sig failure.(%s)\n",jprint(argjson,0));
                 return(clonestr("{\"error\":\"sig failure\"}"));
             }
         }
@@ -671,20 +698,12 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
             jadd(reqjson,"proof",LP_instantdex_txids(0,coin->smartaddr));
     }
     msg = jprint(reqjson,1);
-    //printf("QUERY.(%s)\n",msg);
-    //if ( bits256_nonz(qp->srchash) == 0 || strcmp(method,"request") != 0 )
-    {
-        memset(&zero,0,sizeof(zero));
-        if ( bits256_nonz(qp->srchash) != 0 )
-            LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
-        LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
-        free(msg);
-        /*portable_mutex_lock(&LP_reservedmutex);
-        if ( num_Reserved_msgs[1] < sizeof(Reserved_msgs[1])/sizeof(*Reserved_msgs[1])-2 )
-            Reserved_msgs[1][num_Reserved_msgs[1]++] = msg;
-        if ( num_Reserved_msgs[0] < sizeof(Reserved_msgs[0])/sizeof(*Reserved_msgs[0])-2 )
-            Reserved_msgs[0][num_Reserved_msgs[0]++] = msg2;
-        portable_mutex_unlock(&LP_reservedmutex);*/
-    } //else LP_broadcast_message(LP_mypubsock,qp->srccoin,qp->destcoin,qp->srchash,msg);
+    //printf("etomicdest.(%s) QUERY.(%s)\n",qp->etomicdest,msg);
+    memset(&zero,0,sizeof(zero));
+    if ( bits256_nonz(qp->srchash) != 0 )
+        LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
+    printf("QUERY.(%s)\n",msg);
+    LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
+    free(msg);
 }
 

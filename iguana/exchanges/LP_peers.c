@@ -63,7 +63,7 @@ void LP_cmdchannel(struct LP_peerinfo *peer)
 #ifdef LP_DONT_CMDCHANNEL 
     return;
 #endif
-    if ( bits256_nonz(G.LP_mypub25519) == 0 || strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
+    if ( bits256_nonz(G.LP_mypub25519) == 0 ) //|| strcmp(G.USERPASS,"1d8b27b21efabcd96571cd56f91a40fb9aa4cc623d273c63bf9223dc6f8cd81f") == 0 )
         return;
     if ( (cmdport= LP_psock_get(connectaddr,publicaddr,1,1,peer->ipaddr)) != 0 )
     {
@@ -113,7 +113,7 @@ void LP_peer_pairsock(bits256 pubkey)
 
 struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t isLP,uint32_t sessionid,uint16_t netid)
 {
-    uint32_t ipbits; int32_t valid,pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
+    uint32_t ipbits; int32_t valid,pushsock,subsock,timeout; char checkip[64],pushaddr[128],subaddr[128]; struct LP_peerinfo *peer = 0;
 #ifdef LP_STRICTPEERS
     if ( strncmp("5.9.253",ipaddr,strlen("5.9.253")) != 0 )
         return(0);

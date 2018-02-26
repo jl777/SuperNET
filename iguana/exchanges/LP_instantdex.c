@@ -65,7 +65,8 @@ void LP_instantdex_deposituniq(FILE *fp,bits256 txid)
     for (i=0; i<n; i++)
     {
         fseek(fp,sizeof(prevtxid) * i,SEEK_SET);
-        fread(&prevtxid,1,sizeof(prevtxid),fp);
+        if ( fread(&prevtxid,1,sizeof(prevtxid),fp) != sizeof(prevtxid) )
+            printf("error reading deposit file\n");
         if ( bits256_cmp(prevtxid,txid) == 0 )
         {
             //printf("%s duplicate of deposits[%d]\n",bits256_str(str,prevtxid),i);
@@ -92,13 +93,14 @@ void LP_instantdex_filescreate(char *coinaddr)
         for (i=0; i<n; i++)
         {
             fseek(fp,sizeof(txid) * i,SEEK_SET);
-            fread(&txid,1,sizeof(txid),fp);
+            if ( fread(&txid,1,sizeof(txid),fp) != sizeof(txid) )
+                printf("error reating %s\n",fname);
             jaddibits256(array,txid);
             if ( (txobj= LP_gettxout("KMD",coinaddr,txid,0)) != 0 )
                 free_json(txobj);
             else
             {
-                char str[65]; printf("%s/v%d is already spent\n",bits256_str(str,txid),0);
+                //char str[65]; printf("%s/v%d is already spent\n",bits256_str(str,txid),0);
                 continue;
             }
             jaddibits256(newarray,txid);

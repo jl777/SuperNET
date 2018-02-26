@@ -140,6 +140,7 @@ balances(address)\n\
 fundvalue(address="", holdings=[], divisor=0)\n\
 orderbook(base, rel, duration=3600)\n\
 getprices()\n\
+inuse()\n\
 getmyprice(base, rel)\n\
 getprice(base, rel)\n\
 //sendmessage(base=coin, rel="", pubkey=zero, <argjson method2>)\n\
@@ -176,19 +177,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
     {
         if ( G.USERPASS_COUNTER == 0 )
         {
-            char pub33str[67];
             G.USERPASS_COUNTER = 1;
-            if ( 0 )
-            {
-                retjson = cJSON_CreateObject();
-                jaddstr(retjson,"userpass",G.USERPASS);
-                jaddbits256(retjson,"mypubkey",G.LP_mypub25519);
-                init_hexbytes_noT(pub33str,G.LP_pubsecp,33);
-                jaddstr(retjson,"pubsecp",pub33str);
-                jadd(retjson,"coins",LP_coinsjson(LP_showwif));
-                LP_cmdcount++;
-                return(jprint(retjson,1));
-            }
+            LP_cmdcount++;
         }
         // if passphrase api and passphrase is right, ignore userpass, use hass of passphrase
         if ( strcmp(method,"passphrase") == 0 && (passphrase= jstr(argjson,"passphrase")) != 0 )
@@ -363,6 +353,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             return(clonestr("{\"error\":\"cant find address\"}"));
         }
+        else if ( strcmp(method,"inuse") == 0 )
+            return(jprint(LP_inuse_json(),1));
         else if ( (retstr= LP_istradebots_command(ctx,pubsock,method,argjson)) != 0 )
             return(retstr);
         if ( base[0] != 0 && rel[0] != 0 )
@@ -446,7 +438,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 //*
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-                    if ( ptr->userpass[0] == 0 && strcmp(ptr->symbol,"ETH") != 0 )
+                    if ( ptr->userpass[0] == 0 && ptr->etomic[0] == 0 )
                     {
                         cJSON *retjson = cJSON_CreateObject();
                         jaddstr(retjson,"error",LP_DONTCHANGE_ERRMSG0);
@@ -455,21 +447,13 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     }
                     if ( LP_conflicts_find(ptr) == 0 )
                     {
+                        cJSON *array;
                         ptr->inactive = 0;
-                        cJSON *array; int32_t notarized;
-                        if ( strcmp(ptr->symbol,"ETH") != 0 && LP_getheight(&notarized,ptr) <= 0 )
-                        {
-                            ptr->inactive = (uint32_t)time(NULL);
-                            return(clonestr("{\"error\":\"coin cant be activated till synced\"}"));
-                        }
-                        else
-                        {
-                            if ( ptr->smartaddr[0] != 0 )
-                                LP_unspents_load(coin,ptr->smartaddr);
+                        if ( ptr->smartaddr[0] != 0 )
                             LP_unspents_load(coin,ptr->smartaddr);
-                            if ( strcmp(ptr->symbol,"KMD") == 0 )
-                                LP_importaddress("KMD",BOTS_BONDADDRESS);
-                        }
+                        LP_unspents_load(coin,ptr->smartaddr);
+                        if ( strcmp(ptr->symbol,"KMD") == 0 )
+                            LP_importaddress("KMD",BOTS_BONDADDRESS);
                         array = cJSON_CreateArray();
                         jaddi(array,LP_coinjson(ptr,0));
                         return(jprint(array,1));
@@ -777,7 +761,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                         myipaddr = LP_mypeer->ipaddr;
                     else printf("LP_psock dont have actual ipaddr?\n");
                 }
-                if ( jint(argjson,"ispaired") != 0 )
+                if ( jint(argjson,"ispaired") != 0 && jobj(argjson,"netid") != 0 && juint(argjson,"netid") == G.netid )
                 {
                     retstr = LP_psock(&psock,myipaddr,1,jint(argjson,"cmdchannel"),jbits256(argjson,"pubkey"));
                     //printf("LP_commands.(%s)\n",retstr);
