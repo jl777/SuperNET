@@ -326,10 +326,10 @@ char *LP_unlockedspend(void *ctx,char *symbol,bits256 utxotxid)
                         if ( redeemscript[0] == SCRIPT_OP_RETURN && redeemscript[1] == 32 && redeemscript[2] == 4 && redeemscript[7] == 0xb1 && redeemscript[8] == 0x75 && redeemscript[9] == 0x76 && redeemscript[10] == 0xa9 && redeemscript[11] == 0x14 && redeemscript[32] == 0x88 && redeemscript[33] == 0xac )
                         {
                             expiration = 0;
-                            expiration = (expiration << 8) | redeemscript[3];
-                            expiration = (expiration << 8) | redeemscript[4];
-                            expiration = (expiration << 8) | redeemscript[5];
                             expiration = (expiration << 8) | redeemscript[6];
+                            expiration = (expiration << 8) | redeemscript[5];
+                            expiration = (expiration << 8) | redeemscript[4];
+                            expiration = (expiration << 8) | redeemscript[3];
                             bitcoin_address(symbol,destaddr,coin->taddr,coin->pubtype,&redeemscript[12],20);
                             jaddstr(retjson,"address",destaddr);
                             jaddnum(retjson,"expiration",expiration);
