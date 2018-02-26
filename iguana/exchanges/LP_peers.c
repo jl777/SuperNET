@@ -113,7 +113,7 @@ void LP_peer_pairsock(bits256 pubkey)
 
 struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,int32_t isLP,uint32_t sessionid,uint16_t netid)
 {
-    uint32_t ipbits; int32_t valid,pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
+    uint32_t ipbits; int32_t valid,pushsock,subsock,timeout; char checkip[64],pushaddr[128],subaddr[128]; struct LP_peerinfo *peer = 0;
 #ifdef LP_STRICTPEERS
     if ( strncmp("5.9.253",ipaddr,strlen("5.9.253")) != 0 )
         return(0);
@@ -275,7 +275,7 @@ void LP_peer_recv(char *ipaddr,int32_t ismine,struct LP_pubkey_info *pubp)
     if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),RPC_port)) != 0 )
     {
         peer->numrecv++;
-        if ( ismine != 0 && bits256_cmp(G.LP_mypub25519,pubp->pubkey) != 0 && (bits256_nonz(peer->pubkey) == 0 || pubp->pairsock < 0) )
+        if ( ismine != 0 && bits256_cmp(G.LP_mypub25519,pubp->pubkey) != 0 && (bits256_cmp(peer->pubkey,pubp->pubkey) != 0 || pubp->pairsock != peer->pairsock) )
         {
             peer->pubkey = pubp->pubkey;
             pubp->pairsock = peer->pairsock;

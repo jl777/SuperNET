@@ -332,7 +332,7 @@ cJSON *LP_validateaddress(char *symbol,char *address)
             strcat(script,"88ac");
             jaddstr(retjson,"scriptPubKey",script);
         }
-        bitcoin_address(symbol,coinaddr,coin->taddr,coin->pubtype,G.LP_myrmd160,20);
+        bitcoin_address(symbol,coinaddr,coin->taddr,coin->pubtype,G.LP_pubsecp,33);
         jadd(retjson,"ismine",strcmp(coinaddr,coin->smartaddr) == 0 ? cJSON_CreateTrue() : cJSON_CreateFalse());
         jadd(retjson,"iswatchonly",cJSON_CreateTrue());
         jadd(retjson,"isscript",addrtype == coin->p2shtype ? cJSON_CreateTrue() : cJSON_CreateFalse());
@@ -589,13 +589,12 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
         ctx = bitcoin_ctx();
     bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
 #ifdef LP_DONT_IMPORTPRIVKEY
-    bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
+    //bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
     if ( LP_importaddress(symbol,address) < 0 )
     {
         printf("%s importaddress %s from %s failed, isvalid.%d\n",symbol,address,wifstr,bitcoin_validaddress(symbol,coin->taddr,coin->pubtype,coin->p2shtype,address));
         return(cJSON_Parse("{\"error\":\"couldnt import\"}"));
-    }
-    else return(cJSON_Parse("{\"result\":\"success\"}"));
+    } else return(cJSON_Parse("{\"result\":\"success\"}"));
 #endif
     if ( (retjson= LP_validateaddress(symbol,address)) != 0 )
     {
@@ -657,7 +656,7 @@ again:
                     best = fastest;
                 retstr = calloc(1,16);
                 sprintf(retstr,"%0.8f",((double)best * 1024)/SATOSHIDEN);
-                printf("LP_getestimatedrate (%s) -> %s\n",jprint(retjson,0),retstr);
+                //printf("LP_getestimatedrate (%s) -> %s\n",jprint(retjson,0),retstr);
                 free(retjson);
             }
             /*if ( (retjson= electrum_estimatefee(coin->symbol,coin->electrum,&retjson,numblocks)) != 0 )

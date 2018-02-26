@@ -1,11 +1,18 @@
 #!/bin/bash
 margin=0.05
 source userpass
-./auto_chipskmd
-./auto_chipsbtc
+
+# KMD/BTC must be first as other prices depend on it
 #curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BTC\",\"margin\":$margin,\"refbase\":\"komodo\",\"refrel\":\"coinmarketcap\"}"
 #curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"BTC\",\"rel\":\"KMD\",\"fixed\":0.00025,\"margin\":$margin}"
 #curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BTC\",\"fixed\":4000,\"margin\":$margin}"
+curl --url "http://127.0.0.1:7783" --data "{\"minprice\":0.0003,\"maxprice\":0.001,\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"BTC\",\"margin\":0.05,\"refbase\":\"komodo\",\"refrel\":\"coinmarketcap\"}"
+
+./auto_chipskmd
+./auto_chipsbtc
+
+
+
 #curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"KMD\",\"rel\":\"MNZ\",\"offset\":0.0,\"refbase\":\"KMD\",\"refrel\":\"BTC\",\"factor\":15000,\"margin\":-0.2}"
 
 curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"base\":\"HUSH\",\"rel\":\"KMD\",\"margin\":$margin,\"refbase\":\"hush\",\"refrel\":\"coinmarketcap\"}"
@@ -38,7 +45,7 @@ curl --url "http://127.0.0.1:7783" --data "{\"margin\":$margin,\"base\":\"SUPERN
 
 curl --url "http://127.0.0.1:7783" --data "{\"margin\":$margin,\"base\":\"HODL\",\"rel\":\"KMD\",\"fundvalue_bid\":\"assetNAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"address\":\"RNcUaMUEFLxVwtTo7rgruhwYanGk1jTkeU\",\"holdings\":[{\"coin\":\"siacoin\",\"balance\":185000000,\"comment\":\"using siafunds equal to million siacoin\"}],\"divisor\":10000000}"
 
-dexholdings="{\"coin\":\"blocknet\",\"balance\":4975836}"
+dexholdings="{\"coin\":\"blocknet\",\"balance\":4000000}"
 curl --url "http://127.0.0.1:7783" --data "{\"base\":\"DEX\",\"rel\":\"KMD\",\"margin\":$margin,\"fundvalue_bid\":\"assetNAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"address\":\"RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf\",\"holdings\":[$dexholdings],\"divisor\":1000000}"
 
 curl --url "http://127.0.0.1:7783" --data "{\"base\":\"BOTS\",\"rel\":\"KMD\",\"margin\":$margin,\"fundvalue_bid\":\"assetNAV_KMD\",\"fundvalue_ask\":\"assetNAV_KMD\",\"userpass\":\"$userpass\",\"method\":\"autoprice\",\"address\":\"RNdqHx26GWy9bk8MtmH1UiXjQcXE4RKK2P\",\"holdings\":[$dexholdings],\"divisor\":3333333}"

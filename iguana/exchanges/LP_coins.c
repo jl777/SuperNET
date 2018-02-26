@@ -275,8 +275,8 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 
 struct iguana_info *LP_conflicts_find(struct iguana_info *refcoin)
 {
-    struct iguana_info *coin=0,*tmp;
-    if ( refcoin != 0 )
+    struct iguana_info *coin=0,*tmp; int32_t n;
+    if ( refcoin != 0 && (n= (int32_t)strlen(refcoin->serverport)) > 3 && strcmp(":80",&refcoin->serverport[n-3]) != 0 )
     {
         HASH_ITER(hh,LP_coins,coin,tmp)
         {

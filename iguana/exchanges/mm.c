@@ -28,6 +28,7 @@ void PNACL_message(char *arg,...)
 
 #include <stdio.h>
 #include <stdint.h>
+// #include "lib.h"
 #ifndef NATIVE_WINDOWS
 #include "OS_portable.h"
 #else
