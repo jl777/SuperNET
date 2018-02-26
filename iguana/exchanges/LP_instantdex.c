@@ -335,7 +335,7 @@ char *LP_unlockedspend(void *ctx,char *symbol,bits256 utxotxid)
                             jaddnum(retjson,"expiration",expiration);
                             claimtime = LP_claimtime(coin,expiration);
                             jaddnum(retjson,"claimtime",claimtime);
-                            if ( claimtime != 0 && strcmp(destaddr,coin->smartaddr) == 0 && time(NULL) > expiration )
+                            if ( claimtime > expiration && strcmp(destaddr,coin->smartaddr) == 0 )
                             {
                                 char str[65]; printf("LP_timespend satoshis %.8f %s/v%d\n",dstr(satoshis - coin->txfee),bits256_str(str,utxotxid),utxovout);
                                 if ( (signedtx= basilisk_swap_bobtxspend(&signedtxid,coin->txfee,"timespend",coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,ctx,G.LP_privkey,0,redeemscript+2,redeemlen-2,0,0,utxotxid,utxovout,coin->smartaddr,G.LP_pubsecp,0,claimtime,&destamount,0,0,vinaddr,0,coin->zcash)) != 0 )
