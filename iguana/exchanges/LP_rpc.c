@@ -926,9 +926,9 @@ uint32_t LP_heighttime(char *symbol,int32_t height)
         {
             if ( (blockhashstr= LP_blockhashstr(symbol,height)) != 0 )
             {
-                if ( (retjson= cJSON_Parse(blockhashstr)) != 0 )
+                if ( (retjson= LP_getblockhashstr(symbol,blockhashstr)) != 0 )
                 {
-                    printf("height.(%s)\n",jprint(retjson,0));
+                    printf("%s -> height.(%s)\n",blockhashstr,jprint(retjson,0));
                     timestamp = juint(retjson,"time");
                     free_json(retjson);
                 }
