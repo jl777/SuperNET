@@ -868,7 +868,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
 
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
 {
-    bits256 blockhash; struct LP_transaction *tx; cJSON *blockobj,*retjson,*txobj; int32_t height = 0;
+    bits256 blockhash; struct LP_transaction *tx; cJSON *blockobj,*retjson,*txobj,*txobj2; int32_t height = 0;
     if ( coin == 0 )
         return(-1);
     if ( (tx= LP_transactionfind(coin,txid)) != 0 )
@@ -887,6 +887,15 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
                 height = jint(blockobj,"height");
                 if ( tx != 0 )
                     tx->height = height;
+                else
+                {
+                    txobj2 = LP_transactioninit(coin,txid,0,0);
+                    txobj2 = LP_transactioninit(coin,txid,1,txobj2);
+                    if ( txobj2 != 0 )
+                        free_json(txobj2);
+                    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+                        tx->height = height;
+                }
                 //char str[65];
                 //if ( strcmp(coin->symbol,"CHIPS") != 0 && strcmp(coin->symbol,"BTC") != 0 )
                 //    printf("%s %s LP_txheight.%d\n",coin->symbol,bits256_str(str,txid),height);
