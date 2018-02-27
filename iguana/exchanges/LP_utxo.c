@@ -956,7 +956,7 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
                 numconfirms = 0;
         }
     }
-    if ( numconfirms == BASILISK_DEFAULT_MAXCONFIRMS )
+    /*if ( numconfirms == BASILISK_DEFAULT_MAXCONFIRMS )
     {
         if ( coin->isassetchain != 0 || strcmp(coin->symbol,"KMD") == 0 )
         {
@@ -967,7 +967,7 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
                 numconfirms = BASILISK_DEFAULT_MAXCONFIRMS;
             }
         }
-    }
+    }*/
     return(numconfirms);
 }
 
