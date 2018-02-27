@@ -60,15 +60,25 @@ bits256 LP_pubkey(bits256 privkey)
     return(pubkey);
 }
 
-int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid)
+int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxid,char *coinaddr)
 {
-    cJSON *txobj; bits256 txid; int32_t flag = 0;
+    cJSON *txobj,*retjson; bits256 txid; struct iguana_info *coin; int32_t flag = 0;
+    if ( numconfirmsp != 0 )
+        *numconfirmsp = -1;
     if ( (txobj= LP_gettx(symbol,expectedtxid,0)) != 0 )
     {
         txid = jbits256(txobj,"txid");
         if ( jobj(txobj,"error") == 0 && bits256_cmp(txid,expectedtxid) == 0 )
         {
-            //char str[65]; printf("%s already in gettx (%s)\n",bits256_str(str,txid),jprint(txobj,0));
+            if ( numconfirmsp != 0 && coinaddr != 0 && (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
+            {
+                char str[65]; printf("%s %s already in gettx (%s)\n",coinaddr,bits256_str(str,txid),jprint(txobj,0));
+                if ( (retjson= electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,expectedtxid)) != 0 )
+                {
+                    printf("got history\n");
+                    free_json(retjson);
+                }
+            }
             flag = 1;
         }
         free_json(txobj);
@@ -94,7 +104,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
     for (i=0; i<2; i++)
     {
         //char str[65]; printf("LP_broadcast.%d (%s) %s i.%d sentflag.%d\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag);
-        if ( sentflag == 0 && LP_gettx_presence(symbol,expectedtxid) != 0 )
+        if ( sentflag == 0 && LP_gettx_presence(0,symbol,expectedtxid,0) != 0 )
             sentflag = 1;
         if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
         {
