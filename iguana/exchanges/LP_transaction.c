@@ -72,6 +72,7 @@ int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxi
         {
             if ( numconfirmsp != 0 && coinaddr != 0 && (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
             {
+                *numconfirmsp = 0;
                 char str[65]; printf("%s %s already in gettx (%s)\n",coinaddr,bits256_str(str,txid),jprint(txobj,0));
                 if ( (retjson= electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,expectedtxid)) != 0 )
                 {
