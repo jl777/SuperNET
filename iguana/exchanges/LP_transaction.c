@@ -73,7 +73,7 @@ int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxi
             if ( numconfirmsp != 0 && coinaddr != 0 && (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
             {
                 *numconfirmsp = 0;
-                char str[65]; printf("%s %s already in gettx (%s)\n",coinaddr,bits256_str(str,txid),jprint(txobj,0));
+                //char str[65]; printf("%s %s already in gettx (%s)\n",coinaddr,bits256_str(str,txid),jprint(txobj,0));
                 if ( (retjson= electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,expectedtxid)) != 0 )
                 {
                     if ( (n= cJSON_GetArraySize(retjson)) > 0 )
@@ -84,7 +84,7 @@ int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxi
                             if ( bits256_cmp(txid,jbits256(item,"tx_hash")) == 0 )
                             {
                                 height = jint(item,"height");
-                                printf("found txid at height.%d\n",height);
+                                //printf("found txid at height.%d\n",height);
                                 if ( height <= coin->height )
                                     *numconfirmsp = (coin->height - height + 1);
                                 break;
@@ -92,7 +92,7 @@ int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxi
                         }
                     }
                     free_json(retjson);
-                    printf("got %s history height.%d vs coin.%d -> numconfirms.%d\n",coin->symbol,height,coin->height,*numconfirmsp);
+                    //printf("got %s history height.%d vs coin.%d -> numconfirms.%d\n",coin->symbol,height,coin->height,*numconfirmsp);
                 }
             }
             flag = 1;
