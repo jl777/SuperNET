@@ -376,7 +376,8 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     if ( assetname != 0 && strcmp(name,assetname) == 0 )
     {
         //printf("%s is assetchain\n",symbol);
-        coin->isassetchain = 1;
+        if ( strcmp(name,"BEER") != 0 && strcmp("PIZZA",name) != 0 )
+            coin->isassetchain = 1;
     }
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;
