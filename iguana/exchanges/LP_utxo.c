@@ -868,13 +868,13 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
 
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
 {
-    bits256 blockhash; struct LP_transaction *tx; cJSON *blockobj,*retjson,*txobj,*txobj2; int32_t height = 0;
+    bits256 blockhash; struct LP_transaction *tx=0; cJSON *blockobj,*retjson,*txobj,*txobj2; int32_t height = 0;
     if ( coin == 0 )
         return(-1);
-    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+    /*if ( (tx= LP_transactionfind(coin,txid)) != 0 )
         height = tx->height;
-    if ( height > 0 )
-        return(height);
+    if ( height > 1 )
+        return(height);*/
     if ( coin->electrum == 0 )
     {
         if ( (txobj= LP_gettx("LP_txheight",coin->symbol,txid,0)) != 0 )
@@ -906,6 +906,8 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
     }
     else
     {
+        if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+            height = tx->height;
         if ( height == 0 )
         {
             if ( (retjson= electrum_transaction(&height,coin->symbol,coin->electrum,&retjson,txid,0)) != 0 )
