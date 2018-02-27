@@ -306,7 +306,7 @@ char *LP_unlockedspend(void *ctx,char *symbol,bits256 utxotxid)
     retjson = cJSON_CreateObject();
     utxovout = 0;
     memset(&sendtxid,0,sizeof(sendtxid));
-    if ( (txjson= LP_gettx(coin->symbol,utxotxid,1)) != 0 )
+    if ( (txjson= LP_gettx("LP_unlockedspend",coin->symbol,utxotxid,1)) != 0 )
     {
         if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts >= 2 )
         {
@@ -397,7 +397,7 @@ char *LP_timelock(char *symbol,uint32_t duration,char *destaddr,uint64_t satoshi
 int32_t LP_claim_submit(void *ctx,cJSON *txids,int64_t *sump,struct iguana_info *coin,bits256 utxotxid)
 {
     uint8_t redeemscript[512]; bits256 claimtxid; cJSON *txjson,*vout0,*vout1,*vout2,*vouts,*item; int32_t numvouts; char str[65],vinaddr[64],destaddr[64],checkaddr[64]; int32_t j,utxovout,flagi = 0,redeemlen,weeki,iter; int64_t weeksatoshis,satoshis; uint32_t expiration,claimtime;
-    if ( (txjson= LP_gettx(coin->symbol,utxotxid,1)) != 0 )
+    if ( (txjson= LP_gettx("LP_claim_submit",coin->symbol,utxotxid,1)) != 0 )
     {
         if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts >= 3 )
         {
@@ -515,7 +515,7 @@ int64_t LP_instantdex_credit(int32_t dispflag,char *coinaddr,int64_t satoshis,in
 int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256 txid,char *refaddr,char *origcoinaddr)
 {
     cJSON *txjson,*vouts,*txobj,*item; int64_t satoshis=0,amount64; int32_t weeki,numvouts; char destaddr[64],p2shaddr[64];
-    if ( (txjson= LP_gettx(coin->symbol,txid,0)) != 0 )
+    if ( (txjson= LP_gettx("LP_instantdex_creditcalc",coin->symbol,txid,0)) != 0 )
     {
         // vout0 deposit, vout1 botsfee, vout2 smartaddress
         if ( (vouts= jarray(&numvouts,txjson,"vout")) > 0 && numvouts >= 3 && LP_destaddr(destaddr,jitem(vouts,2)) == 0 )

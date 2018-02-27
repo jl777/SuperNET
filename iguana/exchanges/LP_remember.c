@@ -290,7 +290,7 @@ bits256 basilisk_swap_spendupdate(int32_t iambob,char *symbol,char *spentaddr,in
                         printf("i.%d of %d: %s\n",i,n,bits256_str(str,txid));
                     if ( bits256_cmp(txid,txids[utxoind]) != 0 )
                     {
-                        if ( (txobj= LP_gettx(symbol,txid,1)) != 0 )
+                        if ( (txobj= LP_gettx("basilisk_swap_spendupdate",symbol,txid,1)) != 0 )
                         {
                             if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
                             {
@@ -934,7 +934,7 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
                         safecopy(rswap->alicecoin,symbol,sizeof(rswap->alicecoin));
                     if ( rswap->finishedflag == 0 )
                     {
-                        if ( (sentobj= LP_gettx(symbol,txid,1)) == 0 )
+                        if ( (sentobj= LP_gettx("LP_remember",symbol,txid,1)) == 0 )
                         {
                             //char str2[65]; printf("%s %s ready to broadcast %s r%u q%u\n",symbol,bits256_str(str2,txid),txnames[i],rswap->requestid,rswap->quoteid);
                         }

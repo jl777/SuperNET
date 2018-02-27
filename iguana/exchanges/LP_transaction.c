@@ -65,7 +65,7 @@ int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxi
     cJSON *txobj,*retjson; bits256 txid; struct iguana_info *coin; int32_t flag = 0;
     if ( numconfirmsp != 0 )
         *numconfirmsp = -1;
-    if ( (txobj= LP_gettx(symbol,expectedtxid,0)) != 0 )
+    if ( (txobj= LP_gettx("LP_gettx_presence",symbol,expectedtxid,0)) != 0 )
     {
         txid = jbits256(txobj,"txid");
         if ( jobj(txobj,"error") == 0 && bits256_cmp(txid,expectedtxid) == 0 )
@@ -775,7 +775,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         if ( txfee > 0 && txfee < coin->txfee )
             txfee = coin->txfee;
 #ifndef BASILISK_DISABLESENDTX
-        if ( (txobj= LP_gettx(symbol,utxotxid,0)) != 0 )
+        if ( (txobj= LP_gettx("basilisk_swap_bobtxspend",symbol,utxotxid,0)) != 0 )
         {
             if ( (vouts= jarray(&n,txobj,"vout")) != 0 && utxovout < n )
             {
@@ -1626,7 +1626,7 @@ int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vou
 {
     cJSON *retjson;
     coinaddr[0] = 0;
-    if ( (retjson= LP_gettx(symbol,txid,0)) != 0 )
+    if ( (retjson= LP_gettx("LP_swap_getcoinaddr",symbol,txid,0)) != 0 )
     {
         LP_txdestaddr(coinaddr,txid,vout,retjson);
         free_json(retjson);
@@ -1638,7 +1638,7 @@ int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,b
 {
     cJSON *retjson,*vins,*item,*skey; int32_t n,scriptlen = 0; char *hexstr;
     //char str[65]; printf("getsigscript %s %s/v%d\n",symbol,bits256_str(str,txid),vini);
-    if ( bits256_nonz(txid) != 0 && (retjson= LP_gettx(symbol,txid,0)) != 0 )
+    if ( bits256_nonz(txid) != 0 && (retjson= LP_gettx("basilisk_swap_getsigscript",symbol,txid,0)) != 0 )
     {
         //printf("gettx.(%s)\n",jprint(retjson,0));
         if ( (vins= jarray(&n,retjson,"vin")) != 0 && vini < n )
@@ -1731,7 +1731,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
                 for (i=0; i<n; i++)
                 {
                     txid = jbits256i(array,i);
-                    if ( (txobj= LP_gettx(symbol,txid,1)) != 0 )
+                    if ( (txobj= LP_gettx("LP_swap_spendtxid",symbol,txid,1)) != 0 )
                     {
                         if ( (vins= jarray(&m,txobj,"vin")) != 0 )
                         {
