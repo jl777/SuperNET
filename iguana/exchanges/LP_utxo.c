@@ -954,6 +954,18 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
                 numconfirms = 0;
         }
     }
+    if ( numconfirms == BASILISK_DEFAULT_MAXCONFIRMS )
+    {
+        if ( coin->isassetchain != 0 || strcmp(coin->symbol,"KMD") == 0 )
+        {
+            numconfirms--;
+            if ( coin->notarized >= coin->height-numconfirms )
+            {
+                printf("%s notarized.%d current ht.%d - numconfirms.%d -> txheight.%d\n",coin->symbol,coin->notarized,coin->height,numconfirms,coin->height - numconfirms);
+                numconfirms = BASILISK_DEFAULT_MAXCONFIRMS;
+            }
+        }
+    }
     return(numconfirms);
 }
 
