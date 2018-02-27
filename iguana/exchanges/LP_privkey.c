@@ -251,6 +251,43 @@ int32_t LP_wifstr_valid(char *symbol,char *wifstr)
     return(0);
 }
 
+char *LP_convaddress(char *symbol,char *address,char *dest)
+{
+    struct iguana_info *coin,*destcoin; cJSON *retjson; char destaddress[64],coinaddr2[64]; uint8_t addrtype,rmd160[20],rmd160b[20];
+    if ( (coin= LP_coinfind(symbol)) == 0 || (destcoin= LP_coinfind(dest)) == 0 )
+        return(clonestr("{\"error\":\"both coins must be present\"}"));
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jaddstr(retjson,"coin",symbol);
+    jaddstr(retjson,"address",address);
+    jaddstr(retjson,"destcoin",dest);
+    bitcoin_addr2rmd160(symbol,coin->taddr,&addrtype,rmd160,address);
+    if ( addrtype == coin->pubtype )
+    {
+        bitcoin_address(destcoin->symbol,destaddress,destcoin->taddr,destcoin->pubtype,rmd160,20);
+        bitcoin_addr2rmd160(destcoin->symbol,destcoin->taddr,&addrtype,rmd160b,destaddress);
+        bitcoin_address(coin->symbol,coinaddr2,coin->taddr,coin->pubtype,rmd160b,20);
+    }
+    else if ( addrtype == coin->p2shtype )
+    {
+        bitcoin_address(destcoin->symbol,destaddress,destcoin->taddr,destcoin->p2shtype,rmd160,20);
+        bitcoin_addr2rmd160(symbol,coin->taddr,&addrtype,rmd160b,destaddress);
+        bitcoin_address(destcoin->symbol,coinaddr2,coin->taddr,coin->p2shtype,rmd160b,20);
+    }
+    else
+    {
+        jaddstr(retjson,"error","invalid base58 prefix");
+        jaddnum(retjson,"invalid",addrtype);
+    }
+    if ( strcmp(address,coinaddr2) != 0 )
+    {
+        jaddstr(retjson,"error","checkaddress mismatch");
+        jaddstr(retjson,"checkaddress",coinaddr2);
+    }
+    jaddstr(retjson,"destaddress",destaddress);
+    return(jprint(retjson,1));
+}
+
 bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguana_info *coin,char *passphrase,char *wifstr)
 {
     //static uint32_t counter;
