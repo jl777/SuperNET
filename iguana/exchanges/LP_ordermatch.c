@@ -965,9 +965,17 @@ struct LP_quoteinfo *LP_trades_gotrequest(void *ctx,struct LP_quoteinfo *qp,stru
         p = (double)qp->destsatoshis / (qp->satoshis - qp->txfee);
         if ( LP_trades_pricevalidate(qp,coin,p) < 0. )
             return(0);
-        if ( p >= qprice )
-            break;
-        price /= 0.99;
+        if ( i == 0 && p < myprice )
+        {
+            price = qprice;
+            printf("reset price <- qprice %.8f\n",qprice);
+        }
+        else
+        {
+            if ( qprice >= p )
+                break;
+            price *= 0.995;
+        }
         i++;
     }
     printf("i.%d qprice %.8f myprice %.8f price %.8f [%.8f]\n",i,qprice,myprice,price,p);

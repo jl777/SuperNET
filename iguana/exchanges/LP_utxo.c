@@ -811,7 +811,7 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
     struct LP_transaction *tx; int32_t i,height,numvouts,numvins,spentvout; cJSON *vins,*vouts,*vout,*vin; bits256 spenttxid; char str[65];
     if ( coin->inactive != 0 )
         return(0);
-    if ( txobj != 0 || (txobj= LP_gettx(coin->symbol,txid,0)) != 0 )
+    if ( txobj != 0 || (txobj= LP_gettx("LP_transactioninit",coin->symbol,txid,0)) != 0 )
     {
         if ( coin->electrum == 0 )
             height = LP_txheight(coin,txid);
@@ -868,12 +868,16 @@ cJSON *LP_transactioninit(struct iguana_info *coin,bits256 txid,int32_t iter,cJS
 
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
 {
-    bits256 blockhash; struct LP_transaction *tx; cJSON *blockobj,*retjson,*txobj; int32_t height = 0;
+    bits256 blockhash; struct LP_transaction *tx=0; cJSON *blockobj,*retjson,*txobj,*txobj2; int32_t height = 0;
     if ( coin == 0 )
         return(-1);
+    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+        height = tx->height;
+    if ( height > 0 )
+        return(height);
     if ( coin->electrum == 0 )
     {
-        if ( (txobj= LP_gettx(coin->symbol,txid,0)) != 0 )
+        if ( (txobj= LP_gettx("LP_txheight",coin->symbol,txid,0)) != 0 )
         {
             //*timestampp = juint(txobj,"locktime");
             //*blocktimep = juint(txobj,"blocktime");
@@ -881,6 +885,17 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
             if ( bits256_nonz(blockhash) != 0 && (blockobj= LP_getblock(coin->symbol,blockhash)) != 0 )
             {
                 height = jint(blockobj,"height");
+                if ( tx != 0 )
+                    tx->height = height;
+                else if ( 0 )
+                {
+                    txobj2 = LP_transactioninit(coin,txid,0,0);
+                    txobj2 = LP_transactioninit(coin,txid,1,txobj2);
+                    if ( txobj2 != 0 )
+                        free_json(txobj2);
+                    if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+                        tx->height = height;
+                }
                 //char str[65];
                 //if ( strcmp(coin->symbol,"CHIPS") != 0 && strcmp(coin->symbol,"BTC") != 0 )
                 //    printf("%s %s LP_txheight.%d\n",coin->symbol,bits256_str(str,txid),height);
@@ -891,8 +906,8 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
     }
     else
     {
-        if ( (tx= LP_transactionfind(coin,txid)) != 0 )
-            height = tx->height;
+        //if ( (tx= LP_transactionfind(coin,txid)) != 0 )
+        //    height = tx->height;
         if ( height == 0 )
         {
             if ( (retjson= electrum_transaction(&height,coin->symbol,coin->electrum,&retjson,txid,0)) != 0 )
@@ -923,7 +938,7 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
         }
         else if ( mempool != 0 && LP_mempoolscan(symbol,txid) >= 0 )
             numconfirms = 0;
-        else if ( (txobj= LP_gettx(symbol,txid,1)) != 0 )
+        else if ( (txobj= LP_gettx("LP_numconfirms",symbol,txid,1)) != 0 )
         {
             numconfirms = jint(txobj,"confirmations");
             free_json(txobj);
@@ -941,6 +956,18 @@ int32_t LP_numconfirms(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int
                 numconfirms = 0;
         }
     }
+    /*if ( numconfirms == BASILISK_DEFAULT_MAXCONFIRMS )
+    {
+        if ( coin->isassetchain != 0 || strcmp(coin->symbol,"KMD") == 0 )
+        {
+            numconfirms--;
+            if ( coin->notarized >= coin->height-numconfirms )
+            {
+                printf("%s notarized.%d current ht.%d - numconfirms.%d -> txheight.%d\n",coin->symbol,coin->notarized,coin->height,numconfirms,coin->height - numconfirms);
+                numconfirms = BASILISK_DEFAULT_MAXCONFIRMS;
+            }
+        }
+    }*/
     return(numconfirms);
 }
 
@@ -1052,7 +1079,7 @@ int64_t LP_outpoint_amount(char *symbol,bits256 txid,int32_t vout)
         return(amount);
     else
     {
-        if ( (txjson= LP_gettx(symbol,txid,1)) != 0 )
+        if ( (txjson= LP_gettx("LP_outpoint_amount",symbol,txid,1)) != 0 )
         {
             if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && vout < numvouts )
                 amount = LP_value_extract(jitem(vouts,vout),0);

@@ -161,6 +161,7 @@ bot_status(botid)\n\
 bot_stop(botid)\n\
 bot_pause(botid)\n\
 calcaddress(passphrase)\n\
+convaddress(coin, address, destcoin)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
 timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
@@ -513,6 +514,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx")));
             }
+            else if ( strcmp(method,"convaddress") == 0 )
+            {
+                return(LP_convaddress(coin,jstr(argjson,"address"),jstr(argjson,"destcoin")));
+            }
             else if ( strcmp(method,"timelock") == 0 )
             {
                 return(LP_timelock(coin,juint(argjson,"duration"),jstr(argjson,"destaddr"),jdouble(argjson,"amount")*SATOSHIDEN));
@@ -523,7 +528,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
-                return(jprint(LP_gettx(coin,jbits256(argjson,"txid"),0),1));
+                return(jprint(LP_gettx("stats_JSON",coin,jbits256(argjson,"txid"),0),1));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {

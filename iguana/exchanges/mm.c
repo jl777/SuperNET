@@ -161,23 +161,21 @@ int main(int argc, const char * argv[])
     OS_init();
     if ( strstr(argv[0],"btc2kmd") != 0 && argv[1] != 0 )
     {
-        uint8_t addrtype,rmd160[20],rmd160b[20]; char coinaddr[64],coinaddr2[64];
-        bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160,(char *)argv[1]);
-        if ( addrtype == 0 )
+        bits256 privkey,checkkey; uint8_t tmptype; char kmdwif[64],str[65],str2[65],*retstr;
+        if ( LP_wifstr_valid("BTC",(char *)argv[1]) > 0 )
         {
-            bitcoin_address("KMD",coinaddr,0,60,rmd160,20);
-            bitcoin_addr2rmd160("KMD",0,&addrtype,rmd160b,coinaddr);
-            bitcoin_address("BTC",coinaddr2,0,0,rmd160b,20);
+            bitcoin_wif2priv("BTC",0,&tmptype,&privkey,(char *)argv[1]);
+            bitcoin_priv2wif("KMD",0,kmdwif,privkey,188);
+            bitcoin_wif2priv("KMD",0,&tmptype,&checkkey,kmdwif);
+            if ( bits256_cmp(privkey,checkkey) == 0 )
+                printf("BTC %s -> KMD %s: privkey %s\n",argv[1],kmdwif,bits256_str(str,privkey));
+            else printf("ERROR BTC %s %s != KMD %s %s\n",argv[1],bits256_str(str,privkey),kmdwif,bits256_str(str2,checkkey));
         }
-        else if ( addrtype == 60 )
+        else
         {
-            bitcoin_address("BTC",coinaddr,0,0,rmd160,20);
-            bitcoin_addr2rmd160("BTC",0,&addrtype,rmd160b,coinaddr);
-            bitcoin_address("KMD",coinaddr2,0,60,rmd160b,20);
+            if ( (retstr= LP_convaddress("BTC",(char *)argv[1],"KMD")) != 0 )
+                printf("%s\n",retstr);
         }
-        printf("(%s) -> %s -> %s\n",(char *)argv[1],coinaddr,coinaddr2);
-        if ( strcmp((char *)argv[1],coinaddr2) != 0 )
-            printf("ERROR\n");
         exit(0);
     }
     else if ( argv[1] != 0 && strcmp(argv[1],"hush") == 0 )

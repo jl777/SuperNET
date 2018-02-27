@@ -906,6 +906,7 @@ void LP_bobloop(void *_swap)
         }
     } else printf("swap timed out\n");
     LP_swap_endcritical = (uint32_t)time(NULL);
+    sleep(13);
     LP_pendswap_add(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid);
     //swap->I.finished = LP_swapwait(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*3,swap->I.aliceconfirms == 0 ? 3 : 30);
     basilisk_swap_finished(swap);
@@ -968,10 +969,6 @@ void LP_aliceloop(void *_swap)
                         printf("error waiting for bobpayment\n");
                     else
                     {
-                        if ( swap->I.alicetomic[0] != 0 )
-                        {
-                            // artem: do stuff alice needs to do after bobpayment comes in
-                        }
                         LP_swap_endcritical = (uint32_t)time(NULL);
                         while ( (n= LP_numconfirms(bobstr,swap->bobpayment.I.destaddr,swap->bobpayment.I.signedtxid,0,1)) < swap->I.bobconfirms )
                         {
@@ -986,6 +983,7 @@ void LP_aliceloop(void *_swap)
         }
     }
     LP_swap_endcritical = (uint32_t)time(NULL);
+    sleep(13);
     LP_pendswap_add(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid);
     //swap->I.finished = LP_swapwait(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*3,swap->I.aliceconfirms == 0 ? 3 : 30);
     basilisk_swap_finished(swap);
@@ -1205,10 +1203,6 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
         swap->I.aliceconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
     }
-    if ( bobcoin->isassetchain != 0 )
-        swap->I.bobconfirms = 1;
-    if ( alicecoin->isassetchain != 0 )
-        swap->I.aliceconfirms = 1;
     if ( bobcoin->userconfirms > 0 )
         swap->I.bobconfirms = bobcoin->userconfirms;
     if ( alicecoin->userconfirms > 0 )
@@ -1221,6 +1215,10 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobconfirms = swap->I.bobmaxconfirms;
     if ( swap->I.aliceconfirms > swap->I.alicemaxconfirms )
         swap->I.aliceconfirms = swap->I.alicemaxconfirms;
+    if ( bobcoin->isassetchain != 0 )
+        swap->I.bobconfirms = BASILISK_DEFAULT_MAXCONFIRMS;
+    if ( alicecoin->isassetchain != 0 )
+        swap->I.aliceconfirms = BASILISK_DEFAULT_MAXCONFIRMS;
     if ( strcmp("BAY",swap->I.req.src) != 0 && strcmp("BAY",swap->I.req.dest) != 0 )
     {
         swap->I.bobconfirms *= !swap->I.bobistrusted;
