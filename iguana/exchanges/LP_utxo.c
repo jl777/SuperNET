@@ -887,7 +887,7 @@ int32_t LP_txheight(struct iguana_info *coin,bits256 txid)
                 height = jint(blockobj,"height");
                 if ( tx != 0 )
                     tx->height = height;
-                else
+                else if ( 0 )
                 {
                     txobj2 = LP_transactioninit(coin,txid,0,0);
                     txobj2 = LP_transactioninit(coin,txid,1,txobj2);
