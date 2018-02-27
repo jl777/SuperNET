@@ -62,7 +62,7 @@ bits256 LP_pubkey(bits256 privkey)
 
 int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxid,char *coinaddr)
 {
-    cJSON *txobj,*retjson; bits256 txid; struct iguana_info *coin; int32_t flag = 0;
+    cJSON *txobj,*retjson,*item; bits256 txid; struct iguana_info *coin; int32_t height=-1,i,n,flag = 0;
     if ( numconfirmsp != 0 )
         *numconfirmsp = -1;
     if ( (txobj= LP_gettx("LP_gettx_presence",symbol,expectedtxid,0)) != 0 )
@@ -76,8 +76,23 @@ int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxi
                 char str[65]; printf("%s %s already in gettx (%s)\n",coinaddr,bits256_str(str,txid),jprint(txobj,0));
                 if ( (retjson= electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,expectedtxid)) != 0 )
                 {
-                    printf("got history\n");
+                    if ( (n= cJSON_GetArraySize(retjson)) > 0 )
+                    {
+                        for (i=0; i<n; i++)
+                        {
+                            item = jitem(retjson,i);
+                            if ( bits256_cmp(txid,jbits256(item,"tx_hash")) == 0 )
+                            {
+                                height = jint(item,"height");
+                                printf("found txid at height.%d\n",height);
+                                if ( height <= coin->height )
+                                    *numconfirmsp = (coin->height - height + 1);
+                                break;
+                            }
+                        }
+                    }
                     free_json(retjson);
+                    printf("got %s history height.%d vs coin.%d -> numconfirms.%d\n",coin->symbol,height,coin->height,*numconfirmsp);
                 }
             }
             flag = 1;
