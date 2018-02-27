@@ -969,10 +969,6 @@ void LP_aliceloop(void *_swap)
                         printf("error waiting for bobpayment\n");
                     else
                     {
-                        if ( swap->I.alicetomic[0] != 0 )
-                        {
-                            // artem: do stuff alice needs to do after bobpayment comes in
-                        }
                         LP_swap_endcritical = (uint32_t)time(NULL);
                         while ( (n= LP_numconfirms(bobstr,swap->bobpayment.I.destaddr,swap->bobpayment.I.signedtxid,0,1)) < swap->I.bobconfirms )
                         {
