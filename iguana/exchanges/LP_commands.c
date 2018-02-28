@@ -300,7 +300,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"calcaddress") == 0 )
         {
-            bits256 privkey,pub; uint8_t pubkey33[33]; char *passphrase,coinaddr[64];
+            bits256 privkey,pub; uint8_t pubkey33[33]; char *passphrase,coinaddr[64],wifstr[64];
             if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
             {
                 conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
@@ -310,6 +310,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 jaddstr(retjson,"passphrase",passphrase);
                 jaddstr(retjson,"coinaddr",coinaddr);
                 jaddbits256(retjson,"privkey",privkey);
+                bitcoin_priv2wif("KMD",0,wifstr,privkey,188);
+                jaddstr(retjson,"wif",wifstr);
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
         }
