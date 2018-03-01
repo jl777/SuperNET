@@ -1081,7 +1081,11 @@ void queue_loop(void *ctx)
                                 {
                                     if ( (sentbytes= nn_send(ptr->sock,linebuf,k,0)) != k )
                                         printf("%d LP_send mmjson sent %d instead of %d\n",n,sentbytes,k);
-                                    else flag++;
+                                    else
+                                    {
+                                        flag++;
+                                        ptr->sock = -1;
+                                    }
                                 }
                                 printf("k.%d SEND.(%s) sock.%d\n",k,(char *)ptr->msg,ptr->sock);
                             }
@@ -1092,16 +1096,23 @@ void queue_loop(void *ctx)
                             printf("non-encoded len.%d SEND.(%s) sock.%d\n",ptr->msglen,(char *)ptr->msg,ptr->sock);
                             if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                                 printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                            else flag++;
+                            else
+                            {
+                                flag++;
+                                ptr->sock = -1;
+                            }
                         }
-                        ptr->sock = -1;
                         if ( ptr->peerind > 0 )
                             ptr->starttime = (uint32_t)time(NULL);
                     }
                     else
                     {
                         if ( ptr->notready++ > 1000 )
+                        {
                             flag = 1;
+                            ptr->sock = -1;
+                            printf("queue_loop notready.%d, skip\n",ptr->notready);
+                        }
                     }
                 }
             }
