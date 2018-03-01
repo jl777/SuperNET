@@ -1054,7 +1054,7 @@ void queue_loop(void *ctx)
             flag = 0;
             if ( ptr->sock >= 0 )
             {
-                printf("sock.%d len.%d notready.%d\n",ptr->sock,ptr->msglen,ptr->notready);
+                //printf("sock.%d len.%d notready.%d\n",ptr->sock,ptr->msglen,ptr->notready);
                 if ( ptr->notready == 0 || (LP_rand() % ptr->notready) == 0 )
                 {
                     if ( LP_sockcheck(ptr->sock) > 0 )
@@ -1105,15 +1105,15 @@ void queue_loop(void *ctx)
                         if ( ptr->peerind > 0 )
                             ptr->starttime = (uint32_t)time(NULL);
                     }
-                    /*else
+                    else
                     {
                         if ( ptr->notready++ > 1000 )
                         {
                             flag = 1;
+                            printf("queue_loop sock.%d len.%d notready.%d, skip\n",ptr->sock,ptr->msglen,ptr->notready);
                             ptr->sock = -1;
-                            printf("queue_loop notready.%d, skip\n",ptr->notready);
                         }
-                    }*/
+                    }
                 }
             }
             else if ( 0 && time(NULL) > ptr->starttime+13 )
