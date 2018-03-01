@@ -1513,7 +1513,7 @@ void for_satinder()
     } else printf("error with satinder tx\n");
 }
 
-char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forceflag,int32_t pendingonly)
+char *basilisk_swaplist(int32_t fastflag,uint32_t origrequestid,uint32_t origquoteid,int32_t forceflag,int32_t pendingonly)
 {
     uint64_t ridqids[4096],ridqid; char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t r,q,quoteid,requestid; int64_t KMDtotals[LP_MAXPRICEINFOS],BTCtotals[LP_MAXPRICEINFOS],Btotal,Ktotal; int32_t i,j,count=0;
     //portable_mutex_lock(&LP_swaplistmutex);
@@ -1526,7 +1526,7 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forc
     if ( origrequestid != 0 && origquoteid != 0 )
     {
         //printf("orig req.%u q.%u\n",origrequestid,origquoteid);
-        if ( (item= basilisk_remember(0,KMDtotals,BTCtotals,origrequestid,origquoteid,forceflag,0)) != 0 )
+        if ( (item= basilisk_remember(fastflag,KMDtotals,BTCtotals,origrequestid,origquoteid,forceflag,0)) != 0 )
             jaddi(array,item);
         //printf("got.(%s)\n",jprint(item,0));
     }
@@ -1568,7 +1568,7 @@ char *basilisk_swaplist(uint32_t origrequestid,uint32_t origquoteid,int32_t forc
                     {
                         if ( count < sizeof(ridqids)/sizeof(*ridqids) )
                             ridqids[count++] = ridqid;
-                        if ( (item= basilisk_remember(0,KMDtotals,BTCtotals,requestid,quoteid,0,pendingonly)) != 0 )
+                        if ( (item= basilisk_remember(fastflag,KMDtotals,BTCtotals,requestid,quoteid,0,pendingonly)) != 0 )
                             jaddi(array,item);
                     }
                 }
@@ -1733,14 +1733,14 @@ uint64_t basilisk_swap_addarray(cJSON *item,char *refbase,char *refrel)
     return(ridqid);
 }
 
-char *basilisk_swapentries(char *refbase,char *refrel,int32_t limit)
+char *basilisk_swapentries(int32_t fastflag,char *refbase,char *refrel,int32_t limit)
 {
     uint64_t ridqids[1024],ridqid; char *liststr,*retstr2; cJSON *retjson,*array,*pending,*swapjson,*item,*retarray; int32_t i,j,n,count = 0; uint32_t requestid,quoteid;
     if ( limit <= 0 )
         limit = 10;
     memset(ridqids,0,sizeof(ridqids));
     retarray = cJSON_CreateArray();
-    if ( (liststr= basilisk_swaplist(0,0,0,0)) != 0 )
+    if ( (liststr= basilisk_swaplist(fastflag,0,0,0,0)) != 0 )
     {
         //printf("swapentry.(%s)\n",liststr);
         if ( (retjson= cJSON_Parse(liststr)) != 0 )

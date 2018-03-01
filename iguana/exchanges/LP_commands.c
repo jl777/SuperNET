@@ -120,10 +120,10 @@ buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
 withdraw(coin, outputs[])\n\
 sendrawtransaction(coin, signedtx)\n\
-swapstatus(pending=0)\n\
+swapstatus(pending=0, fast=0)\n\
 swapstatus(coin, limit=10)\n\
 swapstatus(base, rel, limit=10)\n\
-swapstatus(requestid, quoteid, pending=0)\n\
+swapstatus(requestid, quoteid, pending=0, fast=0)\n\
 recentswaps(limit=3)\n\
 notarizations(coin)\n\
 public API:\n \
@@ -336,10 +336,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
                 return(basilisk_swapentry(jint(argjson,"fast"),requestid,quoteid,1));
             else if ( coin[0] != 0 )
-                return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
+                return(basilisk_swapentries(1,coin,0,jint(argjson,"limit")));
             else if ( base[0] != 0 && rel[0] != 0 )
-                return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
-            else return(basilisk_swaplist(0,0,1,jint(argjson,"pending")));
+                return(basilisk_swapentries(1,base,rel,jint(argjson,"limit")));
+            else return(basilisk_swaplist(jint(argjson,"fast"),0,0,1,jint(argjson,"pending")));
         }
         else if ( strcmp(method,"dynamictrust") == 0 )
         {
