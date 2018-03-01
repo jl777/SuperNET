@@ -1276,7 +1276,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     if ( passphrase == 0 || passphrase[0] == 0 )
     {
         printf("jeezy says we cant use the nullstring as passphrase and I agree\n");
-        exit(-1);
+        //exit(-1);
     }
     IAMLP = !amclient;
 #ifndef __linux__
