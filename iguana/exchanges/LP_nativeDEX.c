@@ -1047,7 +1047,6 @@ void queue_loop(void *ctx)
             continue;
         }
         LP_millistats_update(&queue_loop_stats);
-        //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = nonz = flag = 0;
         DL_FOREACH_SAFE(LP_Q,ptr,tmp)
         {
@@ -1055,6 +1054,7 @@ void queue_loop(void *ctx)
             flag = 0;
             if ( ptr->sock >= 0 )
             {
+                //printf("sock.%d len.%d notready.%d\n",ptr->sock,ptr->msglen,ptr->notready);
                 if ( ptr->notready == 0 || (LP_rand() % ptr->notready) == 0 )
                 {
                     if ( LP_sockcheck(ptr->sock) > 0 )
@@ -1081,27 +1081,38 @@ void queue_loop(void *ctx)
                                 {
                                     if ( (sentbytes= nn_send(ptr->sock,linebuf,k,0)) != k )
                                         printf("%d LP_send mmjson sent %d instead of %d\n",n,sentbytes,k);
-                                    else flag++;
+                                    else
+                                    {
+                                        flag++;
+                                        ptr->sock = -1;
+                                    }
                                 }
-                                //printf("k.%d SEND.(%s) sock.%d\n",k,(char *)ptr->msg,ptr->sock);
+                                //printf("k.%d flag.%d SEND.(%s) sock.%d\n",k,flag,(char *)ptr->msg,ptr->sock);
                             }
                             free_json(json);
                         }
                         if ( flag == 0 )
                         {
-                            //printf("len.%d SEND.(%s) sock.%d\n",ptr->msglen,(char *)ptr->msg,ptr->sock);
+                           // printf("non-encoded len.%d SEND.(%s) sock.%d\n",ptr->msglen,(char *)ptr->msg,ptr->sock);
                             if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                                 printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                            else flag++;
+                            else
+                            {
+                                flag++;
+                                ptr->sock = -1;
+                            }
                         }
-                        ptr->sock = -1;
                         if ( ptr->peerind > 0 )
                             ptr->starttime = (uint32_t)time(NULL);
                     }
                     else
                     {
                         if ( ptr->notready++ > 1000 )
+                        {
                             flag = 1;
+                            printf("queue_loop sock.%d len.%d notready.%d, skip\n",ptr->sock,ptr->msglen,ptr->notready);
+                            ptr->sock = -1;
+                        }
                     }
                 }
             }
