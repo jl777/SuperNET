@@ -310,7 +310,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
 #ifdef FROM_MARKETMAKER
     if ( (G.LP_IAMLP == 0 || pubsock < 0) && strcmp(method,"psock") != 0 )
 #else
-    if ( (IAMLP == 0 || pubsock < 0 && strcmp(method,"psock") != 0 )
+    if ( (IAMLP == 0 || pubsock < 0) && strcmp(method,"psock") != 0 )
 #endif
     {
         free(msg);

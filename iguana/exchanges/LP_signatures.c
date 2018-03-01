@@ -698,11 +698,10 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
             jadd(reqjson,"proof",LP_instantdex_txids(0,coin->smartaddr));
     }
     msg = jprint(reqjson,1);
-    //printf("etomicdest.(%s) QUERY.(%s)\n",qp->etomicdest,msg);
+    printf("QUERY.(%s)\n",msg);
     memset(&zero,0,sizeof(zero));
     if ( bits256_nonz(qp->srchash) != 0 )
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
-    printf("QUERY.(%s)\n",msg);
     LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
     free(msg);
 }
