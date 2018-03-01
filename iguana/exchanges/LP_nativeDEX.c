@@ -1047,7 +1047,6 @@ void queue_loop(void *ctx)
             continue;
         }
         LP_millistats_update(&queue_loop_stats);
-        //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = nonz = flag = 0;
         DL_FOREACH_SAFE(LP_Q,ptr,tmp)
         {
@@ -1055,9 +1054,10 @@ void queue_loop(void *ctx)
             flag = 0;
             if ( ptr->sock >= 0 )
             {
+                printf("sock.%d len.%d\n",ptr->sock,ptr->msglen);
                 if ( ptr->notready == 0 || (LP_rand() % ptr->notready) == 0 )
                 {
-                    if ( LP_sockcheck(ptr->sock) > 0 )
+                    //if ( LP_sockcheck(ptr->sock) > 0 )
                     {
                         //bits256 magic;
                         //magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
@@ -1087,7 +1087,7 @@ void queue_loop(void *ctx)
                                         ptr->sock = -1;
                                     }
                                 }
-                                printf("k.%d SEND.(%s) sock.%d\n",k,(char *)ptr->msg,ptr->sock);
+                                printf("k.%d flag.%d SEND.(%s) sock.%d\n",k,flag,(char *)ptr->msg,ptr->sock);
                             }
                             free_json(json);
                         }
@@ -1105,7 +1105,7 @@ void queue_loop(void *ctx)
                         if ( ptr->peerind > 0 )
                             ptr->starttime = (uint32_t)time(NULL);
                     }
-                    else
+                    /*else
                     {
                         if ( ptr->notready++ > 1000 )
                         {
@@ -1113,7 +1113,7 @@ void queue_loop(void *ctx)
                             ptr->sock = -1;
                             printf("queue_loop notready.%d, skip\n",ptr->notready);
                         }
-                    }
+                    }*/
                 }
             }
             else if ( 0 && time(NULL) > ptr->starttime+13 )
@@ -1180,7 +1180,7 @@ void LP_reserved_msgs(void *ignore)
             if ( num_Reserved_msgs[1] > 0 )
             {
                 num_Reserved_msgs[1]--;
-                //printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
+                printf("PRIORITY BROADCAST.(%s)\n",Reserved_msgs[1][num_Reserved_msgs[1]]);
                 LP_broadcast_message(LP_mypubsock,"","",zero,Reserved_msgs[1][num_Reserved_msgs[1]]);
                 Reserved_msgs[1][num_Reserved_msgs[1]] = 0;
             }
