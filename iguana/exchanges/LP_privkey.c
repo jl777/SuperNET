@@ -336,9 +336,6 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
         RS_encode(G.LP_NXTaddr,nxtaddr);
     }
     bitcoin_priv2pub(ctx,coin->symbol,coin->pubkey33,coin->smartaddr,privkey,coin->taddr,coin->pubtype);
-    int32_t i; for (i=0; i<33; i++)
-        printf("%02x",coin->pubkey33[i]);
-    printf("pubkey33\n");
 #ifndef NOTETOMIC
     if ( coin->etomic[0] != 0 )
     {
