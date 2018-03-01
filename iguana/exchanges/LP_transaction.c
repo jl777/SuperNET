@@ -69,7 +69,8 @@ int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxi
         txid = jbits256(txobj,"txid");
         if ( jobj(txobj,"error") == 0 && bits256_cmp(txid,expectedtxid) == 0 )
         {
-            *numconfirmsp = 0;
+            if ( numconfirmsp != 0 )
+                *numconfirmsp = 0;
             if ( numconfirmsp != 0 && coinaddr != 0 && (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
             {
                 //char str[65]; printf("%s %s already in gettx (%s)\n",coinaddr,bits256_str(str,txid),jprint(txobj,0));
