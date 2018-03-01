@@ -104,7 +104,7 @@ int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxi
 
 bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxid)
 {
-    char *retstr,*errstr; bits256 txid; uint8_t *ptr; cJSON *retjson,*errorobj; struct iguana_info *coin; int32_t i,totalretries=0,len,sentflag = 0,numconfirms=-1;
+    char *retstr,*errstr; bits256 txid; uint8_t *ptr; cJSON *retjson,*errorobj; struct iguana_info *coin; int32_t i,totalretries=0,len,sentflag = 0;
     coin = LP_coinfind(symbol);
     memset(&txid,0,sizeof(txid));
     if ( txbytes == 0 || txbytes[0] == 0 )
@@ -120,7 +120,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
     for (i=0; i<2; i++)
     {
         //char str[65]; printf("LP_broadcast.%d (%s) %s i.%d sentflag.%d\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag);
-        if ( sentflag == 0 && LP_gettx_presence(&numconfirms,symbol,expectedtxid,0) != 0 )
+        if ( sentflag == 0 && LP_gettx_presence(0,symbol,expectedtxid,0) != 0 )
             sentflag = 1;
         if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
         {
