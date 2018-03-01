@@ -674,7 +674,7 @@ char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
             return(clonestr("{\"result\":\"success\"}"));
         }
     }
-    if ( (swapstr= basilisk_swapentry(requestid,quoteid,0)) != 0 )
+    if ( (swapstr= basilisk_swapentry(1,requestid,quoteid,0)) != 0 )
     {
         if ( (swapjson= cJSON_Parse(swapstr)) != 0 )
         {
