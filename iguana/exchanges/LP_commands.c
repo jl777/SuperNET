@@ -334,7 +334,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         {
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
-                return(basilisk_swapentry(requestid,quoteid,1));
+                return(basilisk_swapentry(jint(argjson,"fast"),requestid,quoteid,1));
             else if ( coin[0] != 0 )
                 return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
             else if ( base[0] != 0 && rel[0] != 0 )

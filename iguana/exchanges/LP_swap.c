@@ -554,9 +554,10 @@ int32_t LP_sendwait(char *statename,int32_t timeout,int32_t pairsock,struct basi
     return(retval);
 }
 
-void LP_swapsfp_update(struct basilisk_request *rp)
+void LP_swapsfp_update(uint32_t requestid,uint32_t quoteid)
 {
     static FILE *swapsfp;
+    portable_mutex_lock(&LP_listmutex);
     if ( swapsfp == 0 )
     {
         char fname[512];
@@ -568,10 +569,11 @@ void LP_swapsfp_update(struct basilisk_request *rp)
     }
     if ( swapsfp != 0 )
     {
-        fwrite(&rp->requestid,1,sizeof(rp->requestid),swapsfp);
-        fwrite(&rp->quoteid,1,sizeof(rp->quoteid),swapsfp);
+        fwrite(&requestid,1,sizeof(requestid),swapsfp);
+        fwrite(&quoteid,1,sizeof(quoteid),swapsfp);
         fflush(swapsfp);
     }
+    portable_mutex_unlock(&LP_listmutex);
 }
 
 struct basilisk_rawtx *LP_swapdata_rawtx(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx)
@@ -784,7 +786,7 @@ uint32_t LP_swapwait(uint32_t expiration,uint32_t requestid,uint32_t quoteid,int
     }
     while ( expiration == 0 || time(NULL) < expiration )
     {
-        if ( (retstr= basilisk_swapentry(requestid,quoteid,1)) != 0 )
+        if ( (retstr= basilisk_swapentry(0,requestid,quoteid,1)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
@@ -809,7 +811,7 @@ uint32_t LP_swapwait(uint32_t expiration,uint32_t requestid,uint32_t quoteid,int
     if ( retjson != 0 )
     {
         free_json(retjson);
-        if ( (retstr= basilisk_swapentry(requestid,quoteid,1)) != 0 )
+        if ( (retstr= basilisk_swapentry(0,requestid,quoteid,1)) != 0 )
         {
             printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>\nSWAP completed! %u-%u %s\n",requestid,quoteid,retstr);
             free(retstr);
@@ -853,7 +855,7 @@ void LP_bobloop(void *_swap)
             swap->bobrefund.utxotxid = swap->bobdeposit.I.signedtxid;
             basilisk_bobdeposit_refund(swap,swap->I.putduration);
             //printf("depositlen.%d\n",swap->bobdeposit.I.datalen);
-            LP_swapsfp_update(&swap->I.req);
+            //LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
             if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_otherfee) < 0 )
             {
@@ -937,7 +939,7 @@ void LP_aliceloop(void *_swap)
             printf("basilisk_alicetxs error\n");
         else
         {
-            LP_swapsfp_update(&swap->I.req);
+            //LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
             if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
                 printf("error sending alicefee\n");

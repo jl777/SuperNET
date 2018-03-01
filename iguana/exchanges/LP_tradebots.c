@@ -52,7 +52,7 @@ void LP_tradebot_pauseall()
 void LP_tradebot_updatestats(struct LP_tradebot *bot,struct LP_tradebot_trade *tp)
 {
     char *swapstr,*status; int32_t flag; cJSON *swapjson;
-    if ( (swapstr= basilisk_swapentry(tp->requestid,tp->quoteid,1)) != 0 )
+    if ( (swapstr= basilisk_swapentry(0,tp->requestid,tp->quoteid,1)) != 0 )
     {
         flag = 0;
         if ( (swapjson= cJSON_Parse(swapstr)) != 0 )

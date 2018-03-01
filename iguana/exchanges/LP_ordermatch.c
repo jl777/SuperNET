@@ -493,6 +493,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_bobloop,(void *)swap) == 0 )
             {
                 reqjson = LP_quotejson(qp);
+                LP_swapsfp_update(qp->R.requestid,qp->R.quoteid);
                 jaddstr(reqjson,"method","connected");
                 jaddstr(reqjson,"pair",pairstr);
                 if ( (kmdcoin= LP_coinfind("KMD")) != 0 )
@@ -677,6 +678,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
             {
                 retjson = LP_quotejson(qp);
                 jaddstr(retjson,"result","success");
+                LP_swapsfp_update(qp->R.requestid,qp->R.quoteid);
                 //jaddnum(retjson,"requestid",qp->R.requestid);
                 //jaddnum(retjson,"quoteid",qp->R.quoteid);
             }
@@ -1370,6 +1372,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         if ( strcmp(method,"request") == 0 ) // bob
         {
+            if ( LP_Alicemaxprice != 0. )
+                return(retval);
             bestprice = LP_bob_competition(&counter,aliceid,qprice,-1);
             if ( Qtrades == 0 )//|| (bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0) )
                 LP_trades_gotrequest(ctx,&Q,&Q2,jstr(argjson,"pair"));
