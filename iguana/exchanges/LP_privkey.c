@@ -362,7 +362,7 @@ bits256 LP_privkeycalc(void *ctx,uint8_t *pubkey33,bits256 *pubkeyp,struct iguan
     if ( bits256_nonz(privkey) == 0 || (siglen= bitcoin_sign(ctx,coin->symbol,sig,tmpkey,privkey,0)) <= 0 )
     {
         printf("illegal privkey %s\n",bits256_str(str,privkey));
-        //exit(0);
+        exit(0);
     }
     if ( bits256_nonz(privkey) != 0 && bitcoin_verify(ctx,sig,siglen,tmpkey,coin->pubkey33,33) != 0 )
     {
