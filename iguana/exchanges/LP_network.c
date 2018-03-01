@@ -267,22 +267,29 @@ int32_t LP_peerindsock(int32_t *peerindp)
 
 void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
-    int32_t maxind,peerind = 0; //sentbytes,
-    if ( sock0 < 0 && sock1 < 0 )
+    int32_t i,maxind,flag = 0,peerind = 0; //sentbytes,
+    for (i=0; i<2; i++)
     {
-        if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (LP_rand() % maxind) + 1;
-        else peerind = 1;
-        sock0 = LP_peerindsock(&peerind);
-        if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (LP_rand() % maxind) + 1;
-        else peerind = 1;
-        sock1 = LP_peerindsock(&peerind);
+        if ( sock0 < 0 && sock1 < 0 )
+        {
+            if ( (maxind= LP_numpeers()) > 0 )
+                peerind = (LP_rand() % maxind) + 1;
+            else peerind = 1;
+            sock0 = LP_peerindsock(&peerind);
+            if ( (maxind= LP_numpeers()) > 0 )
+                peerind = (LP_rand() % maxind) + 1;
+            else peerind = 1;
+            sock1 = LP_peerindsock(&peerind);
+            flag = 1;
+        }
+        if ( sock0 >= 0 )
+            _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
+        if ( sock1 >= 0 )
+            _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
+        if ( flag == 0 )
+            break;
+        sock0 = sock1 = -1;
     }
-    if ( sock0 >= 0 )
-        _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
-    if ( sock1 >= 0 )
-        _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
 }
 
 void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)

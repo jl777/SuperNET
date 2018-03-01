@@ -1054,10 +1054,10 @@ void queue_loop(void *ctx)
             flag = 0;
             if ( ptr->sock >= 0 )
             {
-                printf("sock.%d len.%d\n",ptr->sock,ptr->msglen);
+                printf("sock.%d len.%d notready.%d\n",ptr->sock,ptr->msglen,ptr->notready);
                 if ( ptr->notready == 0 || (LP_rand() % ptr->notready) == 0 )
                 {
-                    //if ( LP_sockcheck(ptr->sock) > 0 )
+                    if ( LP_sockcheck(ptr->sock) > 0 )
                     {
                         //bits256 magic;
                         //magic = LP_calc_magic(ptr->msg,(int32_t)(ptr->msglen - sizeof(bits256)));
