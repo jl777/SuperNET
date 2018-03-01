@@ -1,4 +1,8 @@
+#ifndef ETOMIC_CURL_HEADER
+#define ETOMIC_CURL_HEADER
+
 #include <stdint.h>
+#include <includes/cJSON.h>
 
 #ifdef __cplusplus
 extern "C"{
@@ -14,15 +18,30 @@ extern "C"{
 typedef struct
 {
     uint64_t blockNumber;
+    uint64_t confirmations;
     char blockHash[75];
+    char status[10];
 } EthTxReceipt;
+
+typedef struct
+{
+    char from[50];
+    char to[50];
+    char input[1000];
+    char valueHex[70];
+    uint8_t exists;
+} EthTxData;
 
 char* sendRawTx(char* rawTx);
 char* ethCall(char* to, const char* data);
-int getNonce(char* address);
+int64_t getNonce(char* address);
 char* getEthBalanceRequest(char* address);
 EthTxReceipt getEthTxReceipt(char *txId);
+EthTxData getEthTxData(char *txId);
+uint64_t getEthBlockNumber();
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

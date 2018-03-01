@@ -13,7 +13,6 @@
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
  ******************************************************************************/
-
 //
 //  LP_transaction.c
 //  marketmaker
@@ -104,7 +103,7 @@ int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxi
 
 bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxid)
 {
-    char *retstr,*errstr; bits256 txid; uint8_t *ptr; cJSON *retjson,*errorobj; struct iguana_info *coin; int32_t i,totalretries=0,len,sentflag = 0;
+    char *retstr,*errstr; bits256 txid; uint8_t *ptr; cJSON *retjson,*errorobj; struct iguana_info *coin; int32_t i,totalretries=0,len,sentflag = 0,numconfirms=-1;
     coin = LP_coinfind(symbol);
     memset(&txid,0,sizeof(txid));
     if ( txbytes == 0 || txbytes[0] == 0 )
@@ -120,7 +119,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
     for (i=0; i<2; i++)
     {
         //char str[65]; printf("LP_broadcast.%d (%s) %s i.%d sentflag.%d\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag);
-        if ( sentflag == 0 && LP_gettx_presence(0,symbol,expectedtxid,0) != 0 )
+        if ( sentflag == 0 && LP_gettx_presence(&numconfirms,symbol,expectedtxid,0) != 0 )
             sentflag = 1;
         if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
         {
@@ -2204,6 +2203,13 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
                     printf("%02x",swap->aliceclaim.txbytes[i]);
                 printf(" <- aliceclaim\n");*/
                 //basilisk_txlog(swap,&swap->aliceclaim,swap->I.putduration+swap->I.callduration);
+#ifndef NOTETOMIC
+                if (swap->bobdeposit.I.ethTxid[0] != 0) {
+                    if (LP_etomic_wait_for_confirmation(swap->bobdeposit.I.ethTxid) < 0) {
+                        return(-1);
+                    }
+                }
+#endif
                 return(LP_waitmempool(coin->symbol,swap->bobdeposit.I.destaddr,swap->bobdeposit.I.signedtxid,0,60));
             } else printf("error signing aliceclaim suppress.%d vin.(%s)\n",swap->aliceclaim.I.suppress_pubkeys,swap->bobdeposit.I.destaddr);
         }
@@ -2227,6 +2233,13 @@ int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t 
             if ( bits256_nonz(swap->alicepayment.I.signedtxid) != 0 )
                 swap->aliceunconf = 1;
             basilisk_dontforget_update(swap,&swap->alicepayment);
+#ifndef NOTETOMIC
+            if (swap->alicepayment.I.ethTxid[0] != 0) {
+                if (LP_etomic_wait_for_confirmation(swap->alicepayment.I.ethTxid) < 0) {
+                    return(-1);
+                }
+            }
+#endif
             return(LP_waitmempool(coin->symbol,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,60));
             //printf("import alicepayment address.(%s)\n",swap->alicepayment.p2shaddr);
             //LP_importaddress(coin->symbol,swap->alicepayment.p2shaddr);
@@ -2279,6 +2292,13 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
             memcpy(swap->alicespend.I.pubkey33,swap->persistent_pubkey33,33);
             bitcoin_address(coin->symbol,swap->alicespend.I.destaddr,coin->taddr,coin->pubtype,swap->persistent_pubkey33,33);
             //char str[65],str2[65]; printf("bobpaid privAm.(%s) myprivs[0].(%s)\n",bits256_str(str,swap->I.privAm),bits256_str(str2,swap->I.myprivs[0]));
+#ifndef NOTETOMIC
+            if (swap->bobpayment.I.ethTxid[0] != 0) {
+                if (LP_etomic_wait_for_confirmation(swap->bobpayment.I.ethTxid) < 0) {
+                    return (-1);
+                }
+            }
+#endif
             if ( (retval= basilisk_rawtx_sign(coin->symbol,coin->wiftaddr,coin->taddr,coin->pubtype,coin->p2shtype,coin->isPoS,coin->wiftype,swap,&swap->alicespend,&swap->bobpayment,swap->I.myprivs[0],0,userdata,len,1,swap->changermd160,swap->bobpayment.I.destaddr,coin->zcash)) == 0 )
             {
                 /*for (i=0; i<swap->bobpayment.I.datalen; i++)

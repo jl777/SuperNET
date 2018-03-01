@@ -28,7 +28,8 @@ int main(int argc, char** argv)
         BOB_APPROVES_ERC20,
         BOB_ETH_BALANCE,
         BOB_ERC20_BALANCE,
-        TX_RECEIPT
+        TX_RECEIPT,
+        TX_DATA
     };
     if (argc < 2) {
         return 1;
@@ -51,8 +52,12 @@ int main(int argc, char** argv)
             strcpy(input.bobHash, argv[3]);
 
             result = bobSendsEthDeposit(input, txData);
-            printf("%s\n", result);
-            free(result);
+            if (result != NULL) {
+                printf("%s\n", result);
+                free(result);
+            } else {
+                printf("Tx send result was NULL\n");
+            }
             break;
         case BOB_ERC20_DEPOSIT:
             strcpy(txData.amount, "0");
@@ -70,7 +75,12 @@ int main(int argc, char** argv)
             strcpy(input1.tokenAddress, tokenAddress);
 
             result = bobSendsErc20Deposit(input1, txData);
-            printf("%s\n", result);
+            if (result != NULL) {
+                printf("%s\n", result);
+                free(result);
+            } else {
+                printf("Tx send result was NULL\n");
+            }
             free(result);
             break;
         case BOB_CLAIMS_DEPOSIT:
@@ -88,7 +98,12 @@ int main(int argc, char** argv)
             strcpy(input2.bobSecret, argv[5]);
 
             result = bobRefundsDeposit(input2, txData);
-            printf("%s\n", result);
+            if (result != NULL) {
+                printf("%s\n", result);
+                free(result);
+            } else {
+                printf("Tx send result was NULL\n");
+            }
             free(result);
             break;
         case ALICE_CLAIMS_DEPOSIT:
@@ -106,7 +121,12 @@ int main(int argc, char** argv)
             strcpy(input3.bobHash, argv[5]);
 
             result = aliceClaimsBobDeposit(input3, txData);
-            printf("%s\n", result);
+            if (result != NULL) {
+                printf("%s\n", result);
+                free(result);
+            } else {
+                printf("Tx send result was NULL\n");
+            }
             free(result);
             break;
         case BOB_ETH_PAYMENT:
@@ -121,7 +141,12 @@ int main(int argc, char** argv)
             strcpy(input4.aliceAddress, aliceAddress);
 
             result = bobSendsEthPayment(input4, txData);
-            printf("%s\n", result);
+            if (result != NULL) {
+                printf("%s\n", result);
+                free(result);
+            } else {
+                printf("Tx send result was NULL\n");
+            }
             free(result);
             break;
         case BOB_ERC20_PAYMENT:
@@ -139,7 +164,12 @@ int main(int argc, char** argv)
             strcpy(input5.aliceHash, argv[3]);
 
             result = bobSendsErc20Payment(input5, txData);
-            printf("%s\n", result);
+            if (result != NULL) {
+                printf("%s\n", result);
+                free(result);
+            } else {
+                printf("Tx send result was NULL\n");
+            }
             free(result);
             break;
         case BOB_CLAIMS_PAYMENT:
@@ -158,7 +188,12 @@ int main(int argc, char** argv)
             strcpy(input6.aliceHash, argv[5]);
 
             result = bobReclaimsBobPayment(input6, txData);
-            printf("%s\n", result);
+            if (result != NULL) {
+                printf("%s\n", result);
+                free(result);
+            } else {
+                printf("Tx send result was NULL\n");
+            }
             free(result);
             break;
         case ALICE_CLAIMS_PAYMENT:
@@ -177,8 +212,12 @@ int main(int argc, char** argv)
             strcpy(input7.aliceSecret, argv[5]);
 
             result = aliceSpendsBobPayment(input7, txData);
-            printf("%s\n", result);
-            free(result);
+            if (result != NULL) {
+                printf("%s\n", result);
+                free(result);
+            } else {
+                printf("Tx send result was NULL\n");
+            }
             break;
         case BOB_APPROVES_ERC20:
             result = approveErc20(
@@ -187,8 +226,12 @@ int main(int argc, char** argv)
                     getenv("BOB_PK")
 
             );
-            printf("%s\n", result);
-            free(result);
+            if (result != NULL) {
+                printf("%s\n", result);
+                free(result);
+            } else {
+                printf("Tx send result was NULL\n");
+            }
             break;
         case BOB_ETH_BALANCE:
             printf("%" PRIu64 "\n", getEthBalance(bobAddress));
@@ -199,9 +242,21 @@ int main(int argc, char** argv)
         case TX_RECEIPT:
             printf("getTxReceipt\n");
             EthTxReceipt txReceipt;
-            txReceipt = getEthTxReceipt("0x82afa1b00f8a63e1a91430162e5cb2d4ebe915831ffd56e6e3227814913e23e6");
-            printf("%" PRIu64 "\n", txReceipt.blockNumber);
-            printf("%s\n", txReceipt.blockHash);
+            txReceipt = getEthTxReceipt("0xc337b9cfe76aaa9022d9399a9e4ecdc1b7044d65ef74e8911a4b47874bee60c6");
+            printf("blockNumber: %" PRIu64 "\n", txReceipt.blockNumber);
+            printf("blockHash: %s\n", txReceipt.blockHash);
+            printf("status: %s\n", txReceipt.status);
+            printf("confirmations: %" PRIu64 "\n", txReceipt.confirmations);
+            break;
+        case TX_DATA:
+            printf("getTxData\n");
+            EthTxData ethTxData;
+            ethTxData = getEthTxData("0xc337b9cfe76aaa9022d9399a9e4ecdc1b7044d65ef74e8911a4b47874bee60c6");
+            printf("from : %s\n", ethTxData.from);
+            printf("to: %s\n", ethTxData.to);
+            printf("value: %s\n", ethTxData.valueHex);
+            printf("input: %s\n", ethTxData.input);
+            printf("exists: %d\n", ethTxData.exists);
             break;
         default:
             return 1;
@@ -214,5 +269,6 @@ int main(int argc, char** argv)
     char weiBuffer[100];
     satoshisToWei(weiBuffer, satoshis);
     printf("wei: %s\n", weiBuffer);
+
     return 0;
 }

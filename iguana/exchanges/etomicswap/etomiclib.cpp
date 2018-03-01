@@ -77,8 +77,8 @@ char* aliceSendsEthPayment(AliceSendsEthPaymentInput input, BasicTxData txData)
        << toHex(jsToBytes(input.bobHash))
        << "000000000000000000000000";
     tx.data = jsToBytes(ss.str());
-    char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char *rawTx = signTx(tx, txData.secretKey);
+    char *result = sendRawTx(rawTx);
     free(rawTx);
     return result;
 }

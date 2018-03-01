@@ -1,8 +1,5 @@
 #include "etomiccurl.h"
 #include <curl/curl.h>
-#include <memory.h>
-#include <stdlib.h>
-#include "../../../includes/cJSON.h"
 
 static char *ethRpcUrl = ETOMIC_URL;
 
@@ -34,6 +31,28 @@ size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s)
     s->len = new_len;
 
     return size*nmemb;
+}
+
+cJSON *parseEthRpcResponse(char *requestResult)
+{
+    printf("Trying to parse ETH RPC response: %s\n", requestResult);
+    cJSON *json = cJSON_Parse(requestResult);
+    if (json == NULL) {
+        printf("ETH RPC response parse failed!\n");
+        return NULL;
+    }
+    cJSON *tmp = cJSON_GetObjectItem(json, "result");
+    cJSON *error = cJSON_GetObjectItem(json, "error");
+    cJSON *result = NULL;
+    if (!is_cJSON_Null(tmp)) {
+        result = cJSON_Duplicate(tmp, 1);
+    } else if (error != NULL && !is_cJSON_Null(error)) {
+        char *errorString = cJSON_PrintUnformatted(error);
+        printf("Got ETH rpc error: %s\n", errorString);
+        free(errorString);
+    }
+    cJSON_Delete(json);
+    return result;
 }
 
 char* sendRequest(char* request)
@@ -69,128 +88,145 @@ char* sendRequest(char* request)
     }
 }
 
-char* sendRawTx(char* rawTx)
+cJSON *sendRpcRequest(char *method, cJSON *params)
 {
     char* string;
     cJSON *request = cJSON_CreateObject();
-    cJSON *params = cJSON_CreateArray();
-    cJSON_AddItemToObject(request, "jsonrpc", cJSON_CreateString("2.0"));
-    cJSON_AddItemToObject(request, "method", cJSON_CreateString("eth_sendRawTransaction"));
-    cJSON_AddItemToArray(params, cJSON_CreateString(rawTx));
-    cJSON_AddItemToObject(request, "params", params);
-    cJSON_AddItemToObject(request, "id", cJSON_CreateNumber(2));
+    cJSON_AddStringToObject(request, "jsonrpc", "2.0");
+    cJSON_AddStringToObject(request, "method", method);
+    cJSON_AddItemToObject(request, "params", cJSON_Duplicate(params, 1));
+    cJSON_AddNumberToObject(request, "id", 1);
     string = cJSON_PrintUnformatted(request);
     char* requestResult = sendRequest(string);
-    cJSON *json = cJSON_Parse(requestResult);
-    cJSON_Delete(request);
-    char* tmp = cJSON_GetObjectItem(json, "result")->valuestring;
-    char* txId = (char*)malloc(strlen(tmp) + 1);
-    strcpy(txId, tmp);
-    cJSON_Delete(json);
-    free(requestResult);
     free(string);
+    cJSON_Delete(request);
+    cJSON *result = parseEthRpcResponse(requestResult);
+    free(requestResult);
+    return result;
+}
+
+char* sendRawTx(char* rawTx)
+{
+    cJSON *params = cJSON_CreateArray();
+    cJSON_AddItemToArray(params, cJSON_CreateString(rawTx));
+    cJSON *resultJson = sendRpcRequest("eth_sendRawTransaction", params);
+    cJSON_Delete(params);
+    char *txId = NULL;
+    if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
+        char* tmp = resultJson->valuestring;
+        txId = (char*)malloc(strlen(tmp) + 1);
+        strcpy(txId, tmp);
+    }
+    cJSON_Delete(resultJson);
     return txId;
 }
 
-int getNonce(char* address)
+int64_t getNonce(char* address)
 {
-    char* string;
-    cJSON *request = cJSON_CreateObject();
     cJSON *params = cJSON_CreateArray();
-    cJSON_AddItemToObject(request, "jsonrpc", cJSON_CreateString("2.0"));
-    cJSON_AddItemToObject(request, "method", cJSON_CreateString("eth_getTransactionCount"));
     cJSON_AddItemToArray(params, cJSON_CreateString(address));
     cJSON_AddItemToArray(params, cJSON_CreateString("pending"));
-    cJSON_AddItemToObject(request, "params", params);
-    cJSON_AddItemToObject(request, "id", cJSON_CreateNumber(2));
-    string = cJSON_PrintUnformatted(request);
-    char* requestResult = sendRequest(string);
-    cJSON_Delete(request);
-    cJSON *json = cJSON_Parse(requestResult);
-    int nonce = (int)strtol(cJSON_GetObjectItem(json, "result")->valuestring, NULL, 0);
-    cJSON_Delete(json);
-    free(requestResult);
-    free(string);
+    int64_t nonce = -1;
+    cJSON *nonceJson = sendRpcRequest("eth_getTransactionCount", params);
+    cJSON_Delete(params);
+    if (nonceJson != NULL && is_cJSON_String(nonceJson) && nonceJson != NULL) {
+        nonce = (int64_t) strtol(nonceJson->valuestring, NULL, 0);
+    }
+    cJSON_Delete(nonceJson);
     return nonce;
 }
 
 char* getEthBalanceRequest(char* address)
 {
-    char* string;
-    cJSON *request = cJSON_CreateObject();
     cJSON *params = cJSON_CreateArray();
-    cJSON_AddItemToObject(request, "jsonrpc", cJSON_CreateString("2.0"));
-    cJSON_AddItemToObject(request, "method", cJSON_CreateString("eth_getBalance"));
     cJSON_AddItemToArray(params, cJSON_CreateString(address));
     cJSON_AddItemToArray(params, cJSON_CreateString("latest"));
-    cJSON_AddItemToObject(request, "params", params);
-    cJSON_AddItemToObject(request, "id", cJSON_CreateNumber(2));
-    string = cJSON_PrintUnformatted(request);
-    char* requestResult = sendRequest(string);
-    cJSON_Delete(request);
-    cJSON *json = cJSON_Parse(requestResult);
-    char* tmp = cJSON_GetObjectItem(json, "result")->valuestring;
-    char* balance = (char*)malloc(strlen(tmp) + 1);
-    strcpy(balance, tmp);
-    cJSON_Delete(json);
-    free(requestResult);
-    free(string);
+    cJSON *balanceJson = sendRpcRequest("eth_getBalance", params);
+    cJSON_Delete(params);
+    char *balance = NULL;
+    if (balanceJson != NULL && is_cJSON_String(balanceJson) && balanceJson->valuestring != NULL) {
+        balance = (char *) malloc(strlen(balanceJson->valuestring) + 1);
+        strcpy(balance, balanceJson->valuestring);
+    }
+    cJSON_Delete(balanceJson);
     return balance;
 }
 
 char* ethCall(char* to, const char* data)
 {
-    char* string;
-    cJSON *request = cJSON_CreateObject();
     cJSON *params = cJSON_CreateArray();
     cJSON *txObject = cJSON_CreateObject();
-    cJSON_AddItemToObject(request, "jsonrpc", cJSON_CreateString("2.0"));
-    cJSON_AddItemToObject(request, "method", cJSON_CreateString("eth_call"));
     cJSON_AddStringToObject(txObject, "to", to);
     cJSON_AddStringToObject(txObject, "data", data);
     cJSON_AddItemToArray(params, txObject);
     cJSON_AddItemToArray(params, cJSON_CreateString("latest"));
-    cJSON_AddItemToObject(request, "params", params);
-    cJSON_AddItemToObject(request, "id", cJSON_CreateNumber(2));
-    string = cJSON_PrintUnformatted(request);
-    char* requestResult = sendRequest(string);
-    cJSON_Delete(request);
-    cJSON *json = cJSON_Parse(requestResult);
-    char* tmp = cJSON_GetObjectItem(json, "result")->valuestring;
-    char* result = (char*)malloc(strlen(tmp) + 1);
-    strcpy(result, tmp);
-    cJSON_Delete(json);
-    free(requestResult);
-    free(string);
+    cJSON *resultJson = sendRpcRequest("eth_call", params);
+    cJSON_Delete(params);
+    char* result = NULL;
+    if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
+        result = (char *) malloc(strlen(resultJson->valuestring) + 1);
+        strcpy(result, resultJson->valuestring);
+    }
+    cJSON_Delete(resultJson);
     return result;
 }
 
 EthTxReceipt getEthTxReceipt(char *txId)
 {
     EthTxReceipt result;
-
-    char* string;
-    cJSON *request = cJSON_CreateObject();
+    memset(&result, 0, sizeof(result));
     cJSON *params = cJSON_CreateArray();
-    cJSON_AddItemToObject(request, "jsonrpc", cJSON_CreateString("2.0"));
-    cJSON_AddItemToObject(request, "method", cJSON_CreateString("eth_getTransactionReceipt"));
     cJSON_AddItemToArray(params, cJSON_CreateString(txId));
-    cJSON_AddItemToObject(request, "params", params);
-    cJSON_AddItemToObject(request, "id", cJSON_CreateNumber(2));
-    string = cJSON_PrintUnformatted(request);
-    char *requestResult = sendRequest(string);
-    cJSON_Delete(request);
-    cJSON *json = cJSON_Parse(requestResult);
-    cJSON *tmp = cJSON_GetObjectItem(json, "result");
-    if (is_cJSON_Null(tmp)) {
+    cJSON *receiptJson = sendRpcRequest("eth_getTransactionReceipt", params);
+    cJSON_Delete(params);
+    if (receiptJson == NULL) {
+        printf("ETH tx %s is not confirmed yet or does not exist at all\n", txId);
         strcpy(result.blockHash, "0x0000000000000000000000000000000000000000000000000000000000000000");
         result.blockNumber = 0;
     } else {
-        strcpy(result.blockHash, cJSON_GetObjectItem(tmp, "blockHash")->valuestring);
-        result.blockNumber = (uint64_t) strtol(cJSON_GetObjectItem(tmp, "blockNumber")->valuestring, NULL, 0);
+        uint64_t currentBlockNumber = getEthBlockNumber();
+        strcpy(result.blockHash, cJSON_GetObjectItem(receiptJson, "blockHash")->valuestring);
+        strcpy(result.status, cJSON_GetObjectItem(receiptJson, "status")->valuestring);
+        result.blockNumber = (uint64_t) strtol(cJSON_GetObjectItem(receiptJson, "blockNumber")->valuestring, NULL, 0);
+        if (currentBlockNumber >= result.blockNumber) {
+            result.confirmations = currentBlockNumber - result.blockNumber + 1;
+        }
     }
-    cJSON_Delete(json);
-    free(requestResult);
-    free(string);
+    cJSON_Delete(receiptJson);
+    return result;
+}
+
+uint64_t getEthBlockNumber()
+{
+    uint64_t result = 0;
+    cJSON *params = cJSON_CreateArray();
+    cJSON *blockNumberJson = sendRpcRequest("eth_blockNumber", params);
+    cJSON_Delete(params);
+    if (blockNumberJson != NULL && is_cJSON_String(blockNumberJson) && blockNumberJson->valuestring != NULL) {
+        result = (uint64_t) strtol(blockNumberJson->valuestring, NULL, 0);
+    }
+    cJSON_Delete(blockNumberJson);
+    return result;
+}
+
+EthTxData getEthTxData(char *txId)
+{
+    EthTxData result;
+    memset(&result, 0, sizeof(result));
+    cJSON *params = cJSON_CreateArray();
+    cJSON_AddItemToArray(params, cJSON_CreateString(txId));
+    cJSON *dataJson = sendRpcRequest("eth_getTransactionByHash", params);
+    cJSON_Delete(params);
+    if (dataJson == NULL) {
+        result.exists = 0;
+        printf("ETH tx %s get data error or txId does not exist\n", txId);
+    } else {
+        result.exists = 1;
+        strcpy(result.from, cJSON_GetObjectItem(dataJson, "from")->valuestring);
+        strcpy(result.to, cJSON_GetObjectItem(dataJson, "to")->valuestring);
+        strcpy(result.input, cJSON_GetObjectItem(dataJson, "input")->valuestring);
+        strcpy(result.valueHex, cJSON_GetObjectItem(dataJson, "value")->valuestring);
+    }
+    free(dataJson);
     return result;
 }
