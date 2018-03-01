@@ -1762,6 +1762,7 @@ char *basilisk_swapentries(int32_t fastflag,char *refbase,char *refrel,int32_t l
                 }
             }
             free_json(retjson);
+            retjson = 0;
         }
         free(liststr);
     }
@@ -1780,9 +1781,9 @@ char *basilisk_swapentries(int32_t fastflag,char *refbase,char *refrel,int32_t l
                     for (j=0; j<count; j++)
                         if ( ridqid == ridqids[j] )
                             break;
-                    //printf("j.%d count.%d %u %u ridqid.%16llx\n",j,count,requestid,quoteid,(long long)ridqid);
                     if ( j == count )
                     {
+                        printf("j.%d count.%d %u %u ridqid.%16llx\n",j,count,requestid,quoteid,(long long)ridqid);
                         if ( (retstr2= basilisk_swapentry(1,requestid,quoteid,0)) != 0 )
                         {
                             if ( (swapjson= cJSON_Parse(retstr2)) != 0 )
@@ -1814,8 +1815,7 @@ char *basilisk_swapentries(int32_t fastflag,char *refbase,char *refrel,int32_t l
                 {
                     if ( basilisk_swap_addarray(pending,refbase,refrel) > 0 )
                         jaddi(retarray,jduplicate(pending));
-                    else free_json(pending);
-                } else free_json(pending);
+                }
             }
             free_json(retjson);
         }
