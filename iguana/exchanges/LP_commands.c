@@ -239,6 +239,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 jaddstr(retjson,"error","IPC endpoint already exists");
                 jaddstr(retjson,"endpoint","ws://127.0.0.1:5555");
+                jaddnum(retjson,"socket",IPC_ENDPOINT);
             }
             else
             {
@@ -248,13 +249,15 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     {
                         jaddstr(retjson,"result","success");
                         jaddstr(retjson,"endpoint","ws://127.0.0.1:5555");
+                        jaddnum(retjson,"socket",IPC_ENDPOINT);
                     }
                     else
                     {
                         jaddstr(retjson,"error",(char *)nn_strerror(nn_errno()));
                         jaddnum(retjson,"err",err);
+                        jaddnum(retjson,"socket",IPC_ENDPOINT);
                     }
-                } else jaddstr(retjson,"error","couldnt get NN_PUB socket");
+                } else jaddstr(retjson,"error","couldnt get NN_PAIR socket");
             }
             return(jprint(retjson,1));
         }
