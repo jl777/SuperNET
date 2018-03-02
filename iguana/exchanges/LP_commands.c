@@ -233,7 +233,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"getendpoint") == 0 )
         {
-            int32_t err;
+            int32_t err,mode;
             retjson = cJSON_CreateObject();
             if ( IPC_ENDPOINT >= 0 )
             {
@@ -250,6 +250,9 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                         jaddstr(retjson,"result","success");
                         jaddstr(retjson,"endpoint","ws://127.0.0.1:5555");
                         jaddnum(retjson,"socket",IPC_ENDPOINT);
+                        mode = NN_WS_MSG_TYPE_TEXT;
+                        err = nn_setsockopt(IPC_ENDPOINT,NN_SOL_SOCKET,NN_WS_MSG_TYPE,&mode,sizeof(mode));
+                        jaddnum(retjson,"sockopt",err);
                     }
                     else
                     {
