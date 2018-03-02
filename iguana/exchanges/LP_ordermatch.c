@@ -482,6 +482,7 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
     {
         printf("cant find coin.%s\n",qp->srccoin);
+        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-3000);
         return(-1);
     }
     privkey = LP_privkey(coin->symbol,coin->smartaddr,coin->taddr);
@@ -493,15 +494,11 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
     if ( bits256_nonz(privkey) != 0 && bits256_cmp(G.LP_mypub25519,qp->srchash) == 0 )
     {
         LP_requestinit(&qp->R,qp->srchash,qp->desthash,base,qp->satoshis-qp->txfee,rel,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
-        /*if ( LP_pendingswap(qp->R.requestid,qp->R.quoteid) > 0 )
-        {
-            printf("requestid.%u quoteid.%u is already in progres\n",qp->R.requestid,qp->R.quoteid);
-            return(-1);
-        }*/
         dtrust = LP_dynamictrust(qp->othercredits,qp->desthash,LP_kmdvalue(qp->destcoin,qp->destsatoshis));
         if ( (swap= LP_swapinit(1,0,privkey,&qp->R,qp,dtrust > 0)) == 0 )
         {
             printf("cant initialize swap\n");
+            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-3001);
             return(-1);
         }
         if ( (pair= LP_nanobind(ctx,pairstr)) >= 0 )
@@ -534,11 +531,28 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                     printf("bob tries %u-%u again i.%d\n",swap->I.req.requestid,swap->I.req.quoteid,i);
                     LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
                 }
-                free_json(reqjson);
+                if ( IPC_ENDPOINT >= 0 )
+                    LP_queuecommand(0,jprint(reqjson,1),IPC_ENDPOINT,-1,0);
+                else free_json(reqjson);
                 retval = 0;
-            } else printf("error launching swaploop\n");
-        } else printf("couldnt bind to any port %s\n",pairstr);
-    } else printf("cant find privkey for %s\n",coin->smartaddr);
+            }
+            else
+            {
+                LP_failedmsg(qp->R.requestid,qp->R.quoteid,-3002);
+                printf("error launching swaploop\n");
+            }
+        }
+        else
+        {
+            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-3003);
+            printf("couldnt bind to any port %s\n",pairstr);
+        }
+    }
+    else
+    {
+        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-3004);
+        printf("cant find privkey for %s\n",coin->smartaddr);
+    }
     if ( retval < 0 )
     {
         if ( pair >= 0 )
@@ -604,31 +618,16 @@ int32_t LP_alice_eligible(uint32_t quotetime)
 
 char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
 {
-    cJSON *retjson; char otheraddr[64]; double bid,ask,price,qprice; int32_t pairsock = -1; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,A,B,*butxo; struct basilisk_swap *swap; struct iguana_info *coin;
-    /*if ( LP_quoteparse(&Q,argjson) < 0 )
-    {
-        LP_aliceid(Q.tradeid,Q.aliceid,"error0",0,0);
-        clonestr("{\"error\":\"cant parse quote\"}");
-    }*/
+    cJSON *retjson; char otheraddr[64],*msg; double bid,ask,price,qprice; int32_t pairsock = -1; int32_t DEXselector = 0; struct LP_utxoinfo *autxo,A,B,*butxo; struct basilisk_swap *swap; struct iguana_info *coin;
     if ( bits256_cmp(qp->desthash,G.LP_mypub25519) != 0 )
     {
         LP_aliceid(qp->tradeid,qp->aliceid,"error1",0,0);
+        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4000);
         return(clonestr("{\"result\",\"update stats\"}"));
     }
     printf("CONNECTED numpending.%d tradeid.%u requestid.%u quoteid.%u pairstr.%s\n",G.LP_pendingswaps,qp->tradeid,qp->R.requestid,qp->R.quoteid,pairstr!=0?pairstr:"");
     LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis-qp->txfee,qp->destcoin,qp->destsatoshis-qp->desttxfee,qp->timestamp,qp->quotetime,DEXselector);
     //printf("calculated requestid.%u quoteid.%u\n",qp->R.requestid,qp->R.quoteid);
-    /*if ( LP_pendingswap(qp->R.requestid,qp->R.quoteid) > 0 )
-    {
-        printf("requestid.%u quoteid.%u is already in progres\n",qp->R.requestid,qp->R.quoteid);
-        retjson = cJSON_CreateObject();
-        jaddstr(retjson,"error","swap already in progress");
-        return(jprint(retjson,1));
-    }*/
-    /*if ( LP_quotecmp(1,qp,&LP_Alicereserved) == 0 )
-    {
-        printf("mismatched between reserved and connected\n");
-    }*/
     memset(&LP_Alicereserved,0,sizeof(LP_Alicereserved));
     LP_aliceid(qp->tradeid,qp->aliceid,"connected",qp->R.requestid,qp->R.quoteid);
     autxo = &A;
@@ -641,6 +640,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
         LP_availableset(qp->desttxid,qp->vout);
         LP_availableset(qp->feetxid,qp->feevout);
         LP_aliceid(qp->tradeid,qp->aliceid,"error4",0,0);
+        LP_failedmsg(qp->R.requestid,qp->R.quoteid,qprice);
         printf("quote %s/%s validate error %.0f\n",qp->srccoin,qp->destcoin,qprice);
         return(clonestr("{\"error\":\"quote validation error\"}"));
     }
@@ -650,6 +650,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
         LP_availableset(qp->desttxid,qp->vout);
         LP_availableset(qp->feetxid,qp->feevout);
         LP_aliceid(qp->tradeid,qp->aliceid,"error5",0,0);
+        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4002);
         return(clonestr("{\"error\":\"no price set\"}"));
     }
     //LP_RTmetrics_update(qp->srccoin,qp->destcoin);
@@ -658,6 +659,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
     if ( (coin= LP_coinfind(qp->destcoin)) == 0 )
     {
         LP_aliceid(qp->tradeid,qp->aliceid,"error6",0,0);
+        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4003);
         return(clonestr("{\"error\":\"cant get alicecoin\"}"));
     }
     qp->privkey = LP_privkey(coin->symbol,qp->destaddr,coin->taddr);
@@ -670,11 +672,13 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
             LP_availableset(qp->desttxid,qp->vout);
             LP_availableset(qp->feetxid,qp->feevout);
             LP_aliceid(qp->tradeid,qp->aliceid,"error7",qp->R.requestid,qp->R.quoteid);
+            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4004);
             return(jprint(retjson,1));
         }
         if ( pairstr == 0 || pairstr[0] == 0 || (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
         {
             LP_aliceid(qp->tradeid,qp->aliceid,"error8",qp->R.requestid,qp->R.quoteid);
+            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4005);
             jaddstr(retjson,"error","couldnt create pairsock");
         }
         else if ( nn_connect(pairsock,pairstr) >= 0 )
@@ -696,6 +700,12 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
                 retjson = LP_quotejson(qp);
                 jaddstr(retjson,"result","success");
                 LP_swapsfp_update(qp->R.requestid,qp->R.quoteid);
+                if ( IPC_ENDPOINT >= 0 )
+                {
+                    msg = jprint(retjson,0);
+                    LP_queuecommand(0,msg,IPC_ENDPOINT,-1,0);
+                    free(msg);
+                }
                 //jaddnum(retjson,"requestid",qp->R.requestid);
                 //jaddnum(retjson,"quoteid",qp->R.quoteid);
             }
@@ -703,12 +713,14 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
             {
                 LP_aliceid(qp->tradeid,qp->aliceid,"error9",qp->R.requestid,qp->R.quoteid);
                 jaddstr(retjson,"error","couldnt aliceloop");
+                LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4006);
             }
         }
         else
         {
             LP_aliceid(qp->tradeid,qp->aliceid,"error10",qp->R.requestid,qp->R.quoteid);
             printf("connect error %s\n",nn_strerror(nn_errno()));
+            LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4007);
         }
         //printf("connected result.(%s)\n",jprint(retjson,0));
         if ( jobj(retjson,"error") != 0 )
@@ -724,6 +736,7 @@ char *LP_connectedalice(struct LP_quoteinfo *qp,char *pairstr) // alice
         LP_availableset(qp->feetxid,qp->feevout);
         LP_aliceid(qp->tradeid,qp->aliceid,"error11",0,0);
         printf("no privkey found coin.%s %s taddr.%u\n",qp->destcoin,qp->destaddr,coin->taddr);
+        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-4008);
         return(clonestr("{\"error\",\"no privkey\"}"));
     }
 }
