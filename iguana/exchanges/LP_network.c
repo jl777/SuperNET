@@ -426,6 +426,7 @@ struct LP_queuedcommand
     struct LP_queuedcommand *next,*prev;
     char **retstrp;
     int32_t responsesock,msglen,stats_JSONonly;
+    uint32_t queueid;
     char msg[];
 } *LP_commandQ;
     
@@ -446,8 +447,16 @@ void LP_commandQ_loop(void *ctx)
                 if ( (retstr= LP_command_process(ctx,"127.0.0.1",ptr->responsesock,argjson,(uint8_t *)ptr->msg,ptr->msglen,ptr->stats_JSONonly)) != 0 )
                 {
                     //printf("processed.(%s)\n",retstr);
-                    if ( ptr->responsesock >= 0  && (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
-                        printf("error sending result\n");
+                    if ( ptr->responsesock >= 0  )
+                    {
+                        /*if ( ptr->queueid != 0 )
+                        {
+                            retjson = cJSON_CreateObject();
+                            
+                        }*/
+                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
+                            printf("error sending result\n");
+                    }
                     if ( ptr->retstrp != 0 )
                         (*ptr->retstrp) = retstr;
                     else free(retstr);
@@ -463,7 +472,7 @@ void LP_commandQ_loop(void *ctx)
     }
 }
     
-void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly)
+void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid)
 {
     struct LP_queuedcommand *ptr; int32_t msglen;
     msglen = (int32_t)strlen(buf) + 1;
@@ -471,8 +480,10 @@ void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats
     ptr = calloc(1,sizeof(*ptr) + msglen);
     if ( (ptr->retstrp= retstrp) != 0 )
         *retstrp = 0;
-    ptr->responsesock = responsesock;
     ptr->msglen = msglen;
+    if ( (ptr->queueid= queueid) != 0 && responsesock < 0 )
+        ptr->responsesock = IPC_ENDPOINT;
+    else ptr->responsesock = responsesock;
     ptr->stats_JSONonly = stats_JSONonly;
     memcpy(ptr->msg,buf,msglen);
     DL_APPEND(LP_commandQ,ptr);
@@ -562,7 +573,7 @@ void LP_psockloop(void *_ptr)
                                 {
                                     sendsock = ptr->sendsock;
                                     break;
-                                } else LP_queuecommand(0,(char *)buf,ptr->publicsock,0);
+                                } else LP_queuecommand(0,(char *)buf,ptr->publicsock,0,0);
                             }
                             if ( buf != 0 )
                             {

@@ -35,9 +35,11 @@ voind dontprintf(char *formatstr,...) {}
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "27770"
+#define LP_BUILD_NUMBER "27771"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
+
+#define LP_IPC_ENDPOINT "tcp://127.0.0.1:7781"
 
 #define LP_DONT_IMPORTPRIVKEY
 

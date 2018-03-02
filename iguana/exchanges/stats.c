@@ -29,7 +29,7 @@
 #define STATS_DEST "/var/www/html/DEXstats.json"
 #include "DEXstats.h"
 char *stats_JSON(void *ctx,char *myipaddr,int32_t mypubsock,cJSON *argjson,char *remoteaddr,uint16_t port);
-void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly);
+void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid);
 extern uint32_t DOCKERFLAG;
 
 char *stats_validmethods[] =
@@ -330,11 +330,12 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 }
 
 extern void *bitcoin_ctx();
+extern int32_t IPC_ENDPOINT;
 
 char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
     static void *ctx;
-    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr=0,*filestr,*token = 0; int32_t i,j,n,num=0;
+    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; char symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr=0,*filestr,*token = 0; int32_t i,j,n,num=0; uint32_t queueid;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
@@ -556,7 +557,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             }
             else
             {
-                cJSON *arg; //char *buf;
+                cJSON *arg; char *buf;
                 if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
                 {
                     arg = jobj(argjson,"params");
@@ -569,20 +570,23 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
 #ifdef FROM_MARKETMAKER
                 if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(arg) > 0 )
                 {
-                    //buf = jprint(arg,0);
-                    //LP_queuecommand(&retstr,buf,-1,1);
-                    //free(buf);
-                    //while ( retstr == 0 )
-                    //    usleep(10000);
-                    retstr = stats_JSON(ctx,"127.0.0.1",-1,arg,remoteaddr,port);
+                    if ( IPC_ENDPOINT >= 0 && (queueid= juint(arg,"queueid")) > 0 )
+                    {
+                        buf = jprint(arg,0);
+                        LP_queuecommand(&retstr,buf,-1,1,queueid);
+                        free(buf);
+                        retstr = clonestr("{\"result\":\"success\",\"status\":\"queued\"}");
+                    } else retstr = stats_JSON(ctx,"127.0.0.1",-1,arg,remoteaddr,port);
                 } else retstr = clonestr("{\"error\":\"invalid remote method\"}");
 #else
-                //buf = jprint(arg,0);
-                //LP_queuecommand(&retstr,buf,-1,1);
-                //free(buf);
-                //while ( retstr == 0 )
-                 //   usleep(10000);
-                retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
+                if ( IPC_ENDPOINT >= 0 && (queueid= juint(arg,"queueid")) > 0 )
+                {
+                    if ( jobj(arg,"id") == 0 )
+                        jaddnum(arg,"id",rand());
+                    buf = jprint(arg,0);
+                    LP_queuecommand(&retstr,buf,-1,1,queueid);
+                    free(buf);
+                } else retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
 #endif
             }
             free_json(argjson);
