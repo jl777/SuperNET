@@ -233,6 +233,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"getendpoint") == 0 )
         {
+            int32_t err;
             retjson = cJSON_CreateObject();
             if ( IPC_ENDPOINT >= 0 )
             {
@@ -243,11 +244,16 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PUB)) >= 0 )
                 {
-                    if ( nn_bind(IPC_ENDPOINT,"ws://127.0.0.1") >= 0 )
+                    if ( (err= nn_bind(IPC_ENDPOINT,"ws://127.0.0.1")) >= 0 )
                     {
                         jaddstr(retjson,"result","success");
                         jaddstr(retjson,"endpoint","ws://127.0.0.1");
-                    } else jaddstr(retjson,"error","couldnt connect to IPC_ENDPOINT");
+                    }
+                    else
+                    {
+                        jaddstr(retjson,"error",(char *)nn_strerror(nn_errno()));
+                        jaddnum(retjson,"err",err);
+                    }
                 } else jaddstr(retjson,"error","couldnt get NN_PUB socket");
             }
             return(jprint(retjson,1));
