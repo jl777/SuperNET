@@ -102,11 +102,6 @@ char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t por
     return(str);
 }
 
-char *nanomsg_wsendpoint(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
-{
-    sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port+10);
-    return(str);
-}
 
 /*char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
  {

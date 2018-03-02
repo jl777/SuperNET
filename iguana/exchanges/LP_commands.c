@@ -233,23 +233,20 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"getendpoint") == 0 )
         {
-            char endpoint[64];
-            nanomsg_wsendpoint(1,endpoint,LP_myipaddr,7781);
             retjson = cJSON_CreateObject();
             if ( IPC_ENDPOINT >= 0 )
             {
                 jaddstr(retjson,"error","IPC endpoint already exists");
-                jaddstr(retjson,"endpoint",endpoint);
+                jaddstr(retjson,"endpoint","ws://127.0.0.1");
             }
             else
             {
                 if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PUB)) >= 0 )
                 {
-                    if ( nn_bind(IPC_ENDPOINT,endpoint) >= 0 )
+                    if ( nn_bind(IPC_ENDPOINT,"ws://127.0.0.1") >= 0 )
                     {
                         jaddstr(retjson,"result","success");
-                        nanomsg_wsendpoint(0,endpoint,LP_myipaddr,7781);
-                        jaddstr(retjson,"endpoint",endpoint);
+                        jaddstr(retjson,"endpoint","ws://127.0.0.1");
                     } else jaddstr(retjson,"error","couldnt connect to IPC_ENDPOINT");
                 } else jaddstr(retjson,"error","couldnt get NN_PUB socket");
             }

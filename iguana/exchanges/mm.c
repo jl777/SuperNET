@@ -58,7 +58,8 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 	#include "../../crypto777/nanosrc/pipeline.h"
 	#include "../../crypto777/nanosrc/reqrep.h"
 	#include "../../crypto777/nanosrc/tcp.h"
-	#include "../../crypto777/nanosrc/pair.h"
+    #include "../../crypto777/nanosrc/pair.h"
+    #include "../../crypto777/nanosrc/ws.h"
 #else
 	#include "/usr/local/include/nanomsg/nn.h"
 	#include "/usr/local/include/nanomsg/bus.h"
@@ -66,7 +67,8 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 	#include "/usr/local/include/nanomsg/pipeline.h"
 	#include "/usr/local/include/nanomsg/reqrep.h"
 	#include "/usr/local/include/nanomsg/tcp.h"
-	#include "/usr/local/include/nanomsg/pair.h"
+    #include "/usr/local/include/nanomsg/pair.h"
+    #include "/usr/local/include/nanomsg/ws.h"
 #endif
 #endif
 
