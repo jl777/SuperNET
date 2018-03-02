@@ -35,7 +35,7 @@ voind dontprintf(char *formatstr,...) {}
 
 #define LP_MAJOR_VERSION "0"
 #define LP_MINOR_VERSION "1"
-#define LP_BUILD_NUMBER "27770"
+#define LP_BUILD_NUMBER "27771"
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
@@ -101,7 +101,7 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 #define LP_MINVOL 20
 #define LP_MINCLIENTVOL 200
 #define LP_MINSIZE_TXFEEMULT 10
-#define LP_REQUIRED_TXFEE 0.8
+#define LP_REQUIRED_TXFEE 0.75
 
 #define LP_DEXFEE(destsatoshis) ((destsatoshis) / INSTANTDEX_INSURANCEDIV)
 #define LP_DEPOSITSATOSHIS(satoshis) ((satoshis) + (satoshis >> 3))
@@ -537,7 +537,7 @@ int32_t LP_mempoolscan(char *symbol,bits256 searchtxid);
 int32_t LP_txheight(struct iguana_info *coin,bits256 txid);
 int32_t LP_numpeers();
 double LP_CMCbtcprice(double *price_usdp,char *symbol);
-char *basilisk_swapentry(uint32_t requestid,uint32_t quoteid,int32_t forceflag);
+char *basilisk_swapentry(int32_t fastflag,uint32_t requestid,uint32_t quoteid,int32_t forceflag);
 int64_t LP_KMDvalue(struct iguana_info *coin,int64_t balance);
 int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight);
 void LP_smartutxos_push(struct iguana_info *coin);

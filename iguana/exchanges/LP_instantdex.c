@@ -717,7 +717,7 @@ cJSON *LP_swapstats_item(struct LP_swapstats *sp,int32_t iambob)
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
             }
-            if ( (swapstr= basilisk_swapentry(sp->Q.R.requestid,sp->Q.R.quoteid,0)) != 0 )
+            if ( (swapstr= basilisk_swapentry(1,sp->Q.R.requestid,sp->Q.R.quoteid,0)) != 0 )
             {
                 if ( (swapjson= cJSON_Parse(swapstr)) != 0 )
                 {

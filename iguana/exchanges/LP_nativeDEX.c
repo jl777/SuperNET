@@ -85,7 +85,7 @@ void LP_millistats_update(struct LP_millistats *mp)
 }
 
 #include "LP_include.h"
-portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex,LP_statslogmutex,LP_tradesmutex,LP_commandQmutex,LP_blockinit_mutex,LP_pendswap_mutex;
+portable_mutex_t LP_peermutex,LP_UTXOmutex,LP_utxomutex,LP_commandmutex,LP_cachemutex,LP_swaplistmutex,LP_forwardmutex,LP_pubkeymutex,LP_networkmutex,LP_psockmutex,LP_coinmutex,LP_messagemutex,LP_portfoliomutex,LP_electrummutex,LP_butxomutex,LP_reservedmutex,LP_nanorecvsmutex,LP_tradebotsmutex,LP_gcmutex,LP_inusemutex,LP_cJSONmutex,LP_logmutex,LP_statslogmutex,LP_tradesmutex,LP_commandQmutex,LP_blockinit_mutex,LP_pendswap_mutex,LP_listmutex;
 int32_t LP_canbind;
 char *Broadcaststr,*Reserved_msgs[2][1000];
 int32_t num_Reserved_msgs[2],max_Reserved_msgs[2];
@@ -101,7 +101,7 @@ struct LP_trade *LP_trades,*LP_tradesQ;
 uint16_t LP_fixed_pairport;//,LP_publicport;
 uint32_t LP_lastnonce,LP_swap_endcritical,LP_swap_critical,LP_RTcount,LP_swapscount;
 int32_t LP_STOP_RECEIVED,LP_numactive_LP;//,LP_mybussock = -1;
-int32_t LP_mypubsock = -1;
+int32_t LP_mypubsock = -1,IPC_ENDPOINT = -1;
 int32_t LP_cmdcount,LP_mypullsock = -1;
 int32_t LP_numfinished,LP_showwif,IAMLP = 0;
 double LP_profitratio = 1.;
@@ -334,7 +334,7 @@ char *LP_process_message(void *ctx,char *typestr,char *myipaddr,int32_t pubsock,
                 }
                 else
                 {
-                    LP_queuecommand(0,jsonstr,pubsock,0);
+                    LP_queuecommand(0,jsonstr,pubsock,0,0);
                     //if ( (retstr= LP_command_process(ctx,myipaddr,pubsock,argjson,&((uint8_t *)ptr)[len],recvlen - len)) != 0 )
                     //{
                     //}
@@ -417,7 +417,7 @@ int32_t LP_sock_check(char *typestr,void *ctx,char *myipaddr,int32_t pubsock,int
                             //printf("self broadcast.(%s)\n",Broadcaststr);
                             str = Broadcaststr;
                             Broadcaststr = 0;
-                            LP_queuecommand(0,str,pubsock,0);
+                            LP_queuecommand(0,str,pubsock,0,0);
                             /*if ( (argjson= cJSON_Parse(str)) != 0 )
                             {
                                 //portable_mutex_lock(&LP_commandmutex);
@@ -961,7 +961,7 @@ void LP_swapsloop(void *ctx)
     char *retstr; cJSON *retjson; uint32_t requestid,quoteid; int32_t nonz; struct LP_pendswap *sp,*tmp;
     strcpy(LP_swapsloop_stats.name,"LP_swapsloop");
     LP_swapsloop_stats.threshold = 605000.;
-    if ( (retstr= basilisk_swapentry(0,0,1)) != 0 )
+    if ( (retstr= basilisk_swapentry(0,0,0,1)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
@@ -1047,7 +1047,6 @@ void queue_loop(void *ctx)
             continue;
         }
         LP_millistats_update(&queue_loop_stats);
-        //printf("LP_Q.%p next.%p prev.%p\n",LP_Q,LP_Q!=0?LP_Q->next:0,LP_Q!=0?LP_Q->prev:0);
         n = nonz = flag = 0;
         DL_FOREACH_SAFE(LP_Q,ptr,tmp)
         {
@@ -1055,6 +1054,7 @@ void queue_loop(void *ctx)
             flag = 0;
             if ( ptr->sock >= 0 )
             {
+                //printf("sock.%d len.%d notready.%d\n",ptr->sock,ptr->msglen,ptr->notready);
                 if ( ptr->notready == 0 || (LP_rand() % ptr->notready) == 0 )
                 {
                     if ( LP_sockcheck(ptr->sock) > 0 )
@@ -1081,27 +1081,38 @@ void queue_loop(void *ctx)
                                 {
                                     if ( (sentbytes= nn_send(ptr->sock,linebuf,k,0)) != k )
                                         printf("%d LP_send mmjson sent %d instead of %d\n",n,sentbytes,k);
-                                    else flag++;
+                                    else
+                                    {
+                                        flag++;
+                                        ptr->sock = -1;
+                                    }
                                 }
-                                //printf("k.%d SEND.(%s) sock.%d\n",k,(char *)ptr->msg,ptr->sock);
+                                //printf("k.%d flag.%d SEND.(%s) sock.%d\n",k,flag,(char *)ptr->msg,ptr->sock);
                             }
                             free_json(json);
                         }
                         if ( flag == 0 )
                         {
-                            //printf("len.%d SEND.(%s) sock.%d\n",ptr->msglen,(char *)ptr->msg,ptr->sock);
+                           // printf("non-encoded len.%d SEND.(%s) sock.%d\n",ptr->msglen,(char *)ptr->msg,ptr->sock);
                             if ( (sentbytes= nn_send(ptr->sock,ptr->msg,ptr->msglen,0)) != ptr->msglen )
                                 printf("%d LP_send sent %d instead of %d\n",n,sentbytes,ptr->msglen);
-                            else flag++;
+                            else
+                            {
+                                flag++;
+                                ptr->sock = -1;
+                            }
                         }
-                        ptr->sock = -1;
                         if ( ptr->peerind > 0 )
                             ptr->starttime = (uint32_t)time(NULL);
                     }
                     else
                     {
                         if ( ptr->notready++ > 1000 )
+                        {
                             flag = 1;
+                            printf("queue_loop sock.%d len.%d notready.%d, skip\n",ptr->sock,ptr->msglen,ptr->notready);
+                            ptr->sock = -1;
+                        }
                     }
                 }
             }
@@ -1342,6 +1353,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     portable_mutex_init(&LP_commandQmutex);
     portable_mutex_init(&LP_blockinit_mutex);
     portable_mutex_init(&LP_pendswap_mutex);
+    portable_mutex_init(&LP_listmutex);
     myipaddr = clonestr("127.0.0.1");
 #ifndef _WIN32
 #ifndef FROM_JS
@@ -1592,7 +1604,7 @@ void LP_fromjs_iter()
         {
             LP_notify_pubkeys(ctx,LP_mypubsock);
             LP_privkey_updates(ctx,LP_mypubsock,0);
-            if ( (retstr= basilisk_swapentry(0,0,0)) != 0 )
+            if ( (retstr= basilisk_swapentry(0,0,0,0)) != 0 )
                 free(retstr);
         }
     }

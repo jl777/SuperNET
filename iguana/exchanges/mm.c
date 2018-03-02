@@ -58,7 +58,8 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 	#include "../../crypto777/nanosrc/pipeline.h"
 	#include "../../crypto777/nanosrc/reqrep.h"
 	#include "../../crypto777/nanosrc/tcp.h"
-	#include "../../crypto777/nanosrc/pair.h"
+    #include "../../crypto777/nanosrc/pair.h"
+    #include "../../crypto777/nanosrc/ws.h"
 #else
 	#include "/usr/local/include/nanomsg/nn.h"
 	#include "/usr/local/include/nanomsg/bus.h"
@@ -66,7 +67,8 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
 	#include "/usr/local/include/nanomsg/pipeline.h"
 	#include "/usr/local/include/nanomsg/reqrep.h"
 	#include "/usr/local/include/nanomsg/tcp.h"
-	#include "/usr/local/include/nanomsg/pair.h"
+    #include "/usr/local/include/nanomsg/pair.h"
+    #include "/usr/local/include/nanomsg/ws.h"
 #endif
 #endif
 
@@ -177,6 +179,24 @@ int main(int argc, const char * argv[])
                 printf("%s\n",retstr);
         }
         exit(0);
+    }
+    else if ( argv[1] != 0 && strcmp(argv[1],"events") == 0 )
+    {
+        int32_t len; void *ptr;
+        if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )
+        {
+            if ( nn_connect(IPC_ENDPOINT,"ws://127.0.0.1:5555") >= 0 )
+            {
+                while ( 1 )
+                {
+                    if ( (len= nn_recv(IPC_ENDPOINT,&ptr,NN_MSG,0)) > 0 )
+                    {
+                        printf("nn_recv[%d] (%s)\n",len,(char *)ptr);
+                        nn_freemsg(ptr);
+                    }
+                }
+            }
+        }
     }
     else if ( argv[1] != 0 && strcmp(argv[1],"hush") == 0 )
     {

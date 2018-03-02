@@ -2152,7 +2152,12 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
     coinaddr[0] = 0;
     offset = 1 + (taddr != 0);
     if ( len != 20 )
+    {
         calc_rmd160_sha256(data+offset,pubkey_or_rmd160,len);
+        //for (i=0; i<20; i++)
+        //    printf("%02x",data[offset+i]);
+        //printf(" rmd160\n");
+    }
     else memcpy(data+offset,pubkey_or_rmd160,20);
     if ( strcmp(symbol,"BCH") == 0 )
     {
