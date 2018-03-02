@@ -862,8 +862,10 @@ void LP_bobloop(void *_swap)
                 error = 1;
                 err = -2004, printf("error waiting for alicefee\n");
             }
-            if ( error == 0 ) {
-                if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 ) {
+            if ( error == 0 )
+            {
+                if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 )
+                {
                     error = 1;
                     err = -2005, printf("error sending bobdeposit\n");
                 }
