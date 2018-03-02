@@ -238,16 +238,16 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             if ( IPC_ENDPOINT >= 0 )
             {
                 jaddstr(retjson,"error","IPC endpoint already exists");
-                jaddstr(retjson,"endpoint","ws://127.0.0.1");
+                jaddstr(retjson,"endpoint","ws://127.0.0.1:5555");
             }
             else
             {
                 if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PUB)) >= 0 )
                 {
-                    if ( (err= nn_bind(IPC_ENDPOINT,"ws://127.0.0.1")) >= 0 )
+                    if ( (err= nn_bind(IPC_ENDPOINT,"ws://*:5555")) >= 0 )
                     {
                         jaddstr(retjson,"result","success");
-                        jaddstr(retjson,"endpoint","ws://127.0.0.1");
+                        jaddstr(retjson,"endpoint","ws://127.0.0.1:5555");
                     }
                     else
                     {
