@@ -449,6 +449,11 @@ void LP_commandQ_loop(void *ctx)
                     //printf("processed.(%s)\n",retstr);
                     if ( ptr->responsesock >= 0  )
                     {
+                        /*if ( ptr->queueid != 0 )
+                        {
+                            retjson = cJSON_CreateObject();
+                            
+                        }*/
                         if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
                             printf("error sending result\n");
                     }
@@ -568,7 +573,7 @@ void LP_psockloop(void *_ptr)
                                 {
                                     sendsock = ptr->sendsock;
                                     break;
-                                } else LP_queuecommand(0,(char *)buf,ptr->publicsock,0);
+                                } else LP_queuecommand(0,(char *)buf,ptr->publicsock,0,0);
                             }
                             if ( buf != 0 )
                             {
