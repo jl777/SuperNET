@@ -166,6 +166,7 @@ instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
 timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
 unlockedspend(coin, txid)\n\
+getendpoint()\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
@@ -229,6 +230,27 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 else return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jobj(argjson,"broadcast") != 0 ? jint(argjson,"broadcast") : 1));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
+        }
+        else if ( strcmp(method,"getendpoint") == 0 )
+        {
+            retjson = cJSON_CreateObject();
+            if ( IPC_ENDPOINT >= 0 )
+            {
+                jaddstr(retjson,"error","IPC endpoint already exists");
+                jaddstr(retjson,"endpoint",LP_IPC_ENDPOINT);
+            }
+            else
+            {
+                if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PUB)) >= 0 )
+                {
+                    if ( nn_bind(IPC_ENDPOINT,LP_IPC_ENDPOINT) >= 0 )
+                    {
+                        jaddstr(retjson,"result","success");
+                        jaddstr(retjson,"endpoint",LP_IPC_ENDPOINT);
+                    } else jaddstr(retjson,"error","couldnt connect to IPC_ENDPOINT");
+                } else jaddstr(retjson,"error","couldnt get NN_PUB socket");
+            }
+            return(jprint(retjson,1));
         }
         else if ( strcmp(method,"instantdex_claim") == 0 )
         {

@@ -101,7 +101,7 @@ struct LP_trade *LP_trades,*LP_tradesQ;
 uint16_t LP_fixed_pairport;//,LP_publicport;
 uint32_t LP_lastnonce,LP_swap_endcritical,LP_swap_critical,LP_RTcount,LP_swapscount;
 int32_t LP_STOP_RECEIVED,LP_numactive_LP;//,LP_mybussock = -1;
-int32_t LP_mypubsock = -1;
+int32_t LP_mypubsock = -1,IPC_ENDPOINT = -1;
 int32_t LP_cmdcount,LP_mypullsock = -1;
 int32_t LP_numfinished,LP_showwif,IAMLP = 0;
 double LP_profitratio = 1.;

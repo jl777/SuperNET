@@ -330,6 +330,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 }
 
 extern void *bitcoin_ctx();
+extern int32_t IPC_ENDPOINT;
 
 char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
@@ -556,7 +557,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
             }
             else
             {
-                cJSON *arg; //char *buf;
+                cJSON *arg; char *buf;
                 if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
                 {
                     arg = jobj(argjson,"params");
@@ -569,20 +570,25 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
 #ifdef FROM_MARKETMAKER
                 if ( strcmp(remoteaddr,"127.0.0.1") == 0 || LP_valid_remotemethod(arg) > 0 )
                 {
-                    //buf = jprint(arg,0);
-                    //LP_queuecommand(&retstr,buf,-1,1);
-                    //free(buf);
-                    //while ( retstr == 0 )
-                    //    usleep(10000);
-                    retstr = stats_JSON(ctx,"127.0.0.1",-1,arg,remoteaddr,port);
+                    if ( IPC_ENDPOINT >= 0 )
+                    {
+                        if ( jobj(arg,"id") == 0 )
+                            jaddnum(arg,"id",rand());
+                        buf = jprint(arg,0);
+                        LP_queuecommand(&retstr,buf,-1,1);
+                        free(buf);
+                        retstr = clonestr("{\"result\":\"success\",\"status\":\"queued\"}");
+                    } else retstr = stats_JSON(ctx,"127.0.0.1",-1,arg,remoteaddr,port);
                 } else retstr = clonestr("{\"error\":\"invalid remote method\"}");
 #else
-                //buf = jprint(arg,0);
-                //LP_queuecommand(&retstr,buf,-1,1);
-                //free(buf);
-                //while ( retstr == 0 )
-                 //   usleep(10000);
-                retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
+                if ( IPC_ENDPOINT >= 0 )
+                {
+                    if ( jobj(arg,"id") == 0 )
+                        jaddnum(arg,"id",rand());
+                    buf = jprint(arg,0);
+                    LP_queuecommand(&retstr,buf,-1,1);
+                    free(buf);
+                } else retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
 #endif
             }
             free_json(argjson);
