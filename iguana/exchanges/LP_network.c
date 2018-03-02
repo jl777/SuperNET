@@ -460,11 +460,11 @@ void LP_commandQ_loop(void *ctx)
                             jadd(retjson,"result",result);
                             retstr = jprint(retjson,1);
                         }
+                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
+                            printf("error sending result\n");
                     }
                     if ( retstr != 0 )
                     {
-                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
-                            printf("error sending result\n");
                         if ( ptr->retstrp == 0 )
                             free(retstr);
                     }
