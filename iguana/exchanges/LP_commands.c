@@ -233,22 +233,34 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"getendpoint") == 0 )
         {
+            int32_t err,mode;
             retjson = cJSON_CreateObject();
             if ( IPC_ENDPOINT >= 0 )
             {
                 jaddstr(retjson,"error","IPC endpoint already exists");
-                jaddstr(retjson,"endpoint",LP_IPC_ENDPOINT);
+                jaddstr(retjson,"endpoint","ws://*:5555");
+                jaddnum(retjson,"socket",IPC_ENDPOINT);
             }
             else
             {
-                if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PUB)) >= 0 )
+                if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )
                 {
-                    if ( nn_bind(IPC_ENDPOINT,"tcp://*:7781") >= 0 )
+                    if ( (err= nn_bind(IPC_ENDPOINT,"ws://*:5555")) >= 0 )
                     {
                         jaddstr(retjson,"result","success");
-                        jaddstr(retjson,"endpoint",LP_IPC_ENDPOINT);
-                    } else jaddstr(retjson,"error","couldnt connect to IPC_ENDPOINT");
-                } else jaddstr(retjson,"error","couldnt get NN_PUB socket");
+                        jaddstr(retjson,"endpoint","ws://127.0.0.1:5555");
+                        jaddnum(retjson,"socket",IPC_ENDPOINT);
+                        mode = NN_WS_MSG_TYPE_TEXT;
+                        err = nn_setsockopt(IPC_ENDPOINT,NN_SOL_SOCKET,NN_WS_MSG_TYPE,&mode,sizeof(mode));
+                        jaddnum(retjson,"sockopt",err);
+                    }
+                    else
+                    {
+                        jaddstr(retjson,"error",(char *)nn_strerror(nn_errno()));
+                        jaddnum(retjson,"err",err);
+                        jaddnum(retjson,"socket",IPC_ENDPOINT);
+                    }
+                } else jaddstr(retjson,"error","couldnt get NN_PAIR socket");
             }
             return(jprint(retjson,1));
         }
