@@ -39,7 +39,7 @@ voind dontprintf(char *formatstr,...) {}
 #define LP_BARTERDEX_VERSION 1
 #define LP_MAGICBITS 1
 
-#define LP_IPC_ENDPOINT "ws://127.0.0.1:7781"
+#define LP_IPC_ENDPOINT "tcp://127.0.0.1:7781"
 
 #define LP_DONT_IMPORTPRIVKEY
 
