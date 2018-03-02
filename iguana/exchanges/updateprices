@@ -1,4 +1,4 @@
-cp ../exchanges/autoprice .
+cp ../exchanges/prices/autoprice .
 cp ../exchanges/auto* .
 cp ../exchanges/prices/crypto .
 cp ../exchanges/prices/jumblr .
