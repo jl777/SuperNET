@@ -242,7 +242,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             else
             {
-                if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PUB)) >= 0 )
+                if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )
                 {
                     if ( (err= nn_bind(IPC_ENDPOINT,"ws://*:5555")) >= 0 )
                     {
