@@ -1,5 +1,5 @@
 cp ../exchanges/prices/autoprice .
-cp ../exchanges/auto* .
+cp ../exchanges/auto_* .
 cp ../exchanges/prices/crypto .
 cp ../exchanges/prices/jumblr .
 cp ../exchanges/prices/pangea .
