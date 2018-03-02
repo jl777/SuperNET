@@ -24,6 +24,23 @@ bits256 LP_Alicedestpubkey,LP_bobs_reserved;
 uint32_t Alice_expiration,Bob_expiration;
 struct { uint64_t aliceid; double bestprice; uint32_t starttime,counter; } Bob_competition[512];
 
+
+void LP_failedmsg(uint32_t requestid,uint32_t quoteid,double val)
+{
+    char *msg; cJSON *retjson;
+    if ( IPC_ENDPOINT >= 0 )
+    {
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"method","failed");
+        jaddnum(retjson,"error",val);
+        jaddnum(retjson,"requestid",requestid);
+        jaddnum(retjson,"quoteid",quoteid);
+        msg = jprint(retjson,1);
+        LP_queuecommand(0,msg,IPC_ENDPOINT,-1,0);
+        free(msg);
+    }
+}
+
 double LP_bob_competition(int32_t *counterp,uint64_t aliceid,double price,int32_t counter)
 {
     int32_t i,firsti = -1; uint32_t now = (uint32_t)time(NULL);
@@ -1016,7 +1033,7 @@ struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,str
         if ( (retstr= LP_quotereceived(qp)) != 0 )
             free(retstr);
         return(qp);
-    }
+    } else LP_failedmsg(qp->R.requestid,qp->R.quoteid,qprice);
     return(0);
 }
 
@@ -1037,17 +1054,22 @@ struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,stru
         printf("CONNECT STARTBOB!\n");
         LP_connectstartbob(ctx,LP_mypubsock,qp->srccoin,qp->destcoin,qprice,qp);
         return(qp);
-    } else printf("connect message from non-reserved (%llu)\n",(long long)qp->aliceid);
+    }
+    else
+    {
+        LP_failedmsg(qp->R.requestid,qp->R.quoteid,-1);
+        printf("connect message from non-reserved (%llu)\n",(long long)qp->aliceid);
+    }
     return(0);
 }
 
 struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr)
 {
-    char *retstr; int32_t changed;
+    char *retstr; int32_t changed; double val;
     //char str[65]; printf("alice %s received CONNECTED.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
     *newqp = *qp;
     qp = newqp;
-    if ( LP_trades_alicevalidate(ctx,qp) > 0. )
+    if ( (val= LP_trades_alicevalidate(ctx,qp)) > 0. )
     {
         printf("CONNECTED ALICE\n");
         LP_aliceid(qp->tradeid,qp->aliceid,"connected",0,0);
@@ -1056,7 +1078,7 @@ struct LP_quoteinfo *LP_trades_gotconnected(void *ctx,struct LP_quoteinfo *qp,st
         LP_mypriceset(&changed,qp->destcoin,qp->srccoin,0.);
         LP_alicequery_clear();
         return(qp);
-    }
+    } else LP_failedmsg(qp->R.requestid,qp->R.quoteid,val);
     //printf("LP_trades_alicevalidate error\n");
     return(0);
 }
@@ -1289,13 +1311,13 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         if ( Q.satoshis < Q.txfee )
             return(1);
         LP_requestinit(&Q.R,Q.srchash,Q.desthash,Q.srccoin,Q.satoshis-Q.txfee,Q.destcoin,Q.destsatoshis-Q.desttxfee,Q.timestamp,Q.quotetime,DEXselector);
-        LP_tradecommand_log(argjson);
         rq = ((uint64_t)Q.R.requestid << 32) | Q.R.quoteid;
         if ( Q.timestamp > 0 && time(NULL) > Q.timestamp + LP_AUTOTRADE_TIMEOUT*20 ) // eat expired packets, some old timestamps floating about?
         {
             printf("aliceid.%llu is expired by %d\n",(long long)Q.aliceid,(uint32_t)time(NULL) - (Q.timestamp + LP_AUTOTRADE_TIMEOUT*20));
             return(1);
         }
+        LP_tradecommand_log(argjson);
         qprice = (double)Q.destsatoshis / (Q.satoshis - Q.txfee); //jdouble(argjson,"price");
         //printf("%s\n",jprint(argjson,0));
         printf("%-4d (%-10u %10u) %12s id.%-20llu %5s/%-5s %12.8f -> %12.8f (%11.8f) | RT.%d %d n%d\n",(uint32_t)time(NULL) % 3600,Q.R.requestid,Q.R.quoteid,method,(long long)Q.aliceid,Q.srccoin,Q.destcoin,dstr(Q.satoshis),dstr(Q.destsatoshis),qprice,LP_RTcount,LP_swapscount,G.netid);

@@ -830,7 +830,7 @@ uint32_t LP_swapwait(uint32_t expiration,uint32_t requestid,uint32_t quoteid,int
 
 void LP_bobloop(void *_swap)
 {
-    uint8_t *data; char bobstr[65],alicestr[65]; int32_t maxlen,m,n; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    uint8_t *data; char bobstr[65],alicestr[65]; int32_t maxlen,m,n,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
     G.LP_pendingswaps++;
     printf("start swap iambob\n");
     LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
@@ -841,13 +841,13 @@ void LP_bobloop(void *_swap)
     if ( swap != 0 )
     {
         if ( LP_waitsend("pubkeys",120,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
-            printf("error waitsend pubkeys\n");
+            err = -2000, printf("error waitsend pubkeys\n");
         else if ( LP_waitsend("choosei",LP_SWAPSTEP_TIMEOUT,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
-            printf("error waitsend choosei\n");
+            err = -2001, printf("error waitsend choosei\n");
         else if ( LP_waitsend("mostprivs",LP_SWAPSTEP_TIMEOUT,swap->N.pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
-            printf("error waitsend mostprivs\n");
+            err = -2002, printf("error waitsend mostprivs\n");
         else if ( basilisk_bobscripts_set(swap,1,1) < 0 )
-            printf("error bobscripts deposit\n");
+            err = -2003, printf("error bobscripts deposit\n");
         else
         {
             uint8_t error = 0;
@@ -860,27 +860,24 @@ void LP_bobloop(void *_swap)
             if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_otherfee) < 0 )
             {
                 error = 1;
-                printf("error waiting for alicefee\n");
+                err = -2004, printf("error waiting for alicefee\n");
             }
-
             if ( error == 0 ) {
                 if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 ) {
                     error = 1;
-                    printf("error sending bobdeposit\n");
+                    err = -2005, printf("error sending bobdeposit\n");
                 }
             }
-
             if ( error == 0 && LP_waitfor(swap->N.pair,swap,1800,LP_verify_alicepayment) < 0 )
             {
                 error = 1;
-                printf("error waiting for alicepayment\n");
+                err = -2006, printf("error waiting for alicepayment\n");
             }
-
             if (error == 0)
             {
                 LP_swap_critical = (uint32_t)time(NULL);
                 if ( basilisk_bobscripts_set(swap,0,1) < 0 )
-                    printf("error bobscripts payment\n");
+                    err = -2007, printf("error bobscripts payment\n");
                 else
                 {
                     m = swap->I.aliceconfirms;
@@ -891,9 +888,8 @@ void LP_bobloop(void *_swap)
                         sleep(10);
                     }
                     LP_swap_critical = (uint32_t)time(NULL);
-
                     if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 ) {
-                        printf("error sending bobpayment\n");
+                        err = -2008, printf("error sending bobpayment\n");
                     }
                     //if ( LP_waitfor(swap->N.pair,swap,10,LP_verify_alicespend) < 0 )
                     //    printf("error waiting for alicespend\n");
@@ -908,6 +904,8 @@ void LP_bobloop(void *_swap)
         }
     } else printf("swap timed out\n");
     LP_swap_endcritical = (uint32_t)time(NULL);
+    if ( err < 0 )
+        LP_failedmsg(swap->I.req.requestid,swap->I.req.quoteid,err);
     sleep(13);
     LP_pendswap_add(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid);
     //swap->I.finished = LP_swapwait(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*3,swap->I.aliceconfirms == 0 ? 3 : 30);
@@ -919,7 +917,7 @@ void LP_bobloop(void *_swap)
 
 void LP_aliceloop(void *_swap)
 {
-    uint8_t *data; char bobstr[65],alicestr[65]; int32_t maxlen,n,m; uint32_t expiration; struct basilisk_swap *swap = _swap;
+    uint8_t *data; char bobstr[65],alicestr[65]; int32_t maxlen,n,m,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
     G.LP_pendingswaps++;
     LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
     LP_etomicsymbol(alicestr,swap->I.alicetomic,swap->I.alicestr);
@@ -930,21 +928,21 @@ void LP_aliceloop(void *_swap)
     {
         printf("start swap iamalice pair.%d\n",swap->N.pair);
         if ( LP_sendwait("pubkeys",120,swap->N.pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
-            printf("error LP_sendwait pubkeys\n");
+            err = -1000, printf("error LP_sendwait pubkeys\n");
         else if ( LP_sendwait("choosei",LP_SWAPSTEP_TIMEOUT,swap->N.pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
-            printf("error LP_sendwait choosei\n");
+            err = -1001, printf("error LP_sendwait choosei\n");
         else if ( LP_sendwait("mostprivs",LP_SWAPSTEP_TIMEOUT,swap->N.pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
-            printf("error LP_sendwait mostprivs\n");
+            err = -1002, printf("error LP_sendwait mostprivs\n");
         else if ( basilisk_alicetxs(swap->N.pair,swap,data,maxlen) != 0 )
-            printf("basilisk_alicetxs error\n");
+            err = -1003, printf("basilisk_alicetxs error\n");
         else
         {
             //LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
             if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
-                printf("error sending alicefee\n");
+                err = -1004, printf("error sending alicefee\n");
             else if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_bobdeposit) < 0 )
-                printf("error waiting for bobdeposit\n");
+                err = -1005, printf("error waiting for bobdeposit\n");
             else
             {
                 m = swap->I.bobconfirms;
@@ -955,7 +953,7 @@ void LP_aliceloop(void *_swap)
                     sleep(10);
                 }
                 if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x1000,data,maxlen,&swap->alicepayment,0x800,0) == 0 )
-                    printf("error sending alicepayment\n");
+                    err = -1006, printf("error sending alicepayment\n");
                 else
                 {
                     m = swap->I.aliceconfirms;
@@ -968,7 +966,7 @@ void LP_aliceloop(void *_swap)
                     //swap->sentflag = 1;
                     LP_swap_critical = (uint32_t)time(NULL);
                     if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_bobpayment) < 0 )
-                        printf("error waiting for bobpayment\n");
+                        err = -1007, printf("error waiting for bobpayment\n");
                     else
                     {
                         LP_swap_endcritical = (uint32_t)time(NULL);
@@ -985,6 +983,8 @@ void LP_aliceloop(void *_swap)
         }
     }
     LP_swap_endcritical = (uint32_t)time(NULL);
+    if ( err < 0 )
+        LP_failedmsg(swap->I.req.requestid,swap->I.req.quoteid,err);
     sleep(13);
     LP_pendswap_add(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid);
     //swap->I.finished = LP_swapwait(swap->I.expiration,swap->I.req.requestid,swap->I.req.quoteid,LP_atomic_locktime(swap->I.bobstr,swap->I.alicestr)*3,swap->I.aliceconfirms == 0 ? 3 : 30);

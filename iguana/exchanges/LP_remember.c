@@ -235,6 +235,18 @@ void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx
     }
     else if ( rawtx == &swap->bobreclaim )
         basilisk_dontforget(swap,&swap->bobreclaim,swap->bobpayment.I.locktime,triggertxid);
+    if ( IPC_ENDPOINT >= 0 )
+    {
+        char fname[512],*fstr; long fsize;
+        sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid), OS_compatible_path(fname);
+        if ( rawtx != 0 )
+            sprintf(fname+strlen(fname),".%s",rawtx->name);
+        if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
+        {
+            LP_queuecommand(0,fstr,IPC_ENDPOINT,-1,0);
+            free(fstr);
+        }
+    }
 }
 
 bits256 basilisk_swap_privbob_extract(char *symbol,bits256 spendtxid,int32_t vini,int32_t revflag)
