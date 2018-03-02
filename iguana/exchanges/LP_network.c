@@ -433,7 +433,7 @@ struct LP_queuedcommand
     
 void LP_commandQ_loop(void *ctx)
 {
-    struct LP_queuedcommand *ptr,*tmp; int32_t size,nonz; char *retstr; cJSON *argjson;
+    struct LP_queuedcommand *ptr,*tmp; int32_t size,nonz; char *retstr; cJSON *argjson,*retjson,*result;
     while ( LP_STOP_RECEIVED == 0 )
     {
         nonz = 0;
@@ -448,19 +448,26 @@ void LP_commandQ_loop(void *ctx)
                 if ( (retstr= LP_command_process(ctx,"127.0.0.1",ptr->responsesock,argjson,(uint8_t *)ptr->msg,ptr->msglen,ptr->stats_JSONonly)) != 0 )
                 {
                     //printf("processed.(%s)\n",retstr);
-                    if ( ptr->responsesock >= 0  )
-                    {
-                        /*if ( ptr->queueid != 0 )
-                        {
-                            retjson = cJSON_CreateObject();
-                            
-                        }*/
-                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
-                            printf("error sending result\n");
-                    }
                     if ( ptr->retstrp != 0 )
                         (*ptr->retstrp) = retstr;
-                    else free(retstr);
+                    if ( ptr->responsesock >= 0  )
+                    {
+                        if ( (result= cJSON_Parse(retstr)) != 0 && ptr->queueid != 0 )
+                        {
+                            free(retstr);
+                            retjson = cJSON_CreateObject();
+                            jaddnum(retjson,"queueid",ptr->queueid);
+                            jadd(retjson,"result",result);
+                            retstr = jprint(retjson,1);
+                        }
+                    }
+                    if ( retstr != 0 )
+                    {
+                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
+                            printf("error sending result\n");
+                        if ( ptr->retstrp == 0 )
+                            free(retstr);
+                    }
                 }
                 else if ( ptr->retstrp != 0 )
                     (*ptr->retstrp) = clonestr("{\"error\":\"timeout\"}");
