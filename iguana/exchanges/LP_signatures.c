@@ -458,7 +458,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 
 char *LP_postprice_recv(cJSON *argjson)
 {
-    bits256 pubkey; double price; char *base,*rel;
+    bits256 pubkey; double price; char *base,*rel,*argstr;
     //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
     if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
     {
@@ -467,6 +467,11 @@ char *LP_postprice_recv(cJSON *argjson)
         {
             if ( LP_price_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,base,rel,j64bits(argjson,"price64")) == 0 )
             {
+                if ( (argstr= jprint(argjson,0)) != 0 )
+                {
+                    LP_queuecommand(0,argstr,IPC_ENDPOINT,-1,0);
+                    free(argstr);
+                }
                 //printf("call pricefeed update\n");
                 LP_pricefeedupdate(pubkey,base,rel,price,jstr(argjson,"utxocoin"),jint(argjson,"n"),jdouble(argjson,"bal")*SATOSHIDEN,jdouble(argjson,"min")*SATOSHIDEN,jdouble(argjson,"max")*SATOSHIDEN,jdouble(argjson,"credits")*SATOSHIDEN);
                 return(clonestr("{\"result\":\"success\"}"));
