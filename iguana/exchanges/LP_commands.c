@@ -259,6 +259,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                         jaddstr(retjson,"error",(char *)nn_strerror(nn_errno()));
                         jaddnum(retjson,"err",err);
                         jaddnum(retjson,"socket",IPC_ENDPOINT);
+                        nn_close(IPC_ENDPOINT);
+                        IPC_ENDPOINT = -1;
                     }
                 } else jaddstr(retjson,"error","couldnt get NN_PAIR socket");
             }
