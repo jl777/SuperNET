@@ -1107,10 +1107,10 @@ void queue_loop(void *ctx)
                     }
                     else
                     {
-                        if ( ptr->notready++ > 1000 )
+                        if ( ptr->notready++ > 100 )
                         {
                             flag = 1;
-                            printf("queue_loop sock.%d len.%d notready.%d, skip\n",ptr->sock,ptr->msglen,ptr->notready);
+                            //printf("queue_loop sock.%d len.%d notready.%d, skip\n",ptr->sock,ptr->msglen,ptr->notready);
                             ptr->sock = -1;
                         }
                     }
