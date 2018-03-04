@@ -86,7 +86,7 @@ bits256 bitcoin_pub256(void *ctx,bits256 *privkeyp,uint8_t odd_even)
 int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256 privkey,int32_t recoverflag)
 {
     int32_t fCompressed = 1;
-    secp256k1_ecdsa_signature SIG; void *funcp; secp256k1_ecdsa_recoverable_signature rSIG; bits256 extra_entropy,seed; uint8_t *entropy; int32_t recid,retval = -1; size_t siglen = 72; secp256k1_pubkey SECPUB,CHECKPUB;
+    secp256k1_ecdsa_signature SIG,SIGOUT; void *funcp; secp256k1_ecdsa_recoverable_signature rSIG; bits256 extra_entropy,seed; uint8_t *entropy; int32_t recid,retval = -1; size_t siglen = 72; secp256k1_pubkey SECPUB,CHECKPUB;
     seed = rand256(0);
     extra_entropy = rand256(0);
     SECP_ENSURE_CTX
@@ -134,7 +134,8 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
             {
                 if ( secp256k1_ecdsa_sign(ctx,&SIG,txhash2.bytes,privkey.bytes,funcp,entropy) != 0 )
                 {
-                    if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIG) != 0 )
+                    secp256k1_ecdsa_signature_normalize(ctx,&SIGOUT,&SIG);
+                        if ( secp256k1_ecdsa_signature_serialize_der(ctx,sig,&siglen,&SIGOUT) != 0 )
                         retval = (int32_t)siglen;
                 }
             }
