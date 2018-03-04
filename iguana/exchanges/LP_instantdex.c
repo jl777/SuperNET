@@ -163,7 +163,7 @@ uint32_t LP_claimtime(struct iguana_info *coin,uint32_t expiration)
         heighttime = LP_heighttime(coin->symbol,coin->height-8);
         printf("claimtime: now %u height.%d heighttime.%u expiration.%u\n",now,coin->height,heighttime,expiration);
         if ( heighttime >= expiration )
-            return(heighttime + 1);
+            return(heighttime - 1);
     }
     return(0);
 }

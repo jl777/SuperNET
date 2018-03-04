@@ -191,7 +191,7 @@ int main(int argc, const char * argv[])
                 {
                     if ( (len= nn_recv(IPC_ENDPOINT,&ptr,NN_MSG,0)) > 0 )
                     {
-                        printf("nn_recv[%d] (%s)\n",len,(char *)ptr);
+                        printf("%s\n",(char *)ptr);
                         nn_freemsg(ptr);
                     }
                 }

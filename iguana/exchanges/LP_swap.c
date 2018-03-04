@@ -208,7 +208,7 @@ int32_t LP_pubkeys_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
         data[datalen++] = swap->persistent_pubkey33[i];
     for (i=0; i<sizeof(swap->deck)/sizeof(swap->deck[0][0]); i++)
         datalen += iguana_rwnum(1,&data[datalen],sizeof(swap->deck[i>>1][i&1]),&swap->deck[i>>1][i&1]);
-    printf("send >>>>>>>>> r.%u q.%u datalen.%d\n",swap->I.req.requestid,swap->I.req.quoteid,datalen);
+    //printf("send >>>>>>>>> r.%u q.%u datalen.%d\n",swap->I.req.requestid,swap->I.req.quoteid,datalen);
     return(datalen);
 }
 
@@ -269,7 +269,7 @@ int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
 
 int32_t LP_choosei_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    int32_t i,datalen; char str[65];
+    int32_t i,datalen; //char str[65];
     datalen = iguana_rwnum(1,data,sizeof(swap->I.choosei),&swap->I.choosei);
     if ( swap->I.iambob != 0 )
     {
@@ -277,7 +277,7 @@ int32_t LP_choosei_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
             data[datalen++] = swap->I.pubB0.bytes[i];
         for (i=0; i<32; i++)
             data[datalen++] = swap->I.pubB1.bytes[i];
-        printf("SEND pubB0/1 %s\n",bits256_str(str,swap->I.pubB0));
+        //printf("SEND pubB0/1 %s\n",bits256_str(str,swap->I.pubB0));
     }
     else
     {
@@ -285,7 +285,7 @@ int32_t LP_choosei_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
             data[datalen++] = swap->I.pubA0.bytes[i];
         for (i=0; i<32; i++)
             data[datalen++] = swap->I.pubA1.bytes[i];
-        printf("SEND pubA0/1 %s\n",bits256_str(str,swap->I.pubA0));
+        //printf("SEND pubA0/1 %s\n",bits256_str(str,swap->I.pubA0));
     }
     return(datalen);
 }
@@ -793,13 +793,12 @@ uint32_t LP_swapwait(uint32_t expiration,uint32_t requestid,uint32_t quoteid,int
                 if ( jstr(retjson,"status") != 0 && strcmp(jstr(retjson,"status"),"finished") == 0 )
                 {
                     finished = (uint32_t)time(NULL);
-                    free(retstr);
+                    free(retstr), retstr = 0;
                     break;
                 }
                 else if ( expiration != 0 && time(NULL) > expiration )
                     printf("NOT FINISHED.(%s)\n",jprint(retjson,0));
-                free_json(retjson);
-                retjson = 0;
+                free_json(retjson), retjson = 0;
             }
             free(retstr);
         }
@@ -832,7 +831,7 @@ void LP_bobloop(void *_swap)
 {
     uint8_t *data; char bobstr[65],alicestr[65]; int32_t maxlen,m,n,err=0; uint32_t expiration; struct basilisk_swap *swap = _swap;
     G.LP_pendingswaps++;
-    printf("start swap iambob\n");
+    //printf("start swap iambob\n");
     LP_etomicsymbol(bobstr,swap->I.bobtomic,swap->I.bobstr);
     LP_etomicsymbol(alicestr,swap->I.alicetomic,swap->I.alicestr);
     maxlen = 1024*1024 + sizeof(*swap);
@@ -857,17 +856,21 @@ void LP_bobloop(void *_swap)
             //printf("depositlen.%d\n",swap->bobdeposit.I.datalen);
             //LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
+            LP_unavailableset(swap->bobdeposit.utxotxid,swap->bobdeposit.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
             if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_otherfee) < 0 )
             {
                 error = 1;
                 err = -2004, printf("error waiting for alicefee\n");
             }
-            if ( error == 0 ) {
-                if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 ) {
+            if ( error == 0 )
+            {
+                if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x200,data,maxlen,&swap->bobdeposit,0x100,0) == 0 )
+                {
                     error = 1;
                     err = -2005, printf("error sending bobdeposit\n");
                 }
             }
+            LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
             if ( error == 0 && LP_waitfor(swap->N.pair,swap,1800,LP_verify_alicepayment) < 0 )
             {
                 error = 1;
@@ -883,6 +886,7 @@ void LP_bobloop(void *_swap)
                     m = swap->I.aliceconfirms;
                     while ( (n= LP_numconfirms(alicestr,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m ) // sync with alice
                     {
+                        LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
                         LP_swap_critical = (uint32_t)time(NULL);
                         char str[65];printf("%d wait for alicepayment %s numconfs.%d %s %s\n",n,swap->alicepayment.I.destaddr,m,alicestr,bits256_str(str,swap->alicepayment.I.signedtxid));
                         sleep(10);
@@ -946,6 +950,7 @@ void LP_aliceloop(void *_swap)
             else
             {
                 m = swap->I.bobconfirms;
+                LP_unavailableset(swap->alicepayment.utxotxid,swap->alicepayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
                 while ( (n= LP_numconfirms(bobstr,swap->bobdeposit.I.destaddr,swap->bobdeposit.I.signedtxid,0,1)) < m )
                 {
                     LP_swap_critical = (uint32_t)time(NULL);
@@ -1227,7 +1232,8 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.aliceconfirms *= !swap->I.aliceistrusted;
     }
     printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< r.%u q.%u, %.8f bobconfs.%d, %.8f aliceconfs.%d taddr.%d %d\n",jumblrflag,swap->I.req.requestid,swap->I.req.quoteid,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms,bobcoin->taddr,alicecoin->taddr);
-    printf("etomic src (%s %s) dest (%s %s)\n",swap->I.bobtomic,swap->I.etomicsrc,swap->I.alicetomic,swap->I.etomicdest);
+    if ( swap->I.etomicsrc[0] != 0 || swap->I.etomicdest[0] != 0 )
+        printf("etomic src (%s %s) dest (%s %s)\n",swap->I.bobtomic,swap->I.etomicsrc,swap->I.alicetomic,swap->I.etomicdest);
     if ( swap->I.iambob != 0 )
     {
         basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,bobcoin,0,0,LP_DEXFEE(swap->I.bobsatoshis) + 0*bobcoin->txfee,0,0,jumblrflag);
@@ -1279,17 +1285,20 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
 
 struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp,struct LP_quoteinfo *qp,int32_t dynamictrust)
 {
+    static void *ctx;
     struct basilisk_swap *swap; bits256 pubkey25519; uint8_t pubkey33[33];
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
     swap = calloc(1,sizeof(*swap));
     swap->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
     swap->I.req.quoteid = rp->quoteid;
-    swap->ctx = bitcoin_ctx();
+    swap->ctx = ctx;
     vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
     swap->I.req = *rp;
     G.LP_skipstatus[G.LP_numskips] = ((uint64_t)rp->requestid << 32) | rp->quoteid;
     if ( G.LP_numskips < sizeof(G.LP_skipstatus)/sizeof(*G.LP_skipstatus) )
         G.LP_numskips++;
-    printf("LP_swapinit request.%u iambob.%d (%s/%s) quoteid.%u\n",rp->requestid,iambob,rp->src,rp->dest,rp->quoteid);
+    //printf("LP_swapinit request.%u iambob.%d (%s/%s) quoteid.%u\n",rp->requestid,iambob,rp->src,rp->dest,rp->quoteid);
     bitcoin_pubkey33(swap->ctx,pubkey33,privkey);
     pubkey25519 = curve25519(privkey,curve25519_basepoint9());
     swap->persistent_pubkey = pubkey25519;

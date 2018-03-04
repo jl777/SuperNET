@@ -161,7 +161,7 @@ double LP_quote_validate(struct LP_utxoinfo *autxo,struct LP_utxoinfo *butxo,str
         if ( LP_iseligible(&destvalue,&destvalue2,0,destcoin,qp->desttxid,qp->destvout,qp->destsatoshis,qp->feetxid,qp->feevout) == 0 )
         {
             //alice not eligible 0.36893923 -> dest 0.55020000 1.49130251 (0.61732249 0.00104324) 14b8b74808d2d34a70e5eddd1cad47d855858f8b23cac802576d4d37b5f8af8f/v1 abec6e76169bcb738235ca67fab02cc55390f39e422aa71f1badf8747c290cc4/v1
-            //char str[65],str2[65]; printf("alice not eligible %.8f -> dest %.8f %.8f (%.8f %.8f) %s/v%d %s/v%d\n",dstr(qp->satoshis),dstr(qp->destsatoshis),(double)qp->destsatoshis/qp->satoshis,dstr(destvalue),dstr(destvalue2),bits256_str(str,qp->desttxid),qp->destvout,bits256_str(str2,qp->feetxid),qp->feevout);
+            char str[65],str2[65]; printf("alice not eligible %.8f -> dest %.8f %.8f (%.8f %.8f) %s/v%d %s/v%d\n",dstr(qp->satoshis),dstr(qp->destsatoshis),(double)qp->destsatoshis/qp->satoshis,dstr(destvalue),dstr(destvalue2),bits256_str(str,qp->desttxid),qp->destvout,bits256_str(str2,qp->feetxid),qp->feevout);
             return(-3);
         }
         if ( (txout= LP_gettxout(destcoin,qp->destaddr,qp->desttxid,qp->destvout)) != 0 )
@@ -1053,7 +1053,6 @@ struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,str
 struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr)
 {
     double myprice,qprice,bid,ask; struct iguana_info *coin;
-    char str[65]; printf("bob %s received CONNECT.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
     *newqp = *qp;
     qp = newqp;
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
@@ -1064,7 +1063,7 @@ struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,stru
         return(0);
     if ( LP_reservation_check(qp->txid,qp->vout,qp->desthash) == 0 && LP_reservation_check(qp->txid2,qp->vout2,qp->desthash) == 0  )
     {
-        printf("CONNECT STARTBOB!\n");
+        char str[65]; printf("bob %s received CONNECT.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
         LP_connectstartbob(ctx,LP_mypubsock,qp->srccoin,qp->destcoin,qprice,qp);
         return(qp);
     }
