@@ -774,7 +774,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     LP_mark_spent(symbol,utxotxid,utxovout);
     *destamountp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
-    //if ( finalseqid == 0 )
+    if ( finalseqid == 0 )
         locktime = expiration;
     //printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
     if ( redeemlen < 0 )
