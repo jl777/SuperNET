@@ -2088,7 +2088,7 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
                 swap->I.statebits |= LP_swapdata_rawtxsend(pairsock,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
                 LP_unspents_mark(swap->I.iambob!=0?coin->symbol:coin->symbol,swap->myfee.vins);
                 //basilisk_txlog(swap,&swap->myfee,-1);
-                //for (i=0; i<swap->myfee.I.datalen; i++)
+                //int32_t i; for (i=0; i<swap->myfee.I.datalen; i++)
                 //    printf("%02x",swap->myfee.txbytes[i]);
                 //printf(" <- fee state.%x\n",swap->I.statebits);
                 swap->I.statebits |= 0x40;

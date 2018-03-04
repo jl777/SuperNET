@@ -486,7 +486,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     portable_mutex_lock(&coin->addressutxo_mutex);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
-        printf("reset %s ap->utxos\n",coin->symbol);
+        //printf("reset %s ap->utxos\n",coin->symbol);
         portable_mutex_lock(&coin->addrmutex);
         portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
