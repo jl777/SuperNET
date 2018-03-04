@@ -1053,7 +1053,6 @@ struct LP_quoteinfo *LP_trades_gotreserved(void *ctx,struct LP_quoteinfo *qp,str
 struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,struct LP_quoteinfo *newqp,char *pairstr)
 {
     double myprice,qprice,bid,ask; struct iguana_info *coin;
-    char str[65]; printf("bob %s received CONNECT.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
     *newqp = *qp;
     qp = newqp;
     if ( (coin= LP_coinfind(qp->srccoin)) == 0 )
@@ -1064,7 +1063,7 @@ struct LP_quoteinfo *LP_trades_gotconnect(void *ctx,struct LP_quoteinfo *qp,stru
         return(0);
     if ( LP_reservation_check(qp->txid,qp->vout,qp->desthash) == 0 && LP_reservation_check(qp->txid2,qp->vout2,qp->desthash) == 0  )
     {
-        printf("CONNECT STARTBOB!\n");
+        char str[65]; printf("bob %s received CONNECT.(%llu)\n",bits256_str(str,G.LP_mypub25519),(long long)qp->aliceid);
         LP_connectstartbob(ctx,LP_mypubsock,qp->srccoin,qp->destcoin,qprice,qp);
         return(qp);
     }
