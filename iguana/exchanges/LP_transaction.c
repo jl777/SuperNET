@@ -120,7 +120,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
     }
     for (i=0; i<2; i++)
     {
-        //char str[65]; printf("LP_broadcast.%d (%s) %s i.%d sentflag.%d %s\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag,txbytes);
+        char str[65]; printf("LP_broadcast.%d (%s) %s i.%d sentflag.%d %s\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag,txbytes);
         if ( sentflag == 0 && LP_gettx_presence(0,symbol,expectedtxid,0) != 0 )
             sentflag = 1;
         if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
