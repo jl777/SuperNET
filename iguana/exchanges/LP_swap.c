@@ -793,13 +793,12 @@ uint32_t LP_swapwait(uint32_t expiration,uint32_t requestid,uint32_t quoteid,int
                 if ( jstr(retjson,"status") != 0 && strcmp(jstr(retjson,"status"),"finished") == 0 )
                 {
                     finished = (uint32_t)time(NULL);
-                    free(retstr);
+                    free(retstr), retstr = 0;
                     break;
                 }
                 else if ( expiration != 0 && time(NULL) > expiration )
                     printf("NOT FINISHED.(%s)\n",jprint(retjson,0));
-                free_json(retjson);
-                retjson = 0;
+                free_json(retjson), retjson = 0;
             }
             free(retstr);
         }
@@ -1281,11 +1280,14 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
 
 struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp,struct LP_quoteinfo *qp,int32_t dynamictrust)
 {
+    static void *ctx;
     struct basilisk_swap *swap; bits256 pubkey25519; uint8_t pubkey33[33];
+    if ( ctx == 0 )
+        ctx = bitcoin_ctx();
     swap = calloc(1,sizeof(*swap));
     swap->aliceid = LP_aliceid_calc(qp->desttxid,qp->destvout,qp->feetxid,qp->feevout);
     swap->I.req.quoteid = rp->quoteid;
-    swap->ctx = bitcoin_ctx();
+    swap->ctx = ctx;
     vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
     swap->I.req = *rp;
     G.LP_skipstatus[G.LP_numskips] = ((uint64_t)rp->requestid << 32) | rp->quoteid;

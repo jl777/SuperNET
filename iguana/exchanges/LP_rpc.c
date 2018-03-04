@@ -468,6 +468,7 @@ cJSON *LP_listreceivedbyaddress(char *symbol,char *coinaddr)
                     }
                 }
             }
+            free_json(array);
         }
         return(cJSON_Parse("[]"));
     } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
