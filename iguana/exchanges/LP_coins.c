@@ -275,8 +275,8 @@ cJSON *LP_coinjson(struct iguana_info *coin,int32_t showwif)
 
 struct iguana_info *LP_conflicts_find(struct iguana_info *refcoin)
 {
-    struct iguana_info *coin=0,*tmp;
-    if ( refcoin != 0 )
+    struct iguana_info *coin=0,*tmp; int32_t n;
+    if ( refcoin != 0 && (n= (int32_t)strlen(refcoin->serverport)) > 3 && strcmp(":80",&refcoin->serverport[n-3]) != 0 )
     {
         HASH_ITER(hh,LP_coins,coin,tmp)
         {
@@ -309,7 +309,7 @@ char *LP_getcoin(char *symbol)
         HASH_ITER(hh,LP_coins,coin,tmp)
         {
             if ( strcmp(symbol,coin->symbol) == 0 )
-                item = LP_coinjson(coin,0);
+                item = LP_coinjson(coin,LP_showwif);
             if ( coin->inactive == 0 )
                 numenabled++;
             else numdisabled++;
@@ -376,7 +376,8 @@ uint16_t LP_coininit(struct iguana_info *coin,char *symbol,char *name,char *asse
     if ( assetname != 0 && strcmp(name,assetname) == 0 )
     {
         //printf("%s is assetchain\n",symbol);
-        coin->isassetchain = 1;
+        if ( strcmp(name,"BEER") != 0 && strcmp("PIZZA",name) != 0 )
+            coin->isassetchain = 1;
     }
     if ( strcmp(symbol,"KMD") == 0 || (assetname != 0 && assetname[0] != 0) )
         name2 = 0;

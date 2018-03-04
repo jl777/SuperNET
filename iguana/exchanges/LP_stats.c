@@ -110,10 +110,14 @@ void LP_tradecommand_log(cJSON *argjson)
     }
     if ( logfp != 0 )
     {
-        jsonstr = jprint(argjson,0);
-        fprintf(logfp,"%s\n",jsonstr);
-        free(jsonstr);
-        fflush(logfp);
+        if ( (jsonstr= jprint(argjson,0)) != 0 )
+        {
+            if ( IPC_ENDPOINT >= 0 )
+                LP_queuecommand(0,jsonstr,IPC_ENDPOINT,-1,0);
+            fprintf(logfp,"%s\n",jsonstr);
+            free(jsonstr);
+            fflush(logfp);
+        }
     }
 }
 
@@ -674,7 +678,7 @@ char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
             return(clonestr("{\"result\":\"success\"}"));
         }
     }
-    if ( (swapstr= basilisk_swapentry(requestid,quoteid,0)) != 0 )
+    if ( (swapstr= basilisk_swapentry(1,requestid,quoteid,0)) != 0 )
     {
         if ( (swapjson= cJSON_Parse(swapstr)) != 0 )
         {

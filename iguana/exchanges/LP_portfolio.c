@@ -848,9 +848,14 @@ void prices_loop(void *ctx)
 {
     char *retstr; cJSON *retjson,*array; char *buycoin,*sellcoin; struct iguana_info *buy,*sell; uint32_t requestid,quoteid; int32_t i,n,m; struct LP_portfoliotrade trades[256]; struct LP_priceinfo *btcpp;
     strcpy(prices_loop_stats.name,"prices_loop");
-    prices_loop_stats.threshold = 191000.;
+    prices_loop_stats.threshold = 600000.;
     while ( LP_STOP_RECEIVED == 0 )
     {
+        if ( G.initializing != 0 )
+        {
+            sleep(1);
+            continue;
+        }
         //printf("prices loop autoprices.%d autorefs.%d\n",LP_autoprices,num_LP_autorefs);
         LP_millistats_update(&prices_loop_stats);
         LP_tradebots_timeslice(ctx);

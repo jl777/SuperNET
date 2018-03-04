@@ -118,6 +118,7 @@ static struct bitcoin_opcode { UT_hash_handle hh; uint8_t opcode,flags,stackitem
 #define IGUANA_OP_SWAP 0x7c
 #define IGUANA_OP_TUCK 0x7d
 
+#define IGUANA_OP_SIZE 0x82
 #define IGUANA_OP_EQUAL 0x87
 #define IGUANA_OP_EQUALVERIFY 0x88
 
@@ -1911,6 +1912,10 @@ int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 
 int32_t bitcoin_secret160verify(uint8_t *script,int32_t n,uint8_t secret160[20])
 {
+    script[n++] = IGUANA_OP_SIZE; // add SIZE 32 EQUALVERIFY
+    script[n++] = 1;
+    script[n++] = 32;
+    script[n++] = SCRIPT_OP_EQUALVERIFY;
     script[n++] = SCRIPT_OP_HASH160;
     script[n++] = 0x14;
     memcpy(&script[n],secret160,0x14);
@@ -2052,11 +2057,14 @@ bits256 bits256_calcaddrhash(char *symbol,uint8_t *serialized,int32_t  len)
 int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr)
 {
     bits256 hash; uint8_t *buf,_buf[26],data5[128],rmd21[21]; char prefixaddr[64],hrp[64]; int32_t len,len5,offset;
+    *addrtypep = 0;
+    memset(rmd160,0,20);
     if ( coinaddr == 0 || coinaddr[0] == 0 )
-    {
-        *addrtypep = 0;
-        memset(rmd160,0,20);
         return(0);
+    if ( coinaddr[0] == '0' && coinaddr[1] == 'x' && is_hexstr(coinaddr+2,0) == 40 )
+    {
+        decode_hex(rmd160,20,coinaddr+2); // not rmd160 hash but hopefully close enough;
+        return(20);
     }
     if ( strcmp(symbol,"BCH") == 0 )//&& strlen(coinaddr) == 42 )
     {
@@ -2110,11 +2118,46 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
 
 char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,int32_t len)
 {
-    int32_t offset,i,len5; char prefixed[64]; uint8_t data[64],data5[64]; bits256 hash;
+    static void *ctx;
+    int32_t offset,i,len5; char prefixed[64]; uint8_t data[64],data5[64],bigpubkey[65]; bits256 hash; struct iguana_info *coin;
+#ifndef NOTETOMIC
+    if ( (coin= LP_coinfind(symbol)) != 0 && coin->etomic[0] != 0 )
+    {
+        if ( len == 20 )
+        {
+            strcpy(coinaddr,"0x");
+            init_hexbytes_noT(coinaddr+2,pubkey_or_rmd160,20);
+            return(coinaddr);
+        }
+        else if ( len == 33 || len == 65 )
+        {
+            if ( len == 33 )
+            {
+                if ( ctx == 0 )
+                    ctx = bitcoin_ctx();
+                bitcoin_expandcompressed(ctx,bigpubkey,pubkey_or_rmd160);
+                LP_etomic_pub2addr(coinaddr,bigpubkey+1);
+                /*for (i=0; i<33; i++)
+                    printf("%02x",pubkey_or_rmd160[i]);
+                printf(" compressed -> ");
+                for (i=0; i<65; i++)
+                    printf("%02x",bigpubkey[i]);
+                printf(" -> %s\n",coinaddr);*/
+            }
+            else LP_etomic_pub2addr(coinaddr,pubkey_or_rmd160+1);
+            return(coinaddr);
+        }
+    }
+#endif
     coinaddr[0] = 0;
     offset = 1 + (taddr != 0);
     if ( len != 20 )
+    {
         calc_rmd160_sha256(data+offset,pubkey_or_rmd160,len);
+        //for (i=0; i<20; i++)
+        //    printf("%02x",data[offset+i]);
+        //printf(" rmd160\n");
+    }
     else memcpy(data+offset,pubkey_or_rmd160,20);
     if ( strcmp(symbol,"BCH") == 0 )
     {
@@ -3353,7 +3396,7 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
 
 bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,uint8_t *serialized,int32_t maxlen,struct iguana_msgtx *msgtx,int32_t vini,uint8_t *spendscript,int32_t spendlen,uint64_t spendamount,uint32_t hashtype,char *vpnstr,int32_t suppress_pubkeys,int32_t zcash)
 {
-    int32_t i,len,sbtcflag = 0; bits256 sigtxid,txid,revsigtxid; struct iguana_msgtx dest;
+    int32_t i,len,sbtcflag = 0,btcpflag=0; bits256 sigtxid,txid,revsigtxid; struct iguana_msgtx dest;
     dest = *msgtx;
     dest.vins = calloc(dest.tx_in,sizeof(*dest.vins));
     dest.vouts = calloc(dest.tx_out,sizeof(*dest.vouts));
@@ -3362,6 +3405,8 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     memset(sigtxid.bytes,0,sizeof(sigtxid));
     if ( strcmp(symbol,"SBTC") == 0 )
         sbtcflag = 1;
+    else if ( strcmp(symbol,"BTCP") == 0 )
+        btcpflag = 1;
     if ( ((hashtype & ~SIGHASH_FORKID) & 0xff) != SIGHASH_ALL )
     {
         printf("currently only SIGHASH_ALL supported, not %d\n",hashtype);
@@ -3396,6 +3441,8 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
             if ( height >= BTC2_HARDFORK_HEIGHT )
                 hashtype |= (0x777 << 20);
 #endif
+            if ( btcpflag != 0 )
+                hashtype = 0x2a41;
             len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
             if ( sbtcflag != 0 )
             {
@@ -3572,7 +3619,7 @@ uint32_t LP_sighash(char *symbol,int32_t zcash)
         sighash |= SIGHASH_FORKID;
         sighash |= (LP_IS_BITCOINGOLD << 8);
     }
-    else if ( strcmp(symbol,"SBTC") == 0 )
+    else if ( strcmp(symbol,"SBTC") == 0 || strcmp(symbol,"BTCP") == 0 )
         sighash |= SIGHASH_FORKID;
     return(sighash);
 }
