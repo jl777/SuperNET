@@ -856,6 +856,7 @@ void LP_bobloop(void *_swap)
             //printf("depositlen.%d\n",swap->bobdeposit.I.datalen);
             //LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
+            LP_unavailableset(swap->bobdeposit.utxotxid,swap->bobdeposit.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
             if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_otherfee) < 0 )
             {
                 error = 1;
@@ -869,6 +870,7 @@ void LP_bobloop(void *_swap)
                     err = -2005, printf("error sending bobdeposit\n");
                 }
             }
+            LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
             if ( error == 0 && LP_waitfor(swap->N.pair,swap,1800,LP_verify_alicepayment) < 0 )
             {
                 error = 1;
@@ -884,6 +886,7 @@ void LP_bobloop(void *_swap)
                     m = swap->I.aliceconfirms;
                     while ( (n= LP_numconfirms(alicestr,swap->alicepayment.I.destaddr,swap->alicepayment.I.signedtxid,0,1)) < m ) // sync with alice
                     {
+                        LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
                         LP_swap_critical = (uint32_t)time(NULL);
                         char str[65];printf("%d wait for alicepayment %s numconfs.%d %s %s\n",n,swap->alicepayment.I.destaddr,m,alicestr,bits256_str(str,swap->alicepayment.I.signedtxid));
                         sleep(10);
@@ -947,6 +950,7 @@ void LP_aliceloop(void *_swap)
             else
             {
                 m = swap->I.bobconfirms;
+                LP_unavailableset(swap->alicepayment.utxotxid,swap->alicepayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
                 while ( (n= LP_numconfirms(bobstr,swap->bobdeposit.I.destaddr,swap->bobdeposit.I.signedtxid,0,1)) < m )
                 {
                     LP_swap_critical = (uint32_t)time(NULL);
