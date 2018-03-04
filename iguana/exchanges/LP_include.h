@@ -529,6 +529,7 @@ void LP_ports(uint16_t *pullportp,uint16_t *pubportp,uint16_t *busportp,uint16_t
 int32_t LP_destaddr(char *destaddr,cJSON *item);
 int32_t LP_waitmempool(char *symbol,char *coinaddr,bits256 txid,int32_t vout,int32_t duration);
 cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey,char *refbase,char *refrel);
+uint32_t LP_claimtime(struct iguana_info *coin,uint32_t expiration);
 uint32_t LP_heighttime(char *symbol,int32_t height);
 uint64_t LP_unspents_load(char *symbol,char *addr);
 int32_t LP_validSPV(char *symbol,char *coinaddr,bits256 txid,int32_t vout);
