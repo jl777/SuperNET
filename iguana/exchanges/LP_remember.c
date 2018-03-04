@@ -1277,7 +1277,7 @@ cJSON *basilisk_remember(int32_t fastflag,int64_t *KMDtotals,int64_t *BTCtotals,
                             memset(revAm.bytes,0,sizeof(revAm));
                             for (i=0; i<32; i++)
                                 revAm.bytes[i] = rswap.privAm.bytes[31-i];
-                            len = basilisk_swapuserdata(userdata,zero,1,rswap.myprivs[0],redeemscript,redeemlen);
+                            len = basilisk_swapuserdata(userdata,revAm,1,rswap.myprivs[0],redeemscript,redeemlen);
                             claimtime = LP_claimtime(bob,rswap.dlocktime);
                             if ( (rswap.txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend(&signedtxid,rswap.Btxfee,"aliceclaim",rswap.bobcoin,bob->wiftaddr,bob->taddr,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rswap.myprivs[0],0,redeemscript,redeemlen,userdata,len,rswap.txids[BASILISK_BOBDEPOSIT],0,0,rswap.pubkey33,0,claimtime,&rswap.values[BASILISK_ALICECLAIM],0,0,rswap.bobdepositaddr,1,bob->zcash)) != 0 )
                             {
