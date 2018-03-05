@@ -581,8 +581,6 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
 #else
                 if ( IPC_ENDPOINT >= 0 && (queueid= juint(arg,"queueid")) > 0 )
                 {
-                    if ( jobj(arg,"id") == 0 )
-                        jaddnum(arg,"id",rand());
                     buf = jprint(arg,0);
                     LP_queuecommand(&retstr,buf,IPC_ENDPOINT,1,queueid);
                     free(buf);

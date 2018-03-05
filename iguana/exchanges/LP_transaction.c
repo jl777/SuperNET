@@ -119,7 +119,7 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
     }
     for (i=0; i<2; i++)
     {
-        //char str[65]; printf("LP_broadcast.%d (%s) %s i.%d sentflag.%d\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag);
+        //char str[65]; printf("LP_broadcast.%d %s (%s) %s i.%d sentflag.%d %s\n",i,txname,symbol,bits256_str(str,expectedtxid),i,sentflag,txbytes);
         if ( sentflag == 0 && LP_gettx_presence(0,symbol,expectedtxid,0) != 0 )
             sentflag = 1;
         if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
@@ -1032,7 +1032,7 @@ uint64_t _komodo_interestnew(uint64_t nValue,uint32_t nLockTime,uint32_t tiptime
     if ( tiptime > nLockTime && (minutes= (tiptime - nLockTime) / 60) >= 60 )
     {
         //minutes.71582779 tiptime.1511292969 locktime.1511293505
-        printf("minutes.%d tiptime.%u locktime.%u\n",minutes,tiptime,nLockTime);
+        //printf("minutes.%d tiptime.%u locktime.%u\n",minutes,tiptime,nLockTime);
         if ( minutes > 365 * 24 * 60 )
             minutes = 365 * 24 * 60;
         minutes -= 59;
@@ -1976,9 +1976,9 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
             bitcoin_address(coin->symbol,swap->bobpayment.p2shaddr,coin->taddr,coin->p2shtype,swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
             strcpy(swap->bobpayment.I.destaddr,swap->bobpayment.p2shaddr);
             //LP_importaddress(coin->symbol,swap->bobpayment.I.destaddr);
-            int32_t i; for (i=0; i<swap->bobpayment.I.redeemlen; i++)
-                printf("%02x",swap->bobpayment.redeemscript[i]);
-            printf(" <- bobpayment redeem %d %s\n",i,swap->bobpayment.I.destaddr);
+            //int32_t i; for (i=0; i<swap->bobpayment.I.redeemlen; i++)
+            //    printf("%02x",swap->bobpayment.redeemscript[i]);
+            //printf(" <- bobpayment redeem %d %s\n",i,swap->bobpayment.I.destaddr);
             if ( genflag != 0 && bits256_nonz(*(bits256 *)swap->I.secretBn256) != 0 && swap->bobpayment.I.datalen == 0 )
             {
                 basilisk_rawtx_gen(swap->ctx,"payment",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobpayment,swap->bobpayment.I.locktime,swap->bobpayment.spendscript,swap->bobpayment.I.spendlen,coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
@@ -2087,7 +2087,7 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
                 swap->I.statebits |= LP_swapdata_rawtxsend(pairsock,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
                 LP_unspents_mark(swap->I.iambob!=0?coin->symbol:coin->symbol,swap->myfee.vins);
                 //basilisk_txlog(swap,&swap->myfee,-1);
-                //for (i=0; i<swap->myfee.I.datalen; i++)
+                //int32_t i; for (i=0; i<swap->myfee.I.datalen; i++)
                 //    printf("%02x",swap->myfee.txbytes[i]);
                 //printf(" <- fee state.%x\n",swap->I.statebits);
                 swap->I.statebits |= 0x40;

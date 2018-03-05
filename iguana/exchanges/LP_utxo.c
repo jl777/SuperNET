@@ -124,7 +124,7 @@ struct LP_inuse_info *_LP_inuse_add(uint32_t expiration,bits256 otherpub,bits256
             //if ( expiration > lp->expiration || expiration == 0 )
                 lp->expiration = expiration;
         }
-        char str[65]; printf("set inuse until %u lag.%d for %s/v%d\n",expiration,(int32_t)(expiration-(uint32_t)time(NULL)),bits256_str(str,txid),vout);
+        //char str[65]; printf("set inuse until %u lag.%d for %s/v%d\n",expiration,(int32_t)(expiration-(uint32_t)time(NULL)),bits256_str(str,txid),vout);
         return(lp);
     } else printf("_LP_inuse_add [%d] overflow\n",LP_numinuse);
     return(0);
@@ -486,7 +486,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
     portable_mutex_lock(&coin->addressutxo_mutex);
     if ( (array= LP_listunspent(coin->symbol,coin->smartaddr,zero,zero)) != 0 )
     {
-        printf("reset %s ap->utxos\n",coin->symbol);
+        //printf("reset %s ap->utxos\n",coin->symbol);
         portable_mutex_lock(&coin->addrmutex);
         portable_mutex_lock(&LP_gcmutex);
         DL_FOREACH_SAFE(ap->utxos,up,tmp)
@@ -1052,20 +1052,20 @@ uint64_t LP_txvalue(char *coinaddr,char *symbol,bits256 txid,int32_t vout)
     }
     else if ( coin->electrum == 0 )
     {
-        uint64_t value;
+        uint64_t value; char str[65];
         if ( (txobj= LP_gettxout(coin->symbol,coinaddr,txid,vout)) != 0 )
         {
             value = LP_value_extract(txobj,0);//SATOSHIDEN * (jdouble(txobj,"value") + jdouble(txobj,"interest"));
             if ( coinaddr != 0 )
                 LP_destaddr(coinaddr,txobj);
-            //printf("pruned node? LP_txvalue couldnt find %s tx %s, but gettxout %.8f\n",coin->symbol,bits256_str(str,txid),dstr(value));
+            //printf("LP_txvalue %s tx %s/v%d value %.8f\n",coin->symbol,bits256_str(str,txid),vout,dstr(value));
             if ( value != 0 )
             {
                 free_json(txobj);
                 return(value);
             }
         }
-        //printf("pruned node? LP_txvalue couldnt find %s tx %s/v%d (%s)\n",coin->symbol,bits256_str(str,txid),vout,txobj!=0?jprint(txobj,0):"");
+        printf("pruned node? LP_txvalue couldnt find %s tx %s/v%d (%s)\n",coin->symbol,bits256_str(str,txid),vout,txobj!=0?jprint(txobj,0):"");
         if ( txobj != 0 )
             free_json(txobj);
     }
