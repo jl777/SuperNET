@@ -1406,8 +1406,8 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
         }
         if ( strcmp(method,"request") == 0 ) // bob
         {
-            if ( LP_Alicemaxprice != 0. )
-                return(retval);
+            //if ( LP_Alicemaxprice != 0. )
+            //    return(retval);
             bestprice = LP_bob_competition(&counter,aliceid,qprice,-1);
             if ( Qtrades == 0 )//|| (bits256_cmp(Q.srchash,G.LP_mypub25519) == 0 && bits256_cmp(G.LP_mypub25519,Q.desthash) != 0) )
                 LP_trades_gotrequest(ctx,&Q,&Q2,jstr(argjson,"pair"));
