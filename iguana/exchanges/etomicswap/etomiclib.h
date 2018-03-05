@@ -168,8 +168,8 @@ char* getPubKeyFromPriv(char* privKey);
 
 // returns satoshis, not wei!
 uint64_t getEthBalance(char* address);
-// returns satoshis, not wei!
-uint64_t getErc20Balance(char* address, char tokenAddress[65]);
+uint64_t getErc20BalanceSatoshi(char* address, char tokenAddress[65]);
+char *getErc20BalanceHexWei(char* address, char tokenAddress[65]);
 
 uint8_t getErc20Decimals(char *tokenAddress);
 

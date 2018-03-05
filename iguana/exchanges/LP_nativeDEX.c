@@ -178,9 +178,6 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 #include "LP_prices.c"
 #include "LP_scan.c"
 #include "LP_transaction.c"
-#ifndef NOTETOMIC
-#include "LP_etomic.c"
-#endif
 #include "LP_stats.c"
 #include "LP_remember.c"
 #include "LP_instantdex.c"

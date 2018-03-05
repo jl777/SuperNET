@@ -11,7 +11,7 @@
 
 char* bobContractAddress = "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2";
 char* aliceAddress = "0x485d2cc2d13a9e12E4b53D606DB1c8adc884fB8a";
-char* bobAddress = "0xA7EF3f65714AE266414C9E58bB4bAa4E6FB82B41";
+char* bobAddress = "0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29";
 char* tokenAddress = "0xc0eb7AeD740E1796992A08962c15661bDEB58003";
 
 int main(int argc, char** argv)
@@ -222,7 +222,7 @@ int main(int argc, char** argv)
         case BOB_APPROVES_ERC20:
             printf("approving erc20\n");
             ApproveErc20Input input8;
-            strcpy(input8.amount, "20000000000000000000");
+            strcpy(input8.amount, "0");
             strcpy(input8.spender, bobContractAddress);
             strcpy(input8.owner, bobAddress);
             strcpy(input8.tokenAddress, tokenAddress);
@@ -239,7 +239,7 @@ int main(int argc, char** argv)
             printf("%" PRIu64 "\n", getEthBalance(bobAddress));
             break;
         case BOB_ERC20_BALANCE:
-            printf("%" PRIu64 "\n", getErc20Balance(bobAddress, tokenAddress));
+            printf("%" PRIu64 "\n", getErc20BalanceSatoshi(bobAddress, tokenAddress));
             break;
         case TX_RECEIPT:
             printf("getTxReceipt\n");

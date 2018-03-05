@@ -73,28 +73,29 @@ char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
     else
     {
         memset(&input20,0,sizeof(input20));
-        strcpy(input20.bobAddress, swap->I.etomicdest);
+        strcpy(input20.bobAddress, swap->I.etomicsrc);
         uint8arrayToHex(input20.bobHash, swap->I.secretBn, 20);
         uint8arrayToHex(input20.aliceHash, swap->I.secretAm, 20);
-        uint8arrayToHex(input20.dealId, swap->alicepayment.utxotxid.bytes, 32);
+        uint8arrayToHex(input20.dealId, swap->alicepayment.I.actualtxid.bytes, 32);
         strcpy(input20.tokenAddress, swap->I.alicetomic);
         satoshisToWei(input20.amount, swap->I.alicesatoshis);
 
-        strcpy(txData.from, swap->I.etomicsrc);
+        strcpy(txData.from, swap->I.etomicdest);
         strcpy(txData.to, ETOMIC_ALICECONTRACT);
         strcpy(txData.amount, "0");
         uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
 
-        uint64_t allowance = getErc20Allowance(swap->I.etomicsrc, ETOMIC_ALICECONTRACT, swap->I.alicetomic);
+        uint64_t allowance = getErc20Allowance(swap->I.etomicdest, ETOMIC_ALICECONTRACT, swap->I.alicetomic);
         if (allowance < swap->I.alicesatoshis) {
             printf("Alice token allowance is too low, setting new allowance\n");
             ApproveErc20Input approveErc20Input;
             strcpy(approveErc20Input.tokenAddress, swap->I.alicetomic);
-            strcpy(approveErc20Input.owner, swap->I.etomicsrc);
+            strcpy(approveErc20Input.owner, swap->I.etomicdest);
             strcpy(approveErc20Input.spender, ETOMIC_ALICECONTRACT);
 
-            // hard code for now
-            strcpy(approveErc20Input.amount, "20000000000000000000");
+            char *tokenBalance = getErc20BalanceHexWei(swap->I.etomicdest, swap->I.alicetomic);
+            strcpy(approveErc20Input.amount, tokenBalance);
+            free(tokenBalance);
             strcpy(approveErc20Input.secret, txData.secretKey);
 
             char *allowTxId = approveErc20(approveErc20Input);
@@ -134,14 +135,14 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
     else
     {
         memset(&input20,0,sizeof(input20));
-        strcpy(input20.bobAddress, swap->I.etomicdest);
+        strcpy(input20.bobAddress, swap->I.etomicsrc);
         uint8arrayToHex(input20.bobHash, swap->I.secretBn, 20);
         uint8arrayToHex(input20.aliceHash, swap->I.secretAm, 20);
         uint8arrayToHex(input20.dealId, swap->alicepayment.utxotxid.bytes, 32);
         strcpy(input20.tokenAddress, swap->I.alicetomic);
         satoshisToWei(input20.amount, swap->I.alicesatoshis);
 
-        strcpy(txData.from, swap->I.etomicsrc);
+        strcpy(txData.from, swap->I.etomicdest);
         strcpy(txData.to, ETOMIC_ALICECONTRACT);
         strcpy(txData.amount, "0");
         uint8arrayToHex(txData.secretKey, swap->persistent_privkey.bytes, 32);
@@ -260,8 +261,9 @@ char *LP_etomicbob_sends_deposit(struct basilisk_swap *swap)
             strcpy(approveErc20Input.owner, swap->I.etomicsrc);
             strcpy(approveErc20Input.spender, ETOMIC_BOBCONTRACT);
 
-            // hard code for now
-            strcpy(approveErc20Input.amount, "20000000000000000000");
+            char *tokenBalance = getErc20BalanceHexWei(swap->I.etomicsrc, swap->I.bobtomic);
+            strcpy(approveErc20Input.amount, tokenBalance);
+            free(tokenBalance);
             strcpy(approveErc20Input.secret, txData.secretKey);
 
             char *allowTxId = approveErc20(approveErc20Input);
@@ -387,8 +389,9 @@ char *LP_etomicbob_sends_payment(struct basilisk_swap *swap)
             strcpy(approveErc20Input.owner, swap->I.etomicsrc);
             strcpy(approveErc20Input.spender, ETOMIC_BOBCONTRACT);
 
-            // hard code for now
-            strcpy(approveErc20Input.amount, "20000000000000000000");
+            char *tokenBalance = getErc20BalanceHexWei(swap->I.etomicsrc, swap->I.bobtomic);
+            strcpy(approveErc20Input.amount, tokenBalance);
+            free(tokenBalance);
             strcpy(approveErc20Input.secret, txData.secretKey);
 
             char *allowTxId = approveErc20(approveErc20Input);
@@ -506,6 +509,7 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
     strcpy(txData.to, ETOMIC_BOBCONTRACT);
     strcpy(txData.amount, "0");
     uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
+    printf("priv key: %s", txData.secretKey);
     return aliceSpendsBobPayment(input, txData);
 }
 

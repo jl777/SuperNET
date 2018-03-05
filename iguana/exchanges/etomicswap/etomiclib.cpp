@@ -434,7 +434,7 @@ uint64_t getEthBalance(char* address)
     return static_cast<uint64_t>(balance);
 }
 
-uint64_t getErc20Balance(char *address, char *tokenAddress)
+uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress)
 {
     std::stringstream ss;
     ss << "0x70a08231"
@@ -446,6 +446,16 @@ uint64_t getErc20Balance(char *address, char *tokenAddress)
     u256 balance = jsToU256(hexBalance) / exp10<10>();
     free(hexBalance);
     return static_cast<uint64_t>(balance);
+}
+
+char *getErc20BalanceHexWei(char *address, char *tokenAddress)
+{
+    std::stringstream ss;
+    ss << "0x70a08231"
+       << "000000000000000000000000"
+       << toHex(jsToAddress(address));
+    char *hexBalance = ethCall(tokenAddress, ss.str().c_str());
+    return hexBalance;
 }
 
 uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress)

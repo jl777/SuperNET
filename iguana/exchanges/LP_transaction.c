@@ -2054,6 +2054,10 @@ void basilisk_alicepayment(struct basilisk_swap *swap,struct iguana_info *coin,s
     basilisk_rawtx_gen(swap->ctx,"alicepayment",swap->I.started,swap->persistent_pubkey33,0,1,alicepayment,alicepayment->I.locktime,alicepayment->spendscript,alicepayment->I.spendlen,swap->I.Atxfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
 }
 
+#ifndef NOTETOMIC
+#include "LP_etomic.c"
+#endif
+
 int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     char coinaddr[64],alicestr[65],alicetomic[128]; int32_t retval = -1; struct iguana_info *coin;
@@ -2205,7 +2209,7 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
                 printf(" <- aliceclaim\n");*/
                 //basilisk_txlog(swap,&swap->aliceclaim,swap->I.putduration+swap->I.callduration);
 #ifndef NOTETOMIC
-                if (swap->bobdeposit.I.ethTxid[0] != 0) {
+                if (swap->bobdeposit.I.ethTxid[0] != 0 && LP_etomic_is_empty_tx_id(swap->bobdeposit.I.ethTxid) == 0) {
                     if (LP_etomic_wait_for_confirmation(swap->bobdeposit.I.ethTxid) < 0 || LP_etomic_verify_bob_deposit(swap, swap->bobdeposit.I.ethTxid) == 0) {
                         return(-1);
                     }
