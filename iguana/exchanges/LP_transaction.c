@@ -2131,6 +2131,13 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
                     //printf("dexfee verified\n");
                 }
                 else printf("locktime mismatch in otherfee, reject %u vs %u\n",swap->otherfee.I.locktime,swap->I.started+1);
+#ifndef NOTETOMIC
+                if (swap->otherfee.I.ethTxid[0] != 0 && LP_etomic_is_empty_tx_id(swap->otherfee.I.ethTxid) == 0) {
+                    if (LP_etomic_wait_for_confirmation(swap->otherfee.I.ethTxid) < 0) {
+                        return(-1);
+                    }
+                }
+#endif
                 return(0);
             } else printf("destaddress mismatch in other fee, reject (%s) vs (%s)\n",swap->otherfee.I.destaddr,swap->otherfee.p2shaddr);
         }
