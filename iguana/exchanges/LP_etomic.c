@@ -138,7 +138,7 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
         strcpy(input20.bobAddress, swap->I.etomicsrc);
         uint8arrayToHex(input20.bobHash, swap->I.secretBn, 20);
         uint8arrayToHex(input20.aliceHash, swap->I.secretAm, 20);
-        uint8arrayToHex(input20.dealId, swap->alicepayment.utxotxid.bytes, 32);
+        uint8arrayToHex(input20.dealId, swap->alicepayment.I.actualtxid.bytes, 32);
         strcpy(input20.tokenAddress, swap->I.alicetomic);
         satoshisToWei(input20.amount, swap->I.alicesatoshis);
 
