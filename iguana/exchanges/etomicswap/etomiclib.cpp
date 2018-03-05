@@ -497,3 +497,46 @@ void satoshisToWei(char *dest, uint64_t input)
     sprintf(dest, "%" PRIu64, input);
     strcat(dest, "0000000000");
 }
+
+char *sendEth(char *to, char *amount, char *privKey)
+{
+    TransactionSkeleton tx;
+    char *from = privKey2Addr(privKey);
+    tx.from = jsToAddress(from);
+    tx.to = jsToAddress(to);
+    tx.value = jsToU256(amount);
+    tx.gas = 21000;
+    tx.gasPrice = ETOMIC_GASMULT * exp10<9>();
+    tx.nonce = getNonce(from);
+    free(from);
+
+    char *rawTx = signTx(tx, privKey);
+    char *result = sendRawTx(rawTx);
+    free(rawTx);
+    return result;
+}
+
+char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey)
+{
+    TransactionSkeleton tx;
+    char *from = privKey2Addr(privKey);
+    tx.from = jsToAddress(from);
+    tx.to = jsToAddress(tokenAddress);
+    tx.value = 0;
+    tx.gas = 60000;
+    tx.gasPrice = ETOMIC_GASMULT * exp10<9>();
+    tx.nonce = getNonce(from);
+    free(from);
+
+    std::stringstream ss;
+    ss << "0xa9059cbb"
+       << "000000000000000000000000"
+       << toHex(jsToAddress(to))
+       << toHex(toBigEndian(jsToU256(amount)));
+    tx.data = jsToBytes(ss.str());
+
+    char *rawTx = signTx(tx, privKey);
+    char *result = sendRawTx(rawTx);
+    free(rawTx);
+    return result;
+}

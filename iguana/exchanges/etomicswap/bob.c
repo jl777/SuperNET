@@ -278,5 +278,13 @@ int main(int argc, char** argv)
     uint64_t tokenAllowance = getErc20Allowance(bobAddress, bobContractAddress, tokenAddress);
     printf("allowance: %" PRIu64 "\n", tokenAllowance);
 
+    char *sendEthTx = sendEth(bobAddress, "100000000000000", getenv("BOB_PK"));
+    printf("sent ETH: %s\n", sendEthTx);
+    free(sendEthTx);
+
+    char *sendErc20Tx = sendErc20(tokenAddress, bobAddress, "100000000000000", getenv("BOB_PK"));
+    printf("sent Erc20: %s\n", sendErc20Tx);
+    free(sendErc20Tx);
+
     return 0;
 }

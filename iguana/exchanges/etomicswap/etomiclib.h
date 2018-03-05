@@ -13,12 +13,14 @@ extern "C" {
 #define ETOMIC_BOBCONTRACT "0x9387fd3a016bb0205e4e131dde886b9d2bc000a2"
 #define ETOMIC_GASMULT 100
 #else
-#define ETOMIC_ALICECONTRACT "0x9bC5418CEdED51dB08467fc4b62F32C5D9EBdA55"
-#define ETOMIC_BOBCONTRACT "0xB1Ad803ea4F57401639c123000C75F5B66E4D123"
+#define ETOMIC_ALICECONTRACT "0x9bc5418ceded51db08467fc4b62f32c5d9ebda55"
+#define ETOMIC_BOBCONTRACT "0xb1ad803ea4f57401639c123000c75f5b66e4d123"
 #define ETOMIC_GASMULT 4
 #endif
 
+
 #define EMPTY_ETH_TX_ID "0x0000000000000000000000000000000000000000000000000000000000000000"
+#define ETH_FEE_ACCEPTOR "0x485d2cc2d13a9e12e4b53d606db1c8adc884fb8a"
 
 typedef struct {
     char from[65];
@@ -133,7 +135,7 @@ typedef struct {
     char secret[70];
 } ApproveErc20Input;
 
-char* approveErc20(ApproveErc20Input input);
+char *approveErc20(ApproveErc20Input input);
 
 char* aliceSendsEthPayment(AliceSendsEthPaymentInput input, BasicTxData txData);
 uint8_t verifyAliceEthPaymentData(AliceSendsEthPaymentInput input, char *data);
@@ -178,6 +180,9 @@ uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress);
 
 void uint8arrayToHex(char *dest, uint8_t *input, int len);
 void satoshisToWei(char *dest, uint64_t input);
+
+char *sendEth(char *to, char *amount, char *privKey);
+char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey);
 // Your prototype or Definition
 #ifdef __cplusplus
 }
