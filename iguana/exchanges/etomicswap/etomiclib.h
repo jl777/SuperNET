@@ -9,16 +9,16 @@ extern "C" {
     
 #define ETOMIC_TESTNET
 #ifdef ETOMIC_TESTNET
-#define ETOMIC_ALICECONTRACT "0xe1D4236C5774D35Dc47dcc2E5E0CcFc463A3289c"
-#define ETOMIC_BOBCONTRACT "0x9387Fd3a016bB0205e4e131Dde886B9d2BC000A2"
+#define ETOMIC_ALICECONTRACT "0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c"
+#define ETOMIC_BOBCONTRACT "0x9387fd3a016bb0205e4e131dde886b9d2bc000a2"
 #define ETOMIC_GASMULT 100
 #else
 #define ETOMIC_ALICECONTRACT "0x9bC5418CEdED51dB08467fc4b62F32C5D9EBdA55"
 #define ETOMIC_BOBCONTRACT "0xB1Ad803ea4F57401639c123000C75F5B66E4D123"
 #define ETOMIC_GASMULT 4
 #endif
-    
-#define ETOMIC_SATOSHICAT "0000000000"
+
+#define EMPTY_ETH_TX_ID "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 typedef struct {
     char from[65];
@@ -125,24 +125,57 @@ typedef struct {
     char bobCanClaimAfter[100];
 } AliceSpendsBobPaymentInput;
 
-char* approveErc20(char amount[100], char* from, char* secret);
+typedef struct {
+    char tokenAddress[65];
+    char owner[65];
+    char spender[65];
+    char amount[100];
+    char secret[70];
+} ApproveErc20Input;
+
+char* approveErc20(ApproveErc20Input input);
+
 char* aliceSendsEthPayment(AliceSendsEthPaymentInput input, BasicTxData txData);
+uint8_t verifyAliceEthPaymentData(AliceSendsEthPaymentInput input, char *data);
+
 char* aliceSendsErc20Payment(AliceSendsErc20PaymentInput input, BasicTxData txData);
+uint8_t verifyAliceErc20PaymentData(AliceSendsErc20PaymentInput input, char *data);
+
 char* aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input, BasicTxData txData);
 char* bobSpendsAlicePayment(BobSpendsAlicePaymentInput input, BasicTxData txData);
+
 char* bobSendsEthDeposit(BobSendsEthDepositInput input, BasicTxData txData);
+uint8_t verifyBobEthDepositData(BobSendsEthDepositInput input, char *data);
+
 char* bobSendsErc20Deposit(BobSendsErc20DepositInput input, BasicTxData txData);
+uint8_t verifyBobErc20DepositData(BobSendsErc20DepositInput input, char *data);
+
 char* bobRefundsDeposit(BobRefundsDepositInput input, BasicTxData txData);
 char* aliceClaimsBobDeposit(AliceClaimsBobDepositInput input, BasicTxData txData);
+
 char* bobSendsEthPayment(BobSendsEthPaymentInput input, BasicTxData txData);
+uint8_t verifyBobEthPaymentData(BobSendsEthPaymentInput input, char *data);
+
 char* bobSendsErc20Payment(BobSendsErc20PaymentInput input, BasicTxData txData);
+uint8_t verifyBobErc20PaymentData(BobSendsErc20PaymentInput input, char *data);
+
 char* bobReclaimsBobPayment(BobReclaimsBobPaymentInput input, BasicTxData txData);
 char* aliceSpendsBobPayment(AliceSpendsBobPaymentInput input, BasicTxData txData);
+
 char* privKey2Addr(char* privKey);
 char* pubKey2Addr(char* pubKey);
 char* getPubKeyFromPriv(char* privKey);
+
+// returns satoshis, not wei!
 uint64_t getEthBalance(char* address);
+// returns satoshis, not wei!
 uint64_t getErc20Balance(char* address, char tokenAddress[65]);
+
+uint8_t getErc20Decimals(char *tokenAddress);
+
+// returns satoshis, not wei!
+uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress);
+
 void uint8arrayToHex(char *dest, uint8_t *input, int len);
 void satoshisToWei(char *dest, uint64_t input);
 // Your prototype or Definition

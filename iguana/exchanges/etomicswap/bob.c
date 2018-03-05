@@ -220,12 +220,14 @@ int main(int argc, char** argv)
             }
             break;
         case BOB_APPROVES_ERC20:
-            result = approveErc20(
-                    "10000000000000000000",
-                    "0xA7EF3f65714AE266414C9E58bB4bAa4E6FB82B41",
-                    getenv("BOB_PK")
-
-            );
+            printf("approving erc20\n");
+            ApproveErc20Input input8;
+            strcpy(input8.amount, "20000000000000000000");
+            strcpy(input8.spender, bobContractAddress);
+            strcpy(input8.owner, bobAddress);
+            strcpy(input8.tokenAddress, tokenAddress);
+            strcpy(input8.secret, getenv("BOB_PK"));
+            result = approveErc20(input8);
             if (result != NULL) {
                 printf("%s\n", result);
                 free(result);
@@ -269,6 +271,12 @@ int main(int argc, char** argv)
     char weiBuffer[100];
     satoshisToWei(weiBuffer, satoshis);
     printf("wei: %s\n", weiBuffer);
+
+    uint8_t decimals = getErc20Decimals(tokenAddress);
+    printf("decimals: %d\n", decimals);
+
+    uint64_t tokenAllowance = getErc20Allowance(bobAddress, bobContractAddress, tokenAddress);
+    printf("allowance: %" PRIu64 "\n", tokenAllowance);
 
     return 0;
 }

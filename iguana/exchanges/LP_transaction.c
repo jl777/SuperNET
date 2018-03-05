@@ -2206,7 +2206,7 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
                 //basilisk_txlog(swap,&swap->aliceclaim,swap->I.putduration+swap->I.callduration);
 #ifndef NOTETOMIC
                 if (swap->bobdeposit.I.ethTxid[0] != 0) {
-                    if (LP_etomic_wait_for_confirmation(swap->bobdeposit.I.ethTxid) < 0) {
+                    if (LP_etomic_wait_for_confirmation(swap->bobdeposit.I.ethTxid) < 0 || LP_etomic_verify_bob_deposit(swap, swap->bobdeposit.I.ethTxid) == 0) {
                         return(-1);
                     }
                 }
@@ -2235,8 +2235,8 @@ int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t 
                 swap->aliceunconf = 1;
             basilisk_dontforget_update(swap,&swap->alicepayment);
 #ifndef NOTETOMIC
-            if (swap->alicepayment.I.ethTxid[0] != 0) {
-                if (LP_etomic_wait_for_confirmation(swap->alicepayment.I.ethTxid) < 0) {
+            if (swap->alicepayment.I.ethTxid[0] != 0 && LP_etomic_is_empty_tx_id(swap->alicepayment.I.ethTxid) == 0) {
+                if (LP_etomic_wait_for_confirmation(swap->alicepayment.I.ethTxid) < 0 || LP_etomic_verify_alice_payment(swap, swap->alicepayment.I.ethTxid) == 0) {
                     return(-1);
                 }
             }
@@ -2294,9 +2294,9 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
             bitcoin_address(coin->symbol,swap->alicespend.I.destaddr,coin->taddr,coin->pubtype,swap->persistent_pubkey33,33);
             //char str[65],str2[65]; printf("bobpaid privAm.(%s) myprivs[0].(%s)\n",bits256_str(str,swap->I.privAm),bits256_str(str2,swap->I.myprivs[0]));
 #ifndef NOTETOMIC
-            if (swap->bobpayment.I.ethTxid[0] != 0) {
-                if (LP_etomic_wait_for_confirmation(swap->bobpayment.I.ethTxid) < 0) {
-                    return (-1);
+            if (swap->bobpayment.I.ethTxid[0] != 0 && LP_etomic_is_empty_tx_id(swap->bobpayment.I.ethTxid) == 0) {
+                if (LP_etomic_wait_for_confirmation(swap->bobpayment.I.ethTxid) < 0 || LP_etomic_verify_bob_payment(swap, swap->bobpayment.I.ethTxid) == 0) {
+                    return(-1);
                 }
             }
 #endif
