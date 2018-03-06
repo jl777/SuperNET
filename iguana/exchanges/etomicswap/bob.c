@@ -286,5 +286,8 @@ int main(int argc, char** argv)
     printf("sent Erc20: %s\n", sendErc20Tx);
     free(sendErc20Tx);
 
+    uint64_t gasPrice = getGasPriceFromStation();
+    printf("gasPrice: %" PRIu64 "\n", gasPrice);
+
     return 0;
 }

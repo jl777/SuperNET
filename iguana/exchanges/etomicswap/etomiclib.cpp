@@ -26,8 +26,8 @@ TransactionSkeleton txDataToSkeleton(BasicTxData txData)
     tx.from = jsToAddress(txData.from);
     tx.to = jsToAddress(txData.to);
     tx.value = jsToU256(txData.amount);
-    tx.gas = 300000;
-    tx.gasPrice = ETOMIC_GASMULT * exp10<9>();
+    tx.gas = 100000;
+    tx.gasPrice = getGasPriceFromStation() * exp10<9>();
     tx.nonce = getNonce(txData.from);
     return tx;
 }

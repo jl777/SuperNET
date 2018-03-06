@@ -230,3 +230,46 @@ EthTxData getEthTxData(char *txId)
     free(dataJson);
     return result;
 }
+
+uint64_t getGasPriceFromStation()
+{
+    CURL *curl;
+    CURLcode res;
+    struct curl_slist *headers = NULL;
+    curl = curl_easy_init();
+    if (curl) {
+        struct string s;
+        init_eth_string(&s);
+
+        headers = curl_slist_append(headers, "Accept: application/json");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
+        curl_easy_setopt(curl, CURLOPT_URL, "https://ethgasstation.info/json/ethgasAPI.json");
+        /* Perform the request, res will get the return code */
+        res = curl_easy_perform(curl);
+        /* Check for errors */
+        if (res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            return DEFAULT_GAS_PRICE;
+        }
+
+        /* always cleanup */
+        curl_easy_cleanup(curl);
+        cJSON *resultJson = cJSON_Parse(s.ptr);
+        uint64_t result = DEFAULT_GAS_PRICE;
+        free(s.ptr);
+        if (resultJson == NULL) {
+            return result;
+        }
+
+        if (is_cJSON_Number(cJSON_GetObjectItem(resultJson, "average"))) {
+            result = (uint64_t)(cJSON_GetObjectItem(resultJson, "average")->valuedouble / 10) + 1;
+        }
+        cJSON_Delete(resultJson);
+        return result;
+    } else {
+        return DEFAULT_GAS_PRICE;
+    }
+}

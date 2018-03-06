@@ -11,10 +11,12 @@ extern "C"{
 #define ETOMIC_TESTNET
 #ifdef ETOMIC_TESTNET
 #define ETOMIC_URL "https://ropsten.infura.io/y07GHxUyTgeN2mdfOonu"
+#define DEFAULT_GAS_PRICE 100
 #else
 #define ETOMIC_URL "https://mainnet.infura.io/y07GHxUyTgeN2mdfOonu"
+#define DEFAULT_GAS_PRICE 4
 #endif
-    
+
 typedef struct
 {
     uint64_t blockNumber;
@@ -39,6 +41,7 @@ char* getEthBalanceRequest(char* address);
 EthTxReceipt getEthTxReceipt(char *txId);
 EthTxData getEthTxData(char *txId);
 uint64_t getEthBlockNumber();
+uint64_t getGasPriceFromStation();
 
 #ifdef __cplusplus
 }
