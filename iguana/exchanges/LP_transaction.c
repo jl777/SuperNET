@@ -60,15 +60,42 @@ bits256 LP_pubkey(bits256 privkey)
     return(pubkey);
 }
 
-int32_t LP_gettx_presence(char *symbol,bits256 expectedtxid)
+int32_t LP_gettx_presence(int32_t *numconfirmsp,char *symbol,bits256 expectedtxid,char *coinaddr)
 {
-    cJSON *txobj; bits256 txid; int32_t flag = 0;
-    if ( (txobj= LP_gettx(symbol,expectedtxid,0)) != 0 )
+    cJSON *txobj,*retjson,*item; bits256 txid; struct iguana_info *coin; int32_t height=-1,i,n,flag = 0;
+    if ( numconfirmsp != 0 )
+        *numconfirmsp = -1;
+    if ( (txobj= LP_gettx("LP_gettx_presence",symbol,expectedtxid,0)) != 0 )
     {
         txid = jbits256(txobj,"txid");
         if ( jobj(txobj,"error") == 0 && bits256_cmp(txid,expectedtxid) == 0 )
         {
-            //char str[65]; printf("%s already in gettx (%s)\n",bits256_str(str,txid),jprint(txobj,0));
+            if ( numconfirmsp != 0 )
+                *numconfirmsp = 0;
+            if ( numconfirmsp != 0 && coinaddr != 0 && (coin= LP_coinfind(symbol)) != 0 && coin->electrum != 0 )
+            {
+                //char str[65]; printf("%s %s already in gettx (%s)\n",coinaddr,bits256_str(str,txid),jprint(txobj,0));
+                if ( (retjson= electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,expectedtxid)) != 0 )
+                {
+                    if ( (n= cJSON_GetArraySize(retjson)) > 0 )
+                    {
+                        for (i=0; i<n; i++)
+                        {
+                            item = jitem(retjson,i);
+                            if ( bits256_cmp(txid,jbits256(item,"tx_hash")) == 0 )
+                            {
+                                height = jint(item,"height");
+                                //printf("found txid at height.%d\n",height);
+                                if ( height <= coin->height )
+                                    *numconfirmsp = (coin->height - height + 1);
+                                break;
+                            }
+                        }
+                    }
+                    free_json(retjson);
+                    //printf("got %s history height.%d vs coin.%d -> numconfirms.%d\n",coin->symbol,height,coin->height,*numconfirmsp);
+                }
+            }
             flag = 1;
         }
         free_json(txobj);
@@ -93,8 +120,8 @@ bits256 LP_broadcast(char *txname,char *symbol,char *txbytes,bits256 expectedtxi
     }
     for (i=0; i<2; i++)
     {
-        //char str[65]; printf("LP_broadcast.%d (%s) %s i.%d sentflag.%d\n",i,symbol,bits256_str(str,expectedtxid),i,sentflag);
-        if ( sentflag == 0 && LP_gettx_presence(symbol,expectedtxid) != 0 )
+        //char str[65]; printf("LP_broadcast.%d %s (%s) %s i.%d sentflag.%d %s\n",i,txname,symbol,bits256_str(str,expectedtxid),i,sentflag,txbytes);
+        if ( sentflag == 0 && LP_gettx_presence(0,symbol,expectedtxid,0) != 0 )
             sentflag = 1;
         if ( sentflag == 0 && (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
         {
@@ -764,7 +791,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         if ( txfee > 0 && txfee < coin->txfee )
             txfee = coin->txfee;
 #ifndef BASILISK_DISABLESENDTX
-        if ( (txobj= LP_gettx(symbol,utxotxid,0)) != 0 )
+        if ( (txobj= LP_gettx("basilisk_swap_bobtxspend",symbol,utxotxid,0)) != 0 )
         {
             if ( (vouts= jarray(&n,txobj,"vout")) != 0 && utxovout < n )
             {
@@ -1006,7 +1033,7 @@ uint64_t _komodo_interestnew(uint64_t nValue,uint32_t nLockTime,uint32_t tiptime
     if ( tiptime > nLockTime && (minutes= (tiptime - nLockTime) / 60) >= 60 )
     {
         //minutes.71582779 tiptime.1511292969 locktime.1511293505
-        printf("minutes.%d tiptime.%u locktime.%u\n",minutes,tiptime,nLockTime);
+        //printf("minutes.%d tiptime.%u locktime.%u\n",minutes,tiptime,nLockTime);
         if ( minutes > 365 * 24 * 60 )
             minutes = 365 * 24 * 60;
         minutes -= 59;
@@ -1615,7 +1642,7 @@ int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vou
 {
     cJSON *retjson;
     coinaddr[0] = 0;
-    if ( (retjson= LP_gettx(symbol,txid,0)) != 0 )
+    if ( (retjson= LP_gettx("LP_swap_getcoinaddr",symbol,txid,0)) != 0 )
     {
         LP_txdestaddr(coinaddr,txid,vout,retjson);
         free_json(retjson);
@@ -1627,7 +1654,7 @@ int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,b
 {
     cJSON *retjson,*vins,*item,*skey; int32_t n,scriptlen = 0; char *hexstr;
     //char str[65]; printf("getsigscript %s %s/v%d\n",symbol,bits256_str(str,txid),vini);
-    if ( bits256_nonz(txid) != 0 && (retjson= LP_gettx(symbol,txid,0)) != 0 )
+    if ( bits256_nonz(txid) != 0 && (retjson= LP_gettx("basilisk_swap_getsigscript",symbol,txid,0)) != 0 )
     {
         //printf("gettx.(%s)\n",jprint(retjson,0));
         if ( (vins= jarray(&n,retjson,"vin")) != 0 && vini < n )
@@ -1720,7 +1747,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t u
                 for (i=0; i<n; i++)
                 {
                     txid = jbits256i(array,i);
-                    if ( (txobj= LP_gettx(symbol,txid,1)) != 0 )
+                    if ( (txobj= LP_gettx("LP_swap_spendtxid",symbol,txid,1)) != 0 )
                     {
                         if ( (vins= jarray(&m,txobj,"vin")) != 0 )
                         {
@@ -1950,9 +1977,9 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
             bitcoin_address(coin->symbol,swap->bobpayment.p2shaddr,coin->taddr,coin->p2shtype,swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
             strcpy(swap->bobpayment.I.destaddr,swap->bobpayment.p2shaddr);
             //LP_importaddress(coin->symbol,swap->bobpayment.I.destaddr);
-            int32_t i; for (i=0; i<swap->bobpayment.I.redeemlen; i++)
-                printf("%02x",swap->bobpayment.redeemscript[i]);
-            printf(" <- bobpayment redeem %d %s\n",i,swap->bobpayment.I.destaddr);
+            //int32_t i; for (i=0; i<swap->bobpayment.I.redeemlen; i++)
+            //    printf("%02x",swap->bobpayment.redeemscript[i]);
+            //printf(" <- bobpayment redeem %d %s\n",i,swap->bobpayment.I.destaddr);
             if ( genflag != 0 && bits256_nonz(*(bits256 *)swap->I.secretBn256) != 0 && swap->bobpayment.I.datalen == 0 )
             {
                 basilisk_rawtx_gen(swap->ctx,"payment",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobpayment,swap->bobpayment.I.locktime,swap->bobpayment.spendscript,swap->bobpayment.I.spendlen,coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
@@ -2061,7 +2088,7 @@ int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *d
                 swap->I.statebits |= LP_swapdata_rawtxsend(pairsock,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
                 LP_unspents_mark(swap->I.iambob!=0?coin->symbol:coin->symbol,swap->myfee.vins);
                 //basilisk_txlog(swap,&swap->myfee,-1);
-                //for (i=0; i<swap->myfee.I.datalen; i++)
+                //int32_t i; for (i=0; i<swap->myfee.I.datalen; i++)
                 //    printf("%02x",swap->myfee.txbytes[i]);
                 //printf(" <- fee state.%x\n",swap->I.statebits);
                 swap->I.statebits |= 0x40;

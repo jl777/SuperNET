@@ -458,7 +458,7 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 
 char *LP_postprice_recv(cJSON *argjson)
 {
-    bits256 pubkey; double price; char *base,*rel;
+    bits256 pubkey; double price; char *base,*rel,*argstr;
     //printf("PRICE POSTED.(%s)\n",jprint(argjson,0));
     if ( (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && (price= jdouble(argjson,"price")) > SMALLVAL )
     {
@@ -467,6 +467,14 @@ char *LP_postprice_recv(cJSON *argjson)
         {
             if ( LP_price_sigcheck(juint(argjson,"timestamp"),jstr(argjson,"sig"),jstr(argjson,"pubsecp"),pubkey,base,rel,j64bits(argjson,"price64")) == 0 )
             {
+                if ( IPC_ENDPOINT >= 0 )
+                {
+                    if ( (argstr= jprint(argjson,0)) != 0 )
+                    {
+                        LP_queuecommand(0,argstr,IPC_ENDPOINT,-1,0);
+                        free(argstr);
+                    }
+                }
                 //printf("call pricefeed update\n");
                 LP_pricefeedupdate(pubkey,base,rel,price,jstr(argjson,"utxocoin"),jint(argjson,"n"),jdouble(argjson,"bal")*SATOSHIDEN,jdouble(argjson,"min")*SATOSHIDEN,jdouble(argjson,"max")*SATOSHIDEN,jdouble(argjson,"credits")*SATOSHIDEN);
                 return(clonestr("{\"result\":\"success\"}"));
@@ -698,11 +706,12 @@ void LP_query(void *ctx,char *myipaddr,int32_t mypubsock,char *method,struct LP_
             jadd(reqjson,"proof",LP_instantdex_txids(0,coin->smartaddr));
     }
     msg = jprint(reqjson,1);
-    //printf("etomicdest.(%s) QUERY.(%s)\n",qp->etomicdest,msg);
+    //printf("QUERY.(%s)\n",msg);
+    if ( IPC_ENDPOINT >= 0 )
+        LP_queuecommand(0,msg,IPC_ENDPOINT,-1,0);
     memset(&zero,0,sizeof(zero));
     if ( bits256_nonz(qp->srchash) != 0 )
         LP_reserved_msg(1,qp->srccoin,qp->destcoin,qp->srchash,clonestr(msg));
-    printf("QUERY.(%s)\n",msg);
     LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,clonestr(msg));
     free(msg);
 }

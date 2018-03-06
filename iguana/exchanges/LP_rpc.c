@@ -179,10 +179,10 @@ cJSON *LP_paxprice(char *fiat)
     return(bitcoin_json(coin,"paxprice",buf));
 }
 
-cJSON *LP_gettx(char *symbol,bits256 txid,int32_t suppress_errors)
+cJSON *LP_gettx(char *debug,char *symbol,bits256 txid,int32_t suppress_errors)
 {
     struct iguana_info *coin; char buf[512],str[65]; int32_t height; cJSON *retjson;
-    //printf("LP_gettx %s %s\n",symbol,bits256_str(str,txid));
+    //printf("%s LP_gettx %s %s\n",debug,symbol,bits256_str(str,txid));
     if ( symbol == 0 || symbol[0] == 0 )
         return(cJSON_Parse("{\"error\":\"null symbol\"}"));
     coin = LP_coinfind(symbol);
@@ -209,7 +209,7 @@ cJSON *LP_gettx(char *symbol,bits256 txid,int32_t suppress_errors)
 uint32_t LP_locktime(char *symbol,bits256 txid)
 {
     cJSON *txobj; uint32_t locktime = 0;
-    if ( (txobj= LP_gettx(symbol,txid,0)) != 0 )
+    if ( (txobj= LP_gettx("LP_locktime",symbol,txid,0)) != 0 )
     {
         locktime = juint(txobj,"locktime");
         free_json(txobj);
@@ -468,6 +468,7 @@ cJSON *LP_listreceivedbyaddress(char *symbol,char *coinaddr)
                     }
                 }
             }
+            free_json(array);
         }
         return(cJSON_Parse("[]"));
     } else return(electrum_address_gethistory(symbol,coin->electrum,&retjson,coinaddr,zero));
@@ -689,8 +690,6 @@ again:
                 //rate *= 1.25;
                 if ( rate < 0.00000005 )
                     rate = 0.00000005;
-                //if ( coin->electrum != 0 )
-                //    rate *= 1.5;
                 if ( fabs(rate - coin->rate) > SMALLVAL )
                     printf("%u t%u estimated rate.(%s) (%s) -> %.8f %.8f\n",(uint32_t)time(NULL),coin->ratetime,coin->symbol,retstr,rate,coin->rate);
                 coin->rate = rate;
@@ -926,9 +925,9 @@ uint32_t LP_heighttime(char *symbol,int32_t height)
         {
             if ( (blockhashstr= LP_blockhashstr(symbol,height)) != 0 )
             {
-                if ( (retjson= cJSON_Parse(blockhashstr)) != 0 )
+                if ( (retjson= LP_getblockhashstr(symbol,blockhashstr)) != 0 )
                 {
-                    //printf("height.(%s)\n",jprint(retjson,0));
+                    //printf("%s -> height.(%s)\n",blockhashstr,jprint(retjson,0));
                     timestamp = juint(retjson,"time");
                     free_json(retjson);
                 }
@@ -1055,7 +1054,7 @@ int32_t LP_txhasnotarization(bits256 *notarizedhashp,struct iguana_info *coin,bi
 {
     cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[1024]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
     memset(notarizedhashp,0,sizeof(*notarizedhashp));
-    if ( (txobj= LP_gettx(coin->symbol,txid,0)) != 0 )
+    if ( (txobj= LP_gettx("LP_txhasnotarization",coin->symbol,txid,0)) != 0 )
     {
         if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
         {
@@ -1067,7 +1066,7 @@ int32_t LP_txhasnotarization(bits256 *notarizedhashp,struct iguana_info *coin,bi
                     vin = jitem(vins,i);
                     spenttxid = jbits256(vin,"txid");
                     spentvout = jint(vin,"vout");
-                    if ( (spentobj= LP_gettx(coin->symbol,spenttxid,0)) != 0 )
+                    if ( (spentobj= LP_gettx("LP_txhasnotarization",coin->symbol,spenttxid,0)) != 0 )
                     {
                         if ( (vouts= jarray(&numvouts,spentobj,"vout")) != 0 )
                         {

@@ -120,10 +120,10 @@ buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
 withdraw(coin, outputs[])\n\
 sendrawtransaction(coin, signedtx)\n\
-swapstatus(pending=0)\n\
+swapstatus(pending=0, fast=0)\n\
 swapstatus(coin, limit=10)\n\
 swapstatus(base, rel, limit=10)\n\
-swapstatus(requestid, quoteid, pending=0)\n\
+swapstatus(requestid, quoteid, pending=0, fast=0)\n\
 recentswaps(limit=3)\n\
 notarizations(coin)\n\
 public API:\n \
@@ -161,10 +161,12 @@ bot_status(botid)\n\
 bot_stop(botid)\n\
 bot_pause(botid)\n\
 calcaddress(passphrase)\n\
+convaddress(coin, address, destcoin)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
 timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
 unlockedspend(coin, txid)\n\
+getendpoint()\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
@@ -228,6 +230,41 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 else return(LP_instantdex_deposit(ptr,juint(argjson,"weeks"),jdouble(argjson,"amount"),jobj(argjson,"broadcast") != 0 ? jint(argjson,"broadcast") : 1));
             }
             return(clonestr("{\"error\":\"cant find KMD\"}"));
+        }
+        else if ( strcmp(method,"getendpoint") == 0 )
+        {
+            int32_t err,mode;
+            retjson = cJSON_CreateObject();
+            if ( IPC_ENDPOINT >= 0 )
+            {
+                jaddstr(retjson,"error","IPC endpoint already exists");
+                jaddstr(retjson,"endpoint","ws://*:5555");
+                jaddnum(retjson,"socket",IPC_ENDPOINT);
+            }
+            else
+            {
+                if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )
+                {
+                    if ( (err= nn_bind(IPC_ENDPOINT,"ws://*:5555")) >= 0 )
+                    {
+                        jaddstr(retjson,"result","success");
+                        jaddstr(retjson,"endpoint","ws://127.0.0.1:5555");
+                        jaddnum(retjson,"socket",IPC_ENDPOINT);
+                        mode = NN_WS_MSG_TYPE_TEXT;
+                        err = nn_setsockopt(IPC_ENDPOINT,NN_SOL_SOCKET,NN_WS_MSG_TYPE,&mode,sizeof(mode));
+                        jaddnum(retjson,"sockopt",err);
+                    }
+                    else
+                    {
+                        jaddstr(retjson,"error",(char *)nn_strerror(nn_errno()));
+                        jaddnum(retjson,"err",err);
+                        jaddnum(retjson,"socket",IPC_ENDPOINT);
+                        nn_close(IPC_ENDPOINT);
+                        IPC_ENDPOINT = -1;
+                    }
+                } else jaddstr(retjson,"error","couldnt get NN_PAIR socket");
+            }
+            return(jprint(retjson,1));
         }
         else if ( strcmp(method,"instantdex_claim") == 0 )
         {
@@ -299,7 +336,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"calcaddress") == 0 )
         {
-            bits256 privkey,pub; uint8_t pubkey33[33]; char *passphrase,coinaddr[64];
+            bits256 privkey,pub; uint8_t pubkey33[33]; char *passphrase,coinaddr[64],wifstr[64];
             if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
             {
                 conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
@@ -309,6 +346,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 jaddstr(retjson,"passphrase",passphrase);
                 jaddstr(retjson,"coinaddr",coinaddr);
                 jaddbits256(retjson,"privkey",privkey);
+                bitcoin_priv2wif("KMD",0,wifstr,privkey,188);
+                jaddstr(retjson,"wif",wifstr);
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
         }
@@ -331,12 +370,12 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         {
             uint32_t requestid,quoteid;
             if ( (requestid= juint(argjson,"requestid")) != 0 && (quoteid= juint(argjson,"quoteid")) != 0 )
-                return(basilisk_swapentry(requestid,quoteid,1));
+                return(basilisk_swapentry(jint(argjson,"fast"),requestid,quoteid,1));
             else if ( coin[0] != 0 )
-                return(basilisk_swapentries(coin,0,jint(argjson,"limit")));
+                return(basilisk_swapentries(1,coin,0,jint(argjson,"limit")));
             else if ( base[0] != 0 && rel[0] != 0 )
-                return(basilisk_swapentries(base,rel,jint(argjson,"limit")));
-            else return(basilisk_swaplist(0,0,1,jint(argjson,"pending")));
+                return(basilisk_swapentries(1,base,rel,jint(argjson,"limit")));
+            else return(basilisk_swaplist(jint(argjson,"fast"),0,0,1,jint(argjson,"pending")));
         }
         else if ( strcmp(method,"dynamictrust") == 0 )
         {
@@ -513,6 +552,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 return(LP_sendrawtransaction(coin,jstr(argjson,"signedtx")));
             }
+            else if ( strcmp(method,"convaddress") == 0 )
+            {
+                return(LP_convaddress(coin,jstr(argjson,"address"),jstr(argjson,"destcoin")));
+            }
             else if ( strcmp(method,"timelock") == 0 )
             {
                 return(LP_timelock(coin,juint(argjson,"duration"),jstr(argjson,"destaddr"),jdouble(argjson,"amount")*SATOSHIDEN));
@@ -523,7 +566,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             else if ( strcmp(method,"getrawtransaction") == 0 )
             {
-                return(jprint(LP_gettx(coin,jbits256(argjson,"txid"),0),1));
+                return(jprint(LP_gettx("stats_JSON",coin,jbits256(argjson,"txid"),0),1));
             }
             else if ( strcmp(method,"withdraw") == 0 )
             {

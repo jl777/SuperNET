@@ -102,6 +102,7 @@ char *nanomsg_transportname(int32_t bindflag,char *str,char *ipaddr,uint16_t por
     return(str);
 }
 
+
 /*char *nanomsg_transportname2(int32_t bindflag,char *str,char *ipaddr,uint16_t port)
  {
  sprintf(str,"ws://%s:%u",bindflag == 0 ? ipaddr : "*",port+10);
@@ -267,22 +268,29 @@ int32_t LP_peerindsock(int32_t *peerindp)
 
 void _LP_queuesend(uint32_t crc32,int32_t sock0,int32_t sock1,uint8_t *msg,int32_t msglen,int32_t needack)
 {
-    int32_t maxind,peerind = 0; //sentbytes,
-    if ( sock0 < 0 && sock1 < 0 )
+    int32_t i,maxind,flag = 0,peerind = 0; //sentbytes,
+    for (i=0; i<2; i++)
     {
-        if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (LP_rand() % maxind) + 1;
-        else peerind = 1;
-        sock0 = LP_peerindsock(&peerind);
-        if ( (maxind= LP_numpeers()) > 0 )
-            peerind = (LP_rand() % maxind) + 1;
-        else peerind = 1;
-        sock1 = LP_peerindsock(&peerind);
+        if ( sock0 < 0 && sock1 < 0 )
+        {
+            if ( (maxind= LP_numpeers()) > 0 )
+                peerind = (LP_rand() % maxind) + 1;
+            else peerind = 1;
+            sock0 = LP_peerindsock(&peerind);
+            if ( (maxind= LP_numpeers()) > 0 )
+                peerind = (LP_rand() % maxind) + 1;
+            else peerind = 1;
+            sock1 = LP_peerindsock(&peerind);
+            flag = 1;
+        }
+        if ( sock0 >= 0 )
+            _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
+        if ( sock1 >= 0 )
+            _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
+        if ( flag == 0 )
+            break;
+        sock0 = sock1 = -1;
     }
-    if ( sock0 >= 0 )
-        _LP_sendqueueadd(crc32,sock0,msg,msglen,needack * peerind);
-    if ( sock1 >= 0 )
-        _LP_sendqueueadd(crc32,sock1,msg,msglen,needack);
 }
 
 void LP_queuesend(uint32_t crc32,int32_t pubsock,char *base,char *rel,uint8_t *msg,int32_t msglen)
@@ -310,7 +318,7 @@ void LP_broadcast_finish(int32_t pubsock,char *base,char *rel,uint8_t *msg,cJSON
 #ifdef FROM_MARKETMAKER
     if ( (G.LP_IAMLP == 0 || pubsock < 0) && strcmp(method,"psock") != 0 )
 #else
-    if ( (IAMLP == 0 || pubsock < 0 && strcmp(method,"psock") != 0 )
+    if ( (IAMLP == 0 || pubsock < 0) && strcmp(method,"psock") != 0 )
 #endif
     {
         free(msg);
@@ -419,12 +427,13 @@ struct LP_queuedcommand
     struct LP_queuedcommand *next,*prev;
     char **retstrp;
     int32_t responsesock,msglen,stats_JSONonly;
+    uint32_t queueid;
     char msg[];
 } *LP_commandQ;
     
 void LP_commandQ_loop(void *ctx)
 {
-    struct LP_queuedcommand *ptr,*tmp; int32_t size,nonz; char *retstr; cJSON *argjson;
+    struct LP_queuedcommand *ptr,*tmp; int32_t size,nonz; char *retstr; cJSON *argjson,*retjson,*result;
     while ( LP_STOP_RECEIVED == 0 )
     {
         nonz = 0;
@@ -434,16 +443,46 @@ void LP_commandQ_loop(void *ctx)
             portable_mutex_lock(&LP_commandQmutex);
             DL_DELETE(LP_commandQ,ptr);
             portable_mutex_unlock(&LP_commandQmutex);
-            if ( (argjson= cJSON_Parse(ptr->msg)) != 0 )
+            if ( ptr->stats_JSONonly < 0 )
+            {
+                if ( ptr->responsesock >= 0  )
+                {
+                    if ( (result= cJSON_Parse(ptr->msg)) != 0  )
+                    {
+                        retjson = cJSON_CreateObject();
+                        jaddnum(retjson,"queueid",0);
+                        jadd(retjson,"result",result);
+                        retstr = jprint(retjson,1);
+                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr),0)) <= 0 )
+                            printf("error sending event\n");
+                    }
+                }
+            }
+            else if ( (argjson= cJSON_Parse(ptr->msg)) != 0 )
             {
                 if ( (retstr= LP_command_process(ctx,"127.0.0.1",ptr->responsesock,argjson,(uint8_t *)ptr->msg,ptr->msglen,ptr->stats_JSONonly)) != 0 )
                 {
                     //printf("processed.(%s)\n",retstr);
-                    if ( ptr->responsesock >= 0  && (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
-                        printf("error sending result\n");
                     if ( ptr->retstrp != 0 )
                         (*ptr->retstrp) = retstr;
-                    else free(retstr);
+                    if ( ptr->responsesock >= 0  )
+                    {
+                        if ( (result= cJSON_Parse(retstr)) != 0 && ptr->queueid != 0 )
+                        {
+                            free(retstr);
+                            retjson = cJSON_CreateObject();
+                            jaddnum(retjson,"queueid",ptr->queueid);
+                            jadd(retjson,"result",result);
+                            retstr = jprint(retjson,1);
+                        }
+                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
+                            printf("error sending result\n");
+                    }
+                    if ( retstr != 0 )
+                    {
+                        if ( ptr->retstrp == 0 )
+                            free(retstr);
+                    }
                 }
                 else if ( ptr->retstrp != 0 )
                     (*ptr->retstrp) = clonestr("{\"error\":\"timeout\"}");
@@ -456,16 +495,16 @@ void LP_commandQ_loop(void *ctx)
     }
 }
     
-void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly)
+void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats_JSONonly,uint32_t queueid)
 {
     struct LP_queuedcommand *ptr; int32_t msglen;
     msglen = (int32_t)strlen(buf) + 1;
     portable_mutex_lock(&LP_commandQmutex);
-    ptr = calloc(1,sizeof(*ptr) + msglen);
+    ptr = calloc(1,sizeof(*ptr) + msglen + 1);
     if ( (ptr->retstrp= retstrp) != 0 )
         *retstrp = 0;
-    ptr->responsesock = responsesock;
     ptr->msglen = msglen;
+    ptr->responsesock = responsesock;
     ptr->stats_JSONonly = stats_JSONonly;
     memcpy(ptr->msg,buf,msglen);
     DL_APPEND(LP_commandQ,ptr);
@@ -555,7 +594,7 @@ void LP_psockloop(void *_ptr)
                                 {
                                     sendsock = ptr->sendsock;
                                     break;
-                                } else LP_queuecommand(0,(char *)buf,ptr->publicsock,0);
+                                } else LP_queuecommand(0,(char *)buf,ptr->publicsock,0,0);
                             }
                             if ( buf != 0 )
                             {

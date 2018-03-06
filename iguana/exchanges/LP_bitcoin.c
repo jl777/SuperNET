@@ -2152,7 +2152,12 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
     coinaddr[0] = 0;
     offset = 1 + (taddr != 0);
     if ( len != 20 )
+    {
         calc_rmd160_sha256(data+offset,pubkey_or_rmd160,len);
+        //for (i=0; i<20; i++)
+        //    printf("%02x",data[offset+i]);
+        //printf(" rmd160\n");
+    }
     else memcpy(data+offset,pubkey_or_rmd160,20);
     if ( strcmp(symbol,"BCH") == 0 )
     {
@@ -3391,7 +3396,7 @@ int32_t iguana_rwmsgtx(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shty
 
 bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,uint8_t *serialized,int32_t maxlen,struct iguana_msgtx *msgtx,int32_t vini,uint8_t *spendscript,int32_t spendlen,uint64_t spendamount,uint32_t hashtype,char *vpnstr,int32_t suppress_pubkeys,int32_t zcash)
 {
-    int32_t i,len,sbtcflag = 0; bits256 sigtxid,txid,revsigtxid; struct iguana_msgtx dest;
+    int32_t i,len,sbtcflag = 0,btcpflag=0; bits256 sigtxid,txid,revsigtxid; struct iguana_msgtx dest;
     dest = *msgtx;
     dest.vins = calloc(dest.tx_in,sizeof(*dest.vins));
     dest.vouts = calloc(dest.tx_out,sizeof(*dest.vouts));
@@ -3400,6 +3405,8 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
     memset(sigtxid.bytes,0,sizeof(sigtxid));
     if ( strcmp(symbol,"SBTC") == 0 )
         sbtcflag = 1;
+    else if ( strcmp(symbol,"BTCP") == 0 )
+        btcpflag = 1;
     if ( ((hashtype & ~SIGHASH_FORKID) & 0xff) != SIGHASH_ALL )
     {
         printf("currently only SIGHASH_ALL supported, not %d\n",hashtype);
@@ -3434,6 +3441,8 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
             if ( height >= BTC2_HARDFORK_HEIGHT )
                 hashtype |= (0x777 << 20);
 #endif
+            if ( btcpflag != 0 )
+                hashtype = 0x2a41;
             len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
             if ( sbtcflag != 0 )
             {
@@ -3610,7 +3619,7 @@ uint32_t LP_sighash(char *symbol,int32_t zcash)
         sighash |= SIGHASH_FORKID;
         sighash |= (LP_IS_BITCOINGOLD << 8);
     }
-    else if ( strcmp(symbol,"SBTC") == 0 )
+    else if ( strcmp(symbol,"SBTC") == 0 || strcmp(symbol,"BTCP") == 0 )
         sighash |= SIGHASH_FORKID;
     return(sighash);
 }
