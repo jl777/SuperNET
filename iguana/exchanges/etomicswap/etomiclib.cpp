@@ -50,7 +50,7 @@ char *approveErc20(ApproveErc20Input input)
     tx.to = jsToAddress(input.tokenAddress);
     tx.value = 0;
     tx.gas = 300000;
-    tx.gasPrice = ETOMIC_GASMULT * exp10<9>();
+    tx.gasPrice = getGasPriceFromStation() * exp10<9>();
     tx.nonce = getNonce(input.owner);
     std::stringstream ss;
     ss << "0x095ea7b3"
@@ -512,7 +512,7 @@ char *sendEth(char *to, char *amount, char *privKey)
     tx.to = jsToAddress(to);
     tx.value = jsToU256(amount);
     tx.gas = 21000;
-    tx.gasPrice = ETOMIC_GASMULT * exp10<9>();
+    tx.gasPrice = getGasPriceFromStation() * exp10<9>();
     tx.nonce = getNonce(from);
     free(from);
 
@@ -540,7 +540,7 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey)
     tx.to = jsToAddress(tokenAddress);
     tx.value = 0;
     tx.gas = 60000;
-    tx.gasPrice = ETOMIC_GASMULT * exp10<9>();
+    tx.gasPrice = getGasPriceFromStation() * exp10<9>();
     tx.nonce = getNonce(from);
     free(from);
 
