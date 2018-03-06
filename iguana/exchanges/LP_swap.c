@@ -1222,10 +1222,20 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.bobconfirms = swap->I.bobmaxconfirms;
     if ( swap->I.aliceconfirms > swap->I.alicemaxconfirms )
         swap->I.aliceconfirms = swap->I.alicemaxconfirms;
-    if ( bobcoin->isassetchain != 0 )
-        swap->I.bobconfirms = BASILISK_DEFAULT_MAXCONFIRMS/2;
-    if ( alicecoin->isassetchain != 0 )
-        swap->I.aliceconfirms = BASILISK_DEFAULT_MAXCONFIRMS/2;
+    if ( bobcoin->isassetchain != 0 ) {
+        if (strcmp(bobstr, "ETOMIC") != 0) {
+            swap->I.bobconfirms = BASILISK_DEFAULT_MAXCONFIRMS / 2;
+        } else {
+            swap->I.bobconfirms = 1;
+        }
+    }
+    if ( alicecoin->isassetchain != 0 ) {
+        if (strcmp(alicestr, "ETOMIC") != 0) {
+            swap->I.aliceconfirms = BASILISK_DEFAULT_MAXCONFIRMS / 2;
+        } else {
+            swap->I.aliceconfirms = 1;
+        }
+    }
     if ( strcmp("BAY",swap->I.req.src) != 0 && strcmp("BAY",swap->I.req.dest) != 0 )
     {
         swap->I.bobconfirms *= !swap->I.bobistrusted;
