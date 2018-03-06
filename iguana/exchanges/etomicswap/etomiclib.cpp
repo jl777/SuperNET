@@ -498,6 +498,12 @@ void satoshisToWei(char *dest, uint64_t input)
     strcat(dest, "0000000000");
 }
 
+uint64_t weiToSatoshi(char *wei)
+{
+    u256 satoshi = jsToU256(wei) / exp10<10>();
+    return static_cast<uint64_t>(satoshi);
+}
+
 char *sendEth(char *to, char *amount, char *privKey)
 {
     TransactionSkeleton tx;
@@ -516,6 +522,16 @@ char *sendEth(char *to, char *amount, char *privKey)
     return result;
 }
 
+std::stringstream getErc20TransferData(char *to, char *amount)
+{
+    std::stringstream ss;
+    ss << "0xa9059cbb"
+       << "000000000000000000000000"
+       << toHex(jsToAddress(to))
+       << toHex(toBigEndian(jsToU256(amount)));
+    return ss;
+}
+
 char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey)
 {
     TransactionSkeleton tx;
@@ -528,15 +544,20 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey)
     tx.nonce = getNonce(from);
     free(from);
 
-    std::stringstream ss;
-    ss << "0xa9059cbb"
-       << "000000000000000000000000"
-       << toHex(jsToAddress(to))
-       << toHex(toBigEndian(jsToU256(amount)));
+    std::stringstream ss = getErc20TransferData(to, amount);
     tx.data = jsToBytes(ss.str());
 
     char *rawTx = signTx(tx, privKey);
     char *result = sendRawTx(rawTx);
     free(rawTx);
     return result;
+}
+
+uint8_t verifyAliceErc20FeeData(char *to, char *amount, char *data)
+{
+    std::stringstream ss = getErc20TransferData(to, amount);
+    if (strcmp(ss.str().c_str(), data) != 0) {
+        return 0;
+    }
+    return 1;
 }

@@ -61,6 +61,31 @@ char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
     }
 }
 
+uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
+{
+    EthTxData data = getEthTxData(swap->otherfee.I.ethTxid);
+    if (data.exists == 0 || strcmp(data.from, swap->I.etomicdest) != 0) {
+        return 0;
+    }
+    if ( strcmp(swap->I.alicestr,"ETH") == 0 )
+    {
+        uint64_t txValue = weiToSatoshi(data.valueHex);
+        if (strcmp(data.to, ETH_FEE_ACCEPTOR) != 0 || txValue != swap->otherfee.I.amount) {
+            return(0);
+        }
+        return(1);
+    }
+    else
+    {
+        if (strcmp(data.to, swap->I.alicetomic) != 0) {
+            return(0);
+        }
+        char weiAmount[70];
+        satoshisToWei(weiAmount, swap->otherfee.I.amount);
+        return(verifyAliceErc20FeeData(ETH_FEE_ACCEPTOR, weiAmount, data.input));
+    }
+}
+
 char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
 {
     AliceSendsEthPaymentInput input; AliceSendsErc20PaymentInput input20; BasicTxData txData;
