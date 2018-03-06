@@ -93,6 +93,7 @@ uint8_t verifyAliceEthPaymentData(AliceSendsEthPaymentInput input, char *data)
 {
     std::stringstream ss = aliceSendsEthPaymentData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
+        printf("Alice ETH payment data %s does not match expected %s\n", data, ss.str().c_str());
         return 0;
     }
     return 1;
@@ -130,6 +131,7 @@ uint8_t verifyAliceErc20PaymentData(AliceSendsErc20PaymentInput input, char *dat
 {
     std::stringstream ss = aliceSendsErc20PaymentData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
+        printf("Alice ERC20 payment data %s is not equal to expected %s\n", data, ss.str().c_str());
         return 0;
     }
     return 1;
@@ -208,6 +210,7 @@ uint8_t verifyBobEthDepositData(BobSendsEthDepositInput input, char *data)
 {
     std::stringstream ss = bobSendsEthDepositData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
+        printf("Bob deposit data %s != expected %s\n", data, ss.str().c_str());
         return 0;
     }
     return 1;
@@ -243,6 +246,7 @@ uint8_t verifyBobErc20DepositData(BobSendsErc20DepositInput input, char *data)
 {
     std::stringstream ss = bobSendsErc20DepositData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
+        printf("Bob deposit data %s != expected %s\n", data, ss.str().c_str());
         return 0;
     }
     return 1;
@@ -318,6 +322,7 @@ uint8_t verifyBobEthPaymentData(BobSendsEthPaymentInput input, char *data)
 {
     std::stringstream ss = bobSendsEthPaymentData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
+        printf("Bob payment data %s != expected %s\n", data, ss.str().c_str());
         return 0;
     }
     return 1;
@@ -353,6 +358,7 @@ uint8_t verifyBobErc20PaymentData(BobSendsErc20PaymentInput input, char *data)
 {
     std::stringstream ss = bobSendsErc20PaymentData(input);
     if (strcmp(ss.str().c_str(), data) != 0) {
+        printf("Bob payment data %s != expected %s\n", data, ss.str().c_str());
         return 0;
     }
     return 1;
@@ -557,6 +563,7 @@ uint8_t verifyAliceErc20FeeData(char *to, char *amount, char *data)
 {
     std::stringstream ss = getErc20TransferData(to, amount);
     if (strcmp(ss.str().c_str(), data) != 0) {
+        printf("Alice ERC20 fee data %s is not equal to expected %s\n", data, ss.str().c_str());
         return 0;
     }
     return 1;
