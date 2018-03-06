@@ -237,13 +237,26 @@ void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx
         basilisk_dontforget(swap,&swap->bobreclaim,swap->bobpayment.I.locktime,triggertxid);
     if ( IPC_ENDPOINT >= 0 )
     {
-        char fname[512],*fstr; long fsize;
+        char fname[512],*fstr,*outstr; long fsize; cJSON *reqjson;
         sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid), OS_compatible_path(fname);
         if ( rawtx != 0 )
             sprintf(fname+strlen(fname),".%s",rawtx->name);
         if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
         {
-            LP_queuecommand(0,fstr,IPC_ENDPOINT,-1,0);
+            if ( (reqjson= cJSON_Parse(fstr)) != 0 )
+            {
+                if ( jobj(reqjson,"method") != 0 )
+                    jdelete(reqjson,"method");
+                jaddstr(reqjson,"method","update");
+                if ( jobj(reqjson,"update") != 0 )
+                    jdelete(reqjson,"update");
+                if ( rawtx != 0 )
+                    jaddstr(reqjson,"update",rawtx->name);
+                else jaddstr(reqjson,"update","main");
+                outstr = jprint(reqjson,1);
+                LP_queuecommand(0,outstr,IPC_ENDPOINT,-1,0);
+                free(outstr);
+            }
             free(fstr);
         }
     }
