@@ -453,7 +453,7 @@ void LP_commandQ_loop(void *ctx)
                         jaddnum(retjson,"queueid",0);
                         jadd(retjson,"result",result);
                         retstr = jprint(retjson,1);
-                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
+                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr),0)) <= 0 )
                             printf("error sending event\n");
                     }
                 }
@@ -500,7 +500,7 @@ void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats
     struct LP_queuedcommand *ptr; int32_t msglen;
     msglen = (int32_t)strlen(buf) + 1;
     portable_mutex_lock(&LP_commandQmutex);
-    ptr = calloc(1,sizeof(*ptr) + msglen);
+    ptr = calloc(1,sizeof(*ptr) + msglen + 1);
     if ( (ptr->retstrp= retstrp) != 0 )
         *retstrp = 0;
     ptr->msglen = msglen;
