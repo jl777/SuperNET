@@ -53,15 +53,11 @@ char *approveErc20(ApproveErc20Input input)
     tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
     tx.nonce = getNonce(input.owner);
     uint8_t decimals = getErc20Decimals(input.tokenAddress);
-    u256 amount = jsToU256(input.amount);
-    if (decimals < 18) {
-        amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
-    }
     std::stringstream ss;
     ss << "0x095ea7b3"
        << "000000000000000000000000"
        << toHex(jsToAddress(input.spender))
-       << toHex(toBigEndian(amount));
+       << toHex(toBigEndian(jsToU256(input.amount)));
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, input.secret);
     char* result = sendRawTx(rawTx);
