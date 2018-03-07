@@ -7,7 +7,6 @@
 extern "C" {
 #endif
     
-#define ETOMIC_TESTNET
 #ifdef ETOMIC_TESTNET
 #define ETOMIC_ALICECONTRACT "0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c"
 #define ETOMIC_BOBCONTRACT "0x9387fd3a016bb0205e4e131dde886b9d2bc000a2"
