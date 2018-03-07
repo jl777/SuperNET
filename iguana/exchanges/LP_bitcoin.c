@@ -3447,7 +3447,10 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
                 hashtype |= (0x777 << 20);
 #endif
             if ( btcpflag != 0 )
+            {
                 hashtype = 0x2a41;
+                printf("BTCP detected: hardcode hashtype to %08x\n",hashtype);
+            }
             len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
             if ( sbtcflag != 0 )
             {
