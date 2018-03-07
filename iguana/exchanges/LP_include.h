@@ -522,6 +522,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t wiftaddr,uint8_
 //void LP_butxo_swapfields_set(struct LP_utxoinfo *butxo);
 struct LP_address_utxo *LP_address_utxofind(struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout);
 int64_t LP_myzcredits();
+void HashKeccak(uint8_t *hash,void *data,size_t len);
 void test_validate(struct iguana_info *coin,char *signedtx);
 void LP_instantdex_depositadd(char *coinaddr,bits256 txid);
 int64_t LP_instantdex_creditcalc(struct iguana_info *coin,int32_t dispflag,bits256 txid,char *refaddr,char *origcoinaddr);

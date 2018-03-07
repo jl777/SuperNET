@@ -2041,8 +2041,13 @@ bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t  len)
 bits256 bits256_calcaddrhash(char *symbol,uint8_t *serialized,int32_t  len)
 {
     bits256 hash;
+    memset(hash.bytes,0,sizeof(hash));
     if ( strcmp(symbol,"GRS") != 0 )
-        hash = bits256_doublesha256(0,serialized,len);
+    {
+        if ( strcmp(symbol,"SMART") != 0 )
+            hash = bits256_doublesha256(0,serialized,len);
+        else HashKeccak(hash.bytes,serialized,len);
+    }
     else
     {
         HashGroestl(hash.bytes,serialized,len);
