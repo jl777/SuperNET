@@ -182,7 +182,7 @@ uint64_t weiToSatoshi(char *wei);
 char *sendEth(char *to, char *amount, char *privKey);
 char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey);
 
-uint8_t verifyAliceErc20FeeData(char *to, char *amount, char *data);
+uint8_t verifyAliceErc20FeeData(char* tokenAddress, char *to, char *amount, char *data);
 // Your prototype or Definition
 #ifdef __cplusplus
 }

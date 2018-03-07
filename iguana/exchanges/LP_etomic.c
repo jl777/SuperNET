@@ -91,7 +91,7 @@ uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
         }
         char weiAmount[70];
         satoshisToWei(weiAmount, swap->otherfee.I.amount);
-        return(verifyAliceErc20FeeData(ETH_FEE_ACCEPTOR, weiAmount, data.input));
+        return(verifyAliceErc20FeeData(swap->I.alicetomic, ETH_FEE_ACCEPTOR, weiAmount, data.input));
     }
 }
 

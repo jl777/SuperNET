@@ -27,7 +27,7 @@ TransactionSkeleton txDataToSkeleton(BasicTxData txData)
     tx.to = jsToAddress(txData.to);
     tx.value = jsToU256(txData.amount);
     tx.gas = 100000;
-    tx.gasPrice = getGasPriceFromStation() * exp10<9>();
+    tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
     tx.nonce = getNonce(txData.from);
     return tx;
 }
@@ -50,13 +50,18 @@ char *approveErc20(ApproveErc20Input input)
     tx.to = jsToAddress(input.tokenAddress);
     tx.value = 0;
     tx.gas = 300000;
-    tx.gasPrice = getGasPriceFromStation() * exp10<9>();
+    tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
     tx.nonce = getNonce(input.owner);
+    uint8_t decimals = getErc20Decimals(input.tokenAddress);
+    u256 amount = jsToU256(input.amount);
+    if (decimals < 18) {
+        amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
+    }
     std::stringstream ss;
     ss << "0x095ea7b3"
        << "000000000000000000000000"
        << toHex(jsToAddress(input.spender))
-       << toHex(toBigEndian(jsToU256(input.amount)));
+       << toHex(toBigEndian(amount));
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, input.secret);
     char* result = sendRawTx(rawTx);
@@ -101,10 +106,15 @@ uint8_t verifyAliceEthPaymentData(AliceSendsEthPaymentInput input, char *data)
 
 std::stringstream aliceSendsErc20PaymentData(AliceSendsErc20PaymentInput input)
 {
+    uint8_t decimals = getErc20Decimals(input.tokenAddress);
+    u256 amount = jsToU256(input.amount);
+    if (decimals < 18) {
+        amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
+    }
     std::stringstream ss;
     ss << "0x184db3bf"
        << toHex(jsToBytes(input.dealId))
-       << toHex(toBigEndian(jsToU256(input.amount)))
+       << toHex(toBigEndian(amount))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.bobAddress))
        << toHex(jsToBytes(input.aliceHash))
@@ -141,11 +151,19 @@ char* aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input, BasicTxDat
 {
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
+    u256 amount = jsToU256(input.amount);
+    dev::Address tokenAddress = jsToAddress(input.tokenAddress);
+    if (tokenAddress != ZeroAddress) {
+        uint8_t decimals = getErc20Decimals(input.tokenAddress);
+        if (decimals < 18) {
+            amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
+        }
+    }
     ss << "0x8b9a167a"
        << toHex(jsToBytes(input.dealId))
-       << toHex(toBigEndian(jsToU256(input.amount)))
+       << toHex(toBigEndian(amount))
        << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress))
+       << toHex(tokenAddress)
        << "000000000000000000000000"
        << toHex(jsToAddress(input.bobAddress))
        << toHex(jsToBytes(input.aliceHash))
@@ -164,11 +182,19 @@ char* bobSpendsAlicePayment(BobSpendsAlicePaymentInput input, BasicTxData txData
 {
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
+    u256 amount = jsToU256(input.amount);
+    dev::Address tokenAddress = jsToAddress(input.tokenAddress);
+    if (tokenAddress != ZeroAddress) {
+        uint8_t decimals = getErc20Decimals(input.tokenAddress);
+        if (decimals < 18) {
+            amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
+        }
+    }
     ss << "0x392ec66b"
        << toHex(jsToBytes(input.dealId))
-       << toHex(toBigEndian(jsToU256(input.amount)))
+       << toHex(toBigEndian(amount))
        << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress))
+       << toHex(tokenAddress)
        << "000000000000000000000000"
        << toHex(jsToAddress(input.aliceAddress))
        << toHex(jsToBytes(input.bobHash))
@@ -218,10 +244,15 @@ uint8_t verifyBobEthDepositData(BobSendsEthDepositInput input, char *data)
 
 std::stringstream bobSendsErc20DepositData(BobSendsErc20DepositInput input)
 {
+    uint8_t decimals = getErc20Decimals(input.tokenAddress);
+    u256 amount = jsToU256(input.amount);
+    if (decimals < 18) {
+        amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
+    }
     std::stringstream ss;
     ss << "0xce8bbe4b"
        << toHex(jsToBytes(input.depositId))
-       << toHex(toBigEndian(jsToU256(input.amount)))
+       << toHex(toBigEndian(amount))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.aliceAddress))
        << toHex(jsToBytes(input.bobHash))
@@ -256,14 +287,22 @@ char* bobRefundsDeposit(BobRefundsDepositInput input, BasicTxData txData)
 {
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
+    u256 amount = jsToU256(input.amount);
+    dev::Address tokenAddress = jsToAddress(input.tokenAddress);
+    if (tokenAddress != ZeroAddress) {
+        uint8_t decimals = getErc20Decimals(input.tokenAddress);
+        if (decimals < 18) {
+            amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
+        }
+    }
     ss << "0x1dbe6508"
        << toHex(jsToBytes(input.depositId))
-       << toHex(toBigEndian(jsToU256(input.amount)))
+       << toHex(toBigEndian(amount))
        << toHex(toBigEndian(jsToU256(input.aliceCanClaimAfter)))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.aliceAddress))
        << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress))
+       << toHex(tokenAddress)
        << "00000000000000000000000000000000000000000000000000000000000000c0"
        << "0000000000000000000000000000000000000000000000000000000000000020"
        << toHex(jsToBytes(input.bobSecret));
@@ -278,14 +317,22 @@ char* aliceClaimsBobDeposit(AliceClaimsBobDepositInput input, BasicTxData txData
 {
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
+    u256 amount = jsToU256(input.amount);
+    dev::Address tokenAddress = jsToAddress(input.tokenAddress);
+    if (tokenAddress != ZeroAddress) {
+        uint8_t decimals = getErc20Decimals(input.tokenAddress);
+        if (decimals < 18) {
+            amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
+        }
+    }
     ss << "0x960173b5"
        << toHex(jsToBytes(input.depositId))
-       << toHex(toBigEndian(jsToU256(input.amount)))
+       << toHex(toBigEndian(amount))
        << toHex(toBigEndian(jsToU256(input.aliceCanClaimAfter)))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.bobAddress))
        << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress))
+       << toHex(tokenAddress)
        << toHex(jsToBytes(input.bobHash))
        << "000000000000000000000000";
     tx.data = jsToBytes(ss.str());
@@ -330,10 +377,15 @@ uint8_t verifyBobEthPaymentData(BobSendsEthPaymentInput input, char *data)
 
 std::stringstream bobSendsErc20PaymentData(BobSendsErc20PaymentInput input)
 {
+    uint8_t decimals = getErc20Decimals(input.tokenAddress);
+    u256 amount = jsToU256(input.amount);
+    if (decimals < 18) {
+        amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
+    }
     std::stringstream ss;
     ss << "0x34f64dfd"
        << toHex(jsToBytes(input.paymentId))
-       << toHex(toBigEndian(jsToU256(input.amount)))
+       << toHex(toBigEndian(amount))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.aliceAddress))
        << toHex(jsToBytes(input.aliceHash))
@@ -368,14 +420,22 @@ char* bobReclaimsBobPayment(BobReclaimsBobPaymentInput input, BasicTxData txData
 {
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
+    u256 amount = jsToU256(input.amount);
+    dev::Address tokenAddress = jsToAddress(input.tokenAddress);
+    if (tokenAddress != ZeroAddress) {
+        uint8_t decimals = getErc20Decimals(input.tokenAddress);
+        if (decimals < 18) {
+            amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
+        }
+    }
     ss << "0xb7cc2312"
        << toHex(jsToBytes(input.paymentId))
-       << toHex(toBigEndian(jsToU256(input.amount)))
+       << toHex(toBigEndian(amount))
        << toHex(toBigEndian(jsToU256(input.bobCanClaimAfter)))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.aliceAddress))
        << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress))
+       << toHex(tokenAddress)
        << toHex(jsToBytes(input.aliceHash))
        << "000000000000000000000000";
     tx.data = jsToBytes(ss.str());
@@ -389,14 +449,22 @@ char* aliceSpendsBobPayment(AliceSpendsBobPaymentInput input, BasicTxData txData
 {
     TransactionSkeleton tx = txDataToSkeleton(txData);
     std::stringstream ss;
+    u256 amount = jsToU256(input.amount);
+    dev::Address tokenAddress = jsToAddress(input.tokenAddress);
+    if (tokenAddress != ZeroAddress) {
+        uint8_t decimals = getErc20Decimals(input.tokenAddress);
+        if (decimals < 18) {
+            amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
+        }
+    }
     ss << "0x97004255"
        << toHex(jsToBytes(input.paymentId))
-       << toHex(toBigEndian(jsToU256(input.amount)))
+       << toHex(toBigEndian(amount))
        << toHex(toBigEndian(jsToU256(input.bobCanClaimAfter)))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.bobAddress))
        << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress))
+       << toHex(tokenAddress)
        << "00000000000000000000000000000000000000000000000000000000000000c0"
        << "0000000000000000000000000000000000000000000000000000000000000020"
        << toHex(jsToBytes(input.aliceSecret));
@@ -435,7 +503,7 @@ uint64_t getEthBalance(char* address)
 {
     char* hexBalance = getEthBalanceRequest(address);
     // convert wei to satoshi
-    u256 balance = jsToU256(hexBalance) / exp10<10>();
+    u256 balance = jsToU256(hexBalance) / boost::multiprecision::pow(u256(10), 10);
     free(hexBalance);
     return static_cast<uint64_t>(balance);
 }
@@ -449,7 +517,12 @@ uint64_t getErc20BalanceSatoshi(char *address, char *tokenAddress)
     std::stringstream& resultStream = *(new std::stringstream);
     char* hexBalance = ethCall(tokenAddress, ss.str().c_str());
     // convert wei to satoshi
-    u256 balance = jsToU256(hexBalance) / exp10<10>();
+    uint8_t decimals = getErc20Decimals(tokenAddress);
+    u256 balance = jsToU256(hexBalance);
+    if (decimals < 18) {
+        balance *= boost::multiprecision::pow(u256(10), 18 - decimals);
+    }
+    balance /= boost::multiprecision::pow(u256(10), 10);
     free(hexBalance);
     return static_cast<uint64_t>(balance);
 }
@@ -473,8 +546,13 @@ uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress)
        << "000000000000000000000000"
        << toHex(jsToAddress(spender));
     char* hexAllowance = ethCall(tokenAddress, ss.str().c_str());
+    uint8_t decimals = getErc20Decimals(tokenAddress);
+    u256 allowance = jsToU256(hexAllowance);
+    if (decimals < 18) {
+        allowance *= boost::multiprecision::pow(u256(10), 18 - decimals);
+    }
     // convert wei to satoshi
-    u256 allowance = jsToU256(hexAllowance) / exp10<10>();
+    allowance /= boost::multiprecision::pow(u256(10), 10);
     free(hexAllowance);
     return static_cast<uint64_t>(allowance);
 }
@@ -482,7 +560,6 @@ uint64_t getErc20Allowance(char *owner, char *spender, char *tokenAddress)
 uint8_t getErc20Decimals(char *tokenAddress)
 {
     char* hexDecimals = ethCall(tokenAddress, "0x313ce567");
-    // convert wei to satoshi
     auto decimals = (uint8_t) strtol(hexDecimals, NULL, 0);
     free(hexDecimals);
     return decimals;
@@ -506,7 +583,7 @@ void satoshisToWei(char *dest, uint64_t input)
 
 uint64_t weiToSatoshi(char *wei)
 {
-    u256 satoshi = jsToU256(wei) / exp10<10>();
+    u256 satoshi = jsToU256(wei) / boost::multiprecision::pow(u256(10), 10);
     return static_cast<uint64_t>(satoshi);
 }
 
@@ -518,7 +595,7 @@ char *sendEth(char *to, char *amount, char *privKey)
     tx.to = jsToAddress(to);
     tx.value = jsToU256(amount);
     tx.gas = 21000;
-    tx.gasPrice = getGasPriceFromStation() * exp10<9>();
+    tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
     tx.nonce = getNonce(from);
     free(from);
 
@@ -528,13 +605,19 @@ char *sendEth(char *to, char *amount, char *privKey)
     return result;
 }
 
-std::stringstream getErc20TransferData(char *to, char *amount)
+std::stringstream getErc20TransferData(char *tokenAddress, char *to, char *amount)
 {
+    u256 amountWei = jsToU256(amount);
+    uint8_t decimals = getErc20Decimals(tokenAddress);
+    if (decimals < 18) {
+        amountWei /= boost::multiprecision::pow(u256(10), 18 - decimals);
+    }
+    // convert wei to satoshi
     std::stringstream ss;
     ss << "0xa9059cbb"
        << "000000000000000000000000"
        << toHex(jsToAddress(to))
-       << toHex(toBigEndian(jsToU256(amount)));
+       << toHex(toBigEndian(amountWei));
     return ss;
 }
 
@@ -546,11 +629,11 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey)
     tx.to = jsToAddress(tokenAddress);
     tx.value = 0;
     tx.gas = 60000;
-    tx.gasPrice = getGasPriceFromStation() * exp10<9>();
+    tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
     tx.nonce = getNonce(from);
     free(from);
 
-    std::stringstream ss = getErc20TransferData(to, amount);
+    std::stringstream ss = getErc20TransferData(tokenAddress, to, amount);
     tx.data = jsToBytes(ss.str());
 
     char *rawTx = signTx(tx, privKey);
@@ -559,9 +642,9 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey)
     return result;
 }
 
-uint8_t verifyAliceErc20FeeData(char *to, char *amount, char *data)
+uint8_t verifyAliceErc20FeeData(char* tokenAddress, char *to, char *amount, char *data)
 {
-    std::stringstream ss = getErc20TransferData(to, amount);
+    std::stringstream ss = getErc20TransferData(tokenAddress, to, amount);
     if (strcmp(ss.str().c_str(), data) != 0) {
         printf("Alice ERC20 fee data %s is not equal to expected %s\n", data, ss.str().c_str());
         return 0;
