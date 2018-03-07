@@ -253,6 +253,8 @@ void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx
                 if ( rawtx != 0 )
                     jaddstr(reqjson,"update",rawtx->name);
                 else jaddstr(reqjson,"update","main");
+                jaddnum(reqjson,"requestid",swap->I.req.requestid);
+                jaddnum(reqjson,"quoteid",swap->I.req.quoteid);
                 outstr = jprint(reqjson,1);
                 LP_queuecommand(0,outstr,IPC_ENDPOINT,-1,0);
                 free(outstr);
