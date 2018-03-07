@@ -1822,7 +1822,14 @@ sph_keccak512_addbits_and_close(void *cc, unsigned ub, unsigned n, void *dst)
         keccak_close64(cc, ub, n, dst);
 }
  
- 
+void HashKeccak(uint8_t *hash,void *data,size_t len)
+{
+    sph_keccak256_context ctx_keccak;
+    sph_keccak256_init(&ctx_keccak);
+    sph_keccak256(&ctx_keccak,data,len);
+    sph_keccak256_close(&ctx_keccak,(void *)hash);
+}
+
 #ifdef __cplusplus
 }
 #endif
