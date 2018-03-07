@@ -1,0 +1,4 @@
+#!/bin/bash
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"userpass\":\"$userpass\",\"method\":\"withdraw\",\"coin\":\"HUSH\",\"outputs\":[{\"t1JTXxWyBrxdWNTaNa5gYPPfpJkhqESvyov\":$1}], \"opreturn\":\"deadbeef\"}"
+
