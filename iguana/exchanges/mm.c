@@ -71,6 +71,9 @@ void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveas
     #include "/usr/local/include/nanomsg/ws.h"
 #endif
 #endif
+#ifndef NN_WS_MSG_TYPE
+#define NN_WS_MSG_TYPE 1
+#endif
 
 
 #include "LP_nativeDEX.c"
