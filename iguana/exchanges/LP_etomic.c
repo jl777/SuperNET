@@ -198,6 +198,11 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
 
 char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
 {
+    EthTxReceipt receipt = getEthTxReceipt(swap->alicePaymentEthTx);
+    if (strcmp(receipt.status, "0x1") != 0) {
+        printf("Alice payment receipt status failed, can't reclaim\n");
+        return NULL;
+    }
     AliceReclaimsAlicePaymentInput input;
     BasicTxData txData;
     memset(&txData,0,sizeof(txData));
@@ -234,6 +239,11 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
 
 char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
 {
+    EthTxReceipt receipt = getEthTxReceipt(swap->alicePaymentEthTx);
+    if (strcmp(receipt.status, "0x1") != 0) {
+        printf("Alice payment receipt status failed, can't spend\n");
+        return NULL;
+    }
     BobSpendsAlicePaymentInput input;
     BasicTxData txData;
 
@@ -375,6 +385,10 @@ char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
+    if (strcmp(receipt.status, "0x1") != 0) {
+        printf("Bob deposit receipt status failed, can't refund\n");
+        return NULL;
+    }
     uint8arrayToHex(input.depositId, swap->txids[BASILISK_BOBDEPOSIT].bytes, 32);
     strcpy(input.aliceAddress, swap->etomicdest);
     sprintf(input.aliceCanClaimAfter, "%" PRIu64, receipt.blockNumber + 960);
@@ -506,6 +520,10 @@ char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     EthTxReceipt receipt = getEthTxReceipt(swap->bobPaymentEthTx);
+    if (strcmp(receipt.status, "0x1") != 0) {
+        printf("Bob payment receipt status failed, can't reclaim\n");
+        return NULL;
+    }
     uint8arrayToHex(input.paymentId, swap->txids[BASILISK_BOBPAYMENT].bytes, 32);
     strcpy(input.aliceAddress, swap->etomicdest);
     sprintf(input.bobCanClaimAfter, "%" PRIu64, receipt.blockNumber + 480);
@@ -533,7 +551,10 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
     EthTxReceipt receipt = getEthTxReceipt(swap->bobPaymentEthTx);
-
+    if (strcmp(receipt.status, "0x1") != 0) {
+        printf("Bob payment receipt status failed, can't spend\n");
+        return NULL;
+    }
     struct iguana_info *ecoin;
     bits256 privkey;
     ecoin = LP_coinfind("ETOMIC");
@@ -572,6 +593,10 @@ char *LP_etomicalice_claims_bob_deposit(struct LP_swap_remember *swap)
     memset(&txData,0,sizeof(txData));
     memset(&input,0,sizeof(input));
     EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
+    if (strcmp(receipt.status, "0x1") != 0) {
+        printf("Bob deposit receipt status failed, can't claim\n");
+        return NULL;
+    }
 
     struct iguana_info *ecoin;
     bits256 privkey;

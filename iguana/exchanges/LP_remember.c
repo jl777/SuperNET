@@ -75,6 +75,9 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
         if (swap->bobpayment.I.ethTxid[0] != 0) {
             fprintf(fp,",\"bobPaymentEthTx\":\"%s\"", swap->bobpayment.I.ethTxid);
         }
+        if (swap->alicepayment.I.ethTxid[0] != 0) {
+            fprintf(fp,",\"alicePaymentEthTx\":\"%s\"", swap->alicepayment.I.ethTxid);
+        }
 
         fprintf(fp,",\"alicecoin\":\"%s\"",swap->I.alicestr);
         if ( swap->I.alicetomic[0] != 0 )
@@ -899,6 +902,10 @@ int32_t LP_swap_load(struct LP_swap_remember *rswap,int32_t forceflag)
 
                 if (jstr(txobj,"bobPaymentEthTx") != 0) {
                     strcpy(rswap->bobPaymentEthTx, jstr(txobj,"bobPaymentEthTx"));
+                }
+
+                if (jstr(txobj,"alicePaymentEthTx") != 0) {
+                    strcpy(rswap->alicePaymentEthTx, jstr(txobj,"alicePaymentEthTx"));
                 }
 
                 if (jstr(txobj,"bobtomic") != 0) {
