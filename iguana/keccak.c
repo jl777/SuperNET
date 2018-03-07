@@ -38,7 +38,11 @@
 #ifdef __cplusplus
 extern "C"{
 #endif
- 
+
+#if defined(WIN32)
+#include <stdint.h>
+#endif 
+
 /*
  * Parameters:
  *
