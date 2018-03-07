@@ -561,7 +561,6 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
     strcpy(txData.to, ETOMIC_BOBCONTRACT);
     strcpy(txData.amount, "0");
     uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
-    printf("priv key: %s", txData.secretKey);
     return aliceSpendsBobPayment(input, txData);
 }
 

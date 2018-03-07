@@ -721,8 +721,13 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                 if ( swap->I.bobtomic[0] != 0 || swap->I.alicetomic[0] != 0 )
                 {
                     char *ethTxId = sendEthTx(swap, rawtx);
-                    strcpy(rawtx->I.ethTxid, ethTxId);
-                    free(ethTxId);
+                    if (ethTxId != NULL) {
+                        strcpy(rawtx->I.ethTxid, ethTxId);
+                        free(ethTxId);
+                    } else {
+                        printf("Error sending ETH tx\n");
+                        return(-1);
+                    }
                 }
 #endif
                 sendlen = 0;
