@@ -2,6 +2,7 @@
 #include <curl/curl.h>
 
 static char *ethRpcUrl = ETOMIC_URL;
+static uint8_t gettingNonceFlag = 0;
 
 struct string {
     char *ptr;
@@ -123,6 +124,11 @@ char* sendRawTx(char* rawTx)
 
 int64_t getNonce(char* address)
 {
+    while (gettingNonceFlag == 1) {
+        printf("Wait for other thread to get ETH nonce\n");
+        sleep(5);
+    }
+    gettingNonceFlag = 1;
     cJSON *params = cJSON_CreateArray();
     cJSON_AddItemToArray(params, cJSON_CreateString(address));
     cJSON_AddItemToArray(params, cJSON_CreateString("pending"));
@@ -133,6 +139,8 @@ int64_t getNonce(char* address)
         nonce = (int64_t) strtol(nonceJson->valuestring, NULL, 0);
     }
     cJSON_Delete(nonceJson);
+    printf("Got ETH nonce %d\n", (int)nonce);
+    gettingNonceFlag = 0;
     return nonce;
 }
 
