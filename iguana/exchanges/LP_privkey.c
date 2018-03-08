@@ -536,7 +536,7 @@ int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t 
     int32_t i; for (i=0; i<msglen; i++)
         printf("%02x",encoded[i]);
     printf(" encoded.%d\n",msglen);
-   return(msglen);
+    return(msglen);
 }
 
 uint8_t *JPG_decrypt(uint16_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],uint8_t *encoded,bits256 privkey)
