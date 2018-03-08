@@ -14,6 +14,11 @@ char* aliceAddress = "0x485d2cc2d13a9e12E4b53D606DB1c8adc884fB8a";
 char* bobAddress = "0xbAB36286672fbdc7B250804bf6D14Be0dF69fa29";
 char* tokenAddress = "0xc0eb7AeD740E1796992A08962c15661bDEB58003";
 
+void *erc20ApproveThread(ApproveErc20Input *input) {
+    char *result = approveErc20(*input);
+    free(result);
+}
+
 int main(int argc, char** argv)
 {
     enum {
@@ -227,13 +232,32 @@ int main(int argc, char** argv)
             strcpy(input8.owner, bobAddress);
             strcpy(input8.tokenAddress, tokenAddress);
             strcpy(input8.secret, getenv("BOB_PK"));
-            result = approveErc20(input8);
+            ApproveErc20Input input123;
+            strcpy(input123.amount, "100");
+            strcpy(input123.spender, bobContractAddress);
+            strcpy(input123.owner, bobAddress);
+            strcpy(input123.tokenAddress, tokenAddress);
+            strcpy(input123.secret, getenv("BOB_PK"));
+            pthread_t t1, t2;
+            pthread_create(&t1, NULL, erc20ApproveThread, &input8);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_join(t1, NULL);
+            pthread_join(t2, NULL);
+            /*result = approveErc20(input8);
             if (result != NULL) {
                 printf("%s\n", result);
                 free(result);
             } else {
                 printf("Tx send result was NULL\n");
             }
+            result = approveErc20(&input8);
+            if (result != NULL) {
+                printf("%s\n", result);
+                free(result);
+            } else {
+                printf("Tx send result was NULL\n");
+            }
+             */
             break;
         case BOB_ETH_BALANCE:
             printf("%" PRIu64 "\n", getEthBalance(bobAddress));
@@ -263,6 +287,7 @@ int main(int argc, char** argv)
         default:
             return 1;
     }
+    /*
     char *pubkey = getPubKeyFromPriv(getenv("BOB_PK"));
     printf("pubkey: %s\n", pubkey);
     free(pubkey);
@@ -288,6 +313,6 @@ int main(int argc, char** argv)
 
     uint64_t gasPrice = getGasPriceFromStation();
     printf("gasPrice: %" PRIu64 "\n", gasPrice);
-
+    */
     return 0;
 }

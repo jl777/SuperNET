@@ -27,26 +27,7 @@
 
 int32_t LP_etomic_wait_for_confirmation(char *txId)
 {
-    EthTxReceipt receipt;
-    EthTxData txData;
-    do {
-        sleep(15);
-        printf("waiting for ETH txId to be confirmed: %s\n", txId);
-        receipt = getEthTxReceipt(txId);
-        if (receipt.confirmations < 1) {
-            txData = getEthTxData(txId);
-            if (txData.exists == 0) {
-                return(-1);
-            }
-        }
-    } while (receipt.confirmations < 1);
-
-    if (strcmp(receipt.status, "0x1") != 0) {
-        printf("ETH txid %s receipt status failed\n", txId);
-        return(-1);
-    }
-
-    return(receipt.confirmations);
+    return(waitForConfirmation(txId));
 }
 
 char *LP_etomicalice_send_fee(struct basilisk_swap *swap)

@@ -3,11 +3,14 @@
 
 #include <stdint.h>
 #include <includes/cJSON.h>
+#ifdef _WIN32
+#include "../../../OSlibs/win/pthread.h"
+#endif
 
 #ifdef __cplusplus
 extern "C"{
 #endif
-    
+
 #ifdef ETOMIC_TESTNET
 #define ETOMIC_URL "https://ropsten.infura.io/y07GHxUyTgeN2mdfOonu"
 #define DEFAULT_GAS_PRICE 100
@@ -41,6 +44,7 @@ EthTxReceipt getEthTxReceipt(char *txId);
 EthTxData getEthTxData(char *txId);
 uint64_t getEthBlockNumber();
 uint64_t getGasPriceFromStation();
+int32_t waitForConfirmation(char *txId);
 
 #ifdef __cplusplus
 }

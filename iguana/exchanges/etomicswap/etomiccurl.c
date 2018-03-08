@@ -2,7 +2,7 @@
 #include <curl/curl.h>
 
 static char *ethRpcUrl = ETOMIC_URL;
-static uint8_t gettingNonceFlag = 0;
+pthread_mutex_t sendTxMutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct string {
     char *ptr;
@@ -115,20 +115,23 @@ char* sendRawTx(char* rawTx)
     char *txId = NULL;
     if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
         char* tmp = resultJson->valuestring;
-        txId = (char*)malloc(strlen(tmp) + 1);
-        strcpy(txId, tmp);
+        if (waitForConfirmation(tmp) > 0) {
+            txId = (char *) malloc(strlen(tmp) + 1);
+            strcpy(txId, tmp);
+        }
     }
     cJSON_Delete(resultJson);
+    pthread_mutex_unlock(&sendTxMutex);
     return txId;
 }
 
 int64_t getNonce(char* address)
 {
-    while (gettingNonceFlag == 1) {
-        printf("Wait for other thread to get ETH nonce\n");
-        sleep(5);
-    }
-    gettingNonceFlag = 1;
+    // we should lock this mutex and unlock it only when transaction was already sent.
+    // make sure that sendRawTx is called after getting a nonce!
+    if (pthread_mutex_lock(&sendTxMutex) != 0) {
+        printf("Nonce mutex lock failed\n");
+    };
     cJSON *params = cJSON_CreateArray();
     cJSON_AddItemToArray(params, cJSON_CreateString(address));
     cJSON_AddItemToArray(params, cJSON_CreateString("pending"));
@@ -140,7 +143,6 @@ int64_t getNonce(char* address)
     }
     cJSON_Delete(nonceJson);
     printf("Got ETH nonce %d\n", (int)nonce);
-    gettingNonceFlag = 0;
     return nonce;
 }
 
@@ -273,11 +275,39 @@ uint64_t getGasPriceFromStation()
         }
 
         if (is_cJSON_Number(cJSON_GetObjectItem(resultJson, "average"))) {
+#ifdef ETOMIC_TESTNET
+            result = (uint64_t)(cJSON_GetObjectItem(resultJson, "average")->valuedouble / 10) + 10;
+#else
             result = (uint64_t)(cJSON_GetObjectItem(resultJson, "average")->valuedouble / 10) + 1;
+#endif
         }
         cJSON_Delete(resultJson);
         return result;
     } else {
         return DEFAULT_GAS_PRICE;
     }
+}
+
+int32_t waitForConfirmation(char *txId)
+{
+    EthTxReceipt receipt;
+    EthTxData txData;
+    do {
+        sleep(15);
+        printf("waiting for ETH txId to be confirmed: %s\n", txId);
+        receipt = getEthTxReceipt(txId);
+        if (receipt.confirmations < 1) {
+            txData = getEthTxData(txId);
+            if (txData.exists == 0) {
+                return(-1);
+            }
+        }
+    } while (receipt.confirmations < 1);
+
+    if (strcmp(receipt.status, "0x1") != 0) {
+        printf("ETH txid %s receipt status failed\n", txId);
+        return(-1);
+    }
+
+    return((int32_t)receipt.confirmations);
 }

@@ -52,7 +52,6 @@ char *approveErc20(ApproveErc20Input input)
     tx.gas = 300000;
     tx.gasPrice = getGasPriceFromStation() * boost::multiprecision::pow(u256(10), 9);
     tx.nonce = getNonce(input.owner);
-    uint8_t decimals = getErc20Decimals(input.tokenAddress);
     std::stringstream ss;
     ss << "0x095ea7b3"
        << "000000000000000000000000"
