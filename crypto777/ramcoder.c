@@ -430,19 +430,22 @@ int32_t ramcoder_decoder(struct ramcoder *coder,int32_t updateprobs,uint8_t *buf
     return(n);
 }
 
-int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 seed)
+int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t datalen,bits256 origseed)
 {
-    int32_t numbits; HUFF H,*hp = &H;
+    uint64_t histo[256]; bits256 seed; char str[65]; int32_t numbits; HUFF H,*hp = &H;
     _init_HUFF(hp,maxlen,bits);
-    if ( ramcoder_encoder(0,1,data,datalen,hp,0,&seed) < 0 )
+    memset(histo,0,sizeof(histo));
+    seed = origseed;
+    if ( ramcoder_encoder(0,1,data,datalen,hp,histo,&seed) < 0 )
         return(-1);
+    printf("seed.%s\n",bits256_str(str,seed));
     numbits = hp->bitoffset;
-    if ( (0) )
+    if ( (1) )
     {
         void *malloc(size_t); void free(void *);
         int32_t i,checklen; uint8_t *checkbuf;
         checkbuf = malloc(datalen*2);
-        memset(seed.bytes,0,sizeof(seed));
+        seed = origseed;
         hrewind(hp);
         checklen = ramcoder_decoder(0,1,checkbuf,datalen*2,hp,&seed);
         if ( checklen != datalen || memcmp(checkbuf,data,datalen) != 0 )
@@ -457,7 +460,7 @@ int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t dat
                 printf("%02x ",checkbuf[i]);
             printf("checklen.%d\n",checklen);
             getchar();
-        } // else printf("CODEC passed datalen.%d -> numbits %d %d\n",datalen,numbits,numbits/8);
+        } else printf("CODEC passed datalen.%d -> numbits %d %d origseed.%s\n",datalen,numbits,numbits/8,bits256_str(str,origseed));
         free(checkbuf);
     }
     return(numbits);

@@ -101,16 +101,23 @@ void LP_tradecommand_log(cJSON *argjson)
     static FILE *logfp; char *jsonstr;
     if ( logfp == 0 )
     {
+#ifndef _WIN32
         if ( (logfp= fopen(LP_STATSLOG_FNAME,"rb+")) != 0 )
             fseek(logfp,0,SEEK_END);
-        else logfp = fopen(LP_STATSLOG_FNAME,"wb");
+        else
+#endif
+            logfp = fopen(LP_STATSLOG_FNAME,"wb");
     }
     if ( logfp != 0 )
     {
-        jsonstr = jprint(argjson,0);
-        fprintf(logfp,"%s\n",jsonstr);
-        free(jsonstr);
-        fflush(logfp);
+        if ( (jsonstr= jprint(argjson,0)) != 0 )
+        {
+            if ( IPC_ENDPOINT >= 0 )
+                LP_queuecommand(0,jsonstr,IPC_ENDPOINT,-1,0);
+            fprintf(logfp,"%s\n",jsonstr);
+            free(jsonstr);
+            fflush(logfp);
+        }
     }
 }
 
@@ -198,9 +205,11 @@ int32_t LP_statslog_parse()
 struct LP_swapstats *LP_swapstats_find(uint64_t aliceid)
 {
     struct LP_swapstats *sp;
+    portable_mutex_lock(&LP_statslogmutex);
     HASH_FIND(hh,LP_RTstats,&aliceid,sizeof(aliceid),sp);
     if ( sp == 0 )
         HASH_FIND(hh,LP_swapstats,&aliceid,sizeof(aliceid),sp);
+    portable_mutex_unlock(&LP_statslogmutex);
     return(sp);
 }
 
@@ -211,9 +220,11 @@ struct LP_swapstats *LP_swapstats_add(uint64_t aliceid,int32_t RTflag)
     {
         sp = calloc(1,sizeof(*sp));
         sp->aliceid = aliceid;
+        portable_mutex_lock(&LP_statslogmutex);
         if ( RTflag != 0 )
             HASH_ADD(hh,LP_RTstats,aliceid,sizeof(aliceid),sp);
         else HASH_ADD(hh,LP_swapstats,aliceid,sizeof(aliceid),sp);
+        portable_mutex_unlock(&LP_statslogmutex);
     }
     return(LP_swapstats_find(aliceid));
 }
@@ -455,6 +466,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         {
             HASH_ITER(hh,LP_swapstats,sp,tmp)
             {
+                static uint32_t counter;
                 if ( sp->Q.R.requestid == requestid && sp->Q.R.quoteid == quoteid )
                 {
                     sp->methodind = methodind;
@@ -463,7 +475,8 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
                         flag = 1;
                         break;
                     }
-                    printf("error after delayed match\n");
+                    if ( counter++ < 1 )
+                        printf("error after delayed match\n");
                 }
             }
         }
@@ -491,7 +504,7 @@ int32_t LP_statslog_parsequote(char *method,cJSON *lineobj)
         satoshis = j64bits(lineobj,"satoshis");
         if ( base == 0 || rel == 0 || satoshis == 0 )
         {
-            printf("quoteparse_error.(%s)\n",jprint(lineobj,0));
+            //printf("quoteparse_error.(%s)\n",jprint(lineobj,0));
             LP_parse_errors++;
             return(-1);
         }
@@ -665,7 +678,7 @@ char *LP_gettradestatus(uint64_t aliceid,uint32_t requestid,uint32_t quoteid)
             return(clonestr("{\"result\":\"success\"}"));
         }
     }
-    if ( (swapstr= basilisk_swapentry(requestid,quoteid,0)) != 0 )
+    if ( (swapstr= basilisk_swapentry(1,requestid,quoteid,0)) != 0 )
     {
         if ( (swapjson= cJSON_Parse(swapstr)) != 0 )
         {
@@ -718,7 +731,7 @@ int32_t LP_stats_dispiter(cJSON *array,struct LP_swapstats *sp,uint32_t starttim
 cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256 refpubkey,char *refbase,char *refrel)
 {
     static int32_t rval;
-    cJSON *retjson,*array,*item,*reqjson; struct LP_pubkey_info *pubp,*ptmp; bits256 zero; uint32_t now; struct LP_swapstats *sp,*tmp; int32_t i,n,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
+    cJSON *retjson,*array,*item; struct LP_pubkey_info *pubp,*ptmp; uint32_t now; struct LP_swapstats *sp,*tmp; int32_t i,n,numtrades[LP_MAXPRICEINFOS]; uint64_t basevols[LP_MAXPRICEINFOS],relvols[LP_MAXPRICEINFOS];
     if ( rval == 0 )
         rval = (LP_rand() % 300) + 60;
     if ( starttime > endtime )
@@ -737,20 +750,22 @@ cJSON *LP_statslog_disp(uint32_t starttime,uint32_t endtime,char *refgui,bits256
     {
         if ( LP_stats_dispiter(array,sp,starttime,endtime,refbase,refrel,refgui,refpubkey) > 0 )
         {
+            portable_mutex_lock(&LP_statslogmutex);
             HASH_DELETE(hh,LP_RTstats,sp);
             HASH_ADD(hh,LP_swapstats,aliceid,sizeof(sp->aliceid),sp);
+            portable_mutex_unlock(&LP_statslogmutex);
         }
         else
         {
             LP_RTcount++;
-            if ( now > sp->lasttime+rval )
+            /*if ( now > sp->lasttime+rval )
             {
                 reqjson = cJSON_CreateObject();
                 jaddstr(reqjson,"method","gettradestatus");
                 jadd64bits(reqjson,"aliceid",sp->aliceid);
                 memset(zero.bytes,0,sizeof(zero));
                 LP_reserved_msg(0,"","",zero,jprint(reqjson,1));
-            }
+            }*/
         }
     }
     HASH_ITER(hh,LP_swapstats,sp,tmp)

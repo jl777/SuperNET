@@ -1,8 +1,9 @@
 #!/bin/bash
 source passphrase
 source coins
-pkill -15 marketmaker; 
+./stop
 git pull;
 cd ..; 
 ./m_mm;
- $1 ./marketmaker "{\"gui\":\"nogui\", \"profitmargin\":0.01, \"userhome\":\"/${HOME#"/"}\", \"passphrase\":\"$passphrase\", \"coins\":$coins}" &
+pkill -15 marketmaker; 
+stdbuf -oL $1 ./marketmaker "{\"gui\":\"nogui\", \"profitmargin\":0.01, \"userhome\":\"/${HOME#"/"}\", \"passphrase\":\"$passphrase\", \"coins\":$coins}" &

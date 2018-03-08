@@ -1,0 +1,3 @@
+source userpass
+curl --url "http://127.0.0.1:7783" --data "{\"password\":\"123\",\"ind\":3453,\"userpass\":\"$userpass\",\"method\":\"jpg\",\"srcfile\":\"/root/boost_1_64_0/libs/gil/doc/doxygen/images/monkey_steps.jpg\",\"destfile\":\"dest.jpg\",\"power2\":3,\"data\":\"68656c6c6f20776f726c64\",\"required\":88}"
+curl --url "http://127.0.0.1:7783" --data "{\"password\":\"123\",\"userpass\":\"$userpass\",\"method\":\"jpg\",\"srcfile\":\"dest.jpg\",\"power2\":3,\"required\":88}"

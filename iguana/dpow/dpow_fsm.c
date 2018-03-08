@@ -91,25 +91,25 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
         {
             //printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",coin->symbol,height,bits256_str(str,txid));
             /*if ( channel == DPOW_BTCTXIDCHANNEL )
-            {
-                if ( bp->state < 1000 )
-                {
-                    bp->desttxid = txid;
-                    bp->state = 1000;
-                    dp->destupdated = 0;
-                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,bp->isratify);
-                    //dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
-                }
-            }
-            else
-            {
-                if ( bp->state != 0xffffffff )
-                {
-                    bp->srctxid = txid;
-                    printf("set state elapsed %d COMPLETED %s.(%s) %s.(%s)\n",(int32_t)(time(NULL) - bp->starttime),dp->symbol,bits256_str(str,bp->desttxid),dp->dest,bits256_str(str2,txid));
-                    bp->state = 0xffffffff;
-                }
-            }*/
+             {
+             if ( bp->state < 1000 )
+             {
+             bp->desttxid = txid;
+             bp->state = 1000;
+             dp->destupdated = 0;
+             dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,bp->isratify);
+             //dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
+             }
+             }
+             else
+             {
+             if ( bp->state != 0xffffffff )
+             {
+             bp->srctxid = txid;
+             printf("set state elapsed %d COMPLETED %s.(%s) %s.(%s)\n",(int32_t)(time(NULL) - bp->starttime),dp->symbol,bits256_str(str,bp->desttxid),dp->dest,bits256_str(str2,txid));
+             bp->state = 0xffffffff;
+             }
+             }*/
         }
         else
         {
@@ -121,7 +121,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
     return(0);
 }
 
-int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr)
+int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin)
 {
     int32_t haveutxo,completed,minutxo,n; bits256 signedtxid; cJSON *addresses; char *rawtx,*sendtx;
     if ( strcmp("BTC",coin->symbol) == 0 )
@@ -129,12 +129,17 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         minutxo = 199;
         n = 10;
     }
+    else if ( strcmp("KMD",coin->symbol) == 0 )
+    {
+        minutxo = 512;
+        n = 256;
+    }
     else
     {
         minutxo = 49;
-        n = 10;
+        n = 50;
     }
-    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration && (bp->myind != 0 || dp->ratifying == 0) )
+    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr,srccoin)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration && (bp->myind != 0 || dp->ratifying == 0) )
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
@@ -154,6 +159,8 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         return(-1);
     return(haveutxo);
 }
+
+uint32_t Numallocated;
 
 void dpow_statemachinestart(void *ptr)
 {
@@ -177,6 +184,7 @@ void dpow_statemachinestart(void *ptr)
     if ( src == 0 || dest == 0 )
     {
         printf("null coin ptr? (%s %p or %s %p)\n",dp->symbol,src,dp->dest,dest);
+        free(ptr);
         return;
     }
     if ( strcmp(src->symbol,"KMD") == 0 )
@@ -186,6 +194,7 @@ void dpow_statemachinestart(void *ptr)
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
+        Numallocated++;
         bp->minsigs = minsigs;
         bp->duration = duration;
         bp->srccoin = src;
@@ -200,6 +209,8 @@ void dpow_statemachinestart(void *ptr)
                 if ( numratified > 64 )
                 {
                     fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
+                    free(ptr);
+                    free_json(ratified);
                     return;
                 }
                 for (i=0; i<numratified; i++)
@@ -238,24 +249,14 @@ void dpow_statemachinestart(void *ptr)
                     bp->numratified = numratified;
                     bp->ratified = ratified;
                     printf("numratified.%d %s\n",numratified,jprint(ratified,0));
-                }
-                else
-                {
-                    printf("i.%d numratified.%d\n",i,numratified);
-                    free_json(ratified);
-                }
+                } else printf("i.%d numratified.%d\n",i,numratified);
             }
+            free_json(ratified);
         }
         bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
         bp->beacon = rand256(0);
         vcalc_sha256(0,bp->commit.bytes,bp->beacon.bytes,sizeof(bp->beacon));
-        /*if ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] != 0 )
-        {
-            printf("purge %s.%d\n",dp->dest,checkpoint.blockhash.height - DPOW_FIRSTRATIFY);
-            free(dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY]);
-            dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] = 0;
-        }*/
     }
     if ( bp->isratify != 0 && dp->ratifying != 0 )
     {
@@ -336,6 +337,7 @@ void dpow_statemachinestart(void *ptr)
             printf("%02x",bp->ratified_pubkeys[0][i]);
         printf(" new, cant change notary0\n");
         dp->ratifying -= bp->isratify;
+        free(ptr);
         return;
     }
     //printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
@@ -353,18 +355,18 @@ void dpow_statemachinestart(void *ptr)
     }
     else
     {
-        if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr) < 0 )
+        if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr,src->symbol) < 0 )
         {
             printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
-            free(ptr);
             dp->ratifying -= bp->isratify;
+            free(ptr);
             return;
         }
-        if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr) < 0 )
+        if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr,"") < 0 )
         {
             printf("dont have %s %s utxo, please send funds\n",dp->symbol,srcaddr);
-            free(ptr);
             dp->ratifying -= bp->isratify;
+            free(ptr);
             return;
         }
         if ( bp->isratify != 0 )
@@ -388,6 +390,7 @@ void dpow_statemachinestart(void *ptr)
         {
             printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
+            free(ptr);
             return;
         }
         sleep(1);
@@ -396,7 +399,7 @@ void dpow_statemachinestart(void *ptr)
     if ( bp->isratify == 0 )
     {
         //if ( (starttime= checkpoint.timestamp) == 0 )
-            bp->starttime = starttime;
+        bp->starttime = starttime;
         extralen = dpow_paxpending(extras,&bp->paxwdcrc);
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
     }
@@ -458,11 +461,11 @@ void dpow_statemachinestart(void *ptr)
             break;
         }
     }
-    printf("END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
+    printf("[%d] END isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",Numallocated,bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     bp->state = 0xffffffff;
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
-    dp->blocks[bp->height] = 0;
+    // dp->blocks[bp->height] = 0;
     free(ptr);
 }
 

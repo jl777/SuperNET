@@ -1216,12 +1216,15 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
     return(0);
 }
 
+void iguana_optableinit();
+
 void iguana_coins(void *arg)
 {
     struct iguana_info **coins,*coin; char *jsonstr,*symbol; cJSON *array,*item,*json;
     int32_t i,n,maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles;
     int64_t maxrecvcache; uint64_t services; struct vin_info V; struct supernet_info *myinfo;
     myinfo = SuperNET_MYINFO(0);
+    iguana_optableinit();
     memset(&V,0,sizeof(V));
     if ( (jsonstr= arg) != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
     {

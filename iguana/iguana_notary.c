@@ -24,7 +24,7 @@
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen);
 uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
-int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr);
+int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr,char *srccoin);
 
 #include "dpow/dpow_network.c"
 #include "dpow/dpow_rpc.c"
@@ -135,7 +135,7 @@ int32_t dpow_hasnotarization(struct supernet_info *myinfo,struct iguana_info *co
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs; //uint8_t pubkeys[64][33];
+    void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht; struct dpow_block *bp;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     if ( strcmp("BTC",dp->dest) == 0 )
@@ -193,7 +193,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     {
         //printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
         dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
-        ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
+        ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint) + sizeof(pthread_t));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
         ptrs[2] = (void *)(uint64_t)minsigs;
@@ -203,8 +203,21 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         ptrs[4] = 0;
         memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
         dp->activehash = checkpoint.blockhash.hash;
-        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
+        ht = checkpoint.blockhash.height;
+        if ( OS_thread_create((void *)((uint64_t)&ptrs[5] + sizeof(struct dpow_checkpoint)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
         {
+        }
+        if ( ht > 100 )
+        {
+            for (i=ht-100; i>=0; i--)
+            {
+                if ( (bp= dp->blocks[i]) != 0 )
+                {
+                    dp->blocks[i] = 0;
+                    Numallocated--;
+                    free(bp);
+                }
+            }
         }
     }
 }
@@ -556,9 +569,82 @@ STRING_ARG(iguana,addnotary,ipaddr)
     return(clonestr("{\"result\":\"notary node added\"}"));
 }
 
-char NOTARY_CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD",
-    "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK" }; // "LTC",
+char NOTARY_CURRENCIES[][16] = {
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN" 
+};
+  
+// "LTC", "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
+
+void _iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
+{
+    FILE *fp; uint64_t signedmask; long fpos,startfpos; int32_t i,height,iter,prevheight;
+    if ( (fp= fopen(fname,"rb")) != 0 )
+    {
+        printf("opened %s\n",fname);
+        startfpos = 0;
+        prevheight = -1;
+        for (iter=0; iter<2; iter++)
+        {
+            while ( 1 )
+            {
+                fpos = ftell(fp);
+                if (fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
+                {
+                    //printf("%6d %016llx\n",height,(long long)signedmask);
+                    if ( height < prevheight )
+                    {
+                        startfpos = fpos;
+                        if ( iter == 0 )
+                            printf("found reversed height %d vs %d\n",height,prevheight);
+                        else printf("fpos.%ld fatal unexpected height reversal %d vs %d\n",fpos,height,prevheight);
+                    }
+                    if ( iter == 1 && (height >= 180000 || strcmp(fname,"signedmasks") != 0) )
+                    {
+                        for (i=0; i<64; i++)
+                        {
+                            if ( ((1LL << i) & signedmask) != 0 )
+                            {
+                                totals[i]++;
+                                if ( dispflag > 1 )
+                                    printf("%2d ",i);
+                            }
+                        }
+                        if ( dispflag > 1 )
+                            printf("height.%d %016llx %s\n",height,(long long)signedmask,fname);
+                    }
+                    prevheight = height;
+                } else break;
+            }
+            if ( iter == 0 )
+            {
+                prevheight = -1;
+                fseek(fp,startfpos,SEEK_SET);
+                printf("set startfpos %ld\n",startfpos);
+            }
+        }
+        fclose(fp);
+        if ( dispflag != 0 )
+        {
+            printf("after %s\n",fname);
+            for (i=0; i<64; i++)
+            {
+                if ( totals[i] != 0 )
+                    printf("%s, %d\n",Notaries_elected[i][0],totals[i]);
+            }
+        }
+    } else printf("couldnt open.(%s)\n",fname);
+}
+
+void iguana_notarystats(int32_t totals[64],int32_t dispflag)
+{
+    int32_t i; char fname[512];
+    _iguana_notarystats("signedmasks",totals,dispflag);
+    for (i=0; i<sizeof(NOTARY_CURRENCIES)/sizeof(*NOTARY_CURRENCIES); i++)
+    {
+        sprintf(fname,"%s/signedmasks",NOTARY_CURRENCIES[i]);
+        _iguana_notarystats(fname,totals,dispflag);
+    }
+}
 
 ZERO_ARGS(dpow,notarychains)
 {

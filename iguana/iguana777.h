@@ -27,6 +27,8 @@
  5. make coins/basilisk/<ac_name>
  6. launch from a single node with -gen, launch a second node using -addnode=<ipaddr of 1st node> but without -gen
  7. from a single node, fundnotaries <ac_name> to get notaries able to dPoW
+ 8. m_splitfunds
+ 
  */
 
 #ifndef iguana777_net_h

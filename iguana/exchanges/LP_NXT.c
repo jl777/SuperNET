@@ -202,8 +202,7 @@ void NXTventure_liquidation()
 cJSON *LP_NXT_redeems()
 {
     char url[1024],*retstr,*recv,*method,*msgstr,assetname[128]; uint64_t totals[2][sizeof(assetids)/sizeof(*assetids)],mult,txnum,assetid,qty; int32_t i,ind,numtx=0,past_marker=0; cJSON *item,*attach,*decjson,*array,*msgjson,*encjson,*retjson=0;
-    //sleep 1; fiat/pangea sendtoaddress RWMdRaUmMZqKkEibwEhY6XS3RLCXJDWHTi 22.10910000 # txnum.2649622877615958504
-    uint64_t txnum_marker = calc_nxt64bits("2649622877615958504"); // set to most recent processed
+    uint64_t txnum_marker = calc_nxt64bits("2675953695997905027"); // 4114304329372848717, 8537615468620726612"); // set to most recent processed
     uint64_t txnum_marker2 = calc_nxt64bits("7256847492742571143"); // dont change, end marker
     char *passphrase = "";
     char *account = "NXT-MRBN-8DFH-PFMK-A4DBM";
@@ -212,6 +211,7 @@ cJSON *LP_NXT_redeems()
     //printf("calling (%s)\n",url);
     if ( (retstr= issue_curlt(url,LP_HTTP_TIMEOUT)) != 0 )
     {
+        //printf("got.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (array= jarray(&numtx,retjson,"transactions")) != 0 )
@@ -297,7 +297,7 @@ cJSON *LP_NXT_redeems()
             //free_json(retjson);
         }
         free(retstr);
-    }
+    } else printf("null return from NXT api call\n");
     printf("\nTotal redeemed.%d\n",numtx);
     for (past_marker=0; past_marker<2; past_marker++)
     {
