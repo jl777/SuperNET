@@ -45,6 +45,7 @@ coins/etomic_7776
 coins/btch_7776
 coins/vote2018_7776
 coins/ninja_7776
+coins/oot_7776
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\",\"timeout\":900000}"
 
