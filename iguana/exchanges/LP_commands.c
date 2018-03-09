@@ -572,7 +572,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-                    if ( jobj(argjson,"outputs") == 0 )
+                    if ( jobj(argjson,"outputs") == 0 && jstr(argjson,"opreturn") == 0 )
                         return(clonestr("{\"error\":\"withdraw needs to have outputs\"}"));
                     else return(LP_withdraw(ptr,argjson));
                 }
