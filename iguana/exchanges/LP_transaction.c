@@ -1226,10 +1226,10 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     return(n);
 }
 
-char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,uint32_t locktime,char *opretstr)
+char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,uint32_t locktime,char *opretstr,char *passphrase)
 {
     static void *ctx;
-    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,len,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS*256]; struct LP_address *ap;
+    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],data[8192+64],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr; bits256 txid; uint32_t crc32,timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t origspendlen=0,i,offset,len,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS*256]; struct LP_address *ap;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     *numvinsp = 0;
@@ -1370,8 +1370,16 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     if ( opretstr != 0 )
     {
         spendlen = (int32_t)strlen(opretstr) >> 1;
-        if ( spendlen < sizeof(script) )
+        if ( spendlen < sizeof(script)-64 )
         {
+            if ( passphrase != 0 && passphrase[0] != 0 )
+            {
+                decode_hex(data,spendlen,opretstr);
+                offset = 2 + (spendlen > 12);
+                origspendlen = spendlen;
+                crc32 = calc_crc32(0,data,spendlen);
+                spendlen = LP_opreturn_encrypt(&script[offset],(int32_t)sizeof(script)-offset,data,spendlen,passphrase,crc32&0xffff);
+            } else offset = crc32 = 0;
             len = 0;
             script[len++] = SCRIPT_OP_RETURN;
             if ( spendlen < 76 )
@@ -1387,9 +1395,16 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 script[len++] = (spendlen & 0xff);
                 script[len++] = ((spendlen >> 8) & 0xff);
             }
-            decode_hex(&script[len],spendlen,opretstr);
+            if ( passphrase != 0 && passphrase[0] != 0 )
+            {
+                if ( offset != len )
+                {
+                    printf("offset.%d vs len.%d, reencrypt\n",offset,len);
+                    spendlen = LP_opreturn_encrypt(&script[len],(int32_t)sizeof(script)-len,data,origspendlen,passphrase,crc32&0xffff);
+                } else printf("offset.%d already in right place\n",offset);
+            } else decode_hex(&script[len],spendlen,opretstr);
             txobj = bitcoin_txoutput(txobj,script,len + spendlen,0);
-            printf("OP_RETURN.[%d, %d] script.(%s)\n",len,spendlen,opretstr);
+            //printf("OP_RETURN.[%d, %d] script.(%s)\n",len,spendlen,opretstr);
         }
         else
         {
@@ -1467,7 +1482,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
         numvins = 0;
-        if ( (rawtx= LP_createrawtransaction(&txobj,&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee,utxotxid,utxovout,locktime,jstr(argjson,"opreturn"))) != 0 )
+        if ( (rawtx= LP_createrawtransaction(&txobj,&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee,utxotxid,utxovout,locktime,jstr(argjson,"opreturn"),jstr(argjson,"passphrase"))) != 0 )
         {
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));

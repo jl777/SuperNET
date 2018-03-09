@@ -3415,7 +3415,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         sbtcflag = 1;
     else if ( strcmp(symbol,"BTCP") == 0 )
         btcpflag = 1;
-    else printf("normal symbol.(%s)\n",symbol);
+    //else printf("normal symbol.(%s)\n",symbol);
     if ( ((hashtype & ~SIGHASH_FORKID) & 0xff) != SIGHASH_ALL )
     {
         printf("currently only SIGHASH_ALL supported, not %d\n",hashtype);
