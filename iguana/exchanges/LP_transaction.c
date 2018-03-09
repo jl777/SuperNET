@@ -1335,6 +1335,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 else
                 {
                     printf("custom script.%d too long %d\n",i,spendlen);
+                    free_json(txobj);
                     return(0);
                 }
             }
@@ -1346,7 +1347,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 else spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
                 if ( i == numvouts-1 && strcmp(coinaddr,coin->smartaddr) == 0 && change != 0 )
                 {
-                    printf("combine last vout %.8f with change %.8f\n",dstr(value+adjust),dstr(change));
+                    //printf("combine last vout %.8f with change %.8f\n",dstr(value+adjust),dstr(change));
                     value += change;
                     change = 0;
                 }
@@ -1370,15 +1371,21 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     if ( opretstr != 0 )
     {
         spendlen = (int32_t)strlen(opretstr) >> 1;
-        if ( spendlen < sizeof(script)-64 )
+        if ( spendlen < sizeof(script)-60 )
         {
             if ( passphrase != 0 && passphrase[0] != 0 )
             {
                 decode_hex(data,spendlen,opretstr);
-                offset = 2 + (spendlen > 12);
+                offset = 2 + (spendlen >= 16);
                 origspendlen = spendlen;
                 crc32 = calc_crc32(0,data,spendlen);
                 spendlen = LP_opreturn_encrypt(&script[offset],(int32_t)sizeof(script)-offset,data,spendlen,passphrase,crc32&0xffff);
+                if ( spendlen < 0 )
+                {
+                    printf("error encrpting opreturn data\n");
+                    free_json(txobj);
+                    return(0);
+                }
             } else offset = crc32 = 0;
             len = 0;
             script[len++] = SCRIPT_OP_RETURN;
@@ -1401,7 +1408,13 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 {
                     printf("offset.%d vs len.%d, reencrypt\n",offset,len);
                     spendlen = LP_opreturn_encrypt(&script[len],(int32_t)sizeof(script)-len,data,origspendlen,passphrase,crc32&0xffff);
-                } else printf("offset.%d already in right place\n",offset);
+                    if ( spendlen < 0 )
+                    {
+                        printf("error encrpting opreturn data\n");
+                        free_json(txobj);
+                        return(0);
+                    }
+                } //else printf("offset.%d already in right place\n",offset);
             } else decode_hex(&script[len],spendlen,opretstr);
             txobj = bitcoin_txoutput(txobj,script,len + spendlen,0);
             //printf("OP_RETURN.[%d, %d] script.(%s)\n",len,spendlen,opretstr);
@@ -1409,6 +1422,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
         else
         {
             printf("custom script.%d too long %d\n",i,spendlen);
+            free_json(txobj);
             return(0);
         }
     }

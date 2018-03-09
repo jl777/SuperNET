@@ -571,7 +571,7 @@ int32_t LP_opreturn_encrypt(uint8_t *dest,int32_t maxsize,uint8_t *data,int32_t 
     vcalc_sha256(0,privkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     if ( (len= JPG_encrypt(ind16,encoded,data,datalen,privkey)) > 0 )
     {
-        printf("datalen.%d -> len.%d max.%d\n",datalen,len,maxsize);
+        //printf("datalen.%d -> len.%d max.%d\n",datalen,len,maxsize);
         if ( len <= maxsize )
         {
             memcpy(dest,encoded,len);
