@@ -1436,7 +1436,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
 
 char *LP_opreturndecrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphrase)
 {
-    cJSON *txjson,*vouts,*opret,*sobj,*retjson; uint16_t utxovout; char *opretstr; uint8_t *opretdata,*databuf,*decoded; uint16_t ind16; uint32_t crc32; int32_t len,numvouts,opretlen,datalen; struct iguana_info *coin;
+    cJSON *txjson,*vouts,*opret,*sobj,*retjson; uint16_t utxovout; char *opretstr,*hexstr; uint8_t *opretdata,*databuf,*decoded; uint16_t ind16; uint32_t crc32; int32_t i,len,numvouts,opretlen,datalen; struct iguana_info *coin;
     if ( (coin= LP_coinfind(symbol)) == 0 )
         return(clonestr("{\"error\":\"cant find coin\"}"));
     retjson = cJSON_CreateObject();
@@ -1493,6 +1493,19 @@ char *LP_opreturndecrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphras
                             if ( (crc32 & 0xffff) == ind16 )
                             {
                                 jaddstr(retjson,"result","success");
+                                hexstr = malloc(len*2+1);
+                                init_hexbytes_noT(hexstr,decoded,len);
+                                jaddstr(retjson,"decrypted",hexstr);
+                                for (i=0; i<len; i++)
+                                    if ( isprint(decoded[i]) == 0 )
+                                        break;
+                                if ( i == len )
+                                {
+                                    decode_hex((uint8_t *)hexstr,len>>1,(char *)decoded);
+                                    hexstr[len>>1] = 0;
+                                    jaddstr(retjson,"original",hexstr);
+                                }
+                                free(hexstr);
                             } else jaddstr(retjson,"error","decrypt crc16 error");
                         }
                         free(decoded);

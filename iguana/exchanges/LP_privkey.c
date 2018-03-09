@@ -552,14 +552,14 @@ uint8_t *JPG_decrypt(uint16_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTE
     cipherlen = msglen - (len + crypto_box_NONCEBYTES);
     if ( cipherlen > 0 && cipherlen <= JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES )
     {
-        int32_t i; for (i=0; i<cipherlen; i++)
-            printf("%02x",cipher[i]);
-        printf(" cipherlen\n");
+        //int32_t i; for (i=0; i<cipherlen; i++)
+        //    printf("%02x",cipher[i]);
+        //printf(" cipherlen\n");
         if ( (extracted= _SuperNET_decipher(nonce,cipher,space,cipherlen,pubkey,privkey)) != 0 )
         {
-            int32_t i; for (i=0; i<msglen; i++)
-                printf("%02x",encoded[i]);
-            printf(" restored\n");
+            //int32_t i; for (i=0; i<msglen; i++)
+            //    printf("%02x",encoded[i]);
+            //printf(" restored\n");
             msglen = (cipherlen - crypto_box_ZEROBYTES);
             *recvlenp = msglen;
             *indp = ind;
