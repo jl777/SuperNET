@@ -2066,7 +2066,7 @@ int32_t bitcoin_addr2rmd160(char *symbol,uint8_t taddr,uint8_t *addrtypep,uint8_
     memset(rmd160,0,20);
     if ( coinaddr == 0 || coinaddr[0] == 0 )
         return(0);
-    if ( coinaddr[0] == '0' && coinaddr[1] == 'x' && is_hexstr(coinaddr+2,0) == 40 )
+    if ( coinaddr[0] == '0' && coinaddr[1] == 'x' && is_hexstr(coinaddr+2,0) == 40 ) // for ETH
     {
         decode_hex(rmd160,20,coinaddr+2); // not rmd160 hash but hopefully close enough;
         return(20);
@@ -2187,7 +2187,7 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
         data[1] = addrtype;
     } else data[0] = addrtype;
     hash = bits256_calcaddrhash(symbol,data,20+offset);
-    if ( strcmp(symbol,"GRS") != 0 )
+    if ( strcmp(symbol,"GRS") != 0 && strcmp(symbol,"SMART") != 0 )
     {
         for (i=0; i<4; i++)
             data[20+offset+i] = hash.bytes[31-i];
