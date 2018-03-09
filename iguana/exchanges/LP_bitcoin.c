@@ -2251,7 +2251,7 @@ int32_t base58encode_checkbuf(char *symbol,uint8_t taddr,uint8_t addrtype,uint8_
     //for (i=0; i<32; i++)
     //    printf("%02x",hash.bytes[i]);
     //printf(" checkhash\n");
-    if ( strcmp(symbol,"GRS") != 0 )
+    if ( strcmp(symbol,"GRS") != 0 && strcmp(symbol,"SMART") != 0 )
     {
         for (i=0; i<4; i++)
             data[data_len+i+offset] = hash.bytes[31-i];
