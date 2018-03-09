@@ -44,11 +44,11 @@ char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
 
 uint8_t LP_etomic_verify_alice_fee(struct basilisk_swap *swap)
 {
-    EthTxData data = getEthTxData(swap->otherfee.I.ethTxid);
-    if (data.exists == 0) {
+    if (waitForConfirmation(swap->otherfee.I.ethTxid) < 0) {
         printf("Alice fee tx %s does not exist", swap->otherfee.I.ethTxid);
         return(0);
     }
+    EthTxData data = getEthTxData(swap->otherfee.I.ethTxid);
     if (strcmp(data.from, swap->I.etomicdest) != 0) {
         printf("Alice fee tx %s was sent from wrong address %s\n", swap->otherfee.I.ethTxid, data.from);
         return(0);
@@ -136,11 +136,11 @@ char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
 
 uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
 {
-    EthTxData data = getEthTxData(txId);
-    if (data.exists == 0) {
+    if (waitForConfirmation(txId) < 0) {
         printf("Alice payment %s does not exist\n", txId);
         return(0);
     }
+    EthTxData data = getEthTxData(txId);
     if (strcmp(data.to, ETOMIC_ALICECONTRACT) != 0) {
         printf("Alice payment %s was not sent to wrong address %s\n", txId, data.to);
         return(0);
@@ -179,6 +179,10 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
 
 char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
 {
+    if (waitForConfirmation(swap->alicePaymentEthTx) < 0) {
+        printf("Alice ETH payment %s is not found, can't reclaim\n", swap->alicePaymentEthTx);
+        return NULL;
+    }
     EthTxReceipt receipt = getEthTxReceipt(swap->alicePaymentEthTx);
     if (strcmp(receipt.status, "0x1") != 0) {
         printf("Alice payment receipt status failed, can't reclaim\n");
@@ -220,6 +224,10 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
 
 char *LP_etomicbob_spends_alice_payment(struct LP_swap_remember *swap)
 {
+    if (waitForConfirmation(swap->alicePaymentEthTx) < 0) {
+        printf("Alice ETH payment %s is not found, can't spend\n", swap->alicePaymentEthTx);
+        return NULL;
+    }
     EthTxReceipt receipt = getEthTxReceipt(swap->alicePaymentEthTx);
     if (strcmp(receipt.status, "0x1") != 0) {
         printf("Alice payment receipt status failed, can't spend\n");
@@ -314,11 +322,11 @@ char *LP_etomicbob_sends_deposit(struct basilisk_swap *swap)
 
 uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
 {
-    EthTxData data = getEthTxData(txId);
-    if (data.exists == 0) {
+    if (waitForConfirmation(txId) < 0) {
         printf("Bob deposit txid %s does not exist\n", txId);
         return(0);
     }
+    EthTxData data = getEthTxData(txId);
     if (strcmp(data.to, ETOMIC_BOBCONTRACT) != 0) {
         printf("Bob deposit txid %s was sent to wrong address %s\n", txId, data.to);
         return(0);
@@ -355,6 +363,10 @@ uint8_t LP_etomic_verify_bob_deposit(struct basilisk_swap *swap, char *txId)
 
 char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
 {
+    if (waitForConfirmation(swap->bobDepositEthTx) < 0) {
+        printf("Bob deposit %s is not found, can't refund\n", swap->bobDepositEthTx);
+        return NULL;
+    }
     BobRefundsDepositInput input;
     BasicTxData txData;
     memset(&txData,0,sizeof(txData));
@@ -367,7 +379,7 @@ char *LP_etomicbob_refunds_deposit(struct LP_swap_remember *swap)
 
     EthTxReceipt receipt = getEthTxReceipt(swap->bobDepositEthTx);
     if (strcmp(receipt.status, "0x1") != 0) {
-        printf("Bob deposit receipt status failed, can't refund\n");
+        printf("Bob deposit %s receipt status failed, can't refund\n", swap->bobDepositEthTx);
         return NULL;
     }
     uint8arrayToHex(input.depositId, swap->txids[BASILISK_BOBDEPOSIT].bytes, 32);
@@ -450,11 +462,11 @@ char *LP_etomicbob_sends_payment(struct basilisk_swap *swap)
 
 uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
 {
-    EthTxData data = getEthTxData(txId);
-    if (data.exists == 0) {
-        printf("Bob payment tx %s does not exist\n", txId);
-        return(0);
+    if (waitForConfirmation(txId) < 0) {
+        printf("Bob payment %s is not found\n", txId);
+        return 0;
     }
+    EthTxData data = getEthTxData(txId);
     if (strcmp(data.to, ETOMIC_BOBCONTRACT) != 0) {
         printf("Bob payment %s was sent to wrong address %s\n", txId, data.to);
     }
@@ -490,6 +502,10 @@ uint8_t LP_etomic_verify_bob_payment(struct basilisk_swap *swap, char *txId)
 
 char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
 {
+    if (waitForConfirmation(swap->bobPaymentEthTx) < 0) {
+        printf("Bob payment %s is not found, can't reclaim\n", swap->bobPaymentEthTx);
+        return NULL;
+    }
     BobReclaimsBobPaymentInput input;
     BasicTxData txData;
     memset(&txData,0,sizeof(txData));
@@ -526,6 +542,10 @@ char *LP_etomicbob_reclaims_payment(struct LP_swap_remember *swap)
 
 char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
 {
+    if (waitForConfirmation(swap->bobPaymentEthTx) < 0) {
+        printf("Bob payment %s is not found, can't spend\n", swap->bobPaymentEthTx);
+        return NULL;
+    }
     AliceSpendsBobPaymentInput input;
     BasicTxData txData;
 
@@ -533,7 +553,7 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
     memset(&input,0,sizeof(input));
     EthTxReceipt receipt = getEthTxReceipt(swap->bobPaymentEthTx);
     if (strcmp(receipt.status, "0x1") != 0) {
-        printf("Bob payment receipt status failed, can't spend\n");
+        printf("Bob payment %s receipt status failed, can't spend\n", swap->bobPaymentEthTx);
         return NULL;
     }
     struct iguana_info *ecoin;
@@ -568,6 +588,10 @@ char *LP_etomicalice_spends_bob_payment(struct LP_swap_remember *swap)
 
 char *LP_etomicalice_claims_bob_deposit(struct LP_swap_remember *swap)
 {
+    if (waitForConfirmation(swap->bobDepositEthTx) < 0) {
+        printf("Bob deposit %s is not found, can't claim\n", swap->bobDepositEthTx);
+        return NULL;
+    }
     AliceClaimsBobDepositInput input;
     BasicTxData txData;
 
