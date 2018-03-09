@@ -862,7 +862,7 @@ void LP_bobloop(void *_swap)
             //LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
             LP_unavailableset(swap->bobdeposit.utxotxid,swap->bobdeposit.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
-            if ( LP_waitfor(swap->N.pair,swap,LP_SWAPSTEP_TIMEOUT*10,LP_verify_otherfee) < 0 )
+            if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_otherfee) < 0 )
             {
                 error = 1;
                 err = -2004, printf("error waiting for alicefee\n");
