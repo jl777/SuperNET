@@ -2199,7 +2199,7 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
     }
     if ( (coinaddr= bitcoin_base58encode(coinaddr,data,24+offset)) != 0 )
     {
-        printf("coinaddr.%p %s\n",coinaddr,coinaddr!=0?coinaddr:"null");
+        //printf("coinaddr.%p %s\n",coinaddr,coinaddr!=0?coinaddr:"null");
     } else printf("null coinaddr taddr.%02x\n",taddr);
     return(coinaddr);
 }
@@ -2317,6 +2317,8 @@ int32_t bitcoin_wif2addr(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,u
     if ( bitcoin_wif2priv(symbol,wiftaddr,&addrtype,&privkey,wifstr) == sizeof(privkey) )
     {
         bitcoin_priv2pub(ctx,symbol,pubkey33,coinaddr,privkey,taddr,pubtype);
+        printf("priv2pub returns.(%s)\n",coinaddr);
+        return(0);
     }
     return(-1);
 }
