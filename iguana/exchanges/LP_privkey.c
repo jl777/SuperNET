@@ -565,6 +565,19 @@ uint8_t *JPG_decrypt(uint16_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTE
     return(extracted);
 }
 
+int32_t LP_opreturn_decrypt(uint16_t *ind16p,uint8_t *decoded,uint8_t *encoded,int32_t encodedlen,char *passphrase)
+{
+    bits256 privkey; int32_t msglen; uint8_t *extracted,space[JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES];
+    vcalc_sha256(0,privkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+    msglen = ((int32_t)encoded[1] << 8) | encoded[0];
+    *ind16p = ((int32_t)encoded[3] << 8) | encoded[2];
+    if ( msglen < encodedlen && (extracted= JPG_decrypt(ind16p,&msglen,space,encoded,privkey)) != 0 )
+    {
+        memcpy(decoded,extracted,msglen);
+        return(msglen);
+    } else return(-1);
+}
+
 int32_t LP_opreturn_encrypt(uint8_t *dest,int32_t maxsize,uint8_t *data,int32_t datalen,char *passphrase,uint16_t ind16)
 {
     bits256 privkey; int32_t len; uint8_t encoded[JPG_ENCRYPTED_MAXSIZE];

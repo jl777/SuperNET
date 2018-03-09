@@ -563,7 +563,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             }
             else if ( strcmp(method,"opreturndecrypt") == 0 )
             {
-                return(LP_opreturn_decrypt(ctx,coin,jbits256(argjson,"txid"),jstr(argjson,"passphrase")));
+                return(LP_opreturndecrypt(ctx,coin,jbits256(argjson,"txid"),jstr(argjson,"passphrase")));
             }
             else if ( strcmp(method,"unlockedspend") == 0 )
             {

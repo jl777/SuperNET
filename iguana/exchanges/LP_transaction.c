@@ -1434,9 +1434,9 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     return(rawtxbytes);
 }
 
-char *LP_opreturn_decrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphrase)
+char *LP_opreturndecrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphrase)
 {
-    cJSON *txjson,*vouts,*opret,*sobj,*retjson; uint16_t utxovout; char *opretstr; uint8_t redeemscript[128]; int32_t numvouts,opretlen; struct iguana_info *coin;
+    cJSON *txjson,*vouts,*opret,*sobj,*retjson; uint16_t utxovout; char *opretstr; uint8_t *opretdata,*databuf,*decoded; uint16_t ind16; uint32_t crc32; int32_t len,numvouts,opretlen,datalen; struct iguana_info *coin;
     if ( (coin= LP_coinfind(symbol)) == 0 )
         return(clonestr("{\"error\":\"cant find coin\"}"));
     retjson = cJSON_CreateObject();
@@ -1446,7 +1446,7 @@ char *LP_opreturn_decrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphra
         if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts >= 1 )
         {
             opret = jitem(vouts,numvouts - 1);
-            jaddstr(retjson,"result","success");
+            jaddstr(retjson,"coin",symbol);
             jaddbits256(retjson,"opreturntxid",utxotxid);
             if ( (sobj= jobj(opret,"scriptPubKey")) != 0 )
             {
@@ -1454,9 +1454,54 @@ char *LP_opreturn_decrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphra
                 {
                     jaddstr(retjson,"opreturn",opretstr);
                     opretlen = (int32_t)strlen(opretstr) >> 1;
+                    opretdata = malloc(opretlen);
+                    decode_hex(opretdata,opretlen,opretstr);
+                    databuf = &opretdata[2];
+                    datalen = 0;
+                    if ( opretdata[0] != 0x6a )
+                        jaddstr(retjson,"error","not opreturn data");
+                    else if ( (datalen= opretdata[1]) < 76 )
+                    {
+                        if ( &databuf[datalen] != &opretdata[opretlen] )
+                            databuf = 0, jaddstr(retjson,"error","mismatched short opretlen");
+                    }
+                    else if ( opretdata[1] == 0x4c )
+                    {
+                        datalen = opretdata[2];
+                        databuf++;
+                        if ( &databuf[datalen] != &opretdata[opretlen] )
+                            databuf = 0, jaddstr(retjson,"error","mismatched opretlen");
+                    }
+                    else if ( opretdata[1] == 0x4d )
+                    {
+                        datalen = opretdata[3];
+                        datalen <<= 8;
+                        datalen |= opretdata[2];
+                        databuf += 2;
+                        if ( &databuf[datalen] != &opretdata[opretlen] )
+                            databuf = 0, jaddstr(retjson,"error","mismatched big opretlen");
+                    }
+                    else databuf = 0, jaddstr(retjson,"error","unexpected opreturn data type");
+                    if ( databuf != 0 )
+                    {
+                        decoded = calloc(1,opretlen+1);
+                        if ( (len= LP_opreturn_decrypt(&ind16,decoded,databuf,datalen,passphrase)) < 0 )
+                            jaddstr(retjson,"error","decrypt error");
+                        else
+                        {
+                            crc32 = calc_crc32(0,decoded,len);
+                            if ( (crc32 & 0xffff) == ind16 )
+                            {
+                                jaddstr(retjson,"result","success");
+                            } else jaddstr(retjson,"error","decrypt crc16 error");
+                        }
+                        free(decoded);
+                    }
+                    free(opretdata);
                 }
             }
         }
+        free_json(txjson);
     }
     return(jprint(retjson,1));
 }
