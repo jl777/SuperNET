@@ -299,7 +299,7 @@ int32_t waitForConfirmation(char *txId)
             txData = getEthTxData(txId);
             if (txData.exists == 0) {
                 retries++;
-                if (retries >= 10) {
+                if (retries >= 30) {
                     printf("Have not found ETH tx %s after 10 checks, aborting\n", txId);
                     return (-1);
                 }
