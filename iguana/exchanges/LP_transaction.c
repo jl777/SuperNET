@@ -1434,6 +1434,33 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     return(rawtxbytes);
 }
 
+char *LP_opreturn_decrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphrase)
+{
+    cJSON *txjson,*vouts,*opret,*sobj,*retjson; uint16_t utxovout; char *opretstr; uint8_t redeemscript[128]; int32_t numvouts,opretlen; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(symbol)) == 0 )
+        return(clonestr("{\"error\":\"cant find coin\"}"));
+    retjson = cJSON_CreateObject();
+    utxovout = 0;
+    if ( (txjson= LP_gettx("LP_opreturn_decrypt",coin->symbol,utxotxid,1)) != 0 )
+    {
+        if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts >= 1 )
+        {
+            opret = jitem(vouts,numvouts - 1);
+            jaddstr(retjson,"result","success");
+            jaddbits256(retjson,"opreturntxid",utxotxid);
+            if ( (sobj= jobj(opret,"scriptPubKey")) != 0 )
+            {
+                if ( (opretstr= jstr(sobj,"hex")) != 0 )
+                {
+                    jaddstr(retjson,"opreturn",opretstr);
+                    opretlen = (int32_t)strlen(opretstr) >> 1;
+                }
+            }
+        }
+    }
+    return(jprint(retjson,1));
+}
+
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
