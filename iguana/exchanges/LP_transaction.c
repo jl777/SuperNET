@@ -1408,7 +1408,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
+    int32_t allocated_outputs=0,iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
 //printf("withdraw.%s %s\n",coin->symbol,jprint(argjson,0));
     if ( coin->etomic[0] != 0 )
     {
@@ -1417,10 +1417,22 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     }
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 && jstr(argjson,"opreturn") == 0 )
+    if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 )
     {
-        printf("no outputs in argjson (%s)\n",jprint(argjson,0));
-        return(clonestr("{\"error\":\"no outputs specified\"}"));
+        if ( jstr(argjson,"opreturn") == 0 )
+        {
+            printf("no outputs in argjson (%s)\n",jprint(argjson,0));
+            return(clonestr("{\"error\":\"no outputs specified\"}"));
+        }
+        else
+        {
+            outputs = cJSON_CreateArray();
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,0.0001);
+            jaddi(outputs,item);
+            numvouts = 1;
+            allocated_outputs = 1;
+        }
     }
     utxotxid = jbits256(argjson,"utxotxid");
     utxovout = jint(argjson,"utxovout");
@@ -1447,6 +1459,8 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         {
             printf("LP_withdraw error utxo reset %s\n",coin->symbol);
             free(V);
+            if ( allocated_outputs != 0 )
+                free_json(outputs);
             return(0);
         }
         privkeys = cJSON_CreateArray();
@@ -1514,6 +1528,8 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         jadd(retjson,"tx",txobj);
     jaddbits256(retjson,"txid",signedtxid);
     jadd(retjson,"complete",completed!=0?jtrue():jfalse());
+    if ( allocated_outputs != 0 )
+        free_json(outputs);
     return(jprint(retjson,1));
 }
 
