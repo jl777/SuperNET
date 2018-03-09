@@ -540,7 +540,8 @@ int32_t LP_importaddress(char *symbol,char *address)
         return(-2);
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
-        return(-2);
+        return(-3);
+    //printf("import.(%s %s)\n",symbol,address);
     if ( coin->electrum != 0 )
     {
         /*if ( (retjson= electrum_address_subscribe(symbol,coin->electrum,&retjson,address)) != 0 )
@@ -554,6 +555,7 @@ int32_t LP_importaddress(char *symbol,char *address)
     {
         if ( (validatejson= LP_validateaddress(symbol,address)) != 0 )
         {
+            //printf("validated.(%s)\n",jprint(validatejson,0));
             if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
             {
                 if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
@@ -561,6 +563,7 @@ int32_t LP_importaddress(char *symbol,char *address)
             }
             free_json(validatejson);
         }
+        //printf("%s (%s) isvalid.%d doneflag.%d\n",symbol,address,isvalid,doneflag);
         if ( isvalid == 0 )
             return(-1);
         if ( doneflag != 0 )
@@ -590,7 +593,6 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
         ctx = bitcoin_ctx();
     bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
 #ifdef LP_DONT_IMPORTPRIVKEY
-    //bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
     if ( LP_importaddress(symbol,address) < 0 )
     {
         printf("%s importaddress %s from %s failed, isvalid.%d\n",symbol,address,wifstr,bitcoin_validaddress(symbol,coin->taddr,coin->pubtype,coin->p2shtype,address));

@@ -166,6 +166,7 @@ instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
 timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
 unlockedspend(coin, txid)\n\
+opreturndecrypt(coin, txid, passphrase)\n\
 getendpoint()\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 \"}"));
@@ -560,6 +561,10 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 return(LP_timelock(coin,juint(argjson,"duration"),jstr(argjson,"destaddr"),jdouble(argjson,"amount")*SATOSHIDEN));
             }
+            else if ( strcmp(method,"opreturndecrypt") == 0 )
+            {
+                return(LP_opreturndecrypt(ctx,coin,jbits256(argjson,"txid"),jstr(argjson,"passphrase")));
+            }
             else if ( strcmp(method,"unlockedspend") == 0 )
             {
                 return(LP_unlockedspend(ctx,coin,jbits256(argjson,"txid")));
@@ -572,7 +577,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 if ( (ptr= LP_coinsearch(coin)) != 0 )
                 {
-                    if ( jobj(argjson,"outputs") == 0 )
+                    if ( jobj(argjson,"outputs") == 0 && jstr(argjson,"opreturn") == 0 )
                         return(clonestr("{\"error\":\"withdraw needs to have outputs\"}"));
                     else return(LP_withdraw(ptr,argjson));
                 }

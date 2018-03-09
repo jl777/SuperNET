@@ -536,7 +536,7 @@ int32_t JPG_encrypt(uint16_t ind,uint8_t encoded[JPG_ENCRYPTED_MAXSIZE],uint8_t 
     int32_t i; for (i=0; i<msglen; i++)
         printf("%02x",encoded[i]);
     printf(" encoded.%d\n",msglen);
-   return(msglen);
+    return(msglen);
 }
 
 uint8_t *JPG_decrypt(uint16_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES],uint8_t *encoded,bits256 privkey)
@@ -552,17 +552,49 @@ uint8_t *JPG_decrypt(uint16_t *indp,int32_t *recvlenp,uint8_t space[JPG_ENCRYPTE
     cipherlen = msglen - (len + crypto_box_NONCEBYTES);
     if ( cipherlen > 0 && cipherlen <= JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES )
     {
+        //int32_t i; for (i=0; i<cipherlen; i++)
+        //    printf("%02x",cipher[i]);
+        //printf(" cipherlen\n");
         if ( (extracted= _SuperNET_decipher(nonce,cipher,space,cipherlen,pubkey,privkey)) != 0 )
         {
-            int32_t i; for (i=0; i<msglen; i++)
-                printf("%02x",encoded[i]);
-            printf(" restored\n");
+            //int32_t i; for (i=0; i<msglen; i++)
+            //    printf("%02x",encoded[i]);
+            //printf(" restored\n");
             msglen = (cipherlen - crypto_box_ZEROBYTES);
             *recvlenp = msglen;
             *indp = ind;
         }
     } //else printf("cipher.%d too big for %d\n",cipherlen,JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES);
     return(extracted);
+}
+
+int32_t LP_opreturn_decrypt(uint16_t *ind16p,uint8_t *decoded,uint8_t *encoded,int32_t encodedlen,char *passphrase)
+{
+    bits256 privkey; int32_t msglen; uint8_t *extracted,space[JPG_ENCRYPTED_MAXSIZE + crypto_box_ZEROBYTES];
+    vcalc_sha256(0,privkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+    msglen = ((int32_t)encoded[1] << 8) | encoded[0];
+    *ind16p = ((int32_t)encoded[3] << 8) | encoded[2];
+    if ( msglen == encodedlen && (extracted= JPG_decrypt(ind16p,&msglen,space,encoded,privkey)) != 0 )
+    {
+        memcpy(decoded,extracted,msglen);
+        return(msglen);
+    } else return(-1);
+}
+
+int32_t LP_opreturn_encrypt(uint8_t *dest,int32_t maxsize,uint8_t *data,int32_t datalen,char *passphrase,uint16_t ind16)
+{
+    bits256 privkey; int32_t len; uint8_t encoded[JPG_ENCRYPTED_MAXSIZE];
+    vcalc_sha256(0,privkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
+    if ( (len= JPG_encrypt(ind16,encoded,data,datalen,privkey)) > 0 )
+    {
+        //printf("datalen.%d -> len.%d max.%d\n",datalen,len,maxsize);
+        if ( len <= maxsize )
+        {
+            memcpy(dest,encoded,len);
+            return(len);
+        }
+    }
+    return(-1);
 }
 
 // from https://github.com/owencm/C-Steganography-Framework
