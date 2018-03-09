@@ -2288,7 +2288,7 @@ int32_t bitcoin_wif2priv(char *symbol,uint8_t wiftaddr,uint8_t *addrtypep,bits25
         ptr = buf;
         hash = bits256_calcaddrhash(symbol,ptr,len - 4);
         *addrtypep = (wiftaddr == 0) ? *ptr : ptr[1];
-        if ( strcmp(symbol,"GRS") != 0 && (ptr[len - 4]&0xff) == hash.bytes[31] && (ptr[len - 3]&0xff) == hash.bytes[30] &&(ptr[len - 2]&0xff) == hash.bytes[29] && (ptr[len - 1]&0xff) == hash.bytes[28] )
+        if ( (ptr[len - 4]&0xff) == hash.bytes[31] && (ptr[len - 3]&0xff) == hash.bytes[30] &&(ptr[len - 2]&0xff) == hash.bytes[29] && (ptr[len - 1]&0xff) == hash.bytes[28] )
         {
             //int32_t i; for (i=0; i<len; i++)
             //    printf("%02x ",ptr[i]);
@@ -2296,7 +2296,7 @@ int32_t bitcoin_wif2priv(char *symbol,uint8_t wiftaddr,uint8_t *addrtypep,bits25
             //printf("wifstr.(%s) valid len.%d\n",wifstr,len);
             return(32);
         }
-        else if ( strcmp(symbol,"GRS") == 0 && (ptr[len - 4]&0xff) == hash.bytes[0] && (ptr[len - 3]&0xff) == hash.bytes[1] &&(ptr[len - 2]&0xff) == hash.bytes[2] && (ptr[len - 1]&0xff) == hash.bytes[3] )
+        else if ( (strcmp(symbol,"GRS") == 0 || strcmp(symbol,"SMART") == 0) && (ptr[len - 4]&0xff) == hash.bytes[0] && (ptr[len - 3]&0xff) == hash.bytes[1] &&(ptr[len - 2]&0xff) == hash.bytes[2] && (ptr[len - 1]&0xff) == hash.bytes[3] )
             return(32);
         else if ( 0 ) // gets errors when len is 37
         {
@@ -2310,16 +2310,16 @@ int32_t bitcoin_wif2priv(char *symbol,uint8_t wiftaddr,uint8_t *addrtypep,bits25
 
 int32_t bitcoin_wif2addr(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,uint8_t pubtype,char *coinaddr,char *wifstr)
 {
-    bits256 privkey; uint8_t addrtype,pubkey33[33];
+    bits256 privkey; int32_t len; uint8_t addrtype,pubkey33[33];
     if ( strcmp(symbol,"BCH") == 0 )
         symbol = "BTC";
     coinaddr[0] = 0;
-    if ( bitcoin_wif2priv(symbol,wiftaddr,&addrtype,&privkey,wifstr) == sizeof(privkey) )
+    if ( (len= bitcoin_wif2priv(symbol,wiftaddr,&addrtype,&privkey,wifstr)) == sizeof(privkey) )
     {
         bitcoin_priv2pub(ctx,symbol,pubkey33,coinaddr,privkey,taddr,pubtype);
         printf("priv2pub returns.(%s)\n",coinaddr);
         return(0);
-    }
+    } else printf("wif2priv returns len.%d\n",len);
     return(-1);
 }
 

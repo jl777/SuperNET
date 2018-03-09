@@ -541,6 +541,7 @@ int32_t LP_importaddress(char *symbol,char *address)
     coin = LP_coinfind(symbol);
     if ( coin == 0 )
         return(-3);
+    printf("import.(%s %s)\n",symbol,address);
     if ( coin->electrum != 0 )
     {
         /*if ( (retjson= electrum_address_subscribe(symbol,coin->electrum,&retjson,address)) != 0 )
@@ -592,7 +593,6 @@ cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
         ctx = bitcoin_ctx();
     bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
 #ifdef LP_DONT_IMPORTPRIVKEY
-    //bitcoin_wif2addr(ctx,symbol,coin->wiftaddr,coin->taddr,coin->pubtype,address,wifstr);
     if ( LP_importaddress(symbol,address) < 0 )
     {
         printf("%s importaddress %s from %s failed, isvalid.%d\n",symbol,address,wifstr,bitcoin_validaddress(symbol,coin->taddr,coin->pubtype,coin->p2shtype,address));
