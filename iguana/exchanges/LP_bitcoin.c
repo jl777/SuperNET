@@ -2199,6 +2199,7 @@ char *bitcoin_address(char *symbol,char *coinaddr,uint8_t taddr,uint8_t addrtype
     }
     if ( (coinaddr= bitcoin_base58encode(coinaddr,data,24+offset)) != 0 )
     {
+        printf("coinaddr.%p %s\n",coinaddr,coinaddr!=0?coinaddr:"null");
     } else printf("null coinaddr taddr.%02x\n",taddr);
     return(coinaddr);
 }
