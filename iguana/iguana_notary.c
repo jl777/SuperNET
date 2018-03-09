@@ -211,7 +211,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         {
             for (i=ht-100; i>=0; i--)
             {
-                if ( (bp= dp->blocks[i]) != 0 )
+                if ( (bp= dp->blocks[i]) != 0 && bp->state == 0xffffffff )
                 {
                     dp->blocks[i] = 0;
                     Numallocated--;
