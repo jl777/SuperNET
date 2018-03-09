@@ -1501,8 +1501,8 @@ char *LP_opreturndecrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphras
                                         break;
                                 if ( i == len )
                                 {
-                                    decode_hex((uint8_t *)hexstr,len>>1,(char *)decoded);
-                                    hexstr[len>>1] = 0;
+                                    memcpy(hexstr,decoded,len);
+                                    hexstr[len] = 0;
                                     jaddstr(retjson,"original",hexstr);
                                 }
                                 free(hexstr);
