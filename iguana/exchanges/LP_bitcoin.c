@@ -2317,7 +2317,7 @@ int32_t bitcoin_wif2addr(void *ctx,char *symbol,uint8_t wiftaddr,uint8_t taddr,u
     if ( (len= bitcoin_wif2priv(symbol,wiftaddr,&addrtype,&privkey,wifstr)) == sizeof(privkey) )
     {
         bitcoin_priv2pub(ctx,symbol,pubkey33,coinaddr,privkey,taddr,pubtype);
-        printf("priv2pub returns.(%s)\n",coinaddr);
+        //printf("priv2pub returns.(%s)\n",coinaddr);
         return(0);
     } else printf("wif2priv returns len.%d\n",len);
     return(-1);
