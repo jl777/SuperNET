@@ -1417,7 +1417,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     }
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
-    if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 )
+    if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 && jstr(argjson,"opreturn") == 0 )
     {
         printf("no outputs in argjson (%s)\n",jprint(argjson,0));
         return(clonestr("{\"error\":\"no outputs specified\"}"));
