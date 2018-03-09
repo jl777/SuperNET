@@ -292,12 +292,17 @@ int32_t waitForConfirmation(char *txId)
 {
     EthTxReceipt receipt;
     EthTxData txData;
+    uint8_t retries = 0;
     do {
         receipt = getEthTxReceipt(txId);
         if (receipt.confirmations < 1) {
             txData = getEthTxData(txId);
             if (txData.exists == 0) {
-                return(-1);
+                retries++;
+                if (retries >= 10) {
+                    printf("Have not found ETH tx %s after 10 checks, aborting\n", txId);
+                    return (-1);
+                }
             }
         } else {
             break;
