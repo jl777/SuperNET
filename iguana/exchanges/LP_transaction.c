@@ -1409,6 +1409,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
     int32_t iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
+printf("withdraw.%s %s\n",coin->symbol,jprint(argjson,0));
     if ( coin->etomic[0] != 0 )
     {
         if ( (coin= LP_coinfind("ETOMIC")) == 0 )
