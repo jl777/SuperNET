@@ -3421,7 +3421,7 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
         printf("currently only SIGHASH_ALL supported, not %d\n",hashtype);
         return(sigtxid);
     }
-    if ( (hashtype & SIGHASH_FORKID) == 0 || sbtcflag != 0 )
+    if ( (hashtype & SIGHASH_FORKID) == 0 || sbtcflag != 0 || btcpflag != 0 )
     {
         for (i=0; i<dest.tx_in; i++)
         {
@@ -3537,10 +3537,10 @@ bits256 bitcoin_sigtxid(char *symbol,uint8_t taddr,uint8_t pubtype,uint8_t p2sht
             len += iguana_voutparse(1,&serialized[len],&dest.vouts[i]);
         outputhash = bits256_doublesha256(0,serialized,len);
 
-        char str[65]; printf("prevouthash.%s ",bits256_str(str,prevouthash));
-        printf("seqhash.%s ",bits256_str(str,seqhash));
-        printf("outputhash.%s ",bits256_str(str,outputhash));
-        printf("vini.%d prev.%s/v%d\n",vini,bits256_str(str,dest.vins[vini].prev_hash),dest.vins[vini].prev_vout);
+        //char str[65]; printf("prevouthash.%s ",bits256_str(str,prevouthash));
+        //printf("seqhash.%s ",bits256_str(str,seqhash));
+        //printf("outputhash.%s ",bits256_str(str,outputhash));
+        //printf("vini.%d prev.%s/v%d\n",vini,bits256_str(str,dest.vins[vini].prev_hash),dest.vins[vini].prev_vout);
         /*01000000
         997c1040c67ee2f9ab21abf7457f7aec4503970e974e532b6578f326c270b7eb
         445066705e799022b7095f7ceca255149f43acfc47e7f59e551f7bce2930b13b
