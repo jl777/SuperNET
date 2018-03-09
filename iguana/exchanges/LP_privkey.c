@@ -574,6 +574,7 @@ int32_t LP_opreturn_decrypt(uint16_t *ind16p,uint8_t *decoded,uint8_t *encoded,i
     vcalc_sha256(0,privkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     msglen = ((int32_t)encoded[1] << 8) | encoded[0];
     *ind16p = ((int32_t)encoded[3] << 8) | encoded[2];
+    printf("msglen.%d vs encodedlen.%d\n",msglen,encodedlen);
     if ( msglen < encodedlen && (extracted= JPG_decrypt(ind16p,&msglen,space,encoded,privkey)) != 0 )
     {
         memcpy(decoded,extracted,msglen);
