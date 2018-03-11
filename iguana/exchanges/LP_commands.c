@@ -160,7 +160,7 @@ bot_settings(botid, newprice, newvolume)\n\
 bot_status(botid)\n\
 bot_stop(botid)\n\
 bot_pause(botid)\n\
-calcaddress(passphrase)\n\
+calcaddress(passphrase, coin=KMD)\n\
 convaddress(coin, address, destcoin)\n\
 instantdex_deposit(weeks, amount, broadcast=1)\n\
 instantdex_claim()\n\
