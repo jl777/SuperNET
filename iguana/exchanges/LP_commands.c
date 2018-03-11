@@ -337,17 +337,39 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"calcaddress") == 0 )
         {
-            bits256 privkey,pub; uint8_t pubkey33[33]; char *passphrase,coinaddr[64],wifstr[64];
+            bits256 privkey,pub; uint8_t pubtype,wiftaddr,p2shtype,taddr,wiftype,pubkey33[33]; char *passphrase,coinaddr[64],wifstr[64],pubsecp[67];
             if ( (passphrase= jstr(argjson,"passphrase")) != 0 )
             {
                 conv_NXTpassword(privkey.bytes,pub.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
                 privkey.bytes[0] &= 248, privkey.bytes[31] &= 127, privkey.bytes[31] |= 64;
-                bitcoin_priv2pub(ctx,"KMD",pubkey33,coinaddr,privkey,0,60);
+                if ( (coin= jstr(argjson,"coin")) == 0 || (ptr= LP_coinfind(coin)) == 0 )
+                {
+                    coin = "KMD";
+                    taddr = 0;
+                    pubtype = 60;
+                    p2shtype = 85;
+                    wiftype = 188;
+                    wiftaddr = 0;
+                }
+                else
+                {
+                    coin = ptr->symbol;
+                    taddr = ptr->taddr;
+                    pubtype = ptr->pubtype;
+                    p2shtype = ptr->p2shtype;
+                    wiftype = ptr->wiftype;
+                    wiftaddr = ptr->wiftaddr;
+                }
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"passphrase",passphrase);
+                bitcoin_priv2pub(ctx,coin,pubkey33,coinaddr,privkey,taddr,pubtype);
+                init_hexbytes_noT(pubsecp,pubkey33,33);
+                jaddstr(retjson,"pubsecp",pubsecp);
                 jaddstr(retjson,"coinaddr",coinaddr);
+                bitcoin_priv2pub(ctx,coin,pubkey33,coinaddr,privkey,taddr,p2shtype);
+                jaddstr(retjson,"p2shaddr",coinaddr);
                 jaddbits256(retjson,"privkey",privkey);
-                bitcoin_priv2wif("KMD",0,wifstr,privkey,188);
+                bitcoin_priv2wif(coin,wiftaddr,wifstr,privkey,wiftype);
                 jaddstr(retjson,"wif",wifstr);
                 return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"need to have passphrase\"}"));
