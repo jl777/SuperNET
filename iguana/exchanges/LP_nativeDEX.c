@@ -828,7 +828,7 @@ void LP_initcoins(void *ctx,int32_t pubsock,cJSON *coins)
             item = jitem(coins,i);
             if ( (symbol= jstr(item,"coin")) != 0 )
             {
-                printf("%s, ",jstr(item,"coin"));
+                printf("%s.%d ",jstr(item,"coin"),LP_numpriceinfos);
                 LP_coincreate(item);
                 LP_priceinfoadd(jstr(item,"coin"));
                 if ( (coin= LP_coinfind(symbol)) != 0 )
