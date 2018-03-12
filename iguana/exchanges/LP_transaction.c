@@ -2247,7 +2247,7 @@ int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t 
             basilisk_dontforget_update(swap,&swap->alicepayment);
 #ifndef NOTETOMIC
             if (swap->alicepayment.I.ethTxid[0] != 0 && LP_etomic_is_empty_tx_id(swap->alicepayment.I.ethTxid) == 0) {
-                if (LP_etomic_wait_for_confirmation(swap->alicepayment.I.ethTxid) < 0 || LP_etomic_verify_alice_payment(swap, swap->alicepayment.I.ethTxid) == 0) {
+                if (LP_etomic_verify_alice_payment(swap, swap->alicepayment.I.ethTxid) == 0) {
                     return(-1);
                 }
             }
