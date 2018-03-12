@@ -136,10 +136,12 @@ char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
 
 uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
 {
+    /*
     if (waitForConfirmation(txId) < 0) {
         printf("Alice payment %s does not exist\n", txId);
         return(0);
     }
+    */
     EthTxData data = getEthTxData(txId);
     if (strcmp(data.to, ETOMIC_ALICECONTRACT) != 0) {
         printf("Alice payment %s was sent to wrong address %s\n", txId, data.to);
