@@ -646,7 +646,7 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
         return(0);
     if ( LP_numpriceinfos >= sizeof(LP_priceinfos)/sizeof(*LP_priceinfos) )
     {
-        printf("cant add any more priceinfos\n");
+        printf("cant add any more priceinfos than LP_numpriceinfos\n");
         return(0);
     }
     pp = &LP_priceinfos[LP_numpriceinfos];
