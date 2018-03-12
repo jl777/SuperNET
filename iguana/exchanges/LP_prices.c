@@ -644,6 +644,11 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
     struct LP_priceinfo *pp; cJSON *retjson;
     if ( symbol == 0 )
         return(0);
+    if ( (pp= LP_priceinfofind(symbol)) != 0 )
+    {
+        printf("%s already there\n",symbol);
+        return(pp);
+    }
     if ( LP_numpriceinfos >= sizeof(LP_priceinfos)/sizeof(*LP_priceinfos) )
     {
         printf("cant add any more priceinfos than %d\n",LP_numpriceinfos);
