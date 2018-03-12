@@ -654,7 +654,7 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
     safecopy(pp->symbol,symbol,sizeof(pp->symbol));
     pp->coinbits = stringbits(symbol);
     pp->ind = LP_numpriceinfos++;
-    LP_numpriceinfos++;
+    //LP_numpriceinfos++;
     if ( (retjson= LP_priceinfomatrix(0)) != 0 )
         free_json(retjson);
     return(pp);
