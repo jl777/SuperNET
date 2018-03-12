@@ -142,7 +142,7 @@ uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
     }
     EthTxData data = getEthTxData(txId);
     if (strcmp(data.to, ETOMIC_ALICECONTRACT) != 0) {
-        printf("Alice payment %s was not sent to wrong address %s\n", txId, data.to);
+        printf("Alice payment %s was sent to wrong address %s\n", txId, data.to);
         return(0);
     }
     if (strcmp(data.from, swap->I.etomicdest) != 0) {

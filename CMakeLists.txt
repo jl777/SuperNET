@@ -7,6 +7,9 @@ HunterGate(
 )
 project(SuperNET)
 set(DEPS_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_EXTENSIONS Off)
 
 include(cmake/DownloadProject.cmake)
 
