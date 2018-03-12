@@ -2032,9 +2032,12 @@ bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t  len)
     else
     {
         vcalc_sha256(0,revtxid.bytes,serialized,len);
+        for (i=0; i<32; i++)
+            txid.bytes[i] = revtxid.bytes[31 - i];
         if ( strcmp(symbol,"SMART") == 0 )
         {
-            HashKeccak(txid.bytes,revtxid.bytes,sizeof(revtxid));
+            HashKeccak(revtxid.bytes,txid.bytes,sizeof(txid));
+            txid = revtxid;
         }
         else
         {
