@@ -2027,13 +2027,17 @@ bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t  len)
 {
     bits256 txid,revtxid; int32_t i;
     memset(txid.bytes,0,sizeof(txid));
-    if ( strcmp(symbol,"GRS") != 0 )
+    if ( strcmp(symbol,"GRS") != 0 && strcmp(symbol,"SMART") != 0 )
         txid = bits256_doublesha256(0,serialized,len);
-    else
+    else if ( strcmp(symbol,"GRS") == 0 )
     {
         vcalc_sha256(0,revtxid.bytes,serialized,len);
         for (i=0; i<32; i++)
             txid.bytes[i] = revtxid.bytes[31 - i];
+    }
+    else
+    {
+        HashKeccak(txid.bytes,serialized,len);
     }
     return(txid);
 }
