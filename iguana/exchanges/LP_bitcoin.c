@@ -2035,10 +2035,12 @@ bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t  len)
         if ( strcmp(symbol,"SMART") == 0 )
         {
             HashKeccak(txid.bytes,revtxid.bytes,sizeof(revtxid));
-            revtxid = txid;
         }
-        for (i=0; i<32; i++)
-            txid.bytes[i] = revtxid.bytes[31 - i];
+        else
+        {
+            for (i=0; i<32; i++)
+                txid.bytes[i] = revtxid.bytes[31 - i];
+        }
     }
     return(txid);
 }
