@@ -443,7 +443,7 @@ void LP_commandQ_loop(void *ctx)
             portable_mutex_lock(&LP_commandQmutex);
             DL_DELETE(LP_commandQ,ptr);
             portable_mutex_unlock(&LP_commandQmutex);
-            if ( ptr->stats_JSONonly < 0 )
+            if ( ptr->stats_JSONonly < 0 ) // broadcast passthrough
             {
                 if ( ptr->responsesock >= 0  )
                 {
@@ -455,6 +455,7 @@ void LP_commandQ_loop(void *ctx)
                         retstr = jprint(retjson,1);
                         if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr),0)) <= 0 )
                             printf("error sending event\n");
+                        free(retstr);
                     }
                 }
             }
