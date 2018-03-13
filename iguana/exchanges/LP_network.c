@@ -463,7 +463,7 @@ void LP_commandQ_loop(void *ctx)
             {
                 if ( (retstr= LP_command_process(ctx,"127.0.0.1",ptr->responsesock,argjson,(uint8_t *)ptr->msg,ptr->msglen,ptr->stats_JSONonly)) != 0 )
                 {
-                    //printf("processed.(%s)\n",retstr);
+                    printf("queueid.%d processed.(%s)\n",ptr->queueid,ptr->msg);
                     if ( ptr->retstrp != 0 )
                         (*ptr->retstrp) = retstr;
                     if ( ptr->responsesock >= 0  )
