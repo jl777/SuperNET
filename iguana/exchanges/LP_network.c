@@ -507,6 +507,7 @@ void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats
     if ( (ptr->retstrp= retstrp) != 0 )
         *retstrp = 0;
     ptr->msglen = msglen;
+    ptr->queueid = queueid;
     ptr->responsesock = responsesock;
     ptr->stats_JSONonly = stats_JSONonly;
     memcpy(ptr->msg,buf,msglen);
