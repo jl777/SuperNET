@@ -108,6 +108,7 @@
  
  */
 
+#define TX_WAIT_TIMEOUT 180
 
 uint32_t LP_atomic_locktime(char *base,char *rel)
 {
@@ -862,7 +863,7 @@ void LP_bobloop(void *_swap)
             //LP_swapsfp_update(&swap->I.req);
             LP_swap_critical = (uint32_t)time(NULL);
             LP_unavailableset(swap->bobdeposit.utxotxid,swap->bobdeposit.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
-            if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_otherfee) < 0 )
+            if ( LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_otherfee) < 0 )
             {
                 error = 1;
                 err = -2004, printf("error waiting for alicefee\n");
@@ -876,7 +877,7 @@ void LP_bobloop(void *_swap)
                 }
             }
             LP_unavailableset(swap->bobpayment.utxotxid,swap->bobpayment.utxovout,(uint32_t)time(NULL)+60,swap->I.otherhash);
-            if ( error == 0 && LP_waitfor(swap->N.pair,swap,1800,LP_verify_alicepayment) < 0 )
+            if ( error == 0 && LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_alicepayment) < 0 )
             {
                 error = 1;
                 err = -2006, printf("error waiting for alicepayment\n");
@@ -950,7 +951,7 @@ void LP_aliceloop(void *_swap)
             LP_swap_critical = (uint32_t)time(NULL);
             if ( LP_swapdata_rawtxsend(swap->N.pair,swap,0x80,data,maxlen,&swap->myfee,0x40,0) == 0 )
                 err = -1004, printf("error sending alicefee\n");
-            else if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_bobdeposit) < 0 )
+            else if ( LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_bobdeposit) < 0 )
                 err = -1005, printf("error waiting for bobdeposit\n");
             else
             {
@@ -975,7 +976,7 @@ void LP_aliceloop(void *_swap)
                     }
                     //swap->sentflag = 1;
                     LP_swap_critical = (uint32_t)time(NULL);
-                    if ( LP_waitfor(swap->N.pair,swap,1800,LP_verify_bobpayment) < 0 )
+                    if ( LP_waitfor(swap->N.pair,swap,TX_WAIT_TIMEOUT,LP_verify_bobpayment) < 0 )
                         err = -1007, printf("error waiting for bobpayment\n");
                     else
                     {
