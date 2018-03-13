@@ -475,7 +475,6 @@ void LP_commandQ_loop(void *ctx)
                             retjson = cJSON_CreateObject();
                             jaddnum(retjson,"queueid",ptr->queueid);
                             jadd(retjson,"result",result);
-                            jadd(retjson,"request",argjson);
                             retstr = jprint(retjson,1);
                             //printf("send (%s)\n",retstr);
                         }
