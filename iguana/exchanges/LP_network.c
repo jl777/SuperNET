@@ -457,6 +457,7 @@ void LP_commandQ_loop(void *ctx)
                                 retjson = cJSON_CreateObject();
                                 jaddnum(retjson,"queueid",ptr->queueid);
                                 jadd(retjson,"result",result);
+                                jadd(retjson,"request",argjson);
                                 retstr = jprint(retjson,1);
                                 if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr),0)) <= 0 )
                                     printf("error sending event\n");
