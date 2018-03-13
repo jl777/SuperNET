@@ -465,7 +465,7 @@ void LP_commandQ_loop(void *ctx)
                 {
                     if ( ptr->retstrp != 0 )
                         (*ptr->retstrp) = retstr;
-                    if ( ptr->queueid != 0 )
+                    if ( 0 && ptr->queueid != 0 )
                         printf("sock.%d queueid.%d processed.(%s) -> (%s)\n",ptr->responsesock,ptr->queueid,ptr->msg,retstr);
                     if ( ptr->responsesock >= 0  )
                     {
@@ -475,8 +475,9 @@ void LP_commandQ_loop(void *ctx)
                             retjson = cJSON_CreateObject();
                             jaddnum(retjson,"queueid",ptr->queueid);
                             jadd(retjson,"result",result);
+                            jadd(retjson,"request",argjson);
                             retstr = jprint(retjson,1);
-                            printf("send (%s)\n",retstr);
+                            //printf("send (%s)\n",retstr);
                         }
                         if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
                             printf("error sending result\n");
