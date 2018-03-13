@@ -465,11 +465,12 @@ void LP_commandQ_loop(void *ctx)
                 {
                     if ( ptr->retstrp != 0 )
                         (*ptr->retstrp) = retstr;
+                    if ( ptr->queueid != 0 )
+                        printf("sock.%d queueid.%d processed.(%s) -> (%s)\n",ptr->responsesock,ptr->queueid,ptr->msg,retstr);
                     if ( ptr->responsesock >= 0  )
                     {
                         if ( (result= cJSON_Parse(retstr)) != 0 && ptr->queueid != 0 )
                         {
-                            printf("queueid.%d processed.(%s)\n",ptr->queueid,ptr->msg);
                             free(retstr);
                             retjson = cJSON_CreateObject();
                             jaddnum(retjson,"queueid",ptr->queueid);
