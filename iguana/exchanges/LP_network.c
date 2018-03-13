@@ -445,7 +445,7 @@ void LP_commandQ_loop(void *ctx)
             portable_mutex_unlock(&LP_commandQmutex);
             if ( ptr->stats_JSONonly < 0 ) // broadcast passthrough
             {
-                if ( 0 && ptr->responsesock >= 0  )
+                if ( 1 && ptr->responsesock >= 0  )
                 {
                     if ( (result= cJSON_Parse(ptr->msg)) != 0  )
                     {
