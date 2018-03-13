@@ -445,7 +445,7 @@ void LP_commandQ_loop(void *ctx)
             portable_mutex_unlock(&LP_commandQmutex);
             if ( ptr->stats_JSONonly < 0 ) // broadcast passthrough
             {
-                if ( ptr->responsesock >= 0  )
+                if ( 0 && ptr->responsesock >= 0  )
                 {
                     if ( (result= cJSON_Parse(ptr->msg)) != 0  )
                     {
@@ -475,6 +475,7 @@ void LP_commandQ_loop(void *ctx)
                             jaddnum(retjson,"queueid",ptr->queueid);
                             jadd(retjson,"result",result);
                             retstr = jprint(retjson,1);
+                            printf("send (%s)\n",retstr);
                         }
                         if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
                             printf("error sending result\n");
