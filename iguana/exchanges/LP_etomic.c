@@ -201,14 +201,14 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
     privkey = LP_privkey(ecoin->symbol, ecoin->smartaddr, ecoin->taddr);
 
     uint8arrayToHex(input.dealId, swap->txids[BASILISK_ALICEPAYMENT].bytes, 32);
-    satoshisToWei(input.amount, swap->values[BASILISK_ALICEPAYMENT]);
+    satoshisToWei(input.amount, swap->destamount);
 
     if (swap->alicetomic[0] != 0) {
         strcpy(input.tokenAddress, swap->alicetomic);
     } else {
         strcpy(input.tokenAddress, "0x0000000000000000000000000000000000000000");
     }
-    strcpy(input.bobAddress, swap->etomicdest);
+    strcpy(input.bobAddress, swap->etomicsrc);
     uint8arrayToHex(input.aliceHash, swap->secretAm, 20);
     bits256 invertedSecret;
     int32_t i;
@@ -217,7 +217,7 @@ char *LP_etomicalice_reclaims_payment(struct LP_swap_remember *swap)
     }
     uint8arrayToHex(input.bobSecret, invertedSecret.bytes, 32);
 
-    strcpy(txData.from, swap->etomicsrc);
+    strcpy(txData.from, swap->etomicdest);
     strcpy(txData.to, ETOMIC_ALICECONTRACT);
     strcpy(txData.amount, "0");
     uint8arrayToHex(txData.secretKey, privkey.bytes, 32);
