@@ -447,24 +447,14 @@ void LP_commandQ_loop(void *ctx)
             {
                 if ( ptr->responsesock >= 0  )
                 {
-                    if ( (argjson= cJSON_Parse(ptr->msg)) != 0  )
+                    if ( (result= cJSON_Parse(ptr->msg)) != 0  )
                     {
-                        if ( (retstr= LP_command_process(ctx,"127.0.0.1",ptr->responsesock,argjson,(uint8_t *)ptr->msg,ptr->msglen,ptr->stats_JSONonly)) != 0 )
-                        {
-                            if ( (result= cJSON_Parse(retstr)) != 0 )
-                            {
-                                free(retstr);
-                                retjson = cJSON_CreateObject();
-                                jaddnum(retjson,"queueid",ptr->queueid);
-                                jadd(retjson,"result",result);
-                                jadd(retjson,"request",argjson);
-                                retstr = jprint(retjson,1);
-                                if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr),0)) <= 0 )
-                                    printf("error sending event\n");
-                            }
-                            free(retstr);
-                        }
-                        free_json(argjson);
+                        retjson = cJSON_CreateObject();
+                        jaddnum(retjson,"queueid",0);
+                        jadd(retjson,"result",result);
+                        retstr = jprint(retjson,1);
+                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr),0)) <= 0 )
+                            printf("error sending event\n");
                     }
                 }
             }
