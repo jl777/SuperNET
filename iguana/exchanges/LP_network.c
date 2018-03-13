@@ -443,9 +443,9 @@ void LP_commandQ_loop(void *ctx)
             portable_mutex_lock(&LP_commandQmutex);
             DL_DELETE(LP_commandQ,ptr);
             portable_mutex_unlock(&LP_commandQmutex);
-            if ( ptr->stats_JSONonly < 0 )
+            if ( ptr->stats_JSONonly < 0 ) // broadcast passthrough
             {
-                if ( ptr->responsesock >= 0  )
+                if ( 1 && ptr->responsesock >= 0  )
                 {
                     if ( (result= cJSON_Parse(ptr->msg)) != 0  )
                     {
@@ -455,6 +455,7 @@ void LP_commandQ_loop(void *ctx)
                         retstr = jprint(retjson,1);
                         if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr),0)) <= 0 )
                             printf("error sending event\n");
+                        free(retstr);
                     }
                 }
             }
@@ -462,9 +463,10 @@ void LP_commandQ_loop(void *ctx)
             {
                 if ( (retstr= LP_command_process(ctx,"127.0.0.1",ptr->responsesock,argjson,(uint8_t *)ptr->msg,ptr->msglen,ptr->stats_JSONonly)) != 0 )
                 {
-                    //printf("processed.(%s)\n",retstr);
                     if ( ptr->retstrp != 0 )
                         (*ptr->retstrp) = retstr;
+                    if ( 0 && ptr->queueid != 0 )
+                        printf("sock.%d queueid.%d processed.(%s) -> (%s)\n",ptr->responsesock,ptr->queueid,ptr->msg,retstr);
                     if ( ptr->responsesock >= 0  )
                     {
                         if ( (result= cJSON_Parse(retstr)) != 0 && ptr->queueid != 0 )
@@ -474,6 +476,7 @@ void LP_commandQ_loop(void *ctx)
                             jaddnum(retjson,"queueid",ptr->queueid);
                             jadd(retjson,"result",result);
                             retstr = jprint(retjson,1);
+                            //printf("send (%s)\n",retstr);
                         }
                         if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
                             printf("error sending result\n");
@@ -504,6 +507,7 @@ void LP_queuecommand(char **retstrp,char *buf,int32_t responsesock,int32_t stats
     if ( (ptr->retstrp= retstrp) != 0 )
         *retstrp = 0;
     ptr->msglen = msglen;
+    ptr->queueid = queueid;
     ptr->responsesock = responsesock;
     ptr->stats_JSONonly = stats_JSONonly;
     memcpy(ptr->msg,buf,msglen);

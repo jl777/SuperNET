@@ -573,7 +573,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                     if ( IPC_ENDPOINT >= 0 && (queueid= juint(arg,"queueid")) > 0 )
                     {
                         buf = jprint(arg,0);
-                        LP_queuecommand(&retstr,buf,IPC_ENDPOINT,-1,queueid);
+                        LP_queuecommand(&retstr,buf,IPC_ENDPOINT,1,queueid);
                         free(buf);
                         retstr = clonestr("{\"result\":\"success\",\"status\":\"queued\"}");
                     } else retstr = stats_JSON(ctx,"127.0.0.1",-1,arg,remoteaddr,port);
@@ -582,7 +582,7 @@ char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *po
                 if ( IPC_ENDPOINT >= 0 && (queueid= juint(arg,"queueid")) > 0 )
                 {
                     buf = jprint(arg,0);
-                    LP_queuecommand(&retstr,buf,IPC_ENDPOINT,-1,queueid);
+                    LP_queuecommand(&retstr,buf,IPC_ENDPOINT,1,queueid);
                     free(buf);
                 } else retstr = stats_JSON(ctx,myipaddr,-1,arg,remoteaddr,port);
 #endif

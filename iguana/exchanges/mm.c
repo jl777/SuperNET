@@ -204,8 +204,8 @@ int main(int argc, const char * argv[])
                         nn_freemsg(ptr);
                     }
                 }
-            }
-        }
+            } else printf("nn_connect error to IPC_ENDPOINT\n");
+        } else printf("error opening IPC_ENDPOINT\n");
     }
     else if ( argv[1] != 0 && strcmp(argv[1],"hush") == 0 )
     {
