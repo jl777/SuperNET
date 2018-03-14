@@ -2019,7 +2019,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
             if ( ipbits[i] != 0 )
             {
                 expand_ipbits(ipaddr,ipbits[i]);
-                printf("ADD NOTARY.(%s) %08x\n",ipaddr,ipbits[i]);
+                //printf("ADD NOTARY.(%s) %08x\n",ipaddr,ipbits[i]);
                 dpow_addnotary(myinfo,dp,ipaddr);
             }
     } else if ( missing > 0 )
