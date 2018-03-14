@@ -2194,7 +2194,6 @@ void iguana_main(void *arg)
     iguana_Qinit();
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     myinfo->dpowsock = myinfo->dexsock = myinfo->pubsock = myinfo->subsock = myinfo->reqsock = myinfo->repsock = -1;
-    dex_init(myinfo);
     myinfo->psockport = 30000;
     if ( arg != 0 )
     {
@@ -2226,6 +2225,7 @@ void iguana_main(void *arg)
         printf("didnt find any elected notaries JSON in (%s)\n",elected);
         exit(-1);
     }
+    dex_init(myinfo);
 #ifdef IGUANA_OSTESTS
     do_OStests = 1;
 #endif
