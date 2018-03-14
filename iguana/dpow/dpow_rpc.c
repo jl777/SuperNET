@@ -52,15 +52,18 @@ cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 
 char *Notaries_elected[64][2];
 int32_t Notaries_num,Notaries_BTCminsigs = DPOW_MINSIGS,Notaries_minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
+uint16_t Notary_port = DPOW_SOCKPORT;
 
 int32_t komodo_initjson(char *fname)
 {
-    char *fstr,*field,*hexstr; cJSON *argjson,*array,*item; long fsize; int32_t i,n,num,retval = -1;
+    char *fstr,*field,*hexstr; cJSON *argjson,*array,*item; long fsize; uint16_t port; int32_t i,n,num,retval = -1;
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {
         printf("%s.(%s)\n",fname,fstr);
         if ( (argjson= cJSON_Parse(fstr)) != 0 )
         {
+            if ( (port= juint(argjson,"port")) != 0 )
+                Notary_port = port;
             if ( (num= juint(argjson,"BTCminsigs")) > Notaries_BTCminsigs )
                 Notaries_BTCminsigs = num;
             if ( (num= juint(argjson,"minsigs")) > Notaries_minsigs )

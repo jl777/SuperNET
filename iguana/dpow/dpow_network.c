@@ -1292,7 +1292,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
     if ( myinfo->IAMNOTARY == 0 )
         return(-1);
     portable_mutex_lock(&myinfo->notarymutex);
-    if ( myinfo->dpowsock >= 0 && myinfo->dexsock >= 0 )
+    if ( myinfo->dpowsock >= 0 )//&& myinfo->dexsock >= 0 )
     {
         ipbits = (uint32_t)calc_ipbits(ipaddr);
         for (iter=0; iter<2; iter++)
@@ -1315,9 +1315,9 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
                 ptr[n] = ipbits;
                 if ( iter == 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
                 {
-                    retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(0,str,ipaddr,DPOW_SOCK));
+                    retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(0,str,ipaddr,Notaries_port));
                     printf("NN_CONNECT to (%s)\n",str);
-                    retval = nn_connect(myinfo->dexsock,nanomsg_tcpname(0,str,ipaddr,DEX_SOCK));
+                    //retval = nn_connect(myinfo->dexsock,nanomsg_tcpname(0,str,ipaddr,DEX_SOCK));
                 }
                 n++;
                 qsort(ptr,n,sizeof(uint32_t),_increasing_ipbits);
@@ -1353,13 +1353,13 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     pubsock = myinfo->pubsock;
     if ( dpowsock < 0 && (dpowsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
-        if ( nn_bind(dpowsock,nanomsg_tcpname(myinfo,str,myinfo->ipaddr,DPOW_SOCK)) < 0 )
+        if ( nn_bind(dpowsock,nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port)) < 0 )
         {
-            printf("error binding to dpowsock (%s)\n",nanomsg_tcpname(myinfo,str,myinfo->ipaddr,DPOW_SOCK));
+            printf("error binding to dpowsock (%s)\n",nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port));
             nn_close(dpowsock);
             dpowsock = -1;
         }
-        else
+        else if ( 0 )
         {
             printf("NN_BIND to %s\n",str);
             if ( dexsock < 0 && (dexsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
@@ -2093,7 +2093,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         } else flags |= 1;
         if ( freeptr != 0 )
             nn_freemsg(freeptr), np = 0, freeptr = 0;
-        if ( myinfo->dexsock >= 0 ) // from servers
+        if ( 0 && myinfo->dexsock >= 0 ) // from servers
         {
             freeptr = 0;
             if ( (flags & 2) == 0 && (size= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 )
@@ -2111,7 +2111,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( freeptr != 0 )
                 nn_freemsg(freeptr), dexp = 0, freeptr = 0;
         }
-        if ( myinfo->repsock >= 0 ) // from clients
+        if ( 0 && myinfo->repsock >= 0 ) // from clients
         {
             dexp = 0;
             if ( (flags & 4) == 0 && (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
