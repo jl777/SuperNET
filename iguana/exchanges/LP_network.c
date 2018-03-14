@@ -479,7 +479,7 @@ void LP_commandQ_loop(void *ctx)
                             //printf("send (%s)\n",retstr);
                         }
                         len = (int32_t)strlen(retstr);
-                        if ( ptr->queueid != 0 )
+                        if ( ptr->queueid == 0 )
                             len++;
                         if ( (size= nn_send(ptr->responsesock,retstr,len,0)) <= 0 )
                             printf("error sending result\n");
