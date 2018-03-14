@@ -1002,8 +1002,8 @@ char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
             }
             else
             {
-                extern const char *Notaries_elected[][2];
-                myinfo->numnotaries = 64;//sizeof(Notaries_elected)/sizeof(*Notaries_elected);
+                extern char *Notaries_elected[][2]; extern int32_t Notaries_num;
+                myinfo->numnotaries = Notaries_num;//sizeof(Notaries_elected)/sizeof(*Notaries_elected);
                 for (i=0; i<myinfo->numnotaries; i++)
                 {
                     decode_hex(myinfo->notaries[i],33,(char *)Notaries_elected[i][1]);

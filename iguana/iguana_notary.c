@@ -141,11 +141,11 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     if ( strcmp("BTC",dp->dest) == 0 )
     {
         freq = DPOW_CHECKPOINTFREQ;
-        minsigs = DPOW_MINSIGS;
+        minsigs = Notaries_BTCminsigs; //DPOW_MINSIGS;
     }
     else
     {
-        minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
+        minsigs = Notaries_minsigs; //DPOW_MIN_ASSETCHAIN_SIGS;
         if ( strcmp("CHIPS",dp->symbol) == 0 )
             freq = 100;
         else freq = 1;
@@ -197,9 +197,9 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
         ptrs[2] = (void *)(uint64_t)minsigs;
-        if ( strcmp(dp->dest,"KMD") == 0 )
-            ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
-        else ptrs[3] = (void *)DPOW_DURATION;
+        if ( strcmp(dp->dest,"KMD") != 0 )
+            ptrs[3] = (void *)DPOW_DURATION;
+        else ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
         ptrs[4] = 0;
         memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
         dp->activehash = checkpoint.blockhash.hash;

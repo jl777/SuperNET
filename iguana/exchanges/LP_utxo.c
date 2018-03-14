@@ -471,7 +471,7 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
 
 struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
 {
-    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,m,vout,height; cJSON *array,*item,*txobj; bits256 zero; int64_t value; bits256 txid; uint32_t now;
+    struct LP_address *ap; struct LP_address_utxo *up,*tmp; int32_t i,n,numconfs,m,vout,height; cJSON *array,*item,*txobj; bits256 zero; int64_t value; bits256 txid; uint32_t now;
     LP_address(coin,coin->smartaddr);
     memset(zero.bytes,0,sizeof(zero));
     LP_listunspent_issue(coin->symbol,coin->smartaddr,2,zero,zero);
@@ -511,10 +511,16 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                 if ( 1 )
                 {
                     if ( (txobj= LP_gettxout(coin->symbol,coin->smartaddr,txid,vout)) == 0 )
+                    {
+                        printf("skip null gettxout %s.v%d\n",bits256_str(str,txid),vout);
                         continue;
+                    }
                     else free_json(txobj);
-                    if ( LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0) <= 0 )
+                    if ( (numconfs= LP_numconfirms(coin->symbol,coin->smartaddr,txid,vout,0)) <= 0 )
+                    {
+                        printf("skip numconfs.%d %s.v%d\n",numconfs,bits256_str(str,txid),vout);
                         continue;
+                    }
                 }
                 LP_address_utxoadd(1,now,"withdraw",coin,coin->smartaddr,txid,vout,value,height,-1);
                 if ( (up= LP_address_utxofind(coin,coin->smartaddr,txid,vout)) == 0 )
@@ -525,7 +531,7 @@ struct LP_address *LP_address_utxo_reset(struct iguana_info *coin)
                     //printf("%.8f ",dstr(value));
                 }
             }
-            printf("added %d from %s listunspents\n",m,coin->symbol);
+            printf("added %d of %d from %s listunspents\n",m,n,coin->symbol);
         }
         free_json(array);
     }
