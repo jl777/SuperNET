@@ -58,6 +58,7 @@ int32_t komodo_initjson(char *fname)
     char *fstr,*field,*hexstr; cJSON *argjson,*array,*item; long fsize; int32_t i,n,num,retval = -1;
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {
+        printf("%s.(%s)\n",fname,fstr);
         if ( (argjson= cJSON_Parse(fstr)) != 0 )
         {
             if ( (num= juint(argjson,"BTCminsigs")) > Notaries_BTCminsigs )
@@ -74,7 +75,13 @@ int32_t komodo_initjson(char *fname)
                     {
                         Notaries_elected[i][0] = clonestr(field);
                         Notaries_elected[i][1] = clonestr(hexstr);
-                    } else break;
+                        printf("%d of %d: %s %s\n",i,n,field,hexstr);
+                    }
+                    else
+                    {
+                        printf("couldnt find (%s) in %s or non-hex (%s)\n",field,jprint(item,0),hexstr!=0?hexstr:"");
+                        break;
+                    }
                 }
                 if ( i == n )
                 {
@@ -91,7 +98,7 @@ int32_t komodo_initjson(char *fname)
 
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
 {
-    int32_t i,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
+    int32_t i; //,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
     if ( Notaries_num > 0 )
     {
         for (i=0; i<Notaries_num; i++)
