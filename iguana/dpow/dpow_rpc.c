@@ -66,6 +66,7 @@ int32_t komodo_initjson(char *fname)
     {
         if ( (argjson= cJSON_Parse(fstr)) != 0 )
         {
+            printf("(%s)\n",fstr);
             if ( (port= juint(argjson,"port")) != 0 )
                 Notaries_port = port;
             if ( (num= juint(argjson,"BTCminsigs")) > Notaries_BTCminsigs )
