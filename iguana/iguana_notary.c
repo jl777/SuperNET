@@ -347,9 +347,9 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 void dpow_addresses()
 {
     int32_t i; char coinaddr[64]; uint8_t pubkey[33];
-    for (i=0; i<sizeof(Notaries)/sizeof(*Notaries); i++)
+    for (i=0; i<Notaries_num; i++)
     {
-        decode_hex(pubkey,33,Notaries[i][1]);
+        decode_hex(pubkey,33,Notaries_elected[i][1]);
         bitcoin_address(coinaddr,60,pubkey,33);
         printf("%s ",coinaddr);
     }
