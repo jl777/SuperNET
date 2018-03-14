@@ -2207,18 +2207,24 @@ void iguana_main(void *arg)
             iguana_notarystats(totals,1);
             exit(0);
         }
-        else if ( strcmp((char *)arg,"notary") == 0 )
-        {
-            myinfo->rpcport = IGUANA_NOTARYPORT;
-            myinfo->IAMNOTARY = 1;
-            myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
-        }
         else if ( strncmp((char *)arg,"-port=",6) == 0 )
         {
             myinfo->rpcport = atoi(&((char *)arg)[6]);
             printf("OVERRIDE IGUANA port <- %u\n",myinfo->rpcport);
         }
-        else elected = (char *)arg;
+        else if ( strcmp((char *)arg,"notary") == 0 ) // must be second to last
+        {
+            myinfo->rpcport = IGUANA_NOTARYPORT;
+            myinfo->IAMNOTARY = 1;
+            myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
+        }
+        else
+        {
+            myinfo->rpcport = IGUANA_NOTARYPORT;
+            myinfo->IAMNOTARY = 1;
+            myinfo->DEXEXPLORER = 0;//1; disable as SPV is used now
+            elected = (char *)arg;
+        }
     }
     if ( komodo_initjson(elected) < 0 )
     {

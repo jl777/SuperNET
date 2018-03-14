@@ -15,13 +15,34 @@
 
 #define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0,0)
 
+char *bitcoind_getinfo(char *symbol,char *serverport,char *userpass,char *getinfostr)
+{
+    char buf[1],*retstr; cJSON *retjson;
+    buf[0] = 0;
+    if ( getinfostr[0] == 0 )
+        strcpy(getinfostr,"getinfo");
+    retstr = bitcoind_passthru(symbol,serverport,userpass,getinfostr,buf);
+    if ( (retjson= cJSON_Parse(retstr)) != 0 )
+    {
+        if ( jobj(retjson,"error") != 0 && strcmp(getinfostr,"getinfo") == 0 )
+        {
+            strcpy(getinfostr,"getblockchaininfo");
+            free(retstr);
+            retstr = bitcoind_passthru(symbol,serverport,userpass,getinfostr,buf);
+            printf("switch to getblockchaininfo -> (%s)\n",retstr);
+        }
+        free(retjson);
+    }
+    return(retstr);
+}
+
 cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char buf[128],*retstr=0; cJSON *json = 0;
     if ( coin->FULLNODE < 0 )
     {
         buf[0] = 0;
-        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",buf);
+        retstr = bitcoind_getinfo(coin->symbol,coin->chain->serverport,coin->chain->userpass,coin->getinfostr);
         usleep(10000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
@@ -1244,7 +1265,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     if ( height <= 0 )
         height = 1;
     *isrealtimep = 0;
-    if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getinfo",0,port)) != 0 )
+    if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)coin->getinfostr,0,port)) != 0 )
     {
         if ( (infoobj= cJSON_Parse(retstr)) != 0 )
         {
