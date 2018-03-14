@@ -151,7 +151,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         else freq = 1;
     }
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
-    if ( strcmp(dp->dest,"KMD") == 0 )
+    if ( strcmp(dp->dest,"KMD") == 0 || strcmp(dp->dest,"CHAIN") == 0 )
     {
         //if ( dp->SRCREALTIME == 0 )
         //    return;
@@ -197,7 +197,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
         ptrs[2] = (void *)(uint64_t)minsigs;
-        if ( strcmp(dp->dest,"KMD") != 0 )
+        if ( strcmp(dp->dest,"KMD") != 0 && strcmp(dp->dest,"CHAIN") != 0 )
             ptrs[3] = (void *)DPOW_DURATION;
         else ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
         ptrs[4] = 0;
@@ -297,7 +297,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
             } else dpow_destupdate(myinfo,dp,height,blockhash,(uint32_t)time(NULL),blocktime);
         } // else printf("error getchaintip for %s\n",dp->dest);
         dp->numsrctx = sizeof(dp->srctx)/sizeof(*dp->srctx);
-        if ( strcmp(dp->dest,"KMD") == 0 && dp->SRCHEIGHT < src->longestchain )
+        if ( (strcmp(dp->dest,"KMD") == 0 || strcmp(dp->dest,"CHAIN") == 0) && dp->SRCHEIGHT < src->longestchain )
         {
             //fprintf(stderr,"[I ");
             dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
@@ -360,9 +360,9 @@ void dpow_addresses()
 #include "../includes/iguana_apideclares.h"
 #include "../includes/iguana_apideclares2.h"
 
-TWO_STRINGS(iguana,dpow,symbol,pubkey)
+THREE_STRINGS(iguana,dpow,symbol,dest,pubkey)
 {
-    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*dest; cJSON *ismine; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
+    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*destcoin; cJSON *ismine; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
     destvalid = srcvalid = 0;
     if ( myinfo->NOTARY.RELAYID < 0 )
     {
@@ -380,21 +380,22 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         return(clonestr("{\"error\":\"need 33 byte pubkey\"}"));
     if ( symbol == 0 || symbol[0] == 0 )
         symbol = "KMD";
+    if ( dest == 0 || dest[0] == 0 )
+    {
+        if ( strcmp(symbol,"KMD") == 0 )
+            dest = "BTC";
+        else dest = "KMD";
+    }
     //if ( myinfo->numdpows == 1 )
     //    komodo_assetcoins(-1);
     if ( iguana_coinfind(symbol) == 0 )
         return(clonestr("{\"error\":\"cant dPoW an inactive coin\"}"));
     if ( strcmp(symbol,"KMD") == 0 && iguana_coinfind("BTC") == 0 )
         return(clonestr("{\"error\":\"cant dPoW KMD without BTC\"}"));
-    else if ( myinfo->numdpows == 0 && strcmp(symbol,"KMD") != 0 && iguana_coinfind("KMD") == 0 )
-        return(clonestr("{\"error\":\"cant dPoW without KMD\"}"));
+    else if ( iguana_coinfind(dest) == 0 )
+        return(clonestr("{\"error\":\"cant dPoW without KMD (dest)\"}"));
     if ( myinfo->numdpows > 1 )
     {
-        if ( strcmp(symbol,"KMD") == 0 || iguana_coinfind("BTC") == 0 )
-        {
-            dp->symbol[0] = 0;
-            return(clonestr("{\"error\":\"cant dPoW KMD or BTC again\"}"));
-        }
         for (i=1; i<myinfo->numdpows; i++)
             if ( strcmp(symbol,myinfo->DPOWS[i].symbol) == 0 )
             {
@@ -410,14 +411,14 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     }
     else
     {
-        strcpy(dp->dest,"KMD");
+        strcpy(dp->dest,dest);
         dp->srcconfirms = DPOW_THIRDPARTY_CONFIRMS;
     }
     if ( dp->srcconfirms > DPOW_FIFOSIZE )
         dp->srcconfirms = DPOW_FIFOSIZE;
     src = iguana_coinfind(dp->symbol);
-    dest = iguana_coinfind(dp->dest);
-    if ( src == 0 || dest == 0 )
+    destcoin = iguana_coinfind(dp->dest);
+    if ( src == 0 || destcoin == 0 )
     {
         dp->symbol[0] = 0;
         return(clonestr("{\"error\":\"source coin or dest coin not there\"}"));
@@ -435,8 +436,8 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         free(retstr);
         retstr = 0;
     }
-    bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
-    if ( (retstr= dpow_validateaddress(myinfo,dest,destaddr)) != 0 )
+    bitcoin_address(destaddr,destcoin->chain->pubtype,dp->minerkey33,33);
+    if ( (retstr= dpow_validateaddress(myinfo,destcoin,destaddr)) != 0 )
     {
         json = cJSON_Parse(retstr);
         if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
