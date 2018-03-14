@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 extern uint16_t Notaries_port;
+
 struct signed_nnpacket
 {
     uint8_t sig64[64];
