@@ -604,6 +604,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 {
                     if ( jobj(argjson,"outputs") == 0 && jstr(argjson,"opreturn") == 0 )
                         return(clonestr("{\"error\":\"withdraw needs to have outputs\"}"));
+                    else if ( ptr->etomic[0] != 0 )
+                        return(clonestr("{\"error\":\"use eth_withdraw for ETH/ERC20\"}"));
                     else return(LP_withdraw(ptr,argjson));
                 }
                 return(clonestr("{\"error\":\"cant find coind\"}"));
