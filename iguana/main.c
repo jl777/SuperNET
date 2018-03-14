@@ -2221,9 +2221,9 @@ void iguana_main(void *arg)
         }
         else elected = (char *)arg;
     }
-    if ( komodo_initjson(elected) <= 0 )
+    if ( komodo_initjson(elected) < 0 )
     {
-        printf("didnt find any elected notaries JSON file\n");
+        printf("didnt find any elected notaries JSON in (%s)\n",elected);
         exit(-1);
     }
 #ifdef IGUANA_OSTESTS
