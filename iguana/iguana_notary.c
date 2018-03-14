@@ -86,7 +86,7 @@ int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *
                                     decode_hex(script,len,hexstr);
                                     if ( script[0] == 33 && script[34] == 0xac )
                                     {
-                                        for (j=0; j<sizeof(Notaries_elected)/sizeof(*Notaries_elected); j++)
+                                        for (j=0; j<Notaries_num; j++)
                                         {
                                             if ( strncmp(Notaries_elected[j][1],hexstr+2,66) == 0 )
                                             {
@@ -626,7 +626,7 @@ void _iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
         if ( dispflag != 0 )
         {
             printf("after %s\n",fname);
-            for (i=0; i<64; i++)
+            for (i=0; i<Notaries_num; i++)
             {
                 if ( totals[i] != 0 )
                     printf("%s, %d\n",Notaries_elected[i][0],totals[i]);
