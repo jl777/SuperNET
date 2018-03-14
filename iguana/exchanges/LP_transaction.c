@@ -1525,7 +1525,7 @@ char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
     bits256 privkey;
 
     dest_addr = jstr(argjson, "to");
-    amount = get_cJSON_int(argjson, "amount");
+    amount = jdouble(argjson, "amount") * 100000000;
     privkey = LP_privkey(coin->symbol, coin->smartaddr, coin->taddr);
     uint8arrayToHex(privkey_str, privkey.bytes, 32);
     satoshisToWei(amount_str, amount);
