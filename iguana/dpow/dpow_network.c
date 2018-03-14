@@ -13,6 +13,10 @@
  *                                                                            *
  ******************************************************************************/
 
+extern uint16_t Notaries_port;
+extern int32_t Notaries_numseeds;
+extern char *Notaries_seeds[];
+
 struct signed_nnpacket
 {
     uint8_t sig64[64];
@@ -24,14 +28,14 @@ struct signed_nnpacket
 
 void dex_init(struct supernet_info *myinfo)
 {
-    int32_t i,j,mask = 0; char *seeds[] = { "78.47.196.146", "5.9.102.210", "149.56.29.163", "191.235.80.138", "88.198.65.74", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200", "149.56.28.84", "103.18.58.150", "221.121.144.140", "123.249.79.12", "103.18.58.146", "27.50.93.252", "176.9.0.233", "94.102.63.227", "167.114.227.223", "27.50.68.219", "192.99.233.217", "94.102.63.217", "45.64.168.216" };
+    int32_t i,j,mask = 0; 
     OS_randombytes((void *)&i,sizeof(i));
     srand(i);
     for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
     {
         while ( 1 )
         {
-            j = (rand() % (sizeof(seeds)/sizeof(*seeds)));
+            j = (rand() % Notaries_numseeds);
             if ( i < 2 )
                 j = i;
             if ( ((1 << j) & mask) == 0 )
@@ -41,8 +45,8 @@ void dex_init(struct supernet_info *myinfo)
 #ifdef NOTARY_TESTMODE
         seeds[j] = NOTARY_TESTMODE;
 #endif
-        printf("seed.[%d] <- %s\n",i,seeds[j]);
-        strcpy(myinfo->dexseed_ipaddrs[i],seeds[j]);
+        printf("seed.[%d] <- %s\n",i,Notaries_seeds[j]);
+        strcpy(myinfo->dexseed_ipaddrs[i],Notaries_seeds[j]);
         myinfo->dexipbits[i] = (uint32_t)calc_ipbits(myinfo->dexseed_ipaddrs[i]);
     }
     myinfo->numdexipbits = i;
@@ -1002,8 +1006,8 @@ char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
             }
             else
             {
-                extern const char *Notaries_elected[][2];
-                myinfo->numnotaries = 64;//sizeof(Notaries_elected)/sizeof(*Notaries_elected);
+                extern char *Notaries_elected[][2]; extern int32_t Notaries_num;
+                myinfo->numnotaries = Notaries_num;//sizeof(Notaries_elected)/sizeof(*Notaries_elected);
                 for (i=0; i<myinfo->numnotaries; i++)
                 {
                     decode_hex(myinfo->notaries[i],33,(char *)Notaries_elected[i][1]);
@@ -1292,7 +1296,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
     if ( myinfo->IAMNOTARY == 0 )
         return(-1);
     portable_mutex_lock(&myinfo->notarymutex);
-    if ( myinfo->dpowsock >= 0 && myinfo->dexsock >= 0 )
+    if ( myinfo->dpowsock >= 0 )//&& myinfo->dexsock >= 0 )
     {
         ipbits = (uint32_t)calc_ipbits(ipaddr);
         for (iter=0; iter<2; iter++)
@@ -1315,9 +1319,9 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
                 ptr[n] = ipbits;
                 if ( iter == 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
                 {
-                    retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(0,str,ipaddr,DPOW_SOCK));
+                    retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(0,str,ipaddr,Notaries_port));
                     printf("NN_CONNECT to (%s)\n",str);
-                    retval = nn_connect(myinfo->dexsock,nanomsg_tcpname(0,str,ipaddr,DEX_SOCK));
+                    //retval = nn_connect(myinfo->dexsock,nanomsg_tcpname(0,str,ipaddr,DEX_SOCK));
                 }
                 n++;
                 qsort(ptr,n,sizeof(uint32_t),_increasing_ipbits);
@@ -1353,13 +1357,13 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     pubsock = myinfo->pubsock;
     if ( dpowsock < 0 && (dpowsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
-        if ( nn_bind(dpowsock,nanomsg_tcpname(myinfo,str,myinfo->ipaddr,DPOW_SOCK)) < 0 )
+        if ( nn_bind(dpowsock,nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port)) < 0 )
         {
-            printf("error binding to dpowsock (%s)\n",nanomsg_tcpname(myinfo,str,myinfo->ipaddr,DPOW_SOCK));
+            printf("error binding to dpowsock (%s)\n",nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port));
             nn_close(dpowsock);
             dpowsock = -1;
         }
-        else
+        else if ( 0 )
         {
             printf("NN_BIND to %s\n",str);
             if ( dexsock < 0 && (dexsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
@@ -2019,7 +2023,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
                 dpow_addnotary(myinfo,dp,ipaddr);
             }
     } else if ( missing > 0 )
-        printf("IGNORE from.%d RECV numips.%d numipbits.%d matched.%d missing.%d\n",fromid,numipbits,n,matched,missing);
+        printf("IGNORE from.%d RECV numips.%d numipbits.%d matched.%d missing.%d maxipbits.%d\n",fromid,numipbits,n,matched,missing,maxipbits);
     expand_ipbits(ipaddr,senderipbits);
     dpow_addnotary(myinfo,dp,ipaddr);
     expand_ipbits(ipaddr,myinfo->myaddr.myipbits);
@@ -2093,7 +2097,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         } else flags |= 1;
         if ( freeptr != 0 )
             nn_freemsg(freeptr), np = 0, freeptr = 0;
-        if ( myinfo->dexsock >= 0 ) // from servers
+        if ( 0 && myinfo->dexsock >= 0 ) // from servers
         {
             freeptr = 0;
             if ( (flags & 2) == 0 && (size= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 )
@@ -2111,7 +2115,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( freeptr != 0 )
                 nn_freemsg(freeptr), dexp = 0, freeptr = 0;
         }
-        if ( myinfo->repsock >= 0 ) // from clients
+        if ( 0 && myinfo->repsock >= 0 ) // from clients
         {
             dexp = 0;
             if ( (flags & 4) == 0 && (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )

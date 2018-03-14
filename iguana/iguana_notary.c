@@ -86,7 +86,7 @@ int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *
                                     decode_hex(script,len,hexstr);
                                     if ( script[0] == 33 && script[34] == 0xac )
                                     {
-                                        for (j=0; j<sizeof(Notaries_elected)/sizeof(*Notaries_elected); j++)
+                                        for (j=0; j<Notaries_num; j++)
                                         {
                                             if ( strncmp(Notaries_elected[j][1],hexstr+2,66) == 0 )
                                             {
@@ -141,11 +141,11 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     if ( strcmp("BTC",dp->dest) == 0 )
     {
         freq = DPOW_CHECKPOINTFREQ;
-        minsigs = DPOW_MINSIGS;
+        minsigs = Notaries_BTCminsigs; //DPOW_MINSIGS;
     }
     else
     {
-        minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
+        minsigs = Notaries_minsigs; //DPOW_MIN_ASSETCHAIN_SIGS;
         if ( strcmp("CHIPS",dp->symbol) == 0 )
             freq = 100;
         else freq = 1;
@@ -197,9 +197,9 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
         ptrs[2] = (void *)(uint64_t)minsigs;
-        if ( strcmp(dp->dest,"KMD") == 0 )
-            ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
-        else ptrs[3] = (void *)DPOW_DURATION;
+        if ( strcmp(dp->dest,"KMD") != 0 )
+            ptrs[3] = (void *)DPOW_DURATION;
+        else ptrs[3] = (void *)(DPOW_DURATION * 60); // essentially try forever for assetchains
         ptrs[4] = 0;
         memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
         dp->activehash = checkpoint.blockhash.hash;
@@ -347,9 +347,9 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 void dpow_addresses()
 {
     int32_t i; char coinaddr[64]; uint8_t pubkey[33];
-    for (i=0; i<sizeof(Notaries)/sizeof(*Notaries); i++)
+    for (i=0; i<Notaries_num; i++)
     {
-        decode_hex(pubkey,33,Notaries[i][1]);
+        decode_hex(pubkey,33,Notaries_elected[i][1]);
         bitcoin_address(coinaddr,60,pubkey,33);
         printf("%s ",coinaddr);
     }
@@ -626,7 +626,7 @@ void _iguana_notarystats(char *fname,int32_t totals[64],int32_t dispflag)
         if ( dispflag != 0 )
         {
             printf("after %s\n",fname);
-            for (i=0; i<64; i++)
+            for (i=0; i<Notaries_num; i++)
             {
                 if ( totals[i] != 0 )
                     printf("%s, %d\n",Notaries_elected[i][0],totals[i]);

@@ -167,7 +167,7 @@ instantdex_claim()\n\
 timelock(coin, duration, destaddr=(tradeaddr), amount)\n\
 unlockedspend(coin, txid)\n\
 opreturndecrypt(coin, txid, passphrase)\n\
-getendpoint()\n\
+getendpoint(port=5555)\n\
 jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
 \"}"));
     //sell(base, rel, price, basevolume, timeout=10, duration=3600)\n\
@@ -234,22 +234,25 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
         }
         else if ( strcmp(method,"getendpoint") == 0 )
         {
-            int32_t err,mode;
+            int32_t err,mode; uint16_t wsport = 5555; char endpoint[64],bindpoint[64];
+            if ( juint(argjson,"port") != 0 )
+                wsport = juint(argjson,"port");
             retjson = cJSON_CreateObject();
             if ( IPC_ENDPOINT >= 0 )
             {
                 jaddstr(retjson,"error","IPC endpoint already exists");
-                jaddstr(retjson,"endpoint","ws://*:5555");
                 jaddnum(retjson,"socket",IPC_ENDPOINT);
             }
             else
             {
                 if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )
                 {
-                    if ( (err= nn_bind(IPC_ENDPOINT,"ws://*:5555")) >= 0 )
+                    sprintf(bindpoint,"ws://*:%u",port);
+                    sprintf(endpoint,"ws://127.0.0.1:%u",port);
+                    if ( (err= nn_bind(IPC_ENDPOINT,bindpoint)) >= 0 )
                     {
                         jaddstr(retjson,"result","success");
-                        jaddstr(retjson,"endpoint","ws://127.0.0.1:5555");
+                        jaddstr(retjson,"endpoint",endpoint);
                         jaddnum(retjson,"socket",IPC_ENDPOINT);
                         mode = NN_WS_MSG_TYPE_TEXT;
                         err = nn_setsockopt(IPC_ENDPOINT,NN_SOL_SOCKET,NN_WS_MSG_TYPE,&mode,sizeof(mode));
@@ -601,6 +604,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 {
                     if ( jobj(argjson,"outputs") == 0 && jstr(argjson,"opreturn") == 0 )
                         return(clonestr("{\"error\":\"withdraw needs to have outputs\"}"));
+                    else if ( ptr->etomic[0] != 0 )
+                        return(clonestr("{\"error\":\"use eth_withdraw for ETH/ERC20\"}"));
                     else return(LP_withdraw(ptr,argjson));
                 }
                 return(clonestr("{\"error\":\"cant find coind\"}"));

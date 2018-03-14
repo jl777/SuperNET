@@ -47,7 +47,7 @@
 #define DPOW_MAXSIGLEN 128
 
 #define DEX_VERSION 0x0105
-#define DPOW_SOCK 7775
+#define DPOW_SOCKPORT 7775
 #define DEX_SOCK 7774
 #define PUB_SOCK 7773
 #define REP_SOCK 7772
