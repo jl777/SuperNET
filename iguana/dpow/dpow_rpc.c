@@ -29,6 +29,7 @@ char *bitcoind_getinfo(char *symbol,char *serverport,char *userpass,char *getinf
             strcpy(getinfostr,"getblockchaininfo");
             free(retstr);
             retstr = bitcoind_passthru(symbol,serverport,userpass,getinfostr,buf);
+            printf("switch to getblockchaininfo -> (%s)\n",retstr);
         }
         free(retjson);
     }
