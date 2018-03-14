@@ -51,12 +51,17 @@ cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 }
 
 char *Notaries_elected[64][2];
-int32_t Notaries_num,Notaries_BTCminsigs = DPOW_MINSIGS,Notaries_minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
+int32_t Notaries_numseeds,Notaries_num,Notaries_BTCminsigs = DPOW_MINSIGS,Notaries_minsigs = DPOW_MIN_ASSETCHAIN_SIGS;
 uint16_t Notaries_port = DPOW_SOCKPORT;
+char *seeds[] = { "78.47.196.146", "5.9.102.210", "149.56.29.163", "191.235.80.138", "88.198.65.74", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200", "149.56.28.84", "103.18.58.150", "221.121.144.140", "123.249.79.12", "103.18.58.146", "27.50.93.252", "176.9.0.233", "94.102.63.227", "167.114.227.223", "27.50.68.219", "192.99.233.217", "94.102.63.217", "45.64.168.216" };
+char *Notaries_seeds[64];
 
 int32_t komodo_initjson(char *fname)
 {
     char *fstr,*field,*hexstr; cJSON *argjson,*array,*item; long fsize; uint16_t port; int32_t i,n,num,retval = -1;
+    Notaries_numseeds = (int32_t)(sizeof(seeds)/sizeof(*seeds));
+    for (i=0; i<Notaries_numseeds; i++)
+        Notaries_seeds[i] = seeds[i];
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {
         if ( (argjson= cJSON_Parse(fstr)) != 0 )
@@ -67,6 +72,15 @@ int32_t komodo_initjson(char *fname)
                 Notaries_BTCminsigs = num;
             if ( (num= juint(argjson,"minsigs")) > Notaries_minsigs )
                 Notaries_minsigs = num;
+            if ( (array= jarray(&n,argjson,"seeds")) != 0 && n <= 64 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    Notaries_seeds[i] = clonestr(jstri(array,i));
+                    printf("%s ",Notaries_seeds[i]);
+                }
+                printf("Notaries_numseeds.%d\n",Notaries_numseeds);
+            }
             if ( (array= jarray(&n,argjson,"notaries")) != 0 && n <= 64 )
             {
                 for (i=0; i<n; i++)

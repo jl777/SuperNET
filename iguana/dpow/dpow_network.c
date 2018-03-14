@@ -14,6 +14,8 @@
  ******************************************************************************/
 
 extern uint16_t Notaries_port;
+extern uint32_t Notaries_numseeds;
+extern char *Notaries_seeds[];
 
 struct signed_nnpacket
 {
@@ -26,14 +28,14 @@ struct signed_nnpacket
 
 void dex_init(struct supernet_info *myinfo)
 {
-    int32_t i,j,mask = 0; char *seeds[] = { "78.47.196.146", "5.9.102.210", "149.56.29.163", "191.235.80.138", "88.198.65.74", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200", "149.56.28.84", "103.18.58.150", "221.121.144.140", "123.249.79.12", "103.18.58.146", "27.50.93.252", "176.9.0.233", "94.102.63.227", "167.114.227.223", "27.50.68.219", "192.99.233.217", "94.102.63.217", "45.64.168.216" };
+    int32_t i,j,mask = 0; 
     OS_randombytes((void *)&i,sizeof(i));
     srand(i);
     for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
     {
         while ( 1 )
         {
-            j = (rand() % (sizeof(seeds)/sizeof(*seeds)));
+            j = (rand() % Notaries_numseeds);
             if ( i < 2 )
                 j = i;
             if ( ((1 << j) & mask) == 0 )
@@ -43,8 +45,8 @@ void dex_init(struct supernet_info *myinfo)
 #ifdef NOTARY_TESTMODE
         seeds[j] = NOTARY_TESTMODE;
 #endif
-        printf("seed.[%d] <- %s\n",i,seeds[j]);
-        strcpy(myinfo->dexseed_ipaddrs[i],seeds[j]);
+        printf("seed.[%d] <- %s\n",i,Notaries_seeds[j]);
+        strcpy(myinfo->dexseed_ipaddrs[i],Notaries_seeds[j]);
         myinfo->dexipbits[i] = (uint32_t)calc_ipbits(myinfo->dexseed_ipaddrs[i]);
     }
     myinfo->numdexipbits = i;
@@ -2017,11 +2019,11 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
             if ( ipbits[i] != 0 )
             {
                 expand_ipbits(ipaddr,ipbits[i]);
-                //printf("ADD NOTARY.(%s) %08x\n",ipaddr,ipbits[i]);
+                printf("ADD NOTARY.(%s) %08x\n",ipaddr,ipbits[i]);
                 dpow_addnotary(myinfo,dp,ipaddr);
             }
     } else if ( missing > 0 )
-        printf("IGNORE from.%d RECV numips.%d numipbits.%d matched.%d missing.%d\n",fromid,numipbits,n,matched,missing);
+        printf("IGNORE from.%d RECV numips.%d numipbits.%d matched.%d missing.%d maxipbits.%d\n",fromid,numipbits,n,matched,missing,maxipbits);
     expand_ipbits(ipaddr,senderipbits);
     dpow_addnotary(myinfo,dp,ipaddr);
     expand_ipbits(ipaddr,myinfo->myaddr.myipbits);
