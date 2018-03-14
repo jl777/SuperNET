@@ -107,8 +107,7 @@
  depositspent.(f34e04ad74e290f63f3d0bccb7d0d50abfa54eea58de38816fdc596a19767add) alice.1 bob.0
  
  */
-
-#define TX_WAIT_TIMEOUT 180
+#define TX_WAIT_TIMEOUT 1800
 
 uint32_t LP_atomic_locktime(char *base,char *rel)
 {
@@ -735,7 +734,7 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                 sendbuf[sendlen++] = rawtx->I.datalen & 0xff;
                 sendbuf[sendlen++] = (rawtx->I.datalen >> 8) & 0xff;
                 sendbuf[sendlen++] = rawtx->I.redeemlen;
-                if ( rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66 )
+                if ( rawtx->I.ethTxid[0] != 0 && strlen(rawtx->I.ethTxid) == 66  )
                 {
                     uint8_t ethTxidBytes[32];
                     // ETH txid always starts with 0x

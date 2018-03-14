@@ -1515,6 +1515,31 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     return(jprint(retjson,1));
 }
 
+#ifndef NOTETOMIC
+
+char *LP_eth_withdraw(struct iguana_info *coin,cJSON *argjson)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    char *dest_addr, *tx_id, privkey_str[70], amount_str[100];
+    int64_t amount;
+    bits256 privkey;
+
+    dest_addr = jstr(argjson, "to");
+    amount = get_cJSON_int(argjson, "amount");
+    privkey = LP_privkey(coin->symbol, coin->smartaddr, coin->taddr);
+    uint8arrayToHex(privkey_str, privkey.bytes, 32);
+    satoshisToWei(amount_str, amount);
+    if (strcmp(coin->symbol, "ETH") == 0) {
+        tx_id = sendEth(dest_addr, amount_str, privkey_str, 0);
+    } else {
+        tx_id = sendErc20(coin->etomic, dest_addr, amount_str, privkey_str, 0);
+    }
+    jaddstr(retjson, "tx_id", tx_id);
+    return(jprint(retjson,1));
+}
+
+#endif
+
 int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay,bits256 privkey,uint8_t *changermd160,char *vinaddr)
 {
     struct iguana_info *coin; int32_t len,retval=-1; char *retstr,*hexstr; cJSON *argjson,*outputs,*item,*retjson,*obj;
@@ -2053,10 +2078,6 @@ void basilisk_alicepayment(struct basilisk_swap *swap,struct iguana_info *coin,s
     //printf("%s suppress.%d fee.%d\n",coinaddr,alicepayment->I.suppress_pubkeys,swap->myfee.I.suppress_pubkeys);
     basilisk_rawtx_gen(swap->ctx,"alicepayment",swap->I.started,swap->persistent_pubkey33,0,1,alicepayment,alicepayment->I.locktime,alicepayment->spendscript,alicepayment->I.spendlen,swap->I.Atxfee,1,0,swap->persistent_privkey,swap->changermd160,coinaddr);
 }
-
-#ifndef NOTETOMIC
-#include "LP_etomic.c"
-#endif
 
 int32_t basilisk_alicetxs(int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {

@@ -578,6 +578,14 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                 }
                 return(clonestr("{\"error\":\"cant find coind\"}"));
             }
+#ifndef NOTETOMIC
+            else if ( strcmp(method,"eth_withdraw") == 0 )
+            {
+                if ( (ptr= LP_coinsearch(coin)) != 0 ) {
+                    return LP_eth_withdraw(ptr, argjson);
+                }
+            }
+#endif
             else if ( strcmp(method,"setconfirms") == 0 )
             {
                 int32_t n;

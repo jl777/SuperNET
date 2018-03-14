@@ -106,7 +106,7 @@ cJSON *sendRpcRequest(char *method, cJSON *params)
     return result;
 }
 
-char* sendRawTx(char* rawTx)
+char* sendRawTxWaitConfirm(char* rawTx)
 {
     cJSON *params = cJSON_CreateArray();
     cJSON_AddItemToArray(params, cJSON_CreateString(rawTx));
@@ -119,6 +119,23 @@ char* sendRawTx(char* rawTx)
             txId = (char *) malloc(strlen(tmp) + 1);
             strcpy(txId, tmp);
         }
+    }
+    cJSON_Delete(resultJson);
+    pthread_mutex_unlock(&sendTxMutex);
+    return txId;
+}
+
+char* sendRawTx(char* rawTx)
+{
+    cJSON *params = cJSON_CreateArray();
+    cJSON_AddItemToArray(params, cJSON_CreateString(rawTx));
+    cJSON *resultJson = sendRpcRequest("eth_sendRawTransaction", params);
+    cJSON_Delete(params);
+    char *txId = NULL;
+    if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
+        char* tmp = resultJson->valuestring;
+        txId = (char *) malloc(strlen(tmp) + 1);
+        strcpy(txId, tmp);
     }
     cJSON_Delete(resultJson);
     pthread_mutex_unlock(&sendTxMutex);

@@ -1,5 +1,5 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-set(MM_SOURCES mm.c ../mini-gmp.c ../groestl.c ../segwit_addr.c ../keccak.c)
+set(MM_SOURCES mm.c ../mini-gmp.c ../groestl.c ../segwit_addr.c ../keccak.c LP_etomic.c)
 set(MM_LIBS ${NANOMSG_LIBRARY} curl pthread libcrypto777 libjpeg libsecp256k1)
 add_executable(marketmaker-testnet ${MM_SOURCES})
 add_executable(marketmaker-mainnet ${MM_SOURCES})

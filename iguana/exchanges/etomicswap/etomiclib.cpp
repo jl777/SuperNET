@@ -59,7 +59,7 @@ char *approveErc20(ApproveErc20Input input)
        << toHex(toBigEndian(jsToU256(input.amount)));
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, input.secret);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -84,7 +84,7 @@ char* aliceSendsEthPayment(AliceSendsEthPaymentInput input, BasicTxData txData)
     std::stringstream ss = aliceSendsEthPaymentData(input);
     tx.data = jsToBytes(ss.str());
     char *rawTx = signTx(tx, txData.secretKey);
-    char *result = sendRawTx(rawTx);
+    char *result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -127,7 +127,7 @@ char* aliceSendsErc20Payment(AliceSendsErc20PaymentInput input, BasicTxData txDa
     std::stringstream ss = aliceSendsErc20PaymentData(input);
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -168,7 +168,7 @@ char* aliceReclaimsAlicePayment(AliceReclaimsAlicePaymentInput input, BasicTxDat
        << toHex(jsToBytes(input.bobSecret));
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -199,7 +199,7 @@ char* bobSpendsAlicePayment(BobSpendsAlicePaymentInput input, BasicTxData txData
        << toHex(jsToBytes(input.aliceSecret));
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -263,7 +263,7 @@ char* bobSendsErc20Deposit(BobSendsErc20DepositInput input, BasicTxData txData)
     std::stringstream ss = bobSendsErc20DepositData(input);
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -303,7 +303,7 @@ char* bobRefundsDeposit(BobRefundsDepositInput input, BasicTxData txData)
        << toHex(jsToBytes(input.bobSecret));
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -332,7 +332,7 @@ char* aliceClaimsBobDeposit(AliceClaimsBobDepositInput input, BasicTxData txData
        << "000000000000000000000000";
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -355,7 +355,7 @@ char* bobSendsEthPayment(BobSendsEthPaymentInput input, BasicTxData txData)
     std::stringstream ss = bobSendsEthPaymentData(input);
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -396,7 +396,7 @@ char* bobSendsErc20Payment(BobSendsErc20PaymentInput input, BasicTxData txData)
     std::stringstream ss = bobSendsErc20PaymentData(input);
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -435,7 +435,7 @@ char* bobReclaimsBobPayment(BobReclaimsBobPaymentInput input, BasicTxData txData
        << "000000000000000000000000";
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -465,7 +465,7 @@ char* aliceSpendsBobPayment(AliceSpendsBobPaymentInput input, BasicTxData txData
        << toHex(jsToBytes(input.aliceSecret));
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
-    char* result = sendRawTx(rawTx);
+    char* result = sendRawTxWaitConfirm(rawTx);
     free(rawTx);
     return result;
 }
@@ -582,10 +582,10 @@ uint64_t weiToSatoshi(char *wei)
     return static_cast<uint64_t>(satoshi);
 }
 
-char *sendEth(char *to, char *amount, char *privKey)
+char *sendEth(char *to, char *amount, char *privKey, uint8_t waitConfirm)
 {
     TransactionSkeleton tx;
-    char *from = privKey2Addr(privKey);
+    char *from = privKey2Addr(privKey), *result;
     tx.from = jsToAddress(from);
     tx.to = jsToAddress(to);
     tx.value = jsToU256(amount);
@@ -595,7 +595,11 @@ char *sendEth(char *to, char *amount, char *privKey)
     free(from);
 
     char *rawTx = signTx(tx, privKey);
-    char *result = sendRawTx(rawTx);
+    if (waitConfirm == 0) {
+        result = sendRawTx(rawTx);
+    } else {
+        result = sendRawTxWaitConfirm(rawTx);
+    }
     free(rawTx);
     return result;
 }
@@ -616,10 +620,10 @@ std::stringstream getErc20TransferData(char *tokenAddress, char *to, char *amoun
     return ss;
 }
 
-char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey)
+char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey, uint8_t waitConfirm)
 {
     TransactionSkeleton tx;
-    char *from = privKey2Addr(privKey);
+    char *from = privKey2Addr(privKey), *result;
     tx.from = jsToAddress(from);
     tx.to = jsToAddress(tokenAddress);
     tx.value = 0;
@@ -632,7 +636,11 @@ char *sendErc20(char *tokenAddress, char *to, char *amount, char *privKey)
     tx.data = jsToBytes(ss.str());
 
     char *rawTx = signTx(tx, privKey);
-    char *result = sendRawTx(rawTx);
+    if (waitConfirm == 0) {
+        result = sendRawTx(rawTx);
+    } else {
+        result = sendRawTxWaitConfirm(rawTx);
+    }
     free(rawTx);
     return result;
 }

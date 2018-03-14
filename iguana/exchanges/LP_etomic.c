@@ -21,9 +21,7 @@
 //
 // Created by artem on 24.01.18.
 //
-#include "etomicswap/etomiclib.h"
-#include "etomicswap/etomiccurl.h"
-#include <inttypes.h>
+#include "LP_etomic.h"
 
 int32_t LP_etomic_wait_for_confirmation(char *txId)
 {
@@ -36,9 +34,9 @@ char *LP_etomicalice_send_fee(struct basilisk_swap *swap)
     satoshisToWei(amount, swap->myfee.I.amount);
     uint8arrayToHex(secretKey, swap->persistent_privkey.bytes, 32);
     if (strcmp(swap->I.alicestr,"ETH") == 0 ) {
-        return(sendEth(ETH_FEE_ACCEPTOR, amount, secretKey));
+        return(sendEth(ETH_FEE_ACCEPTOR, amount, secretKey, 1));
     } else {
-        return(sendErc20(swap->I.alicetomic, ETH_FEE_ACCEPTOR, amount, secretKey));
+        return(sendErc20(swap->I.alicetomic, ETH_FEE_ACCEPTOR, amount, secretKey, 1));
     }
 }
 
@@ -136,12 +134,10 @@ char *LP_etomicalice_send_payment(struct basilisk_swap *swap)
 
 uint8_t LP_etomic_verify_alice_payment(struct basilisk_swap *swap, char *txId)
 {
-    /*
     if (waitForConfirmation(txId) < 0) {
         printf("Alice payment %s does not exist\n", txId);
         return(0);
     }
-    */
     EthTxData data = getEthTxData(txId);
     if (strcmp(data.to, ETOMIC_ALICECONTRACT) != 0) {
         printf("Alice payment %s was sent to wrong address %s\n", txId, data.to);

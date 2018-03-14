@@ -37,6 +37,7 @@ typedef struct
 } EthTxData;
 
 char* sendRawTx(char* rawTx);
+char* sendRawTxWaitConfirm(char* rawTx);
 char* ethCall(char* to, const char* data);
 int64_t getNonce(char* address);
 char* getEthBalanceRequest(char* address);

@@ -266,7 +266,7 @@ struct basilisk_swapinfo
 #define BASILISK_ALICERECLAIM 9
 #define BASILISK_ALICECLAIM 10
 //0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0
-char *txnames[] = { "alicespend", "bobspend", "bobpayment", "alicepayment", "bobdeposit", "otherfee", "myfee", "bobrefund", "bobreclaim", "alicereclaim", "aliceclaim" };
+static char *txnames[] = { "alicespend", "bobspend", "bobpayment", "alicepayment", "bobdeposit", "otherfee", "myfee", "bobrefund", "bobreclaim", "alicereclaim", "aliceclaim" };
 
 struct LP_swap_remember
 {
@@ -577,5 +577,6 @@ int bech32_convert_bits(uint8_t *out,int32_t *outlen,int outbits,const uint8_t *
 int bech32_decode(char *hrp,uint8_t *data,int32_t *data_len,const char *input);
 int bech32_encode(char *output,const char *hrp,const uint8_t *data,int32_t data_len);
 void HashGroestl(void * buf, const void * pbegin, int len);
+bits256 LP_privkey(char *symbol,char *coinaddr,uint8_t taddr);
 
 #endif
