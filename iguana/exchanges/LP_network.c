@@ -433,7 +433,7 @@ struct LP_queuedcommand
     
 void LP_commandQ_loop(void *ctx)
 {
-    struct LP_queuedcommand *ptr,*tmp; int32_t size,nonz; char *retstr; cJSON *argjson,*retjson,*result;
+    struct LP_queuedcommand *ptr,*tmp; int32_t len,size,nonz; char *retstr; cJSON *argjson,*retjson,*result;
     while ( LP_STOP_RECEIVED == 0 )
     {
         nonz = 0;
@@ -478,7 +478,10 @@ void LP_commandQ_loop(void *ctx)
                             retstr = jprint(retjson,1);
                             //printf("send (%s)\n",retstr);
                         }
-                        if ( (size= nn_send(ptr->responsesock,retstr,(int32_t)strlen(retstr)+1,0)) <= 0 )
+                        len = (int32_t)strlen(retstr);
+                        if ( ptr->queueid != 0 )
+                            len++;
+                        if ( (size= nn_send(ptr->responsesock,retstr,len,0)) <= 0 )
                             printf("error sending result\n");
                     }
                     if ( retstr != 0 )
