@@ -256,6 +256,11 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
                 if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
                 {
+                    if ( dpow_hasnotarization(myinfo,coin,blockjson) > 0 )
+                    {
+                        free_json(blockjson);
+                        break;
+                    }
                     merkle = jbits256(blockjson,"merkleroot");
                     free_json(blockjson);
                     if ( bits256_nonz(merkle) != 0 )

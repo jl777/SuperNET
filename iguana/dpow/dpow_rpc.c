@@ -759,6 +759,8 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *merklerootp,bits2
             if ( (height= juint(json,"height")) != 0 && (*blocktimep= juint(json,"time")) != 0 )
             {
                 *merklerootp = jbits256(json,"merkleroot");
+                if ( bits256_nonz(*merklerootp) == 0 )
+                    printf("block has no merkle? (%s)\n",jprint(json,0));
                 coin->lastbestheight = height;
                 if ( height > coin->longestchain )
                     coin->longestchain = height;
