@@ -237,16 +237,16 @@ int32_t dpow_hasnotarization(struct supernet_info *myinfo,struct iguana_info *co
     return(hasnotarization);
 }
 
-bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct iguana_info *coin,int32_t height,bits256 checkmerkleroot)
+bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
 {
     bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; int32_t ht,maxdepth = 8192,MoMdepth = 0;
     memset(MoM.bytes,0,sizeof(MoM));
     blockhash = dpow_getblockhash(myinfo,coin,height);
-    if ( bits256_nonz(checkmerkleroot) != 0 && (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
+    if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
     {
         merkle = jbits256(blockjson,"merkleroot");
         free_json(blockjson);
-        if ( bits256_cmp(merkle,checkmerkleroot) == 0 )
+        if ( bits256_nonz(merkle) != 0 )
         {
             merkles = calloc(maxdepth,sizeof(*merkles));
             merkles[MoMdepth++] = merkle;
@@ -290,8 +290,8 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 MoMdepth = 0;
             }
             free(merkles);
-        } else printf("%s.ht%d mismatched merkles\n",coin->symbol,height);
-    } else printf("%s.ht%d null checkmerkleroot\n",coin->symbol,height);
+        } else printf("%s.ht%d null merkles\n",coin->symbol,height);
+    } else printf("%s.ht%d null block\n",coin->symbol,height);
     *MoMdepthp = MoMdepth;
     return(MoM);
 }
@@ -328,7 +328,7 @@ void dpow_statemachinestart(void *ptr)
     else if ( strcmp(dest->symbol,"KMD") == 0 )
     {
         kmdheight = dest->longestchain;
-        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height,merkleroot);
+        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
     }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
