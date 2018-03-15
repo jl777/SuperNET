@@ -1427,15 +1427,15 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                     }
                 }
             }
-            myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
-            myinfo->numdpowipbits = 1;
-            timeout = 1;
-            nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            maxsize = 1024 * 1024;
-            printf("%s RCVBUF.%d\n",bindpoint,nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
-            
-            myinfo->nanoinit = (uint32_t)time(NULL);
         }
+        myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
+        myinfo->numdpowipbits = 1;
+        timeout = 1;
+        nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+        maxsize = 1024 * 1024;
+        printf("%s RCVBUF.%d\n",bindpoint,nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
+        
+        myinfo->nanoinit = (uint32_t)time(NULL);
     } //else printf("error creating nanosocket\n");
     if ( myinfo->dpowsock != dpowsock )
         myinfo->dpowsock = dpowsock;
