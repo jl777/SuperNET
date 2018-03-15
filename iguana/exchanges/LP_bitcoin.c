@@ -2023,7 +2023,7 @@ char *bitcoind_passthrut(char *coinstr,char *serverport,char *userpass,char *met
     return(bitcoind_RPC(0,coinstr,serverport,userpass,method,params,timeout));
 }
 
-bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t  len)
+bits256 bits256_calctxid(char *symbol,uint8_t *serialized,int32_t len)
 {
     bits256 txid,revtxid; int32_t i;
     memset(txid.bytes,0,sizeof(txid));

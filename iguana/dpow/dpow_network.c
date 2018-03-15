@@ -2241,7 +2241,7 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
         {
             memcpy(&opret[opretlen],extras,extralen);
             opretlen += extralen;
-            printf("added extra.%d opreturn for withdraws paxwdcrc.%08x\n",extralen,calc_crc32(0,extras,extralen));
+            printf("added extra.%d crc.%08x\n",extralen,calc_crc32(0,extras,extralen));
         }
     }
     else
