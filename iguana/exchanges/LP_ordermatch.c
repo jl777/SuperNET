@@ -531,6 +531,8 @@ int32_t LP_connectstartbob(void *ctx,int32_t pubsock,char *base,char *rel,double
                     printf("bob tries %u-%u again i.%d\n",swap->I.req.requestid,swap->I.req.quoteid,i);
                     LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
                 }
+                sleep(1);
+                LP_reserved_msg(1,qp->srccoin,qp->destcoin,zero,jprint(reqjson,0));
                 if ( IPC_ENDPOINT >= 0 )
                     LP_queuecommand(0,jprint(reqjson,1),IPC_ENDPOINT,-1,0);
                 else free_json(reqjson);
