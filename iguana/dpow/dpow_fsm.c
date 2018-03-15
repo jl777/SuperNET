@@ -162,7 +162,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
 
 uint32_t Numallocated;
 
-int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
+int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t height)
 {
     cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
     if ( (txobj= dpow_gettransaction(myinfo,coin,txid)) != 0 )
@@ -214,7 +214,7 @@ int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *
                 {
                     if ( numnotaries >= DPOW_MIN_ASSETCHAIN_SIGS )
                         hasnotarization = 1;
-                    printf("numnotaries.%d %s hasnotarization.%d\n",numnotaries,coin->symbol,hasnotarization);
+                    printf("numnotaries.%d %s hasnotarization.%d ht.%d\n",numnotaries,coin->symbol,hasnotarization,height);
                 }
             }
         }
@@ -223,7 +223,7 @@ int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *
     return(hasnotarization);
 }
 
-int32_t dpow_hasnotarization(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *blockjson)
+int32_t dpow_hasnotarization(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *blockjson,int32_t ht)
 {
     int32_t i,n,hasnotarization = 0; bits256 txid; cJSON *txarray;
     if ( (txarray= jarray(&n,blockjson,"tx")) != 0 )
@@ -231,7 +231,7 @@ int32_t dpow_hasnotarization(struct supernet_info *myinfo,struct iguana_info *co
         for (i=0; i<n; i++)
         {
             txid = jbits256i(txarray,i);
-            hasnotarization += dpow_txhasnotarization(myinfo,coin,txid);
+            hasnotarization += dpow_txhasnotarization(myinfo,coin,txid,ht);
         }
     }
     return(hasnotarization);
@@ -256,7 +256,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
                 if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
                 {
-                    if ( dpow_hasnotarization(myinfo,coin,blockjson) > 0 )
+                    if ( dpow_hasnotarization(myinfo,coin,blockjson,ht) > 0 )
                     {
                         free_json(blockjson);
                         break;

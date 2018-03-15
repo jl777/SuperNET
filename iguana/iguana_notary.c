@@ -87,9 +87,9 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
             {
                 if ( (blockjson= dpow_getblock(myinfo,coin,hash)) != 0 )
                 {
-                    if ( dpow_hasnotarization(myinfo,coin,blockjson) <= 0 )
+                    height = jint(blockjson,"height");
+                    if ( dpow_hasnotarization(myinfo,coin,blockjson,height) <= 0 )
                     {
-                        height = jint(blockjson,"height");
                         blocktime = juint(blockjson,"time");
                         free_json(blockjson);
                         if ( height > 0 && blocktime > 0 )
