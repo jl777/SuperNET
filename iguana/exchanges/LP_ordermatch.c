@@ -1443,7 +1443,7 @@ int32_t LP_tradecommand(void *ctx,char *myipaddr,int32_t pubsock,cJSON *argjson,
 
 char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel,double maxprice,double relvolume,int32_t timeout,int32_t duration,char *gui,uint32_t nonce,bits256 destpubkey,uint32_t tradeid)
 {
-    uint64_t desttxfee,txfee; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B,A; struct LP_quoteinfo Q; bits256 pubkeys[100]; struct LP_address_utxo *utxos[1000]; int32_t max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
+    uint64_t desttxfee,txfee; uint32_t lastnonce; int64_t bestsatoshis=0,destsatoshis; struct iguana_info *basecoin,*relcoin; struct LP_utxoinfo *autxo,B,A; struct LP_quoteinfo Q; bits256 pubkeys[100]; struct LP_address_utxo *utxos[1000]; int32_t i,max=(int32_t)(sizeof(utxos)/sizeof(*utxos));
     basecoin = LP_coinfind(base);
     relcoin = LP_coinfind(rel);
     if ( gui == 0 )
@@ -1488,13 +1488,20 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
     memset(pubkeys,0,sizeof(pubkeys));
     LP_txfees(&txfee,&desttxfee,base,rel);
     destsatoshis = SATOSHIDEN * relvolume + 2*desttxfee;
-    memset(&A,0,sizeof(A));
     LP_address_utxo_reset(relcoin);
-    if ( (autxo= LP_address_myutxopair(&A,0,utxos,max,relcoin,relcoin->smartaddr,txfee,dstr(destsatoshis),maxprice,desttxfee)) == 0 )
+    autxo = 0;
+    for (i=0; i<50; i++)
+    {
+        memset(&A,0,sizeof(A));
+        if ( (autxo= LP_address_myutxopair(&A,0,utxos,max,relcoin,relcoin->smartaddr,txfee,dstr(destsatoshis),maxprice,desttxfee)) != 0 )
+            break;
+        destsatoshis *= 0.99;
+    }
+    if ( i == 50 && autxo == 0 )
     {
         return(clonestr("{\"error\":\"cant find a deposit that is close enough in size. make another deposit that is just a bit larger than what you want to trade\"}"));
     }
-    //printf("bestfit selected alice (%.8f %.8f) for %.8f sats %.8f\n",dstr(autxo->payment.value),dstr(autxo->fee.value),dstr(destsatoshis),dstr(autxo->swap_satoshis));
+    printf("bestfit.[%d] selected alice (%.8f %.8f) for %.8f sats %.8f\n",i,dstr(autxo->payment.value),dstr(autxo->fee.value),dstr(destsatoshis),dstr(autxo->swap_satoshis));
     if ( destsatoshis - desttxfee < autxo->swap_satoshis )
     {
         destsatoshis -= desttxfee;
