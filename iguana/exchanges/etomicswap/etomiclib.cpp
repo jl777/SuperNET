@@ -206,13 +206,15 @@ char* bobSpendsAlicePayment(BobSpendsAlicePaymentInput input, BasicTxData txData
 
 std::stringstream bobSendsEthDepositData(BobSendsEthDepositInput input)
 {
+    u256 lockTime = input.lockTime;
     std::stringstream ss;
-    ss << "0xc2c5143f"
+    ss << "0xdd23795f"
        << toHex(jsToBytes(input.depositId))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.aliceAddress))
        << toHex(jsToBytes(input.bobHash))
-       << "000000000000000000000000";
+       << "000000000000000000000000"
+       << toHex(toBigEndian(lockTime));
     return ss;
 }
 
@@ -241,11 +243,12 @@ std::stringstream bobSendsErc20DepositData(BobSendsErc20DepositInput input)
 {
     uint8_t decimals = getErc20Decimals(input.tokenAddress);
     u256 amount = jsToU256(input.amount);
+    u256 lockTime = input.lockTime;
     if (decimals < 18) {
         amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
     }
     std::stringstream ss;
-    ss << "0xce8bbe4b"
+    ss << "0x5d567259"
        << toHex(jsToBytes(input.depositId))
        << toHex(toBigEndian(amount))
        << "000000000000000000000000"
@@ -253,7 +256,8 @@ std::stringstream bobSendsErc20DepositData(BobSendsErc20DepositInput input)
        << toHex(jsToBytes(input.bobHash))
        << "000000000000000000000000"
        << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress));
+       << toHex(jsToAddress(input.tokenAddress))
+       << toHex(toBigEndian(lockTime));
     return ss;
 }
 
@@ -290,17 +294,14 @@ char* bobRefundsDeposit(BobRefundsDepositInput input, BasicTxData txData)
             amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
         }
     }
-    ss << "0x1dbe6508"
+    ss << "0x1f7a72f7"
        << toHex(jsToBytes(input.depositId))
        << toHex(toBigEndian(amount))
-       << toHex(toBigEndian(jsToU256(input.aliceCanClaimAfter)))
+       << toHex(jsToBytes(input.bobSecret))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.aliceAddress))
        << "000000000000000000000000"
-       << toHex(tokenAddress)
-       << "00000000000000000000000000000000000000000000000000000000000000c0"
-       << "0000000000000000000000000000000000000000000000000000000000000020"
-       << toHex(jsToBytes(input.bobSecret));
+       << toHex(tokenAddress);
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
     char* result = sendRawTxWaitConfirm(rawTx);
@@ -320,10 +321,9 @@ char* aliceClaimsBobDeposit(AliceClaimsBobDepositInput input, BasicTxData txData
             amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
         }
     }
-    ss << "0x960173b5"
+    ss << "0x4b915a68"
        << toHex(jsToBytes(input.depositId))
        << toHex(toBigEndian(amount))
-       << toHex(toBigEndian(jsToU256(input.aliceCanClaimAfter)))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.bobAddress))
        << "000000000000000000000000"
@@ -339,13 +339,15 @@ char* aliceClaimsBobDeposit(AliceClaimsBobDepositInput input, BasicTxData txData
 
 std::stringstream bobSendsEthPaymentData(BobSendsEthPaymentInput input)
 {
+    u256 lockTime = input.lockTime;
     std::stringstream ss;
-    ss << "0xcf36fe8e"
+    ss << "0x5ab30d95"
        << toHex(jsToBytes(input.paymentId))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.aliceAddress))
        << toHex(jsToBytes(input.aliceHash))
-       << "000000000000000000000000";
+       << "000000000000000000000000"
+       << toHex(toBigEndian(lockTime));
     return ss;
 }
 
@@ -374,11 +376,12 @@ std::stringstream bobSendsErc20PaymentData(BobSendsErc20PaymentInput input)
 {
     uint8_t decimals = getErc20Decimals(input.tokenAddress);
     u256 amount = jsToU256(input.amount);
+    u256 lockTime = input.lockTime;
     if (decimals < 18) {
         amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
     }
     std::stringstream ss;
-    ss << "0x34f64dfd"
+    ss << "0xb8a15b1d"
        << toHex(jsToBytes(input.paymentId))
        << toHex(toBigEndian(amount))
        << "000000000000000000000000"
@@ -386,7 +389,8 @@ std::stringstream bobSendsErc20PaymentData(BobSendsErc20PaymentInput input)
        << toHex(jsToBytes(input.aliceHash))
        << "000000000000000000000000"
        << "000000000000000000000000"
-       << toHex(jsToAddress(input.tokenAddress));
+       << toHex(jsToAddress(input.tokenAddress))
+       << toHex(toBigEndian(lockTime));
     return ss;
 }
 
@@ -423,10 +427,9 @@ char* bobReclaimsBobPayment(BobReclaimsBobPaymentInput input, BasicTxData txData
             amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
         }
     }
-    ss << "0xb7cc2312"
+    ss << "0xe45ef4ad"
        << toHex(jsToBytes(input.paymentId))
        << toHex(toBigEndian(amount))
-       << toHex(toBigEndian(jsToU256(input.bobCanClaimAfter)))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.aliceAddress))
        << "000000000000000000000000"
@@ -452,17 +455,14 @@ char* aliceSpendsBobPayment(AliceSpendsBobPaymentInput input, BasicTxData txData
             amount /= boost::multiprecision::pow(u256(10), 18 - decimals);
         }
     }
-    ss << "0x97004255"
+    ss << "0x113ee583"
        << toHex(jsToBytes(input.paymentId))
        << toHex(toBigEndian(amount))
-       << toHex(toBigEndian(jsToU256(input.bobCanClaimAfter)))
+       << toHex(jsToBytes(input.aliceSecret))
        << "000000000000000000000000"
        << toHex(jsToAddress(input.bobAddress))
        << "000000000000000000000000"
-       << toHex(tokenAddress)
-       << "00000000000000000000000000000000000000000000000000000000000000c0"
-       << "0000000000000000000000000000000000000000000000000000000000000020"
-       << toHex(jsToBytes(input.aliceSecret));
+       << toHex(tokenAddress);
     tx.data = jsToBytes(ss.str());
     char* rawTx = signTx(tx, txData.secretKey);
     char* result = sendRawTxWaitConfirm(rawTx);

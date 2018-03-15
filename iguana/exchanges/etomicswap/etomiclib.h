@@ -6,10 +6,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
+
 #ifdef ETOMIC_TESTNET
 #define ETOMIC_ALICECONTRACT "0xe1d4236c5774d35dc47dcc2e5e0ccfc463a3289c"
-#define ETOMIC_BOBCONTRACT "0x9387fd3a016bb0205e4e131dde886b9d2bc000a2"
+#define ETOMIC_BOBCONTRACT "0x2a8e4f9ae69c86e277602c6802085febc4bd5986"
 #else
 #define ETOMIC_ALICECONTRACT "0x9bc5418ceded51db08467fc4b62f32c5d9ebda55"
 #define ETOMIC_BOBCONTRACT "0xb1ad803ea4f57401639c123000c75f5b66e4d123"
@@ -63,6 +63,7 @@ typedef struct {
     char depositId[70];
     char aliceAddress[65];
     char bobHash[65];
+    uint64_t lockTime;
 } BobSendsEthDepositInput;
 
 typedef struct {
@@ -71,6 +72,7 @@ typedef struct {
     char tokenAddress[65];
     char aliceAddress[65];
     char bobHash[65];
+    uint64_t lockTime;
 } BobSendsErc20DepositInput;
 
 typedef struct {
@@ -79,7 +81,6 @@ typedef struct {
     char tokenAddress[65];
     char aliceAddress[65];
     char bobSecret[70];
-    char aliceCanClaimAfter[100];
 } BobRefundsDepositInput;
 
 typedef struct {
@@ -88,13 +89,13 @@ typedef struct {
     char tokenAddress[65];
     char bobAddress[65];
     char bobHash[65];
-    char aliceCanClaimAfter[100];
 } AliceClaimsBobDepositInput;
 
 typedef struct {
     char paymentId[70];
     char aliceAddress[65];
     char aliceHash[65];
+    uint64_t lockTime;
 } BobSendsEthPaymentInput;
 
 typedef struct {
@@ -103,6 +104,7 @@ typedef struct {
     char tokenAddress[65];
     char aliceAddress[65];
     char aliceHash[65];
+    uint64_t lockTime;
 } BobSendsErc20PaymentInput;
 
 typedef struct {
@@ -111,7 +113,6 @@ typedef struct {
     char tokenAddress[65];
     char aliceAddress[65];
     char aliceHash[65];
-    char bobCanClaimAfter[100];
 } BobReclaimsBobPaymentInput;
 
 typedef struct {
@@ -120,7 +121,6 @@ typedef struct {
     char tokenAddress[65];
     char aliceSecret[70];
     char bobAddress[65];
-    char bobCanClaimAfter[100];
 } AliceSpendsBobPaymentInput;
 
 typedef struct {
