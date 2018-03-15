@@ -247,8 +247,8 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
             {
                 if ( (IPC_ENDPOINT= nn_socket(AF_SP,NN_PAIR)) >= 0 )
                 {
-                    sprintf(bindpoint,"ws://*:%u",port);
-                    sprintf(endpoint,"ws://127.0.0.1:%u",port);
+                    sprintf(bindpoint,"ws://*:%u",wsport);
+                    sprintf(endpoint,"ws://127.0.0.1:%u",wsport);
                     if ( (err= nn_bind(IPC_ENDPOINT,bindpoint)) >= 0 )
                     {
                         jaddstr(retjson,"result","success");
@@ -261,6 +261,7 @@ jpg(srcfile, destfile, power2=7, password, data="", required, ind=0)\n\
                     else
                     {
                         jaddstr(retjson,"error",(char *)nn_strerror(nn_errno()));
+                        jaddstr(retjson,"bind",bindpoint);
                         jaddnum(retjson,"err",err);
                         jaddnum(retjson,"socket",IPC_ENDPOINT);
                         nn_close(IPC_ENDPOINT);
