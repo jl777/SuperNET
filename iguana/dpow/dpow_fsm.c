@@ -250,7 +250,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
         {
             merkles = calloc(maxdepth,sizeof(*merkles));
             merkles[MoMdepth++] = merkle;
-            while ( MoMdepth < maxdepth )
+            while ( MoMdepth < maxdepth && MoMdepth < height )
             {
                 ht = height - MoMdepth;
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
