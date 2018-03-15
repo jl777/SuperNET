@@ -1183,7 +1183,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 {
-    char *retstr=0,*symbol,*coinaddr,*infostr; cJSON *retjson,*sobj,*info,*addrs,*txoutjson,*txjson,*array; uint32_t basilisktag,blocktime,numtx=0; bits256 txid,blockhash; struct basilisk_item *ptr,Lptr; uint64_t value; int32_t timeoutmillis,vout,height,n,m;
+    char *retstr=0,*symbol,*coinaddr,*infostr; cJSON *retjson,*sobj,*info,*addrs,*txoutjson,*txjson,*array; uint32_t basilisktag,blocktime,numtx=0; bits256 txid,blockhash,merkleroot; struct basilisk_item *ptr,Lptr; uint64_t value; int32_t timeoutmillis,vout,height,n,m;
     if ( vals == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
     //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
@@ -1219,7 +1219,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
                     jadd64bits(retjson,"satoshis",value);
                     jaddnum(retjson,"value",dstr(value));
                     jaddnum(retjson,"amount",dstr(value));
-                    height = dpow_getchaintip(myinfo,&blockhash,&blocktime,0,&numtx,coin);
+                    height = dpow_getchaintip(myinfo,&merkleroot,&blockhash,&blocktime,0,&numtx,coin);
                     jaddnum(retjson,"height",height);
                     jaddnum(retjson,"numconfirms",jint(txoutjson,"confirmations"));
                     jaddbits256(retjson,"txid",txid);

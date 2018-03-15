@@ -346,7 +346,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
                 }
                 if ( i == block->RO.txn_count )
                 {
-                    merkle_root = iguana_merkle(tree,block->RO.txn_count);
+                    merkle_root = iguana_merkle(coin->symbol,tree,block->RO.txn_count);
                     if ( bits256_cmp(merkle_root,block->RO.merkle_root) == 0 )
                     {
                         if ( addr != 0 && addr->lastsent != block->height )

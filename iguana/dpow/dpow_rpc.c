@@ -266,7 +266,7 @@ bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,
         sprintf(buf,"%d",height);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblockhash",buf);
         //printf("%s ht.%d -> getblockhash.(%s)\n",coin->symbol,height,retstr);
-        usleep(10000);
+        usleep(1000);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -746,7 +746,7 @@ void init_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin)
     }
 }
 
-int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin)
+int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *merklerootp,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin)
 {
     int32_t n,i,height = -1,maxtx = *numtxp; bits256 besthash,oldhash; cJSON *array,*json;
     *numtxp = *blocktimep = 0;
@@ -758,6 +758,9 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32
         {
             if ( (height= juint(json,"height")) != 0 && (*blocktimep= juint(json,"time")) != 0 )
             {
+                *merklerootp = jbits256(json,"merkleroot");
+                //if ( bits256_nonz(*merklerootp) == 0 )
+                //    printf("block has no merkle? (%s)\n",jprint(json,0));
                 coin->lastbestheight = height;
                 if ( height > coin->longestchain )
                     coin->longestchain = height;
