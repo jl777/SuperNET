@@ -1495,7 +1495,7 @@ char *LP_autobuy(void *ctx,char *myipaddr,int32_t mypubsock,char *base,char *rel
         memset(&A,0,sizeof(A));
         if ( (autxo= LP_address_myutxopair(&A,0,utxos,max,relcoin,relcoin->smartaddr,txfee,dstr(destsatoshis),maxprice,desttxfee)) != 0 )
             break;
-        destsatoshis *= 0.99;
+        destsatoshis *= 0.98;
         if ( destsatoshis < desttxfee*LP_MINSIZE_TXFEEMULT )
             break;
     }
