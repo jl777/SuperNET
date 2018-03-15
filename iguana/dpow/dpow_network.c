@@ -1358,7 +1358,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     if ( dpowsock < 0 && (dpowsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
         sprintf(bindpoint,"tcp://*:%u",Notaries_port);
-        if ( nn_bind(dpowsock,bindpoint)) < 0 ) //nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port
+        if ( nn_bind(dpowsock,bindpoint) < 0 ) //nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port
         {
             printf("error binding to dpowsock (%s)\n",bindpoint);
             nn_close(dpowsock);
