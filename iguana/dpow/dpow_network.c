@@ -1873,7 +1873,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     bp->pendingbestk = bp->bestk;
                     bp->pendingbestmask = bp->bestmask;
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
-                    printf("finished signing\n");
+                    //printf("finished signing\n");
                 }
                 if ( bp->destsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
                 {
