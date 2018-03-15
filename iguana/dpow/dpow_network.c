@@ -1342,7 +1342,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
 
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 {
-    char str[512]; int32_t timeout,retval,maxsize,dpowsock,dexsock,repsock,pubsock;
+    char str[512],bindpoint[64]; int32_t timeout,retval,maxsize,dpowsock,dexsock,repsock,pubsock;
     if ( myinfo->ipaddr[0] == 0 )
     {
         printf("need to set ipaddr before nanomsg\n");
@@ -1357,7 +1357,8 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     pubsock = myinfo->pubsock;
     if ( dpowsock < 0 && (dpowsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
-        if ( nn_bind(dpowsock,nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port)) < 0 )
+        sprintf(bindpoint,"tcp://*:%u",Notaries_port);
+        if ( nn_bind(dpowsock,bindpoing)) < 0 ) //nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port
         {
             printf("error binding to dpowsock (%s)\n",nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port));
             nn_close(dpowsock);
@@ -1431,7 +1432,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
             timeout = 1;
             nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             maxsize = 1024 * 1024;
-            printf("RCVBUF.%d\n",nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
+            printf("%s RCVBUF.%d\n",bindpoint,nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
             
             myinfo->nanoinit = (uint32_t)time(NULL);
         }
