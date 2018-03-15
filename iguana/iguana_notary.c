@@ -198,21 +198,21 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
 void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 {
     int32_t height,num; uint32_t blocktime; bits256 blockhash,merkleroot; struct iguana_info *src,*dest;
-    //fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
     //if ( strcmp(dp->symbol,"KMD") == 0 )
     {
         num = dpow_nanomsg_update(myinfo);
-        //fprintf(stderr,"%d ",num);
+        fprintf(stderr,"nano.%d ",num);
     }
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
     if ( src != 0 && dest != 0 )
     {
+        fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
         if ( (height= dpow_getchaintip(myinfo,&merkleroot,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
             char str[65];
-            if ( strcmp(dp->symbol,"KMD") == 0 )//|| height != dp->destchaintip.blockhash.height+1 )
+            //if ( strcmp(dp->symbol,"KMD") == 0 )//|| height != dp->destchaintip.blockhash.height+1 )
                 printf("[%s].%d %s %s height.%d vs last.%d\n",dp->symbol,dp->SRCHEIGHT,dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
             if ( height <= dp->destchaintip.blockhash.height )
             {
@@ -224,13 +224,13 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         dp->numsrctx = sizeof(dp->srctx)/sizeof(*dp->srctx);
         if ( (strcmp(dp->dest,"KMD") == 0 || strcmp(dp->dest,"CHAIN") == 0) && dp->SRCHEIGHT < src->longestchain )
         {
-            //fprintf(stderr,"[I ");
+            fprintf(stderr,"[I ");
             dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
-            //fprintf(stderr," %d] ",dp->SRCHEIGHT);
+            fprintf(stderr," %d] ",dp->SRCHEIGHT);
         }
         if ( (height= dpow_getchaintip(myinfo,&merkleroot,&blockhash,&blocktime,dp->srctx,&dp->numsrctx,src)) != dp->last.blockhash.height && height >= 0 )
         {
-            //char str[65]; printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
+            char str[65]; printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( dp->lastheight == 0 )
                 dp->lastheight = height-1;
             if ( height < dp->last.blockhash.height )
