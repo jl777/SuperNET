@@ -286,7 +286,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
             }
             free(merkles);
         } else printf("%s.ht%d mismatched merkles\n",coin->symbol,height);
-    }
+    } else printf("%s.ht%d null checkmerkleroot\n",coin->symbol,height);
     *MoMdepthp = MoMdepth;
     return(MoM);
 }
