@@ -495,7 +495,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
     return(clonestr("{\"result\":\"notary node added\"}"));
 }
 
-char NOTARY_CURRENCIES[][16] = {
+char NOTARY_CURRENCIES[][65] = {
     "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "BOTS", "MGW", "COQUI", "WLC", "KV", "CEAL", "MESH", "MNZ", "CHIPS", "MSHARK", "AXO", "ETOMIC", "BTCH", "VOTE2018", "NINJA", "OOT", "CHAIN" 
 };
   
