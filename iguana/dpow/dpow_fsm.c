@@ -256,7 +256,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
             merkles = calloc(maxdepth,sizeof(*merkles));
             merkles[MoMdepth++] = merkle;
             ht = height - MoMdepth;
-            while ( MoMdepth < maxdepth && MoMdepth < height && ht >= breakht )
+            while ( MoMdepth < maxdepth && ht >= breakht && ht > 0 )
             {
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
                 if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
@@ -300,6 +300,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
         } else printf("%s.ht%d null merkles\n",coin->symbol,height);
     } else printf("%s.ht%d null block\n",coin->symbol,height);
     *MoMdepthp = MoMdepth;
+    printf("done MoM calc %s height.%d MoMdepth.%d\n",coin->symbol,height,MoMdepth);
     return(MoM);
 }
 
