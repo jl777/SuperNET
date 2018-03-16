@@ -246,7 +246,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
     bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; int32_t breakht=0,notht=0,ht,maxdepth = 256,MoMdepth = 0;
     memset(MoM.bytes,0,sizeof(MoM));
     blockhash = dpow_getblockhash(myinfo,coin,height);
-    printf("start MoM calc %s height.%d\n",coin->symbol,height);
+    //printf("start MoM calc %s height.%d\n",coin->symbol,height);
     if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
     {
         merkle = jbits256(blockjson,"merkleroot");
@@ -266,7 +266,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                     {
                         breakht = notht;
                         free_json(blockjson);
-                        printf("%s has notarization at %d for breakht.%d\n",coin->symbol,ht,notht);
+                        //printf("%s has notarization at %d for breakht.%d\n",coin->symbol,ht,notht);
                     }
                     merkle = jbits256(blockjson,"merkleroot");
                     free_json(blockjson);
@@ -301,7 +301,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
         } else printf("%s.ht%d null merkles\n",coin->symbol,height);
     } else printf("%s.ht%d null block\n",coin->symbol,height);
     *MoMdepthp = MoMdepth;
-    printf("done MoM calc %s height.%d MoMdepth.%d\n",coin->symbol,height,MoMdepth);
+    //printf("done MoM calc %s height.%d MoMdepth.%d\n",coin->symbol,height,MoMdepth);
     return(MoM);
 }
 
@@ -344,7 +344,7 @@ void dpow_statemachinestart(void *ptr)
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
-        printf("allocate bp for %s ht.%d -> %s\n",src->symbol,checkpoint.blockhash.height,dest->symbol);
+        //printf("allocate bp for %s ht.%d -> %s\n",src->symbol,checkpoint.blockhash.height,dest->symbol);
         Numallocated++;
         bp->MoM = MoM;
         bp->MoMdepth = MoMdepth;
