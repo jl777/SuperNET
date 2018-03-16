@@ -142,7 +142,7 @@ struct dpow_info
     struct dpow_block **blocks;
 };
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
-int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp);
+int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp,bits256 MoM,uint32_t MoMdepth);
 void dex_updateclient(struct supernet_info *myinfo);
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M,char *field);
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration);
