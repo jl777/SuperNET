@@ -253,7 +253,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
         free_json(blockjson);
         if ( bits256_nonz(merkle) != 0 )
         {
-            merkles = calloc(maxdepth,sizeof(*merkles));
+            merkles = calloc(maxdepth+1,sizeof(*merkles));
             merkles[MoMdepth++] = merkle;
             ht = height - MoMdepth;
             while ( MoMdepth < maxdepth && ht >= breakht && ht > 0 )
@@ -290,7 +290,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
             if ( MoMdepth > 0 )
             {
                 MoM = iguana_merkle(coin->symbol,merkles,MoMdepth);
-                char str[65]; printf("%s from height.%d MoMdepth.%d -> MoM %s\n",coin->symbol,height,MoMdepth,bits256_str(str,MoM));
+                char str[65]; printf("%s from height.%d ht.%d MoMdepth.%d -> MoM %s\n",coin->symbol,height,ht,MoMdepth,bits256_str(str,MoM));
             }
             else
             {
