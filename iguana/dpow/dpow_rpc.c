@@ -230,11 +230,14 @@ int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp,bits256 MoM,uint32_t Mo
 {
     struct iguana_info *coin; char *retstr,*hexstr; cJSON *retjson; int32_t n=0; uint32_t paxwdcrc;
     paxwdcrc = 0;
-    n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
-    n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
-    paxwdcrc = calc_crc32(0,hex,n) & 0xffffff00;
-    paxwdcrc |= (n & 0xff);
-    *paxwdcrcp = paxwdcrc;
+    if ( Notaries_port != DPOW_SOCKPORT )
+    {
+        n += iguana_rwbignum(1,&hex[n],sizeof(MoM),MoM.bytes);
+        n += iguana_rwnum(1,&hex[n],sizeof(MoMdepth),(uint32_t *)&MoMdepth);
+        paxwdcrc = calc_crc32(0,hex,n) & 0xffffff00;
+        paxwdcrc |= (n & 0xff);
+    }
+     *paxwdcrcp = paxwdcrc;
     return(n);
     if ( (coin= iguana_coinfind("KMD")) != 0 )
     {
