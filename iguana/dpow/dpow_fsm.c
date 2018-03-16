@@ -242,6 +242,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
     bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; int32_t ht,maxdepth = 65536,MoMdepth = 0;
     memset(MoM.bytes,0,sizeof(MoM));
     blockhash = dpow_getblockhash(myinfo,coin,height);
+    printf("start MoM calc %d height.%d\n",coin->symbol,height);
     if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
     {
         merkle = jbits256(blockjson,"merkleroot");
@@ -333,6 +334,7 @@ void dpow_statemachinestart(void *ptr)
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
+        printf("allocate bp for %s ht.%d -> %s\n",src->symbol,checkpoint.blockhash.height,dest->symbol);
         Numallocated++;
         bp->MoM = MoM;
         bp->MoMdepth = MoMdepth;
