@@ -287,7 +287,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 }
                 ht = height - MoMdepth;
             }
-            if ( MoMdepth > 0 && MoMdepth < maxdepth )
+            if ( MoMdepth > 0 )
             {
                 MoM = iguana_merkle(coin->symbol,merkles,MoMdepth);
                 char str[65]; printf("%s from height.%d MoMdepth.%d -> MoM %s\n",coin->symbol,height,MoMdepth,bits256_str(str,MoM));
