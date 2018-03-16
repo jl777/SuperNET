@@ -253,7 +253,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
         free_json(blockjson);
         if ( bits256_nonz(merkle) != 0 )
         {
-            merkles = calloc(maxdepth+1,sizeof(*merkles));
+            merkles = calloc(3*maxdepth+1,sizeof(*merkles));
             merkles[MoMdepth++] = merkle;
             ht = height - MoMdepth;
             while ( MoMdepth < maxdepth && ht >= breakht && ht > 0 )
@@ -262,7 +262,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
                 if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
                 {
-                    if ( (0) && breakht == 0 && dpow_hasnotarization(&notht,myinfo,coin,blockjson,ht) > 0 )
+                    if ( breakht == 0 && dpow_hasnotarization(&notht,myinfo,coin,blockjson,ht) > 0 )
                     {
                         breakht = notht;
                         //free_json(blockjson);
