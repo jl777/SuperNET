@@ -216,8 +216,8 @@ int32_t dpow_txhasnotarization(int32_t *nothtp,struct supernet_info *myinfo,stru
                     {
                         hasnotarization = 1;
                         *nothtp = height - 10;
+                        printf("numnotaries.%d %s hasnotarization.%d ht.%d MUSTFIX notht.%d\n",numnotaries,coin->symbol,hasnotarization,height,*nothtp);
                     }
-                    printf("numnotaries.%d %s hasnotarization.%d ht.%d MUSTFIX notht.%d\n",numnotaries,coin->symbol,hasnotarization,height,*nothtp);
                 }
             }
         }
