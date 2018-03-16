@@ -171,7 +171,7 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
 struct dex_nanomsghdr
 {
     uint32_t crc32,size,datalen,timestamp;
-    char handler[8];
+    char handler[64];
     uint8_t version0,version1,packet[];
 } PACKED;
 
@@ -2363,7 +2363,7 @@ uint16_t komodo_port(char *symbol,uint64_t supply,uint32_t *magicp)
 }
 
 #define MAX_CURRENCIES 32
-extern char CURRENCIES[][8];
+extern char CURRENCIES[][65];
 
 void komodo_assetcoins(int32_t fullnode,uint64_t mask)
 {
