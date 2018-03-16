@@ -162,12 +162,147 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
 
 uint32_t Numallocated;
 
+int32_t dpow_txhasnotarization(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t height)
+{
+    cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
+    if ( (txobj= dpow_gettransaction(myinfo,coin,txid)) != 0 )
+    {
+        if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
+        {
+            if ( numvins >= DPOW_MIN_ASSETCHAIN_SIGS )
+            {
+                notarymask = numnotaries = 0;
+                for (i=0; i<numvins; i++)
+                {
+                    vin = jitem(vins,i);
+                    spenttxid = jbits256(vin,"txid");
+                    spentvout = jint(vin,"vout");
+                    if ( (spentobj= dpow_gettransaction(myinfo,coin,spenttxid)) != 0 )
+                    {
+                        if ( (vouts= jarray(&numvouts,spentobj,"vout")) != 0 )
+                        {
+                            if ( spentvout < numvouts )
+                            {
+                                vout = jitem(vouts,spentvout);
+                                if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) == sizeof(script)*2 )
+                                {
+                                    len >>= 1;
+                                    decode_hex(script,len,hexstr);
+                                    if ( script[0] == 33 && script[34] == 0xac )
+                                    {
+                                        for (j=0; j<Notaries_num; j++)
+                                        {
+                                            if ( strncmp(Notaries_elected[j][1],hexstr+2,66) == 0 )
+                                            {
+                                                if ( ((1LL << j) & notarymask) == 0 )
+                                                {
+                                                    printf("n%d ",j);
+                                                    numnotaries++;
+                                                    notarymask |= (1LL << j);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        free_json(spentobj);
+                    }
+                }
+                if ( numnotaries > 0 )
+                {
+                    if ( numnotaries >= DPOW_MIN_ASSETCHAIN_SIGS )
+                        hasnotarization = 1;
+                    printf("numnotaries.%d %s hasnotarization.%d ht.%d\n",numnotaries,coin->symbol,hasnotarization,height);
+                }
+            }
+        }
+        free_json(txobj);
+    }
+    return(hasnotarization);
+}
+
+int32_t dpow_hasnotarization(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *blockjson,int32_t ht)
+{
+    int32_t i,n,hasnotarization = 0; bits256 txid; cJSON *txarray;
+    if ( (txarray= jarray(&n,blockjson,"tx")) != 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            txid = jbits256i(txarray,i);
+            hasnotarization += dpow_txhasnotarization(myinfo,coin,txid,ht);
+        }
+    }
+    return(hasnotarization);
+}
+
+bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
+{
+    bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; int32_t ht,maxdepth = 8192,MoMdepth = 0;
+    memset(MoM.bytes,0,sizeof(MoM));
+    blockhash = dpow_getblockhash(myinfo,coin,height);
+    if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
+    {
+        merkle = jbits256(blockjson,"merkleroot");
+        free_json(blockjson);
+        if ( bits256_nonz(merkle) != 0 )
+        {
+            merkles = calloc(maxdepth,sizeof(*merkles));
+            merkles[MoMdepth++] = merkle;
+            while ( MoMdepth < maxdepth && MoMdepth < height )
+            {
+                ht = height - MoMdepth;
+                blockhash = dpow_getblockhash(myinfo,coin,ht);
+                if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
+                {
+                    if ( dpow_hasnotarization(myinfo,coin,blockjson,ht) > 0 )
+                    {
+                        free_json(blockjson);
+                        break;
+                    }
+                    merkle = jbits256(blockjson,"merkleroot");
+                    free_json(blockjson);
+                    if ( bits256_nonz(merkle) != 0 )
+                        merkles[MoMdepth++] = merkle;
+                    else
+                    {
+                        printf("%s MoMdepth.%d ht.%d from height.%d, null merkleroot\n",coin->symbol,MoMdepth,ht,height);
+                        MoMdepth = 0;
+                        break;
+                    }
+                }
+                else
+                {
+                    printf("%s MoMdepth.%d ht.%d from height.%d, no blockhash\n",coin->symbol,MoMdepth,ht,height);
+                    MoMdepth = 0;
+                    break;
+                }
+            }
+            if ( MoMdepth > 0 && MoMdepth < maxdepth )
+            {
+                MoM = iguana_merkle(coin->symbol,merkles,MoMdepth);
+                char str[65]; printf("%s from height.%d MoMdepth.%d -> MoM %s\n",coin->symbol,height,MoMdepth,bits256_str(str,MoM));
+            }
+            else
+            {
+                printf("unexpected %s from height.%d MoMdepth.%d vs max.%d\n",coin->symbol,height,MoMdepth,maxdepth);
+                MoMdepth = 0;
+            }
+            free(merkles);
+        } else printf("%s.ht%d null merkles\n",coin->symbol,height);
+    } else printf("%s.ht%d null block\n",coin->symbol,height);
+    *MoMdepthp = MoMdepth;
+    return(MoM);
+}
+
 void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime,srctime;
+    int32_t i,j,ht,extralen,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t extras[10000],pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,MoM,merkleroot,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t MoMdepth,duration,minsigs,starttime,srctime;
     memset(&zero,0,sizeof(zero));
+    MoM = zero;
     srcprevtxid0 = destprevtxid0 = zero;
     srcprevvout0 = destprevvout0 = -1;
     myinfo = ptrs[0];
@@ -179,22 +314,28 @@ void dpow_statemachinestart(void *ptr)
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
-    dpow_getchaintip(myinfo,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
-    dpow_getchaintip(myinfo,&srchash,&srctime,dp->desttx,&dp->numdesttx,dest);
+    dpow_getchaintip(myinfo,&merkleroot,&srchash,&srctime,dp->desttx,&dp->numdesttx,dest);
+    dpow_getchaintip(myinfo,&merkleroot,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
     if ( src == 0 || dest == 0 )
     {
         printf("null coin ptr? (%s %p or %s %p)\n",dp->symbol,src,dp->dest,dest);
         free(ptr);
         return;
     }
+    MoMdepth = 0;
     if ( strcmp(src->symbol,"KMD") == 0 )
         kmdheight = checkpoint.blockhash.height;
     else if ( strcmp(dest->symbol,"KMD") == 0 )
+    {
         kmdheight = dest->longestchain;
+        MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
+    }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
         Numallocated++;
+        bp->MoM = MoM;
+        bp->MoMdepth = MoMdepth;
         bp->minsigs = minsigs;
         bp->duration = duration;
         bp->srccoin = src;

@@ -88,7 +88,7 @@ int32_t datachain_checkpoint_update(struct supernet_info *myinfo,struct iguana_i
             }
             if ( n > 0 && lastheight >= 0 && bits256_nonz(lasthash2) != 0 )
             {
-                merkle = iguana_merkle(tree,num);
+                merkle = iguana_merkle(coin->symbol,tree,num);
                 coin->lastcheckpoint = datachain_checkpoint(myinfo,coin,coin->lastcheckpoint,timestamp,merkle,lastheight,lasthash2);
             }
         }
