@@ -644,9 +644,14 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
     struct LP_priceinfo *pp; cJSON *retjson;
     if ( symbol == 0 )
         return(0);
+    if ( (pp= LP_priceinfofind(symbol)) != 0 )
+    {
+        printf("%s already there\n",symbol);
+        return(pp);
+    }
     if ( LP_numpriceinfos >= sizeof(LP_priceinfos)/sizeof(*LP_priceinfos) )
     {
-        printf("cant add any more priceinfos\n");
+        printf("cant add any more priceinfos than %d\n",LP_numpriceinfos);
         return(0);
     }
     pp = &LP_priceinfos[LP_numpriceinfos];
@@ -654,7 +659,7 @@ struct LP_priceinfo *LP_priceinfoadd(char *symbol)
     safecopy(pp->symbol,symbol,sizeof(pp->symbol));
     pp->coinbits = stringbits(symbol);
     pp->ind = LP_numpriceinfos++;
-    LP_numpriceinfos++;
+    //LP_numpriceinfos++;
     if ( (retjson= LP_priceinfomatrix(0)) != 0 )
         free_json(retjson);
     return(pp);

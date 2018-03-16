@@ -1226,10 +1226,10 @@ int32_t LP_vins_select(void *ctx,struct iguana_info *coin,int64_t *totalp,int64_
     return(n);
 }
 
-char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,uint32_t locktime,char *opretstr)
+char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_info *coin,struct vin_info *V,int32_t max,bits256 privkey,cJSON *outputs,cJSON *vins,cJSON *privkeys,int64_t txfee,bits256 utxotxid,int32_t utxovout,uint32_t locktime,char *opretstr,char *passphrase)
 {
     static void *ctx;
-    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr; bits256 txid; uint32_t timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t i,len,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS*256]; struct LP_address *ap;
+    cJSON *txobj,*item; uint8_t addrtype,rmd160[20],data[8192+64],script[8192],spendscript[256]; char *coinaddr,*rawtxbytes,*scriptstr; bits256 txid; uint32_t crc32,timestamp; int64_t change=0,adjust=0,total,value,amount = 0; int32_t origspendlen=0,i,offset,len,dustcombine,scriptlen,spendlen,suppress_pubkeys,ignore_cltverr,numvouts=0,numvins=0,numutxos=0; struct LP_address_utxo *utxos[LP_MAXVINS*256]; struct LP_address *ap;
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
     *numvinsp = 0;
@@ -1335,6 +1335,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 else
                 {
                     printf("custom script.%d too long %d\n",i,spendlen);
+                    free_json(txobj);
                     return(0);
                 }
             }
@@ -1346,7 +1347,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 else spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
                 if ( i == numvouts-1 && strcmp(coinaddr,coin->smartaddr) == 0 && change != 0 )
                 {
-                    printf("combine last vout %.8f with change %.8f\n",dstr(value+adjust),dstr(change));
+                    //printf("combine last vout %.8f with change %.8f\n",dstr(value+adjust),dstr(change));
                     value += change;
                     change = 0;
                 }
@@ -1370,8 +1371,22 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     if ( opretstr != 0 )
     {
         spendlen = (int32_t)strlen(opretstr) >> 1;
-        if ( spendlen < sizeof(script) )
+        if ( spendlen < sizeof(script)-60 )
         {
+            if ( passphrase != 0 && passphrase[0] != 0 )
+            {
+                decode_hex(data,spendlen,opretstr);
+                offset = 2 + (spendlen >= 16);
+                origspendlen = spendlen;
+                crc32 = calc_crc32(0,data,spendlen);
+                spendlen = LP_opreturn_encrypt(&script[offset],(int32_t)sizeof(script)-offset,data,spendlen,passphrase,crc32&0xffff);
+                if ( spendlen < 0 )
+                {
+                    printf("error encrpting opreturn data\n");
+                    free_json(txobj);
+                    return(0);
+                }
+            } else offset = crc32 = 0;
             len = 0;
             script[len++] = SCRIPT_OP_RETURN;
             if ( spendlen < 76 )
@@ -1387,13 +1402,27 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 script[len++] = (spendlen & 0xff);
                 script[len++] = ((spendlen >> 8) & 0xff);
             }
-            decode_hex(&script[len],spendlen,opretstr);
+            if ( passphrase != 0 && passphrase[0] != 0 )
+            {
+                if ( offset != len )
+                {
+                    printf("offset.%d vs len.%d, reencrypt\n",offset,len);
+                    spendlen = LP_opreturn_encrypt(&script[len],(int32_t)sizeof(script)-len,data,origspendlen,passphrase,crc32&0xffff);
+                    if ( spendlen < 0 )
+                    {
+                        printf("error encrpting opreturn data\n");
+                        free_json(txobj);
+                        return(0);
+                    }
+                } //else printf("offset.%d already in right place\n",offset);
+            } else decode_hex(&script[len],spendlen,opretstr);
             txobj = bitcoin_txoutput(txobj,script,len + spendlen,0);
-            printf("OP_RETURN.[%d, %d] script.(%s)\n",len,spendlen,opretstr);
+            //printf("OP_RETURN.[%d, %d] script.(%s)\n",len,spendlen,opretstr);
         }
         else
         {
             printf("custom script.%d too long %d\n",i,spendlen);
+            free_json(txobj);
             return(0);
         }
     }
@@ -1405,10 +1434,96 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
     return(rawtxbytes);
 }
 
+char *LP_opreturndecrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphrase)
+{
+    cJSON *txjson,*vouts,*opret,*sobj,*retjson; uint16_t utxovout; char *opretstr,*hexstr; uint8_t *opretdata,*databuf,*decoded; uint16_t ind16; uint32_t crc32; int32_t i,len,numvouts,opretlen,datalen; struct iguana_info *coin;
+    if ( (coin= LP_coinfind(symbol)) == 0 )
+        return(clonestr("{\"error\":\"cant find coin\"}"));
+    retjson = cJSON_CreateObject();
+    utxovout = 0;
+    if ( (txjson= LP_gettx("LP_opreturn_decrypt",coin->symbol,utxotxid,1)) != 0 )
+    {
+        if ( (vouts= jarray(&numvouts,txjson,"vout")) != 0 && numvouts >= 1 )
+        {
+            opret = jitem(vouts,numvouts - 1);
+            jaddstr(retjson,"coin",symbol);
+            jaddbits256(retjson,"opreturntxid",utxotxid);
+            if ( (sobj= jobj(opret,"scriptPubKey")) != 0 )
+            {
+                if ( (opretstr= jstr(sobj,"hex")) != 0 )
+                {
+                    jaddstr(retjson,"opreturn",opretstr);
+                    opretlen = (int32_t)strlen(opretstr) >> 1;
+                    opretdata = malloc(opretlen);
+                    decode_hex(opretdata,opretlen,opretstr);
+                    databuf = &opretdata[2];
+                    datalen = 0;
+                    if ( opretdata[0] != 0x6a )
+                        jaddstr(retjson,"error","not opreturn data");
+                    else if ( (datalen= opretdata[1]) < 76 )
+                    {
+                        if ( &databuf[datalen] != &opretdata[opretlen] )
+                            databuf = 0, jaddstr(retjson,"error","mismatched short opretlen");
+                    }
+                    else if ( opretdata[1] == 0x4c )
+                    {
+                        datalen = opretdata[2];
+                        databuf++;
+                        if ( &databuf[datalen] != &opretdata[opretlen] )
+                            databuf = 0, jaddstr(retjson,"error","mismatched opretlen");
+                    }
+                    else if ( opretdata[1] == 0x4d )
+                    {
+                        datalen = opretdata[3];
+                        datalen <<= 8;
+                        datalen |= opretdata[2];
+                        databuf += 2;
+                        if ( &databuf[datalen] != &opretdata[opretlen] )
+                            databuf = 0, jaddstr(retjson,"error","mismatched big opretlen");
+                    }
+                    else databuf = 0, jaddstr(retjson,"error","unexpected opreturn data type");
+                    if ( databuf != 0 )
+                    {
+                        decoded = calloc(1,opretlen+1);
+                        if ( (len= LP_opreturn_decrypt(&ind16,decoded,databuf,datalen,passphrase)) < 0 )
+                            jaddstr(retjson,"error","decrypt error");
+                        else
+                        {
+                            crc32 = calc_crc32(0,decoded,len);
+                            if ( (crc32 & 0xffff) == ind16 )
+                            {
+                                jaddstr(retjson,"result","success");
+                                hexstr = malloc(len*2+1);
+                                init_hexbytes_noT(hexstr,decoded,len);
+                                jaddstr(retjson,"decrypted",hexstr);
+                                for (i=0; i<len; i++)
+                                    if ( isprint(decoded[i]) == 0 )
+                                        break;
+                                if ( i == len )
+                                {
+                                    memcpy(hexstr,decoded,len);
+                                    hexstr[len] = 0;
+                                    jaddstr(retjson,"original",hexstr);
+                                }
+                                free(hexstr);
+                            } else jaddstr(retjson,"error","decrypt crc16 error");
+                        }
+                        free(decoded);
+                    }
+                    free(opretdata);
+                }
+            }
+        }
+        free_json(txjson);
+    }
+    return(jprint(retjson,1));
+}
+
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
+    int32_t allocated_outputs=0,iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
+//printf("withdraw.%s %s\n",coin->symbol,jprint(argjson,0));
     if ( coin->etomic[0] != 0 )
     {
         if ( (coin= LP_coinfind("ETOMIC")) == 0 )
@@ -1418,8 +1533,20 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         ctx = bitcoin_ctx();
     if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 )
     {
-        printf("no outputs in argjson (%s)\n",jprint(argjson,0));
-        return(clonestr("{\"error\":\"no outputs specified\"}"));
+        if ( jstr(argjson,"opreturn") == 0 )
+        {
+            printf("no outputs in argjson (%s)\n",jprint(argjson,0));
+            return(clonestr("{\"error\":\"no outputs specified\"}"));
+        }
+        else
+        {
+            outputs = cJSON_CreateArray();
+            item = cJSON_CreateObject();
+            jaddnum(item,coin->smartaddr,0.0001);
+            jaddi(outputs,item);
+            numvouts = 1;
+            allocated_outputs = 1;
+        }
     }
     utxotxid = jbits256(argjson,"utxotxid");
     utxovout = jint(argjson,"utxovout");
@@ -1446,13 +1573,15 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         {
             printf("LP_withdraw error utxo reset %s\n",coin->symbol);
             free(V);
+            if ( allocated_outputs != 0 )
+                free_json(outputs);
             return(0);
         }
         privkeys = cJSON_CreateArray();
         vins = cJSON_CreateArray();
         memset(V,0,sizeof(*V) * maxV);
         numvins = 0;
-        if ( (rawtx= LP_createrawtransaction(&txobj,&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee,utxotxid,utxovout,locktime,jstr(argjson,"opreturn"))) != 0 )
+        if ( (rawtx= LP_createrawtransaction(&txobj,&numvins,coin,V,maxV,privkey,outputs,vins,privkeys,iter == 0 ? txfee : newtxfee,utxotxid,utxovout,locktime,jstr(argjson,"opreturn"),jstr(argjson,"passphrase"))) != 0 )
         {
             completed = 0;
             memset(&msgtx,0,sizeof(msgtx));
@@ -1513,6 +1642,8 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         jadd(retjson,"tx",txobj);
     jaddbits256(retjson,"txid",signedtxid);
     jadd(retjson,"complete",completed!=0?jtrue():jfalse());
+    if ( allocated_outputs != 0 )
+        free_json(outputs);
     return(jprint(retjson,1));
 }
 

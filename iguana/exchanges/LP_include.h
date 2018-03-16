@@ -98,8 +98,8 @@ void emscripten_usleep(int32_t x); // returns immediate, no sense for sleeping
 
 #define LP_SWAPSTEP_TIMEOUT 30
 #define LP_MIN_TXFEE 1000
-#define LP_MINVOL 20
-#define LP_MINCLIENTVOL 200
+#define LP_MINVOL 100
+#define LP_MINCLIENTVOL 1000
 #define LP_MINSIZE_TXFEEMULT 10
 #define LP_REQUIRED_TXFEE 0.75
 
@@ -508,6 +508,8 @@ char *LP_pricepings(void *ctx,char *myipaddr,int32_t pubsock,char *base,char *re
 int32_t LP_merkleproof(struct iguana_info *coin,char *coinaddr,struct electrum_info *ep,bits256 txid,int32_t height);
 cJSON *electrum_address_gethistory(char *symbol,struct electrum_info *ep,cJSON **retjsonp,char *addr,bits256 reftxid);
 cJSON *LP_myzdebits();
+int32_t LP_opreturn_decrypt(uint16_t *ind16p,uint8_t *decoded,uint8_t *encoded,int32_t encodedlen,char *passphrase);
+int32_t LP_opreturn_encrypt(uint8_t *dest,int32_t maxsize,uint8_t *data,int32_t datalen,char *passphrase,uint16_t ind16);
 void LP_pendswap_add(uint32_t expiration,uint32_t requestid,uint32_t quoteid);
 int32_t _LP_utxos_remove(bits256 txid,int32_t vout);
 int32_t LP_utxos_remove(bits256 txid,int32_t vout);
