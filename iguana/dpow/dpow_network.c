@@ -1944,7 +1944,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     //printf(" dpow_send.(%d) size.%d numipbits.%d myind.%d\n",datalen,size,np->numipbits,bp->myind);
     if ( bp->isratify == 0 )
     {
-        extralen = dpow_paxpending(extras,&paxwdcrc);
+        extralen = dpow_paxpending(extras,&paxwdcrc,bp->MoM,bp->MoMdepth);
         bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = paxwdcrc;
         //dpow_bestconsensus(bp);
         dpow_nanoutxoset(myinfo,dp,&np->notarize,bp,0);

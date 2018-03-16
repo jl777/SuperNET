@@ -541,7 +541,7 @@ void dpow_statemachinestart(void *ptr)
     {
         //if ( (starttime= checkpoint.timestamp) == 0 )
         bp->starttime = starttime;
-        extralen = dpow_paxpending(extras,&bp->paxwdcrc);
+        extralen = dpow_paxpending(extras,&bp->paxwdcrc,bp->MoM,bp->MoMdepth);
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
     }
     printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u+dur.%d vs %ld\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),starttime,bp->duration,time(NULL));
@@ -559,7 +559,7 @@ void dpow_statemachinestart(void *ptr)
                 printf("break due to already ratifying\n");
                 break;
             }
-            extralen = dpow_paxpending(extras,&bp->paxwdcrc);
+            extralen = dpow_paxpending(extras,&bp->paxwdcrc,bp->MoM,bp->MoMdepth);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
         sleep(13);
