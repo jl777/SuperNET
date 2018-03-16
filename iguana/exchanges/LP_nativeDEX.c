@@ -1439,7 +1439,7 @@ void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,uint16_t mybu
     //strcpy(LP_publicaddr,pushaddr);
     //LP_publicport = mypullport;
     //LP_mybussock = LP_coinbus(mybusport);
-    printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d pushaddr.%s\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport,pushaddr);
+    printf("got %s, initpeers. LP_mypubsock.%d pullsock.%d RPC_port.%u mypullport.%d mypubport.%d\n",myipaddr,LP_mypubsock,LP_mypullsock,RPC_port,mypullport,mypubport);
     LP_passphrase_init(passphrase,jstr(argjson,"gui"),juint(argjson,"netid"),jstr(argjson,"seednode"));
 #ifndef FROM_JS
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_psockloop,(void *)myipaddr) != 0 )

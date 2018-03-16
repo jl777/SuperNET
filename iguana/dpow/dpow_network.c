@@ -1342,7 +1342,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
 
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 {
-    char str[512]; int32_t timeout,retval,maxsize,dpowsock,dexsock,repsock,pubsock;
+    char str[512],bindpoint[64]; int32_t timeout,retval,maxsize,dpowsock,dexsock,repsock,pubsock;
     if ( myinfo->ipaddr[0] == 0 )
     {
         printf("need to set ipaddr before nanomsg\n");
@@ -1357,9 +1357,10 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     pubsock = myinfo->pubsock;
     if ( dpowsock < 0 && (dpowsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
-        if ( nn_bind(dpowsock,nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port)) < 0 )
+        sprintf(bindpoint,"tcp://*:%u",Notaries_port);
+        if ( nn_bind(dpowsock,bindpoint) < 0 ) //nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port
         {
-            printf("error binding to dpowsock (%s)\n",nanomsg_tcpname(myinfo,str,myinfo->ipaddr,Notaries_port));
+            printf("error binding to dpowsock (%s)\n",bindpoint);
             nn_close(dpowsock);
             dpowsock = -1;
         }
@@ -1426,15 +1427,15 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                     }
                 }
             }
-            myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
-            myinfo->numdpowipbits = 1;
-            timeout = 1;
-            nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            maxsize = 1024 * 1024;
-            printf("RCVBUF.%d\n",nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
-            
-            myinfo->nanoinit = (uint32_t)time(NULL);
         }
+        myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
+        myinfo->numdpowipbits = 1;
+        timeout = 1;
+        nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+        maxsize = 1024 * 1024;
+        printf("%s RCVBUF.%d\n",bindpoint,nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
+        
+        myinfo->nanoinit = (uint32_t)time(NULL);
     } //else printf("error creating nanosocket\n");
     if ( myinfo->dpowsock != dpowsock )
         myinfo->dpowsock = dpowsock;
@@ -1900,8 +1901,8 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 printf("mypaxcrc.%x\n",bp->paxwdcrc);
         }
         char str[65];
-        if ( (rand() % 130) == 0 )
-            printf("%p ht.%d [%d] ips.%d %s NOTARIZE.%d matches.%d paxmatches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx) senderind.%d state.%x (%x %x %x) MoM.%s\n",bp,bp->height,bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,paxmatches,bestmatches,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigsmasks[bp->bestk]:0),senderind,bp->state,bp->hashmsg.uints[0],bp->desttxid.uints[0],bp->srctxid.uints[0],bits256_str(str,bp->MoM));
+        if ( (rand() % 130) == 0 || strcmp(dp->symbol,"PIZZA") == 0 )
+            printf("%p ht.%d [%d] ips.%d %s NOTARIZE.%d matches.%d paxmatches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx) senderind.%d state.%x (%x %x %x) MoM.%s [%d]\n",bp,bp->height,bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,paxmatches,bestmatches,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigsmasks[bp->bestk]:0),senderind,bp->state,bp->hashmsg.uints[0],bp->desttxid.uints[0],bp->srctxid.uints[0],bits256_str(str,bp->MoM),bp->MoMdepth);
     }
 }
 
@@ -2014,7 +2015,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
         if ( j == n )
             missing++;
     }
-    if ( (numipbits == 1 || missing < matched || matched > 0) && missing > 0 )
+    if ( (numipbits == 1 || missing < matched || matched >= 0) && missing > 0 )
     {
         for (i=0; i<numipbits; i++)
             if ( ipbits[i] != 0 )

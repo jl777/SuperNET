@@ -189,7 +189,7 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
     dpow_fifoupdate(myinfo,dp->destfifo,dp->destchaintip);
     if ( strcmp(dp->dest,"BTC") == 0 )
     {
-        printf("%s destupdate ht.%d\n",dp->dest,height);
+        //printf("%s destupdate ht.%d\n",dp->dest,height);
         dpow_destconfirm(myinfo,dp,&dp->destfifo[DPOW_BTCCONFIRMS]);
     }
     else dpow_destconfirm(myinfo,dp,&dp->destfifo[DPOW_KOMODOCONFIRMS*2]); // todo: change to notarized KMD depth
@@ -198,21 +198,21 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
 void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 {
     int32_t height,num; uint32_t blocktime; bits256 blockhash,merkleroot; struct iguana_info *src,*dest;
-    //fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
     //if ( strcmp(dp->symbol,"KMD") == 0 )
     {
         num = dpow_nanomsg_update(myinfo);
-        //fprintf(stderr,"%d ",num);
+        //fprintf(stderr,"nano.%d ",num);
     }
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
     if ( src != 0 && dest != 0 )
     {
+        //fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
         if ( (height= dpow_getchaintip(myinfo,&merkleroot,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
             char str[65];
-            if ( strcmp(dp->symbol,"KMD") == 0 )//|| height != dp->destchaintip.blockhash.height+1 )
+            if ( (0) && strcmp(dp->symbol,"KMD") == 0 )//|| height != dp->destchaintip.blockhash.height+1 )
                 printf("[%s].%d %s %s height.%d vs last.%d\n",dp->symbol,dp->SRCHEIGHT,dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
             if ( height <= dp->destchaintip.blockhash.height )
             {
