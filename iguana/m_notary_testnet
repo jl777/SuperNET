@@ -1,0 +1,6 @@
+#!/bin/bash
+pkill -15 iguana
+rm -f ../agents/iguana *.o
+git pull
+wget -qO testnet.json https://raw.githubusercontent.com/KomodoPlatform/vote2018/master/testnet/testnet.json
+./m_notary_run_testnet testnet.json
