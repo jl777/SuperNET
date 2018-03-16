@@ -243,7 +243,7 @@ int32_t dpow_hasnotarization(int32_t *nothtp,struct supernet_info *myinfo,struct
 
 bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
 {
-    bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; int32_t breakht=0,notht=0,ht,maxdepth = 65536,MoMdepth = 0;
+    bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; int32_t breakht=0,notht=0,ht,maxdepth = 20000,MoMdepth = 0;
     memset(MoM.bytes,0,sizeof(MoM));
     blockhash = dpow_getblockhash(myinfo,coin,height);
     printf("start MoM calc %s height.%d\n",coin->symbol,height);
@@ -258,7 +258,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
             ht = height - MoMdepth;
             while ( MoMdepth < maxdepth && ht >= breakht && ht > 0 )
             {
-                fprintf(stderr,"%s.%d ",coin->symbol,ht);
+                //fprintf(stderr,"%s.%d ",coin->symbol,ht);
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
                 if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
                 {
@@ -337,7 +337,9 @@ void dpow_statemachinestart(void *ptr)
     else if ( strcmp(dest->symbol,"KMD") == 0 )
     {
         kmdheight = dest->longestchain;
+        portable_mutex_lock(&myinfo->MoM_mutex);
         MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
+        portable_mutex_unlock(&myinfo->MoM_mutex);
     }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
