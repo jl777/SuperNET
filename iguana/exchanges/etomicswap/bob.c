@@ -99,7 +99,6 @@ int main(int argc, char** argv)
             strcpy(input2.amount, "1000000000000000000");
             strcpy(input2.aliceAddress, aliceAddress);
             strcpy(input2.tokenAddress, argv[3]);
-            strcpy(input2.aliceCanClaimAfter, argv[4]);
             strcpy(input2.bobSecret, argv[5]);
 
             result = bobRefundsDeposit(input2, txData);
@@ -122,7 +121,6 @@ int main(int argc, char** argv)
             strcpy(input3.amount, "1000000000000000000");
             strcpy(input3.bobAddress, bobAddress);
             strcpy(input3.tokenAddress, argv[3]);
-            strcpy(input3.aliceCanClaimAfter, argv[4]);
             strcpy(input3.bobHash, argv[5]);
 
             result = aliceClaimsBobDeposit(input3, txData);
@@ -189,7 +187,6 @@ int main(int argc, char** argv)
             strcpy(input6.aliceAddress, aliceAddress);
             strcpy(input6.amount, "1000000000000000000");
             strcpy(input6.tokenAddress, argv[3]);
-            strcpy(input6.bobCanClaimAfter, argv[4]);
             strcpy(input6.aliceHash, argv[5]);
 
             result = bobReclaimsBobPayment(input6, txData);
@@ -213,7 +210,6 @@ int main(int argc, char** argv)
             strcpy(input7.bobAddress, bobAddress);
             strcpy(input7.amount, "1000000000000000000");
             strcpy(input7.tokenAddress, argv[3]);
-            strcpy(input7.bobCanClaimAfter, argv[4]);
             strcpy(input7.aliceSecret, argv[5]);
 
             result = aliceSpendsBobPayment(input7, txData);
@@ -240,6 +236,53 @@ int main(int argc, char** argv)
             strcpy(input123.secret, getenv("BOB_PK"));
             pthread_t t1, t2;
             pthread_create(&t1, NULL, erc20ApproveThread, &input8);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
+            pthread_create(&t2, NULL, erc20ApproveThread, &input123);
             pthread_create(&t2, NULL, erc20ApproveThread, &input123);
             pthread_join(t1, NULL);
             pthread_join(t2, NULL);
