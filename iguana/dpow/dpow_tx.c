@@ -230,7 +230,7 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
             printf("%02x",extras[i]);
         printf(" <- withdraw.%d %08x\n",n,paxwdcrc);
     }
-    else if ( Notaries_port != DPOW_SOCKPORT && bp->MoMdepth > 0 && src_or_dest == 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) // only testnets for now
+    else if ( Notaries_port != DPOW_SOCKPORT && bp->MoMdepth > 0 && strcmp(bp->destcoin->symbol,"KMD") == 0 ) // only testnets for now
     {
         n += iguana_rwbignum(1,&extras[n],sizeof(bp->MoM),bp->MoM.bytes);
         n += iguana_rwnum(1,&extras[n],sizeof(bp->MoMdepth),(uint32_t *)&bp->MoMdepth);
