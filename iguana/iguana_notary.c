@@ -60,7 +60,7 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht; struct dpow_block *bp;
+    void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht,notht; struct dpow_block *bp;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     if ( strcmp("BTC",dp->dest) == 0 )
@@ -88,7 +88,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                 if ( (blockjson= dpow_getblock(myinfo,coin,hash)) != 0 )
                 {
                     height = jint(blockjson,"height");
-                    if ( dpow_hasnotarization(myinfo,coin,blockjson,height) <= 0 )
+                    if ( dpow_hasnotarization(&notht,myinfo,coin,blockjson,height) <= 0 )
                     {
                         blocktime = juint(blockjson,"time");
                         free_json(blockjson);
