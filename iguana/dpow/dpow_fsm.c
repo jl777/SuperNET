@@ -262,7 +262,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
                 if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
                 {
-                    if ( breakht == 0 && dpow_hasnotarization(&notht,myinfo,coin,blockjson,ht) > 0 )
+                    if ( (0) && breakht == 0 && dpow_hasnotarization(&notht,myinfo,coin,blockjson,ht) > 0 )
                     {
                         breakht = notht;
                         //free_json(blockjson);
@@ -337,9 +337,9 @@ void dpow_statemachinestart(void *ptr)
     else if ( strcmp(dest->symbol,"KMD") == 0 )
     {
         kmdheight = dest->longestchain;
-        portable_mutex_lock(&myinfo->MoM_mutex);
+        //portable_mutex_lock(&myinfo->MoM_mutex);
         MoM = dpow_calcMoM(&MoMdepth,myinfo,src,checkpoint.blockhash.height);
-        portable_mutex_unlock(&myinfo->MoM_mutex);
+        //portable_mutex_unlock(&myinfo->MoM_mutex);
     }
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
