@@ -262,10 +262,10 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
                 if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
                 {
-                    if ( notht == 0 && dpow_hasnotarization(&notht,myinfo,coin,blockjson,ht) > 0 )
+                    if ( breakht == 0 && dpow_hasnotarization(&notht,myinfo,coin,blockjson,ht) > 0 )
                     {
                         breakht = notht;
-                        free_json(blockjson);
+                        //free_json(blockjson);
                         //printf("%s has notarization at %d for breakht.%d\n",coin->symbol,ht,notht);
                     }
                     merkle = jbits256(blockjson,"merkleroot");
