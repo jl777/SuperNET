@@ -258,6 +258,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
             ht = height - MoMdepth;
             while ( MoMdepth < maxdepth && ht >= breakht && ht > 0 )
             {
+                fprintf(stderr,"%s.%d ",coin->symbol,ht);
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
                 if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
                 {
