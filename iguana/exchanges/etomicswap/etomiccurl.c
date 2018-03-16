@@ -211,7 +211,7 @@ EthTxReceipt getEthTxReceipt(char *txId)
     cJSON_AddItemToArray(params, cJSON_CreateString(txId));
     cJSON *receiptJson = sendRpcRequest("eth_getTransactionReceipt", params);
     cJSON_Delete(params);
-    if (receiptJson == NULL) {
+    if (receiptJson == NULL || is_cJSON_Null(cJSON_GetObjectItem(receiptJson, "blockHash")) || is_cJSON_Null(cJSON_GetObjectItem(receiptJson, "blockNumber"))) {
         printf("ETH tx %s is not confirmed yet or does not exist at all\n", txId);
         strcpy(result.blockHash, "0x0000000000000000000000000000000000000000000000000000000000000000");
         result.blockNumber = 0;
