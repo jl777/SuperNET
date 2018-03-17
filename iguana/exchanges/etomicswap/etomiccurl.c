@@ -115,16 +115,11 @@ char* sendRawTxWaitConfirm(char* rawTx)
     char *txId = NULL;
     if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
         char* tmp = resultJson->valuestring;
-        txId = (char *) malloc(strlen(tmp) + 1);
-        strcpy(txId, tmp);
-    }
-    /*if (resultJson != NULL && is_cJSON_String(resultJson) && resultJson->valuestring != NULL) {
-        char* tmp = resultJson->valuestring;
         if (waitForConfirmation(tmp) > 0) {
             txId = (char *) malloc(strlen(tmp) + 1);
             strcpy(txId, tmp);
         }
-    }*/
+    }
     cJSON_Delete(resultJson);
     pthread_mutex_unlock(&sendTxMutex);
     return txId;
@@ -156,9 +151,9 @@ int64_t getNonce(char* address)
     };
     cJSON *params = cJSON_CreateArray();
     cJSON_AddItemToArray(params, cJSON_CreateString(address));
-    //cJSON_AddItemToArray(params, cJSON_CreateString("pending"));
+    cJSON_AddItemToArray(params, cJSON_CreateString("pending"));
     int64_t nonce = -1;
-    cJSON *nonceJson = sendRpcRequest("parity_nextNonce", params);
+    cJSON *nonceJson = sendRpcRequest("eth_getTransactionCount", params);
     cJSON_Delete(params);
     if (nonceJson != NULL && is_cJSON_String(nonceJson) && nonceJson != NULL) {
         nonce = (int64_t) strtol(nonceJson->valuestring, NULL, 0);
