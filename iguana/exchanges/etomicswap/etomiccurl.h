@@ -12,10 +12,10 @@ extern "C"{
 #endif
 
 #ifdef ETOMIC_TESTNET
-#define ETOMIC_URL "https://ropsten.infura.io/y07GHxUyTgeN2mdfOonu"
+#define ETOMIC_URL "http://195.201.0.6:8545"
 #define DEFAULT_GAS_PRICE 100
 #else
-#define ETOMIC_URL "https://mainnet.infura.io/y07GHxUyTgeN2mdfOonu"
+#define ETOMIC_URL "http://195.201.0.6:8555"
 #define DEFAULT_GAS_PRICE 4
 #endif
 
