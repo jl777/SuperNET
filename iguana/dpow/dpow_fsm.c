@@ -201,7 +201,7 @@ int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txi
             offset += iguana_rwbignum(0,&opret[offset],sizeof(*MoMp),MoMp->bytes);
             offset += iguana_rwnum(0,&opret[offset],sizeof(*MoMdepthp),(uint32_t *)MoMdepthp);
         }
-        printf("offset.%d vs len.%d\n",offset,len);
+        ///printf("offset.%d vs len.%d\n",offset,len);
         return(len);
     }
     return(-1);
@@ -260,7 +260,7 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                     if ( numnotaries >= DPOW_MIN_ASSETCHAIN_SIGS )
                     {
                         hasnotarization = 1;
-                        *nothtp = 0;
+                        *nothtp = height - 10;
                         if ( (vouts= jarray(&numvouts,txobj,"vout")) != 0 )
                         {
                             bits256 blockhash,txid,MoM; uint32_t MoMdepth; char symbol[65],str[65],str2[65],str3[65];
@@ -269,7 +269,7 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                             {
                                 len >>= 1;
                                 decode_hex(script,len,hexstr);
-                                if ( dpow_opreturn_parsesrc(&blockhash,nothtp,&txid,symbol,&MoM,&MoMdepth,script,len) > 0 )
+                                if ( 0 && dpow_opreturn_parsesrc(&blockhash,nothtp,&txid,symbol,&MoM,&MoMdepth,script,len) > 0 )
                                 {
                                     if ( bits256_nonz(MoM) == 0 || MoMdepth == 0 || *nothtp >= height || *nothtp < 0 )
                                         *nothtp = 0;
