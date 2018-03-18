@@ -162,6 +162,48 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
 
 uint32_t Numallocated;
 
+int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txidp,char *symbol,bits256 *MoMp,uint32_t *MoMdepthp,uint8_t *opret,int32_t opretlen)
+{
+    int32_t i,c,len,offset = 0; uint8_t op;
+    symbol[0] = 0;
+    memset(blockhashp->bytes,0,sizeof(*blockhashp));
+    memset(heightp,0,sizeof(*heightp));
+    memset(txidp->bytes,0,sizeof(*txidp));
+    memset(MoMp->bytes,0,sizeof(*MoMp));
+    memset(MoMdepthp,0,sizeof(*MoMdepthp));
+    if ( opret[offset++] == 0x6a )
+    {
+        if ( (op= opret[offset++]) < 0x4c )
+            len = op;
+        else if ( op == 0x4c )
+            len = opret[offset++];
+        else if ( op == 0x4d )
+        {
+            len = opret[offset++];
+            len = len + ((int32_t)opret[offset++] << 8);
+        } else return(-1);
+        offset += iguana_rwbignum(0,&opret[offset],sizeof(*blockhashp),blockhashp->bytes);
+        offset += iguana_rwnum(0,&opret[offset],sizeof(*heightp),(uint32_t *)heightp);
+        offset += iguana_rwbignum(0,&opret[offset],sizeof(*txidp),txidp->bytes);
+        for (i=0; i<65; i++)
+        {
+            if ( (c= opret[offset++]) == 0 )
+                break;
+            if ( offset > opretlen )
+                break;
+            symbol[i] = c;
+        }
+        symbol[i] = 0;
+        if ( offset+sizeof(bits256)+sizeof(uint32_t) <= opretlen )
+        {
+            offset += iguana_rwbignum(0,&opret[offset],sizeof(*MoMp),MoMp->bytes);
+            offset += iguana_rwnum(0,&opret[offset],sizeof(*MoMdepthp),(uint32_t *)MoMdepthp);
+        }
+        return(len);
+    }
+    return(-1);
+}
+
 int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t height)
 {
     cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; uint64_t notarymask=0; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
@@ -216,6 +258,22 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                     {
                         hasnotarization = 1;
                         *nothtp = height - 10;
+                        if ( (vouts= jarray(&numvouts,txobj,"vout")) != 0 )
+                        {
+                            bits256 blockhash,txid,MoM; uint32_t MoMdepth; char symbol[65],str[65],str2[65],str3[65];
+                            vout = jitem(vouts,numvouts-1);
+                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) == sizeof(script)*2 )
+                            {
+                                len >>= 1;
+                                decode_hex(script,len,hexstr);
+                                if ( dpow_opreturn_parsesrc(&blockhash,nothtp,&txid,symbol,&MoM,&MoMdepth,script,len) > 0 )
+                                {
+                                    printf("%s.%d notarizationht.%d %s -> %s MoM.%s [%d]\n",symbol,height,*nothtp,bits256_str(str,blockhash),bits256_str(str2,txid),bits256_str(str3,MoM),MoMdepth);
+                                    if ( bits256_nonz(MoM) == 0 || MoMdepth == 0 )
+                                        *nothtp = 0;
+                                }
+                            }
+                        }
                         printf("numnotaries.%d %s hasnotarization.%d ht.%d MUSTFIX notht.%d\n",numnotaries,coin->symbol,hasnotarization,height,*nothtp);
                     }
                 }
@@ -259,7 +317,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
             merkles = calloc(3*maxdepth+1,sizeof(*merkles));
             merkles[MoMdepth++] = merkle;
             ht = height - MoMdepth;
-            while ( MoMdepth < maxdepth && ht >= breakht && ht > 0 )
+            while ( MoMdepth < maxdepth && ht > breakht && ht > 0 )
             {
                 //fprintf(stderr,"%s.%d ",coin->symbol,ht);
                 blockhash = dpow_getblockhash(myinfo,coin,ht);

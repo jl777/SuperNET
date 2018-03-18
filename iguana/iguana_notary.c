@@ -584,6 +584,7 @@ STRING_AND_TWOINTS(dpow,notarizations,symbol,height,numblocks)
         free_json(retjson);
     } else maxheight = (1 << 30);
     memset(masksums,0,sizeof(masksums));
+    ht = height;
     if ( (coin= iguana_coinfind(symbol)) != 0 )
     {
         for (i=0; i<numblocks; i++)
@@ -610,6 +611,7 @@ STRING_AND_TWOINTS(dpow,notarizations,symbol,height,numblocks)
             {
                 item = cJSON_CreateObject();
                 jaddstr(item,"notary",Notaries_elected[i][0]);
+                jaddnum(item,"id",i);
                 jaddnum(item,"notarizations",masksums[i]);
                 jaddi(array,item);
             }
@@ -617,7 +619,8 @@ STRING_AND_TWOINTS(dpow,notarizations,symbol,height,numblocks)
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"coin",symbol);
         jaddnum(retjson,"start",height);
-        jaddnum(retjson,"numblocks",numblocks);
+        jaddnum(retjson,"numblocks",ht - height);
+        jaddnum(retjson,"maxheight",maxheight);
         jadd(retjson,"notarizations",array);
         return(jprint(retjson,1));
     }
