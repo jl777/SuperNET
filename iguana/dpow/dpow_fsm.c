@@ -199,6 +199,7 @@ int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txi
             offset += iguana_rwbignum(0,&opret[offset],sizeof(*MoMp),MoMp->bytes);
             offset += iguana_rwnum(0,&opret[offset],sizeof(*MoMdepthp),(uint32_t *)MoMdepthp);
         }
+        printf("offset.%d vs len.%d\n",offset,len);
         return(len);
     }
     return(-1);
