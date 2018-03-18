@@ -262,7 +262,7 @@ int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supe
                         {
                             bits256 blockhash,txid,MoM; uint32_t MoMdepth; char symbol[65],str[65],str2[65],str3[65];
                             vout = jitem(vouts,numvouts-1);
-                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) == sizeof(script)*2 )
+                            if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && (len= is_hexstr(hexstr,0)) > 36 )
                             {
                                 len >>= 1;
                                 decode_hex(script,len,hexstr);
