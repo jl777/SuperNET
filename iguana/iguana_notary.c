@@ -577,13 +577,20 @@ void iguana_notarystats(int32_t totals[64],int32_t dispflag)
 
 STRING_AND_TWOINTS(dpow,notarizations,symbol,height,numblocks)
 {
-    int32_t i,j,ht,notht,masksums[64]; uint64_t signedmask; cJSON *retjson,*blockjson,*item,*array; bits256 blockhash;
+    int32_t i,j,ht,maxheight,notht,masksums[64]; uint64_t signedmask; cJSON *retjson,*blockjson,*item,*array; bits256 blockhash;
+    if ( (retjson= dpow_getinfo(myinfo,coin)) != 0 )
+    {
+        maxheight = jint(retjson,"blocks");
+        free_json(retjson);
+    } else maxheight = (1 << 30);
     memset(masksums,0,sizeof(masksums));
     if ( (coin= iguana_coinfind(symbol)) != 0 )
     {
         for (i=0; i<numblocks; i++)
         {
             ht = height + i;
+            if ( ht > maxheight )
+                break;
             blockhash = dpow_getblockhash(myinfo,coin,ht);
             if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
             {
