@@ -188,12 +188,14 @@ int32_t dpow_opreturn_parsesrc(bits256 *blockhashp,int32_t *heightp,bits256 *txi
         for (i=0; i<65; i++)
         {
             if ( (c= opret[offset++]) == 0 )
+            {
+                symbol[i] = 0;
                 break;
+            }
             if ( offset > opretlen )
                 break;
             symbol[i] = c;
         }
-        symbol[i] = 0;
         if ( offset+sizeof(bits256)+sizeof(uint32_t) <= opretlen )
         {
             offset += iguana_rwbignum(0,&opret[offset],sizeof(*MoMp),MoMp->bytes);
