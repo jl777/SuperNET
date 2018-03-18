@@ -162,9 +162,9 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
 
 uint32_t Numallocated;
 
-int32_t dpow_txhasnotarization(int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t height)
+int32_t dpow_txhasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t height)
 {
-    cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; uint64_t notarymask; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
+    cJSON *txobj,*vins,*vin,*vouts,*vout,*spentobj,*sobj; char *hexstr; uint8_t script[35]; bits256 spenttxid; uint64_t notarymask=0; int32_t i,j,numnotaries,len,spentvout,numvins,numvouts,hasnotarization = 0;
     if ( (txobj= dpow_gettransaction(myinfo,coin,txid)) != 0 )
     {
         if ( (vins= jarray(&numvins,txobj,"vin")) != 0 )
@@ -223,19 +223,22 @@ int32_t dpow_txhasnotarization(int32_t *nothtp,struct supernet_info *myinfo,stru
         }
         free_json(txobj);
     }
+    if ( hasnotarization != 0 )
+        (*signedmaskp) = notarymask;
     return(hasnotarization);
 }
 
-int32_t dpow_hasnotarization(int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,cJSON *blockjson,int32_t ht)
+int32_t dpow_hasnotarization(uint64_t *signedmaskp,int32_t *nothtp,struct supernet_info *myinfo,struct iguana_info *coin,cJSON *blockjson,int32_t ht)
 {
     int32_t i,n,hasnotarization = 0; bits256 txid; cJSON *txarray;
     *nothtp = 0;
+    *signedmaskp = 0;
     if ( (txarray= jarray(&n,blockjson,"tx")) != 0 )
     {
         for (i=0; i<n; i++)
         {
             txid = jbits256i(txarray,i);
-            hasnotarization += dpow_txhasnotarization(nothtp,myinfo,coin,txid,ht);
+            hasnotarization += dpow_txhasnotarization(signedmaskp,nothtp,myinfo,coin,txid,ht);
         }
     }
     return(hasnotarization);
@@ -243,7 +246,7 @@ int32_t dpow_hasnotarization(int32_t *nothtp,struct supernet_info *myinfo,struct
 
 bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
 {
-    bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; int32_t breakht=0,notht=0,ht,maxdepth = 1440,MoMdepth = 0;
+    bits256 MoM,blockhash,merkle,*merkles; cJSON *blockjson; uint64_t signedmask; int32_t breakht=0,notht=0,ht,maxdepth = 1440,MoMdepth = 0;
     memset(MoM.bytes,0,sizeof(MoM));
     blockhash = dpow_getblockhash(myinfo,coin,height);
     //printf("start MoM calc %s height.%d\n",coin->symbol,height);
@@ -262,7 +265,7 @@ bits256 dpow_calcMoM(uint32_t *MoMdepthp,struct supernet_info *myinfo,struct igu
                 blockhash = dpow_getblockhash(myinfo,coin,ht);
                 if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
                 {
-                    if ( breakht == 0 && dpow_hasnotarization(&notht,myinfo,coin,blockjson,ht) > 0 )
+                    if ( breakht == 0 && dpow_hasnotarization(&signedmask,&notht,myinfo,coin,blockjson,ht) > 0 )
                     {
                         breakht = notht;
                         //free_json(blockjson);

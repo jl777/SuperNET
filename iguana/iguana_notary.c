@@ -60,7 +60,7 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht,notht; struct dpow_block *bp;
+    void **ptrs; char str[65]; cJSON *blockjson; struct iguana_info *coin; struct dpow_checkpoint checkpoint; int32_t freq,minsigs,i,ht,notht; uint64_t signedmask; struct dpow_block *bp;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     if ( strcmp("BTC",dp->dest) == 0 )
@@ -88,7 +88,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
                 if ( (blockjson= dpow_getblock(myinfo,coin,hash)) != 0 )
                 {
                     height = jint(blockjson,"height");
-                    if ( dpow_hasnotarization(&notht,myinfo,coin,blockjson,height) <= 0 )
+                    if ( dpow_hasnotarization(&signedmask,&notht,myinfo,coin,blockjson,height) <= 0 )
                     {
                         blocktime = juint(blockjson,"time");
                         free_json(blockjson);
@@ -573,6 +573,48 @@ void iguana_notarystats(int32_t totals[64],int32_t dispflag)
         sprintf(fname,"%s/signedmasks",NOTARY_CURRENCIES[i]);
         _iguana_notarystats(fname,totals,dispflag);
     }
+}
+
+STRING_AND_TWOINTS(dpow,notarizations,symbol,height,numblocks)
+{
+    int32_t i,j,ht,notht,masksums[64]; uint64_t signedmask; cJSON *retjson,*blockjson,*item,*array; bits256 blockhash;
+    memset(masksums,0,sizeof(masksums));
+    if ( (coin= iguana_coinfind(symbol)) != 0 )
+    {
+        for (i=0; i<numblocks; i++)
+        {
+            ht = height + i;
+            blockhash = dpow_getblockhash(myinfo,coin,ht);
+            if ( (blockjson= dpow_getblock(myinfo,coin,blockhash)) != 0 )
+            {
+                if ( dpow_hasnotarization(&signedmask,&notht,myinfo,coin,blockjson,ht) > 0 )
+                {
+                    for (j=0; j<64; j++)
+                        if ( ((1LL << j) & signedmask) != 0 )
+                            masksums[j]++;
+                }
+                free_json(blockjson);
+            }
+        }
+        array = cJSON_CreateArray();
+        for (i=0; i<Notaries_num; i++)
+        {
+            if ( masksums[i] != 0 )
+            {
+                item = cJSON_CreateObject();
+                jaddstr(item,"notary",Notaries_elected[i][0]);
+                jaddnum(item,"notarizations",masksums[i]);
+                jaddi(array,item);
+            }
+        }
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"coin",symbol);
+        jaddnum(retjson,"start",height);
+        jaddnum(retjson,"numblocks",numblocks);
+        jadd(retjson,"notarizations",array);
+        return(jprint(retjson,1));
+    }
+    return(clonestr("{\"error\":\"cant find coin\"}"));
 }
 
 ZERO_ARGS(dpow,notarychains)
