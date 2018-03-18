@@ -539,7 +539,7 @@ void dpow_statemachinestart(void *ptr)
     bp->myind = myind;
     while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
-        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( (checkpoint.blockhash.height % 100) != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
