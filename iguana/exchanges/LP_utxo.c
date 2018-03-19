@@ -324,18 +324,6 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
             {
                 if ( (txout= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) != 0 )
                 {
-                    if ( (sobj= jobj(txout,"scriptPubKey")) != 0 )
-                    {
-                        if ( (hexstr= jstr(sobj,"hex")) != 0 )
-                        {
-                            if ( strlen(hexstr) != 25*2 )
-                            {
-                                printf("skip non-standard utxo.(%s)\n",hexstr);
-                                free_json(txout);
-                                continue;
-                            }
-                        }
-                    }
                     if ( LP_value_extract(txout,0) == 0 )
                     {
                         //printf("LP_address_utxo_ptrs skip zero value %s/v%d\n",bits256_str(str,up->U.txid),up->U.vout);
@@ -366,37 +354,18 @@ int32_t LP_address_utxo_ptrs(struct iguana_info *coin,int32_t iambob,struct LP_a
                     continue;
                 }
             }
+            if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
+            {
+                utxos[n++] = up;
+                if ( n >= max )
+                    break;
+            } //else printf("LP_allocated skip %u\n",LP_allocated(up->U.txid,up->U.vout));
         }
         else
         {
             if ( (tx= LP_transactionfind(coin,up->U.txid)) != 0 && up->U.vout < tx->numvouts )
                 tx->outpoints[up->U.vout].spendheight = 1;
         }
-        if ( LP_allocated(up->U.txid,up->U.vout) == 0 )
-        {
-            if ( coin->electrum == 0 )
-            {
-                if ( (txout= LP_gettxout(coin->symbol,coinaddr,up->U.txid,up->U.vout)) != 0 )
-                {
-                    if ( (sobj= jobj(txout,"scriptPubKey")) != 0 )
-                    {
-                        if ( (hexstr= jstr(sobj,"hex")) != 0 )
-                        {
-                            if ( strlen(hexstr) != 25*2 )
-                            {
-                                printf("skip non-standard utxo.(%s)\n",hexstr);
-                                free_json(txout);
-                                continue;
-                            }
-                        }
-                    }
-                    utxos[n++] = up;
-                    free_json(txout);
-                }
-            } else utxos[n++] = up;
-            if ( n >= max )
-                break;
-        } //else printf("LP_allocated skip %u\n",LP_allocated(up->U.txid,up->U.vout));
     }
     //portable_mutex_unlock(&LP_utxomutex);
     //printf("return n.%d for %s %s\n",n,coin->symbol,coinaddr);
@@ -437,7 +406,7 @@ void LP_mark_spent(char *symbol,bits256 txid,int32_t vout)
 
 int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t height,int32_t spendheight)
 {
-    struct LP_address *ap; cJSON *txobj; struct LP_transaction *tx; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; //char str[65];
+    struct LP_address *ap; char *hexstr; cJSON *txobj,*sobj; struct LP_transaction *tx; struct LP_address_utxo *up,*tmp; int32_t flag,retval = 0; //char str[65];
     if ( coin == 0 )
         return(0);
     if ( spendheight > 0 ) // dont autocreate entries for spends we dont care about
@@ -474,7 +443,20 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
                 {
                     //char str[65]; printf("prevent utxoadd since gettxout %s %s %s/v%d missing\n",coin->symbol,coinaddr,bits256_str(str,txid),vout);
                     return(0);
-                } else free_json(txobj);
+                }
+                if ( (sobj= jobj(txout,"scriptPubKey")) != 0 )
+                {
+                    if ( (hexstr= jstr(sobj,"hex")) != 0 )
+                    {
+                        if ( strlen(hexstr) != 25*2 )
+                        {
+                            printf("skip non-standard utxo.(%s)\n",hexstr);
+                            free_json(txobj);
+                            return(0);
+                        }
+                    }
+                }
+                free_json(txobj);
             }
             up = calloc(1,sizeof(*up));
             up->U.txid = txid;
