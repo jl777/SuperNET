@@ -118,7 +118,7 @@ inventory(coin, reset=0, [passphrase=])\n\
 lastnonce()\n\
 buy(base, rel, price, relvolume, timeout=10, duration=3600, nonce)\n\
 sell(base, rel, price, basevolume, timeout=10, duration=3600, nonce)\n\
-withdraw(coin, outputs[])\n\
+withdraw(coin, outputs[], broadcast=0)\n\
 sendrawtransaction(coin, signedtx)\n\
 swapstatus(pending=0, fast=0)\n\
 swapstatus(coin, limit=10)\n\

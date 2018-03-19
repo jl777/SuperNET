@@ -1521,7 +1521,7 @@ char *LP_opreturndecrypt(void *ctx,char *symbol,bits256 utxotxid,char *passphras
 char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
 {
     static void *ctx;
-    int32_t allocated_outputs=0,iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
+    int32_t broadcast,allocated_outputs=0,iter,i,utxovout,autofee,completed=0,maxV,numvins,numvouts,datalen,suppress_pubkeys; bits256 privkey; struct LP_address *ap; char changeaddr[64],vinaddr[64],str[65],*signret,*signedtx=0,*rawtx=0; struct vin_info *V; uint32_t locktime; cJSON *retjson,*item,*outputs,*vins=0,*txobj=0,*privkeys=0; struct iguana_msgtx msgtx; bits256 utxotxid,signedtxid; uint64_t txfee,newtxfee=10000;
 //printf("withdraw.%s %s\n",coin->symbol,jprint(argjson,0));
     if ( coin->etomic[0] != 0 )
     {
@@ -1530,6 +1530,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     }
     if ( ctx == 0 )
         ctx = bitcoin_ctx();
+    broadcast = jint(argjson,"broadcast");
     if ( (outputs= jarray(&numvouts,argjson,"outputs")) == 0 )
     {
         if ( jstr(argjson,"opreturn") == 0 )
@@ -1592,7 +1593,7 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
                 printf("incomplete signing withdraw (%s)\n",jprint(vins,0));
                 if ( signedtx != 0 )
                     free(signedtx), signedtx = 0;
-            } //else printf("LP_withdraw.%s %s -> %s\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid));
+            }
             if ( signedtx == 0 )
                 break;
             datalen = (int32_t)strlen(signedtx) / 2;
@@ -1621,7 +1622,6 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
     {
         if ( completed == 0 && (numvins= cJSON_GetArraySize(vins)) > 0 )
         {
-            
             for (i=0; i<numvins; i++)
             {
                 item = jitem(vins,i);
@@ -1634,9 +1634,23 @@ char *LP_withdraw(struct iguana_info *coin,cJSON *argjson)
         free_json(privkeys);
     retjson = cJSON_CreateObject();
     if ( rawtx != 0 )
+    {
         jaddstr(retjson,"rawtx",rawtx);
+        free(rawtx);
+    }
     if ( signedtx != 0 )
+    {
         jaddstr(retjson,"hex",signedtx);
+        if ( broadcast != 0 )
+        {
+            if ( (signret= LP_sendrawtransaction(coin->symbol,signedtx)) != 0 )
+            {
+                printf("LP_withdraw.%s %s -> %s (%s)\n",coin->symbol,jprint(argjson,0),bits256_str(str,signedtxid),signret);
+                free(signret);
+            }
+        }
+        free(signedtx);
+    }
     if ( txobj != 0 )
         jadd(retjson,"tx",txobj);
     jaddbits256(retjson,"txid",signedtxid);
