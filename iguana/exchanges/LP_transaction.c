@@ -1329,7 +1329,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 if ( spendlen < sizeof(script) )
                 {
                     decode_hex(script,spendlen,scriptstr);
-                    printf("i.%d using external script.(%s)\n",i,scriptstr);
+                    printf("i.%d using external script.(%s) %d\n",i,scriptstr,spendlen);
                 }
                 else
                 {
@@ -1352,6 +1352,7 @@ char *LP_createrawtransaction(cJSON **txobjp,int32_t *numvinsp,struct iguana_inf
                 }
             }
             txobj = bitcoin_txoutput(txobj,spendscript,spendlen,value + adjust);
+printf("txobj.(%s)\n",jprint(txobj,0));
         }
         else
         {

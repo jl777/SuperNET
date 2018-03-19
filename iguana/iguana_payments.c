@@ -464,7 +464,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                     }
                     if ( strlen(spendscriptstr) != 50 || strncmp("76a914",spendscriptstr,6) != 0 || strcmp("88ac",&spendscriptstr[50-4]) != 0 )
                         continue;
-printf("utxo.(%s)\n",jprint(item,0));
+//printf("utxo.(%s)\n",jprint(item,0));
                     unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
                     value = jdouble(item,"amount") * SATOSHIDEN;
                     if ( (0) && jdouble(item,"interest") != 0 )
