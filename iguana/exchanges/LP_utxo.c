@@ -450,7 +450,7 @@ int32_t LP_address_utxoadd(int32_t skipsearch,uint32_t timestamp,char *debug,str
                     {
                         if ( strlen(hexstr) != 25*2 )
                         {
-                            printf("skip non-standard utxo.(%s)\n",hexstr);
+                            //printf("skip non-standard utxo.(%s)\n",hexstr);
                             free_json(txobj);
                             return(0);
                         }
